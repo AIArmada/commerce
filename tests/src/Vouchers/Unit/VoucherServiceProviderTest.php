@@ -15,9 +15,11 @@ use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
+use AIArmada\Vouchers\VoucherServiceProvider;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 describe('VoucherServiceProvider', function (): void {
     describe('service bindings', function (): void {
@@ -66,7 +68,7 @@ describe('VoucherServiceProvider', function (): void {
 
     describe('provides method', function (): void {
         it('returns list of provided services', function (): void {
-            $provider = new AIArmada\Vouchers\VoucherServiceProvider(app());
+            $provider = new VoucherServiceProvider(app());
             $provides = $provider->provides();
 
             expect($provides)->toContain(VoucherService::class)

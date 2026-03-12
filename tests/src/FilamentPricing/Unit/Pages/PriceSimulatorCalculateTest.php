@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentPricing\Pages\PriceSimulator;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\Data\PriceResultData;
@@ -69,11 +71,11 @@ it('passes customer_id in context when a customer is provided', function (): voi
     $product = Product::factory()->create(['price' => 1000]);
 
     $effectiveAt = CarbonImmutable::parse('2025-01-02 12:00:00');
-    $customer = \AIArmada\Customers\Models\Customer::query()->create([
+    $customer = Customer::query()->create([
         'first_name' => 'Test',
         'last_name' => 'Customer',
         'email' => 'customer-' . uniqid() . '@example.com',
-        'status' => \AIArmada\Customers\Enums\CustomerStatus::Active,
+        'status' => CustomerStatus::Active,
         'wallet_balance' => 0,
         'lifetime_value' => 0,
         'total_orders' => 0,

@@ -6,6 +6,8 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 
 describe('Segment Model', function (): void {
     describe('Creation', function (): void {
@@ -68,7 +70,7 @@ describe('Segment Model', function (): void {
                 'slug' => 'customers-rel-' . uniqid(),
             ]);
 
-            expect($segment->customers())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
+            expect($segment->customers())->toBeInstanceOf(BelongsToMany::class);
         });
 
         it('can add customers', function (): void {
@@ -168,7 +170,7 @@ describe('Segment Model', function (): void {
 
             $matching = $segment->getMatchingCustomers();
 
-            expect($matching)->toBeInstanceOf(Illuminate\Support\Collection::class)
+            expect($matching)->toBeInstanceOf(Collection::class)
                 ->and($matching->every(fn ($c) => $c->accepts_marketing === true))->toBeTrue();
         });
 
@@ -355,7 +357,7 @@ describe('Segment Model', function (): void {
             $matching = $segment->getMatchingCustomers();
 
             // Should return all active customers
-            expect($matching)->toBeInstanceOf(Illuminate\Support\Collection::class);
+            expect($matching)->toBeInstanceOf(Collection::class);
         });
 
         it('skips conditions without value', function (): void {
@@ -370,7 +372,7 @@ describe('Segment Model', function (): void {
 
             $matching = $segment->getMatchingCustomers();
 
-            expect($matching)->toBeInstanceOf(Illuminate\Support\Collection::class);
+            expect($matching)->toBeInstanceOf(Collection::class);
         });
 
         it('handles default field with custom operator', function (): void {

@@ -12,6 +12,7 @@ use AIArmada\FilamentCart\Services\AlertEvaluator;
 use AIArmada\FilamentCart\Services\CartMonitor;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use stdClass;
 
 class MonitorCartsCommand extends Command
@@ -109,7 +110,7 @@ class MonitorCartsCommand extends Command
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, stdClass>  $items
+     * @param  Collection<int, stdClass>  $items
      */
     private function processEvents(string $eventType, $items): void
     {

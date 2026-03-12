@@ -6,9 +6,13 @@ use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
+use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
+use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Events\WebhookHandled;
 use AIArmada\CashierChip\Events\WebhookReceived;
+use AIArmada\CashierChip\Payment;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 
@@ -77,7 +81,7 @@ it('can create subscription renewal failed event', function (): void {
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
     ]);
-    $event = new AIArmada\CashierChip\Events\SubscriptionRenewalFailed($subscription, 'Payment declined');
+    $event = new SubscriptionRenewalFailed($subscription, 'Payment declined');
 
     expect($event->subscription)->toBe($subscription);
     expect($event->reason)->toBe('Payment declined');
@@ -88,12 +92,12 @@ it('can create subscription renewed event', function (): void {
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
     ]);
-    $payment = new AIArmada\CashierChip\Payment(AIArmada\Chip\Data\PurchaseData::from([
+    $payment = new Payment(PurchaseData::from([
         'id' => 'test-purchase',
         'purchase' => ['total' => 1000],
     ]));
 
-    $event = new AIArmada\CashierChip\Events\SubscriptionRenewed($subscription, $payment);
+    $event = new SubscriptionRenewed($subscription, $payment);
 
     expect($event->subscription)->toBe($subscription);
     expect($event->payment)->toBe($payment);

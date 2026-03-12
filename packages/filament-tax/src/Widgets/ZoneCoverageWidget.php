@@ -7,6 +7,7 @@ namespace AIArmada\FilamentTax\Widgets;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Widgets\Widget;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 
 final class ZoneCoverageWidget extends Widget
@@ -25,7 +26,7 @@ final class ZoneCoverageWidget extends Widget
         $zones = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
             ->with([
                 'rates' => function ($query): void {
-                    $builder = $query instanceof \Illuminate\Database\Eloquent\Relations\Relation
+                    $builder = $query instanceof Relation
                         ? $query->getQuery()
                         : $query;
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\Concerns\AllowsCoupons;
+use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
@@ -104,7 +105,7 @@ class AllowsCouponsTest extends CashierChipTestCase
     {
         $this->app->instance(VoucherService::class, new FakeVoucherService([]));
 
-        $this->expectException(\AIArmada\CashierChip\Exceptions\InvalidCoupon::class);
+        $this->expectException(InvalidCoupon::class);
 
         (new AllowsCouponsHarness)->exposeValidateCouponForCheckout('MISSING');
     }
@@ -124,7 +125,7 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->app->instance(VoucherService::class, new FakeVoucherService(['INACTIVE' => $voucher]));
 
-        $this->expectException(\AIArmada\CashierChip\Exceptions\InvalidCoupon::class);
+        $this->expectException(InvalidCoupon::class);
 
         (new AllowsCouponsHarness)->exposeValidateCouponForCheckout('INACTIVE');
     }
@@ -144,7 +145,7 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->app->instance(VoucherService::class, new FakeVoucherService(['FOREVER_OFF' => $voucher]));
 
-        $this->expectException(\AIArmada\CashierChip\Exceptions\InvalidCoupon::class);
+        $this->expectException(InvalidCoupon::class);
 
         (new AllowsCouponsHarness)->exposeValidateCouponForCheckout('FOREVER_OFF');
     }
@@ -164,7 +165,7 @@ class AllowsCouponsTest extends CashierChipTestCase
 
         $this->app->instance(VoucherService::class, new FakeVoucherService(['FOREVER_OFF_SUB' => $voucher]));
 
-        $this->expectException(\AIArmada\CashierChip\Exceptions\InvalidCoupon::class);
+        $this->expectException(InvalidCoupon::class);
 
         (new AllowsCouponsHarness)->exposeValidateCouponForSubscriptionApplication('FOREVER_OFF_SUB');
     }

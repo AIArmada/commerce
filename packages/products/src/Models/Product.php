@@ -7,7 +7,9 @@ namespace AIArmada\Products\Models;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
+use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Contracts\Buyable;
 use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Contracts\Priceable;
@@ -28,6 +30,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -67,9 +70,9 @@ use Throwable;
  * @property string|null $meta_description
  * @property string|null $tax_class
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $published_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $published_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Variant> $variants
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Option> $options
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $categories
@@ -223,13 +226,13 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     /**
      * Get the product's prices from the pricing package.
      *
-     * @return MorphMany<\AIArmada\Pricing\Models\Price, $this>
+     * @return MorphMany<Price, $this>
      */
     public function prices(): MorphMany
     {
-        $priceClass = class_exists(\AIArmada\Pricing\Models\Price::class)
-            ? \AIArmada\Pricing\Models\Price::class
-            : \Illuminate\Database\Eloquent\Model::class;
+        $priceClass = class_exists(Price::class)
+            ? Price::class
+            : Model::class;
 
         return $this->morphMany($priceClass, 'priceable');
     }
@@ -617,9 +620,9 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
         }
 
         // Use inventory package if installed and configured
-        if (class_exists(\AIArmada\Inventory\Services\InventoryService::class)) {
+        if (class_exists(InventoryService::class)) {
             try {
-                return app(\AIArmada\Inventory\Services\InventoryService::class)->getTotalAvailable($this);
+                return app(InventoryService::class)->getTotalAvailable($this);
             } catch (Throwable) {
                 // Inventory tables may not exist, fall back to local stock
             }

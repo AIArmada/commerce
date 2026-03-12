@@ -8,6 +8,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use Carbon\CarbonImmutable;
 
 describe('AffiliateOffer Model', function (): void {
     beforeEach(function (): void {
@@ -175,8 +176,8 @@ describe('AffiliateOffer Model', function (): void {
                 'ends_at' => now()->addDays(30),
             ]);
 
-            expect($offer->starts_at)->toBeInstanceOf(\Carbon\CarbonImmutable::class);
-            expect($offer->ends_at)->toBeInstanceOf(\Carbon\CarbonImmutable::class);
+            expect($offer->starts_at)->toBeInstanceOf(CarbonImmutable::class);
+            expect($offer->ends_at)->toBeInstanceOf(CarbonImmutable::class);
         });
     });
 });

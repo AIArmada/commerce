@@ -8,6 +8,7 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
+use AIArmada\Pricing\PricingServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 
 final class CalculatePricingStep extends AbstractCheckoutStep
@@ -83,7 +84,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
 
     private function hasPricingPackage(): bool
     {
-        return class_exists(\AIArmada\Pricing\PricingServiceProvider::class);
+        return class_exists(PricingServiceProvider::class);
     }
 
     /**

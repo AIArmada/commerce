@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Models\RecoveryCampaign;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
@@ -204,6 +205,6 @@ describe('RecoveryCampaign', function (): void {
             'strategy' => 'email',
         ]);
 
-        expect($campaign->attempts())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($campaign->attempts())->toBeInstanceOf(HasMany::class);
     });
 });

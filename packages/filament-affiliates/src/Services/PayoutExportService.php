@@ -8,7 +8,10 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use Dompdf\Dompdf;
 use League\Csv\Writer;
+use Shuchkin\SimpleXLSXGen;
+use Spatie\LaravelPdf\Facades\Pdf;
 use SplTempFileObject;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -55,7 +58,7 @@ final class PayoutExportService
         $filename = sprintf('%s.xlsx', $payout->reference);
 
         // Use Spatie SimpleXLSXGen or fallback to CSV-compatible Excel
-        if (class_exists(\Shuchkin\SimpleXLSXGen::class)) {
+        if (class_exists(SimpleXLSXGen::class)) {
             return $this->streamXlsxWithSimpleXlsx($data, $filename);
         }
 
@@ -76,12 +79,12 @@ final class PayoutExportService
         $filename = sprintf('%s.pdf', $payout->reference);
 
         // Use Spatie Laravel PDF if available
-        if (class_exists(\Spatie\LaravelPdf\Facades\Pdf::class)) {
+        if (class_exists(Pdf::class)) {
             return $this->streamWithSpatiePdf($payout, $data, $filename);
         }
 
         // Fallback: Use DomPDF directly if available
-        if (class_exists(\Dompdf\Dompdf::class)) {
+        if (class_exists(Dompdf::class)) {
             return $this->streamWithDompdf($payout, $data, $filename);
         }
 
@@ -175,7 +178,7 @@ final class PayoutExportService
         return response()->streamDownload(
             function () use ($data): void {
                 /** @phpstan-ignore class.notFound */
-                $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
+                $xlsx = SimpleXLSXGen::fromArray($data);
                 $xlsx->saveAs('php://output');
             },
             $filename,
@@ -228,7 +231,7 @@ final class PayoutExportService
 
         return response()->streamDownload(
             function () use ($html): void {
-                $pdf = \Spatie\LaravelPdf\Facades\Pdf::html($html)->base64();
+                $pdf = Pdf::html($html)->base64();
                 echo base64_decode($pdf);
             },
             $filename,
@@ -248,7 +251,7 @@ final class PayoutExportService
         return response()->streamDownload(
             function () use ($html): void {
                 /** @phpstan-ignore class.notFound */
-                $dompdf = new \Dompdf\Dompdf;
+                $dompdf = new Dompdf;
                 /** @phpstan-ignore-next-line */
                 $dompdf->loadHtml($html);
                 /** @phpstan-ignore-next-line */

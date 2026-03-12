@@ -89,7 +89,7 @@ describe('ExportService', function (): void {
         // Mock getAbandonmentAnalysis using a real object or mock if allowed
         // But AbandonmentAnalysis is just a DTO, so we can mock/instantiate it if we have access
         // Assuming we mock the service return
-        $abandonmentAnalysis = Mockery::mock(AIArmada\FilamentCart\Data\AbandonmentAnalysis::class);
+        $abandonmentAnalysis = Mockery::mock(AbandonmentAnalysis::class);
         $abandonmentAnalysis->shouldReceive('toArray')->andReturn([]);
         $this->analyticsService->shouldReceive('getAbandonmentAnalysis')->andReturn($abandonmentAnalysis);
 

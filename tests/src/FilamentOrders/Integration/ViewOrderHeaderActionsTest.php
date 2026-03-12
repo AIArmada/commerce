@@ -12,6 +12,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Eloquent\Model;
@@ -112,7 +113,7 @@ it('evaluates ViewOrder header action authorization + visibility closures', func
         $action->isHidden();
     }
 
-    /** @var \Filament\Actions\Action $confirmPayment */
+    /** @var Action $confirmPayment */
     $confirmPayment = collect($actions)->firstWhere(fn ($action) => $action->getName() === 'confirm_payment');
 
     expect($confirmPayment)->not->toBeNull();
@@ -143,7 +144,7 @@ it('evaluates status-dependent header actions for processing orders', function (
 
     $actions = $page->headerActions();
 
-    /** @var \Filament\Actions\Action $shipOrder */
+    /** @var Action $shipOrder */
     $shipOrder = collect($actions)->firstWhere(fn ($action) => $action->getName() === 'ship_order');
 
     expect($shipOrder)->not->toBeNull();

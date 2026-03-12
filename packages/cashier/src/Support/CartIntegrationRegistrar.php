@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Support;
 
+use AIArmada\Affiliates\AffiliatesServiceProvider;
+use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cashier\Events\PaymentFailed;
 use AIArmada\Cashier\Events\PaymentSucceeded;
+use AIArmada\Inventory\InventoryServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Registers cart integration when aiarmada/cart is installed.
@@ -99,7 +104,7 @@ final class CartIntegrationRegistrar
             return;
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($cartId, $event): void {
+        DB::transaction(function () use ($cartId, $event): void {
             /** @var CartManagerInterface $cartManager */
             $cartManager = $this->app->make('cart');
 
@@ -111,12 +116,12 @@ final class CartIntegrationRegistrar
             }
 
             // Commit inventory allocations if inventory package is present
-            if (class_exists(\AIArmada\Inventory\InventoryServiceProvider::class)) {
+            if (class_exists(InventoryServiceProvider::class)) {
                 $this->commitInventoryAllocations($cartManager, $cartId, $event);
             }
 
             // Record affiliate conversion if affiliates package is present
-            if (class_exists(\AIArmada\Affiliates\AffiliatesServiceProvider::class)) {
+            if (class_exists(AffiliatesServiceProvider::class)) {
                 $this->recordAffiliateConversion($cart, $event);
             }
 
@@ -200,7 +205,7 @@ final class CartIntegrationRegistrar
      */
     private function releaseInventoryAllocations(string $cartId): void
     {
-        if (! class_exists(\AIArmada\Inventory\InventoryServiceProvider::class)) {
+        if (! class_exists(InventoryServiceProvider::class)) {
             return;
         }
 
@@ -215,11 +220,11 @@ final class CartIntegrationRegistrar
     /**
      * Record affiliate conversion from cart.
      *
-     * @param  \AIArmada\Cart\Cart  $cart
+     * @param  Cart  $cart
      */
     private function recordAffiliateConversion(object $cart, PaymentSucceeded $event): void
     {
-        if (! class_exists(\AIArmada\Affiliates\Services\AffiliateService::class)) {
+        if (! class_exists(AffiliateService::class)) {
             return;
         }
 
@@ -230,13 +235,13 @@ final class CartIntegrationRegistrar
             return;
         }
 
-        /** @var \AIArmada\Affiliates\Services\AffiliateService $affiliateService */
-        $affiliateService = $this->app->make(\AIArmada\Affiliates\Services\AffiliateService::class);
+        /** @var AffiliateService $affiliateService */
+        $affiliateService = $this->app->make(AffiliateService::class);
 
         $amount = $event->payment->rawAmount();
         $currency = $event->payment->currency();
 
-        /** @var \AIArmada\Cart\Cart $cart */
+        /** @var Cart $cart */
         $affiliateService->recordConversion($cart, [
             'order_reference' => $this->extractOrderIdFromPayment($event),
             'total' => $amount,

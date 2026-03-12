@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart as FilamentCart;
 use AIArmada\FilamentCart\Resources\CartResource;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class CartBridge
@@ -53,7 +54,7 @@ final class CartBridge
             }
         }
 
-        /** @var \Illuminate\Database\Eloquent\Builder<FilamentCart> $cartQuery */
+        /** @var Builder<FilamentCart> $cartQuery */
         $cartQuery = CartResource::getEloquentQuery()->where('identifier', $identifier);
 
         if ((bool) config('affiliates.owner.enabled', false)) {

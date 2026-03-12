@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Events\ParcelDelivered;
@@ -122,13 +123,13 @@ describe('JntOrderStatusChanged event', function (): void {
         config()->set('jnt.owner.enabled', true);
         config()->set('jnt.owner.include_global', false);
 
-        $ownerA = \AIArmada\Commerce\Tests\Fixtures\Models\User::query()->create([
+        $ownerA = User::query()->create([
             'name' => 'Owner A',
             'email' => 'evt-owner-a@example.com',
             'password' => 'secret',
         ]);
 
-        $ownerB = \AIArmada\Commerce\Tests\Fixtures\Models\User::query()->create([
+        $ownerB = User::query()->create([
             'name' => 'Owner B',
             'email' => 'evt-owner-b@example.com',
             'password' => 'secret',

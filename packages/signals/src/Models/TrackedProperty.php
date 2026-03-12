@@ -7,6 +7,7 @@ namespace AIArmada\Signals\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Models\Concerns\AutoAssignsSignalOwnerOnCreate;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,14 +26,14 @@ use Illuminate\Support\Str;
  * @property string $currency
  * @property bool $is_active
  * @property array<string, mixed>|null $settings
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalIdentity> $identities
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalSession> $sessions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalEvent> $events
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalDailyMetric> $dailyMetrics
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalGoal> $goals
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SavedSignalReport> $savedReports
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalAlertRule> $alertRules
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalAlertLog> $alertLogs
+ * @property-read Collection<int, SignalIdentity> $identities
+ * @property-read Collection<int, SignalSession> $sessions
+ * @property-read Collection<int, SignalEvent> $events
+ * @property-read Collection<int, SignalDailyMetric> $dailyMetrics
+ * @property-read Collection<int, SignalGoal> $goals
+ * @property-read Collection<int, SavedSignalReport> $savedReports
+ * @property-read Collection<int, SignalAlertRule> $alertRules
+ * @property-read Collection<int, SignalAlertLog> $alertLogs
  */
 final class TrackedProperty extends Model
 {

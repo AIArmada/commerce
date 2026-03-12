@@ -7,6 +7,9 @@ use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class InventoryBatchTest extends InventoryTestCase
 {
@@ -35,28 +38,28 @@ class InventoryBatchTest extends InventoryTestCase
     {
         $batch = new InventoryBatch;
         $relation = $batch->inventoryable();
-        expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
+        expect($relation)->toBeInstanceOf(MorphTo::class);
     }
 
     public function test_location_relationship(): void
     {
         $batch = new InventoryBatch;
         $relation = $batch->location();
-        expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        expect($relation)->toBeInstanceOf(BelongsTo::class);
     }
 
     public function test_movements_relationship(): void
     {
         $batch = new InventoryBatch;
         $relation = $batch->movements();
-        expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($relation)->toBeInstanceOf(HasMany::class);
     }
 
     public function test_allocations_relationship(): void
     {
         $batch = new InventoryBatch;
         $relation = $batch->allocations();
-        expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($relation)->toBeInstanceOf(HasMany::class);
     }
 
     public function test_get_available_attribute(): void

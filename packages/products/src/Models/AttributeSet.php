@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -24,8 +26,8 @@ use InvalidArgumentException;
  * @property string|null $description
  * @property bool $is_default
  * @property int $position
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Attribute> $setAttributes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeGroup> $groups
  */
@@ -115,9 +117,9 @@ class AttributeSet extends Model
     /**
      * Get all attributes organized by group.
      *
-     * @return \Illuminate\Support\Collection<int, array{group: AttributeGroup, attributes: \Illuminate\Database\Eloquent\Collection<int, Attribute>}>
+     * @return Collection<int, array{group: AttributeGroup, attributes: \Illuminate\Database\Eloquent\Collection<int, Attribute>}>
      */
-    public function getGroupedAttributes(): \Illuminate\Support\Collection
+    public function getGroupedAttributes(): Collection
     {
         $this->loadMissing(['groups.groupAttributes', 'setAttributes']);
 
@@ -132,8 +134,8 @@ class AttributeSet extends Model
     /**
      * Scope to default sets only.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<AttributeSet>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<AttributeSet>
+     * @param  Builder<AttributeSet>  $query
+     * @return Builder<AttributeSet>
      */
     public function scopeDefault($query)
     {
@@ -143,8 +145,8 @@ class AttributeSet extends Model
     /**
      * Scope to order by position.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<AttributeSet>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<AttributeSet>
+     * @param  Builder<AttributeSet>  $query
+     * @return Builder<AttributeSet>
      */
     public function scopeOrdered($query)
     {

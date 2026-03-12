@@ -14,6 +14,7 @@ use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ViewClient;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages\ListCompanyStatements;
 use AIArmada\FilamentChip\Resources\Pages\ReadOnlyListRecords;
+use AIArmada\FilamentChip\Resources\PaymentResource;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ListPayments;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ViewPayment;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ListPurchases;
@@ -22,6 +23,8 @@ use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\CreateSendInst
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ListSendInstructions;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ViewSendInstruction;
 use Filament\Actions\Exports\Models\Export;
+use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -59,7 +62,7 @@ it('covers exporters notification bodies and column definitions', function (): v
 it('covers resource pages and read-only list base class', function (): void {
     $readOnly = new class extends ReadOnlyListRecords
     {
-        protected static string $resource = \AIArmada\FilamentChip\Resources\PaymentResource::class;
+        protected static string $resource = PaymentResource::class;
     };
 
     $m = (new ReflectionClass(ReadOnlyListRecords::class))->getMethod('getHeaderActions');
@@ -75,7 +78,7 @@ it('covers resource pages and read-only list base class', function (): void {
 
     expect((new ListCompanyStatements)->getTitle())->toBeString();
 
-    $purchaseRecord = new class extends \Illuminate\Database\Eloquent\Model
+    $purchaseRecord = new class extends Model
     {
         public $reference = 'REF-123';
 
@@ -87,7 +90,7 @@ it('covers resource pages and read-only list base class', function (): void {
 
     $viewPurchase = new ViewPurchase;
 
-    $recordProp = (new ReflectionClass(Filament\Resources\Pages\ViewRecord::class))->getProperty('record');
+    $recordProp = (new ReflectionClass(ViewRecord::class))->getProperty('record');
     $recordProp->setAccessible(true);
     $recordProp->setValue($viewPurchase, $purchaseRecord);
 

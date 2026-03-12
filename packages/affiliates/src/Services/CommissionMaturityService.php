@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
+use Carbon\CarbonInterface;
 
 /**
  * Service for managing commission maturity and release to available balance.
@@ -84,7 +85,7 @@ final class CommissionMaturityService
     /**
      * Get the maturity date for a conversion.
      */
-    public function getMaturityDate(AffiliateConversion $conversion): \Carbon\CarbonInterface
+    public function getMaturityDate(AffiliateConversion $conversion): CarbonInterface
     {
         return $conversion->occurred_at->addDays($this->maturityDays);
     }

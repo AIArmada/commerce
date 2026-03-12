@@ -6,6 +6,8 @@ use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Models\Shipment;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 describe('ReturnAuthorization Model', function (): void {
     it('can create a return authorization with required fields', function (): void {
@@ -102,7 +104,7 @@ describe('ReturnAuthorization Model', function (): void {
 
         expect($rma->originalShipment)->toBeInstanceOf(Shipment::class);
         expect($rma->originalShipment->id)->toBe($shipment->id);
-        expect($rma->items())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($rma->items())->toBeInstanceOf(HasMany::class);
     });
 
     it('has status helper methods', function (): void {
@@ -281,7 +283,7 @@ describe('ReturnAuthorization Model', function (): void {
 
         $rma->refresh();
 
-        expect($rma->returnShipment())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasOne::class);
+        expect($rma->returnShipment())->toBeInstanceOf(HasOne::class);
         expect($rma->returnShipment)->toBeInstanceOf(Shipment::class);
         expect($rma->returnShipment->id)->toBe($returnShipment->id);
     });

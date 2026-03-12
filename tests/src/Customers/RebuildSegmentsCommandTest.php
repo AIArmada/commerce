@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Customers\Console\Commands\RebuildSegmentsCommand;
 use AIArmada\Customers\Models\Segment;
+use Illuminate\Contracts\Console\Kernel;
 
 describe('RebuildSegmentsCommand', function (): void {
     describe('Instantiation', function (): void {
@@ -46,7 +47,7 @@ describe('RebuildSegmentsCommand', function (): void {
             Segment::query()->where('is_automatic', true)->where('is_active', true)->delete();
 
             // Register command
-            $this->app->make(Illuminate\Contracts\Console\Kernel::class)
+            $this->app->make(Kernel::class)
                 ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments')
@@ -62,7 +63,7 @@ describe('RebuildSegmentsCommand', function (): void {
                 'conditions' => [],
             ]);
 
-            $this->app->make(Illuminate\Contracts\Console\Kernel::class)
+            $this->app->make(Kernel::class)
                 ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments')
@@ -78,7 +79,7 @@ describe('RebuildSegmentsCommand', function (): void {
                 'conditions' => [],
             ]);
 
-            $this->app->make(Illuminate\Contracts\Console\Kernel::class)
+            $this->app->make(Kernel::class)
                 ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', ['--segment' => $segment->id])
@@ -86,7 +87,7 @@ describe('RebuildSegmentsCommand', function (): void {
         });
 
         it('handles non-existent segment', function (): void {
-            $this->app->make(Illuminate\Contracts\Console\Kernel::class)
+            $this->app->make(Kernel::class)
                 ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', ['--segment' => 'non-existent'])
@@ -101,7 +102,7 @@ describe('RebuildSegmentsCommand', function (): void {
                 'is_automatic' => false,
             ]);
 
-            $this->app->make(Illuminate\Contracts\Console\Kernel::class)
+            $this->app->make(Kernel::class)
                 ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', ['--segment' => $segment->id])
@@ -117,7 +118,7 @@ describe('RebuildSegmentsCommand', function (): void {
                 'conditions' => [],
             ]);
 
-            $this->app->make(Illuminate\Contracts\Console\Kernel::class)
+            $this->app->make(Kernel::class)
                 ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', ['--dry-run' => true])
@@ -133,7 +134,7 @@ describe('RebuildSegmentsCommand', function (): void {
                 'conditions' => [],
             ]);
 
-            $this->app->make(Illuminate\Contracts\Console\Kernel::class)
+            $this->app->make(Kernel::class)
                 ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', [

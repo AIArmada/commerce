@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Database\Eloquent\Model;
 
 class InventoryLocationTest extends InventoryTestCase
 {
@@ -497,7 +500,7 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         // Create global location (no owner)
-        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
+        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
             'owner_type' => null,
             'owner_id' => null,
         ]));
@@ -517,11 +520,11 @@ class InventoryLocationTest extends InventoryTestCase
 
         $owner = InventoryItem::create(['name' => 'Owner Item']);
 
-        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($owner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
         {
-            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+            public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return $this->owner;
             }
@@ -534,25 +537,25 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         // Create global location
-        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return null;
             }
         });
-        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
+        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
             'owner_type' => null,
             'owner_id' => null,
         ]));
 
         // Create location owned by different owner
         $otherOwner = InventoryItem::create(['name' => 'Other Owner']);
-        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($otherOwner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        app()->instance(OwnerResolverInterface::class, new class($otherOwner) implements OwnerResolverInterface
         {
-            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+            public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return $this->owner;
             }
@@ -576,11 +579,11 @@ class InventoryLocationTest extends InventoryTestCase
 
         $owner = InventoryItem::create(['name' => 'Owner Item']);
 
-        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($owner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
         {
-            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+            public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return $this->owner;
             }
@@ -593,14 +596,14 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         // Create global location
-        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return null;
             }
         });
-        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
+        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
             'owner_type' => null,
             'owner_id' => null,
         ]));

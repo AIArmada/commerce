@@ -10,6 +10,7 @@ use AIArmada\Shipping\States\Shipped;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 uses(TestCase::class);
@@ -152,7 +153,7 @@ describe('ManifestPage', function (): void {
         $method = new ReflectionMethod($page, 'getTableQuery');
         $method->setAccessible(true);
 
-        /** @var \Illuminate\Database\Eloquent\Builder $query */
+        /** @var Builder $query */
         $query = $method->invoke($page);
 
         expect($query->count())->toBe(1);

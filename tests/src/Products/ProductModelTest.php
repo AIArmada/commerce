@@ -7,8 +7,10 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
+use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Akaunting\Money\Money;
 use Illuminate\Support\Facades\DB;
 
@@ -648,8 +650,8 @@ describe('Product Model', function (): void {
             $variantId = $variant->id;
             $product->delete();
 
-            expect(AIArmada\Products\Models\Variant::where('product_id', $productId)->count())->toBe(0)
-                ->and(AIArmada\Products\Models\Option::where('product_id', $productId)->count())->toBe(0)
+            expect(Variant::where('product_id', $productId)->count())->toBe(0)
+                ->and(Option::where('product_id', $productId)->count())->toBe(0)
                 ->and(DB::table('product_variant_options')->where('variant_id', $variantId)->count())->toBe(0);
         });
     });

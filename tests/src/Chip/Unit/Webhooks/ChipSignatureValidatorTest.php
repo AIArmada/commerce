@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Webhooks\ChipSignatureValidator;
 use AIArmada\Chip\Webhooks\ChipWebhookProfile;
+use AIArmada\Chip\Webhooks\ProcessChipWebhook;
 use Illuminate\Http\Request;
+use Spatie\WebhookClient\Models\WebhookCall;
 use Spatie\WebhookClient\WebhookConfig;
 
 it('returns the correct signature header name', function (): void {
@@ -47,8 +49,8 @@ it('validates a correct signature', function (): void {
         'signature_header_name' => 'X-Signature',
         'signature_validator' => ChipSignatureValidator::class,
         'webhook_profile' => ChipWebhookProfile::class,
-        'webhook_model' => Spatie\WebhookClient\Models\WebhookCall::class,
-        'process_webhook_job' => AIArmada\Chip\Webhooks\ProcessChipWebhook::class,
+        'webhook_model' => WebhookCall::class,
+        'process_webhook_job' => ProcessChipWebhook::class,
     ]);
 
     expect($validator->isValid($request, $config))->toBeTrue();
@@ -75,8 +77,8 @@ it('rejects an incorrect signature', function (): void {
         'signature_header_name' => 'X-Signature',
         'signature_validator' => ChipSignatureValidator::class,
         'webhook_profile' => ChipWebhookProfile::class,
-        'webhook_model' => Spatie\WebhookClient\Models\WebhookCall::class,
-        'process_webhook_job' => AIArmada\Chip\Webhooks\ProcessChipWebhook::class,
+        'webhook_model' => WebhookCall::class,
+        'process_webhook_job' => ProcessChipWebhook::class,
     ]);
 
     expect($validator->isValid($request, $config))->toBeFalse();
@@ -102,8 +104,8 @@ it('rejects request without signature header', function (): void {
         'signature_header_name' => 'X-Signature',
         'signature_validator' => ChipSignatureValidator::class,
         'webhook_profile' => ChipWebhookProfile::class,
-        'webhook_model' => Spatie\WebhookClient\Models\WebhookCall::class,
-        'process_webhook_job' => AIArmada\Chip\Webhooks\ProcessChipWebhook::class,
+        'webhook_model' => WebhookCall::class,
+        'process_webhook_job' => ProcessChipWebhook::class,
     ]);
 
     expect($validator->isValid($request, $config))->toBeFalse();
@@ -129,8 +131,8 @@ it('rejects request with empty signing secret', function (): void {
         'signature_header_name' => 'X-Signature',
         'signature_validator' => ChipSignatureValidator::class,
         'webhook_profile' => ChipWebhookProfile::class,
-        'webhook_model' => Spatie\WebhookClient\Models\WebhookCall::class,
-        'process_webhook_job' => AIArmada\Chip\Webhooks\ProcessChipWebhook::class,
+        'webhook_model' => WebhookCall::class,
+        'process_webhook_job' => ProcessChipWebhook::class,
     ]);
 
     expect($validator->isValid($request, $config))->toBeFalse();

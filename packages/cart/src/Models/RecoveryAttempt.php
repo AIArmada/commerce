@@ -14,6 +14,7 @@ use AIArmada\Cart\States\Sent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 use Spatie\ModelStates\HasStates;
 
@@ -33,22 +34,22 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $discount_code
  * @property int|null $discount_value_cents
  * @property bool $free_shipping_offered
- * @property \Illuminate\Support\Carbon|null $offer_expires_at
+ * @property Carbon|null $offer_expires_at
  * @property int $cart_value_cents
  * @property int $cart_items_count
- * @property \Illuminate\Support\Carbon|null $scheduled_for
- * @property \Illuminate\Support\Carbon|null $queued_at
- * @property \Illuminate\Support\Carbon|null $sent_at
- * @property \Illuminate\Support\Carbon|null $delivered_at
- * @property \Illuminate\Support\Carbon|null $opened_at
- * @property \Illuminate\Support\Carbon|null $clicked_at
- * @property \Illuminate\Support\Carbon|null $converted_at
- * @property \Illuminate\Support\Carbon|null $failed_at
+ * @property Carbon|null $scheduled_for
+ * @property Carbon|null $queued_at
+ * @property Carbon|null $sent_at
+ * @property Carbon|null $delivered_at
+ * @property Carbon|null $opened_at
+ * @property Carbon|null $clicked_at
+ * @property Carbon|null $converted_at
+ * @property Carbon|null $failed_at
  * @property string|null $message_id
  * @property array<string, mixed>|null $metadata
  * @property string|null $failure_reason
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read RecoveryCampaign $campaign
  * @property-read RecoveryTemplate|null $template
  * @property-read Model $cart

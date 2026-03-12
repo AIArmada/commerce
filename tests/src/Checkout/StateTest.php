@@ -12,6 +12,7 @@ use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\PaymentProcessing;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
+use Spatie\ModelStates\StateConfig;
 
 describe('CheckoutState', function (): void {
     it('has all expected states', function (): void {
@@ -119,7 +120,7 @@ describe('State transitions', function (): void {
     it('has valid state configuration', function (): void {
         $config = CheckoutState::config();
 
-        expect($config)->toBeInstanceOf(\Spatie\ModelStates\StateConfig::class);
+        expect($config)->toBeInstanceOf(StateConfig::class);
     });
 
     it('has pending as default state', function (): void {

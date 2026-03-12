@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\PaymentContract;
+use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Http\RedirectResponse;
@@ -285,7 +286,7 @@ class ChipPayment implements PaymentContract
     /**
      * Validate the payment and throw exception if failed.
      *
-     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
+     * @throws IncompletePayment
      */
     public function validate(): static
     {

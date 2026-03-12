@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Shipping\Contracts\RateSelectionStrategyInterface;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Services\RateShoppingEngine;
 use AIArmada\Shipping\ShippingManager;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Concurrency;
@@ -165,7 +167,7 @@ describe('RateShoppingEngine', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
         $engine = new RateShoppingEngine($shippingManager, ['cache_ttl' => 0]);
 
-        $strategy = Mockery::mock(AIArmada\Shipping\Contracts\RateSelectionStrategyInterface::class);
+        $strategy = Mockery::mock(RateSelectionStrategyInterface::class);
         $strategy->shouldReceive('select')->andReturn(null);
 
         $result = $engine->setStrategy($strategy);
@@ -436,7 +438,7 @@ describe('RateShoppingEngine', function (): void {
             new RateQuoteData(carrier: 'fedex', service: 'ground', rate: 1000, currency: 'USD', estimatedDays: 3),
         ]);
 
-        $cacheRepository = Mockery::mock(Illuminate\Contracts\Cache\Repository::class);
+        $cacheRepository = Mockery::mock(Repository::class);
         $cacheRepository->shouldReceive('getStore')
             ->andReturn(new stdClass); // Not taggable
 

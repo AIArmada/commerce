@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Actions\CreateShipment;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Draft;
 use AIArmada\Shipping\States\Pending;
 use AIArmada\Shipping\States\Shipped;
+use Illuminate\Auth\Access\AuthorizationException;
 
 describe('CreateShipment Action', function (): void {
     it('can create a shipment with minimal data', function (): void {
@@ -117,7 +119,7 @@ describe('CreateShipment Action', function (): void {
 
         try {
             // Force OwnerContext::resolve() to return null even if a resolver is bound.
-            \AIArmada\CommerceSupport\Support\OwnerContext::override(null);
+            OwnerContext::override(null);
 
             $action = app(CreateShipment::class);
 
@@ -129,9 +131,9 @@ describe('CreateShipment Action', function (): void {
             ];
 
             expect(fn () => $action->handle($data))
-                ->toThrow(Illuminate\Auth\Access\AuthorizationException::class);
+                ->toThrow(AuthorizationException::class);
         } finally {
-            \AIArmada\CommerceSupport\Support\OwnerContext::clearOverride();
+            OwnerContext::clearOverride();
             config(['shipping.features.owner.enabled' => false]);
         }
     });

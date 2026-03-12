@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 describe('PriceTier Model - Extended Tests', function (): void {
     describe('getTable', function (): void {
@@ -273,7 +274,7 @@ describe('PriceTier Model - Extended Tests', function (): void {
             // Don't set tierable_type to avoid class resolution
             $relation = $tier->tierable();
 
-            expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
+            expect($relation)->toBeInstanceOf(MorphTo::class);
         });
     });
 

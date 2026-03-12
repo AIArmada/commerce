@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Orders\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
 
 describe('GenerateInvoice Action', function (): void {
     describe('Invoice Generation', function (): void {
@@ -26,13 +28,13 @@ describe('GenerateInvoice Action', function (): void {
             $path = storage_path('app/test-invoice.pdf');
 
             // Mock the PDF facade to avoid actual file generation
-            $mockBuilder = Mockery::mock(Spatie\LaravelPdf\PdfBuilder::class);
+            $mockBuilder = Mockery::mock(PdfBuilder::class);
             $mockBuilder->shouldReceive('format')->andReturnSelf();
             $mockBuilder->shouldReceive('margins')->andReturnSelf();
             $mockBuilder->shouldReceive('name')->andReturnSelf();
             $mockBuilder->shouldReceive('save')->with($path)->andReturnSelf();
 
-            Spatie\LaravelPdf\Facades\Pdf::shouldReceive('view')->andReturn($mockBuilder);
+            Pdf::shouldReceive('view')->andReturn($mockBuilder);
 
             $result = $action->save($order, $path);
 

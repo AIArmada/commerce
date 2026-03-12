@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 use AIArmada\CashierChip\Invoice;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use Illuminate\Support\Collection;
 
 class InvoiceTest extends CashierChipTestCase
 {
@@ -132,7 +133,7 @@ class InvoiceTest extends CashierChipTestCase
 
         $items = $invoice->invoiceItems();
 
-        $this->assertInstanceOf(\Illuminate\Support\Collection::class, $items);
+        $this->assertInstanceOf(Collection::class, $items);
     }
 
     public function test_to_array(): void

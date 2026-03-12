@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Data\StepResult;
+use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\PaymentFailed;
@@ -129,7 +130,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
 
         // Handle immediate success
         if ($result->isSuccessful()) {
-            event(new \AIArmada\Checkout\Events\CheckoutPaymentCompleted(
+            event(new CheckoutPaymentCompleted(
                 session: $session,
                 paymentData: $paymentData,
             ));

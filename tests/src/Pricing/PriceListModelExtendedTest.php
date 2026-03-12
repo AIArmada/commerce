@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 describe('PriceList Model - Extended Tests', function (): void {
@@ -297,7 +298,7 @@ describe('PriceList Model - Extended Tests', function (): void {
             ]));
 
             // Owned record
-            $otherOwner = new class extends Illuminate\Database\Eloquent\Model
+            $otherOwner = new class extends Model
             {
                 public $incrementing = false;
 
@@ -327,7 +328,7 @@ describe('PriceList Model - Extended Tests', function (): void {
             $ownerId = 'owner-' . uniqid();
 
             // Create a mock owner model
-            $owner = new class extends Illuminate\Database\Eloquent\Model
+            $owner = new class extends Model
             {
                 public $incrementing = false;
 
@@ -353,7 +354,7 @@ describe('PriceList Model - Extended Tests', function (): void {
             ]));
 
             // Different owner
-            $otherOwner = new class extends Illuminate\Database\Eloquent\Model
+            $otherOwner = new class extends Model
             {
                 public $incrementing = false;
 
@@ -381,7 +382,7 @@ describe('PriceList Model - Extended Tests', function (): void {
             $ownerId = 'owner-' . uniqid();
 
             // Create a mock owner model
-            $owner = new class extends Illuminate\Database\Eloquent\Model
+            $owner = new class extends Model
             {
                 public $incrementing = false;
 
@@ -426,7 +427,7 @@ describe('PriceList Model - Extended Tests', function (): void {
             ]));
 
             // Owned record
-            $otherOwner = new class extends Illuminate\Database\Eloquent\Model
+            $otherOwner = new class extends Model
             {
                 public $incrementing = false;
 

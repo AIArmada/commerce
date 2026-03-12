@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
@@ -35,8 +36,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $meta_title
  * @property string|null $meta_description
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Category|null $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $children
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products

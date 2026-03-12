@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources;
 
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource\Pages;
+use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;
 use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -100,7 +105,7 @@ final class AttributeGroupResource extends Resource
                                 'groupAttributes',
                                 'name',
                                 modifyQueryUsing: function (Builder $query): Builder {
-                                    /** @var Builder<\AIArmada\Products\Models\Attribute> $query */
+                                    /** @var Builder<Attribute> $query */
                                     return $query->forOwner();
                                 }
                             )
@@ -153,12 +158,12 @@ final class AttributeGroupResource extends Resource
                     ->label(__('filament-products::resources.attribute_groups.fields.is_visible')),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->reorderable('position');

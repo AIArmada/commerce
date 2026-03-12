@@ -10,6 +10,8 @@ use AIArmada\Inventory\States\Expired;
 use AIArmada\Inventory\States\Fulfilled;
 use AIArmada\Inventory\States\PartiallyFulfilled;
 use AIArmada\Inventory\States\Pending;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class InventoryBackorderTest extends InventoryTestCase
 {
@@ -23,14 +25,14 @@ class InventoryBackorderTest extends InventoryTestCase
     {
         $backorder = new InventoryBackorder;
         $relation = $backorder->inventoryable();
-        expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
+        expect($relation)->toBeInstanceOf(MorphTo::class);
     }
 
     public function test_location_relationship(): void
     {
         $backorder = new InventoryBackorder;
         $relation = $backorder->location();
-        expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        expect($relation)->toBeInstanceOf(BelongsTo::class);
     }
 
     public function test_scope_open_filters_correctly(): void

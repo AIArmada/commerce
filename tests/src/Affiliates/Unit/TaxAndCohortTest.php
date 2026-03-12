@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Services\CohortAnalyzer;
 use AIArmada\Affiliates\Services\Tax\Tax1099Generator;
 use AIArmada\Affiliates\Services\Tax\TaxDocumentService;
 use AIArmada\Affiliates\States\Active;
+use Illuminate\Support\Collection;
 
 // Tax1099Generator Tests
 test('Tax1099Generator can be instantiated', function (): void {
@@ -55,7 +56,7 @@ test('TaxDocumentService getDocumentsForAffiliate returns collection', function 
 
     $documents = $service->getDocumentsForAffiliate($affiliate);
 
-    expect($documents)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($documents)->toBeInstanceOf(Collection::class);
 });
 
 test('TaxDocumentService markDocumentAsSent updates status', function (): void {

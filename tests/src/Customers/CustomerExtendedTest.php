@@ -4,27 +4,30 @@ declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('Customer Model - Extended Coverage', function (): void {
     describe('Relationships', function (): void {
         it('has addresses relationship', function (): void {
             $customer = new Customer;
-            expect($customer->addresses())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+            expect($customer->addresses())->toBeInstanceOf(HasMany::class);
         });
 
         it('has segments relationship', function (): void {
             $customer = new Customer;
-            expect($customer->segments())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
+            expect($customer->segments())->toBeInstanceOf(BelongsToMany::class);
         });
 
         it('has notes relationship', function (): void {
             $customer = new Customer;
-            expect($customer->notes())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+            expect($customer->notes())->toBeInstanceOf(HasMany::class);
         });
 
         it('has groups relationship', function (): void {
             $customer = new Customer;
-            expect($customer->groups())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
+            expect($customer->groups())->toBeInstanceOf(BelongsToMany::class);
         });
     });
 
@@ -97,12 +100,12 @@ describe('Customer Model - Extended Coverage', function (): void {
     describe('Scopes', function (): void {
         it('has inSegment scope', function (): void {
             $query = Customer::inSegment('test-id');
-            expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
+            expect($query)->toBeInstanceOf(Builder::class);
         });
 
         it('has active scope pattern', function (): void {
             $query = Customer::active();
-            expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
+            expect($query)->toBeInstanceOf(Builder::class);
         });
     });
 

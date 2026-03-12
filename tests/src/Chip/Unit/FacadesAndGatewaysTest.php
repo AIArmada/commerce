@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Facades\Chip;
+use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Gateways\ChipPaymentIntent;
 use AIArmada\Chip\Gateways\ChipWebhookHandler;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
+use AIArmada\CommerceSupport\Exceptions\PaymentGatewayException;
+use Akaunting\Money\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
@@ -30,7 +33,7 @@ describe('Chip Facade', function (): void {
     });
 
     it('returns facade accessor', function (): void {
-        $class = new \ReflectionClass(Chip::class);
+        $class = new ReflectionClass(Chip::class);
         $method = $class->getMethod('getFacadeAccessor');
         $method->setAccessible(true);
 
@@ -329,7 +332,7 @@ describe('ChipPaymentIntent', function (): void {
         ]);
         $intent = new ChipPaymentIntent($purchase);
 
-        expect($intent->getAmount())->toBeInstanceOf(Akaunting\Money\Money::class);
+        expect($intent->getAmount())->toBeInstanceOf(Money::class);
     });
 
     it('returns isTest correctly', function (): void {
@@ -374,7 +377,7 @@ describe('ChipGateway', function (): void {
     beforeEach(function (): void {
         $this->collectService = Mockery::mock(ChipCollectService::class);
         $this->webhookService = Mockery::mock(WebhookService::class);
-        $this->gateway = new \AIArmada\Chip\Gateways\ChipGateway($this->collectService, $this->webhookService);
+        $this->gateway = new ChipGateway($this->collectService, $this->webhookService);
     });
 
     it('returns correct name', function (): void {
@@ -431,7 +434,7 @@ describe('ChipGateway', function (): void {
             ->andThrow(new Exception('Not found'));
 
         $this->gateway->getPayment('purchase-404');
-    })->throws(\AIArmada\CommerceSupport\Exceptions\PaymentGatewayException::class);
+    })->throws(PaymentGatewayException::class);
 
     it('cancels payment', function (): void {
         $purchase = createTestPurchaseData(['id' => 'purchase-123', 'status' => 'cancelled']);
@@ -454,7 +457,7 @@ describe('ChipGateway', function (): void {
             ->andThrow(new Exception('Failed'));
 
         $this->gateway->cancelPayment('purchase-123');
-    })->throws(\AIArmada\CommerceSupport\Exceptions\PaymentGatewayException::class);
+    })->throws(PaymentGatewayException::class);
 
     it('refunds payment with full amount', function (): void {
         $purchase = createTestPurchaseData(['id' => 'purchase-123', 'status' => 'refunded']);
@@ -472,7 +475,7 @@ describe('ChipGateway', function (): void {
 
     it('refunds payment with partial amount', function (): void {
         $purchase = createTestPurchaseData(['id' => 'purchase-123', 'status' => 'refunded']);
-        $amount = Akaunting\Money\Money::MYR(5000); // 50.00 MYR
+        $amount = Money::MYR(5000); // 50.00 MYR
 
         $this->collectService->shouldReceive('refundPurchase')
             ->once()
@@ -491,7 +494,7 @@ describe('ChipGateway', function (): void {
             ->andThrow(new Exception('Failed'));
 
         $this->gateway->refundPayment('purchase-123');
-    })->throws(\AIArmada\CommerceSupport\Exceptions\PaymentGatewayException::class);
+    })->throws(PaymentGatewayException::class);
 
     it('captures payment', function (): void {
         $purchase = createTestPurchaseData(['id' => 'purchase-123', 'status' => 'paid']);
@@ -509,7 +512,7 @@ describe('ChipGateway', function (): void {
 
     it('captures payment with amount', function (): void {
         $purchase = createTestPurchaseData(['id' => 'purchase-123', 'status' => 'paid']);
-        $amount = Akaunting\Money\Money::MYR(5000);
+        $amount = Money::MYR(5000);
 
         $this->collectService->shouldReceive('capturePurchase')
             ->once()
@@ -528,7 +531,7 @@ describe('ChipGateway', function (): void {
             ->andThrow(new Exception('Failed'));
 
         $this->gateway->capturePayment('purchase-123');
-    })->throws(\AIArmada\CommerceSupport\Exceptions\PaymentGatewayException::class);
+    })->throws(PaymentGatewayException::class);
 
     it('gets payment methods', function (): void {
         $methods = ['fpx' => true, 'card' => true];

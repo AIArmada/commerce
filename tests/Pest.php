@@ -8,10 +8,13 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Commerce\Tests\Jnt\JntTestCase;
 use AIArmada\Commerce\Tests\Products\ProductsTestCase;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAuthz\Models\Role;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,9 +89,9 @@ expect()->extend('toHaveValidCartStructure', function () {
  *
  * @param  array<string>  $roles  Role names to assign to the user
  */
-function createUserWithRoles(array $roles = []): AIArmada\Commerce\Tests\Fixtures\Models\User
+function createUserWithRoles(array $roles = []): User
 {
-    $user = AIArmada\Commerce\Tests\Fixtures\Models\User::create([
+    $user = User::create([
         'name' => 'Test User',
         'email' => 'test' . uniqid() . '@example.com',
         'password' => bcrypt('password'),
@@ -98,9 +101,9 @@ function createUserWithRoles(array $roles = []): AIArmada\Commerce\Tests\Fixture
         return $user;
     }
 
-    AIArmada\CommerceSupport\Support\OwnerContext::withOwner($user, function () use ($roles, $user): void {
+    OwnerContext::withOwner($user, function () use ($roles, $user): void {
         foreach ($roles as $roleName) {
-            $role = AIArmada\FilamentAuthz\Models\Role::firstOrCreate(
+            $role = Role::firstOrCreate(
                 ['name' => $roleName, 'guard_name' => 'web']
             );
             $user->assignRole($role);
@@ -166,5 +169,5 @@ beforeEach(function (): void {
     config()->set('customers.features.owner.enabled', true);
     config()->set('customers.features.owner.include_global', false);
 
-    AIArmada\CommerceSupport\Support\OwnerContext::clearOverride();
+    OwnerContext::clearOverride();
 })->in('src/Customers');

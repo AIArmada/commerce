@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashierChip\Support;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -47,7 +48,7 @@ final class CashierChipOwnerScope
         $modelClass = $model::class;
 
         if (method_exists($modelClass, 'ownerScopeConfig')) {
-            /** @var \AIArmada\CommerceSupport\Support\OwnerScopeConfig $config */
+            /** @var OwnerScopeConfig $config */
             $config = $modelClass::ownerScopeConfig();
             $ownerTypeColumn = $config->ownerTypeColumn;
             $ownerIdColumn = $config->ownerIdColumn;

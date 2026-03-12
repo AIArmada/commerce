@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\FilamentCustomers\FilamentCustomersPlugin;
 use AIArmada\FilamentCustomers\FilamentCustomersServiceProvider;
+use AIArmada\FilamentCustomers\Resources\CustomerResource;
+use AIArmada\FilamentCustomers\Resources\SegmentResource;
+use AIArmada\FilamentCustomers\Widgets\CustomerStatsWidget;
+use AIArmada\FilamentCustomers\Widgets\RecentCustomersWidget;
 use Filament\Panel;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,8 +22,8 @@ it('FilamentCustomersPlugin registers resources and widgets', function (): void 
         ->shouldReceive('resources')
         ->once()
         ->with([
-            AIArmada\FilamentCustomers\Resources\CustomerResource::class,
-            AIArmada\FilamentCustomers\Resources\SegmentResource::class,
+            CustomerResource::class,
+            SegmentResource::class,
         ])
         ->andReturnSelf();
 
@@ -33,8 +37,8 @@ it('FilamentCustomersPlugin registers resources and widgets', function (): void 
         ->shouldReceive('widgets')
         ->once()
         ->with([
-            AIArmada\FilamentCustomers\Widgets\CustomerStatsWidget::class,
-            AIArmada\FilamentCustomers\Widgets\RecentCustomersWidget::class,
+            CustomerStatsWidget::class,
+            RecentCustomersWidget::class,
         ])
         ->andReturnSelf();
 

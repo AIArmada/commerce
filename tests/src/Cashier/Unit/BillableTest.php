@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Billable;
+use AIArmada\Cashier\Concerns\ManagesGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);
@@ -48,7 +49,7 @@ describe('Billable Trait', function (): void {
         it('uses ManagesGateway through Billable', function (): void {
             $traits = class_uses_recursive($this->user);
 
-            expect($traits)->toContain(AIArmada\Cashier\Concerns\ManagesGateway::class);
+            expect($traits)->toContain(ManagesGateway::class);
         });
     });
 });

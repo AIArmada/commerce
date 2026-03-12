@@ -10,6 +10,7 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 use Mockery;
 
@@ -131,7 +132,7 @@ class SubscriptionTest extends CashierChipTestCase
     {
         // hasMany relation
         $subscription = new Subscription;
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $subscription->items());
+        $this->assertInstanceOf(HasMany::class, $subscription->items());
     }
 
     public function test_can_cancel_immediately()

@@ -19,6 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 final class PriceListResource extends Resource
@@ -79,7 +80,7 @@ final class PriceListResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Forms\Set $set, ?string $state) => $set('slug', Str::slug($state))
                                     ),
 
                                 Forms\Components\TextInput::make('slug')

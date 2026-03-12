@@ -8,6 +8,7 @@ use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ManagesSubscriptionsTest extends CashierChipTestCase
 {
@@ -81,7 +82,7 @@ class ManagesSubscriptionsTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $user->subscriptions());
+        $this->assertInstanceOf(HasMany::class, $user->subscriptions());
     }
 
     public function test_has_incomplete_payment_returns_false_without_subscription(): void

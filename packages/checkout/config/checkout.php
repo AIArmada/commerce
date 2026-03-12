@@ -1,6 +1,9 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\Checkout\Transformers\NullSessionDataTransformer;
+use AIArmada\Customers\Models\Customer;
+use AIArmada\Orders\Models\Order;
 
 return [
     /*
@@ -38,8 +41,8 @@ return [
     |
     */
     'models' => [
-        'customer' => AIArmada\Customers\Models\Customer::class,
-        'order' => AIArmada\Orders\Models\Order::class,
+        'customer' => Customer::class,
+        'order' => Order::class,
     ],
 
     /*
@@ -48,8 +51,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'transformers' => [
-        'billing' => AIArmada\Checkout\Transformers\NullSessionDataTransformer::class,
-        'shipping' => AIArmada\Checkout\Transformers\NullSessionDataTransformer::class,
+        'billing' => NullSessionDataTransformer::class,
+        'shipping' => NullSessionDataTransformer::class,
     ],
 
     /*

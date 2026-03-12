@@ -25,7 +25,10 @@ use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages\ViewSubscr
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\RelationManagers\SubscriptionItemsRelationManager;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Schemas\SubscriptionInfolist;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Tables\SubscriptionTable;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Panel;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
@@ -60,7 +63,7 @@ if (! function_exists('filamentCashierChip_makeSchemaLivewire')) {
                 string $key,
                 bool $withHidden = false,
                 array $skipComponentsChildContainersWhileSearching = [],
-            ): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null {
+            ): Component | Action | ActionGroup | null {
                 return null;
             }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Jobs;
 
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Docs\Contracts\DocumentServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -29,11 +30,11 @@ final class GenerateCheckoutDocumentsJob implements ShouldQueue
 
     public function handle(): void
     {
-        if (! class_exists(\AIArmada\Docs\Contracts\DocumentServiceInterface::class)) {
+        if (! class_exists(DocumentServiceInterface::class)) {
             return;
         }
 
-        $documentService = app(\AIArmada\Docs\Contracts\DocumentServiceInterface::class);
+        $documentService = app(DocumentServiceInterface::class);
 
         $session = CheckoutSession::find($this->sessionId);
 

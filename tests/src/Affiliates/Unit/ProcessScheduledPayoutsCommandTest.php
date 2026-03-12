@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Console\Commands\ProcessScheduledPayoutsCommand;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
@@ -337,7 +338,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         ]);
 
         // Create an approved conversion without payout
-        $conversion = AIArmada\Affiliates\Models\AffiliateConversion::create([
+        $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'order_reference' => 'ORDER-' . uniqid(),

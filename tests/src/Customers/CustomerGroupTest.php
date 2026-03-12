@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 describe('CustomerGroup Model', function (): void {
     describe('Table Name', function (): void {
@@ -42,12 +44,12 @@ describe('CustomerGroup Model', function (): void {
     describe('Relationships', function (): void {
         it('has members relationship', function (): void {
             $group = new CustomerGroup;
-            expect($group->members())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
+            expect($group->members())->toBeInstanceOf(BelongsToMany::class);
         });
 
         it('has admins relationship', function (): void {
             $group = new CustomerGroup;
-            expect($group->admins())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
+            expect($group->admins())->toBeInstanceOf(BelongsToMany::class);
         });
     });
 
@@ -61,7 +63,7 @@ describe('CustomerGroup Model', function (): void {
     describe('Scopes', function (): void {
         it('has active scope', function (): void {
             $query = CustomerGroup::active();
-            expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
+            expect($query)->toBeInstanceOf(Builder::class);
         });
     });
 

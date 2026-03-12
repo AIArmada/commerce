@@ -6,9 +6,13 @@ namespace AIArmada\FilamentProducts\Pages;
 
 use AIArmada\FilamentProducts\Support\OwnerScope;
 use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
+use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -52,8 +56,8 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
     }
 
     /**
-     * @param  Builder<\AIArmada\Products\Models\Category>  $query
-     * @return Builder<\AIArmada\Products\Models\Category>
+     * @param  Builder<Category>  $query
+     * @return Builder<Category>
      */
     private function scopeCategoriesQuery(Builder $query): Builder
     {
@@ -97,11 +101,11 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
                     ->options(ProductStatus::class),
 
                 Tables\Filters\SelectFilter::make('type')
-                    ->options(\AIArmada\Products\Enums\ProductType::class),
+                    ->options(ProductType::class),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\BulkAction::make('update_price')
+                BulkActionGroup::make([
+                    BulkAction::make('update_price')
                         ->label('Update Price')
                         ->icon('heroicon-o-currency-dollar')
                         ->color('success')
@@ -157,7 +161,7 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    \Filament\Actions\BulkAction::make('update_status')
+                    BulkAction::make('update_status')
                         ->label('Change Status')
                         ->icon('heroicon-o-flag')
                         ->form([
@@ -178,13 +182,13 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    \Filament\Actions\BulkAction::make('update_visibility')
+                    BulkAction::make('update_visibility')
                         ->label('Change Visibility')
                         ->icon('heroicon-o-eye')
                         ->form([
                             Select::make('visibility')
                                 ->label('New Visibility')
-                                ->options(\AIArmada\Products\Enums\ProductVisibility::class)
+                                ->options(ProductVisibility::class)
                                 ->required(),
                         ])
                         ->action(function ($records, array $data): void {
@@ -199,7 +203,7 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    \Filament\Actions\BulkAction::make('assign_categories')
+                    BulkAction::make('assign_categories')
                         ->label('Assign Categories')
                         ->icon('heroicon-o-folder')
                         ->color('info')

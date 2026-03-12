@@ -6,7 +6,10 @@ namespace AIArmada\Checkout\Models;
 
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\States\CheckoutState;
+use AIArmada\Checkout\States\Completed;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Customers\Models\Customer;
+use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -102,23 +105,23 @@ class CheckoutSession extends Model
     }
 
     /**
-     * @return BelongsTo<\AIArmada\Customers\Models\Customer, $this>
+     * @return BelongsTo<Customer, $this>
      */
     public function customer(): BelongsTo
     {
-        /** @var class-string<\AIArmada\Customers\Models\Customer> $customerModel */
-        $customerModel = config('checkout.models.customer', \AIArmada\Customers\Models\Customer::class);
+        /** @var class-string<Customer> $customerModel */
+        $customerModel = config('checkout.models.customer', Customer::class);
 
         return $this->belongsTo($customerModel, 'customer_id');
     }
 
     /**
-     * @return BelongsTo<\Illuminate\Database\Eloquent\Model, $this>
+     * @return BelongsTo<Model, $this>
      */
     public function order(): BelongsTo
     {
-        /** @var class-string<\Illuminate\Database\Eloquent\Model> $orderModel */
-        $orderModel = config('checkout.models.order', \AIArmada\Orders\Models\Order::class);
+        /** @var class-string<Model> $orderModel */
+        $orderModel = config('checkout.models.order', Order::class);
 
         return $this->belongsTo($orderModel, 'order_id');
     }
@@ -200,7 +203,7 @@ class CheckoutSession extends Model
         });
 
         static::updating(function (CheckoutSession $session): void {
-            if ($session->isDirty('status') && $session->status instanceof \AIArmada\Checkout\States\Completed) {
+            if ($session->isDirty('status') && $session->status instanceof Completed) {
                 $session->completed_at = CarbonImmutable::now();
             }
         });

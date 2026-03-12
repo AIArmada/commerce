@@ -6,12 +6,14 @@ namespace AIArmada\Products\Traits;
 
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeValue;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * Trait to add dynamic attribute support to models.
  *
- * @mixin \Illuminate\Database\Eloquent\Model
+ * @mixin Model
  */
 trait HasAttributes
 {
@@ -180,8 +182,8 @@ trait HasAttributes
     /**
      * Scope to filter by custom attribute value.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeWhereCustomAttribute($query, string $code, mixed $value, ?string $locale = null)
     {
@@ -205,9 +207,9 @@ trait HasAttributes
     /**
      * Scope to filter by multiple custom attributes.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @param  Builder<static>  $query
      * @param  array<string, mixed>  $attributes
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
     public function scopeWhereCustomAttributes($query, array $attributes, ?string $locale = null)
     {

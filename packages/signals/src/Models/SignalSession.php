@@ -7,6 +7,8 @@ namespace AIArmada\Signals\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Models\Concerns\AutoAssignsSignalOwnerOnCreate;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,8 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $session_identifier
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property \Carbon\CarbonImmutable $started_at
- * @property \Carbon\CarbonImmutable|null $ended_at
+ * @property CarbonImmutable $started_at
+ * @property CarbonImmutable|null $ended_at
  * @property int $duration_seconds
  * @property string|null $entry_path
  * @property string|null $exit_path
@@ -37,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_bounce
  * @property-read TrackedProperty $trackedProperty
  * @property-read SignalIdentity|null $identity
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalEvent> $events
+ * @property-read Collection<int, SignalEvent> $events
  */
 final class SignalSession extends Model
 {

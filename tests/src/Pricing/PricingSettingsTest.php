@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Pricing\Settings\PricingSettings;
 use AIArmada\Pricing\Settings\PromotionalPricingSettings;
+use Spatie\LaravelSettings\Settings;
 
 describe('PricingSettings', function (): void {
     describe('group method', function (): void {
@@ -14,7 +15,7 @@ describe('PricingSettings', function (): void {
 
     describe('class structure', function (): void {
         it('extends Spatie Settings class', function (): void {
-            expect(is_subclass_of(PricingSettings::class, Spatie\LaravelSettings\Settings::class))->toBeTrue();
+            expect(is_subclass_of(PricingSettings::class, Settings::class))->toBeTrue();
         });
 
         it('has expected public properties defined', function (): void {
@@ -146,7 +147,7 @@ describe('PromotionalPricingSettings', function (): void {
 
     describe('class structure', function (): void {
         it('extends Spatie Settings class', function (): void {
-            expect(is_subclass_of(PromotionalPricingSettings::class, Spatie\LaravelSettings\Settings::class))->toBeTrue();
+            expect(is_subclass_of(PromotionalPricingSettings::class, Settings::class))->toBeTrue();
         });
 
         it('has expected public properties defined', function (): void {

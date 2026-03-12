@@ -146,7 +146,7 @@ final class RetentionReportService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<SignalIdentity>
+     * @return Builder<SignalIdentity>
      */
     private function baseQuery(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId): Builder
     {

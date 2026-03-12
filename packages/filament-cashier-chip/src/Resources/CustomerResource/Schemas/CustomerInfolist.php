@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class CustomerInfolist
@@ -78,7 +79,7 @@ final class CustomerInfolist
                                         return 0;
                                     }
 
-                                    /** @var \Illuminate\Database\Eloquent\Builder<Subscription> $query */
+                                    /** @var Builder<Subscription> $query */
                                     $query = CashierChipOwnerScope::apply($record->subscriptions()->getQuery());
 
                                     return $query->whereActive()->count();

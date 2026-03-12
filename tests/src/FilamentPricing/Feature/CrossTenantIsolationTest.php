@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentPricing\Widgets\PricingStatsWidget;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\Promotion;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
@@ -115,7 +116,7 @@ it('scopes filament-pricing dashboard stats to the current owner (optionally inc
     $method = $reflection->getMethod('getStats');
     $method->setAccessible(true);
 
-    /** @var array<int, Filament\Widgets\StatsOverviewWidget\Stat> $stats */
+    /** @var array<int, Stat> $stats */
     $stats = $method->invoke($widget);
 
     expect($stats[0]->getValue())->toBe('2')

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources;
 
+use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartItem;
 use AIArmada\FilamentCart\Resources\CartItemResource\Pages\ListCartItems;
 use AIArmada\FilamentCart\Resources\CartItemResource\Pages\ViewCartItem;
@@ -58,7 +59,7 @@ final class CartItemResource extends Resource
         /** @var Builder<CartItem> $query */
         $query = parent::getEloquentQuery();
 
-        return $query->whereIn('cart_id', \AIArmada\FilamentCart\Models\Cart::query()->forOwner()->select('id'));
+        return $query->whereIn('cart_id', Cart::query()->forOwner()->select('id'));
     }
 
     public static function getRelations(): array

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\CreateAffiliateOfferCategory;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\EditAffiliateOfferCategory;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\ListAffiliateOfferCategories;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
@@ -152,9 +155,9 @@ final class AffiliateOfferCategoryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\ListAffiliateOfferCategories::route('/'),
-            'create' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\CreateAffiliateOfferCategory::route('/create'),
-            'edit' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\EditAffiliateOfferCategory::route('/{record}/edit'),
+            'index' => ListAffiliateOfferCategories::route('/'),
+            'create' => CreateAffiliateOfferCategory::route('/create'),
+            'edit' => EditAffiliateOfferCategory::route('/{record}/edit'),
         ];
     }
 }

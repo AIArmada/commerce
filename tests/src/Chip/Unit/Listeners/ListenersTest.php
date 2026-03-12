@@ -8,6 +8,7 @@ use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Listeners\GenerateDocOnPayment;
 use AIArmada\Chip\Listeners\GenerateDocOnRefund;
 use AIArmada\Chip\Listeners\StoreWebhookData;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
 describe('StoreWebhookData listener', function (): void {
     it('can be instantiated', function (): void {
@@ -66,7 +67,7 @@ describe('GenerateDocOnPayment listener', function (): void {
 
     it('implements ShouldQueue', function (): void {
         $listener = new GenerateDocOnPayment;
-        expect($listener)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
+        expect($listener)->toBeInstanceOf(ShouldQueue::class);
     });
 
     it('returns early when DocService class does not exist', function (): void {
@@ -120,7 +121,7 @@ describe('GenerateDocOnRefund listener', function (): void {
 
     it('implements ShouldQueue', function (): void {
         $listener = new GenerateDocOnRefund;
-        expect($listener)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
+        expect($listener)->toBeInstanceOf(ShouldQueue::class);
     });
 
     it('returns early when DocService class does not exist', function (): void {

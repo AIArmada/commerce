@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Actions\UpdateShipmentStatus;
 use AIArmada\Shipping\Enums\TrackingStatus;
+use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentEvent;
 use AIArmada\Shipping\States\Delivered;
@@ -143,6 +144,6 @@ describe('UpdateShipmentStatus', function (): void {
         $action = new UpdateShipmentStatus;
 
         expect(fn () => $action->handle($shipment, Delivered::class))
-            ->toThrow(AIArmada\Shipping\Exceptions\InvalidStatusTransitionException::class);
+            ->toThrow(InvalidStatusTransitionException::class);
     });
 });

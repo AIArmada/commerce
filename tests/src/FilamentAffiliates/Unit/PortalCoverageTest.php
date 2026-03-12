@@ -475,7 +475,7 @@ it('PortalLinks falls back when link generator rejects the default URL', functio
     {
         public function generate(string $affiliateCode, string $url): string
         {
-            throw new \InvalidArgumentException('Disallowed URL');
+            throw new InvalidArgumentException('Disallowed URL');
         }
     });
 

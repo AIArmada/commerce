@@ -13,6 +13,7 @@ use AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
 use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Panel;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -176,7 +177,7 @@ class RoleResource extends Resource
         return (bool) $shouldRegister && static::canViewAny();
     }
 
-    public static function getSlug(?\Filament\Panel $panel = null): string
+    public static function getSlug(?Panel $panel = null): string
     {
         return (string) config('filament-authz.role_resource.slug', 'authz/roles');
     }

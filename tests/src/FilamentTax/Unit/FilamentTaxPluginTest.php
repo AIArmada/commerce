@@ -15,6 +15,7 @@ use AIArmada\FilamentTax\Resources\TaxZoneResource;
 use AIArmada\FilamentTax\Widgets\ExpiringExemptionsWidget;
 use AIArmada\FilamentTax\Widgets\TaxStatsWidget;
 use AIArmada\FilamentTax\Widgets\ZoneCoverageWidget;
+use Filament\Pages\SettingsPage;
 use Filament\Panel;
 
 it('creates plugin instance', function (): void {
@@ -34,7 +35,7 @@ it('registers resources, widgets, and pages on the panel', function (): void {
 
     $panel = Mockery::mock(Panel::class);
 
-    $expectedPages = class_exists(\Filament\Pages\SettingsPage::class)
+    $expectedPages = class_exists(SettingsPage::class)
         ? [ManageTaxSettings::class]
         : [];
 
@@ -78,7 +79,7 @@ it('respects plugin toggles when registering', function (): void {
 
     $panel = Mockery::mock(Panel::class);
 
-    $expectedPages = class_exists(\Filament\Pages\SettingsPage::class)
+    $expectedPages = class_exists(SettingsPage::class)
         ? [ManageTaxSettings::class]
         : [];
 
