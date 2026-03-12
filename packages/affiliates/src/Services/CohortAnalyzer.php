@@ -67,7 +67,7 @@ final class CohortAnalyzer
             });
 
             $totalRevenue = (int) $affiliates->sum(function ($affiliate): int | float {
-                return $affiliate->conversions()->sum('total_minor');
+                return (int) $affiliate->conversions()->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
             });
 
             $totalCommissions = (int) $affiliates->sum(function ($affiliate): int | float {
@@ -298,7 +298,7 @@ final class CohortAnalyzer
             ->selectRaw('COUNT(DISTINCT a.id) as total_affiliates')
             ->selectRaw('COUNT(c.id) as total_conversions')
             ->selectRaw('COUNT(DISTINCT c.affiliate_id) as with_conversions')
-            ->selectRaw('COALESCE(SUM(c.total_minor), 0) as total_revenue')
+            ->selectRaw('COALESCE(SUM(COALESCE(c.value_minor, c.total_minor, 0)), 0) as total_revenue')
             ->whereBetween('a.created_at', [$from, $to])
             ->groupBy('source');
 
@@ -391,7 +391,7 @@ final class CohortAnalyzer
             $conversionsQuery = DB::table($conversionsTable)
                 ->whereIn('affiliate_id', $affiliateIds)
                 ->whereBetween('occurred_at', [$periodStart, $periodEnd])
-                ->selectRaw('COUNT(*) as count, SUM(total_minor) as revenue, SUM(commission_minor) as commissions');
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(NULLIF(value_minor, 0), total_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions');
 
             $this->applyOwnerScopeToQuery($conversionsQuery, "{$conversionsTable}.owner_type", "{$conversionsTable}.owner_id");
 

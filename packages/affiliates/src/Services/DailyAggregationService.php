@@ -49,7 +49,10 @@ final class DailyAggregationService
 
         $conversionStats = $affiliate->conversions()
             ->whereDate('occurred_at', $date)
-            ->selectRaw('COUNT(*) as conversion_count, COALESCE(SUM(total_minor), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor')
+            ->selectRaw(sprintf(
+                'COUNT(*) as conversion_count, COALESCE(SUM(%s), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor',
+                $this->revenueMinorExpression(),
+            ))
             ->first();
 
         $conversionCount = (int) ($conversionStats?->getAttribute('conversion_count') ?? 0);
@@ -149,5 +152,10 @@ final class DailyAggregationService
             'by_source' => $bySource,
             'by_campaign' => $byCampaign,
         ];
+    }
+
+    private function revenueMinorExpression(): string
+    {
+        return 'COALESCE(NULLIF(value_minor, 0), total_minor, 0)';
     }
 }

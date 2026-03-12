@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Support;
 
+use AIArmada\Signals\Listeners\RecordAffiliateAttributedSignal;
+use AIArmada\Signals\Listeners\RecordAffiliateConversionRecordedSignal;
 use AIArmada\Signals\Listeners\RecordCartClearedSignal;
 use AIArmada\Signals\Listeners\RecordCartItemAddedSignal;
 use AIArmada\Signals\Listeners\RecordCartItemRemovedSignal;
@@ -18,10 +20,26 @@ final class CommerceSignalsIntegrationRegistrar
 {
     public function boot(): void
     {
+        $this->bootAffiliatesIntegration();
         $this->bootCartIntegration();
         $this->bootCheckoutIntegration();
         $this->bootOrdersIntegration();
         $this->bootVoucherIntegration();
+    }
+
+    private function bootAffiliatesIntegration(): void
+    {
+        if (! config('signals.integrations.affiliates.enabled', true)) {
+            return;
+        }
+
+        if (config('signals.integrations.affiliates.listen_for_attributed', true)) {
+            $this->listenIfAvailable('AIArmada\\Affiliates\\Events\\AffiliateAttributed', RecordAffiliateAttributedSignal::class);
+        }
+
+        if (config('signals.integrations.affiliates.listen_for_conversion_recorded', true)) {
+            $this->listenIfAvailable('AIArmada\\Affiliates\\Events\\AffiliateConversionRecorded', RecordAffiliateConversionRecordedSignal::class);
+        }
     }
 
     private function bootCartIntegration(): void

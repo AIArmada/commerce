@@ -6,7 +6,6 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -160,30 +159,57 @@ describe('AffiliateProgramTier Model', function (): void {
         ]);
 
         // Create attribution for program
-        $attribution = AffiliateAttribution::create([
-            'affiliate_id' => $affiliate->id,
-            'affiliate_code' => $affiliate->code,
-            'program_id' => $this->program->id,
-            'visitor_fingerprint' => 'visitor123',
-            'first_click_at' => now(),
-            'last_click_at' => now(),
-        ]);
-
         // Create conversion with low total
         AffiliateConversion::create([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
-            'affiliate_attribution_id' => $attribution->id,
             'order_reference' => 'ORD-REV-001',
             'total_minor' => 50000, // Only 500 in minor units, below 100000 minimum
+            'value_minor' => 75000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
+            'metadata' => ['program_id' => $this->program->id],
             'status' => ApprovedConversion::class,
             'occurred_at' => now(),
         ]);
 
         // Revenue is below minimum
         expect($tier->meetsUpgradeRequirements($affiliate, $this->program))->toBeFalse();
+    });
+
+    test('meetsUpgradeRequirements prefers neutral revenue value', function (): void {
+        $tier = AffiliateProgramTier::create([
+            'program_id' => $this->program->id,
+            'name' => 'Neutral Revenue Tier',
+            'level' => 4,
+            'commission_rate_basis_points' => 1200,
+            'min_conversions' => 1,
+            'min_revenue' => 100000,
+        ]);
+
+        $affiliate = Affiliate::create([
+            'code' => 'REVQUAL' . uniqid(),
+            'name' => 'Neutral Revenue Affiliate',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+
+        AffiliateConversion::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'order_reference' => 'ORD-REV-002',
+            'total_minor' => 50000,
+            'value_minor' => 125000,
+            'commission_minor' => 5000,
+            'commission_currency' => 'USD',
+            'metadata' => ['program_id' => $this->program->id],
+            'status' => ApprovedConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        expect($tier->meetsUpgradeRequirements($affiliate, $this->program))->toBeTrue();
     });
 
     test('meetsUpgradeRequirements returns true when all requirements met', function (): void {

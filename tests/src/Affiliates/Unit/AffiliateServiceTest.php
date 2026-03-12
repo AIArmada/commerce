@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
@@ -65,6 +66,40 @@ test('affiliate conversions are recorded using cart metadata', function (): void
         ->toBe($this->affiliate->code)
         ->and($stored->commission_minor)->toBe(500) // 5% of 10,000
         ->and($stored->order_reference)->toBe('SO-1001');
+});
+
+test('subject fields propagate through attribution touchpoint and conversion records', function (): void {
+    Cart::attachAffiliate($this->affiliate->code, [
+        'subject_type' => 'event',
+        'subject_identifier' => 'event:ramadan-1',
+        'subject_instance' => 'share',
+        'subject_title_snapshot' => 'Ramadan Night',
+    ]);
+
+    Cart::recordAffiliateConversion([
+        'order_reference' => 'SO-2001',
+        'subtotal' => 10000,
+        'total' => 10000,
+    ]);
+
+    $attribution = AffiliateAttribution::query()->firstOrFail();
+    $touchpoint = AffiliateTouchpoint::query()->firstOrFail();
+    $conversion = AffiliateConversion::query()->firstOrFail();
+
+    expect($attribution->subject_type)->toBe('event')
+        ->and($attribution->subject_identifier)->toBe('event:ramadan-1')
+        ->and($attribution->subject_instance)->toBe('share')
+        ->and($attribution->subject_title_snapshot)->toBe('Ramadan Night');
+
+    expect($touchpoint->subject_type)->toBe('event')
+        ->and($touchpoint->subject_identifier)->toBe('event:ramadan-1')
+        ->and($touchpoint->subject_instance)->toBe('share')
+        ->and($touchpoint->subject_title_snapshot)->toBe('Ramadan Night');
+
+    expect($conversion->subject_type)->toBe('event')
+        ->and($conversion->subject_identifier)->toBe('event:ramadan-1')
+        ->and($conversion->subject_instance)->toBe('share')
+        ->and($conversion->subject_title_snapshot)->toBe('Ramadan Night');
 });
 
 test('affiliate metadata helpers expose and clear attachment state', function (): void {

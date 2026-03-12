@@ -135,6 +135,20 @@ describe('AffiliateAttribution Model', function (): void {
         expect($attribution->cart_identifier)->toBe('cart_abc123');
     });
 
+    it('keeps neutral subject aliases in sync with cart fields', function (): void {
+        $attribution = AffiliateAttribution::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'subject_identifier' => 'event:123',
+            'subject_instance' => 'share',
+        ]);
+
+        expect($attribution->subject_identifier)->toBe('event:123')
+            ->and($attribution->cart_identifier)->toBe('event:123')
+            ->and($attribution->subject_instance)->toBe('share')
+            ->and($attribution->cart_instance)->toBe('share');
+    });
+
     it('casts metadata as array', function (): void {
         $attribution = AffiliateAttribution::create([
             'affiliate_id' => $this->affiliate->id,

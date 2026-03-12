@@ -102,6 +102,10 @@ class AffiliatePanelProvider extends PanelProvider
             ]),
         ];
 
+        if (! config('affiliates.features.commission_tracking.enabled', true)) {
+            $this->portalConfig['features']['payouts'] = false;
+        }
+
         return $this->portalConfig;
     }
 

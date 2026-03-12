@@ -102,9 +102,9 @@ test('ExportAffiliatePayoutCommand exports payout to CSV', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
-        'payout_id' => $payout->id,
-        'order_reference' => 'ORDER_001',
-        'total_minor' => 50000,
+        'affiliate_payout_id' => $payout->id,
+        'external_reference' => 'REF_001',
+        'value_minor' => 50000,
         'commission_minor' => 5000,
         'commission_currency' => 'USD',
         'status' => ApprovedConversion::class,
@@ -121,6 +121,13 @@ test('ExportAffiliatePayoutCommand exports payout to CSV', function (): void {
         ->assertSuccessful();
 
     expect(File::exists($path))->toBeTrue();
+
+    $content = File::get($path);
+
+    expect($content)
+        ->toContain('affiliate_code,reference,commission_minor,currency,status')
+        ->toContain('REF_001')
+        ->not->toContain('order_reference');
 
     // Clean up
     File::delete($path);

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $id
  * @property string $affiliate_id
  * @property string $affiliate_code
+ * @property string|null $subject_type
+ * @property string|null $subject_identifier
+ * @property string|null $subject_instance
+ * @property string|null $subject_title_snapshot
  * @property string|null $cart_identifier
  * @property string $cart_instance
  * @property string|null $cookie_value
@@ -58,6 +63,10 @@ class AffiliateAttribution extends Model
     protected $fillable = [
         'affiliate_id',
         'affiliate_code',
+        'subject_type',
+        'subject_identifier',
+        'subject_instance',
+        'subject_title_snapshot',
         'cart_identifier',
         'cart_instance',
         'cookie_value',
@@ -92,6 +101,58 @@ class AffiliateAttribution extends Model
     public function getTable(): string
     {
         return config('affiliates.database.tables.attributions', parent::getTable());
+    }
+
+    /**
+     * Neutral alias for cart_identifier.
+     *
+     * @return Attribute<string|null, string|null>
+     */
+    protected function subjectIdentifier(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): ?string => $this->attributes['subject_identifier'] ?? $this->attributes['cart_identifier'] ?? null,
+            set: fn (?string $value): ?string => $value,
+        );
+    }
+
+    /**
+     * Neutral alias for cart_instance.
+     *
+     * @return Attribute<string|null, string|null>
+     */
+    protected function subjectInstance(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): string => (string) ($this->attributes['subject_instance'] ?? $this->attributes['cart_instance'] ?? 'default'),
+            set: fn (?string $value): ?string => $value,
+        );
+    }
+
+    /**
+     * Compatibility alias for subject_identifier.
+     *
+     * @return Attribute<string|null, string|null>
+     */
+    protected function cartIdentifier(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): ?string => $this->attributes['cart_identifier'] ?? $this->attributes['subject_identifier'] ?? null,
+            set: fn (?string $value): ?string => $value,
+        );
+    }
+
+    /**
+     * Compatibility alias for subject_instance.
+     *
+     * @return Attribute<string|null, string|null>
+     */
+    protected function cartInstance(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): string => (string) ($this->attributes['cart_instance'] ?? $this->attributes['subject_instance'] ?? 'default'),
+            set: fn (?string $value): ?string => $value,
+        );
     }
 
     /**

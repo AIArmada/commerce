@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 final class RankQualificationService
 {
@@ -116,15 +117,16 @@ final class RankQualificationService
             return $this->metricsCache[$cacheKey];
         }
 
-        $personalSales = $affiliate->conversions()
-            ->where('occurred_at', '>=', $from)
-            ->sum('total_minor');
+        $personalSales = $this->sumRevenue(
+            $affiliate,
+            fn ($query) => $query->where('occurred_at', '>=', $from)
+        );
 
         $teamSales = $this->networkService->getTeamSales($affiliate, $from);
 
         $activeDownlines = $this->networkService->getActiveDownlineCount($affiliate);
 
-        $lifetimeValue = $affiliate->conversions()->sum('total_minor');
+        $lifetimeValue = $this->sumRevenue($affiliate);
 
         return $this->metricsCache[$cacheKey] = [
             'personal_sales' => (int) $personalSales,
@@ -148,6 +150,20 @@ final class RankQualificationService
     private function buildMetricsCacheKey(Affiliate $affiliate, Carbon $from): string
     {
         return $affiliate->id . ':' . $from->toDateString();
+    }
+
+    /**
+     * @param  null|callable(mixed): mixed  $scope
+     */
+    private function sumRevenue(Affiliate $affiliate, ?callable $scope = null): int
+    {
+        $query = $affiliate->conversions();
+
+        if ($scope !== null) {
+            $scope($query);
+        }
+
+        return (int) $query->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
     }
 
     private function shouldChangeRank(Affiliate $affiliate, ?AffiliateRank $newRank): bool

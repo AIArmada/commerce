@@ -185,6 +185,28 @@ describe('AffiliateLink Model', function (): void {
             ->and($link->sub_id_3)->toBe('variant_a');
     });
 
+    it('supports canonical share subject fields', function (): void {
+        $link = AffiliateLink::create([
+            'affiliate_id' => $this->affiliate->id,
+            'destination_url' => 'https://example.com/product',
+            'tracking_url' => 'https://track.example.com/go/' . $this->affiliate->code,
+            'subject_type' => 'product',
+            'subject_identifier' => 'product:sku-123',
+            'subject_instance' => 'web',
+            'subject_title_snapshot' => 'SKU 123',
+            'subject_metadata' => [
+                'subject_id' => 'sku-123',
+                'category' => 'featured',
+            ],
+        ]);
+
+        expect($link->subject_type)->toBe('product')
+            ->and($link->subject_identifier)->toBe('product:sku-123')
+            ->and($link->subject_instance)->toBe('web')
+            ->and($link->subject_title_snapshot)->toBe('SKU 123')
+            ->and(data_get($link->subject_metadata, 'subject_id'))->toBe('sku-123');
+    });
+
     it('casts is_active as boolean', function (): void {
         $link = AffiliateLink::create([
             'affiliate_id' => $this->affiliate->id,

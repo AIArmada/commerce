@@ -39,6 +39,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $package
             ->name('affiliates')
             ->hasConfigFile('affiliates')
+            ->runsMigrations()
             ->discoversMigrations()
             ->hasRoutes(['api'])
             ->hasCommands([
@@ -77,18 +78,30 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        if (config('affiliates.cart.register_manager_proxy', true)) {
+        if (
+            config('affiliates.features.cart_integration.enabled', true)
+            && config('affiliates.cart.register_manager_proxy', true)
+        ) {
             app(CartIntegrationRegistrar::class)->register();
         }
 
-        app(VoucherIntegrationRegistrar::class)->register();
+        if (config('affiliates.features.voucher_integration.enabled', true)) {
+            app(VoucherIntegrationRegistrar::class)->register();
+        }
 
-        if (class_exists(ConditionProviderRegistry::class)) {
+        if (
+            config('affiliates.features.cart_integration.enabled', true)
+            && class_exists(ConditionProviderRegistry::class)
+        ) {
             $this->app->make(ConditionProviderRegistry::class)
                 ->register(AffiliateDiscountConditionProvider::class);
         }
 
-        if (class_exists(CommissionAttributionRequired::class) && class_exists(CartManager::class)) {
+        if (
+            config('affiliates.features.commission_tracking.enabled', true)
+            && class_exists(CommissionAttributionRequired::class)
+            && class_exists(CartManager::class)
+        ) {
             Event::listen(CommissionAttributionRequired::class, RecordCommissionForOrder::class);
         }
 

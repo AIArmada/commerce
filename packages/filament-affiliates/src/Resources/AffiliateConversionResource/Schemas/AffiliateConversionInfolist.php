@@ -18,19 +18,32 @@ final class AffiliateConversionInfolist
             Section::make('Reference')
                 ->schema([
                     Grid::make(3)->schema([
-                        TextEntry::make('order_reference')
-                            ->label('Order Reference')
+                        TextEntry::make('external_reference')
+                            ->label('Reference')
                             ->placeholder('—')
                             ->weight(FontWeight::SemiBold)
                             ->copyable(),
+                        TextEntry::make('subject_identifier')
+                            ->label('Subject Identifier')
+                            ->placeholder('—'),
+                        TextEntry::make('subject_instance')
+                            ->label('Subject Instance')
+                            ->placeholder('—'),
+                    ]),
+                ]),
+
+            Section::make('Cart Integration')
+                ->schema([
+                    Grid::make(2)->schema([
                         TextEntry::make('cart_identifier')
                             ->label('Cart Identifier')
                             ->placeholder('—'),
                         TextEntry::make('cart_instance')
-                            ->label('Instance')
+                            ->label('Cart Instance')
                             ->placeholder('—'),
                     ]),
-                ]),
+                ])
+                ->collapsed(),
 
             Section::make('Affiliate')
                 ->schema([

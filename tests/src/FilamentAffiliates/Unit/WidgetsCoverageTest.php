@@ -105,6 +105,17 @@ it('RealTimeActivityWidget configures its table', function (): void {
     expect(true)->toBeTrue();
 });
 
+it('RealTimeActivityWidget shows neutral reference semantics', function (): void {
+    $repositoryRoot = dirname(__DIR__, 4);
+    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Widgets/RealTimeActivityWidget.php');
+
+    expect($source)
+        ->toContain("TextColumn::make('external_reference')")
+        ->toContain("->label('Reference')")
+        ->toContain("TextColumn::make('value_minor')")
+        ->toContain("->label('Value')");
+});
+
 it('FraudAlertWidget configures its table', function (): void {
     $table = Mockery::mock(Table::class);
     $table->shouldReceive('query')->once()->andReturnSelf();

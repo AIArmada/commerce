@@ -74,6 +74,47 @@ it('registers affiliate resources, pages, and widgets', function (): void {
     (new FilamentAffiliatesPlugin)->register($panel);
 });
 
+it('skips payout and program admin surfaces when commission tracking is disabled', function (): void {
+    config()->set('affiliates.features.commission_tracking.enabled', false);
+
+    /** @var Panel&Mockery\MockInterface $panel */
+    $panel = Mockery::mock(Panel::class);
+
+    // @phpstan-ignore method.notFound
+    $panel->shouldReceive('resources')
+        ->once()
+        ->with([
+            AffiliateResource::class,
+            AffiliateConversionResource::class,
+            AffiliateFraudSignalResource::class,
+        ])
+        ->andReturnSelf();
+
+    // @phpstan-ignore method.notFound
+    $panel->shouldReceive('pages')
+        ->once()
+        ->with([
+            FraudReviewPage::class,
+            ReportsPage::class,
+        ])
+        ->andReturnSelf();
+
+    // @phpstan-ignore method.notFound
+    $panel->shouldReceive('widgets')
+        ->once()
+        ->with([
+            AffiliateStatsWidget::class,
+            PerformanceOverviewWidget::class,
+            RealTimeActivityWidget::class,
+            FraudAlertWidget::class,
+            NetworkVisualizationWidget::class,
+        ])
+        ->andReturnSelf();
+
+    // @phpstan-ignore argument.type
+    (new FilamentAffiliatesPlugin)->register($panel);
+});
+
 it('boot method does not throw exceptions', function (): void {
     /** @var Panel&Mockery\MockInterface $panel */
     $panel = Mockery::mock(Panel::class);

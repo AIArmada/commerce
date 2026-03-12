@@ -111,6 +111,26 @@ it('AffiliateConversionsTable configures table', function (): void {
     expect(true)->toBeTrue();
 });
 
+it('conversion resource schemas use neutral reference fields', function (): void {
+    $repositoryRoot = dirname(__DIR__, 4);
+
+    $infolistSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Schemas/AffiliateConversionInfolist.php');
+    $formSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Schemas/AffiliateConversionForm.php');
+    $tableSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Tables/AffiliateConversionsTable.php');
+
+    expect($infolistSource)
+        ->toContain("TextEntry::make('external_reference')")
+        ->toContain("TextEntry::make('subject_identifier')")
+        ->toContain("Section::make('Cart Integration')")
+        ->and($formSource)
+        ->toContain("TextInput::make('external_reference')")
+        ->toContain("TextInput::make('subject_identifier')")
+        ->toContain("Section::make('Cart Integration')")
+        ->and($tableSource)
+        ->toContain("TextColumn::make('external_reference')")
+        ->not->toContain("->label('Order / Ref')");
+});
+
 it('AffiliatePayoutsTable configures table', function (): void {
     $table = Mockery::mock(Table::class);
     $table->shouldReceive('columns')->once()->andReturnSelf();

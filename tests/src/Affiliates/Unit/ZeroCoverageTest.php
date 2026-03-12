@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTrainingModule;
+use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\Commissions\CommissionCalculationResult;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
@@ -236,6 +237,45 @@ test('CommissionRuleEngine calculate returns CommissionCalculationResult', funct
 
     expect($result)->toBeInstanceOf(CommissionCalculationResult::class);
     expect($result->baseCommissionMinor)->toBeGreaterThanOrEqual(0);
+});
+
+test('CommissionRuleEngine uses neutral revenue for volume tiers', function (): void {
+    $engine = app(CommissionRuleEngine::class);
+
+    $affiliate = Affiliate::create([
+        'code' => 'ENGINE003',
+        'name' => 'Volume Tier Test',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    AffiliateVolumeTier::create([
+        'name' => 'Neutral Revenue Tier',
+        'min_volume_minor' => 10000,
+        'max_volume_minor' => null,
+        'commission_rate_basis_points' => 1500,
+        'period' => 'monthly',
+    ]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'order_reference' => 'ENGINE-VOLUME-001',
+        'total_minor' => 5000,
+        'value_minor' => 12000,
+        'commission_minor' => 500,
+        'commission_currency' => 'USD',
+        'status' => QualifiedConversion::class,
+        'occurred_at' => now()->startOfMonth()->addDay(),
+    ]);
+
+    $result = $engine->calculate($affiliate, 10000);
+
+    expect($result->baseCommissionMinor)->toBe(1000)
+        ->and($result->volumeBonusMinor)->toBe(500)
+        ->and($result->finalCommissionMinor)->toBe(1500);
 });
 
 test('CommissionRuleEngine getApplicableRules returns collection', function (): void {

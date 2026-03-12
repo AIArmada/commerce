@@ -6,11 +6,13 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Pending;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -347,6 +349,41 @@ describe('AffiliateProgram Model', function (): void {
 
         // Affiliate has no conversions, should not be able to join
         expect($program->canJoin($affiliate))->toBeFalse();
+    });
+
+    it('canJoin evaluates min_revenue using neutral value', function (): void {
+        $program = AffiliateProgram::create([
+            'name' => 'Revenue Threshold Program',
+            'status' => ProgramStatus::Active,
+            'requires_approval' => false,
+            'is_public' => true,
+            'default_commission_rate_basis_points' => 1000,
+            'commission_type' => CommissionType::Percentage,
+            'cookie_lifetime_days' => 30,
+            'eligibility_rules' => ['min_revenue' => 7000],
+        ]);
+
+        $affiliate = Affiliate::create([
+            'code' => 'TEST-REV-001',
+            'name' => 'Revenue Qualified Affiliate',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 1000,
+            'currency' => 'USD',
+        ]);
+
+        AffiliateConversion::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'order_reference' => 'JOIN-REV-001',
+            'total_minor' => 4000,
+            'value_minor' => 9000,
+            'commission_minor' => 400,
+            'status' => ApprovedConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        expect($program->canJoin($affiliate))->toBeTrue();
     });
 
     it('canJoin evaluates required_status eligibility rule', function (): void {

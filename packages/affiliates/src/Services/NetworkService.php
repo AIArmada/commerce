@@ -135,7 +135,7 @@ final class NetworkService
             $query->where('occurred_at', '<=', $to);
         }
 
-        return (int) $query->sum('total_minor');
+        return (int) $query->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
     }
 
     /**

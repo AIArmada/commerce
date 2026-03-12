@@ -26,9 +26,9 @@ final class ConversionsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('order_reference')
+            ->recordTitleAttribute('external_reference')
             ->columns([
-                TextColumn::make('order_reference')
+                TextColumn::make('external_reference')
                     ->label('Reference')
                     ->icon(Heroicon::OutlinedReceiptPercent)
                     ->placeholder('—')

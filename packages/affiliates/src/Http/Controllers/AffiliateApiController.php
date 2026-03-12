@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Http\Controllers;
 
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +17,6 @@ final class AffiliateApiController extends Controller
     public function __construct(
         private readonly AffiliateService $affiliates,
         private readonly AffiliateReportService $reports,
-        private readonly AffiliateLinkGenerator $links
     ) {}
 
     public function summary(string $code): JsonResponse
@@ -58,21 +56,39 @@ final class AffiliateApiController extends Controller
             return response()->json(['message' => 'Affiliate not found'], 404);
         }
 
-        $url = (string) $request->query('url', url('/'));
+        $url = (string) $request->input('url', url('/'));
         $ttl = null;
         if ($request->filled('ttl')) {
             $ttlValue = $request->integer('ttl');
             $ttl = $ttlValue > 0 ? $ttlValue : null;
         }
-        $params = (array) $request->query('params', []);
+        $params = (array) $request->input('params', []);
+        $subjectMetadata = $request->input('subject_metadata', []);
+
+        if (! is_array($subjectMetadata)) {
+            $subjectMetadata = [];
+        }
 
         try {
-            $link = $this->links->generate($affiliate->code, $url, $params, $ttl);
+            $link = $this->affiliates->createTrackingLink($affiliate, $url, [
+                'params' => $params,
+                'ttl_seconds' => $ttl,
+                'subject_type' => $request->input('subject_type'),
+                'subject_identifier' => $request->input('subject_identifier'),
+                'subject_instance' => $request->input('subject_instance'),
+                'subject_title_snapshot' => $request->input('subject_title_snapshot'),
+                'subject_metadata' => $subjectMetadata,
+            ]);
         } catch (InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(['link' => $link]);
+        return response()->json([
+            'id' => (string) $link->getKey(),
+            'link' => $link->tracking_url,
+            'subject_type' => $link->subject_type,
+            'subject_identifier' => $link->subject_identifier,
+        ]);
     }
 
     public function creatives(string $code): JsonResponse

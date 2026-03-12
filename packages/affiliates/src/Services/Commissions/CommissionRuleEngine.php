@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final class CommissionRuleEngine
 {
@@ -153,7 +154,7 @@ final class CommissionRuleEngine
 
         $periodVolume = (int) $volumeQuery
             ->where('occurred_at', '>=', now()->startOfMonth())
-            ->sum('total_minor');
+            ->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
 
         // Find applicable volume tier
         $tier = AffiliateVolumeTier::query()

@@ -15,6 +15,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $affiliate_attribution_id
  * @property string $affiliate_id
  * @property string $affiliate_code
+ * @property string|null $subject_type
+ * @property string|null $subject_identifier
+ * @property string|null $subject_instance
+ * @property string|null $subject_title_snapshot
  * @property string|null $source
  * @property string|null $medium
  * @property string|null $campaign
@@ -43,6 +47,10 @@ class AffiliateTouchpoint extends Model
         'affiliate_attribution_id',
         'affiliate_id',
         'affiliate_code',
+        'subject_type',
+        'subject_identifier',
+        'subject_instance',
+        'subject_title_snapshot',
         'source',
         'medium',
         'campaign',
