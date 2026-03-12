@@ -284,7 +284,7 @@ describe('AffiliateApiController class structure', function (): void {
     });
 
     test('registers link creation as a post route', function (): void {
-        $source = file_get_contents(dirname(__DIR__, 4).'/packages/affiliates/routes/api.php');
+        $source = file_get_contents(dirname(__DIR__, 4) . '/packages/affiliates/routes/api.php');
 
         expect($source)
             ->toContain("Route::post('{code}/links'")
