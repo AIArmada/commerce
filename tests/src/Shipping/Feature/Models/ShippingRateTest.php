@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Models\ShippingRate;
 use AIArmada\Shipping\Models\ShippingZone;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('ShippingRate Model', function (): void {
     it('can create a shipping rate with required fields', function (): void {
@@ -95,7 +96,7 @@ describe('ShippingRate Model', function (): void {
             'base_rate' => 500,
         ]);
 
-        expect($rate->zone())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        expect($rate->zone())->toBeInstanceOf(BelongsTo::class);
         expect($rate->zone->name)->toBe('Test Zone');
     });
 

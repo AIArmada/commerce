@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Data\RevenueMetrics;
+use AIArmada\Chip\Data\TransactionMetrics;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\LocalAnalyticsService;
 use Carbon\CarbonImmutable;
@@ -149,8 +151,8 @@ it('gets dashboard metrics', function (): void {
 
     $dashboard = $this->service->getDashboardMetrics($now->copy()->subDay(), $now->copy()->addDay());
 
-    expect($dashboard->revenue)->toBeInstanceOf(\AIArmada\Chip\Data\RevenueMetrics::class);
-    expect($dashboard->transactions)->toBeInstanceOf(\AIArmada\Chip\Data\TransactionMetrics::class);
+    expect($dashboard->revenue)->toBeInstanceOf(RevenueMetrics::class);
+    expect($dashboard->transactions)->toBeInstanceOf(TransactionMetrics::class);
     expect($dashboard->paymentMethods)->toBeArray();
     expect($dashboard->failures)->toBeArray();
 });

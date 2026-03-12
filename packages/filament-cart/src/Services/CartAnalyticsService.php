@@ -12,6 +12,7 @@ use AIArmada\FilamentCart\Data\RecoveryMetrics;
 use AIArmada\FilamentCart\Models\Cart;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Service for retrieving and calculating cart analytics.
@@ -151,7 +152,7 @@ class CartAnalyticsService
             ->first();
 
         // Get strategy breakdown from cart metadata
-        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+        $driver = DB::connection()->getDriverName();
         $strategyExpression = match ($driver) {
             'sqlite' => "json_extract(metadata, '$.last_recovery_strategy')",
             'pgsql' => "metadata->>'last_recovery_strategy'",
@@ -194,7 +195,7 @@ class CartAnalyticsService
      */
     public function getValueTrends(Carbon $from, Carbon $to, string $interval = 'day'): array
     {
-        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+        $driver = DB::connection()->getDriverName();
 
         $groupBy = match ($interval) {
             'week' => match ($driver) {
@@ -236,7 +237,7 @@ class CartAnalyticsService
      */
     public function getAbandonmentAnalysis(Carbon $from, Carbon $to): AbandonmentAnalysis
     {
-        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+        $driver = DB::connection()->getDriverName();
 
         // By hour
         $hourExpression = match ($driver) {

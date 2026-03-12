@@ -12,8 +12,13 @@ use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Models\SendLimit;
 use AIArmada\Chip\Models\SendWebhook;
 use AIArmada\Chip\Models\Webhook;
+use Akaunting\Money\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 describe('ChipModel base class', function (): void {
     it('uses HasUuids trait', function (): void {
@@ -41,7 +46,7 @@ describe('ChipModel base class', function (): void {
 
     it('has owner relationship', function (): void {
         $purchase = new Purchase;
-        expect($purchase->owner())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
+        expect($purchase->owner())->toBeInstanceOf(MorphTo::class);
     });
 
     it('can check if model has owner', function (): void {
@@ -134,7 +139,7 @@ describe('Purchase model', function (): void {
 
     it('has payments relationship', function (): void {
         $purchase = new Purchase;
-        expect($purchase->payments())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($purchase->payments())->toBeInstanceOf(HasMany::class);
     });
 
     it('can access amount attribute', function (): void {
@@ -184,7 +189,7 @@ describe('Purchase model', function (): void {
             'purchase' => ['total' => 15000, 'currency' => 'MYR'],
         ]);
 
-        expect($purchase->totalMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
+        expect($purchase->totalMoney)->toBeInstanceOf(Money::class);
     });
 
     it('can get formatted total', function (): void {
@@ -251,7 +256,7 @@ describe('Client model', function (): void {
 describe('Payment model', function (): void {
     it('has purchase relationship', function (): void {
         $payment = new Payment;
-        expect($payment->purchase())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        expect($payment->purchase())->toBeInstanceOf(BelongsTo::class);
     });
 
     it('can access money attributes', function (): void {
@@ -264,10 +269,10 @@ describe('Payment model', function (): void {
             'currency' => 'MYR',
         ]);
 
-        expect($payment->amountMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
-        expect($payment->netAmountMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
-        expect($payment->feeAmountMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
-        expect($payment->pendingAmountMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
+        expect($payment->amountMoney)->toBeInstanceOf(Money::class);
+        expect($payment->netAmountMoney)->toBeInstanceOf(Money::class);
+        expect($payment->feeAmountMoney)->toBeInstanceOf(Money::class);
+        expect($payment->pendingAmountMoney)->toBeInstanceOf(Money::class);
     });
 
     it('can get formatted amounts', function (): void {
@@ -296,10 +301,10 @@ describe('Payment model', function (): void {
             'currency' => 'MYR',
         ]);
 
-        expect($payment->paidOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
-        expect($payment->remotePaidOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
-        expect($payment->createdOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
-        expect($payment->updatedOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
+        expect($payment->paidOn)->toBeInstanceOf(CarbonImmutable::class);
+        expect($payment->remotePaidOn)->toBeInstanceOf(CarbonImmutable::class);
+        expect($payment->createdOn)->toBeInstanceOf(CarbonImmutable::class);
+        expect($payment->updatedOn)->toBeInstanceOf(CarbonImmutable::class);
     });
 });
 
@@ -317,8 +322,8 @@ describe('Webhook model', function (): void {
             'updated_on' => time(),
         ]);
 
-        expect($webhook->createdOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
-        expect($webhook->updatedOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
+        expect($webhook->createdOn)->toBeInstanceOf(CarbonImmutable::class);
+        expect($webhook->updatedOn)->toBeInstanceOf(CarbonImmutable::class);
     });
 
     it('has correct casts', function (): void {

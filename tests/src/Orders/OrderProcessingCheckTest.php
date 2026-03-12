@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Health\OrderProcessingCheck;
+use Spatie\Health\Checks\Result;
 
 describe('OrderProcessingCheck Health Check', function (): void {
     describe('Health Check Configuration', function (): void {
@@ -41,7 +42,7 @@ describe('OrderProcessingCheck Health Check', function (): void {
             $check = new OrderProcessingCheck;
             $result = $check->run();
 
-            expect($result)->toBeInstanceOf(Spatie\Health\Checks\Result::class);
+            expect($result)->toBeInstanceOf(Result::class);
         });
     });
 });

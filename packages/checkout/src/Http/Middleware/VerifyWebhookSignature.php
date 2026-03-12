@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Http\Middleware;
 
 use AIArmada\Checkout\Exceptions\WebhookVerificationException;
+use AIArmada\Chip\Services\WebhookService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Stripe\Exception\SignatureVerificationException;
+use Stripe\Webhook;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -121,7 +124,7 @@ final class VerifyWebhookSignature
     private function verifyChipSignature(Request $request, string $loggingChannel): bool
     {
         // Delegate to CHIP package's verification if available
-        if (! class_exists(\AIArmada\Chip\Services\WebhookService::class)) {
+        if (! class_exists(WebhookService::class)) {
             Log::channel($loggingChannel)->error('CHIP webhook received but chip package is not installed');
 
             throw new WebhookVerificationException('CHIP package not installed');
@@ -146,8 +149,8 @@ final class VerifyWebhookSignature
         }
 
         // Use CHIP's WebhookService for verification
-        /** @var \AIArmada\Chip\Services\WebhookService $webhookService */
-        $webhookService = app(\AIArmada\Chip\Services\WebhookService::class);
+        /** @var WebhookService $webhookService */
+        $webhookService = app(WebhookService::class);
 
         return $webhookService->verifySignature($request);
     }
@@ -158,7 +161,7 @@ final class VerifyWebhookSignature
     private function verifyStripeSignature(Request $request, string $loggingChannel): bool
     {
         // Check if Cashier/Stripe is available
-        if (! class_exists(\Stripe\Webhook::class)) {
+        if (! class_exists(Webhook::class)) {
             Log::channel($loggingChannel)->error('Stripe webhook received but stripe/stripe-php is not installed');
 
             throw new WebhookVerificationException('Stripe package not installed');
@@ -177,14 +180,14 @@ final class VerifyWebhookSignature
         }
 
         try {
-            \Stripe\Webhook::constructEvent(
+            Webhook::constructEvent(
                 $request->getContent(),
                 $signature,
                 $webhookSecret
             );
 
             return true;
-        } catch (\Stripe\Exception\SignatureVerificationException) {
+        } catch (SignatureVerificationException) {
             return false;
         }
     }

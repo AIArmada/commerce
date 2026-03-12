@@ -7,6 +7,11 @@ use AIArmada\Commerce\Tests\TestCase;
 uses(TestCase::class);
 
 use AIArmada\FilamentPricing\FilamentPricingPlugin;
+use AIArmada\FilamentPricing\Pages\ManagePricingSettings;
+use AIArmada\FilamentPricing\Pages\PriceSimulator;
+use AIArmada\FilamentPricing\Resources\PriceListResource;
+use AIArmada\FilamentPricing\Resources\PromotionResource;
+use AIArmada\FilamentPricing\Widgets\PricingStatsWidget;
 use Filament\FilamentManager;
 use Filament\Panel;
 
@@ -49,27 +54,27 @@ it('registers resources and widgets on the panel', function (): void {
     $panel = Mockery::mock(Panel::class);
 
     $expectedResources = [
-        AIArmada\FilamentPricing\Resources\PriceListResource::class,
+        PriceListResource::class,
     ];
 
     if (class_exists('\\AIArmada\\Promotions\\Models\\Promotion')) {
-        $expectedResources[] = AIArmada\FilamentPricing\Resources\PromotionResource::class;
+        $expectedResources[] = PromotionResource::class;
     }
 
     $panel->shouldReceive('resources')->once()->with($expectedResources)->andReturnSelf();
 
     $expectedPages = [
-        AIArmada\FilamentPricing\Pages\ManagePricingSettings::class,
+        ManagePricingSettings::class,
     ];
 
     if (class_exists('\\AIArmada\\Products\\Models\\Product') && class_exists('\\AIArmada\\Products\\Models\\Variant')) {
-        $expectedPages[] = AIArmada\FilamentPricing\Pages\PriceSimulator::class;
+        $expectedPages[] = PriceSimulator::class;
     }
 
     $panel->shouldReceive('pages')->once()->with($expectedPages)->andReturnSelf();
 
     $panel->shouldReceive('widgets')->once()->with([
-        AIArmada\FilamentPricing\Widgets\PricingStatsWidget::class,
+        PricingStatsWidget::class,
     ])->andReturnSelf();
 
     $plugin = app(FilamentPricingPlugin::class);

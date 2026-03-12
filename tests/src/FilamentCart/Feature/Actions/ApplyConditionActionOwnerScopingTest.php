@@ -7,6 +7,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Actions\ApplyConditionAction;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -86,7 +87,7 @@ it('scopes ApplyConditionAction condition options and lookups by resolved owner'
     $queryMethod = new ReflectionMethod(ApplyConditionAction::class, 'getScopedConditionQuery');
     $queryMethod->setAccessible(true);
 
-    /** @var \Illuminate\Database\Eloquent\Builder<Condition> $query */
+    /** @var Builder<Condition> $query */
     $query = $queryMethod->invoke(null, false);
 
     expect($query->findOrFail($conditionA->id)->id)->toBe($conditionA->id);

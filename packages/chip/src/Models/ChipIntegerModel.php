@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 use AIArmada\Chip\Models\Concerns\AutoAssignOwnerOnCreate;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Akaunting\Money\Money;
@@ -79,7 +80,7 @@ abstract class ChipIntegerModel extends Model
 
     protected function resolveOwner(): ?Model
     {
-        return \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+        return OwnerContext::resolve();
     }
 
     protected function toTimestamp(?int $value): ?CarbonImmutable

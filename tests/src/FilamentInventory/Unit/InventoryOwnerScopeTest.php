@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentInventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Models\InventoryLocation;
@@ -92,7 +93,7 @@ it('scopes to the resolved owner and optionally includes global rows', function 
     config()->set('inventory.owner.enabled', true);
     config()->set('inventory.owner.include_global', false);
 
-    app()->bind(AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, fn () => new TestOwnerResolver($ownerA));
+    app()->bind(OwnerResolverInterface::class, fn () => new TestOwnerResolver($ownerA));
 
     $ownerOnlyQuery = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query());
 

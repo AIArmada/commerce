@@ -285,7 +285,7 @@ class TaxClassTest extends TaxTestCase
         config(['tax.features.owner.include_global' => true]);
 
         // Create a mock owner
-        $owner = new class extends \Illuminate\Database\Eloquent\Model
+        $owner = new class extends Model
         {
             protected $table = 'users';
 
@@ -346,7 +346,7 @@ class TaxClassTest extends TaxTestCase
     {
         config(['tax.features.owner.enabled' => true]);
 
-        $owner = new class extends \Illuminate\Database\Eloquent\Model
+        $owner = new class extends Model
         {
             protected $table = 'users';
 

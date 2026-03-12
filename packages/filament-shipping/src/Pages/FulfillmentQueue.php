@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Processing;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -217,7 +219,7 @@ class FulfillmentQueue extends Page implements HasTable
                     ])),
             ])
             ->actions([
-                \Filament\Actions\Action::make('fulfill')
+                Action::make('fulfill')
                     ->label('Ship')
                     ->icon('heroicon-o-truck')
                     ->color('success')
@@ -264,7 +266,7 @@ class FulfillmentQueue extends Page implements HasTable
                     ->modalHeading('Ship Order')
                     ->modalDescription(fn ($record) => "Complete shipment for order {$record->order_number}"),
 
-                \Filament\Actions\Action::make('view')
+                Action::make('view')
                     ->label('View')
                     ->icon('heroicon-o-eye')
                     ->url(fn ($record) => $this->getOrderViewUrl($record))
@@ -306,8 +308,8 @@ class FulfillmentQueue extends Page implements HasTable
      */
     protected function getOrderViewUrl(Order $order): string
     {
-        if (class_exists(\AIArmada\FilamentOrders\Resources\OrderResource::class)) {
-            return \AIArmada\FilamentOrders\Resources\OrderResource::getUrl('view', ['record' => $order]);
+        if (class_exists(OrderResource::class)) {
+            return OrderResource::getUrl('view', ['record' => $order]);
         }
 
         return '#';

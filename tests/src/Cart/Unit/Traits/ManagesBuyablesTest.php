@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\BuyableInterface;
 use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
+use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Tests\Support\Cart\InMemoryStorage;
 
@@ -51,7 +52,7 @@ function createTestBuyable(
 
         public function getBuyablePrice(): Money
         {
-            return new Money($this->price, new Akaunting\Money\Currency('USD'));
+            return new Money($this->price, new Currency('USD'));
         }
 
         public function getBuyableStock(): ?int

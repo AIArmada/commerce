@@ -11,15 +11,18 @@ use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
 use AIArmada\Products\Contracts\Priceable;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * @property string $id
@@ -39,11 +42,11 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property bool $is_default
  * @property bool $is_enabled
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Product $product
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OptionValue> $optionValues
- * @property-read Collection<int, \Spatie\MediaLibrary\MediaCollections\Models\Media> $display_images
+ * @property-read Collection<int, Media> $display_images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
  */
 class Variant extends Model implements HasMedia, Priceable, PricingPriceable
@@ -91,10 +94,10 @@ class Variant extends Model implements HasMedia, Priceable, PricingPriceable
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
-    public function scopeForOwner(\Illuminate\Database\Eloquent\Builder $query, ?Model $owner = null, bool $includeGlobal = false): \Illuminate\Database\Eloquent\Builder
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = false): Builder
     {
         $ownerToScope = $owner;
 
@@ -108,7 +111,7 @@ class Variant extends Model implements HasMedia, Priceable, PricingPriceable
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var \Illuminate\Database\Eloquent\Builder<Variant> $scoped */
+        /** @var Builder<Variant> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;

@@ -14,6 +14,7 @@ use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -42,25 +43,25 @@ test('doc belongs to template', function (): void {
 test('doc has many status histories relation', function (): void {
     $doc = Doc::factory()->create();
 
-    expect($doc->statusHistories())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($doc->statusHistories())->toBeInstanceOf(HasMany::class);
 });
 
 test('doc has many payments relation', function (): void {
     $doc = Doc::factory()->create();
 
-    expect($doc->payments())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($doc->payments())->toBeInstanceOf(HasMany::class);
 });
 
 test('doc has many versions relation', function (): void {
     $doc = Doc::factory()->create();
 
-    expect($doc->versions())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($doc->versions())->toBeInstanceOf(HasMany::class);
 });
 
 test('doc has many emails relation', function (): void {
     $doc = Doc::factory()->create();
 
-    expect($doc->emails())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($doc->emails())->toBeInstanceOf(HasMany::class);
 });
 
 test('doc has many approvals', function (): void {

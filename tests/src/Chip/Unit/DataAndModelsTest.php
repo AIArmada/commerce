@@ -9,8 +9,12 @@ use AIArmada\Chip\Data\SendInstructionData;
 use AIArmada\Chip\Data\SendLimitData;
 use AIArmada\Chip\Data\SendWebhookData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
+use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\Client;
+use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Models\SendLimit;
 use AIArmada\Chip\Services\ChipSendService;
+use Akaunting\Money\Money;
 
 describe('ChipSendService', function (): void {
     beforeEach(function (): void {
@@ -331,7 +335,7 @@ describe('Client Model', function (): void {
 
 describe('BankAccount Model', function (): void {
     it('returns status color and label', function (): void {
-        $account = new \AIArmada\Chip\Models\BankAccount(['status' => 'active']);
+        $account = new BankAccount(['status' => 'active']);
         expect($account->statusColor())->toBe('success');
         expect($account->statusLabel())->toBe('Active');
 
@@ -343,7 +347,7 @@ describe('BankAccount Model', function (): void {
     });
 
     it('checks if active', function (): void {
-        $account = new \AIArmada\Chip\Models\BankAccount(['status' => 'active']);
+        $account = new BankAccount(['status' => 'active']);
         expect($account->isActive)->toBeTrue();
 
         $account->status = 'pending';
@@ -352,19 +356,19 @@ describe('BankAccount Model', function (): void {
 
     it('has correct table name', function (): void {
         Config::set('chip.database.table_prefix', 'chip_');
-        $account = new \AIArmada\Chip\Models\BankAccount;
+        $account = new BankAccount;
         expect($account->getTable())->toBe('chip_bank_accounts');
     });
 });
 
 describe('SendInstruction Model', function (): void {
     it('returns amount numeric', function (): void {
-        $instruction = new \AIArmada\Chip\Models\SendInstruction(['amount' => '100.50']);
+        $instruction = new SendInstruction(['amount' => '100.50']);
         expect($instruction->amountNumeric)->toBe(100.50);
     });
 
     it('returns state label and color', function (): void {
-        $instruction = new \AIArmada\Chip\Models\SendInstruction(['state' => 'completed']);
+        $instruction = new SendInstruction(['state' => 'completed']);
         expect($instruction->stateLabel)->toBe('Completed');
         expect($instruction->stateColor())->toBe('success');
 
@@ -376,29 +380,29 @@ describe('SendInstruction Model', function (): void {
     });
 
     it('has correct table name', function (): void {
-        $instruction = new \AIArmada\Chip\Models\SendInstruction;
+        $instruction = new SendInstruction;
         expect($instruction->getTable())->toBe('chip_send_instructions');
     });
 });
 
 describe('SendLimit Model', function (): void {
     it('converts amounts to Money objects', function (): void {
-        $limit = new \AIArmada\Chip\Models\SendLimit([
+        $limit = new SendLimit([
             'amount' => 10000,
             'net_amount' => 9900,
             'fee' => 100,
             'currency' => 'MYR',
         ]);
 
-        expect($limit->amountMoney)->toBeInstanceOf(\Akaunting\Money\Money::class);
+        expect($limit->amountMoney)->toBeInstanceOf(Money::class);
         expect($limit->amountMoney->getAmount())->toBe(10000);
 
-        expect($limit->netAmountMoney)->toBeInstanceOf(\Akaunting\Money\Money::class);
-        expect($limit->feeMoney)->toBeInstanceOf(\Akaunting\Money\Money::class);
+        expect($limit->netAmountMoney)->toBeInstanceOf(Money::class);
+        expect($limit->feeMoney)->toBeInstanceOf(Money::class);
     });
 
     it('returns status color', function (): void {
-        $limit = new \AIArmada\Chip\Models\SendLimit(['status' => 'active']);
+        $limit = new SendLimit(['status' => 'active']);
         expect($limit->statusColor())->toBe('success');
 
         $limit->status = 'pending';

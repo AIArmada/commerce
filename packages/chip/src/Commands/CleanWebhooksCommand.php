@@ -8,6 +8,7 @@ use AIArmada\Chip\Models\Webhook;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class CleanWebhooksCommand extends Command
@@ -125,7 +126,7 @@ final class CleanWebhooksCommand extends Command
         return self::SUCCESS;
     }
 
-    private function buildQuery(CarbonImmutable $cutoffDate, string $status, ?Model $owner): \Illuminate\Database\Eloquent\Builder
+    private function buildQuery(CarbonImmutable $cutoffDate, string $status, ?Model $owner): Builder
     {
         $query = Webhook::query()
             ->forOwner($owner, false)

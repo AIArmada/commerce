@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax;
 
 use Filament\Contracts\Plugin;
+use Filament\Pages\SettingsPage;
 use Filament\Panel;
 
 final class FilamentTaxPlugin implements Plugin
@@ -131,7 +132,7 @@ final class FilamentTaxPlugin implements Plugin
         }
 
         $shouldShowSettings = $this->hasSettingsPage ?? ($features['settings_page'] ?? true);
-        if ($shouldShowSettings && class_exists(\Filament\Pages\SettingsPage::class)) {
+        if ($shouldShowSettings && class_exists(SettingsPage::class)) {
             $pages[] = Pages\ManageTaxSettings::class;
         }
 

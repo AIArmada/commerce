@@ -14,6 +14,8 @@ use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 // MatureConversion Action Tests
 test('MatureConversion can be instantiated', function (): void {
@@ -122,7 +124,7 @@ test('AffiliateTrainingModule can be created with all fields', function (): void
 test('AffiliateTrainingModule has progress relationship', function (): void {
     $module = new AffiliateTrainingModule;
 
-    expect($module->progress())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($module->progress())->toBeInstanceOf(HasMany::class);
 });
 
 test('AffiliateTrainingModule casts are correct', function (): void {
@@ -292,7 +294,7 @@ test('CommissionRuleEngine getApplicableRules returns collection', function (): 
 
     $rules = $engine->getApplicableRules($affiliate, []);
 
-    expect($rules)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($rules)->toBeInstanceOf(Collection::class);
 });
 
 test('CommissionRuleEngine clearCache works', function (): void {
@@ -324,7 +326,7 @@ test('PerformanceBonusService getLeaderboard returns collection', function (): v
 
     $leaderboard = $service->getLeaderboard();
 
-    expect($leaderboard)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($leaderboard)->toBeInstanceOf(Collection::class);
 });
 
 test('PerformanceBonusService getLeaderboard with custom limit', function (): void {
@@ -332,5 +334,5 @@ test('PerformanceBonusService getLeaderboard with custom limit', function (): vo
 
     $leaderboard = $service->getLeaderboard(limit: 5);
 
-    expect($leaderboard)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($leaderboard)->toBeInstanceOf(Collection::class);
 });

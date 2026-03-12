@@ -34,7 +34,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         if (! $executed) {
             throw new IncompletePayment(
-                new Payment(\AIArmada\Chip\Data\PurchaseData::from(['id' => 'rate_limited', 'status' => 'failed'])),
+                new Payment(PurchaseData::from(['id' => 'rate_limited', 'status' => 'failed'])),
                 'Rate limit exceeded. Please wait before making another charge.'
             );
         }

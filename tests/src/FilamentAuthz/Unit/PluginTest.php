@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
+use Filament\Contracts\Plugin;
 
 describe('FilamentAuthzPlugin', function (): void {
     it('can be instantiated', function (): void {
@@ -20,6 +21,6 @@ describe('FilamentAuthzPlugin', function (): void {
     it('implements Plugin interface', function (): void {
         $plugin = FilamentAuthzPlugin::make();
 
-        expect($plugin)->toBeInstanceOf(\Filament\Contracts\Plugin::class);
+        expect($plugin)->toBeInstanceOf(Plugin::class);
     });
 });

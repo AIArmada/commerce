@@ -18,7 +18,7 @@ final class VouchersAdapter
      */
     public function applyVouchers(CheckoutSession $session, array $codes): array
     {
-        if (! class_exists(\AIArmada\Vouchers\Contracts\VoucherServiceInterface::class)) {
+        if (! class_exists(VoucherServiceInterface::class)) {
             return ['applied' => [], 'discount' => 0];
         }
 
@@ -74,7 +74,7 @@ final class VouchersAdapter
      */
     public function validateVoucher(string $code, CheckoutSession $session): array
     {
-        if (! class_exists(\AIArmada\Vouchers\Contracts\VoucherServiceInterface::class)) {
+        if (! class_exists(VoucherServiceInterface::class)) {
             return ['valid' => false, 'message' => 'Vouchers not available', 'voucher' => null];
         }
 
@@ -92,7 +92,7 @@ final class VouchersAdapter
      */
     public function releaseVoucher(string $code): void
     {
-        if (! class_exists(\AIArmada\Vouchers\Contracts\VoucherServiceInterface::class)) {
+        if (! class_exists(VoucherServiceInterface::class)) {
             return;
         }
 
@@ -107,7 +107,7 @@ final class VouchersAdapter
      */
     public function redeemVouchers(array $codes, string $orderId): void
     {
-        if (! class_exists(\AIArmada\Vouchers\Contracts\VoucherServiceInterface::class)) {
+        if (! class_exists(VoucherServiceInterface::class)) {
             return;
         }
 

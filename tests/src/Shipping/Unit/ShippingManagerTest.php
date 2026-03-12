@@ -7,8 +7,10 @@ use AIArmada\Shipping\Contracts\StatusMapperInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
+use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Shipping\ShippingManager;
+use Illuminate\Support\Collection;
 
 // ============================================
 // ShippingManager Tests (using Laravel framework)
@@ -112,9 +114,9 @@ it('can register and retrieve status mapper', function (): void {
             return 'test_carrier';
         }
 
-        public function map(string $carrierEventCode): AIArmada\Shipping\Enums\TrackingStatus
+        public function map(string $carrierEventCode): TrackingStatus
         {
-            return AIArmada\Shipping\Enums\TrackingStatus::InTransit;
+            return TrackingStatus::InTransit;
         }
     };
 
@@ -146,7 +148,7 @@ it('can get drivers for destination', function (): void {
     $drivers = $this->manager->getDriversForDestination($destination);
 
     // At minimum, we should have drivers that service the destination
-    expect($drivers)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($drivers)->toBeInstanceOf(Collection::class);
 });
 
 it('supports dynamic method calls via facade', function (): void {

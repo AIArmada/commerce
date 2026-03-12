@@ -8,6 +8,7 @@ use AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers\Variant
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\Product;
+use Filament\Actions\EditAction;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -92,7 +93,7 @@ it('exercises variant relation manager actions and bulk actions', function (): v
     $livewire = Mockery::mock(HasTable::class);
     $table = $manager->table(Table::make($livewire));
 
-    /** @var \Filament\Actions\EditAction $edit */
+    /** @var EditAction $edit */
     $edit = $table->getAction('edit');
 
     expect($edit)->not->toBeNull();

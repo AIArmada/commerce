@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShippingZone;
@@ -9,6 +10,7 @@ use AIArmada\Shipping\Policies\ReturnAuthorizationPolicy;
 use AIArmada\Shipping\Policies\ShipmentPolicy;
 use AIArmada\Shipping\Policies\ShippingZonePolicy;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // Helper: Create user with permission checking
@@ -188,15 +190,15 @@ describe('ShipmentPolicy', function (): void {
 
         $user = createUserWithPermissions([]);
 
-        $owner = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $owner = Mockery::mock(Model::class);
         $owner->shouldReceive('getMorphClass')->andReturn('TestOwner');
         $owner->shouldReceive('getKey')->andReturn('owner-123');
 
-        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($owner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
         {
-            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+            public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return $this->owner;
             }
@@ -208,7 +210,7 @@ describe('ShipmentPolicy', function (): void {
         try {
             expect($this->policy->view($user, $shipment))->toBeTrue();
         } finally {
-            app()->forgetInstance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class);
+            app()->forgetInstance(OwnerResolverInterface::class);
             config(['shipping.features.owner.enabled' => false]);
         }
     });
@@ -486,15 +488,15 @@ describe('ReturnAuthorizationPolicy', function (): void {
 
         $user = createUserWithPermissions([]);
 
-        $owner = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $owner = Mockery::mock(Model::class);
         $owner->shouldReceive('getMorphClass')->andReturn('TestOwner');
         $owner->shouldReceive('getKey')->andReturn('owner-123');
 
-        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($owner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
         {
-            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+            public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return $this->owner;
             }
@@ -506,7 +508,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         try {
             expect($this->policy->view($user, $rma))->toBeTrue();
         } finally {
-            app()->forgetInstance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class);
+            app()->forgetInstance(OwnerResolverInterface::class);
             config(['shipping.features.owner.enabled' => false]);
         }
     });

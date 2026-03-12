@@ -8,6 +8,7 @@ use AIArmada\FilamentCustomers\Widgets\CustomerStatsWidget;
 use AIArmada\FilamentCustomers\Widgets\RecentCustomersWidget;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -83,7 +84,7 @@ it('CustomerStatsWidget is owner-scoped for counts and aggregates', function ():
         $method = new ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
-        /** @var array<int, \Filament\Widgets\StatsOverviewWidget\Stat> $result */
+        /** @var array<int, Stat> $result */
         $result = $method->invoke($widget);
 
         return $result;

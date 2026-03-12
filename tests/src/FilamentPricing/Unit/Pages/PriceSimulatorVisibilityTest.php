@@ -7,6 +7,7 @@ use AIArmada\Commerce\Tests\TestCase;
 uses(TestCase::class);
 
 use AIArmada\FilamentPricing\Pages\PriceSimulator;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -17,7 +18,7 @@ function findSectionByHeading(Schema $schema, string $heading): ?Section
             return $component;
         }
 
-        if (! $component instanceof \Filament\Schemas\Components\Component) {
+        if (! $component instanceof Component) {
             continue;
         }
 
@@ -124,7 +125,7 @@ it('toggles clear header action visibility based on result state', function (): 
     $page = app(PriceSimulator::class);
     $page->result = null;
 
-    $method = new \ReflectionMethod($page, 'getHeaderActions');
+    $method = new ReflectionMethod($page, 'getHeaderActions');
     $method->setAccessible(true);
 
     $actions = $method->invoke($page);

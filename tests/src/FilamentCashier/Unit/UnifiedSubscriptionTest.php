@@ -190,7 +190,7 @@ it('calculates stripe amount from loaded items without calling items()', functio
 
         public function items(): never
         {
-            throw new \RuntimeException('items() should not be called when items relation is preloaded.');
+            throw new RuntimeException('items() should not be called when items relation is preloaded.');
         }
     };
 
@@ -227,7 +227,7 @@ it('calculates chip amount from loaded items without calling items()', function 
 
         public function items(): never
         {
-            throw new \RuntimeException('items() should not be called when items relation is preloaded.');
+            throw new RuntimeException('items() should not be called when items relation is preloaded.');
         }
     };
 

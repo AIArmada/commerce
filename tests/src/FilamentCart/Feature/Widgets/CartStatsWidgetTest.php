@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use Akaunting\Money\Money;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -76,7 +77,7 @@ describe('CartStatsWidget', function (): void {
         $method = $reflection->getMethod('getStats');
         $method->setAccessible(true);
 
-        /** @var array<int, \Filament\Widgets\StatsOverviewWidget\Stat> $stats */
+        /** @var array<int, Stat> $stats */
         $stats = $method->invoke($widget);
 
         expect($stats[0]->getValue())->toBe(1);

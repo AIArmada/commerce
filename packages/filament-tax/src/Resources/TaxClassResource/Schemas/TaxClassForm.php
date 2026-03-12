@@ -10,6 +10,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set as SetFormState;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 final class TaxClassForm
 {
@@ -25,7 +26,7 @@ final class TaxClassForm
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(
-                                fn (SetFormState $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state ?? ''))
+                                fn (SetFormState $set, ?string $state) => $set('slug', Str::slug($state ?? ''))
                             ),
 
                         TextInput::make('slug')

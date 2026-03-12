@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Pages;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
+use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
 use BackedEnum;
@@ -180,7 +181,7 @@ final class AffiliateMarketplacePage extends Page
             return;
         }
 
-        $linkService = app(\AIArmada\AffiliateNetwork\Services\OfferLinkService::class);
+        $linkService = app(OfferLinkService::class);
         $link = $linkService->createLink($offer, $affiliate);
         $trackingUrl = $linkService->generateTrackingUrl($link);
 

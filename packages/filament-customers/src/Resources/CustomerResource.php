@@ -11,6 +11,12 @@ use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -20,6 +26,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
@@ -203,17 +210,17 @@ class CustomerResource extends Resource
                     ->query(fn ($query) => $query->where('created_at', '>=', CarbonImmutable::now()->subDays(30))),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
-                    \Filament\Actions\BulkAction::make('opt_in_marketing')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('opt_in_marketing')
                         ->label('Opt-In Marketing')
                         ->icon('heroicon-o-bell')
-                        ->action(function (\Illuminate\Support\Collection $records): void {
-                            $user = \Filament\Facades\Filament::auth()->user();
+                        ->action(function (Collection $records): void {
+                            $user = Filament::auth()->user();
                             abort_unless($user !== null, 403);
 
                             $records->each(function (Customer $record) use ($user): void {
@@ -221,11 +228,11 @@ class CustomerResource extends Resource
                                 $record->optInMarketing();
                             });
                         }),
-                    \Filament\Actions\BulkAction::make('opt_out_marketing')
+                    BulkAction::make('opt_out_marketing')
                         ->label('Opt-Out Marketing')
                         ->icon('heroicon-o-bell-slash')
-                        ->action(function (\Illuminate\Support\Collection $records): void {
-                            $user = \Filament\Facades\Filament::auth()->user();
+                        ->action(function (Collection $records): void {
+                            $user = Filament::auth()->user();
                             abort_unless($user !== null, 403);
 
                             $records->each(function (Customer $record) use ($user): void {

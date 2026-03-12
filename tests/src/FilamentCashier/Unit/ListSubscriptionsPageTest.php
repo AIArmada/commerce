@@ -8,6 +8,8 @@ use AIArmada\CashierChip\SubscriptionItem as ChipSubscriptionItem;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\ListSubscriptions;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -30,7 +32,7 @@ if (! function_exists('filamentCashier_setProtectedProperty')) {
 
 it('lists CHIP subscriptions as unified subscriptions and applies tabs and filters', function (): void {
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
-        Schema::create('cashier_chip_subscriptions', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        Schema::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id');
             $table->nullableMorphs('owner');
@@ -50,7 +52,7 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
     }
 
     if (! Schema::hasTable('cashier_chip_subscription_items')) {
-        Schema::create('cashier_chip_subscription_items', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        Schema::create('cashier_chip_subscription_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('subscription_id');
             $table->nullableMorphs('owner');
@@ -63,7 +65,7 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
         });
     }
 
-    /** @var class-string<\Illuminate\Database\Eloquent\Model> $userModel */
+    /** @var class-string<Model> $userModel */
     $userModel = config('auth.providers.users.model');
     $user = $userModel::query()->create([
         'name' => 'Subscriptions',

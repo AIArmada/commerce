@@ -206,9 +206,11 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         'title' => 'Revenue threshold reached',
         'message' => 'Revenue exceeded the configured threshold.',
         'is_read' => false,
+    ]);
+    $logA->forceFill([
         'created_at' => CarbonImmutable::parse('2026-03-10 11:00:00'),
         'updated_at' => CarbonImmutable::parse('2026-03-10 11:00:00'),
-    ]);
+    ])->save();
     $logA->assignOwner($ownerA)->save();
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
@@ -224,9 +226,11 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         'title' => 'Other owner alert',
         'message' => 'This alert belongs to another owner.',
         'is_read' => false,
+    ]);
+    $logB->forceFill([
         'created_at' => CarbonImmutable::parse('2026-03-10 11:00:00'),
         'updated_at' => CarbonImmutable::parse('2026-03-10 11:00:00'),
-    ]);
+    ])->save();
     $logB->assignOwner($ownerB)->save();
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));

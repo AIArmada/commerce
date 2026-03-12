@@ -11,7 +11,9 @@ use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Completed;
 use AIArmada\Orders\States\Created;
+use AIArmada\Orders\States\Delivered;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Orders\States\Shipped;
 
 describe('Order Model', function (): void {
     describe('Order Creation', function (): void {
@@ -438,7 +440,7 @@ describe('Order Model', function (): void {
         it('can check if order is shipped', function (): void {
             $order = Order::create([
                 'order_number' => 'ORD-SHIP-' . uniqid(),
-                'status' => AIArmada\Orders\States\Shipped::class,
+                'status' => Shipped::class,
                 'currency' => 'MYR',
                 'subtotal' => 10000,
                 'grand_total' => 10000,
@@ -451,7 +453,7 @@ describe('Order Model', function (): void {
         it('can check if order is delivered', function (): void {
             $order = Order::create([
                 'order_number' => 'ORD-DELIV-' . uniqid(),
-                'status' => AIArmada\Orders\States\Delivered::class,
+                'status' => Delivered::class,
                 'currency' => 'MYR',
                 'subtotal' => 10000,
                 'grand_total' => 10000,

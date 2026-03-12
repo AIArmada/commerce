@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources;
 
 use AIArmada\FilamentProducts\Resources\AttributeSetResource\Pages;
+use AIArmada\Products\Models\Attribute;
+use AIArmada\Products\Models\AttributeGroup;
 use AIArmada\Products\Models\AttributeSet;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -95,7 +102,7 @@ final class AttributeSetResource extends Resource
                                 'setAttributes',
                                 'name',
                                 modifyQueryUsing: function (Builder $query): Builder {
-                                    /** @var Builder<\AIArmada\Products\Models\Attribute> $query */
+                                    /** @var Builder<Attribute> $query */
                                     return $query->forOwner();
                                 }
                             )
@@ -112,7 +119,7 @@ final class AttributeSetResource extends Resource
                                 'groups',
                                 'name',
                                 modifyQueryUsing: function (Builder $query): Builder {
-                                    /** @var Builder<\AIArmada\Products\Models\AttributeGroup> $query */
+                                    /** @var Builder<AttributeGroup> $query */
                                     return $query->forOwner();
                                 }
                             )
@@ -165,19 +172,19 @@ final class AttributeSetResource extends Resource
                     ->label(__('filament-products::resources.attribute_sets.fields.is_default')),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('setDefault')
+                EditAction::make(),
+                Action::make('setDefault')
                     ->label(__('filament-products::resources.attribute_sets.actions.set_default'))
                     ->icon('heroicon-o-star')
                     ->color('warning')
                     ->requiresConfirmation()
                     ->action(fn (AttributeSet $record) => $record->setAsDefault())
                     ->visible(fn (AttributeSet $record): bool => ! $record->is_default),
-                \Filament\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

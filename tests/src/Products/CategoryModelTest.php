@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
+use Illuminate\Support\Facades\DB;
 
 describe('Category Model', function (): void {
     describe('Category Creation', function (): void {
@@ -274,7 +275,7 @@ describe('Category Model', function (): void {
 
             $category->delete();
 
-            expect(Illuminate\Support\Facades\DB::table(config('products.database.tables.category_product', 'category_product'))
+            expect(DB::table(config('products.database.tables.category_product', 'category_product'))
                 ->where('category_id', $categoryId)->count())->toBe(0);
         });
     });

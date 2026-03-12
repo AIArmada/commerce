@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -12,6 +18,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 
 final class VariantsRelationManager extends RelationManager
 {
@@ -123,7 +130,7 @@ final class VariantsRelationManager extends RelationManager
                     ->label('Enabled'),
             ])
             ->headerActions([
-                \Filament\Actions\CreateAction::make()
+                CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         // Convert prices to cents
                         if (isset($data['price']) && is_numeric($data['price'])) {
@@ -140,7 +147,7 @@ final class VariantsRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make()
+                EditAction::make()
                     ->mutateRecordDataUsing(function (array $data): array {
                         // Convert cents to display values
                         if (isset($data['price'])) {
@@ -169,22 +176,22 @@ final class VariantsRelationManager extends RelationManager
 
                         return $data;
                     }),
-                \Filament\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
-                    \Filament\Actions\BulkAction::make('enable')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('enable')
                         ->label('Enable')
                         ->icon('heroicon-o-check-circle')
                         ->action(
-                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_enabled' => true])
+                            fn (Collection $records) => $records->each->update(['is_enabled' => true])
                         ),
-                    \Filament\Actions\BulkAction::make('disable')
+                    BulkAction::make('disable')
                         ->label('Disable')
                         ->icon('heroicon-o-x-circle')
                         ->action(
-                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_enabled' => false])
+                            fn (Collection $records) => $records->each->update(['is_enabled' => false])
                         ),
                 ]),
             ]);

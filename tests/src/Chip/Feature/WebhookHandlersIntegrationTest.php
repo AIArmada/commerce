@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
+use AIArmada\Chip\Enums\SendInstructionState;
+use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Events\PayoutFailed;
+use AIArmada\Chip\Events\PayoutSuccess;
+use AIArmada\Chip\Events\PurchaseCancelled;
+use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Events\PurchasePaymentFailure;
+use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Webhooks\Handlers\PaymentFailedHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchaseCancelledHandler;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
@@ -11,6 +20,7 @@ use AIArmada\Chip\Webhooks\Handlers\PurchaseRefundedHandler;
 use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
 use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 use AIArmada\Chip\Webhooks\Handlers\WebhookHandler;
+use Illuminate\Support\Facades\Event;
 
 describe('Webhook Handlers Integration', function (): void {
     /**
@@ -190,9 +200,9 @@ describe('Webhook Handlers Integration', function (): void {
          *
          * @param  array<string, mixed>  $overrides
          */
-        function createTestPurchase(array $overrides = []): AIArmada\Chip\Models\Purchase
+        function createTestPurchase(array $overrides = []): Purchase
         {
-            return AIArmada\Chip\Models\Purchase::create(array_merge([
+            return Purchase::create(array_merge([
                 'id' => 'purchase-' . uniqid(),
                 'type' => 'purchase',
                 'status' => 'created',
@@ -225,7 +235,7 @@ describe('Webhook Handlers Integration', function (): void {
          */
         function createPayloadWithPurchase(
             string $event,
-            AIArmada\Chip\Models\Purchase $purchase,
+            Purchase $purchase,
             array $rawPayload = []
         ): EnrichedWebhookPayload {
             $payload = array_merge([
@@ -253,7 +263,7 @@ describe('Webhook Handlers Integration', function (): void {
         }
 
         it('PurchasePaidHandler updates purchase status to paid', function (): void {
-            Illuminate\Support\Facades\Event::fake();
+            Event::fake();
 
             $purchase = createTestPurchase(['status' => 'created']);
             $payload = createPayloadWithPurchase('purchase.paid', $purchase, ['status' => 'paid']);
@@ -267,11 +277,11 @@ describe('Webhook Handlers Integration', function (): void {
             $purchase->refresh();
             expect($purchase->status->value ?? $purchase->status)->toBe('paid');
 
-            Illuminate\Support\Facades\Event::assertDispatched(AIArmada\Chip\Events\PurchasePaid::class);
+            Event::assertDispatched(PurchasePaid::class);
         });
 
         it('PurchaseCancelledHandler updates purchase status to cancelled', function (): void {
-            Illuminate\Support\Facades\Event::fake();
+            Event::fake();
 
             $purchase = createTestPurchase(['status' => 'created']);
             $payload = createPayloadWithPurchase('purchase.cancelled', $purchase, ['status' => 'cancelled']);
@@ -285,11 +295,11 @@ describe('Webhook Handlers Integration', function (): void {
             $purchase->refresh();
             expect($purchase->status->value ?? $purchase->status)->toBe('cancelled');
 
-            Illuminate\Support\Facades\Event::assertDispatched(AIArmada\Chip\Events\PurchaseCancelled::class);
+            Event::assertDispatched(PurchaseCancelled::class);
         });
 
         it('PaymentFailedHandler updates purchase status', function (): void {
-            Illuminate\Support\Facades\Event::fake();
+            Event::fake();
 
             $purchase = createTestPurchase(['status' => 'pending']);
             $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, ['status' => 'failed']);
@@ -300,11 +310,11 @@ describe('Webhook Handlers Integration', function (): void {
             expect($result)->toBeInstanceOf(WebhookResult::class);
             expect($result->isHandled())->toBeTrue();
 
-            Illuminate\Support\Facades\Event::assertDispatched(AIArmada\Chip\Events\PurchasePaymentFailure::class);
+            Event::assertDispatched(PurchasePaymentFailure::class);
         });
 
         it('PurchaseRefundedHandler updates purchase', function (): void {
-            Illuminate\Support\Facades\Event::fake();
+            Event::fake();
 
             $purchase = createTestPurchase(['status' => 'paid']);
             $payload = createPayloadWithPurchase('payment.refunded', $purchase, [
@@ -318,13 +328,13 @@ describe('Webhook Handlers Integration', function (): void {
             expect($result)->toBeInstanceOf(WebhookResult::class);
             expect($result->isHandled())->toBeTrue();
 
-            Illuminate\Support\Facades\Event::assertDispatched(AIArmada\Chip\Events\PaymentRefunded::class);
+            Event::assertDispatched(PaymentRefunded::class);
         });
 
         it('SendCompletedHandler updates send instruction state', function (): void {
-            Illuminate\Support\Facades\Event::fake();
+            Event::fake();
 
-            $instruction = AIArmada\Chip\Models\SendInstruction::create([
+            $instruction = SendInstruction::create([
                 'id' => 12345,
                 'bank_account_id' => 1,
                 'amount' => '100.00',
@@ -358,15 +368,15 @@ describe('Webhook Handlers Integration', function (): void {
             expect($result->isHandled())->toBeTrue();
 
             $instruction->refresh();
-            expect($instruction->state)->toBe(AIArmada\Chip\Enums\SendInstructionState::COMPLETED->value);
+            expect($instruction->state)->toBe(SendInstructionState::COMPLETED->value);
 
-            Illuminate\Support\Facades\Event::assertDispatched(AIArmada\Chip\Events\PayoutSuccess::class);
+            Event::assertDispatched(PayoutSuccess::class);
         });
 
         it('SendRejectedHandler updates send instruction state', function (): void {
-            Illuminate\Support\Facades\Event::fake();
+            Event::fake();
 
-            $instruction = AIArmada\Chip\Models\SendInstruction::create([
+            $instruction = SendInstruction::create([
                 'id' => 67890,
                 'bank_account_id' => 1,
                 'amount' => '100.00',
@@ -400,9 +410,9 @@ describe('Webhook Handlers Integration', function (): void {
             expect($result->isHandled())->toBeTrue();
 
             $instruction->refresh();
-            expect($instruction->state)->toBe(AIArmada\Chip\Enums\SendInstructionState::REJECTED->value);
+            expect($instruction->state)->toBe(SendInstructionState::REJECTED->value);
 
-            Illuminate\Support\Facades\Event::assertDispatched(AIArmada\Chip\Events\PayoutFailed::class);
+            Event::assertDispatched(PayoutFailed::class);
         });
     });
 });

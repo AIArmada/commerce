@@ -9,11 +9,13 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Enums\AttributeType;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 /**
@@ -37,11 +39,11 @@ use InvalidArgumentException;
  * @property string|null $placeholder
  * @property string|null $help_text
  * @property string|null $default_value
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeGroup> $groups
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeSet> $attributeSets
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $values
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, AttributeGroup> $groups
+ * @property-read Collection<int, AttributeSet> $attributeSets
+ * @property-read Collection<int, AttributeValue> $values
  */
 class Attribute extends Model
 {
@@ -232,8 +234,8 @@ class Attribute extends Model
     /**
      * Scope to filterable attributes.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<Attribute>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Attribute>
+     * @param  Builder<Attribute>  $query
+     * @return Builder<Attribute>
      */
     public function scopeFilterable($query)
     {
@@ -243,8 +245,8 @@ class Attribute extends Model
     /**
      * Scope to searchable attributes.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<Attribute>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Attribute>
+     * @param  Builder<Attribute>  $query
+     * @return Builder<Attribute>
      */
     public function scopeSearchable($query)
     {
@@ -254,8 +256,8 @@ class Attribute extends Model
     /**
      * Scope to comparable attributes.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<Attribute>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Attribute>
+     * @param  Builder<Attribute>  $query
+     * @return Builder<Attribute>
      */
     public function scopeComparable($query)
     {
@@ -265,8 +267,8 @@ class Attribute extends Model
     /**
      * Scope to visible on front attributes.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<Attribute>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Attribute>
+     * @param  Builder<Attribute>  $query
+     * @return Builder<Attribute>
      */
     public function scopeVisibleOnFront($query)
     {
@@ -276,8 +278,8 @@ class Attribute extends Model
     /**
      * Scope to order by position.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<Attribute>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<Attribute>
+     * @param  Builder<Attribute>  $query
+     * @return Builder<Attribute>
      */
     public function scopeOrdered($query)
     {

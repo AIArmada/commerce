@@ -15,6 +15,8 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\States\Active;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
 
 test('AffiliateActivated event can be constructed with an affiliate', function (): void {
@@ -34,11 +36,11 @@ test('AffiliateActivated event can be constructed with an affiliate', function (
 });
 
 test('AffiliateActivated event uses Dispatchable trait', function (): void {
-    expect(in_array(Illuminate\Foundation\Events\Dispatchable::class, class_uses_recursive(AffiliateActivated::class)))->toBeTrue();
+    expect(in_array(Dispatchable::class, class_uses_recursive(AffiliateActivated::class)))->toBeTrue();
 });
 
 test('AffiliateActivated event uses SerializesModels trait', function (): void {
-    expect(in_array(Illuminate\Queue\SerializesModels::class, class_uses_recursive(AffiliateActivated::class)))->toBeTrue();
+    expect(in_array(SerializesModels::class, class_uses_recursive(AffiliateActivated::class)))->toBeTrue();
 });
 
 test('AffiliateProgramJoined event can be constructed with affiliate, program and membership', function (): void {
@@ -184,8 +186,8 @@ test('DailyStatsAggregated event can be constructed with date and count', functi
 test('DailyStatsAggregated event uses Dispatchable and SerializesModels traits', function (): void {
     $traits = class_uses_recursive(DailyStatsAggregated::class);
 
-    expect(in_array(Illuminate\Foundation\Events\Dispatchable::class, $traits))->toBeTrue();
-    expect(in_array(Illuminate\Queue\SerializesModels::class, $traits))->toBeTrue();
+    expect(in_array(Dispatchable::class, $traits))->toBeTrue();
+    expect(in_array(SerializesModels::class, $traits))->toBeTrue();
 });
 
 test('AffiliateRankChanged event can be constructed with all parameters', function (): void {

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
 use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -41,7 +42,7 @@ it('scopes user_id queries to current owner billables', function (): void {
         });
     }
 
-    /** @var class-string<\Illuminate\Database\Eloquent\Model> $ownerModel */
+    /** @var class-string<Model> $ownerModel */
     $ownerModel = config('auth.providers.users.model');
 
     $ownerA = $ownerModel::query()->create([
@@ -84,9 +85,9 @@ it('scopes user_id queries to current owner billables', function (): void {
 
     app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
     {
-        public function __construct(private readonly \Illuminate\Database\Eloquent\Model $owner) {}
+        public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?\Illuminate\Database\Eloquent\Model
+        public function resolve(): ?Model
         {
             return $this->owner;
         }
@@ -120,7 +121,7 @@ it('fails closed when billable supports owner scoping but no owner context exist
         });
     }
 
-    /** @var class-string<\Illuminate\Database\Eloquent\Model> $ownerModel */
+    /** @var class-string<Model> $ownerModel */
     $ownerModel = config('auth.providers.users.model');
 
     $ownerA = $ownerModel::query()->create([
@@ -163,7 +164,7 @@ it('blocks selecting a cross-tenant customer when an owner context exists', func
         });
     }
 
-    /** @var class-string<\Illuminate\Database\Eloquent\Model> $ownerModel */
+    /** @var class-string<Model> $ownerModel */
     $ownerModel = config('auth.providers.users.model');
 
     $ownerA = $ownerModel::query()->create([
@@ -196,9 +197,9 @@ it('blocks selecting a cross-tenant customer when an owner context exists', func
 
     app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
     {
-        public function __construct(private readonly \Illuminate\Database\Eloquent\Model $owner) {}
+        public function __construct(private readonly Model $owner) {}
 
-        public function resolve(): ?\Illuminate\Database\Eloquent\Model
+        public function resolve(): ?Model
         {
             return $this->owner;
         }

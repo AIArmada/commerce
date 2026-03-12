@@ -248,7 +248,7 @@ describe('OrderService', function (): void {
             ];
 
             // Create a simple test model
-            $customer = new class extends Illuminate\Database\Eloquent\Model
+            $customer = new class extends Model
             {
                 protected $table = 'users';
 

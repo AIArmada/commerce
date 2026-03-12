@@ -11,7 +11,7 @@ use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Support\Facades\Event;
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 it('registers cart and voucher integrations when their features are enabled', function (): void {

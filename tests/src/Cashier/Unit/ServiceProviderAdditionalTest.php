@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Cashier;
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
@@ -49,7 +50,7 @@ describe('CashierServiceProvider - Additional Coverage', function (): void {
     describe('route registration', function (): void {
         it('registers routes by default', function (): void {
             // Routes should be registered when $registersRoutes is true
-            expect(AIArmada\Cashier\Cashier::$registersRoutes)->toBeTrue();
+            expect(Cashier::$registersRoutes)->toBeTrue();
         });
     });
 });

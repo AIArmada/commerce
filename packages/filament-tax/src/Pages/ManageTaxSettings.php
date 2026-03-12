@@ -6,6 +6,7 @@ namespace AIArmada\FilamentTax\Pages;
 
 use AIArmada\Tax\Settings\TaxSettings;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -152,7 +153,7 @@ final class ManageTaxSettings extends Page
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('save')
+            Action::make('save')
                 ->label(__('Save'))
                 ->icon('heroicon-o-check')
                 ->color('primary')

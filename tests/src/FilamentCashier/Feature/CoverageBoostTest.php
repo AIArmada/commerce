@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Components\GatewayBadge;
@@ -10,6 +13,9 @@ use AIArmada\FilamentCashier\CustomerPortal\Pages\BillingOverview;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ManagePaymentMethods;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ManageSubscriptions;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ViewInvoices;
+use AIArmada\FilamentCashier\CustomerPortal\Widgets\ActiveSubscriptionsWidget;
+use AIArmada\FilamentCashier\CustomerPortal\Widgets\PaymentMethodsPreviewWidget;
+use AIArmada\FilamentCashier\CustomerPortal\Widgets\RecentInvoicesWidget;
 use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
 use AIArmada\FilamentCashier\Pages\BillingDashboard;
@@ -31,7 +37,10 @@ use AIArmada\FilamentCashier\Widgets\GatewayComparisonWidget;
 use AIArmada\FilamentCashier\Widgets\TotalMrrWidget;
 use AIArmada\FilamentCashier\Widgets\TotalSubscribersWidget;
 use AIArmada\FilamentCashier\Widgets\UnifiedChurnWidget;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Panel;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
@@ -40,7 +49,9 @@ use Filament\Tables\Table;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Auth\User as AuthenticatableUser;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -75,7 +86,7 @@ if (! function_exists('filamentCashier_makeSchemaLivewire')) {
                 string $key,
                 bool $withHidden = false,
                 array $skipComponentsChildContainersWhileSearching = [],
-            ): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null {
+            ): Component | Action | ActionGroup | null {
                 return null;
             }
 
@@ -152,7 +163,7 @@ it('covers the filament-cashier public surface', function (): void {
     ]);
 
     if (! SchemaFacade::hasTable('subscriptions')) {
-        SchemaFacade::create('subscriptions', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        SchemaFacade::create('subscriptions', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->string('name')->nullable();
@@ -167,7 +178,7 @@ it('covers the filament-cashier public surface', function (): void {
     }
 
     if (! SchemaFacade::hasTable('subscription_items')) {
-        SchemaFacade::create('subscription_items', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        SchemaFacade::create('subscription_items', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('subscription_id');
             $table->string('stripe_id')->nullable();
@@ -180,7 +191,7 @@ it('covers the filament-cashier public surface', function (): void {
     }
 
     if (! SchemaFacade::hasTable('cashier_chip_subscriptions')) {
-        SchemaFacade::create('cashier_chip_subscriptions', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        SchemaFacade::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id');
             $table->nullableMorphs('owner');
@@ -200,7 +211,7 @@ it('covers the filament-cashier public surface', function (): void {
     }
 
     if (! SchemaFacade::hasTable('cashier_chip_subscription_items')) {
-        SchemaFacade::create('cashier_chip_subscription_items', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        SchemaFacade::create('cashier_chip_subscription_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('subscription_id');
             $table->nullableMorphs('owner');
@@ -228,18 +239,18 @@ it('covers the filament-cashier public surface', function (): void {
 
     Auth::guard()->setUser($dbUser);
 
-    \AIArmada\CashierChip\Cashier::useCustomerModel($userModel);
-    \AIArmada\CashierChip\Cashier::useSubscriptionModel(\AIArmada\CashierChip\Subscription::class);
-    \AIArmada\CashierChip\Cashier::useSubscriptionItemModel(\AIArmada\CashierChip\SubscriptionItem::class);
+    Cashier::useCustomerModel($userModel);
+    Cashier::useSubscriptionModel(Subscription::class);
+    Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
     // Seed one CHIP subscription + item to exercise CHIP branches (no external API calls).
     $chipSubscriptionId = (string) Str::uuid();
-    \AIArmada\CashierChip\Subscription::query()->create([
+    Subscription::query()->create([
         'id' => $chipSubscriptionId,
         'user_id' => $dbUser->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $chipSubscriptionId,
-        'chip_status' => \AIArmada\CashierChip\Subscription::STATUS_ACTIVE,
+        'chip_status' => Subscription::STATUS_ACTIVE,
         'chip_price' => 'price_basic',
         'quantity' => 1,
         'billing_interval' => 'month',
@@ -249,7 +260,7 @@ it('covers the filament-cashier public surface', function (): void {
         'updated_at' => now(),
     ]);
 
-    \AIArmada\CashierChip\SubscriptionItem::query()->create([
+    SubscriptionItem::query()->create([
         'id' => (string) Str::uuid(),
         'subscription_id' => $chipSubscriptionId,
         'chip_id' => 'item_' . Str::uuid(),
@@ -284,7 +295,7 @@ it('covers the filament-cashier public surface', function (): void {
 
     $badge = new GatewayBadge('stripe');
     expect($badge->label)->toBe('Stripe');
-    expect($badge->render())->toBeInstanceOf(\Illuminate\Contracts\View\View::class);
+    expect($badge->render())->toBeInstanceOf(View::class);
 
     $stripeInvoice = new class
     {
@@ -461,8 +472,8 @@ it('covers the filament-cashier public surface', function (): void {
     $gatewayManagement = app(GatewayManagement::class);
     expect($gatewayManagement->getTitle())->toBeString();
     expect($gatewayManagement->getGatewayHealth())->toBeInstanceOf(Collection::class);
-    expect($gatewayManagement->testConnectionAction())->toBeInstanceOf(\Filament\Actions\Action::class);
-    expect($gatewayManagement->setDefaultAction())->toBeInstanceOf(\Filament\Actions\Action::class);
+    expect($gatewayManagement->testConnectionAction())->toBeInstanceOf(Action::class);
+    expect($gatewayManagement->setDefaultAction())->toBeInstanceOf(Action::class);
 
     $checkGatewayHealth = new ReflectionMethod(GatewayManagement::class, 'checkGatewayHealth');
     $checkGatewayHealth->setAccessible(true);
@@ -707,9 +718,9 @@ it('covers the filament-cashier public surface', function (): void {
     expect($portalInvoices->getInvoices())->toBeInstanceOf(Collection::class);
 
     $portalWidgets = [
-        \AIArmada\FilamentCashier\CustomerPortal\Widgets\ActiveSubscriptionsWidget::class,
-        \AIArmada\FilamentCashier\CustomerPortal\Widgets\PaymentMethodsPreviewWidget::class,
-        \AIArmada\FilamentCashier\CustomerPortal\Widgets\RecentInvoicesWidget::class,
+        ActiveSubscriptionsWidget::class,
+        PaymentMethodsPreviewWidget::class,
+        RecentInvoicesWidget::class,
     ];
 
     foreach ($portalWidgets as $widgetClass) {

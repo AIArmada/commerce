@@ -13,6 +13,7 @@ use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use Filament\Schemas\Schema;
@@ -22,7 +23,7 @@ use Filament\Tables\Table;
 uses(TestCase::class);
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 it('covers cart-related widgets and voucher suggestions', function (): void {
@@ -77,7 +78,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     $tableWidget->record = $cart;
 
     /** @var HasTable $livewire */
-    $livewire = \Mockery::mock(HasTable::class);
+    $livewire = Mockery::mock(HasTable::class);
 
     expect($tableWidget->table(Table::make($livewire)))->toBeInstanceOf(Table::class);
 
@@ -137,7 +138,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
             {
                 public function applyVoucher(string $code): void
                 {
-                    throw new \AIArmada\Vouchers\Exceptions\VoucherException('Cannot apply');
+                    throw new VoucherException('Cannot apply');
                 }
             };
         }

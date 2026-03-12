@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\FilamentCashier\Fixtures;
 
+use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
@@ -11,12 +12,13 @@ use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
-class ChipBillableUser extends User implements \AIArmada\Cashier\Contracts\BillableContract
+class ChipBillableUser extends User implements BillableContract
 {
     public function gateway(?string $gateway = null): GatewayContract
     {
@@ -125,7 +127,7 @@ class ChipBillableUser extends User implements \AIArmada\Cashier\Contracts\Billa
 
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(\AIArmada\CashierChip\Subscription::class, 'user_id');
+        return $this->hasMany(Subscription::class, 'user_id');
     }
 
     public function hasIncompletePayment(string $type = 'default'): bool

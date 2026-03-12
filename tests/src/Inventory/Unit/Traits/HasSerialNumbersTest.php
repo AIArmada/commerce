@@ -9,6 +9,7 @@ use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\States\Sold;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 beforeEach(function (): void {
     $this->item = SerializedInventoryItem::create(['name' => 'Serialized Product']);
@@ -18,7 +19,7 @@ beforeEach(function (): void {
 describe('HasSerialNumbers trait', function (): void {
     describe('serials relationship', function (): void {
         it('returns morph many relationship', function (): void {
-            expect($this->item->serials())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphMany::class);
+            expect($this->item->serials())->toBeInstanceOf(MorphMany::class);
         });
 
         it('returns serials for the model', function (): void {

@@ -8,6 +8,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 describe('Collection Model', function (): void {
@@ -437,7 +438,7 @@ describe('Collection Model', function (): void {
             $collection->delete();
 
             // The pivot record should be removed
-            expect(Illuminate\Support\Facades\DB::table('collection_product')->where('collection_id', $collectionId)->count())->toBe(0);
+            expect(DB::table('collection_product')->where('collection_id', $collectionId)->count())->toBe(0);
         });
     });
 

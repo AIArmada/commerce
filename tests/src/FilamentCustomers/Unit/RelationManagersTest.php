@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers\AddressesRelationManager;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers\NotesRelationManager;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
@@ -26,7 +30,7 @@ if (! function_exists('filamentCustomers_makeSchemaLivewire')) {
                 return null;
             }
 
-            public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null
+            public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Component | Action | ActionGroup | null
             {
                 return null;
             }
@@ -50,7 +54,7 @@ it('builds relation manager schemas', function (): void {
     $livewire = filamentCustomers_makeSchemaLivewire();
 
     foreach ([AddressesRelationManager::class, NotesRelationManager::class] as $managerClass) {
-        /** @var \Filament\Resources\RelationManagers\RelationManager $manager */
+        /** @var RelationManager $manager */
         $manager = new $managerClass($livewire);
 
         $schema = $manager->form(Schema::make($livewire));

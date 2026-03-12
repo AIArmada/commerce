@@ -6,6 +6,8 @@ namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -40,12 +42,12 @@ final class TiersRelationManager extends RelationManager
                         Forms\Components\Select::make('tierable_type')
                             ->label('Apply To')
                             ->options([
-                                \AIArmada\Products\Models\Product::class => 'Product',
-                                \AIArmada\Products\Models\Variant::class => 'Variant',
+                                Product::class => 'Product',
+                                Variant::class => 'Variant',
                             ])
                             ->required()
                             ->live()
-                            ->default(\AIArmada\Products\Models\Product::class),
+                            ->default(Product::class),
 
                         Forms\Components\Select::make('tierable_id')
                             ->label('Product/Variant')
@@ -56,9 +58,9 @@ final class TiersRelationManager extends RelationManager
 
                                 $owner = $this->resolveOwner();
 
-                                if ($type === \AIArmada\Products\Models\Product::class) {
+                                if ($type === Product::class) {
                                     $query = OwnerQuery::applyToEloquentBuilder(
-                                        \AIArmada\Products\Models\Product::query(),
+                                        Product::query(),
                                         $owner,
                                         (bool) config('products.features.owner.include_global', false)
                                     );
@@ -70,8 +72,8 @@ final class TiersRelationManager extends RelationManager
                                         ->toArray();
                                 }
 
-                                if ($type === \AIArmada\Products\Models\Variant::class) {
-                                    return \AIArmada\Products\Models\Variant::query()
+                                if ($type === Variant::class) {
+                                    return Variant::query()
                                         ->with('product')
                                         ->whereHas('product', function ($query) use ($owner): void {
                                             OwnerQuery::applyToEloquentBuilder(
@@ -119,7 +121,7 @@ final class TiersRelationManager extends RelationManager
                                     return null;
                                 }
 
-                                if ($record instanceof \AIArmada\Products\Models\Variant) {
+                                if ($record instanceof Variant) {
                                     $record->loadMissing('product');
 
                                     return $record->product->name . ' - ' . $record->sku;
@@ -203,7 +205,7 @@ final class TiersRelationManager extends RelationManager
                     ->state(function ($record): string {
                         $record->loadMissing('tierable');
 
-                        if ($record->tierable_type === \AIArmada\Products\Models\Variant::class) {
+                        if ($record->tierable_type === Variant::class) {
                             $record->tierable?->loadMissing('product');
 
                             return ($record->tierable?->product?->name ?? 'Variant') . ' - ' . ($record->tierable?->sku ?? $record->tierable_id);

@@ -10,6 +10,7 @@ use AIArmada\Inventory\Models\InventorySerialHistory;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Reserved;
 use AIArmada\Inventory\States\SerialStatus;
+use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Serialized Product']);
@@ -192,7 +193,7 @@ describe('InventorySerialHistory', function (): void {
                 'occurred_at' => '2024-01-15 10:30:00',
             ]);
 
-            expect($history->occurred_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+            expect($history->occurred_at)->toBeInstanceOf(Carbon::class);
         });
 
         it('casts metadata to array', function (): void {

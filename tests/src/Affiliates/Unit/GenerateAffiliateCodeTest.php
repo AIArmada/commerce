@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Actions\Affiliates\GenerateAffiliateCode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 describe('GenerateAffiliateCode', function (): void {
     describe('handle', function (): void {
@@ -138,7 +139,7 @@ describe('GenerateAffiliateCode', function (): void {
         test('uses AsAction trait', function (): void {
             $traits = class_uses_recursive(GenerateAffiliateCode::class);
 
-            expect($traits)->toContain(Lorisleiva\Actions\Concerns\AsAction::class);
+            expect($traits)->toContain(AsAction::class);
         });
     });
 });

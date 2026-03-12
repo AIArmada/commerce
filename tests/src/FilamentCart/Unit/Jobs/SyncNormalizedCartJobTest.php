@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart;
+use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\FilamentCart\Jobs\SyncNormalizedCartJob;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentCart\Services\CartSyncManager;
@@ -45,8 +47,8 @@ describe('SyncNormalizedCartJob', function (): void {
     });
 
     it('syncs a resolved cart on handle', function (): void {
-        $storage = Mockery::mock(\AIArmada\Cart\Storage\StorageInterface::class);
-        $cart = new \AIArmada\Cart\Cart($storage, 'user-123');
+        $storage = Mockery::mock(StorageInterface::class);
+        $cart = new Cart($storage, 'user-123');
 
         $cartInstances = Mockery::mock(CartInstanceManager::class);
         $cartInstances
@@ -76,8 +78,8 @@ describe('SyncNormalizedCartJob', function (): void {
     });
 
     it('logs and rethrows when sync fails', function (): void {
-        $storage = Mockery::mock(\AIArmada\Cart\Storage\StorageInterface::class);
-        $cart = new \AIArmada\Cart\Cart($storage, 'user-999');
+        $storage = Mockery::mock(StorageInterface::class);
+        $cart = new Cart($storage, 'user-999');
 
         $cartInstances = Mockery::mock(CartInstanceManager::class);
         $cartInstances

@@ -6,6 +6,8 @@ namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -33,12 +35,12 @@ final class PricesRelationManager extends RelationManager
                 Forms\Components\Select::make('priceable_type')
                     ->label('Type')
                     ->options([
-                        \AIArmada\Products\Models\Product::class => 'Product',
-                        \AIArmada\Products\Models\Variant::class => 'Variant',
+                        Product::class => 'Product',
+                        Variant::class => 'Variant',
                     ])
                     ->required()
                     ->live()
-                    ->default(\AIArmada\Products\Models\Product::class),
+                    ->default(Product::class),
 
                 Forms\Components\Select::make('priceable_id')
                     ->label('Product/Variant')
@@ -49,9 +51,9 @@ final class PricesRelationManager extends RelationManager
 
                         $owner = $this->resolveOwner();
 
-                        if ($type === \AIArmada\Products\Models\Product::class) {
+                        if ($type === Product::class) {
                             $query = OwnerQuery::applyToEloquentBuilder(
-                                \AIArmada\Products\Models\Product::query(),
+                                Product::query(),
                                 $owner,
                                 (bool) config('products.features.owner.include_global', false)
                             );
@@ -63,8 +65,8 @@ final class PricesRelationManager extends RelationManager
                                 ->toArray();
                         }
 
-                        if ($type === \AIArmada\Products\Models\Variant::class) {
-                            return \AIArmada\Products\Models\Variant::query()
+                        if ($type === Variant::class) {
+                            return Variant::query()
                                 ->with('product')
                                 ->whereHas('product', function ($query) use ($owner): void {
                                     OwnerQuery::applyToEloquentBuilder(
@@ -114,7 +116,7 @@ final class PricesRelationManager extends RelationManager
                             return null;
                         }
 
-                        if ($record instanceof \AIArmada\Products\Models\Variant) {
+                        if ($record instanceof Variant) {
                             $record->loadMissing('product');
 
                             return $record->product->name . ' - ' . $record->sku;

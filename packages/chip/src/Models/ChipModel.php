@@ -124,7 +124,7 @@ abstract class ChipModel extends Model implements Auditable
 
     protected function resolveOwner(): ?Model
     {
-        return \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+        return OwnerContext::resolve();
     }
 
     protected function toTimestamp(?int $value): ?CarbonImmutable

@@ -11,6 +11,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Laravel\Cashier\Subscription;
+use Laravel\Cashier\SubscriptionItem;
 
 /**
  * Wrapper for Stripe subscription.
@@ -198,8 +199,8 @@ class StripeSubscription implements SubscriptionContract
     public function items(): Collection
     {
         $items = $this->subscription->items
-            ->filter(fn ($item) => $item instanceof \Laravel\Cashier\SubscriptionItem)
-            ->map(fn (\Laravel\Cashier\SubscriptionItem $item): SubscriptionItemContract => new StripeSubscriptionItem($item))
+            ->filter(fn ($item) => $item instanceof SubscriptionItem)
+            ->map(fn (SubscriptionItem $item): SubscriptionItemContract => new StripeSubscriptionItem($item))
             ->values();
 
         /** @var Collection<int, SubscriptionItemContract> $items */

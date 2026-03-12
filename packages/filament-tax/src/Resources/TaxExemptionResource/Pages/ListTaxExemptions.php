@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Pages;
 
 use AIArmada\FilamentTax\Resources\TaxExemptionResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListTaxExemptions extends ListRecords
@@ -14,7 +15,7 @@ class ListTaxExemptions extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

@@ -10,6 +10,7 @@ use AIArmada\FilamentChip\Resources\BankAccountResource\Schemas\BankAccountForm;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Schemas\BankAccountInfolist;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Tables\BankAccountTable;
 use BackedEnum;
+use Filament\Resources\Pages\PageRegistration;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -48,7 +49,7 @@ final class BankAccountResource extends BaseChipResource
     }
 
     /**
-     * @return array<string, \Filament\Resources\Pages\PageRegistration>
+     * @return array<string, PageRegistration>
      */
     public static function getPages(): array
     {

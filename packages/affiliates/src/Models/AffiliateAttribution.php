@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -40,12 +41,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Carbon\CarbonInterface|null $first_seen_at
- * @property \Carbon\CarbonInterface|null $last_seen_at
- * @property \Carbon\CarbonInterface|null $last_cookie_seen_at
- * @property \Carbon\CarbonInterface|null $expires_at
- * @property \Carbon\CarbonInterface|null $created_at
- * @property \Carbon\CarbonInterface|null $updated_at
+ * @property CarbonInterface|null $first_seen_at
+ * @property CarbonInterface|null $last_seen_at
+ * @property CarbonInterface|null $last_cookie_seen_at
+ * @property CarbonInterface|null $expires_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
  * @property-read Affiliate $affiliate
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliateTouchpoint> $touchpoints
@@ -226,7 +227,7 @@ class AffiliateAttribution extends Model
                 return;
             }
 
-            $owner = \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+            $owner = OwnerContext::resolve();
 
             if ($owner) {
                 $attribution->owner_type = $owner->getMorphClass();

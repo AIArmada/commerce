@@ -6,6 +6,8 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Pages\ViewAffiliateOfferApplication;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
@@ -243,8 +245,8 @@ final class AffiliateOfferApplicationResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Pages\ListAffiliateOfferApplications::route('/'),
-            'view' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Pages\ViewAffiliateOfferApplication::route('/{record}'),
+            'index' => ListAffiliateOfferApplications::route('/'),
+            'view' => ViewAffiliateOfferApplication::route('/{record}'),
         ];
     }
 

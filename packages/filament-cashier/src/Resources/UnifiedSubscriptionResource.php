@@ -23,6 +23,7 @@ use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Subscription;
 
@@ -44,7 +45,7 @@ final class UnifiedSubscriptionResource extends Resource
             return $userModel;
         }
 
-        return \Illuminate\Foundation\Auth\User::class;
+        return User::class;
     }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;

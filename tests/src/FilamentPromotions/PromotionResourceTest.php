@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
+use Illuminate\Database\Eloquent\Builder;
 
 describe('PromotionResource', function (): void {
     describe('model', function (): void {
@@ -56,7 +57,7 @@ describe('PromotionResource', function (): void {
         it('returns query builder', function (): void {
             $query = PromotionResource::getEloquentQuery();
 
-            expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+            expect($query)->toBeInstanceOf(Builder::class);
         });
     });
 
@@ -84,7 +85,7 @@ describe('PromotionResource', function (): void {
         });
 
         it('has tenant ownership relationship name', function (): void {
-            $reflection = new \ReflectionClass(PromotionResource::class);
+            $reflection = new ReflectionClass(PromotionResource::class);
             $property = $reflection->getProperty('tenantOwnershipRelationshipName');
             $property->setAccessible(true);
 

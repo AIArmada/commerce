@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Integrations;
 
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Tax\Contracts\TaxServiceInterface;
 
 final class TaxAdapter
 {
@@ -15,11 +16,11 @@ final class TaxAdapter
      */
     public function calculateTax(CheckoutSession $session): array
     {
-        if (! class_exists(\AIArmada\Tax\Contracts\TaxServiceInterface::class)) {
+        if (! class_exists(TaxServiceInterface::class)) {
             return $this->getDefaultTaxResult($session);
         }
 
-        $taxService = app(\AIArmada\Tax\Contracts\TaxServiceInterface::class);
+        $taxService = app(TaxServiceInterface::class);
 
         $shippingData = $session->shipping_data ?? [];
         $billingData = $session->billing_data ?? [];

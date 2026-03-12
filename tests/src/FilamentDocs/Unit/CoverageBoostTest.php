@@ -29,6 +29,9 @@ use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\ViewDocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Schemas\DocTemplateForm;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Schemas\DocTemplateInfolist;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Tables\DocTemplatesTable;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
@@ -61,7 +64,7 @@ if (! function_exists('filamentDocs_makeSchemaLivewire')) {
                 string $key,
                 bool $withHidden = false,
                 array $skipComponentsChildContainersWhileSearching = [],
-            ): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null {
+            ): Component | Action | ActionGroup | null {
                 return null;
             }
 
@@ -162,7 +165,7 @@ it('builds FilamentDocs resources, schemas, tables, relation managers, pages, an
     }
 
     // Actions
-    expect(RecordPaymentAction::make())->toBeInstanceOf(\Filament\Actions\Action::class);
-    expect(SendEmailAction::make())->toBeInstanceOf(\Filament\Actions\Action::class);
+    expect(RecordPaymentAction::make())->toBeInstanceOf(Action::class);
+    expect(SendEmailAction::make())->toBeInstanceOf(Action::class);
     expect(DocExporter::getColumns())->toBeArray();
 });

@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Models\ShippingRate;
 use AIArmada\Shipping\Models\ShippingZone;
 use AIArmada\Shipping\Services\ShippingZoneResolver;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 describe('ShippingZoneResolver', function (): void {
     beforeEach(function (): void {
@@ -303,7 +309,7 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        AIArmada\Shipping\Models\ShippingRate::create([
+        ShippingRate::create([
             'zone_id' => $zone->id,
             'carrier_code' => null, // Null carrier code matches all carriers
             'method_code' => 'standard',
@@ -313,7 +319,7 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        AIArmada\Shipping\Models\ShippingRate::create([
+        ShippingRate::create([
             'zone_id' => $zone->id,
             'carrier_code' => null, // Null carrier code matches all carriers
             'method_code' => 'express',
@@ -353,7 +359,7 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        AIArmada\Shipping\Models\ShippingRate::create([
+        ShippingRate::create([
             'zone_id' => $zone->id,
             'carrier_code' => 'fedex',
             'method_code' => 'standard',
@@ -363,7 +369,7 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        AIArmada\Shipping\Models\ShippingRate::create([
+        ShippingRate::create([
             'zone_id' => $zone->id,
             'carrier_code' => 'ups',
             'method_code' => 'standard',
@@ -436,17 +442,17 @@ describe('ShippingZoneResolver', function (): void {
         config()->set('shipping.features.owner.enabled', true);
         config()->set('shipping.features.owner.include_global', true);
 
-        $ownerA = new class extends \Illuminate\Database\Eloquent\Model
+        $ownerA = new class extends Model
         {
-            use \Illuminate\Database\Eloquent\Concerns\HasUuids;
+            use HasUuids;
 
             protected $table = 'test_shipping_owners';
 
             protected $fillable = ['name'];
         };
 
-        \Illuminate\Support\Facades\Schema::dropIfExists('test_shipping_owners');
-        \Illuminate\Support\Facades\Schema::create('test_shipping_owners', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        Schema::dropIfExists('test_shipping_owners');
+        Schema::create('test_shipping_owners', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->timestamps();
@@ -488,17 +494,17 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($ownerA) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
         {
-            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+            public function __construct(private readonly ?Model $owner) {}
 
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return $this->owner;
             }
         });
 
-        $address = new \AIArmada\Shipping\Data\AddressData(
+        $address = new AddressData(
             name: 'John Doe',
             phone: '123-456-7890',
             line1: '123 Main St',

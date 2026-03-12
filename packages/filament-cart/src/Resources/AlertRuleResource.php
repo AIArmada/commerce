@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources;
 
 use AIArmada\Cart\Models\AlertRule;
+use AIArmada\FilamentCart\Data\AlertEvent;
 use AIArmada\FilamentCart\Resources\AlertRuleResource\Pages;
+use AIArmada\FilamentCart\Services\AlertDispatcher;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\Repeater;
@@ -253,8 +255,8 @@ class AlertRuleResource extends Resource
                     ->modalDescription('This will send a test alert to all configured channels.')
                     ->action(function (AlertRule $record): void {
                         // Dispatch test alert
-                        $dispatcher = app(\AIArmada\FilamentCart\Services\AlertDispatcher::class);
-                        $event = \AIArmada\FilamentCart\Data\AlertEvent::custom(
+                        $dispatcher = app(AlertDispatcher::class);
+                        $event = AlertEvent::custom(
                             eventType: $record->event_type,
                             severity: 'info',
                             title: "[TEST] {$record->name}",

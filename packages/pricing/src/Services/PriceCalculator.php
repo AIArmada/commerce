@@ -11,8 +11,10 @@ use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Support\PricingOwnerScope;
+use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Throwable;
@@ -48,10 +50,10 @@ final class PriceCalculator implements PriceCalculatorInterface
     /**
      * @template TModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<TModel>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<TModel>
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
      */
-    protected function applyPriceListActiveAt(\Illuminate\Database\Eloquent\Builder $query, CarbonImmutable $at): \Illuminate\Database\Eloquent\Builder
+    protected function applyPriceListActiveAt(Builder $query, CarbonImmutable $at): Builder
     {
         return $query->where('is_active', true)
             ->where(function ($q) use ($at): void {
@@ -65,10 +67,10 @@ final class PriceCalculator implements PriceCalculatorInterface
     /**
      * @template TModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<TModel>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<TModel>
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
      */
-    protected function applyPriceActiveAt(\Illuminate\Database\Eloquent\Builder $query, CarbonImmutable $at): \Illuminate\Database\Eloquent\Builder
+    protected function applyPriceActiveAt(Builder $query, CarbonImmutable $at): Builder
     {
         return $query
             ->where(function ($q) use ($at): void {
@@ -82,10 +84,10 @@ final class PriceCalculator implements PriceCalculatorInterface
     /**
      * @template TModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<TModel>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<TModel>
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
      */
-    protected function applyPromotionActiveAt(\Illuminate\Database\Eloquent\Builder $query, CarbonImmutable $at): \Illuminate\Database\Eloquent\Builder
+    protected function applyPromotionActiveAt(Builder $query, CarbonImmutable $at): Builder
     {
         return $query->where('is_active', true)
             ->where(function ($q) use ($at): void {
@@ -314,7 +316,7 @@ final class PriceCalculator implements PriceCalculatorInterface
             return null;
         }
 
-        /** @var \AIArmada\Promotions\Models\Promotion $promotionModel */
+        /** @var Promotion $promotionModel */
         $promotionModel = new $promotionClass;
         $promotionTable = $promotionModel->getTable();
         $promotionablesTable = (string) config('promotions.database.tables.promotionables', 'promotionables');
