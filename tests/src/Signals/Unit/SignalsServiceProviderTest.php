@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Console\Commands\ProcessSignalAlertsCommand;
+use AIArmada\Signals\Listeners\RecordAffiliateAttributedSignal;
+use AIArmada\Signals\Listeners\RecordAffiliateConversionRecordedSignal;
 use AIArmada\Signals\Listeners\RecordCartClearedSignal;
 use AIArmada\Signals\Listeners\RecordCartItemAddedSignal;
 use AIArmada\Signals\Listeners\RecordCartItemRemovedSignal;
@@ -52,6 +54,8 @@ it('registers the dashboard and aggregator services as singletons', function ():
 it('registers optional checkout and order listeners', function (): void {
     Event::fake();
 
+    Event::assertListening('AIArmada\\Affiliates\\Events\\AffiliateAttributed', RecordAffiliateAttributedSignal::class);
+    Event::assertListening('AIArmada\\Affiliates\\Events\\AffiliateConversionRecorded', RecordAffiliateConversionRecordedSignal::class);
     Event::assertListening('AIArmada\\Cart\\Events\\ItemAdded', RecordCartItemAddedSignal::class);
     Event::assertListening('AIArmada\\Cart\\Events\\ItemRemoved', RecordCartItemRemovedSignal::class);
     Event::assertListening('AIArmada\\Cart\\Events\\CartCleared', RecordCartClearedSignal::class);

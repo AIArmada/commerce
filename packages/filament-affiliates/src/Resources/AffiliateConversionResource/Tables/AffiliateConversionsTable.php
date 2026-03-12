@@ -30,8 +30,8 @@ final class AffiliateConversionsTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('order_reference')
-                    ->label('Order / Ref')
+                TextColumn::make('external_reference')
+                    ->label('Reference')
                     ->icon(Heroicon::OutlinedReceiptPercent)
                     ->placeholder('—')
                     ->searchable(),

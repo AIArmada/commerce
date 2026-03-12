@@ -284,6 +284,7 @@ describe('PerformanceBonusService', function (): void {
                 'order_reference' => 'ORD-003',
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
+                'value_minor' => 7000,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
@@ -296,6 +297,7 @@ describe('PerformanceBonusService', function (): void {
                 'order_reference' => 'ORD-004',
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
+                'value_minor' => 11000,
                 'commission_minor' => 1000,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
@@ -344,6 +346,7 @@ describe('PerformanceBonusService', function (): void {
                 'order_reference' => 'ORD-005',
                 'subtotal_minor' => 8000,
                 'total_minor' => 10000,
+                'value_minor' => 13000,
                 'commission_minor' => 1000,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
@@ -362,9 +365,10 @@ describe('PerformanceBonusService', function (): void {
                 'total_commissions',
                 'avg_order_value',
             ]);
-            expect($entry['total_revenue'])->toBe(10000);
+            expect($entry['total_revenue'])->toBe(13000);
             expect($entry['total_conversions'])->toBe(1);
             expect($entry['total_commissions'])->toBe(1000);
+            expect($entry['avg_order_value'])->toBe(13000.0);
         });
 
         test('filters by date range', function (): void {
@@ -375,6 +379,7 @@ describe('PerformanceBonusService', function (): void {
                 'order_reference' => 'ORD-IN-RANGE',
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
+                'value_minor' => 8000,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
@@ -387,6 +392,7 @@ describe('PerformanceBonusService', function (): void {
                 'order_reference' => 'ORD-OUT-RANGE',
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
+                'value_minor' => 12000,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subMonths(2),
@@ -398,7 +404,7 @@ describe('PerformanceBonusService', function (): void {
             $result = $this->service->getLeaderboard($from, $to);
 
             expect($result)->toHaveCount(1);
-            expect($result->first()['total_revenue'])->toBe(5000); // Only in-range conversion
+            expect($result->first()['total_revenue'])->toBe(8000); // Only in-range conversion
         });
     });
 });

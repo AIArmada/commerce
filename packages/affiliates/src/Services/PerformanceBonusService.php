@@ -159,10 +159,10 @@ final class PerformanceBonusService
                 "{$affiliatesTable}.id as affiliate_id",
                 "{$affiliatesTable}.name as affiliate_name",
                 "{$affiliatesTable}.code as affiliate_code",
-                DB::raw("SUM({$conversionsTable}.total_minor) as total_revenue"),
+                DB::raw("SUM(COALESCE({$conversionsTable}.value_minor, {$conversionsTable}.total_minor, 0)) as total_revenue"),
                 DB::raw("COUNT({$conversionsTable}.id) as total_conversions"),
                 DB::raw("SUM({$conversionsTable}.commission_minor) as total_commissions"),
-                DB::raw("AVG({$conversionsTable}.total_minor) as avg_order_value"),
+                DB::raw("AVG(COALESCE({$conversionsTable}.value_minor, {$conversionsTable}.total_minor, 0)) as avg_order_value"),
             ])
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
@@ -404,12 +404,12 @@ final class PerformanceBonusService
             $currentRevenue = $affiliate->conversions()
                 ->whereBetween('occurred_at', [$from, $to])
                 ->where('status', ApprovedConversion::value())
-                ->sum('total_minor');
+                ->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
 
             $previousRevenue = $affiliate->conversions()
                 ->whereBetween('occurred_at', [$prevFrom, $prevTo])
                 ->where('status', ApprovedConversion::value())
-                ->sum('total_minor');
+                ->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
 
             // Must have minimum previous revenue to qualify
             if ($previousRevenue < ($config['min_previous_revenue'] ?? 50000)) {

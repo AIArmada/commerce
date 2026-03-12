@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -253,7 +254,9 @@ class AffiliateProgram extends Model
         }
 
         if (isset($rules['min_revenue'])) {
-            if ($affiliate->conversions()->sum('total_minor') < $rules['min_revenue']) {
+            $revenue = (int) $affiliate->conversions()->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
+
+            if ($revenue < $rules['min_revenue']) {
                 return false;
             }
         }

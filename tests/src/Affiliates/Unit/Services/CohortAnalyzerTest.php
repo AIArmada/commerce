@@ -62,6 +62,7 @@ test('analyzeMonthly returns correct cohort data', function (): void {
         'order_reference' => 'ORD1',
         'occurred_at' => '2024-01-20 10:00:00',
         'total_minor' => 10000, // $100.00
+        'value_minor' => 10000,
         'commission_minor' => 1000, // $10.00
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -75,6 +76,7 @@ test('analyzeMonthly returns correct cohort data', function (): void {
         'order_reference' => 'ORD2',
         'occurred_at' => '2024-02-20 10:00:00',
         'total_minor' => 5000, // $50.00
+        'value_minor' => 5000,
         'commission_minor' => 500, // $5.00
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -88,6 +90,7 @@ test('analyzeMonthly returns correct cohort data', function (): void {
         'order_reference' => 'ORD3',
         'occurred_at' => '2024-02-25 10:00:00',
         'total_minor' => 20000, // $200.00
+        'value_minor' => 20000,
         'commission_minor' => 2000, // $20.00
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -165,6 +168,7 @@ test('calculateRetentionCurve returns aggregated data', function (): void {
         'order_reference' => 'RET1',
         'occurred_at' => '2024-01-20', // Month 0 for Jan cohort
         'total_minor' => 10000,
+        'value_minor' => 10000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -177,6 +181,7 @@ test('calculateRetentionCurve returns aggregated data', function (): void {
         'order_reference' => 'RET2',
         'occurred_at' => '2024-02-20', // Month 0 for Feb cohort
         'total_minor' => 20000,
+        'value_minor' => 20000,
         'commission_minor' => 2000,
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -217,6 +222,7 @@ test('calculateLtv returns correct lifetime value metrics', function (): void {
         'order_reference' => 'LTV_O1',
         'occurred_at' => '2024-01-20',
         'total_minor' => 12000, // 120.00
+        'value_minor' => 12000,
         'commission_minor' => 1200,
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -229,6 +235,7 @@ test('calculateLtv returns correct lifetime value metrics', function (): void {
         'order_reference' => 'LTV_O2',
         'occurred_at' => '2024-02-20',
         'total_minor' => 12000, // 120.00
+        'value_minor' => 12000,
         'commission_minor' => 1200,
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -268,6 +275,7 @@ test('compareCohorts correctly identifies best and worst cohorts', function (): 
         'order_reference' => 'COMP_O1',
         'occurred_at' => '2024-01-15',
         'total_minor' => 100000,
+        'value_minor' => 125000,
         'commission_minor' => 10000,
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -290,6 +298,7 @@ test('compareCohorts correctly identifies best and worst cohorts', function (): 
         'order_reference' => 'COMP_O2',
         'occurred_at' => '2024-02-15',
         'total_minor' => 1000,
+        'value_minor' => 1000,
         'commission_minor' => 100,
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -345,6 +354,7 @@ test('analyzeBySource groups by metadata source', function (): void {
         'order_reference' => 'SRC_O1',
         'occurred_at' => '2024-01-15',
         'total_minor' => 5000,
+        'value_minor' => 8000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -362,6 +372,41 @@ test('analyzeBySource groups by metadata source', function (): void {
     expect($results)->toHaveKey('google_ads')
         ->and($results)->toHaveKey('direct');
 
-    expect($results['google_ads']['total_revenue'])->toBe(5000)
+    expect($results['google_ads']['total_revenue'])->toBe(8000)
         ->and($results['direct']['total_affiliates'])->toBe(1);
+});
+
+test('analyzeMonthly prefers neutral revenue value over legacy total', function (): void {
+    $affiliate = Affiliate::create([
+        'code' => 'MONTH-NEUTRAL',
+        'name' => 'Monthly Neutral Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+        'created_at' => '2024-01-01',
+    ]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'order_reference' => 'MONTH-NEUTRAL-001',
+        'occurred_at' => '2024-01-20',
+        'total_minor' => 4000,
+        'value_minor' => 9000,
+        'commission_minor' => 400,
+        'commission_currency' => 'USD',
+        'status' => 'approved',
+
+    ]);
+
+    $results = $this->analyzer->analyzeMonthly(
+        Carbon::parse('2024-01-01'),
+        Carbon::parse('2024-01-31'),
+        1
+    );
+
+    expect($results['2024-01']['total_revenue'])->toBe(9000)
+        ->and($results['2024-01']['avg_revenue_per_affiliate'])->toBe(9000.0)
+        ->and($results['2024-01']['monthly_breakdown'][0]['revenue'])->toBe(9000);
 });

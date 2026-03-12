@@ -19,17 +19,30 @@ final class AffiliateConversionForm
             Section::make('Reference')
                 ->schema([
                     Grid::make(3)->schema([
-                        TextInput::make('order_reference')
-                            ->label('Order Reference')
+                        TextInput::make('external_reference')
+                            ->label('Reference')
                             ->readOnly(),
+                        TextInput::make('subject_identifier')
+                            ->label('Subject Identifier')
+                            ->readOnly(),
+                        TextInput::make('subject_instance')
+                            ->label('Subject Instance')
+                            ->readOnly(),
+                    ]),
+                ]),
+
+            Section::make('Cart Integration')
+                ->schema([
+                    Grid::make(2)->schema([
                         TextInput::make('cart_identifier')
                             ->label('Cart Identifier')
                             ->readOnly(),
                         TextInput::make('cart_instance')
-                            ->label('Instance')
+                            ->label('Cart Instance')
                             ->readOnly(),
                     ]),
-                ]),
+                ])
+                ->collapsed(),
 
             Section::make('Amounts')
                 ->schema([

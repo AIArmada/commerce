@@ -252,6 +252,32 @@ describe('AffiliateConversion Model', function (): void {
         expect($conversion->cart_instance)->toBe('shopping');
     });
 
+    test('keeps neutral subject and reference aliases in sync', function (): void {
+        $conversion = AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'subject_identifier' => 'event:123',
+            'subject_instance' => 'share',
+            'external_reference' => 'REG-123',
+            'conversion_type' => 'registration',
+            'value_minor' => 4200,
+            'commission_minor' => 420,
+            'commission_currency' => 'USD',
+            'status' => ApprovedConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        expect($conversion->subject_identifier)->toBe('event:123')
+            ->and($conversion->cart_identifier)->toBe('event:123')
+            ->and($conversion->subject_instance)->toBe('share')
+            ->and($conversion->cart_instance)->toBe('share')
+            ->and($conversion->external_reference)->toBe('REG-123')
+            ->and($conversion->order_reference)->toBe('REG-123')
+            ->and($conversion->conversion_type)->toBe('registration')
+            ->and($conversion->value_minor)->toBe(4200)
+            ->and($conversion->total_minor)->toBe(4200);
+    });
+
     test('can store voucher code', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,

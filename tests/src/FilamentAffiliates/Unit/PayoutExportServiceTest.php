@@ -43,8 +43,8 @@ function createPayoutWithConversions(): AffiliatePayout
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
         'affiliate_payout_id' => $payout->getKey(),
-        'order_reference' => 'ORD-001',
-        'total_minor' => 10000,
+        'external_reference' => 'REF-001',
+        'value_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => ApprovedConversion::class,
@@ -56,7 +56,7 @@ function createPayoutWithConversions(): AffiliatePayout
         'affiliate_code' => $affiliate->code,
         'affiliate_payout_id' => $payout->getKey(),
         'order_reference' => 'ORD-002',
-        'total_minor' => 20000,
+        'value_minor' => 20000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
         'status' => PaidConversion::class,
@@ -81,7 +81,10 @@ it('downloads payout as CSV', function (): void {
     $content = (string) ob_get_clean();
 
     expect($content)->toContain('Affiliate Code')
-        ->and($content)->toContain('ORD-001');
+        ->and($content)->toContain('Reference')
+        ->and($content)->not->toContain('Order Reference')
+        ->and($content)->toContain('REF-001')
+        ->and($content)->toContain('ORD-002');
 });
 
 it('download method returns CSV format (backward compatibility)', function (): void {
@@ -128,7 +131,8 @@ it('builds PDF HTML for a payout (without invoking external PDF generators)', fu
     $html = $buildPdfHtml->invoke($service, $payout, $data);
 
     expect($html)->toContain('Affiliate Payout Report')
-        ->and($html)->toContain('ORD-001');
+        ->and($html)->toContain('Reference')
+        ->and($html)->toContain('REF-001');
 });
 
 it('formats payout status safely for both enum and string statuses', function (): void {

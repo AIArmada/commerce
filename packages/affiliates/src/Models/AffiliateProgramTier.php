@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -70,21 +71,15 @@ class AffiliateProgramTier extends Model
 
     public function meetsUpgradeRequirements(Affiliate $affiliate, AffiliateProgram $program): bool
     {
-        $conversions = $affiliate->conversions()
-            ->whereHas('attribution', function ($q) use ($program): void {
-                $q->where('program_id', $program->id);
-            })
+        $conversions = $this->programConversions($affiliate, $program)
             ->count();
 
         if ($conversions < $this->min_conversions) {
             return false;
         }
 
-        $revenue = $affiliate->conversions()
-            ->whereHas('attribution', function ($q) use ($program): void {
-                $q->where('program_id', $program->id);
-            })
-            ->sum('total_minor');
+        $revenue = (int) $this->programConversions($affiliate, $program)
+            ->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
 
         if ($revenue < $this->min_revenue) {
             return false;
@@ -96,6 +91,20 @@ class AffiliateProgramTier extends Model
     public function getCommissionRatePercentage(): float
     {
         return $this->commission_rate_basis_points / 100;
+    }
+
+    /**
+     * @return HasMany<AffiliateConversion, Affiliate>
+     */
+    private function programConversions(Affiliate $affiliate, AffiliateProgram $program): HasMany
+    {
+        return $affiliate->conversions()
+            ->where(function ($query) use ($program): void {
+                $query->where('metadata->program_id', $program->id)
+                    ->orWhereHas('attribution', function ($attributionQuery) use ($program): void {
+                        $attributionQuery->where('metadata->program_id', $program->id);
+                    });
+            });
     }
 
     protected static function booted(): void

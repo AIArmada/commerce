@@ -10,6 +10,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use InvalidArgumentException;
 
+/**
+ * Optional orders integration for affiliates.
+ *
+ * The affiliates core model is reference-neutral. This listener adapts an
+ * orders event into the compatibility payload expected by recordConversion().
+ */
 final readonly class RecordCommissionForOrder
 {
     public function __construct(

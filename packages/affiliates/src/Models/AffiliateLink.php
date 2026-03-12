@@ -24,6 +24,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $sub_id
  * @property string|null $sub_id_2
  * @property string|null $sub_id_3
+ * @property string|null $subject_type
+ * @property string|null $subject_identifier
+ * @property string|null $subject_instance
+ * @property string|null $subject_title_snapshot
+ * @property array<string, mixed>|null $subject_metadata
  * @property int $clicks
  * @property int $conversions
  * @property bool $is_active
@@ -48,12 +53,18 @@ class AffiliateLink extends Model
         'sub_id',
         'sub_id_2',
         'sub_id_3',
+        'subject_type',
+        'subject_identifier',
+        'subject_instance',
+        'subject_title_snapshot',
+        'subject_metadata',
         'clicks',
         'conversions',
         'is_active',
     ];
 
     protected $casts = [
+        'subject_metadata' => 'array',
         'clicks' => 'integer',
         'conversions' => 'integer',
         'is_active' => 'boolean',

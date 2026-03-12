@@ -124,7 +124,7 @@ final class PayoutExportService
     {
         return [
             'Affiliate Code',
-            'Order Reference',
+            'Reference',
             'Commission Amount',
             'Currency',
             'Status',
@@ -141,7 +141,7 @@ final class PayoutExportService
     {
         return [
             (string) $conversion->affiliate_code,
-            (string) $conversion->order_reference,
+            (string) $conversion->external_reference,
             number_format((int) $conversion->commission_minor / 100, 2),
             (string) $conversion->commission_currency,
             $conversion->status->value ?? (string) $conversion->status,

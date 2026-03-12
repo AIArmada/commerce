@@ -60,12 +60,12 @@ class PortalConversions extends Page implements HasTable
                     ->dateTime()
                     ->sortable(),
 
-                TextColumn::make('order_reference')
-                    ->label(__('Order Reference'))
+                TextColumn::make('external_reference')
+                    ->label(__('Reference'))
                     ->searchable(),
 
-                TextColumn::make('total_minor')
-                    ->label(__('Order Total'))
+                TextColumn::make('value_minor')
+                    ->label(__('Total'))
                     ->formatStateUsing(fn ($state) => $this->formatAmount((int) $state))
                     ->sortable(),
 
