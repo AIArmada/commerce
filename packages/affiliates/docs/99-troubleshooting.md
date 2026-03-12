@@ -95,8 +95,10 @@ $affiliate->commission_type; // 'percentage' or 'fixed_amount'
 
 2. **Order total is provided:**
 ```php
-$service->recordConversion($affiliate, [
-    'total_minor' => 15000, // Required for percentage commissions
+$service->recordConversion($cart, [
+    'external_reference' => 'ORD-123',
+    'value_minor' => 15000, // Required for percentage commissions
+    'total_minor' => 15000, // compatibility alias
 ]);
 ```
 
