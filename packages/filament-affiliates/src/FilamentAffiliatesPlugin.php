@@ -44,30 +44,108 @@ final class FilamentAffiliatesPlugin implements Plugin
     public function register(Panel $panel): void
     {
         $panel
-            ->resources([
-                AffiliateResource::class,
-                AffiliateConversionResource::class,
-                AffiliatePayoutResource::class,
-                AffiliateProgramResource::class,
-                AffiliateFraudSignalResource::class,
-            ])
-            ->pages([
-                FraudReviewPage::class,
-                PayoutBatchPage::class,
-                ReportsPage::class,
-            ])
-            ->widgets([
-                AffiliateStatsWidget::class,
-                PerformanceOverviewWidget::class,
-                RealTimeActivityWidget::class,
-                FraudAlertWidget::class,
-                PayoutQueueWidget::class,
-                NetworkVisualizationWidget::class,
-            ]);
+            ->resources($this->getResources())
+            ->pages($this->getPages())
+            ->widgets($this->getWidgets());
     }
 
     public function boot(Panel $panel): void
     {
         //
+    }
+
+    /**
+     * @return array<class-string>
+     */
+    private function getResources(): array
+    {
+        $features = $this->getAdminFeatures();
+        $resources = [AffiliateResource::class];
+
+        if ($features['conversions']) {
+            $resources[] = AffiliateConversionResource::class;
+        }
+
+        if ($features['payouts']) {
+            $resources[] = AffiliatePayoutResource::class;
+        }
+
+        if ($features['programs']) {
+            $resources[] = AffiliateProgramResource::class;
+        }
+
+        if ($features['fraud_monitoring']) {
+            $resources[] = AffiliateFraudSignalResource::class;
+        }
+
+        return $resources;
+    }
+
+    /**
+     * @return array<class-string>
+     */
+    private function getPages(): array
+    {
+        $features = $this->getAdminFeatures();
+        $pages = [];
+
+        if ($features['fraud_monitoring']) {
+            $pages[] = FraudReviewPage::class;
+        }
+
+        if ($features['payouts']) {
+            $pages[] = PayoutBatchPage::class;
+        }
+
+        if ($features['reports']) {
+            $pages[] = ReportsPage::class;
+        }
+
+        return $pages;
+    }
+
+    /**
+     * @return array<class-string>
+     */
+    private function getWidgets(): array
+    {
+        $features = $this->getAdminFeatures();
+        $widgets = [
+            AffiliateStatsWidget::class,
+            PerformanceOverviewWidget::class,
+            RealTimeActivityWidget::class,
+        ];
+
+        if ($features['fraud_monitoring']) {
+            $widgets[] = FraudAlertWidget::class;
+        }
+
+        if ($features['payouts']) {
+            $widgets[] = PayoutQueueWidget::class;
+        }
+
+        if ($features['network_visualization']) {
+            $widgets[] = NetworkVisualizationWidget::class;
+        }
+
+        return $widgets;
+    }
+
+    /**
+     * @return array{conversions: bool, payouts: bool, programs: bool, fraud_monitoring: bool, reports: bool, network_visualization: bool}
+     */
+    private function getAdminFeatures(): array
+    {
+        $configured = config('filament-affiliates.features.admin', []);
+        $commissionTrackingEnabled = (bool) config('affiliates.features.commission_tracking.enabled', true);
+
+        return [
+            'conversions' => (bool) ($configured['conversions'] ?? true),
+            'payouts' => $commissionTrackingEnabled && (bool) ($configured['payouts'] ?? true),
+            'programs' => $commissionTrackingEnabled && (bool) ($configured['programs'] ?? true),
+            'fraud_monitoring' => (bool) ($configured['fraud_monitoring'] ?? true),
+            'reports' => (bool) ($configured['reports'] ?? true),
+            'network_visualization' => (bool) ($configured['network_visualization'] ?? true),
+        ];
     }
 }

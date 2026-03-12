@@ -105,6 +105,7 @@ describe('RankQualificationService', function (): void {
                 'order_reference' => 'SALES-001',
                 'subtotal_minor' => 6000,
                 'total_minor' => 6000,
+                'value_minor' => 7500,
                 'commission_minor' => 600,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
@@ -364,6 +365,7 @@ describe('RankQualificationService', function (): void {
                 'order_reference' => 'METRIC-001',
                 'subtotal_minor' => 5000,
                 'total_minor' => 5500,
+                'value_minor' => 7000,
                 'commission_minor' => 550,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
@@ -375,6 +377,7 @@ describe('RankQualificationService', function (): void {
                 'order_reference' => 'METRIC-002',
                 'subtotal_minor' => 3000,
                 'total_minor' => 3300,
+                'value_minor' => 4000,
                 'commission_minor' => 330,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(10),
@@ -382,7 +385,8 @@ describe('RankQualificationService', function (): void {
 
             $metrics = $this->service->calculateMetrics($this->affiliate);
 
-            expect($metrics['personal_sales'])->toBe(8800);
+            expect($metrics['personal_sales'])->toBe(11000)
+                ->and($metrics['lifetime_value'])->toBe(11000);
         });
 
         test('respects date range for personal sales', function (): void {
@@ -393,6 +397,7 @@ describe('RankQualificationService', function (): void {
                 'order_reference' => 'RECENT',
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
+                'value_minor' => 7000,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
@@ -405,6 +410,7 @@ describe('RankQualificationService', function (): void {
                 'order_reference' => 'OLD',
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
+                'value_minor' => 13000,
                 'commission_minor' => 1000,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(45),
@@ -412,8 +418,8 @@ describe('RankQualificationService', function (): void {
 
             $metrics = $this->service->calculateMetrics($this->affiliate);
 
-            expect($metrics['personal_sales'])->toBe(5000);
-            expect($metrics['lifetime_value'])->toBe(15000); // All time
+            expect($metrics['personal_sales'])->toBe(7000);
+            expect($metrics['lifetime_value'])->toBe(20000); // All time
         });
 
         test('caches metrics for same affiliate and date', function (): void {
@@ -445,6 +451,7 @@ describe('RankQualificationService', function (): void {
                 'order_reference' => 'CUSTOM',
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
+                'value_minor' => 8500,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(60),
@@ -453,7 +460,7 @@ describe('RankQualificationService', function (): void {
             // With 90 day lookback
             $metrics = $this->service->calculateMetrics($this->affiliate, Carbon::now()->subDays(90));
 
-            expect($metrics['personal_sales'])->toBe(5000);
+            expect($metrics['personal_sales'])->toBe(8500);
         });
     });
 
@@ -472,7 +479,9 @@ describe('RankQualificationService', function (): void {
                 'order_reference' => 'NEW-CACHE',
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
+                'value_minor' => 7000,
                 'commission_minor' => 500,
+                'commission_currency' => 'USD',
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
             ]);
@@ -480,7 +489,8 @@ describe('RankQualificationService', function (): void {
             // Second call should recalculate
             $metrics2 = $this->service->calculateMetrics($this->affiliate);
 
-            expect($metrics2['personal_sales'])->toBeGreaterThan($metrics1['personal_sales']);
+            expect($metrics1['personal_sales'])->toBe(0)
+                ->and($metrics2['personal_sales'])->toBe(7000);
         });
     });
 });

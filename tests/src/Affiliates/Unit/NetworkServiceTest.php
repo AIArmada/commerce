@@ -295,13 +295,14 @@ describe('NetworkService', function (): void {
                 'order_reference' => 'TEAM-SALE-001',
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
+                'value_minor' => 6500,
                 'commission_minor' => 500,
                 'status' => ApprovedConversion::class,
             ]);
 
             $teamSales = $this->service->getTeamSales($this->rootAffiliate);
 
-            expect($teamSales)->toBe(5000);
+            expect($teamSales)->toBe(6500);
         });
 
         test('returns zero when no downline', function (): void {
@@ -344,6 +345,7 @@ describe('NetworkService', function (): void {
                 'order_reference' => 'IN-RANGE',
                 'subtotal_minor' => 3000,
                 'total_minor' => 3000,
+                'value_minor' => 4500,
                 'commission_minor' => 300,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
@@ -356,6 +358,7 @@ describe('NetworkService', function (): void {
                 'order_reference' => 'OUT-RANGE',
                 'subtotal_minor' => 2000,
                 'total_minor' => 2000,
+                'value_minor' => 9000,
                 'commission_minor' => 200,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subMonths(2),
@@ -366,7 +369,7 @@ describe('NetworkService', function (): void {
 
             $teamSales = $this->service->getTeamSales($this->rootAffiliate, $from, $to);
 
-            expect($teamSales)->toBe(3000);
+            expect($teamSales)->toBe(4500);
         });
     });
 

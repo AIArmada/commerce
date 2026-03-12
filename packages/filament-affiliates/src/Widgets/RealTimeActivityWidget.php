@@ -49,12 +49,12 @@ final class RealTimeActivityWidget extends BaseWidget
                     ->label('Affiliate')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('order_id')
-                    ->label('Order')
+                Tables\Columns\TextColumn::make('external_reference')
+                    ->label('Reference')
                     ->limit(15),
 
-                Tables\Columns\TextColumn::make('total_minor')
-                    ->label('Amount')
+                Tables\Columns\TextColumn::make('value_minor')
+                    ->label('Value')
                     ->money(fn ($record) => $record->currency, divideBy: 100)
                     ->sortable(),
 

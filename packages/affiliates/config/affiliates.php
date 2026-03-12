@@ -64,6 +64,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Features / Behavior
+    |--------------------------------------------------------------------------
+    */
+
+    'features' => [
+        'cart_integration' => [
+            'enabled' => env('AFFILIATES_FEATURE_CART_INTEGRATION', true),
+        ],
+        'voucher_integration' => [
+            'enabled' => env('AFFILIATES_FEATURE_VOUCHER_INTEGRATION', true),
+        ],
+        'commission_tracking' => [
+            'enabled' => env('AFFILIATES_FEATURE_COMMISSION_TRACKING', true),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Ownership (Multi-Tenancy)
     |--------------------------------------------------------------------------
     |

@@ -5,10 +5,10 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ beforeEach(function (): void {
     OwnerContext::clearOverride();
 
     $this->affiliate = Affiliate::create([
-        'code' => 'API-TEST-' . uniqid(),
+        'code' => 'API-TEST-'.uniqid(),
         'name' => 'API Test Affiliate',
         'contact_email' => 'api@example.com',
         'status' => Active::class,
@@ -33,12 +33,10 @@ describe('AffiliateApiController', function (): void {
     test('can be instantiated', function (): void {
         $affiliateService = app(AffiliateService::class);
         $reportService = app(AffiliateReportService::class);
-        $linkGenerator = app(AffiliateLinkGenerator::class);
 
         $controller = new AffiliateApiController(
             $affiliateService,
             $reportService,
-            $linkGenerator
         );
 
         expect($controller)->toBeInstanceOf(AffiliateApiController::class);
@@ -80,7 +78,7 @@ describe('AffiliateApiController', function (): void {
             ]);
 
             $affiliateA = Affiliate::create([
-                'code' => 'API-OWNER-A-' . uniqid(),
+                'code' => 'API-OWNER-A-'.uniqid(),
                 'name' => 'Affiliate A',
                 'contact_email' => 'a@example.com',
                 'status' => Active::class,
@@ -113,7 +111,7 @@ describe('AffiliateApiController', function (): void {
 
     describe('links', function (): void {
         test('generates affiliate link', function (): void {
-            $request = Request::create('/api/affiliates/links', 'GET', [
+            $request = Request::create('/api/affiliates/links', 'POST', [
                 'url' => 'https://example.com/products',
             ]);
 
@@ -124,10 +122,37 @@ describe('AffiliateApiController', function (): void {
             $data = json_decode($response->getContent(), true);
             expect($data)->toHaveKey('link');
             expect($data['link'])->toContain($this->affiliate->code);
+            expect(AffiliateLink::query()->count())->toBe(1);
+        });
+
+        test('persists canonical subject fields on generated links', function (): void {
+            $request = Request::create('/api/affiliates/links', 'POST', [
+                'url' => 'https://example.com/products',
+                'subject_type' => 'product',
+                'subject_identifier' => 'product:sku-123',
+                'subject_instance' => 'web',
+                'subject_title_snapshot' => 'SKU 123',
+                'subject_metadata' => [
+                    'subject_id' => 'sku-123',
+                    'category' => 'featured',
+                ],
+            ]);
+
+            $response = $this->controller->links($this->affiliate->code, $request);
+
+            expect($response->getStatusCode())->toBe(200);
+
+            $link = AffiliateLink::query()->sole();
+
+            expect($link->subject_type)->toBe('product')
+                ->and($link->subject_identifier)->toBe('product:sku-123')
+                ->and($link->subject_instance)->toBe('web')
+                ->and($link->subject_title_snapshot)->toBe('SKU 123')
+                ->and(data_get($link->subject_metadata, 'subject_id'))->toBe('sku-123');
         });
 
         test('generates link with default URL', function (): void {
-            $request = Request::create('/api/affiliates/links', 'GET');
+            $request = Request::create('/api/affiliates/links', 'POST');
 
             $response = $this->controller->links($this->affiliate->code, $request);
 
@@ -138,7 +163,7 @@ describe('AffiliateApiController', function (): void {
         });
 
         test('generates link with custom params', function (): void {
-            $request = Request::create('/api/affiliates/links', 'GET', [
+            $request = Request::create('/api/affiliates/links', 'POST', [
                 'url' => 'https://example.com/products',
                 'params' => ['campaign' => 'summer'],
             ]);
@@ -152,7 +177,7 @@ describe('AffiliateApiController', function (): void {
         });
 
         test('returns 404 for unknown affiliate code', function (): void {
-            $request = Request::create('/api/affiliates/links', 'GET');
+            $request = Request::create('/api/affiliates/links', 'POST');
 
             $response = $this->controller->links('NONEXISTENT-CODE', $request);
 
@@ -163,7 +188,7 @@ describe('AffiliateApiController', function (): void {
         });
 
         test('generates link with TTL', function (): void {
-            $request = Request::create('/api/affiliates/links', 'GET', [
+            $request = Request::create('/api/affiliates/links', 'POST', [
                 'url' => 'https://example.com/products',
                 'ttl' => 86400,
             ]);
@@ -182,7 +207,7 @@ describe('AffiliateApiController', function (): void {
 
             OwnerContext::override(null);
 
-            $request = Request::create('/api/affiliates/links', 'GET');
+            $request = Request::create('/api/affiliates/links', 'POST');
 
             $response = $this->controller->links($this->affiliate->code, $request);
 
@@ -256,5 +281,13 @@ describe('AffiliateApiController class structure', function (): void {
         expect($reflection->hasMethod('summary'))->toBeTrue();
         expect($reflection->hasMethod('links'))->toBeTrue();
         expect($reflection->hasMethod('creatives'))->toBeTrue();
+    });
+
+    test('registers link creation as a post route', function (): void {
+        $source = file_get_contents('/Users/saiffil/Herd/commerce/packages/affiliates/routes/api.php');
+
+        expect($source)
+            ->toContain("Route::post('{code}/links'")
+            ->not->toContain("Route::get('{code}/links'");
     });
 });

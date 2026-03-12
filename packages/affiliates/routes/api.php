@@ -15,7 +15,7 @@ Route::prefix(config('affiliates.api.prefix', 'api/affiliates'))
     ->group(function (): void {
         Route::middleware(EnsureApiAuthorized::class)->group(function (): void {
             Route::get('{code}/summary', [AffiliateApiController::class, 'summary']);
-            Route::get('{code}/links', [AffiliateApiController::class, 'links']);
+            Route::post('{code}/links', [AffiliateApiController::class, 'links']);
             Route::get('{code}/creatives', [AffiliateApiController::class, 'creatives']);
         });
     });

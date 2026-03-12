@@ -13,6 +13,19 @@ return [
         'currency' => env('AFFILIATES_DEFAULT_CURRENCY', 'USD'),
     ],
 
+    /* Features */
+
+    'features' => [
+        'admin' => [
+            'conversions' => true,
+            'payouts' => true,
+            'programs' => true,
+            'fraud_monitoring' => true,
+            'reports' => true,
+            'network_visualization' => true,
+        ],
+    ],
+
     /* Portal */
 
     'portal' => [

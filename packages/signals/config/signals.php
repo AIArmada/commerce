@@ -93,6 +93,15 @@ return [
             'removed_event_name' => 'voucher.removed',
             'event_category' => 'promotion',
         ],
+        'affiliates' => [
+            'enabled' => true,
+            'listen_for_attributed' => true,
+            'listen_for_conversion_recorded' => true,
+            'attributed_event_name' => 'affiliate.attributed',
+            'attributed_event_category' => 'acquisition',
+            'conversion_event_name' => 'affiliate.conversion.recorded',
+            'conversion_event_category' => 'conversion',
+        ],
     ],
 
     /* HTTP */

@@ -13,10 +13,12 @@ use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -36,7 +38,8 @@ final class AffiliateService
         private readonly CommissionCalculator $commissionCalculator,
         private readonly Dispatcher $events,
         private readonly WebhookDispatcher $webhooks,
-        private readonly AttributionModel $attributionModel
+        private readonly AttributionModel $attributionModel,
+        private readonly AffiliateLinkGenerator $linkGenerator,
     ) {}
 
     /**
@@ -106,6 +109,54 @@ final class AffiliateService
                 fn ($q) => $q->whereRaw('LOWER(default_voucher_code) = ?', [mb_strtolower($normalized)])
             )
             ->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function createTrackingLink(Affiliate $affiliate, string $destinationUrl, array $attributes = []): AffiliateLink
+    {
+        if (! $affiliate->isActive()) {
+            throw new AffiliateNotFoundException("Affiliate {$affiliate->code} is not active.");
+        }
+
+        $params = Arr::get($attributes, 'params', []);
+
+        if (! is_array($params)) {
+            $params = [];
+        }
+
+        $subjectMetadata = Arr::get($attributes, 'subject_metadata');
+
+        if (! is_array($subjectMetadata)) {
+            $subjectMetadata = null;
+        }
+
+        $trackingUrl = $this->linkGenerator->generate(
+            affiliateCode: $affiliate->code,
+            url: $destinationUrl,
+            params: $params,
+            ttlSeconds: is_int(Arr::get($attributes, 'ttl_seconds')) ? Arr::get($attributes, 'ttl_seconds') : null,
+        );
+
+        return AffiliateLink::query()->create([
+            'affiliate_id' => $affiliate->getKey(),
+            'program_id' => Arr::get($attributes, 'program_id'),
+            'destination_url' => $destinationUrl,
+            'tracking_url' => $trackingUrl,
+            'short_url' => Arr::get($attributes, 'short_url'),
+            'custom_slug' => Arr::get($attributes, 'custom_slug'),
+            'campaign' => Arr::get($attributes, 'campaign'),
+            'sub_id' => Arr::get($attributes, 'sub_id'),
+            'sub_id_2' => Arr::get($attributes, 'sub_id_2'),
+            'sub_id_3' => Arr::get($attributes, 'sub_id_3'),
+            'subject_type' => Arr::get($attributes, 'subject_type'),
+            'subject_identifier' => Arr::get($attributes, 'subject_identifier'),
+            'subject_instance' => Arr::get($attributes, 'subject_instance'),
+            'subject_title_snapshot' => Str::limit((string) Arr::get($attributes, 'subject_title_snapshot', ''), 200, ''),
+            'subject_metadata' => $subjectMetadata,
+            'is_active' => (bool) Arr::get($attributes, 'is_active', true),
+        ]);
     }
 
     public function attachToCartByCode(string $code, Cart $cart, array $context = []): ?AffiliateAttributionData
@@ -343,17 +394,29 @@ final class AffiliateService
                 'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
                 'affiliate_code' => $beneficiary?->code ?? $affiliate->code,
                 'affiliate_attribution_id' => $attribution?->getKey(),
+                'subject_type' => $payload['subject_type'] ?? $attribution?->subject_type ?? ($metadata['subject_type'] ?? null),
+                'subject_identifier' => $attribution?->subject_identifier ?? $cart->getIdentifier(),
+                'subject_instance' => $attribution?->subject_instance ?? $cart->instance(),
+                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
                 'cart_identifier' => $cart->getIdentifier(),
                 'cart_instance' => $cart->instance(),
                 'voucher_code' => $metadata['voucher_code'] ?? null,
+                'external_reference' => $payload['external_reference'] ?? $payload['order_reference'] ?? null,
                 'order_reference' => $payload['order_reference'] ?? null,
+                'conversion_type' => $payload['conversion_type'] ?? 'purchase',
                 'subtotal_minor' => $subtotalMinor ?? 0,
+                'value_minor' => $portionRevenue,
                 'total_minor' => $portionRevenue,
                 'commission_minor' => $portionCommission,
                 'commission_currency' => $payload['commission_currency'] ?? $affiliate->currency,
                 'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
                 'channel' => $payload['channel'] ?? null,
-                'metadata' => array_merge($payload['metadata'] ?? [], ['weight' => $weight]),
+                'metadata' => $this->buildConversionMetadata(
+                    $payload['metadata'] ?? [],
+                    $weight,
+                    $payload['subject_type'] ?? $attribution?->subject_type ?? ($metadata['subject_type'] ?? null),
+                    $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
+                ),
                 'owner_type' => $beneficiary?->owner_type ?? $affiliate->owner_type,
                 'owner_id' => $beneficiary?->owner_id ?? $affiliate->owner_id,
                 'occurred_at' => $payload['occurred_at'] ?? now(),
@@ -389,6 +452,10 @@ final class AffiliateService
             'affiliate_attribution_id' => $attribution->getKey(),
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
+            'subject_type' => $payload['subject_type'] ?? $attribution->subject_type,
+            'subject_identifier' => $payload['subject_identifier'] ?? $attribution->subject_identifier,
+            'subject_instance' => $payload['subject_instance'] ?? $attribution->subject_instance,
+            'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution->subject_title_snapshot,
             'source' => $payload['source'] ?? null,
             'medium' => $payload['medium'] ?? null,
             'campaign' => $payload['campaign'] ?? null,
@@ -397,6 +464,10 @@ final class AffiliateService
             'owner_type' => $attribution->owner_type ?? $affiliate->owner_type,
             'owner_id' => $attribution->owner_id ?? $affiliate->owner_id,
             'metadata' => [
+                'subject_type' => $payload['subject_type'] ?? $attribution->subject_type,
+                'subject_identifier' => $attribution->subject_identifier,
+                'subject_instance' => $attribution->subject_instance,
+                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution->subject_title_snapshot,
                 'cart_identifier' => $attribution->cart_identifier,
                 'cart_instance' => $attribution->cart_instance,
                 'utm' => [
@@ -426,14 +497,28 @@ final class AffiliateService
 
         $cartIdentifier = $cart?->getIdentifier() ?? ($context['cart_identifier'] ?? null);
         $cartInstance = $cart?->instance() ?? ($context['cart_instance'] ?? null);
+        $subjectType = $context['subject_type'] ?? Arr::get($context, 'metadata.subject_type');
+        $subjectIdentifier = $context['subject_identifier'] ?? $cartIdentifier;
+        $subjectInstance = $context['subject_instance'] ?? $cartInstance;
+        $subjectTitleSnapshot = $this->normalizeSubjectTitleSnapshot(
+            $context['subject_title_snapshot'] ?? Arr::get($context, 'metadata.subject_title_snapshot')
+        );
 
         if (! $cartInstance && $cart) {
             $cartInstance = 'default';
         }
 
+        if (! $subjectInstance && $cart) {
+            $subjectInstance = 'default';
+        }
+
         return [
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
+            'subject_type' => $subjectType,
+            'subject_identifier' => $subjectIdentifier,
+            'subject_instance' => $subjectInstance,
+            'subject_title_snapshot' => $subjectTitleSnapshot,
             'cart_identifier' => $cartIdentifier,
             'cart_instance' => $cartInstance,
             'cookie_value' => $context['cookie_value'] ?? null,
@@ -461,6 +546,10 @@ final class AffiliateService
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
             'attribution_id' => $attribution->getKey(),
+            'subject_type' => $attribution->subject_type,
+            'subject_identifier' => $attribution->subject_identifier,
+            'subject_instance' => $attribution->subject_instance,
+            'subject_title_snapshot' => $attribution->subject_title_snapshot,
             'cookie_value' => $attribution->cookie_value,
             'voucher_code' => $attribution->voucher_code,
             'source' => $attribution->source,
@@ -600,6 +689,15 @@ final class AffiliateService
         return (string) config('affiliates.cart.metadata_key', 'affiliate');
     }
 
+    private function normalizeSubjectTitleSnapshot(mixed $value): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        return Str::limit($value, 200, '');
+    }
+
     private function normalizeCode(string $code): string
     {
         return Str::upper(mb_trim($code));
@@ -731,8 +829,38 @@ final class AffiliateService
         $metadata = $context['metadata'] ?? Arr::only($context, ['coupon', 'notes', 'utm']);
         $fingerprint = $this->resolveFingerprint($context);
 
+        $subjectType = $context['subject_type'] ?? null;
+        $subjectTitleSnapshot = $this->normalizeSubjectTitleSnapshot($context['subject_title_snapshot'] ?? null);
+
+        if ($subjectType && ! isset($metadata['subject_type'])) {
+            $metadata['subject_type'] = $subjectType;
+        }
+
+        if ($subjectTitleSnapshot && ! isset($metadata['subject_title_snapshot'])) {
+            $metadata['subject_title_snapshot'] = $subjectTitleSnapshot;
+        }
+
         if ($fingerprint) {
             $metadata['fingerprint'] = $fingerprint;
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    private function buildConversionMetadata(array $metadata, float $weight, ?string $subjectType, ?string $subjectTitleSnapshot): array
+    {
+        $metadata['weight'] = $weight;
+
+        if ($subjectType && ! isset($metadata['subject_type'])) {
+            $metadata['subject_type'] = $subjectType;
+        }
+
+        if ($subjectTitleSnapshot && ! isset($metadata['subject_title_snapshot'])) {
+            $metadata['subject_title_snapshot'] = $subjectTitleSnapshot;
         }
 
         return $metadata;
@@ -779,11 +907,18 @@ final class AffiliateService
                         'affiliate_id' => $current->getKey(),
                         'affiliate_code' => $current->code,
                         'affiliate_attribution_id' => $attributionId,
+                        'subject_type' => $conversionData->subjectType,
+                        'subject_identifier' => $conversionData->subjectIdentifier,
+                        'subject_instance' => $conversionData->subjectInstance,
+                        'subject_title_snapshot' => $conversionData->subjectTitleSnapshot,
                         'cart_identifier' => $conversionData->cartIdentifier,
                         'cart_instance' => $conversionData->cartInstance,
                         'voucher_code' => $conversionData->voucherCode,
+                        'external_reference' => $conversionData->externalReference,
                         'order_reference' => $conversionData->orderReference,
+                        'conversion_type' => $conversionData->conversionType,
                         'subtotal_minor' => 0,
+                        'value_minor' => 0,
                         'total_minor' => 0,
                         'commission_minor' => $portion,
                         'commission_currency' => $conversionData->commissionCurrency,

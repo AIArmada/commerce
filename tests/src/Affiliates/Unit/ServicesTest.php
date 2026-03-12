@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -14,6 +15,7 @@ use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\DailyAggregationService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Pending;
 use Illuminate\Support\Facades\Event;
@@ -138,6 +140,40 @@ test('DailyAggregationService aggregateForAffiliate creates or updates daily sta
 
     expect($stat)->toBeInstanceOf(AffiliateDailyStat::class);
     expect($stat->clicks)->toBe(0);
+});
+
+test('DailyAggregationService aggregateForAffiliate prefers neutral conversion values', function (): void {
+    $service = app(DailyAggregationService::class);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AGG006',
+        'name' => 'Neutral Revenue Test',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'subject_identifier' => 'event:agg-1',
+        'subject_instance' => 'share',
+        'external_reference' => 'REG-AGG-1',
+        'conversion_type' => 'registration',
+        'value_minor' => 4200,
+        'total_minor' => 9000,
+        'commission_minor' => 420,
+        'commission_currency' => 'USD',
+        'status' => ApprovedConversion::class,
+        'occurred_at' => now(),
+    ]);
+
+    $stat = $service->aggregateForAffiliate($affiliate, now());
+
+    expect($stat->conversions)->toBe(1)
+        ->and($stat->revenue_cents)->toBe(4200)
+        ->and($stat->commission_cents)->toBe(420);
 });
 
 test('DailyAggregationService aggregate processes all affiliates', function (): void {

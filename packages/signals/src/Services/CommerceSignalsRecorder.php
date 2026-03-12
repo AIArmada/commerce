@@ -145,6 +145,164 @@ final class CommerceSignalsRecorder
         );
     }
 
+    public function recordAffiliateAttributed(object $attribution): ?SignalEvent
+    {
+        $attributionModel = $this->resolveAffiliateModel(
+            'AIArmada\\Affiliates\\Models\\AffiliateAttribution',
+            $this->readPublicScalar($attribution, 'id'),
+            $this->readPublicScalar($attribution, 'affiliateId'),
+            $this->readPublicScalar($attribution, 'affiliateCode'),
+            $this->readPublicScalar($attribution, 'ownerType'),
+            $this->readPublicScalar($attribution, 'ownerId'),
+        );
+
+        if (! $attributionModel instanceof Model) {
+            return null;
+        }
+
+        $trackedProperty = $this->resolveTrackedPropertyForAffiliateModel($attributionModel);
+
+        if ($trackedProperty === null) {
+            return null;
+        }
+
+        $subjectIdentifier = $this->stringValue($attributionModel->getAttribute('subject_identifier'))
+            ?? $this->readPublicScalar($attribution, 'subjectIdentifier');
+        $subjectInstance = $this->stringValue($attributionModel->getAttribute('subject_instance'))
+            ?? $this->readPublicScalar($attribution, 'subjectInstance');
+        $cartIdentifier = $this->stringValue($attributionModel->getAttribute('cart_identifier'))
+            ?? $this->readPublicScalar($attribution, 'cartIdentifier')
+            ?? $subjectIdentifier
+            ?? $this->stringValue($attributionModel->getAttribute('cookie_value'))
+            ?? $this->readPublicScalar($attribution, 'cookieValue');
+        $cartInstance = $this->stringValue($attributionModel->getAttribute('cart_instance'))
+            ?? $this->readPublicScalar($attribution, 'cartInstance')
+            ?? $subjectInstance
+            ?? 'default';
+        $landingUrl = $this->stringValue($attributionModel->getAttribute('landing_url'));
+        $referrerUrl = $this->stringValue($attributionModel->getAttribute('referrer_url'));
+
+        return $this->ingestSignalEvent->handle($trackedProperty, [
+            'event_name' => (string) config('signals.integrations.affiliates.attributed_event_name', 'affiliate.attributed'),
+            'event_category' => (string) config('signals.integrations.affiliates.attributed_event_category', 'acquisition'),
+            'external_id' => $this->stringValue($attributionModel->getAttribute('user_id')),
+            'anonymous_id' => $cartIdentifier,
+            'session_identifier' => $this->buildAffiliateSessionIdentifier($cartIdentifier, $cartInstance),
+            'occurred_at' => $this->timestampValue($attributionModel->getAttribute('last_seen_at') ?? $attributionModel->getAttribute('created_at')),
+            'path' => $landingUrl,
+            'url' => $landingUrl,
+            'referrer' => $referrerUrl,
+            'source' => $this->stringValue($attributionModel->getAttribute('source')),
+            'medium' => $this->stringValue($attributionModel->getAttribute('medium')),
+            'campaign' => $this->stringValue($attributionModel->getAttribute('campaign')),
+            'content' => $this->stringValue($attributionModel->getAttribute('content')),
+            'term' => $this->stringValue($attributionModel->getAttribute('term')),
+            'revenue_minor' => 0,
+            'currency' => (string) config('signals.defaults.currency', 'MYR'),
+            'properties' => array_filter([
+                'attribution_id' => $this->stringValue($attributionModel->getKey()),
+                'affiliate_id' => $this->stringValue($attributionModel->getAttribute('affiliate_id'))
+                    ?? $this->readPublicScalar($attribution, 'affiliateId'),
+                'affiliate_code' => $this->stringValue($attributionModel->getAttribute('affiliate_code'))
+                    ?? $this->readPublicScalar($attribution, 'affiliateCode'),
+                'subject_identifier' => $subjectIdentifier,
+                'subject_instance' => $subjectInstance,
+                'cart_identifier' => $this->stringValue($attributionModel->getAttribute('cart_identifier')),
+                'cart_instance' => $this->stringValue($attributionModel->getAttribute('cart_instance')),
+                'cookie_value' => $this->stringValue($attributionModel->getAttribute('cookie_value')),
+                'voucher_code' => $this->stringValue($attributionModel->getAttribute('voucher_code')),
+                'landing_url' => $landingUrl,
+                'referrer_url' => $referrerUrl,
+            ], static fn (mixed $value): bool => $value !== null),
+        ]);
+    }
+
+    public function recordAffiliateConversionRecorded(object $conversion): ?SignalEvent
+    {
+        $conversionModel = $this->resolveAffiliateModel(
+            'AIArmada\\Affiliates\\Models\\AffiliateConversion',
+            $this->readPublicScalar($conversion, 'id'),
+            $this->readPublicScalar($conversion, 'affiliateId'),
+            $this->readPublicScalar($conversion, 'affiliateCode'),
+            $this->readPublicScalar($conversion, 'ownerType'),
+            $this->readPublicScalar($conversion, 'ownerId'),
+        );
+
+        if (! $conversionModel instanceof Model) {
+            return null;
+        }
+
+        $trackedProperty = $this->resolveTrackedPropertyForAffiliateModel($conversionModel);
+
+        if ($trackedProperty === null) {
+            return null;
+        }
+
+        $attributionModel = $this->resolveAffiliateModel(
+            'AIArmada\\Affiliates\\Models\\AffiliateAttribution',
+            $this->stringValue($conversionModel->getAttribute('affiliate_attribution_id')),
+            $this->stringValue($conversionModel->getAttribute('affiliate_id')),
+            $this->stringValue($conversionModel->getAttribute('affiliate_code')),
+            $this->stringValue($conversionModel->getAttribute('owner_type')),
+            $this->stringValue($conversionModel->getAttribute('owner_id')),
+        );
+        $subjectIdentifier = $this->stringValue($conversionModel->getAttribute('subject_identifier'))
+            ?? $this->readPublicScalar($conversion, 'subjectIdentifier');
+        $subjectInstance = $this->stringValue($conversionModel->getAttribute('subject_instance'))
+            ?? $this->readPublicScalar($conversion, 'subjectInstance');
+        $cartIdentifier = $this->stringValue($conversionModel->getAttribute('cart_identifier'))
+            ?? $this->readPublicScalar($conversion, 'cartIdentifier')
+            ?? $subjectIdentifier;
+        $cartInstance = $this->stringValue($conversionModel->getAttribute('cart_instance'))
+            ?? $this->readPublicScalar($conversion, 'cartInstance')
+            ?? $subjectInstance
+            ?? 'default';
+        $revenueMinor = $this->resolveAffiliateRevenueMinor($conversionModel);
+
+        return $this->ingestSignalEvent->handle($trackedProperty, [
+            'event_name' => (string) config('signals.integrations.affiliates.conversion_event_name', 'affiliate.conversion.recorded'),
+            'event_category' => (string) config('signals.integrations.affiliates.conversion_event_category', 'conversion'),
+            'external_id' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('user_id')) : null,
+            'anonymous_id' => $cartIdentifier,
+            'session_identifier' => $this->buildAffiliateSessionIdentifier($cartIdentifier, $cartInstance),
+            'occurred_at' => $this->timestampValue($conversionModel->getAttribute('occurred_at') ?? $conversionModel->getAttribute('created_at')),
+            'path' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('landing_url')) : null,
+            'url' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('landing_url')) : null,
+            'referrer' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('referrer_url')) : null,
+            'source' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('source')) : null,
+            'medium' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('medium')) : null,
+            'campaign' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('campaign')) : null,
+            'content' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('content')) : null,
+            'term' => $attributionModel instanceof Model ? $this->stringValue($attributionModel->getAttribute('term')) : null,
+            'revenue_minor' => $revenueMinor,
+            'currency' => $this->stringValue($conversionModel->getAttribute('commission_currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
+            'properties' => array_filter([
+                'conversion_id' => $this->stringValue($conversionModel->getKey()),
+                'affiliate_id' => $this->stringValue($conversionModel->getAttribute('affiliate_id'))
+                    ?? $this->readPublicScalar($conversion, 'affiliateId'),
+                'affiliate_code' => $this->stringValue($conversionModel->getAttribute('affiliate_code'))
+                    ?? $this->readPublicScalar($conversion, 'affiliateCode'),
+                'attribution_id' => $this->stringValue($conversionModel->getAttribute('affiliate_attribution_id')),
+                'subject_identifier' => $subjectIdentifier,
+                'subject_instance' => $subjectInstance,
+                'cart_identifier' => $this->stringValue($conversionModel->getAttribute('cart_identifier')),
+                'cart_instance' => $this->stringValue($conversionModel->getAttribute('cart_instance')),
+                'voucher_code' => $this->stringValue($conversionModel->getAttribute('voucher_code')),
+                'external_reference' => $this->stringValue($conversionModel->getAttribute('external_reference'))
+                    ?? $this->readPublicScalar($conversion, 'externalReference'),
+                'order_reference' => $this->stringValue($conversionModel->getAttribute('order_reference')),
+                'conversion_type' => $this->stringValue($conversionModel->getAttribute('conversion_type'))
+                    ?? $this->readPublicScalar($conversion, 'conversionType'),
+                'subtotal_minor' => $conversionModel->getAttribute('subtotal_minor'),
+                'value_minor' => $revenueMinor,
+                'total_minor' => $conversionModel->getAttribute('total_minor'),
+                'commission_minor' => $conversionModel->getAttribute('commission_minor'),
+                'status' => $this->normalizeStateValue($conversionModel->getAttribute('status')),
+                'channel' => $this->stringValue($conversionModel->getAttribute('channel')),
+            ], static fn (mixed $value): bool => $value !== null),
+        ]);
+    }
+
     /**
      * @param  array<string, mixed>  $properties
      */
@@ -230,13 +388,72 @@ final class CommerceSignalsRecorder
         );
     }
 
+    private function resolveTrackedPropertyForAffiliateModel(Model $model): ?TrackedProperty
+    {
+        return $this->trackedPropertyResolver->resolveForOwnerReference(
+            $this->stringValue($model->getAttribute('owner_type')),
+            $model->getAttribute('owner_id'),
+        );
+    }
+
     private function buildCartSessionIdentifier(?string $cartIdentifier, string $instanceName): ?string
     {
         if ($cartIdentifier === null || $cartIdentifier === '') {
             return null;
         }
 
-        return 'cart:' . $instanceName . ':' . $cartIdentifier;
+        return 'cart:'.$instanceName.':'.$cartIdentifier;
+    }
+
+    private function buildAffiliateSessionIdentifier(?string $identifier, string $instanceName): ?string
+    {
+        if ($identifier === null || $identifier === '') {
+            return null;
+        }
+
+        return 'affiliate:'.$instanceName.':'.$identifier;
+    }
+
+    private function resolveAffiliateModel(
+        string $modelClass,
+        ?string $identifier,
+        ?string $expectedAffiliateId = null,
+        ?string $expectedAffiliateCode = null,
+        ?string $expectedOwnerType = null,
+        string|int|null $expectedOwnerId = null,
+    ): ?Model {
+        if ($identifier === null || $identifier === '' || ! class_exists($modelClass) || ! is_subclass_of($modelClass, Model::class)) {
+            return null;
+        }
+
+        /** @var class-string<Model> $modelClass */
+        $query = $modelClass::query();
+
+        if (method_exists($modelClass, 'scopeWithoutOwnerScope')) {
+            /** @var mixed $ownerScopedQuery */
+            $ownerScopedQuery = $query;
+            $query = $ownerScopedQuery->withoutOwnerScope();
+        }
+
+        if ($expectedAffiliateId !== null && $expectedAffiliateId !== '') {
+            $query->where('affiliate_id', $expectedAffiliateId);
+        }
+
+        if ($expectedAffiliateCode !== null && $expectedAffiliateCode !== '') {
+            $query->where('affiliate_code', $expectedAffiliateCode);
+        }
+
+        if ($expectedOwnerType !== null && $expectedOwnerType !== '') {
+            $query->where('owner_type', $expectedOwnerType);
+        }
+
+        if ($expectedOwnerId !== null && $expectedOwnerId !== '') {
+            $query->where('owner_id', $expectedOwnerId);
+        }
+
+        $model = $query->find($identifier);
+
+        return $model instanceof Model ? $model : null;
     }
 
     private function stringValue(mixed $value): ?string
@@ -255,6 +472,28 @@ final class CommerceSignalsRecorder
         }
 
         return is_string($value) ? $value : null;
+    }
+
+    private function normalizeStateValue(mixed $value): ?string
+    {
+        if (is_object($value) && method_exists($value, 'getValue')) {
+            $resolved = $value->getValue();
+
+            return is_scalar($resolved) ? (string) $resolved : null;
+        }
+
+        return $this->stringValue($value);
+    }
+
+    private function resolveAffiliateRevenueMinor(Model $conversionModel): int
+    {
+        $valueMinor = (int) $conversionModel->getRawOriginal('value_minor');
+
+        if ($valueMinor !== 0) {
+            return $valueMinor;
+        }
+
+        return (int) $conversionModel->getRawOriginal('total_minor');
     }
 
     private function callMethod(object $object, string $method): mixed
