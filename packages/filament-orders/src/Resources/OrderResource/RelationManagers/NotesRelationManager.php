@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 
 use AIArmada\Orders\Models\Order;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -73,7 +78,7 @@ final class NotesRelationManager extends RelationManager
                     ->falseLabel('Internal Only'),
             ])
             ->headerActions([
-                \Filament\Actions\CreateAction::make()
+                CreateAction::make()
                     ->authorize(function (): bool {
                         $user = Filament::auth()->user();
 
@@ -94,7 +99,7 @@ final class NotesRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make()
+                EditAction::make()
                     ->authorize(function (): bool {
                         $user = Filament::auth()->user();
 
@@ -106,7 +111,7 @@ final class NotesRelationManager extends RelationManager
 
                         return Gate::forUser($user)->allows('update', $order);
                     }),
-                \Filament\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->authorize(function (): bool {
                         $user = Filament::auth()->user();
 
@@ -120,8 +125,8 @@ final class NotesRelationManager extends RelationManager
                     }),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make()
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
                         ->authorize(function (): bool {
                             $user = Filament::auth()->user();
 

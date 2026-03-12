@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxRateResource\Schemas;
 
+use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -51,7 +52,7 @@ final class TaxRateForm
                                 Select::make('tax_class')
                                     ->label('Tax Class')
                                     ->options(
-                                        fn (): array => \AIArmada\Tax\Models\TaxClass::query()
+                                        fn (): array => TaxClass::query()
                                             ->when(
                                                 config('tax.features.owner.enabled', false),
                                                 fn ($q) => TaxOwnerScope::applyToOwnedQuery($q)

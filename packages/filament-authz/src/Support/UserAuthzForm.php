@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAuthz\Support;
 
 use AIArmada\FilamentAuthz\Models\AuthzScope;
 use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Spatie\Permission\PermissionRegistrar;
 final class UserAuthzForm
 {
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     public static function components(): array
     {

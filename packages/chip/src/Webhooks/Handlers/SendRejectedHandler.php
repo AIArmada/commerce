@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Webhooks\Handlers;
 
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
+use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Enums\SendInstructionState;
 use AIArmada\Chip\Events\PayoutFailed;
@@ -51,7 +52,7 @@ class SendRejectedHandler implements WebhookHandler
 
         // Dispatch Laravel event using Dispatchable trait
         PayoutFailed::dispatch(
-            \AIArmada\Chip\Data\PayoutData::from($payload->rawPayload),
+            PayoutData::from($payload->rawPayload),
             $payload->rawPayload,
         );
 

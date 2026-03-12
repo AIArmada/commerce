@@ -6,6 +6,7 @@ namespace AIArmada\Cashier\Gateways\Stripe;
 
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
 use Stripe\InvoiceLineItem;
+use Stripe\Price;
 
 /**
  * Wrapper for Stripe invoice line item.
@@ -110,7 +111,7 @@ class StripeInvoiceLineItem implements InvoiceLineItemContract
 
         $price = $this->item->offsetGet('price');
 
-        if ($price instanceof \Stripe\Price) {
+        if ($price instanceof Price) {
             return $price->id;
         }
 

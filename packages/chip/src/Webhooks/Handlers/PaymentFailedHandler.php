@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Webhooks\Handlers;
 
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
@@ -36,7 +37,7 @@ class PaymentFailedHandler implements WebhookHandler
 
         // Dispatch Laravel event
         PurchasePaymentFailure::dispatch(
-            \AIArmada\Chip\Data\PurchaseData::from($payload->rawPayload),
+            PurchaseData::from($payload->rawPayload),
             $payload->rawPayload,
         );
 

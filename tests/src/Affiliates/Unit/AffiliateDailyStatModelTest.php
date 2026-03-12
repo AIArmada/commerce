@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 describe('AffiliateDailyStat Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -132,7 +133,7 @@ describe('AffiliateDailyStat Model', function (): void {
             'commission_cents' => 1000,
         ]);
 
-        expect($stat->date)->toBeInstanceOf(Illuminate\Support\Carbon::class)
+        expect($stat->date)->toBeInstanceOf(Carbon::class)
             ->and($stat->date->format('Y-m-d'))->toBe('2024-06-15');
     });
 

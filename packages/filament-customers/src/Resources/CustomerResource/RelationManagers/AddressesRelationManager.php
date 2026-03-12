@@ -6,6 +6,13 @@ namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers
 
 use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Models\Address;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
@@ -134,15 +141,15 @@ class AddressesRelationManager extends RelationManager
                     ),
             ])
             ->headerActions([
-                \Filament\Actions\CreateAction::make(),
+                CreateAction::make(),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('set_billing')
+                EditAction::make(),
+                Action::make('set_billing')
                     ->label('Set as Billing')
                     ->icon('heroicon-o-credit-card')
                     ->action(function (Address $record): void {
-                        $user = \Filament\Facades\Filament::auth()->user();
+                        $user = Filament::auth()->user();
 
                         if ($user === null) {
                             abort(403);
@@ -153,11 +160,11 @@ class AddressesRelationManager extends RelationManager
                         $record->setAsDefaultBilling();
                     })
                     ->visible(fn ($record) => ! $record->is_default_billing),
-                \Filament\Actions\Action::make('set_shipping')
+                Action::make('set_shipping')
                     ->label('Set as Shipping')
                     ->icon('heroicon-o-truck')
                     ->action(function (Address $record): void {
-                        $user = \Filament\Facades\Filament::auth()->user();
+                        $user = Filament::auth()->user();
 
                         if ($user === null) {
                             abort(403);
@@ -168,11 +175,11 @@ class AddressesRelationManager extends RelationManager
                         $record->setAsDefaultShipping();
                     })
                     ->visible(fn ($record) => ! $record->is_default_shipping),
-                \Filament\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Integration;
 
+use AIArmada\CashierChip\Discount;
+use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
 
 class SubscriptionIntegrationTest extends CashierChipTestCase
@@ -320,7 +323,7 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
         $user = $this->createUser(['chip_id' => 'cli_find_item_fail_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        $this->expectException(ModelNotFoundException::class);
 
         $subscription->findItemOrFail('non_existent_price');
     }
@@ -336,7 +339,7 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
 
         $discount = $subscription->discount();
 
-        $this->assertInstanceOf(\AIArmada\CashierChip\Discount::class, $discount);
+        $this->assertInstanceOf(Discount::class, $discount);
     }
 
     public function test_discount_returns_null_without_coupon(): void
@@ -494,7 +497,7 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
             'chip_price' => 'price_existing',
         ]);
 
-        $this->expectException(\AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure::class);
+        $this->expectException(SubscriptionUpdateFailure::class);
 
         $subscription->addPrice('price_existing');
     }
@@ -510,7 +513,7 @@ class SubscriptionIntegrationTest extends CashierChipTestCase
             'chip_price' => 'price_only',
         ]);
 
-        $this->expectException(\AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure::class);
+        $this->expectException(SubscriptionUpdateFailure::class);
 
         $subscription->removePrice('price_only');
     }

@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 describe('AffiliateTaxDocument Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -101,7 +102,7 @@ describe('AffiliateTaxDocument Model', function (): void {
             'generated_at' => '2025-01-15 10:30:00',
         ]);
 
-        expect($doc->generated_at)->toBeInstanceOf(Illuminate\Support\Carbon::class)
+        expect($doc->generated_at)->toBeInstanceOf(Carbon::class)
             ->and($doc->generated_at->format('Y-m-d'))->toBe('2025-01-15');
     });
 
@@ -126,7 +127,7 @@ describe('AffiliateTaxDocument Model', function (): void {
             'sent_at' => '2025-01-16 09:00:00',
         ]);
 
-        expect($doc->sent_at)->toBeInstanceOf(Illuminate\Support\Carbon::class)
+        expect($doc->sent_at)->toBeInstanceOf(Carbon::class)
             ->and($doc->sent_at->format('Y-m-d'))->toBe('2025-01-16');
     });
 

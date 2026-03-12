@@ -331,7 +331,7 @@ class TestThrowingPayoutProcessor implements PayoutProcessorInterface
 {
     public function process(AffiliatePayout $payout): PayoutResult
     {
-        throw new \Exception('Processor exploded');
+        throw new Exception('Processor exploded');
     }
 
     public function getStatus(AffiliatePayout $payout): string

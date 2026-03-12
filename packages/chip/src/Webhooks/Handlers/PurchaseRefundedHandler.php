@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Webhooks\Handlers;
 
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Events\PaymentRefunded;
@@ -33,7 +34,7 @@ class PurchaseRefundedHandler implements WebhookHandler
 
         // Dispatch Laravel event
         PaymentRefunded::dispatch(
-            \AIArmada\Chip\Data\PurchaseData::from($payload->rawPayload),
+            PurchaseData::from($payload->rawPayload),
             $payload->rawPayload,
         );
 

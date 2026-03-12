@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource;
@@ -14,6 +15,9 @@ use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
@@ -38,7 +42,7 @@ if (! function_exists('filamentInventory_makeSchemaLivewire')) {
                 return null;
             }
 
-            public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null
+            public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Component | Action | ActionGroup | null
             {
                 return null;
             }
@@ -223,7 +227,7 @@ describe('InventorySerialResource', function (): void {
         config()->set('inventory.owner.include_global', false);
 
         app()->bind(
-            AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class,
+            OwnerResolverInterface::class,
             fn () => new TestOwnerResolver($ownerA),
         );
 

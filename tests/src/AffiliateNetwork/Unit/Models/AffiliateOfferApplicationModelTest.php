@@ -6,6 +6,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
+use Carbon\CarbonImmutable;
 
 describe('AffiliateOfferApplication Model', function (): void {
     beforeEach(function (): void {
@@ -121,7 +122,7 @@ describe('AffiliateOfferApplication Model', function (): void {
                 ->approved()
                 ->create();
 
-            expect($application->reviewed_at)->toBeInstanceOf(\Carbon\CarbonImmutable::class);
+            expect($application->reviewed_at)->toBeInstanceOf(CarbonImmutable::class);
         });
 
         test('metadata is array', function (): void {

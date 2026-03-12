@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Models;
 
 use AIArmada\Cart\Models\Concerns\HasCartOwner;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -31,9 +33,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $times_opened
  * @property int $times_clicked
  * @property int $times_converted
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, RecoveryAttempt> $attempts
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Collection<int, RecoveryAttempt> $attempts
  */
 class RecoveryTemplate extends Model
 {

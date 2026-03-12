@@ -14,6 +14,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 abstract class SignalsTestCase extends Orchestra
 {
@@ -67,8 +69,8 @@ abstract class SignalsTestCase extends Orchestra
         $app['config']->set('signals.features.owner.include_global', false);
         $app['config']->set('signals.features.owner.auto_assign_on_create', true);
 
-        $app['config']->set('permission.models.permission', \Spatie\Permission\Models\Permission::class);
-        $app['config']->set('permission.models.role', \Spatie\Permission\Models\Role::class);
+        $app['config']->set('permission.models.permission', Permission::class);
+        $app['config']->set('permission.models.role', Role::class);
         $app['config']->set('permission.table_names.roles', 'roles');
         $app['config']->set('permission.table_names.permissions', 'permissions');
         $app['config']->set('permission.table_names.model_has_permissions', 'model_has_permissions');

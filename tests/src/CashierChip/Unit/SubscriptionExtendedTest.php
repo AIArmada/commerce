@@ -8,6 +8,8 @@ use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use InvalidArgumentException;
 use LogicException;
 
@@ -313,7 +315,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, $subscription->user());
+        $this->assertInstanceOf(BelongsTo::class, $subscription->user());
     }
 
     public function test_items_relation(): void
@@ -321,7 +323,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create();
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $subscription->items());
+        $this->assertInstanceOf(HasMany::class, $subscription->items());
     }
 
     public function test_get_table(): void

@@ -9,6 +9,7 @@ use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Services\PageViewReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -116,11 +117,11 @@ final class PageViewsReport extends Page implements HasTable
                         $indicators = [];
 
                         if (filled($data['from'] ?? null)) {
-                            $indicators[] = 'From ' . \Carbon\CarbonImmutable::parse((string) $data['from'])->toFormattedDateString();
+                            $indicators[] = 'From ' . CarbonImmutable::parse((string) $data['from'])->toFormattedDateString();
                         }
 
                         if (filled($data['until'] ?? null)) {
-                            $indicators[] = 'Until ' . \Carbon\CarbonImmutable::parse((string) $data['until'])->toFormattedDateString();
+                            $indicators[] = 'Until ' . CarbonImmutable::parse((string) $data['until'])->toFormattedDateString();
                         }
 
                         return $indicators;

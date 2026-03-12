@@ -7,6 +7,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 describe('VoucherValidator', function (): void {
     beforeEach(function (): void {
@@ -227,7 +229,7 @@ describe('VoucherValidator', function (): void {
     describe('getUser method', function (): void {
         it('returns null when Auth user is null', function (): void {
             config(['vouchers.owner.enabled' => false]);
-            Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn(null);
+            Auth::shouldReceive('user')->andReturn(null);
 
             $validator = makeVoucherValidator();
 
@@ -247,7 +249,7 @@ describe('VoucherValidator', function (): void {
             $nonModelUser = new stdClass;
             $nonModelUser->id = 123;
 
-            Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn($nonModelUser);
+            Auth::shouldReceive('user')->andReturn($nonModelUser);
 
             $validator = makeVoucherValidator();
 
@@ -264,7 +266,7 @@ describe('VoucherValidator', function (): void {
             config(['vouchers.owner.enabled' => false]);
 
             $mockUser = Mockery::mock(Model::class);
-            Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn($mockUser);
+            Auth::shouldReceive('user')->andReturn($mockUser);
 
             $validator = makeVoucherValidator();
 
@@ -281,7 +283,7 @@ describe('VoucherValidator', function (): void {
     describe('getUserIdentifier method', function (): void {
         it('returns user id when authenticated', function (): void {
             config(['vouchers.owner.enabled' => false]);
-            Illuminate\Support\Facades\Auth::shouldReceive('id')->andReturn(123);
+            Auth::shouldReceive('id')->andReturn(123);
 
             $validator = makeVoucherValidator();
 
@@ -296,8 +298,8 @@ describe('VoucherValidator', function (): void {
 
         it('returns session id when not authenticated', function (): void {
             config(['vouchers.owner.enabled' => false]);
-            Illuminate\Support\Facades\Auth::shouldReceive('id')->andReturn(null);
-            Illuminate\Support\Facades\Session::shouldReceive('getId')->andReturn('session-abc123');
+            Auth::shouldReceive('id')->andReturn(null);
+            Session::shouldReceive('getId')->andReturn('session-abc123');
 
             $validator = makeVoucherValidator();
 

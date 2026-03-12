@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use Carbon\CarbonImmutable;
 
 describe('AffiliateSite Model', function (): void {
     describe('basic operations', function (): void {
@@ -115,7 +116,7 @@ describe('AffiliateSite Model', function (): void {
         test('verified_at is immutable datetime', function (): void {
             $site = AffiliateSite::factory()->verified()->create();
 
-            expect($site->verified_at)->toBeInstanceOf(\Carbon\CarbonImmutable::class);
+            expect($site->verified_at)->toBeInstanceOf(CarbonImmutable::class);
         });
     });
 

@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 use AIArmada\CashierChip\Discount;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 
 class DiscountTest extends CashierChipTestCase
 {
@@ -90,7 +91,7 @@ class DiscountTest extends CashierChipTestCase
         $discount = new Discount(['start' => $timestamp]);
 
         $this->assertNotNull($discount->start());
-        $this->assertInstanceOf(\Carbon\CarbonInterface::class, $discount->start());
+        $this->assertInstanceOf(CarbonInterface::class, $discount->start());
     }
 
     public function test_start_with_string(): void
@@ -98,7 +99,7 @@ class DiscountTest extends CashierChipTestCase
         $discount = new Discount(['start' => '2024-01-01 00:00:00']);
 
         $this->assertNotNull($discount->start());
-        $this->assertInstanceOf(\Carbon\CarbonInterface::class, $discount->start());
+        $this->assertInstanceOf(CarbonInterface::class, $discount->start());
     }
 
     public function test_end_returns_null_when_not_set(): void
@@ -122,7 +123,7 @@ class DiscountTest extends CashierChipTestCase
         $discount = new Discount(['end' => $timestamp]);
 
         $this->assertNotNull($discount->end());
-        $this->assertInstanceOf(\Carbon\CarbonInterface::class, $discount->end());
+        $this->assertInstanceOf(CarbonInterface::class, $discount->end());
     }
 
     public function test_end_with_string(): void
@@ -130,7 +131,7 @@ class DiscountTest extends CashierChipTestCase
         $discount = new Discount(['end' => '2024-12-31 23:59:59']);
 
         $this->assertNotNull($discount->end());
-        $this->assertInstanceOf(\Carbon\CarbonInterface::class, $discount->end());
+        $this->assertInstanceOf(CarbonInterface::class, $discount->end());
     }
 
     public function test_to_array(): void

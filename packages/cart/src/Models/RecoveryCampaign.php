@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Models;
 
 use AIArmada\Cart\Models\Concerns\HasCartOwner;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 
 /**
@@ -42,12 +44,12 @@ use RuntimeException;
  * @property int $total_clicked
  * @property int $total_recovered
  * @property int $recovered_revenue_cents
- * @property \Illuminate\Support\Carbon|null $starts_at
- * @property \Illuminate\Support\Carbon|null $ends_at
- * @property \Illuminate\Support\Carbon|null $last_run_at
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, RecoveryAttempt> $attempts
+ * @property Carbon|null $starts_at
+ * @property Carbon|null $ends_at
+ * @property Carbon|null $last_run_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Collection<int, RecoveryAttempt> $attempts
  * @property-read RecoveryTemplate|null $controlTemplate
  * @property-read RecoveryTemplate|null $variantTemplate
  */

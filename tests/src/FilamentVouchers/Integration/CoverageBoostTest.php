@@ -38,6 +38,7 @@ use AIArmada\FilamentVouchers\Widgets\VoucherStatsWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherUsageTimelineWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherWalletStatsWidget;
+use Filament\Actions\Action;
 use Filament\Panel;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
@@ -46,13 +47,13 @@ use Filament\Tables\Table;
 uses(TestCase::class);
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 function makeVouchersTable(): Table
 {
     /** @var HasTable $livewire */
-    $livewire = \Mockery::mock(HasTable::class);
+    $livewire = Mockery::mock(HasTable::class);
 
     return Table::make($livewire);
 }
@@ -148,9 +149,9 @@ it('builds resources, schemas, tables, relation managers, pages, widgets, and ac
     }
 
     // Extensions
-    expect(CartVoucherActions::applyVoucher())->toBeInstanceOf(\Filament\Actions\Action::class);
-    expect(CartVoucherActions::showAppliedVouchers())->toBeInstanceOf(\Filament\Actions\Action::class);
-    expect(CartVoucherActions::removeVoucher('TEST'))->toBeInstanceOf(\Filament\Actions\Action::class);
+    expect(CartVoucherActions::applyVoucher())->toBeInstanceOf(Action::class);
+    expect(CartVoucherActions::showAppliedVouchers())->toBeInstanceOf(Action::class);
+    expect(CartVoucherActions::removeVoucher('TEST'))->toBeInstanceOf(Action::class);
 
     // Plugin
     $panel = Panel::make()->id('admin');

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentOrders\Widgets;
 
 use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Models\Order;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -73,7 +74,7 @@ final class RecentOrdersWidget extends BaseWidget
                     ->sortable(),
             ])
             ->actions([
-                \Filament\Actions\Action::make('view')
+                Action::make('view')
                     ->label('View')
                     ->icon('heroicon-o-eye')
                     ->url(fn (Order $record) => OrderResource::getUrl('view', ['record' => $record]))

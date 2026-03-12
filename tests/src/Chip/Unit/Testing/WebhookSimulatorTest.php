@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Data\WebhookData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Testing\WebhookSimulator;
@@ -196,14 +198,14 @@ describe('WebhookSimulator', function (): void {
         $simulator = WebhookSimulator::paid();
         $purchase = $simulator->toPurchase();
 
-        expect($purchase)->toBeInstanceOf(AIArmada\Chip\Data\PurchaseData::class);
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
     });
 
     it('can create webhook data object', function (): void {
         $simulator = WebhookSimulator::paid();
         $webhook = $simulator->toWebhook();
 
-        expect($webhook)->toBeInstanceOf(AIArmada\Chip\Data\WebhookData::class);
+        expect($webhook)->toBeInstanceOf(WebhookData::class);
     });
 
     it('can set factory', function (): void {

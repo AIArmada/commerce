@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,9 +30,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property array<string, mixed>|null $metadata
- * @property \Carbon\CarbonInterface|null $touched_at
- * @property \Carbon\CarbonInterface|null $created_at
- * @property \Carbon\CarbonInterface|null $updated_at
+ * @property CarbonInterface|null $touched_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
  * @property-read AffiliateAttribution $attribution
  * @property-read Affiliate $affiliate
  */

@@ -10,7 +10,13 @@ use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Contracts\HasSchemas;
+use Filament\Schemas\Schema;
+use Filament\Support\Contracts\TranslatableContentDriver;
+use Livewire\Component;
 
 afterEach(function (): void {
     Mockery::close();
@@ -40,9 +46,9 @@ it('builds customer options, plans, payment methods, and can create a subscripti
 
     $page = app(CreateSubscription::class);
 
-    $livewire = new class extends \Livewire\Component implements \Filament\Schemas\Contracts\HasSchemas
+    $livewire = new class extends Component implements HasSchemas
     {
-        public function makeFilamentTranslatableContentDriver(): ?\Filament\Support\Contracts\TranslatableContentDriver
+        public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
         {
             return null;
         }
@@ -56,16 +62,16 @@ it('builds customer options, plans, payment methods, and can create a subscripti
             string $key,
             bool $withHidden = false,
             array $skipComponentsChildContainersWhileSearching = [],
-        ): \Filament\Schemas\Components\Component | \Filament\Actions\Action | \Filament\Actions\ActionGroup | null {
+        ): Filament\Schemas\Components\Component | Action | ActionGroup | null {
             return null;
         }
 
-        public function getSchema(string $name): ?\Filament\Schemas\Schema
+        public function getSchema(string $name): ?Schema
         {
             return null;
         }
 
-        public function currentlyValidatingSchema(?\Filament\Schemas\Schema $schema): void {}
+        public function currentlyValidatingSchema(?Schema $schema): void {}
 
         public function getDefaultTestingSchemaName(): ?string
         {
@@ -73,8 +79,8 @@ it('builds customer options, plans, payment methods, and can create a subscripti
         }
     };
 
-    $schema = \Filament\Schemas\Schema::make($livewire);
-    expect($page->form($schema))->toBeInstanceOf(\Filament\Schemas\Schema::class);
+    $schema = Schema::make($livewire);
+    expect($page->form($schema))->toBeInstanceOf(Schema::class);
 
     $customerOptions = filamentCashier_invokeProtectedMethod($page, 'getCustomerOptions');
     expect($customerOptions)->toBeArray()->toHaveKey((string) $user->getKey());

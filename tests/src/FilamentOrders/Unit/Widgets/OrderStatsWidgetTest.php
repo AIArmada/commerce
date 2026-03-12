@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentOrders\Widgets\OrderStatsWidget;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Carbon;
@@ -121,7 +122,7 @@ it('calculates stats using an owner-scoped query', function (): void {
     $method = new ReflectionMethod(OrderStatsWidget::class, 'getStats');
     $method->setAccessible(true);
 
-    /** @var array<int, \Filament\Widgets\StatsOverviewWidget\Stat> $stats */
+    /** @var array<int, Stat> $stats */
     $stats = $method->invoke($widget);
 
     expect($stats)->toHaveCount(4);

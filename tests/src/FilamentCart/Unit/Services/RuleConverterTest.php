@@ -6,6 +6,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\FilamentCart\Services\RuleConverter;
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 
 describe('RuleConverter', function (): void {
@@ -127,7 +128,7 @@ describe('RuleConverter', function (): void {
         $cart = createCartWithItems([]);
 
         // User is VIP
-        $vipUser = new Illuminate\Foundation\Auth\User;
+        $vipUser = new User;
         $vipUser->is_vip = true;
         Auth::shouldReceive('user')->andReturn($vipUser);
         expect($rule($cart))->toBeTrue();
@@ -139,7 +140,7 @@ describe('RuleConverter', function (): void {
         $cart = createCartWithItems([]);
 
         // User is NOT VIP
-        $regularUser = new Illuminate\Foundation\Auth\User;
+        $regularUser = new User;
         $regularUser->is_vip = false;
         Auth::shouldReceive('user')->andReturn($regularUser);
 

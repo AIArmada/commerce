@@ -15,7 +15,7 @@ it('syncs condition providers into cart conditions', function (): void {
 
     $provider = new class implements ConditionProviderInterface
     {
-        public function getConditionsFor(\AIArmada\Cart\Cart $cart): array
+        public function getConditionsFor(AIArmada\Cart\Cart $cart): array
         {
             return [new CartCondition(
                 name: 'test_provider_condition',
@@ -31,7 +31,7 @@ it('syncs condition providers into cart conditions', function (): void {
             )];
         }
 
-        public function validate(CartCondition $condition, \AIArmada\Cart\Cart $cart): bool
+        public function validate(CartCondition $condition, AIArmada\Cart\Cart $cart): bool
         {
             return true;
         }

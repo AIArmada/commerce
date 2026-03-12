@@ -6,6 +6,12 @@ namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -16,6 +22,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class PricesRelationManager extends RelationManager
 {
@@ -161,7 +168,7 @@ final class PricesRelationManager extends RelationManager
                     ),
             ])
             ->headerActions([
-                \Filament\Actions\CreateAction::make()
+                CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['priceable_type'] = $this->getOwnerRecord()->getMorphClass();
                         $data['priceable_id'] = $this->getOwnerRecord()->getKey();
@@ -170,13 +177,13 @@ final class PricesRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -234,7 +241,7 @@ final class PricesRelationManager extends RelationManager
             ]);
     }
 
-    public static function canViewForRecord(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): bool
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
         // Only show this relation manager if the pricing package is installed
         return class_exists(Price::class) && class_exists(PriceList::class);

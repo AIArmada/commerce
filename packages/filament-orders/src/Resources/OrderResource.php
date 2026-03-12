@@ -20,6 +20,11 @@ use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -255,9 +260,9 @@ final class OrderResource extends Resource
                     }),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('download_invoice')
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('download_invoice')
                     ->label('Invoice')
                     ->icon('heroicon-o-document-arrow-down')
                     ->url(fn (Order $record) => route('filament-orders.invoice.download', $record))
@@ -265,8 +270,8 @@ final class OrderResource extends Resource
                     ->visible(fn (Order $record) => $record->isPaid()),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

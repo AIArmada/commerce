@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 
 it('generates a report for predefined periods', function (): void {
     $captured = ['start' => null, 'end' => null];
@@ -115,9 +116,9 @@ it('generates a report for a custom range with parsed dates', function (): void 
     expect($captured['start'])->not->toBeNull()
         ->and($captured['end'])->not->toBeNull();
 
-    /** @var \Carbon\CarbonInterface $start */
+    /** @var CarbonInterface $start */
     $start = $captured['start'];
-    /** @var \Carbon\CarbonInterface $end */
+    /** @var CarbonInterface $end */
     $end = $captured['end'];
 
     expect($start->toDateString())->toBe('2025-01-10')

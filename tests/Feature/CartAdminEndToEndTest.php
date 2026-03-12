@@ -8,6 +8,7 @@ use AIArmada\Cart\Models\AlertRule;
 use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\Cart\Models\RecoveryTemplate;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Resources\AlertRuleResource;
@@ -396,14 +397,14 @@ describe('Cart Conditions End-to-End', function (): void {
         ]);
 
         // Set owner context to userA
-        \AIArmada\CommerceSupport\Support\OwnerContext::override($userA);
+        OwnerContext::override($userA);
 
         $component = Livewire::test(CartConditionResource\Pages\ListCartConditions::class)
             ->assertSuccessful()
             ->assertCanSeeTableRecords([$conditionA])
             ->assertCanNotSeeTableRecords([$conditionB]);
 
-        \AIArmada\CommerceSupport\Support\OwnerContext::clearOverride();
+        OwnerContext::clearOverride();
         config(['filament-cart.owner.enabled' => false]);
     });
 });

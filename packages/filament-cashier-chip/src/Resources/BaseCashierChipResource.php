@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashierChip\Resources;
 use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 abstract class BaseCashierChipResource extends Resource
@@ -38,7 +39,7 @@ abstract class BaseCashierChipResource extends Resource
     }
 
     /**
-     * @return Builder<\Illuminate\Database\Eloquent\Model>
+     * @return Builder<Model>
      */
     public static function getEloquentQuery(): Builder
     {

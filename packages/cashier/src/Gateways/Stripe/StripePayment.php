@@ -8,7 +8,10 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
+use Laravel\Cashier\Exceptions\PaymentActionRequired;
+use Laravel\Cashier\Exceptions\PaymentFailure;
 use Laravel\Cashier\Payment;
+use Stripe\StripeClient;
 
 /**
  * Wrapper for Stripe payment.
@@ -122,7 +125,7 @@ class StripePayment implements PaymentContract
             return false;
         }
 
-        $stripe = new \Stripe\StripeClient($secret);
+        $stripe = new StripeClient($secret);
         $charge = $stripe->charges->retrieve($latestCharge);
 
         return ($charge->amount_refunded ?? 0) > 0;
@@ -176,7 +179,7 @@ class StripePayment implements PaymentContract
                 return null;
             }
 
-            $stripe = new \Stripe\StripeClient($secret);
+            $stripe = new StripeClient($secret);
             $charge = $stripe->charges->retrieve($latestCharge);
 
             return $charge->receipt_url;
@@ -228,8 +231,8 @@ class StripePayment implements PaymentContract
     /**
      * Validate the payment and throw exception if failed.
      *
-     * @throws \Laravel\Cashier\Exceptions\PaymentActionRequired
-     * @throws \Laravel\Cashier\Exceptions\PaymentFailure
+     * @throws PaymentActionRequired
+     * @throws PaymentFailure
      */
     public function validate(): static
     {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
+use Composer\InstalledVersions;
 use Illuminate\Support\ServiceProvider;
 
 uses(CashierTestCase::class);
@@ -43,8 +44,8 @@ describe('CashierServiceProvider', function (): void {
         expect($provider)->not()->toBeNull();
 
         $migrationsPath = base_path('vendor/laravel/cashier/database/migrations');
-        $isInstalled = class_exists(\Composer\InstalledVersions::class)
-            && \Composer\InstalledVersions::isInstalled('laravel/cashier');
+        $isInstalled = class_exists(InstalledVersions::class)
+            && InstalledVersions::isInstalled('laravel/cashier');
 
         if ($isInstalled && is_dir($migrationsPath)) {
             $pathsToPublish = ServiceProvider::pathsToPublish(CashierServiceProvider::class, 'cashier-stripe-migrations');

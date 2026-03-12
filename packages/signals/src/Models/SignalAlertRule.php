@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Models\Concerns\AutoAssignsSignalOwnerOnCreate;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,7 +34,7 @@ use RuntimeException;
  * @property Carbon|null $last_triggered_at
  * @property bool $is_active
  * @property-read TrackedProperty|null $trackedProperty
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalAlertLog> $logs
+ * @property-read Collection<int, SignalAlertLog> $logs
  */
 final class SignalAlertRule extends Model
 {

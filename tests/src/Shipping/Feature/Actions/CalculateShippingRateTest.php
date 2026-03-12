@@ -5,7 +5,9 @@ declare(strict_types=1);
 use AIArmada\Shipping\Actions\CalculateShippingRate;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
+use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\ShippingManager;
+use Illuminate\Support\Collection;
 
 describe('CalculateShippingRate Action', function (): void {
     it('can calculate rates for a specific carrier', function (): void {
@@ -37,11 +39,11 @@ describe('CalculateShippingRate Action', function (): void {
 
         $rates = $action->handle($origin, $destination, $packages, 'null');
 
-        expect($rates)->toBeInstanceOf(Illuminate\Support\Collection::class);
+        expect($rates)->toBeInstanceOf(Collection::class);
         expect($rates)->toHaveCount(2);
 
         $standardRate = $rates->first();
-        expect($standardRate)->toBeInstanceOf(AIArmada\Shipping\Data\RateQuoteData::class);
+        expect($standardRate)->toBeInstanceOf(RateQuoteData::class);
         expect($standardRate->carrier)->toBe('null');
         expect($standardRate->service)->toBe('standard');
     });
@@ -107,7 +109,7 @@ describe('CalculateShippingRate Action', function (): void {
 
         $rates = $action->handle($origin, $destination, $packages);
 
-        expect($rates)->toBeInstanceOf(Illuminate\Support\Collection::class);
+        expect($rates)->toBeInstanceOf(Collection::class);
         expect($rates)->toHaveCount(3); // manual (1) + flat_rate (2)
     });
 
@@ -215,7 +217,7 @@ describe('CalculateShippingRate Action', function (): void {
         // Should not throw, just skip failing carrier
         $rates = $action->handle($origin, $destination, $packages);
 
-        expect($rates)->toBeInstanceOf(Illuminate\Support\Collection::class);
+        expect($rates)->toBeInstanceOf(Collection::class);
         // Only manual driver rates should be included
         expect($rates)->toHaveCount(1);
         expect($rates->first()?->carrier)->toBe('manual');

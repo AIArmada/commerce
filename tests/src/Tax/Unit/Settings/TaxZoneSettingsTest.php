@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Tests\Unit\Settings;
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Settings\TaxZoneSettings;
 use ReflectionClass;
+use Spatie\LaravelSettings\Settings;
 
 class TaxZoneSettingsTest extends TaxTestCase
 {
@@ -52,7 +53,7 @@ class TaxZoneSettingsTest extends TaxTestCase
 
     public function test_settings_class_extends_spatie_settings(): void
     {
-        $this->assertTrue(is_subclass_of(TaxZoneSettings::class, \Spatie\LaravelSettings\Settings::class));
+        $this->assertTrue(is_subclass_of(TaxZoneSettings::class, Settings::class));
     }
 
     public function test_settings_can_be_instantiated_without_constructor(): void

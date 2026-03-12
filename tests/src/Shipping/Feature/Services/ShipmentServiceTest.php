@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\LabelData;
@@ -21,6 +22,8 @@ use AIArmada\Shipping\States\Draft;
 use AIArmada\Shipping\States\InTransit;
 use AIArmada\Shipping\States\Pending;
 use AIArmada\Shipping\States\Shipped;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 
 describe('ShipmentService', function (): void {
     beforeEach(function (): void {
@@ -83,7 +86,7 @@ describe('ShipmentService', function (): void {
     it('enforces owner context when owner scoping is enabled', function (): void {
         config(['shipping.features.owner.enabled' => true]);
 
-        $owner = new class extends \Illuminate\Database\Eloquent\Model
+        $owner = new class extends Model
         {
             public $incrementing = false;
 
@@ -91,7 +94,7 @@ describe('ShipmentService', function (): void {
         };
         $owner->setAttribute('id', 'test-owner-123');
 
-        \AIArmada\CommerceSupport\Support\OwnerContext::override($owner);
+        OwnerContext::override($owner);
 
         $origin = new AddressData(
             name: 'Test Origin',
@@ -119,14 +122,14 @@ describe('ShipmentService', function (): void {
         );
 
         expect(fn () => $this->service->create($data, 'other-owner', 'OtherOwner'))
-            ->toThrow(Illuminate\Auth\Access\AuthorizationException::class);
+            ->toThrow(AuthorizationException::class);
 
         $shipment = $this->service->create($data);
 
         expect($shipment->owner_id)->toBe('test-owner-123');
         expect($shipment->owner_type)->toBe($owner->getMorphClass());
 
-        \AIArmada\CommerceSupport\Support\OwnerContext::clearOverride();
+        OwnerContext::clearOverride();
         config(['shipping.features.owner.enabled' => false]);
     });
 

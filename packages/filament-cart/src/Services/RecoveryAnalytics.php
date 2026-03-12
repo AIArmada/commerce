@@ -10,6 +10,7 @@ use AIArmada\FilamentCart\Data\CampaignMetrics;
 use AIArmada\FilamentCart\Data\RecoveryInsight;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Service for recovery campaign analytics.
@@ -253,7 +254,7 @@ class RecoveryAnalytics
     private function analyzeTimingPerformance(RecoveryCampaign $campaign): ?RecoveryInsight
     {
         // Analyze conversion by hour sent
-        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+        $driver = DB::connection()->getDriverName();
         $hourExpression = $driver === 'sqlite' ? "strftime('%H', sent_at)" : 'HOUR(sent_at)';
 
         $byHour = RecoveryAttempt::query()->forOwner()

@@ -10,6 +10,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\BillingOverview;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ManageSubscriptions;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\ActiveSubscriptionsWidget;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -17,7 +19,7 @@ use Illuminate\Support\Str;
 
 it('shows and manages CHIP subscriptions in the customer portal', function (): void {
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
-        Schema::create('cashier_chip_subscriptions', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        Schema::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id');
             $table->nullableMorphs('owner');
@@ -37,7 +39,7 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
     }
 
     if (! Schema::hasTable('cashier_chip_subscription_items')) {
-        Schema::create('cashier_chip_subscription_items', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        Schema::create('cashier_chip_subscription_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('subscription_id');
             $table->nullableMorphs('owner');
@@ -50,10 +52,10 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
         });
     }
 
-    /** @var class-string<\Illuminate\Database\Eloquent\Model> $userModel */
+    /** @var class-string<Model> $userModel */
     $userModel = config('auth.providers.users.model');
 
-    /** @var \Illuminate\Database\Eloquent\Model $user */
+    /** @var Model $user */
     $user = $userModel::query()->create([
         'name' => 'Subscriber',
         'email' => 'subscriber@example.com',
@@ -127,7 +129,7 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
 
 it('limits customer portal subscriptions and can load more', function (): void {
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
-        Schema::create('cashier_chip_subscriptions', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        Schema::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id');
             $table->nullableMorphs('owner');
@@ -147,7 +149,7 @@ it('limits customer portal subscriptions and can load more', function (): void {
     }
 
     if (! Schema::hasTable('cashier_chip_subscription_items')) {
-        Schema::create('cashier_chip_subscription_items', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        Schema::create('cashier_chip_subscription_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('subscription_id');
             $table->nullableMorphs('owner');
@@ -160,10 +162,10 @@ it('limits customer portal subscriptions and can load more', function (): void {
         });
     }
 
-    /** @var class-string<\Illuminate\Database\Eloquent\Model> $userModel */
+    /** @var class-string<Model> $userModel */
     $userModel = config('auth.providers.users.model');
 
-    /** @var \Illuminate\Database\Eloquent\Model $user */
+    /** @var Model $user */
     $user = $userModel::query()->create([
         'name' => 'Subscriber',
         'email' => 'subscriber2@example.com',

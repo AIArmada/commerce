@@ -7,6 +7,8 @@ namespace AIArmada\Signals\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Models\Concerns\AutoAssignsSignalOwnerOnCreate;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,11 +23,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $traits
- * @property \Carbon\CarbonImmutable|null $first_seen_at
- * @property \Carbon\CarbonImmutable|null $last_seen_at
+ * @property CarbonImmutable|null $first_seen_at
+ * @property CarbonImmutable|null $last_seen_at
  * @property-read TrackedProperty $trackedProperty
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalSession> $sessions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SignalEvent> $events
+ * @property-read Collection<int, SignalSession> $sessions
+ * @property-read Collection<int, SignalEvent> $events
  */
 final class SignalIdentity extends Model
 {

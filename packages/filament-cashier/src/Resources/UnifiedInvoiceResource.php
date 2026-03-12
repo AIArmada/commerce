@@ -19,6 +19,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -36,7 +37,7 @@ final class UnifiedInvoiceResource extends Resource
             return $userModel;
         }
 
-        return \Illuminate\Foundation\Auth\User::class;
+        return User::class;
     }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;

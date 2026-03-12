@@ -6,7 +6,10 @@ use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;
 use AIArmada\Products\Models\AttributeSet;
+use AIArmada\Products\Models\AttributeValue;
 use AIArmada\Products\Models\Product;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 describe('Attribute Model', function (): void {
     describe('Attribute Creation', function (): void {
@@ -248,8 +251,8 @@ describe('Attribute Model', function (): void {
                 'type' => AttributeType::Number,
             ]);
 
-            $pivotId = Illuminate\Support\Str::uuid();
-            Illuminate\Support\Facades\DB::table('product_attribute_attribute_group')->insert([
+            $pivotId = Str::uuid();
+            DB::table('product_attribute_attribute_group')->insert([
                 'id' => $pivotId,
                 'attribute_id' => $attribute->id,
                 'attribute_group_id' => $group->id,
@@ -258,7 +261,7 @@ describe('Attribute Model', function (): void {
                 'updated_at' => now(),
             ]);
 
-            $pivotRecord = Illuminate\Support\Facades\DB::table('product_attribute_attribute_group')->where('id', $pivotId)->first();
+            $pivotRecord = DB::table('product_attribute_attribute_group')->where('id', $pivotId)->first();
             expect($pivotRecord)->not->toBeNull();
 
             $group->load('groupAttributes');
@@ -279,8 +282,8 @@ describe('Attribute Model', function (): void {
                 'type' => AttributeType::Text,
             ]);
 
-            Illuminate\Support\Facades\DB::table('product_attribute_attribute_set')->insert([
-                'id' => Illuminate\Support\Str::uuid(),
+            DB::table('product_attribute_attribute_set')->insert([
+                'id' => Str::uuid(),
                 'attribute_id' => $attribute->id,
                 'attribute_set_id' => $set->id,
                 'position' => 0,
@@ -354,7 +357,7 @@ describe('Attribute Model', function (): void {
             $attributeId = $attribute->id;
             $attribute->delete();
 
-            expect(AIArmada\Products\Models\AttributeValue::where('attribute_id', $attributeId)->count())->toBe(0);
+            expect(AttributeValue::where('attribute_id', $attributeId)->count())->toBe(0);
         });
 
         it('detaches from groups and sets when deleted', function (): void {
@@ -367,8 +370,8 @@ describe('Attribute Model', function (): void {
                 'type' => AttributeType::Text,
             ]);
 
-            Illuminate\Support\Facades\DB::table('product_attribute_attribute_group')->insert([
-                'id' => Illuminate\Support\Str::uuid(),
+            DB::table('product_attribute_attribute_group')->insert([
+                'id' => Str::uuid(),
                 'attribute_id' => $attribute->id,
                 'attribute_group_id' => $group->id,
                 'position' => 0,
@@ -376,8 +379,8 @@ describe('Attribute Model', function (): void {
                 'updated_at' => now(),
             ]);
 
-            Illuminate\Support\Facades\DB::table('product_attribute_attribute_set')->insert([
-                'id' => Illuminate\Support\Str::uuid(),
+            DB::table('product_attribute_attribute_set')->insert([
+                'id' => Str::uuid(),
                 'attribute_id' => $attribute->id,
                 'attribute_set_id' => $set->id,
                 'position' => 0,
@@ -388,9 +391,9 @@ describe('Attribute Model', function (): void {
             $attributeId = $attribute->id;
             $attribute->delete();
 
-            expect(Illuminate\Support\Facades\DB::table('product_attribute_attribute_group')
+            expect(DB::table('product_attribute_attribute_group')
                 ->where('attribute_id', $attributeId)->count())->toBe(0);
-            expect(Illuminate\Support\Facades\DB::table('product_attribute_attribute_set')
+            expect(DB::table('product_attribute_attribute_set')
                 ->where('attribute_id', $attributeId)->count())->toBe(0);
         });
     });
@@ -447,8 +450,8 @@ describe('AttributeGroup Model', function (): void {
                 'type' => AttributeType::Text,
             ]);
 
-            Illuminate\Support\Facades\DB::table('product_attribute_attribute_group')->insert([
-                'id' => Illuminate\Support\Str::uuid(),
+            DB::table('product_attribute_attribute_group')->insert([
+                'id' => Str::uuid(),
                 'attribute_id' => $attribute->id,
                 'attribute_group_id' => $group->id,
                 'position' => 0,
@@ -459,7 +462,7 @@ describe('AttributeGroup Model', function (): void {
             $groupId = $group->id;
             $group->delete();
 
-            expect(Illuminate\Support\Facades\DB::table('product_attribute_attribute_group')
+            expect(DB::table('product_attribute_attribute_group')
                 ->where('attribute_group_id', $groupId)->count())->toBe(0);
         });
     });
@@ -522,8 +525,8 @@ describe('AttributeSet Model', function (): void {
                 'type' => AttributeType::Text,
             ]);
 
-            Illuminate\Support\Facades\DB::table('product_attribute_attribute_set')->insert([
-                'id' => Illuminate\Support\Str::uuid(),
+            DB::table('product_attribute_attribute_set')->insert([
+                'id' => Str::uuid(),
                 'attribute_id' => $attribute->id,
                 'attribute_set_id' => $set->id,
                 'position' => 0,
@@ -531,8 +534,8 @@ describe('AttributeSet Model', function (): void {
                 'updated_at' => now(),
             ]);
 
-            Illuminate\Support\Facades\DB::table('product_attribute_group_attribute_set')->insert([
-                'id' => Illuminate\Support\Str::uuid(),
+            DB::table('product_attribute_group_attribute_set')->insert([
+                'id' => Str::uuid(),
                 'attribute_group_id' => $group->id,
                 'attribute_set_id' => $set->id,
                 'position' => 0,
@@ -540,8 +543,8 @@ describe('AttributeSet Model', function (): void {
                 'updated_at' => now(),
             ]);
 
-            Illuminate\Support\Facades\DB::table('product_attribute_attribute_group')->insert([
-                'id' => Illuminate\Support\Str::uuid(),
+            DB::table('product_attribute_attribute_group')->insert([
+                'id' => Str::uuid(),
                 'attribute_id' => $attribute->id,
                 'attribute_group_id' => $group->id,
                 'position' => 0,
@@ -565,8 +568,8 @@ describe('AttributeSet Model', function (): void {
                 'type' => AttributeType::Text,
             ]);
 
-            Illuminate\Support\Facades\DB::table('product_attribute_attribute_set')->insert([
-                'id' => Illuminate\Support\Str::uuid(),
+            DB::table('product_attribute_attribute_set')->insert([
+                'id' => Str::uuid(),
                 'attribute_id' => $attribute->id,
                 'attribute_set_id' => $set->id,
                 'position' => 0,
@@ -577,7 +580,7 @@ describe('AttributeSet Model', function (): void {
             $setId = $set->id;
             $set->delete();
 
-            expect(Illuminate\Support\Facades\DB::table('product_attribute_attribute_set')
+            expect(DB::table('product_attribute_attribute_set')
                 ->where('attribute_set_id', $setId)->count())->toBe(0);
         });
     });

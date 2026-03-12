@@ -6,6 +6,7 @@ use AIArmada\FilamentChip\Resources\BaseChipResource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 it('uses config for navigation metadata', function (): void {
@@ -59,7 +60,7 @@ it('uses config for navigation metadata', function (): void {
 
     $resource::setModel($modelFqcn);
 
-    \Illuminate\Support\Facades\DB::table('fake_records')->insert([
+    DB::table('fake_records')->insert([
         ['owner_id' => 'owner-a'],
         ['owner_id' => 'owner-b'],
         ['owner_id' => null],

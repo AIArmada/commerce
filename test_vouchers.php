@@ -31,7 +31,7 @@ echo "\nApplying WELCOME2024...\n";
 try {
     Cart::applyVoucher('WELCOME2024');
     echo "SUCCESS (no exception thrown)\n";
-} catch (\Exception $e) {
+} catch (Exception $e) {
     echo 'ERROR: ' . $e->getMessage() . "\n";
 }
 

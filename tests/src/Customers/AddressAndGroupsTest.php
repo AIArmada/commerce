@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
@@ -64,8 +65,8 @@ describe('Address Model', function (): void {
                 'type' => 'billing',
             ]);
 
-            expect($shipping->type)->toBe(AIArmada\Customers\Enums\AddressType::Shipping)
-                ->and($billing->type)->toBe(AIArmada\Customers\Enums\AddressType::Billing);
+            expect($shipping->type)->toBe(AddressType::Shipping)
+                ->and($billing->type)->toBe(AddressType::Billing);
         });
     });
 

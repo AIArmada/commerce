@@ -5,6 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
 use AIArmada\Customers\Models\CustomerNote;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -81,7 +88,7 @@ class NotesRelationManager extends RelationManager
                     ->label('Pinned'),
             ])
             ->headerActions([
-                \Filament\Actions\CreateAction::make()
+                CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['created_by'] = Auth::user()?->getAuthIdentifier();
 
@@ -89,10 +96,10 @@ class NotesRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                \Filament\Actions\Action::make('pin')
+                Action::make('pin')
                     ->icon('heroicon-o-star')
                     ->action(function (CustomerNote $record): void {
-                        $user = \Filament\Facades\Filament::auth()->user();
+                        $user = Filament::auth()->user();
 
                         if ($user === null) {
                             abort(403);
@@ -103,11 +110,11 @@ class NotesRelationManager extends RelationManager
                         $record->pin();
                     })
                     ->visible(fn ($record) => ! $record->is_pinned),
-                \Filament\Actions\Action::make('unpin')
+                Action::make('unpin')
                     ->icon('heroicon-s-star')
                     ->color('warning')
                     ->action(function (CustomerNote $record): void {
-                        $user = \Filament\Facades\Filament::auth()->user();
+                        $user = Filament::auth()->user();
 
                         if ($user === null) {
                             abort(403);
@@ -118,12 +125,12 @@ class NotesRelationManager extends RelationManager
                         $record->unpin();
                     })
                     ->visible(fn ($record) => $record->is_pinned),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

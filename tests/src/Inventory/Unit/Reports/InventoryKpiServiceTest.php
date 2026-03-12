@@ -8,6 +8,7 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Reports\InventoryKpiService;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
@@ -139,7 +140,7 @@ describe('InventoryKpiService', function (): void {
         });
 
         it('returns zero when period is zero days', function (): void {
-            $today = Carbon\CarbonImmutable::now();
+            $today = CarbonImmutable::now();
             $tomorrow = $today->addDay();
 
             // Even with just 1 day period, should return a rate

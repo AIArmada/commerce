@@ -9,6 +9,7 @@ use AIArmada\Tax\Enums\ExemptionStatus;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxZone;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TaxExemptionTest extends TaxTestCase
@@ -386,6 +387,6 @@ class TaxExemptionTest extends TaxTestCase
         // Access the relationship builder
         $relation = $exemption->exemptable();
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphTo::class, $relation);
+        $this->assertInstanceOf(MorphTo::class, $relation);
     }
 }

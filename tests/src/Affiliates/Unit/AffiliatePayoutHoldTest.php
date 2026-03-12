@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
+use Illuminate\Support\Carbon;
 
 describe('AffiliatePayoutHold Model', function (): void {
     beforeEach(function (): void {
@@ -110,7 +111,7 @@ describe('AffiliatePayoutHold Model', function (): void {
             'expires_at' => '2024-12-31 23:59:59',
         ]);
 
-        expect($hold->expires_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($hold->expires_at)->toBeInstanceOf(Carbon::class);
         expect($hold->expires_at->format('Y-m-d'))->toBe('2024-12-31');
     });
 
@@ -122,7 +123,7 @@ describe('AffiliatePayoutHold Model', function (): void {
             'released_at' => '2024-12-15 10:00:00',
         ]);
 
-        expect($hold->released_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($hold->released_at)->toBeInstanceOf(Carbon::class);
         expect($hold->released_at->format('Y-m-d'))->toBe('2024-12-15');
     });
 

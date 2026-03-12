@@ -7,6 +7,7 @@ use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 describe('Variant Model', function (): void {
@@ -529,7 +530,7 @@ describe('Variant Model', function (): void {
 
             $variant->delete();
 
-            expect(Illuminate\Support\Facades\DB::table(config('products.database.tables.variant_options', 'product_variant_options'))
+            expect(DB::table(config('products.database.tables.variant_options', 'product_variant_options'))
                 ->where('variant_id', $variantId)->count())->toBe(0);
         });
     });
@@ -900,7 +901,7 @@ describe('OptionValue Model', function (): void {
 
             $value->delete();
 
-            expect(Illuminate\Support\Facades\DB::table(config('products.database.tables.variant_options', 'product_variant_options'))
+            expect(DB::table(config('products.database.tables.variant_options', 'product_variant_options'))
                 ->where('option_value_id', $valueId)->count())->toBe(0);
         });
     });

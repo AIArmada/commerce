@@ -11,7 +11,7 @@ describe('Affiliates migrations', function (): void {
 
         expect($provider)->not()->toBeNull();
 
-        $reflection = new \ReflectionClass($provider);
+        $reflection = new ReflectionClass($provider);
         $packageProperty = $reflection->getProperty('package');
         $packageProperty->setAccessible(true);
 

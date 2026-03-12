@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Paid;
@@ -23,7 +24,7 @@ describe('Orders ↔ Docs Integration', function (): void {
             $eventFired = true;
         });
 
-        expect(interface_exists(\AIArmada\Docs\Contracts\DocServiceInterface::class))->toBeTrue();
+        expect(interface_exists(DocServiceInterface::class))->toBeTrue();
 
         $service = new OrderService;
 

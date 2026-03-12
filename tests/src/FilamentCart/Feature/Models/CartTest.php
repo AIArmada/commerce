@@ -9,6 +9,7 @@ use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -70,7 +71,7 @@ describe('Cart Model', function (): void {
 
     it('resolves cart instance', function (): void {
         $storage = Mockery::mock(StorageInterface::class);
-        $mockInstance = new \AIArmada\Cart\Cart(
+        $mockInstance = new AIArmada\Cart\Cart(
             storage: $storage,
             identifier: 'session-123',
             events: null,
@@ -186,7 +187,7 @@ describe('Cart Model', function (): void {
         {
             public function __construct(private TestUser $user) {}
 
-            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            public function resolve(): ?Model
             {
                 return $this->user;
             }

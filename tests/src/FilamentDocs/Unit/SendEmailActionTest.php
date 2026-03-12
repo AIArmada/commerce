@@ -7,7 +7,10 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Services\DocEmailService;
 use AIArmada\FilamentDocs\Actions\SendEmailAction;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
@@ -38,7 +41,7 @@ if (! function_exists('filamentDocs_makeSchemaLivewire')) {
                 string $key,
                 bool $withHidden = false,
                 array $skipComponentsChildContainersWhileSearching = [],
-            ): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null {
+            ): Component | Action | ActionGroup | null {
                 return null;
             }
 
@@ -58,7 +61,7 @@ if (! function_exists('filamentDocs_makeSchemaLivewire')) {
 }
 
 /**
- * @return array<int, \Filament\Schemas\Components\Component|\Filament\Actions\Action|\Filament\Actions\ActionGroup>
+ * @return array<int, Component|Action|ActionGroup>
  */
 function filamentDocs_flattenSchemaComponents(Schema $schema): array
 {

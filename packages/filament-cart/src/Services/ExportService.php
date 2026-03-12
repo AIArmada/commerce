@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCart\Services;
 
 use AIArmada\Cart\Models\CartDailyMetrics;
 use Illuminate\Support\Carbon;
+use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\CellAlignment;
 use OpenSpout\Common\Entity\Style\Style;
 use OpenSpout\Writer\XLSX\Writer;
@@ -144,18 +145,18 @@ class ExportService
         $funnel = $this->analyticsService->getConversionFunnel($from, $to);
         $recovery = $this->analyticsService->getRecoveryMetrics($from, $to);
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Cart Analytics Report',
         ], $headerStyle));
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Period: ' . $from->format('Y-m-d') . ' to ' . $to->format('Y-m-d'),
         ]));
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+        $writer->addRow(Row::fromValues([]));
 
         // Key Metrics
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Key Metrics',
         ], $headerStyle));
 
@@ -166,10 +167,10 @@ class ExportService
         $this->addMetricRow($writer, 'Total Value', '$' . number_format($metrics->total_value_cents / 100, 2));
         $this->addMetricRow($writer, 'Average Cart Value', '$' . number_format($metrics->average_cart_value_cents / 100, 2));
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+        $writer->addRow(Row::fromValues([]));
 
         // Rates
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Performance Rates',
         ], $headerStyle));
 
@@ -177,10 +178,10 @@ class ExportService
         $this->addMetricRow($writer, 'Abandonment Rate', number_format($metrics->abandonment_rate * 100, 2) . '%');
         $this->addMetricRow($writer, 'Recovery Rate', number_format($metrics->recovery_rate * 100, 2) . '%');
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+        $writer->addRow(Row::fromValues([]));
 
         // Funnel
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Conversion Funnel',
         ], $headerStyle));
 
@@ -190,10 +191,10 @@ class ExportService
         $this->addMetricRow($writer, 'Checkout Completed', (string) $funnel->checkout_completed);
         $this->addMetricRow($writer, 'Overall Drop-off', number_format($funnel->getOverallDropOffRate() * 100, 2) . '%');
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+        $writer->addRow(Row::fromValues([]));
 
         // Recovery
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Recovery Performance',
         ], $headerStyle));
 
@@ -216,7 +217,7 @@ class ExportService
             ->setFontBold()
             ->setCellAlignment(CellAlignment::CENTER);
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Date',
             'Carts Created',
             'Active',
@@ -239,7 +240,7 @@ class ExportService
             ->get();
 
         foreach ($metrics as $metric) {
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+            $writer->addRow(Row::fromValues([
                 $metric->date->format('Y-m-d'),
                 $metric->carts_created,
                 $metric->carts_active,
@@ -272,76 +273,76 @@ class ExportService
             ->setCellAlignment(CellAlignment::CENTER);
 
         // By Hour
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Abandonments by Hour',
         ], $headerStyle));
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Hour',
             'Count',
         ], $headerStyle));
 
         foreach ($analysis->by_hour as $hour => $count) {
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+            $writer->addRow(Row::fromValues([
                 sprintf('%02d:00', $hour),
                 $count,
             ]));
         }
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+        $writer->addRow(Row::fromValues([]));
 
         // By Day of Week
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Abandonments by Day of Week',
         ], $headerStyle));
 
         $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Day',
             'Count',
         ], $headerStyle));
 
         foreach ($analysis->by_day_of_week as $day => $count) {
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+            $writer->addRow(Row::fromValues([
                 $days[$day],
                 $count,
             ]));
         }
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+        $writer->addRow(Row::fromValues([]));
 
         // By Cart Value Range
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Abandonments by Cart Value',
         ], $headerStyle));
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Value Range',
             'Count',
         ], $headerStyle));
 
         foreach ($analysis->by_cart_value_range as $range => $count) {
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+            $writer->addRow(Row::fromValues([
                 $range,
                 $count,
             ]));
         }
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+        $writer->addRow(Row::fromValues([]));
 
         // Exit Points
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Common Exit Points',
         ], $headerStyle));
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Exit Point',
             'Count',
         ], $headerStyle));
 
         foreach ($analysis->common_exit_points as $point => $count) {
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+            $writer->addRow(Row::fromValues([
                 $point,
                 $count,
             ]));
@@ -363,7 +364,7 @@ class ExportService
             ->setCellAlignment(CellAlignment::CENTER);
 
         // Overall
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             'Recovery Performance Summary',
         ], $headerStyle));
 
@@ -373,15 +374,15 @@ class ExportService
         $this->addMetricRow($writer, 'Recovered Revenue', '$' . number_format($recovery->recovered_revenue_cents / 100, 2));
         $this->addMetricRow($writer, 'Recovery Rate', number_format($recovery->recovery_rate * 100, 2) . '%');
 
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([]));
+        $writer->addRow(Row::fromValues([]));
 
         // By Strategy
         if (! empty($recovery->by_strategy)) {
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+            $writer->addRow(Row::fromValues([
                 'Performance by Strategy',
             ], $headerStyle));
 
-            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+            $writer->addRow(Row::fromValues([
                 'Strategy',
                 'Attempts',
                 'Conversions',
@@ -394,7 +395,7 @@ class ExportService
                     ? ($data['conversions'] / $data['attempts']) * 100
                     : 0;
 
-                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                $writer->addRow(Row::fromValues([
                     ucfirst($strategy),
                     $data['attempts'],
                     $data['conversions'],
@@ -410,7 +411,7 @@ class ExportService
      */
     private function addMetricRow(Writer $writer, string $label, string $value): void
     {
-        $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+        $writer->addRow(Row::fromValues([
             $label,
             $value,
         ]));

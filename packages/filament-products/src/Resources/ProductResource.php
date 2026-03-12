@@ -10,11 +10,19 @@ use AIArmada\FilamentProducts\Resources\ProductResource\Pages;
 use AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\Data\PriceResultData;
+use AIArmada\Pricing\Models\Price;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
+use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -34,7 +42,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Number;
+use Illuminate\Support\Str;
 use Throwable;
 use UnitEnum;
 
@@ -80,7 +90,7 @@ final class ProductResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', Str::slug($state))
                                     ),
 
                                 TextInput::make('slug')
@@ -376,7 +386,7 @@ final class ProductResource extends Resource
                                         'categories',
                                         'name',
                                         modifyQueryUsing: function (Builder $query): Builder {
-                                            /** @var Builder<\AIArmada\Products\Models\Category> $query */
+                                            /** @var Builder<Category> $query */
                                             return $query->forOwner();
                                         }
                                     )
@@ -438,7 +448,7 @@ final class ProductResource extends Resource
                     ->sortable()
                     ->alignEnd()
                     ->description(function (Product $record): ?string {
-                        if (! class_exists(\AIArmada\Pricing\Models\Price::class)) {
+                        if (! class_exists(Price::class)) {
                             return null;
                         }
 
@@ -500,7 +510,7 @@ final class ProductResource extends Resource
                         'categories',
                         'name',
                         modifyQueryUsing: function (Builder $query): Builder {
-                            /** @var Builder<\AIArmada\Products\Models\Category> $query */
+                            /** @var Builder<Category> $query */
                             return $query->select(['id', 'name'])->forOwner()->groupBy('id', 'name');
                         }
                     )
@@ -509,9 +519,9 @@ final class ProductResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('duplicate')
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('duplicate')
                     ->label('Duplicate')
                     ->icon('heroicon-o-document-duplicate')
                     ->authorize(fn (Product $record): bool => auth()->user()?->can('duplicate', $record) ?? false)
@@ -527,19 +537,19 @@ final class ProductResource extends Resource
                     }),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
-                    \Filament\Actions\BulkAction::make('activate')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('activate')
                         ->label('Activate')
                         ->icon('heroicon-o-check-circle')
                         ->action(
-                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['status' => ProductStatus::Active])
+                            fn (Collection $records) => $records->each->update(['status' => ProductStatus::Active])
                         ),
-                    \Filament\Actions\BulkAction::make('draft')
+                    BulkAction::make('draft')
                         ->label('Set to Draft')
                         ->icon('heroicon-o-pencil')
                         ->action(
-                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['status' => ProductStatus::Draft])
+                            fn (Collection $records) => $records->each->update(['status' => ProductStatus::Draft])
                         ),
                 ]),
             ]);
@@ -664,7 +674,7 @@ final class ProductResource extends Resource
         ];
 
         // Add prices relation manager if pricing package is installed
-        if (class_exists(\AIArmada\Pricing\Models\Price::class)) {
+        if (class_exists(Price::class)) {
             $relations[] = RelationManagers\PricesRelationManager::class;
         }
 

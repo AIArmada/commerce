@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Facades;
 
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
+use AIArmada\Checkout\Services\CheckoutService;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static ?string getCurrentStep(\AIArmada\Checkout\Models\CheckoutSession $session)
  * @method static bool canProceed(\AIArmada\Checkout\Models\CheckoutSession $session)
  *
- * @see \AIArmada\Checkout\Services\CheckoutService
+ * @see CheckoutService
  */
 final class Checkout extends Facade
 {

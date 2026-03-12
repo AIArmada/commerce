@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Resources\OrderResource\Pages;
 
 use AIArmada\FilamentOrders\Resources\OrderResource;
+use AIArmada\Jnt\Shipping\JntShippingDriver;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
@@ -13,6 +14,9 @@ use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Shipped;
 use Filament\Actions;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Facades\Gate;
@@ -41,10 +45,10 @@ class ViewOrder extends ViewRecord
                     return $user ? Gate::forUser($user)->allows('update', $record) : false;
                 })
                 ->form([
-                    \Filament\Forms\Components\TextInput::make('transaction_id')
+                    TextInput::make('transaction_id')
                         ->label('Transaction ID')
                         ->required(),
-                    \Filament\Forms\Components\Select::make('gateway')
+                    Select::make('gateway')
                         ->label('Payment Gateway')
                         ->options((array) config('filament-orders.payment_gateways', [
                             'stripe' => 'Stripe',
@@ -100,13 +104,13 @@ class ViewOrder extends ViewRecord
                     if ($hasFulfillmentHandler && $carriers !== []) {
                         // Shipping integration available - show carrier selection
                         return [
-                            \Filament\Forms\Components\Select::make('carrier')
+                            Select::make('carrier')
                                 ->label('Shipping Carrier')
                                 ->options($carriers)
                                 ->default(config('shipping.default', 'jnt'))
                                 ->required()
                                 ->helperText('Shipment will be created automatically via carrier API'),
-                            \Filament\Forms\Components\Select::make('service')
+                            Select::make('service')
                                 ->label('Service Type')
                                 ->options([
                                     'standard' => 'Standard Delivery',
@@ -119,10 +123,10 @@ class ViewOrder extends ViewRecord
 
                     // Fallback to manual input
                     return [
-                        \Filament\Forms\Components\TextInput::make('carrier')
+                        TextInput::make('carrier')
                             ->label('Carrier')
                             ->required(),
-                        \Filament\Forms\Components\TextInput::make('tracking_number')
+                        TextInput::make('tracking_number')
                             ->label('Tracking Number')
                             ->required(),
                     ];
@@ -230,7 +234,7 @@ class ViewOrder extends ViewRecord
                     return $user ? Gate::forUser($user)->allows('cancel', $record) : false;
                 })
                 ->form([
-                    \Filament\Forms\Components\Textarea::make('reason')
+                    Textarea::make('reason')
                         ->label('Cancellation Reason')
                         ->required(),
                 ])
@@ -288,7 +292,7 @@ class ViewOrder extends ViewRecord
         $carriers = [];
 
         // Check for JNT integration
-        if (class_exists(\AIArmada\Jnt\Shipping\JntShippingDriver::class)) {
+        if (class_exists(JntShippingDriver::class)) {
             $carriers['jnt'] = 'J&T Express';
         }
 

@@ -30,7 +30,9 @@ use AIArmada\FilamentChip\FilamentChipServiceProvider;
 use AIArmada\FilamentShipping\FilamentShippingServiceProvider;
 use AIArmada\FilamentVouchers\FilamentVouchersServiceProvider;
 use AIArmada\Jnt\JntServiceProvider;
+use AIArmada\Products\ProductsServiceProvider;
 use AIArmada\Shipping\Facades\Shipping;
+use AIArmada\Shipping\ShippingServiceProvider;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use BackedEnum;
@@ -38,7 +40,11 @@ use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
 use DateInterval;
 use DateTimeInterface;
+use Filament\Actions\ActionsServiceProvider;
 use Filament\FilamentServiceProvider;
+use Filament\Forms\FormsServiceProvider;
+use Filament\Schemas\SchemasServiceProvider;
+use Filament\Tables\TablesServiceProvider;
 use Illuminate\Cache\CacheServiceProvider;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\DatabaseServiceProvider;
@@ -63,6 +69,7 @@ use Spatie\LaravelData\LaravelDataServiceProvider;
 use Spatie\LaravelData\Transformers\ArrayableTransformer;
 use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
 use Spatie\LaravelData\Transformers\EnumTransformer;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\PermissionServiceProvider;
 
 abstract class TestCase extends Orchestra
@@ -127,10 +134,10 @@ abstract class TestCase extends Orchestra
             LivewireTestingServiceProvider::class,
             LivewireServiceProvider::class,
             \Filament\Support\SupportServiceProvider::class,
-            \Filament\Actions\ActionsServiceProvider::class,
-            \Filament\Schemas\SchemasServiceProvider::class,
-            \Filament\Forms\FormsServiceProvider::class,
-            \Filament\Tables\TablesServiceProvider::class,
+            ActionsServiceProvider::class,
+            SchemasServiceProvider::class,
+            FormsServiceProvider::class,
+            TablesServiceProvider::class,
             FilamentServiceProvider::class,
             CartServiceProvider::class,
             CheckoutServiceProvider::class,
@@ -148,8 +155,8 @@ abstract class TestCase extends Orchestra
             FilamentAffiliatesServiceProvider::class,
             AffiliateNetworkServiceProvider::class,
             FilamentAffiliateNetworkServiceProvider::class,
-            \AIArmada\Shipping\ShippingServiceProvider::class,
-            \AIArmada\Products\ProductsServiceProvider::class,
+            ShippingServiceProvider::class,
+            ProductsServiceProvider::class,
             FilamentShippingServiceProvider::class,
             FilamentCashierServiceProvider::class,
             TestPanelProvider::class,
@@ -336,11 +343,11 @@ abstract class TestCase extends Orchestra
         $app['config']->set('filament-authz.super_admin_role', 'Super Admin');
 
         // Configure Spatie Media Library for testing
-        $app['config']->set('media-library.media_model', \Spatie\MediaLibrary\MediaCollections\Models\Media::class);
+        $app['config']->set('media-library.media_model', Media::class);
         $app['config']->set('media-library.disk_name', 'public');
 
         // Configure auth to use our test User model
-        $app['config']->set('auth.providers.users.model', Fixtures\Models\User::class);
+        $app['config']->set('auth.providers.users.model', User::class);
     }
 
     protected function defineDatabaseMigrations(): void

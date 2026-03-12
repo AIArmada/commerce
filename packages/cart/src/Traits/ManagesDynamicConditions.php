@@ -12,6 +12,7 @@ use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use Closure;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Throwable;
 
@@ -225,7 +226,7 @@ trait ManagesDynamicConditions
             'dynamic_conditions'
         );
 
-        \Illuminate\Support\Facades\Log::info('Restoring dynamic conditions', [
+        Log::info('Restoring dynamic conditions', [
             'count' => is_array($metadata) ? count($metadata) : 0,
             'identifier' => $this->getIdentifier(),
         ]);
@@ -647,7 +648,7 @@ trait ManagesDynamicConditions
     {
         try {
             $shouldApply = $condition->shouldApply($this);
-            \Illuminate\Support\Facades\Log::info('Condition evaluation result', [
+            Log::info('Condition evaluation result', [
                 'name' => $condition->getName(),
                 'shouldApply' => $shouldApply,
             ]);

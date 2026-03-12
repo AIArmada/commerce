@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\Chip\Data\PurchaseData;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
@@ -103,7 +104,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get the date when the payment was made.
      */
-    public function date(): ?\Carbon\CarbonImmutable
+    public function date(): ?CarbonImmutable
     {
         return $this->purchase->payment?->getPaidAt();
     }

@@ -7,7 +7,13 @@ namespace AIArmada\FilamentProducts\Resources;
 use AIArmada\FilamentProducts\Resources\CollectionResource\Pages;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
+use AIArmada\Products\Models\Product;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Radio;
@@ -19,6 +25,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
@@ -28,6 +35,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 final class CollectionResource extends Resource
@@ -73,7 +81,7 @@ final class CollectionResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', Str::slug($state))
                                     ),
 
                                 TextInput::make('slug')
@@ -218,8 +226,8 @@ final class CollectionResource extends Resource
                                     ->relationship(
                                         'products',
                                         'name',
-                                        modifyQueryUsing: function (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder {
-                                            /** @var \Illuminate\Database\Eloquent\Builder<\AIArmada\Products\Models\Product> $query */
+                                        modifyQueryUsing: function (Builder $query): Builder {
+                                            /** @var Builder<Product> $query */
                                             return $query->forOwner();
                                         }
                                     )
@@ -291,9 +299,9 @@ final class CollectionResource extends Resource
                     ->label('Featured'),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('rebuild')
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('rebuild')
                     ->label('Rebuild')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
@@ -302,7 +310,7 @@ final class CollectionResource extends Resource
                     ->action(function ($record): void {
                         $record->rebuildProductList();
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->success()
                             ->title('Collection Rebuilt')
                             ->body('Products have been re-matched based on conditions.')
@@ -310,8 +318,8 @@ final class CollectionResource extends Resource
                     }),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

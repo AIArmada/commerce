@@ -7,11 +7,14 @@ namespace AIArmada\Products\Models;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 /**
@@ -23,10 +26,10 @@ use InvalidArgumentException;
  * @property string|null $display_name
  * @property int $position
  * @property bool $is_visible
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Product $product
- * @property-read \Illuminate\Database\Eloquent\Collection<int, OptionValue> $values
+ * @property-read Collection<int, OptionValue> $values
  */
 class Option extends Model
 {
@@ -66,10 +69,10 @@ class Option extends Model
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
-    public function scopeForOwner(\Illuminate\Database\Eloquent\Builder $query, ?Model $owner = null, bool $includeGlobal = false): \Illuminate\Database\Eloquent\Builder
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = false): Builder
     {
         $ownerToScope = $owner;
 
@@ -83,7 +86,7 @@ class Option extends Model
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var \Illuminate\Database\Eloquent\Builder<Option> $scoped */
+        /** @var Builder<Option> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;

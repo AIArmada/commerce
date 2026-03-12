@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Tests\Unit\Services;
 
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
+use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
+use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Services\TaxCalculator;
@@ -186,7 +188,7 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        \AIArmada\Tax\Models\TaxExemption::create([
+        TaxExemption::create([
             'exemptable_id' => 'customer-exempt-test',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Test exemption',
@@ -208,7 +210,7 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
     public function test_create_exempt_result_without_zone_id(): void
     {
-        \AIArmada\Tax\Models\TaxExemption::create([
+        TaxExemption::create([
             'exemptable_id' => 'customer-no-zone',
             'exemptable_type' => 'App\\Models\\Customer',
             'reason' => 'Test exemption no zone',
@@ -534,7 +536,7 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
         $this->app->instance(TaxZoneSettings::class, $mockZoneSettings);
 
-        $this->expectException(\AIArmada\Tax\Exceptions\TaxZoneNotFoundException::class);
+        $this->expectException(TaxZoneNotFoundException::class);
 
         $this->calculator->calculateTax(10000, 'standard');
     }

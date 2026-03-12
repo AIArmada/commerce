@@ -67,6 +67,6 @@ it('executes redirect url methods (they may throw without a panel)', function ()
         $method = new ReflectionMethod($class, 'getRedirectUrl');
         $method->setAccessible(true);
 
-        expect(fn () => $method->invoke($instance))->toThrow(\Exception::class);
+        expect(fn () => $method->invoke($instance))->toThrow(Exception::class);
     }
 });
