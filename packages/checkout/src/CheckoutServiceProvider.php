@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout;
 
+use AIArmada\Cashier\GatewayManager;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
@@ -21,8 +23,13 @@ use AIArmada\Checkout\Steps\ProcessPaymentStep;
 use AIArmada\Checkout\Steps\ReserveInventoryStep;
 use AIArmada\Checkout\Steps\ResolveCustomerStep;
 use AIArmada\Checkout\Steps\ValidateCartStep;
+use AIArmada\Chip\Facades\Chip;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
+use AIArmada\Inventory\InventoryServiceProvider;
+use AIArmada\Promotions\PromotionsServiceProvider;
+use AIArmada\Tax\TaxServiceProvider;
+use AIArmada\Vouchers\VouchersServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
@@ -131,15 +138,15 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         // Priority: cashier → cashier-chip → chip
         $gateways = (array) config('checkout.payment.gateways', []);
 
-        if (class_exists(\AIArmada\Cashier\GatewayManager::class) && ($gateways['cashier']['enabled'] ?? true)) {
+        if (class_exists(GatewayManager::class) && ($gateways['cashier']['enabled'] ?? true)) {
             $resolver->register('cashier', $this->app->make(Integrations\Payment\CashierProcessor::class));
         }
 
-        if (class_exists(\AIArmada\CashierChip\Cashier::class) && ($gateways['cashier-chip']['enabled'] ?? true)) {
+        if (class_exists(Cashier::class) && ($gateways['cashier-chip']['enabled'] ?? true)) {
             $resolver->register('cashier-chip', $this->app->make(Integrations\Payment\CashierChipProcessor::class));
         }
 
-        if (class_exists(\AIArmada\Chip\Facades\Chip::class) && ($gateways['chip']['enabled'] ?? true)) {
+        if (class_exists(Chip::class) && ($gateways['chip']['enabled'] ?? true)) {
             $resolver->register('chip', $this->app->make(Integrations\Payment\ChipProcessor::class));
         }
     }
@@ -216,9 +223,9 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     protected function validatePaymentGatewayConfiguration(): void
     {
         // Check if at least one payment package exists
-        $hasCashier = class_exists(\AIArmada\Cashier\GatewayManager::class);
-        $hasCashierChip = class_exists(\AIArmada\CashierChip\Cashier::class);
-        $hasChip = class_exists(\AIArmada\Chip\Facades\Chip::class);
+        $hasCashier = class_exists(GatewayManager::class);
+        $hasCashierChip = class_exists(Cashier::class);
+        $hasChip = class_exists(Chip::class);
 
         if (! $hasCashier && ! $hasCashierChip && ! $hasChip) {
             throw MissingPaymentGatewayException::noGatewayInstalled();
@@ -227,18 +234,18 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     protected function hasInventoryPackage(): bool
     {
-        return class_exists(\AIArmada\Inventory\InventoryServiceProvider::class);
+        return class_exists(InventoryServiceProvider::class);
     }
 
     protected function hasTaxPackage(): bool
     {
-        return class_exists(\AIArmada\Tax\TaxServiceProvider::class);
+        return class_exists(TaxServiceProvider::class);
     }
 
     protected function hasDiscountPackages(): bool
     {
-        return class_exists(\AIArmada\Promotions\PromotionsServiceProvider::class)
-            || class_exists(\AIArmada\Vouchers\VouchersServiceProvider::class);
+        return class_exists(PromotionsServiceProvider::class)
+            || class_exists(VouchersServiceProvider::class);
     }
 
     protected function isDiscountsEnabled(): bool

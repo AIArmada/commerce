@@ -8,6 +8,8 @@ use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\CompanyStatementData;
+use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
 use Mockery;
@@ -271,7 +273,7 @@ class FakeChipCollectService extends ChipCollectService
     /**
      * Create a checkout purchase.
      *
-     * @param  array<int, \AIArmada\Chip\Data\ProductData>  $products
+     * @param  array<int, ProductData>  $products
      * @param  array<string, mixed>  $options
      */
     public function createCheckoutPurchase(array $products, ClientDetailsData $clientDetails, array $options = []): PurchaseData
@@ -340,9 +342,9 @@ class FakeChipCollectService extends ChipCollectService
     /**
      * Get a company statement.
      */
-    public function getCompanyStatement(string $statementId): \AIArmada\Chip\Data\CompanyStatementData
+    public function getCompanyStatement(string $statementId): CompanyStatementData
     {
-        return \AIArmada\Chip\Data\CompanyStatementData::from([
+        return CompanyStatementData::from([
             'id' => $statementId,
             'url' => 'http://example.com/statement.pdf',
             'period_start' => time(),
@@ -355,9 +357,9 @@ class FakeChipCollectService extends ChipCollectService
     /**
      * Cancel a company statement.
      */
-    public function cancelCompanyStatement(string $statementId): \AIArmada\Chip\Data\CompanyStatementData
+    public function cancelCompanyStatement(string $statementId): CompanyStatementData
     {
-        return \AIArmada\Chip\Data\CompanyStatementData::from([
+        return CompanyStatementData::from([
             'id' => $statementId,
             'url' => 'http://example.com/statement.pdf',
             'period_start' => time(),

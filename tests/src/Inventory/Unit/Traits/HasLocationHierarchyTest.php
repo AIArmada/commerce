@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Services\LocationTreeService;
 use Illuminate\Database\Eloquent\Collection;
 
 describe('HasLocationHierarchy', function (): void {
@@ -279,7 +280,7 @@ describe('HasLocationHierarchy', function (): void {
         });
 
         it('returns ancestors when path exists', function (): void {
-            $service = app(AIArmada\Inventory\Services\LocationTreeService::class);
+            $service = app(LocationTreeService::class);
 
             $parent = $service->createLocation('Parent', 'P-001');
             $child = $service->createLocation('Child', 'C-001', $parent);

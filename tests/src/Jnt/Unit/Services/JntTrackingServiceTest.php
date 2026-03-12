@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Enums\TrackingStatus;
@@ -9,6 +10,8 @@ use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Collection;
 use Spatie\LaravelData\DataCollection;
 
 /**
@@ -287,7 +290,7 @@ describe('JntTrackingService', function (): void {
         config()->set('jnt.owner.include_global', false);
 
         // Force a null owner even if a test-bound OwnerResolverInterface exists.
-        \AIArmada\CommerceSupport\Support\OwnerContext::override(null);
+        OwnerContext::override(null);
 
         JntOrder::query()->create([
             'order_id' => 'ORD-NEEDS-TRACKING-1',
@@ -301,10 +304,10 @@ describe('JntTrackingService', function (): void {
         $service = new JntTrackingService($expressService, $statusMapper);
 
         try {
-            expect(fn (): \Illuminate\Database\Eloquent\Collection => $service->getOrdersNeedingTrackingUpdate(limit: 10))
-                ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+            expect(fn (): Collection => $service->getOrdersNeedingTrackingUpdate(limit: 10))
+                ->toThrow(AuthorizationException::class);
         } finally {
-            \AIArmada\CommerceSupport\Support\OwnerContext::clearOverride();
+            OwnerContext::clearOverride();
         }
     });
 });

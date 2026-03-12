@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\CachesComputedValues;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,7 +48,7 @@ use Illuminate\Support\Str;
  */
 class AffiliateProgram extends Model
 {
-    use \AIArmada\CommerceSupport\Traits\CachesComputedValues;
+    use CachesComputedValues;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }

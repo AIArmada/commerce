@@ -8,6 +8,7 @@ use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -41,10 +42,10 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Carbon\CarbonInterface|null $occurred_at
- * @property \Carbon\CarbonInterface|null $approved_at
- * @property \Carbon\CarbonInterface|null $created_at
- * @property \Carbon\CarbonInterface|null $updated_at
+ * @property CarbonInterface|null $occurred_at
+ * @property CarbonInterface|null $approved_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
  * @property-read string|null $order_id Alias for order_reference
  * @property-read string $currency Alias for commission_currency
  * @property-read Affiliate $affiliate
@@ -149,7 +150,7 @@ class AffiliateConversion extends Model
                 return;
             }
 
-            $owner = \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+            $owner = OwnerContext::resolve();
 
             if ($owner) {
                 $conversion->owner_type = $owner->getMorphClass();

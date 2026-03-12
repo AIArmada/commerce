@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Jnt\Webhooks\JntSpatieSignatureValidator;
 use AIArmada\Jnt\Webhooks\JntWebhookProfile;
 use AIArmada\Jnt\Webhooks\JntWebhookResponse;
+use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
 use Illuminate\Http\Request;
 use Spatie\WebhookClient\Models\WebhookCall;
 use Spatie\WebhookClient\WebhookConfig;
@@ -36,7 +37,7 @@ it('validates a correct signature', function (): void {
         'webhook_response' => JntWebhookResponse::class,
         'webhook_model' => WebhookCall::class,
         'store_headers' => ['digest'],
-        'process_webhook_job' => AIArmada\Jnt\Webhooks\ProcessJntWebhook::class,
+        'process_webhook_job' => ProcessJntWebhook::class,
     ]);
 
     expect($validator->isValid($request, $config))->toBeTrue();
@@ -65,7 +66,7 @@ it('rejects an incorrect signature', function (): void {
         'webhook_response' => JntWebhookResponse::class,
         'webhook_model' => WebhookCall::class,
         'store_headers' => ['digest'],
-        'process_webhook_job' => AIArmada\Jnt\Webhooks\ProcessJntWebhook::class,
+        'process_webhook_job' => ProcessJntWebhook::class,
     ]);
 
     expect($validator->isValid($request, $config))->toBeFalse();
@@ -93,7 +94,7 @@ it('rejects request without signature header', function (): void {
         'webhook_response' => JntWebhookResponse::class,
         'webhook_model' => WebhookCall::class,
         'store_headers' => ['digest'],
-        'process_webhook_job' => AIArmada\Jnt\Webhooks\ProcessJntWebhook::class,
+        'process_webhook_job' => ProcessJntWebhook::class,
     ]);
 
     expect($validator->isValid($request, $config))->toBeFalse();

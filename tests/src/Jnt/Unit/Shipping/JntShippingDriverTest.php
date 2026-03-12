@@ -259,7 +259,7 @@ describe('cancelShipment', function (): void {
         $this->jntService->shouldReceive('trackParcel')
             ->once()
             ->with(null, 'JNTTRACK123')
-            ->andThrow(new \RuntimeException('Tracking unavailable'));
+            ->andThrow(new RuntimeException('Tracking unavailable'));
 
         $this->jntService->shouldReceive('cancelOrder')
             ->once()
@@ -273,7 +273,7 @@ describe('cancelShipment', function (): void {
         $this->jntService->shouldReceive('trackParcel')
             ->once()
             ->with(null, 'JNTTRACK123')
-            ->andThrow(new \RuntimeException('Tracking unavailable'));
+            ->andThrow(new RuntimeException('Tracking unavailable'));
 
         $this->jntService->shouldReceive('cancelOrder')
             ->once()

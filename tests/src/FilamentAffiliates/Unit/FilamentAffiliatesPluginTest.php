@@ -18,6 +18,7 @@ use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
 use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
 use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
 use Filament\Panel;
+use Mockery\MockInterface;
 
 it('exposes a stable plugin id', function (): void {
     expect((new FilamentAffiliatesPlugin)->getId())->toBe('filament-affiliates');
@@ -32,7 +33,7 @@ it('can be created via make factory method', function (): void {
 });
 
 it('registers affiliate resources, pages, and widgets', function (): void {
-    /** @var Panel&Mockery\MockInterface $panel */
+    /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound
@@ -77,7 +78,7 @@ it('registers affiliate resources, pages, and widgets', function (): void {
 it('skips payout and program admin surfaces when commission tracking is disabled', function (): void {
     config()->set('affiliates.features.commission_tracking.enabled', false);
 
-    /** @var Panel&Mockery\MockInterface $panel */
+    /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound
@@ -116,7 +117,7 @@ it('skips payout and program admin surfaces when commission tracking is disabled
 });
 
 it('boot method does not throw exceptions', function (): void {
-    /** @var Panel&Mockery\MockInterface $panel */
+    /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     $plugin = new FilamentAffiliatesPlugin;

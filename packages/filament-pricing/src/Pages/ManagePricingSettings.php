@@ -6,11 +6,13 @@ namespace AIArmada\FilamentPricing\Pages;
 
 use AIArmada\Pricing\Settings\PricingSettings;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Arr;
 use UnitEnum;
@@ -67,7 +69,7 @@ final class ManagePricingSettings extends Page
     }
 
     /**
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     public static function getFormComponents(): array
     {
@@ -166,7 +168,7 @@ final class ManagePricingSettings extends Page
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('save')
+            Action::make('save')
                 ->label(__('Save'))
                 ->icon('heroicon-o-check')
                 ->color('primary')

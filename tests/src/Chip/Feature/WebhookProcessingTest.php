@@ -4,11 +4,22 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookHealth;
+use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Events\PayoutFailed;
+use AIArmada\Chip\Events\PayoutPending;
+use AIArmada\Chip\Events\PayoutSuccess;
 use AIArmada\Chip\Events\PurchaseCancelled;
+use AIArmada\Chip\Events\PurchaseCaptured;
 use AIArmada\Chip\Events\PurchaseCreated;
+use AIArmada\Chip\Events\PurchaseHold;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
+use AIArmada\Chip\Events\PurchasePendingExecute;
+use AIArmada\Chip\Events\PurchasePreauthorized;
+use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
+use AIArmada\Chip\Events\PurchaseReleased;
 use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
 use AIArmada\Chip\Webhooks\WebhookMonitor;
 use Carbon\CarbonImmutable;
@@ -176,7 +187,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PayoutSuccess::class);
+        Event::assertDispatched(PayoutSuccess::class);
     });
 
     it('dispatches PayoutFailed event', function (): void {
@@ -198,7 +209,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PayoutFailed::class);
+        Event::assertDispatched(PayoutFailed::class);
     });
 
     it('dispatches PayoutPending event', function (): void {
@@ -220,7 +231,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PayoutPending::class);
+        Event::assertDispatched(PayoutPending::class);
     });
 
     it('dispatches PurchaseHold event', function (): void {
@@ -243,7 +254,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PurchaseHold::class);
+        Event::assertDispatched(PurchaseHold::class);
     });
 
     it('dispatches PurchaseCaptured event', function (): void {
@@ -266,7 +277,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PurchaseCaptured::class);
+        Event::assertDispatched(PurchaseCaptured::class);
     });
 
     it('dispatches PurchaseReleased event', function (): void {
@@ -289,7 +300,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PurchaseReleased::class);
+        Event::assertDispatched(PurchaseReleased::class);
     });
 
     it('dispatches PurchasePreauthorized event', function (): void {
@@ -312,7 +323,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PurchasePreauthorized::class);
+        Event::assertDispatched(PurchasePreauthorized::class);
     });
 
     it('dispatches PaymentRefunded event', function (): void {
@@ -335,7 +346,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PaymentRefunded::class);
+        Event::assertDispatched(PaymentRefunded::class);
     });
 
     it('dispatches PurchasePendingExecute event', function (): void {
@@ -358,7 +369,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PurchasePendingExecute::class);
+        Event::assertDispatched(PurchasePendingExecute::class);
     });
 
     it('dispatches PurchaseRecurringTokenDeleted event', function (): void {
@@ -381,7 +392,7 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(\AIArmada\Chip\Events\PurchaseRecurringTokenDeleted::class);
+        Event::assertDispatched(PurchaseRecurringTokenDeleted::class);
     });
 
     describe('extractPurchase', function (): void {
@@ -397,7 +408,7 @@ describe('ProcessChipWebhook', function (): void {
                 'client' => ['email' => 'test@example.com'],
             ];
 
-            $dispatcher = app(\AIArmada\Chip\Services\WebhookEventDispatcher::class);
+            $dispatcher = app(WebhookEventDispatcher::class);
             $result = $dispatcher->extractPurchase($payload);
 
             expect($result)->toBeInstanceOf(PurchaseData::class);
@@ -410,7 +421,7 @@ describe('ProcessChipWebhook', function (): void {
                 'id' => 'payout-123',
             ];
 
-            $dispatcher = app(\AIArmada\Chip\Services\WebhookEventDispatcher::class);
+            $dispatcher = app(WebhookEventDispatcher::class);
             $result = $dispatcher->extractPurchase($payload);
 
             expect($result)->toBeNull();

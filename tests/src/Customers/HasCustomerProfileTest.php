@@ -7,6 +7,7 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 // Create a test model that uses the trait (users table uses UUID primary key in the test schema)
 class TestUserWithProfile extends Model
@@ -25,7 +26,7 @@ describe('HasCustomerProfile Trait', function (): void {
     describe('customerProfile Relationship', function (): void {
         it('returns hasOne relationship', function (): void {
             $user = new TestUserWithProfile;
-            expect($user->customerProfile())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasOne::class);
+            expect($user->customerProfile())->toBeInstanceOf(HasOne::class);
         });
     });
 

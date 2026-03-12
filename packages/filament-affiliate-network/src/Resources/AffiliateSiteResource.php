@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\CreateAffiliateSite;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\EditAffiliateSite;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\ListAffiliateSites;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
@@ -179,9 +182,9 @@ final class AffiliateSiteResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\ListAffiliateSites::route('/'),
-            'create' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\CreateAffiliateSite::route('/create'),
-            'edit' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\EditAffiliateSite::route('/{record}/edit'),
+            'index' => ListAffiliateSites::route('/'),
+            'create' => CreateAffiliateSite::route('/create'),
+            'edit' => EditAffiliateSite::route('/{record}/edit'),
         ];
     }
 }

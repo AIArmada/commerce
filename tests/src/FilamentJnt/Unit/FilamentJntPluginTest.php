@@ -9,6 +9,7 @@ use AIArmada\FilamentJnt\Resources\JntTrackingEventResource;
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use Filament\Panel;
+use Mockery\MockInterface;
 
 uses(TestCase::class);
 
@@ -24,7 +25,7 @@ it('registers JNT resources and widgets when all features enabled', function ():
         'widgets' => true,
     ]);
 
-    /** @var Panel&Mockery\MockInterface $panel */
+    /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound
@@ -55,7 +56,7 @@ it('can disable individual resources via config', function (): void {
         'widgets' => false,
     ]);
 
-    /** @var Panel&Mockery\MockInterface $panel */
+    /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound
@@ -82,7 +83,7 @@ it('can disable features via fluent methods', function (): void {
         'widgets' => true,
     ]);
 
-    /** @var Panel&Mockery\MockInterface $panel */
+    /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound

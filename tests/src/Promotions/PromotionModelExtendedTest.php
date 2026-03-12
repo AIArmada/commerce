@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
 
 describe('Promotion Model - Extended Tests', function (): void {
@@ -284,13 +286,13 @@ describe('Promotion Model - Extended Tests', function (): void {
         it('has morphToMany products relationship', function (): void {
             $promotion = new Promotion;
 
-            expect($promotion->products())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphToMany::class);
+            expect($promotion->products())->toBeInstanceOf(MorphToMany::class);
         });
 
         it('has morphToMany categories relationship', function (): void {
             $promotion = new Promotion;
 
-            expect($promotion->categories())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphToMany::class);
+            expect($promotion->categories())->toBeInstanceOf(MorphToMany::class);
         });
     });
 
@@ -408,7 +410,7 @@ describe('Promotion Model - Extended Tests', function (): void {
             ]));
 
             // Owned record
-            $otherOwner = new class extends Illuminate\Database\Eloquent\Model
+            $otherOwner = new class extends Model
             {
                 public $incrementing = false;
 
@@ -438,7 +440,7 @@ describe('Promotion Model - Extended Tests', function (): void {
             $ownerId = 'owner-' . uniqid();
 
             // Create a mock owner model
-            $owner = new class extends Illuminate\Database\Eloquent\Model
+            $owner = new class extends Model
             {
                 public $incrementing = false;
 
@@ -464,7 +466,7 @@ describe('Promotion Model - Extended Tests', function (): void {
             ]));
 
             // Different owner
-            $otherOwner = new class extends Illuminate\Database\Eloquent\Model
+            $otherOwner = new class extends Model
             {
                 public $incrementing = false;
 
@@ -492,7 +494,7 @@ describe('Promotion Model - Extended Tests', function (): void {
             $ownerId = 'owner-' . uniqid();
 
             // Create a mock owner model
-            $owner = new class extends Illuminate\Database\Eloquent\Model
+            $owner = new class extends Model
             {
                 public $incrementing = false;
 
@@ -537,7 +539,7 @@ describe('Promotion Model - Extended Tests', function (): void {
             ]));
 
             // Owned record
-            $otherOwner = new class extends Illuminate\Database\Eloquent\Model
+            $otherOwner = new class extends Model
             {
                 public $incrementing = false;
 

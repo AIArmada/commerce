@@ -8,6 +8,7 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Events\DocumentsDispatched;
 use AIArmada\Checkout\Jobs\GenerateCheckoutDocumentsJob;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Docs\DocsServiceProvider;
 
 final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
 {
@@ -32,7 +33,7 @@ final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
     public function canSkip(CheckoutSession $session): bool
     {
         // Skip if docs package is not available
-        if (! class_exists(\AIArmada\Docs\DocsServiceProvider::class)) {
+        if (! class_exists(DocsServiceProvider::class)) {
             return true;
         }
 

@@ -5,8 +5,12 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource;
 use AIArmada\Shipping\Models\ShippingRate;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
+use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -17,7 +21,7 @@ if (! function_exists('filamentShipping_makeSchemaLivewire')) {
     {
         return new class extends LivewireComponent implements HasSchemas
         {
-            public function makeFilamentTranslatableContentDriver(): ?\Filament\Support\Contracts\TranslatableContentDriver
+            public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
             {
                 return null;
             }
@@ -27,7 +31,7 @@ if (! function_exists('filamentShipping_makeSchemaLivewire')) {
                 return null;
             }
 
-            public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): \Filament\Schemas\Components\Component | \Filament\Actions\Action | \Filament\Actions\ActionGroup | null
+            public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Component | Action | ActionGroup | null
             {
                 return null;
             }

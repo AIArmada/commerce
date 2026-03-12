@@ -7,6 +7,9 @@ namespace AIArmada\FilamentSignals\Resources;
 use AIArmada\FilamentSignals\Resources\SignalAlertLogResource\Pages;
 use AIArmada\Signals\Models\SignalAlertLog;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -80,14 +83,14 @@ final class SignalAlertLogResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_read'),
             ])
             ->actions([
-                \Filament\Actions\Action::make('mark_read')
+                Action::make('mark_read')
                     ->label('Mark Read')
                     ->icon('heroicon-o-check')
                     ->visible(fn (SignalAlertLog $record): bool => ! $record->is_read)
                     ->action(function (SignalAlertLog $record): void {
                         $record->markAsRead();
                     }),
-                \Filament\Actions\Action::make('mark_unread')
+                Action::make('mark_unread')
                     ->label('Mark Unread')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->visible(fn (SignalAlertLog $record): bool => $record->is_read)
@@ -96,8 +99,8 @@ final class SignalAlertLogResource extends Resource
                     }),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

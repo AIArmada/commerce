@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Models;
 
 use AIArmada\Cart\Models\Concerns\HasCartOwner;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon $created_at
  * @property Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AlertLog> $logs
+ * @property-read Collection<int, AlertLog> $logs
  */
 class AlertRule extends Model
 {

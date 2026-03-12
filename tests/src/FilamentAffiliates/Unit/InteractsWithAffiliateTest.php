@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use Illuminate\Database\Eloquent\Collection;
 
 beforeEach(function (): void {
     AffiliatePayout::query()->delete();
@@ -38,7 +39,7 @@ it('getConversions returns empty collection when no affiliate', function (): voi
     $conversions = $testClass->getConversions();
 
     expect($conversions)
-        ->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class)
+        ->toBeInstanceOf(Collection::class)
         ->toBeEmpty();
 });
 
@@ -47,7 +48,7 @@ it('getPayouts returns empty collection when no affiliate', function (): void {
     $payouts = $testClass->getPayouts();
 
     expect($payouts)
-        ->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class)
+        ->toBeInstanceOf(Collection::class)
         ->toBeEmpty();
 });
 

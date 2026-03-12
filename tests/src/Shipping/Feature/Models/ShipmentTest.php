@@ -10,6 +10,8 @@ use AIArmada\Shipping\States\Draft;
 use AIArmada\Shipping\States\Pending;
 use AIArmada\Shipping\States\ShipmentStatus;
 use AIArmada\Shipping\States\Shipped;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Str;
 
 describe('Shipment Model', function (): void {
@@ -98,16 +100,16 @@ describe('Shipment Model', function (): void {
         ]);
 
         // Test items relationship
-        expect($shipment->items())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($shipment->items())->toBeInstanceOf(HasMany::class);
 
         // Test events relationship
-        expect($shipment->events())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($shipment->events())->toBeInstanceOf(HasMany::class);
 
         // Test labels relationship
-        expect($shipment->labels())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($shipment->labels())->toBeInstanceOf(HasMany::class);
 
         // Test shippable relationship
-        expect($shipment->shippable())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
+        expect($shipment->shippable())->toBeInstanceOf(MorphTo::class);
     });
 
     it('can create shipment items', function (): void {

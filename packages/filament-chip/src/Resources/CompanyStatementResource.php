@@ -9,6 +9,7 @@ use AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Schemas\CompanyStatementInfolist;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Tables\CompanyStatementTable;
 use BackedEnum;
+use Filament\Resources\Pages\PageRegistration;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -47,7 +48,7 @@ final class CompanyStatementResource extends BaseChipResource
     }
 
     /**
-     * @return array<string, \Filament\Resources\Pages\PageRegistration>
+     * @return array<string, PageRegistration>
      */
     public static function getPages(): array
     {

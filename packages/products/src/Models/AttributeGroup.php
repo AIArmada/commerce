@@ -8,10 +8,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 /**
@@ -23,10 +25,10 @@ use InvalidArgumentException;
  * @property string|null $description
  * @property int $position
  * @property bool $is_visible
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Attribute> $groupAttributes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeSet> $attributeSets
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Attribute> $groupAttributes
+ * @property-read Collection<int, AttributeSet> $attributeSets
  */
 class AttributeGroup extends Model
 {
@@ -122,8 +124,8 @@ class AttributeGroup extends Model
     /**
      * Scope to visible groups only.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<AttributeGroup>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<AttributeGroup>
+     * @param  Builder<AttributeGroup>  $query
+     * @return Builder<AttributeGroup>
      */
     public function scopeVisible($query)
     {
@@ -133,8 +135,8 @@ class AttributeGroup extends Model
     /**
      * Scope to order by position.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<AttributeGroup>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<AttributeGroup>
+     * @param  Builder<AttributeGroup>  $query
+     * @return Builder<AttributeGroup>
      */
     public function scopeOrdered($query)
     {

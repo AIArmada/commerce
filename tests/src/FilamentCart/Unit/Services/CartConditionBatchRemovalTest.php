@@ -54,7 +54,7 @@ describe('CartConditionBatchRemoval service', function (): void {
         $storage->shouldReceive('getCreatedAt')->andReturn(now()->toIso8601String());
         $storage->shouldReceive('getUpdatedAt')->andReturn(now()->toIso8601String());
 
-        $storage->shouldReceive('putConditions')->with('session-123', 'default', \Mockery::on(function ($args) {
+        $storage->shouldReceive('putConditions')->with('session-123', 'default', Mockery::on(function ($args) {
             return ! isset($args['Bad Condition']);
         }))->once();
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Models;
 
+use AIArmada\FilamentCart\Database\Factories\CartConditionFactory;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,7 +40,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class CartCondition extends Model
 {
-    /** @use HasFactory<\AIArmada\FilamentCart\Database\Factories\CartConditionFactory> */
+    /** @use HasFactory<CartConditionFactory> */
     use HasFactory;
 
     use HasUuids;

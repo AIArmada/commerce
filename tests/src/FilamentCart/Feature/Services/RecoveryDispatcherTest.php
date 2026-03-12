@@ -13,6 +13,7 @@ use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\RecoveryDispatcher;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
 
 beforeEach(function (): void {
     Carbon::setTestNow(Carbon::create(2025, 1, 15, 12, 0, 0));
@@ -28,9 +29,9 @@ describe('RecoveryDispatcher', function (): void {
         $this->dispatcher = new RecoveryDispatcher;
 
         // Define required routes for testing
-        \Illuminate\Support\Facades\Route::get('/recovery/track/open/{attempt}', fn () => 'ok')
+        Route::get('/recovery/track/open/{attempt}', fn () => 'ok')
             ->name('cart.recovery.track.open');
-        \Illuminate\Support\Facades\Route::get('/recovery/track/click/{attempt}', fn () => 'ok')
+        Route::get('/recovery/track/click/{attempt}', fn () => 'ok')
             ->name('cart.recovery.track.click');
 
         // Create a campaign

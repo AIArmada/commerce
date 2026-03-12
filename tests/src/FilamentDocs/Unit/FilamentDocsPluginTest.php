@@ -15,6 +15,7 @@ use AIArmada\FilamentDocs\Widgets\RecentDocumentsWidget;
 use AIArmada\FilamentDocs\Widgets\RevenueChartWidget;
 use AIArmada\FilamentDocs\Widgets\StatusBreakdownWidget;
 use Filament\Panel;
+use Mockery\MockInterface;
 
 it('exposes a stable plugin id', function (): void {
     $plugin = new FilamentDocsPlugin;
@@ -23,7 +24,7 @@ it('exposes a stable plugin id', function (): void {
 });
 
 it('registers docs resources and widgets on the panel', function (): void {
-    /** @var Panel&Mockery\MockInterface $panel */
+    /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound
@@ -69,7 +70,7 @@ it('can disable pages and widgets via fluent API', function (): void {
         ->revenueChartWidgetEnabled(false)
         ->statusBreakdownWidgetEnabled(false);
 
-    /** @var Panel&Mockery\MockInterface $panel */
+    /** @var Panel&MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound

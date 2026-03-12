@@ -75,7 +75,7 @@ describe('ChipWebhookHandler verifyWebhook', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $webhookService->shouldReceive('verifySignature')
             ->once()
-            ->andThrow(new \AIArmada\Chip\Exceptions\WebhookVerificationException('Invalid signature'));
+            ->andThrow(new AIArmada\Chip\Exceptions\WebhookVerificationException('Invalid signature'));
 
         $collectService = Mockery::mock(ChipCollectService::class);
 

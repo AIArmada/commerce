@@ -5,11 +5,13 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
+use Illuminate\Support\Carbon;
 
 describe('AffiliateFraudSignal Model', function (): void {
     beforeEach(function (): void {
@@ -83,7 +85,7 @@ describe('AffiliateFraudSignal Model', function (): void {
     });
 
     test('belongs to touchpoint when set', function (): void {
-        $attribution = AIArmada\Affiliates\Models\AffiliateAttribution::create([
+        $attribution = AffiliateAttribution::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'visitor_fingerprint' => 'touchpoint123',
@@ -330,7 +332,7 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => '2024-06-15 10:30:00',
         ]);
 
-        expect($signal->detected_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($signal->detected_at)->toBeInstanceOf(Carbon::class);
         expect($signal->detected_at->format('Y-m-d'))->toBe('2024-06-15');
     });
 

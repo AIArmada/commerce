@@ -15,6 +15,7 @@ use AIArmada\FilamentCart\Settings\CartRecoverySettings;
 use AIArmada\Orders\Models\Order;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -123,7 +124,7 @@ class RecoveryScheduler
             return null;
         }
 
-        /** @var \AIArmada\FilamentCart\Models\Cart $cart */
+        /** @var Cart $cart */
         return $this->createAttempt(
             $campaign,
             $cart,
@@ -147,9 +148,9 @@ class RecoveryScheduler
     /**
      * Find carts eligible for a campaign.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Cart>
+     * @return Collection<int, Cart>
      */
-    private function findEligibleCarts(RecoveryCampaign $campaign): \Illuminate\Database\Eloquent\Collection
+    private function findEligibleCarts(RecoveryCampaign $campaign): Collection
     {
         $settings = $this->resolveSettings();
         $cartTable = (new Cart)->getTable();

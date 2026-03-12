@@ -12,6 +12,7 @@ use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\Affiliates\States\Pending;
 use Carbon\Carbon;
+use Spatie\LaravelData\Data;
 
 describe('AffiliateAttributionData', function (): void {
     describe('construction', function (): void {
@@ -411,11 +412,11 @@ describe('AffiliateData', function (): void {
 
 describe('Data classes structure', function (): void {
     test('AffiliateAttributionData extends Data', function (): void {
-        expect(is_subclass_of(AffiliateAttributionData::class, Spatie\LaravelData\Data::class))->toBeTrue();
+        expect(is_subclass_of(AffiliateAttributionData::class, Data::class))->toBeTrue();
     });
 
     test('AffiliateData extends Data', function (): void {
-        expect(is_subclass_of(AffiliateData::class, Spatie\LaravelData\Data::class))->toBeTrue();
+        expect(is_subclass_of(AffiliateData::class, Data::class))->toBeTrue();
     });
 
     test('AffiliateAttributionData uses SnakeCaseMapper', function (): void {

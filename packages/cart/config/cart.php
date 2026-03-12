@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\Cart\Models\CartModel;
 
 return [
     /*
@@ -23,7 +24,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'models' => [
-        'cart' => env('CART_MODEL_CLASS', \AIArmada\Cart\Models\CartModel::class),
+        'cart' => env('CART_MODEL_CLASS', CartModel::class),
     ],
 
     'money' => [

@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Models\Concerns\AutoAssignsSignalOwnerOnCreate;
 use AIArmada\Signals\Services\SignalEventConditionDefinition;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,7 +26,7 @@ use RuntimeException;
  * @property string $match_type
  * @property array<int, array<string, mixed>>|null $conditions
  * @property bool $is_active
- * @property-read \Illuminate\Database\Eloquent\Collection<int, SavedSignalReport> $savedReports
+ * @property-read Collection<int, SavedSignalReport> $savedReports
  */
 final class SignalSegment extends Model
 {

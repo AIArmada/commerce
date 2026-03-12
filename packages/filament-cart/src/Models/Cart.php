@@ -8,6 +8,7 @@ use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\FilamentCart\Database\Factories\CartFactory;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -53,7 +54,7 @@ class Cart extends Model
      * Cascade handling is managed at the application level through the sync manager.
      */
 
-    /** @use HasFactory<\AIArmada\FilamentCart\Database\Factories\CartFactory> */
+    /** @use HasFactory<CartFactory> */
     use HasFactory;
 
     use HasOwner {

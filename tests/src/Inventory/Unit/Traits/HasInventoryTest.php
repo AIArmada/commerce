@@ -7,6 +7,8 @@ use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
@@ -23,7 +25,7 @@ beforeEach(function (): void {
 describe('HasInventory trait', function (): void {
     describe('inventoryLevels relationship', function (): void {
         it('returns morph many relationship', function (): void {
-            expect($this->item->inventoryLevels())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphMany::class);
+            expect($this->item->inventoryLevels())->toBeInstanceOf(MorphMany::class);
         });
 
         it('returns inventory levels for the model', function (): void {
@@ -51,7 +53,7 @@ describe('HasInventory trait', function (): void {
 
     describe('inventoryMovements relationship', function (): void {
         it('returns morph many relationship', function (): void {
-            expect($this->item->inventoryMovements())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphMany::class);
+            expect($this->item->inventoryMovements())->toBeInstanceOf(MorphMany::class);
         });
 
         it('returns movements ordered by occurred_at desc', function (): void {
@@ -79,7 +81,7 @@ describe('HasInventory trait', function (): void {
 
     describe('inventoryAllocations relationship', function (): void {
         it('returns morph many relationship', function (): void {
-            expect($this->item->inventoryAllocations())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphMany::class);
+            expect($this->item->inventoryAllocations())->toBeInstanceOf(MorphMany::class);
         });
 
         it('returns allocations for the model', function (): void {
@@ -233,7 +235,7 @@ describe('HasInventory trait', function (): void {
         it('creates allocations for cart', function (): void {
             $allocations = $this->item->allocate(10, 'cart-123', 30);
 
-            expect($allocations)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class);
+            expect($allocations)->toBeInstanceOf(Collection::class);
             expect($allocations->sum('quantity'))->toBe(10);
         });
     });
@@ -258,7 +260,7 @@ describe('HasInventory trait', function (): void {
 
             $allocations = $this->item->getAllocations('cart-456');
 
-            expect($allocations)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class);
+            expect($allocations)->toBeInstanceOf(Collection::class);
             expect($allocations->sum('quantity'))->toBe(10);
         });
 
@@ -276,7 +278,7 @@ describe('HasInventory trait', function (): void {
 
             $history = $this->item->getInventoryHistory();
 
-            expect($history)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class);
+            expect($history)->toBeInstanceOf(Collection::class);
             expect($history->count())->toBeGreaterThanOrEqual(2);
         });
 

@@ -17,7 +17,7 @@ beforeEach(function (): void {
     OwnerContext::clearOverride();
 
     $this->affiliate = Affiliate::create([
-        'code' => 'API-TEST-'.uniqid(),
+        'code' => 'API-TEST-' . uniqid(),
         'name' => 'API Test Affiliate',
         'contact_email' => 'api@example.com',
         'status' => Active::class,
@@ -78,7 +78,7 @@ describe('AffiliateApiController', function (): void {
             ]);
 
             $affiliateA = Affiliate::create([
-                'code' => 'API-OWNER-A-'.uniqid(),
+                'code' => 'API-OWNER-A-' . uniqid(),
                 'name' => 'Affiliate A',
                 'contact_email' => 'a@example.com',
                 'status' => Active::class,
@@ -284,7 +284,7 @@ describe('AffiliateApiController class structure', function (): void {
     });
 
     test('registers link creation as a post route', function (): void {
-        $source = file_get_contents('/Users/saiffil/Herd/commerce/packages/affiliates/routes/api.php');
+        $source = file_get_contents(dirname(__DIR__, 4) . '/packages/affiliates/routes/api.php');
 
         expect($source)
             ->toContain("Route::post('{code}/links'")

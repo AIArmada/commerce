@@ -11,6 +11,7 @@ use AIArmada\Signals\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 
 uses(SignalsTestCase::class);
 
@@ -186,7 +187,7 @@ it('processes signal alert rules for each owner when no ambient owner is resolve
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?\Illuminate\Database\Eloquent\Model
+        public function resolve(): ?Model
         {
             return null;
         }

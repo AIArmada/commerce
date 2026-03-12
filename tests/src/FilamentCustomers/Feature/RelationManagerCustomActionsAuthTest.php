@@ -11,6 +11,7 @@ use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers\Addre
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers\NotesRelationManager;
 use Filament\Actions\Action;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 it('custom relation manager actions require authentication (abort 403)', function (): void {
@@ -70,7 +71,7 @@ it('custom relation manager actions require authentication (abort 403)', functio
     $pin->livewire($notesRm);
     $pin->record($note);
 
-    \Illuminate\Support\Facades\Auth::logout();
+    Auth::logout();
 
     expect(fn (): mixed => $setBilling->call())->toThrow(HttpException::class);
     expect(fn (): mixed => $pin->call())->toThrow(HttpException::class);

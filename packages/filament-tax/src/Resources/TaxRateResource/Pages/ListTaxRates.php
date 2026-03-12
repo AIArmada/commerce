@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Resources\TaxRateResource\Pages;
 
 use AIArmada\FilamentTax\Resources\TaxRateResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListTaxRates extends ListRecords
@@ -14,7 +15,7 @@ class ListTaxRates extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

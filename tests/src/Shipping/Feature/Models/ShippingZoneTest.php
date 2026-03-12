@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Models\ShippingRate;
 use AIArmada\Shipping\Models\ShippingZone;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('ShippingZone Model', function (): void {
     it('can create a shipping zone with required fields', function (): void {
@@ -67,7 +68,7 @@ describe('ShippingZone Model', function (): void {
             'countries' => ['US'],
         ]);
 
-        expect($zone->rates())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($zone->rates())->toBeInstanceOf(HasMany::class);
     });
 
     it('can create shipping rates', function (): void {

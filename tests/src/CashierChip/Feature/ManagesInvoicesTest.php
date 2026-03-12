@@ -6,6 +6,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
 use AIArmada\CashierChip\Invoice;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use Illuminate\Support\Collection;
 
 class ManagesInvoicesTest extends CashierChipTestCase
 {
@@ -42,7 +43,7 @@ class ManagesInvoicesTest extends CashierChipTestCase
 
         $invoices = $this->user->invoices();
 
-        $this->assertInstanceOf(\Illuminate\Support\Collection::class, $invoices);
+        $this->assertInstanceOf(Collection::class, $invoices);
         // If fake works correctly with filtering by client, we should find at least one
         // Note: charge() creates a purchase.
         // ManagesInvoices::invoices() calls Cashier::chip()->purchases($params).

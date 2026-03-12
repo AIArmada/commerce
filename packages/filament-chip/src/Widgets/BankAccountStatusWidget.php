@@ -6,6 +6,7 @@ namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\BankAccount;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Database\Eloquent\Builder;
 
 final class BankAccountStatusWidget extends ChartWidget
 {
@@ -92,10 +93,10 @@ final class BankAccountStatusWidget extends ChartWidget
     /**
      * @template TModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<TModel>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<TModel>
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
      */
-    private function scopedQuery(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    private function scopedQuery(Builder $query): Builder
     {
         if (method_exists($query->getModel(), 'scopeForOwner')) {
             return $query->forOwner(); // @phpstan-ignore method.notFound

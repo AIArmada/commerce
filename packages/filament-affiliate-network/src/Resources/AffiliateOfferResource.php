@@ -7,6 +7,9 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\ListAffiliateOffers;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
@@ -282,9 +285,9 @@ final class AffiliateOfferResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\ListAffiliateOffers::route('/'),
-            'create' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer::route('/create'),
-            'edit' => \AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer::route('/{record}/edit'),
+            'index' => ListAffiliateOffers::route('/'),
+            'create' => CreateAffiliateOffer::route('/create'),
+            'edit' => EditAffiliateOffer::route('/{record}/edit'),
         ];
     }
 }

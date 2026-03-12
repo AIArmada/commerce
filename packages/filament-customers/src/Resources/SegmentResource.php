@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources;
 
+use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Policies\SegmentPolicy;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
@@ -21,6 +28,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 class SegmentResource extends Resource
@@ -69,7 +77,7 @@ class SegmentResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', Str::slug($state))
                                     ),
 
                                 Forms\Components\TextInput::make('slug')
@@ -129,7 +137,7 @@ class SegmentResource extends Resource
                                         Forms\Components\Select::make('value_status')
                                             ->label('Status')
                                             ->options(
-                                                collect(\AIArmada\Customers\Enums\CustomerStatus::cases())
+                                                collect(CustomerStatus::cases())
                                                     ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
                                             )
                                             ->visible(fn (Get $get) => $get('field') === 'status')
@@ -236,9 +244,9 @@ class SegmentResource extends Resource
                     ->label('Active'),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('rebuild')
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('rebuild')
                     ->label('Rebuild')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
@@ -253,7 +261,7 @@ class SegmentResource extends Resource
 
                         $count = $record->rebuildCustomerList();
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->success()
                             ->title('Segment Rebuilt')
                             ->body("{$count} customer(s) now in this segment.")
@@ -261,8 +269,8 @@ class SegmentResource extends Resource
                     }),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

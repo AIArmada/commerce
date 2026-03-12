@@ -15,12 +15,14 @@ use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use League\Csv\Reader;
 use League\Csv\Writer;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use UnitEnum;
 
 final class ImportExportProducts extends Page
@@ -46,7 +48,7 @@ final class ImportExportProducts extends Page
     {
         return Schema::make($this)
             ->schema([
-                \Filament\Schemas\Components\Section::make('Import Products')
+                Section::make('Import Products')
                     ->schema([
                         Forms\Components\FileUpload::make('csv_file')
                             ->label('CSV File')
@@ -108,7 +110,7 @@ final class ImportExportProducts extends Page
                     $productData = [
                         'name' => $record['name'] ?? null,
                         'sku' => $record['sku'] ?? null,
-                        'slug' => $record['slug'] ?? \Illuminate\Support\Str::slug($record['name'] ?? ''),
+                        'slug' => $record['slug'] ?? Str::slug($record['name'] ?? ''),
                         'description' => $record['description'] ?? null,
                         'short_description' => $record['short_description'] ?? null,
                         'currency' => $record['currency'] ?? null,
@@ -237,7 +239,7 @@ final class ImportExportProducts extends Page
         ];
     }
 
-    protected function exportProducts(array $data): \Symfony\Component\HttpFoundation\StreamedResponse
+    protected function exportProducts(array $data): StreamedResponse
     {
         $query = Product::query()->forOwner();
 
@@ -286,7 +288,7 @@ final class ImportExportProducts extends Page
         ]);
     }
 
-    protected function downloadTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    protected function downloadTemplate(): StreamedResponse
     {
         $csv = Writer::createFromString();
 

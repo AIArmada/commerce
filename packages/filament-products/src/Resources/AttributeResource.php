@@ -7,7 +7,12 @@ namespace AIArmada\FilamentProducts\Resources;
 use AIArmada\FilamentProducts\Resources\AttributeResource\Pages;
 use AIArmada\Products\Enums\AttributeType;
 use AIArmada\Products\Models\Attribute;
+use AIArmada\Products\Models\AttributeGroup;
 use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -96,7 +101,7 @@ final class AttributeResource extends Resource
                                 'groups',
                                 'name',
                                 modifyQueryUsing: function (Builder $query): Builder {
-                                    /** @var Builder<\AIArmada\Products\Models\AttributeGroup> $query */
+                                    /** @var Builder<AttributeGroup> $query */
                                     return $query->forOwner();
                                 }
                             )
@@ -261,7 +266,7 @@ final class AttributeResource extends Resource
                         'groups',
                         'name',
                         modifyQueryUsing: function (Builder $query): Builder {
-                            /** @var Builder<\AIArmada\Products\Models\AttributeGroup> $query */
+                            /** @var Builder<AttributeGroup> $query */
                             return $query->forOwner();
                         }
                     )
@@ -278,12 +283,12 @@ final class AttributeResource extends Resource
                     ->label(__('filament-products::resources.attributes.fields.is_searchable')),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->reorderable('position');

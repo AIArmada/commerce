@@ -8,8 +8,10 @@ use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,18 +30,18 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Carbon\CarbonInterface|null $scheduled_at
- * @property \Carbon\CarbonInterface|null $paid_at
- * @property \Carbon\CarbonInterface|null $created_at
- * @property \Carbon\CarbonInterface|null $updated_at
+ * @property CarbonInterface|null $scheduled_at
+ * @property CarbonInterface|null $paid_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
  * @property-read int $amount_minor Alias for total_minor
  * @property-read string|null $external_reference From metadata
  * @property-read string|null $notes From metadata
  * @property-read Affiliate|null $affiliate Alias for payee when payee is an Affiliate
  * @property-read Model|null $payee
  * @property-read Model|null $owner
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutEvent> $events
+ * @property-read Collection<int, AffiliateConversion> $conversions
+ * @property-read Collection<int, AffiliatePayoutEvent> $events
  */
 class AffiliatePayout extends Model
 {
@@ -132,7 +134,7 @@ class AffiliatePayout extends Model
                 return;
             }
 
-            $owner = \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+            $owner = OwnerContext::resolve();
 
             if ($owner) {
                 $payout->owner_type = $owner->getMorphClass();

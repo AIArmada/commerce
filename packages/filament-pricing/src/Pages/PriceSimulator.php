@@ -6,11 +6,13 @@ namespace AIArmada\FilamentPricing\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use BackedEnum;
 use DateTimeInterface;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -96,8 +98,8 @@ final class PriceSimulator extends Page
                                 $owner = $this->resolveOwner();
 
                                 $query = $this->scopeQueryForOwner(
-                                    \AIArmada\Products\Models\Product::class,
-                                    \AIArmada\Products\Models\Product::query(),
+                                    Product::class,
+                                    Product::query(),
                                     $owner
                                 );
 
@@ -123,8 +125,8 @@ final class PriceSimulator extends Page
                                 $owner = $this->resolveOwner();
 
                                 $query = $this->scopeQueryForOwner(
-                                    \AIArmada\Products\Models\Product::class,
-                                    \AIArmada\Products\Models\Product::query(),
+                                    Product::class,
+                                    Product::query(),
                                     $owner
                                 );
 
@@ -156,7 +158,7 @@ final class PriceSimulator extends Page
                                         $query->where('sku', 'like', "%{$search}%")
                                             ->orWhereHas('product', function ($inner) use ($owner, $search): void {
                                                 $inner = $this->scopeQueryForOwner(
-                                                    \AIArmada\Products\Models\Product::class,
+                                                    Product::class,
                                                     $inner,
                                                     $owner
                                                 );
@@ -167,7 +169,7 @@ final class PriceSimulator extends Page
                                     })
                                     ->whereHas('product', function ($query) use ($owner): void {
                                         $query = $this->scopeQueryForOwner(
-                                            \AIArmada\Products\Models\Product::class,
+                                            Product::class,
                                             $query,
                                             $owner
                                         );
@@ -204,7 +206,7 @@ final class PriceSimulator extends Page
                                     ->whereKey($value)
                                     ->whereHas('product', function ($query) use ($owner): void {
                                         $query = $this->scopeQueryForOwner(
-                                            \AIArmada\Products\Models\Product::class,
+                                            Product::class,
                                             $query,
                                             $owner
                                         );
@@ -319,17 +321,17 @@ final class PriceSimulator extends Page
         $priceable = null;
         if ($data['product_type'] === 'product') {
             $query = $this->scopeQueryForOwner(
-                \AIArmada\Products\Models\Product::class,
-                \AIArmada\Products\Models\Product::query(),
+                Product::class,
+                Product::query(),
                 $owner
             );
 
             $priceable = $query->find($data['product_id']);
         } else {
-            $priceable = \AIArmada\Products\Models\Variant::query()
+            $priceable = Variant::query()
                 ->whereHas('product', function ($query) use ($owner): void {
                     $query = $this->scopeQueryForOwner(
-                        \AIArmada\Products\Models\Product::class,
+                        Product::class,
                         $query,
                         $owner
                     );
@@ -361,7 +363,7 @@ final class PriceSimulator extends Page
         if ($effectiveAt instanceof DateTimeInterface || (is_string($effectiveAt) && $effectiveAt !== '')) {
             $context['effective_at'] = $effectiveAt;
         }
-        /** @var \AIArmada\Pricing\Contracts\Priceable $priceable */
+        /** @var Priceable $priceable */
         $priceResult = $pricingService->calculate(
             item: $priceable,
             quantity: (int) $data['quantity'],
@@ -498,12 +500,12 @@ final class PriceSimulator extends Page
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('calculate')
+            Action::make('calculate')
                 ->label('Calculate Price')
                 ->icon('heroicon-o-calculator')
                 ->color('primary')
                 ->action('calculate'),
-            \Filament\Actions\Action::make('clear')
+            Action::make('clear')
                 ->label('Clear')
                 ->icon('heroicon-o-x-mark')
                 ->color('gray')

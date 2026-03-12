@@ -6,6 +6,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
+use Carbon\CarbonImmutable;
 
 describe('AffiliateOfferLink Model', function (): void {
     beforeEach(function (): void {
@@ -214,7 +215,7 @@ describe('AffiliateOfferLink Model', function (): void {
                 ->expiresAt(now()->addDays(30))
                 ->create();
 
-            expect($link->expires_at)->toBeInstanceOf(\Carbon\CarbonImmutable::class);
+            expect($link->expires_at)->toBeInstanceOf(CarbonImmutable::class);
         });
 
         test('metadata is array', function (): void {

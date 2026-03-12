@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Cashier;
+use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
@@ -19,7 +20,7 @@ describe('Cashier Class - Additional Coverage', function (): void {
         it('returns gateway via static method', function (): void {
             $gateway = Cashier::gateway();
 
-            expect($gateway)->toBeInstanceOf(AIArmada\Cashier\Contracts\GatewayContract::class);
+            expect($gateway)->toBeInstanceOf(GatewayContract::class);
         });
 
         it('returns specific gateway via static method', function (): void {

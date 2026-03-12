@@ -7,6 +7,12 @@ namespace AIArmada\FilamentProducts\Resources;
 use AIArmada\FilamentProducts\Resources\CategoryResource\Pages;
 use AIArmada\Products\Models\Category;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -22,6 +28,8 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 final class CategoryResource extends Resource
@@ -67,7 +75,7 @@ final class CategoryResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', Str::slug($state))
                                     ),
 
                                 TextInput::make('slug')
@@ -82,7 +90,7 @@ final class CategoryResource extends Resource
                                         'parent',
                                         'name',
                                         modifyQueryUsing: function (Builder $query): Builder {
-                                            /** @var Builder<\AIArmada\Products\Models\Category> $query */
+                                            /** @var Builder<Category> $query */
                                             return $query->forOwner();
                                         }
                                     )
@@ -224,7 +232,7 @@ final class CategoryResource extends Resource
                         'parent',
                         'name',
                         modifyQueryUsing: function (Builder $query): Builder {
-                            /** @var Builder<\AIArmada\Products\Models\Category> $query */
+                            /** @var Builder<Category> $query */
                             return $query->forOwner();
                         }
                     )
@@ -232,27 +240,27 @@ final class CategoryResource extends Resource
                     ->options(fn () => ['0' => 'Root Categories'] + Category::query()->forOwner()->whereNull('parent_id')->pluck('name', 'id')->toArray()),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('add_child')
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('add_child')
                     ->label('Add Child')
                     ->icon('heroicon-o-plus')
                     ->url(fn ($record) => static::getUrl('create', ['parent' => $record->id])),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
-                    \Filament\Actions\BulkAction::make('show')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('show')
                         ->label('Make Visible')
                         ->icon('heroicon-o-eye')
                         ->action(
-                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_visible' => true])
+                            fn (Collection $records) => $records->each->update(['is_visible' => true])
                         ),
-                    \Filament\Actions\BulkAction::make('hide')
+                    BulkAction::make('hide')
                         ->label('Make Hidden')
                         ->icon('heroicon-o-eye-slash')
                         ->action(
-                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_visible' => false])
+                            fn (Collection $records) => $records->each->update(['is_visible' => false])
                         ),
                 ]),
             ]);

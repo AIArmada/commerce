@@ -7,6 +7,7 @@ namespace AIArmada\Chip\Webhooks;
 use AIArmada\Chip\Data\WebhookHealth;
 use AIArmada\Chip\Models\Webhook;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Monitors webhook health and provides statistics.
@@ -110,9 +111,9 @@ class WebhookMonitor
     /**
      * Get pending webhooks that haven't been processed.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Webhook>
+     * @return Collection<int, Webhook>
      */
-    public function getPendingWebhooks(int $limit = 100): \Illuminate\Database\Eloquent\Collection
+    public function getPendingWebhooks(int $limit = 100): Collection
     {
         return Webhook::query()
             ->forOwner()
@@ -125,9 +126,9 @@ class WebhookMonitor
     /**
      * Get recently failed webhooks.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Webhook>
+     * @return Collection<int, Webhook>
      */
-    public function getRecentFailures(int $limit = 50): \Illuminate\Database\Eloquent\Collection
+    public function getRecentFailures(int $limit = 50): Collection
     {
         return Webhook::query()
             ->forOwner()

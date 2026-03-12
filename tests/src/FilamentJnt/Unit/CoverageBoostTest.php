@@ -23,6 +23,10 @@ use AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Schemas\JntWebhookLogIn
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Tables\JntWebhookLogTable;
 use AIArmada\FilamentJnt\Resources\Pages\ReadOnlyListRecords;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
@@ -55,7 +59,7 @@ if (! function_exists('filamentJnt_makeSchemaLivewire')) {
                 string $key,
                 bool $withHidden = false,
                 array $skipComponentsChildContainersWhileSearching = [],
-            ): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null {
+            ): Component | Action | ActionGroup | null {
                 return null;
             }
 
@@ -133,9 +137,9 @@ it('builds Filament JNT resources, schemas, tables, pages, widgets, and actions'
     expect(app(JntStatsWidget::class))->toBeInstanceOf(JntStatsWidget::class);
 
     // Actions
-    expect(SyncTrackingAction::make())->toBeInstanceOf(\Filament\Actions\Action::class);
-    expect(CancelOrderAction::make())->toBeInstanceOf(\Filament\Actions\Action::class);
+    expect(SyncTrackingAction::make())->toBeInstanceOf(Action::class);
+    expect(CancelOrderAction::make())->toBeInstanceOf(Action::class);
 
     // Base resource helpers
-    expect(is_a(BaseJntResource::class, \Filament\Resources\Resource::class, true))->toBeTrue();
+    expect(is_a(BaseJntResource::class, Filament\Resources\Resource::class, true))->toBeTrue();
 });

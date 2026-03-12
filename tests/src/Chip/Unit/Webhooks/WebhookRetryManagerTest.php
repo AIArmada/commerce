@@ -213,7 +213,7 @@ describe('WebhookRetryManager', function (): void {
 
             $this->enricher->shouldReceive('enrich')
                 ->once()
-                ->andThrow(new \Exception('Enrichment failed'));
+                ->andThrow(new Exception('Enrichment failed'));
 
             $result = $this->manager->retry($webhook);
 

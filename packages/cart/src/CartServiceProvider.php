@@ -17,6 +17,8 @@ use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Database\ConnectionResolverInterface;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -96,8 +98,8 @@ final class CartServiceProvider extends PackageServiceProvider
 
     protected function registerStorage(): void
     {
-        $this->app->bind('cart.storage', function (\Illuminate\Contracts\Foundation\Application $app) {
-            $connection = $app->make(\Illuminate\Database\ConnectionResolverInterface::class)->connection();
+        $this->app->bind('cart.storage', function (Application $app) {
+            $connection = $app->make(ConnectionResolverInterface::class)->connection();
 
             $storage = new DatabaseStorage(
                 $connection,
@@ -120,7 +122,7 @@ final class CartServiceProvider extends PackageServiceProvider
 
     protected function registerCartManager(): void
     {
-        $this->app->scoped('cart', function (\Illuminate\Contracts\Foundation\Application $app) {
+        $this->app->scoped('cart', function (Application $app) {
             return new CartManager(
                 storage: $app->make('cart.storage'),
                 events: $app->make(Dispatcher::class),

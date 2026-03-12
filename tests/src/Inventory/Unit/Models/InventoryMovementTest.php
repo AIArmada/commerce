@@ -7,6 +7,8 @@ use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class InventoryMovementTest extends InventoryTestCase
 {
@@ -166,7 +168,7 @@ class InventoryMovementTest extends InventoryTestCase
             'occurred_at' => '2025-01-01 12:00:00',
         ]);
 
-        expect($movement->occurred_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($movement->occurred_at)->toBeInstanceOf(Carbon::class);
     }
 
     public function test_user_relationship(): void
@@ -174,6 +176,6 @@ class InventoryMovementTest extends InventoryTestCase
         $movement = new InventoryMovement;
         $relation = $movement->user();
 
-        expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        expect($relation)->toBeInstanceOf(BelongsTo::class);
     }
 }

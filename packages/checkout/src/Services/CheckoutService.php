@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Services;
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepInterface;
@@ -11,11 +12,13 @@ use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\SessionDataTransformerInterface;
 use AIArmada\Checkout\Data\CheckoutResult;
+use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\Events\CheckoutCancelled;
 use AIArmada\Checkout\Events\CheckoutCompleted;
 use AIArmada\Checkout\Events\CheckoutFailed;
+use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
 use AIArmada\Checkout\Events\CheckoutStarted;
 use AIArmada\Checkout\Events\CheckoutStepCompleted;
 use AIArmada\Checkout\Events\CheckoutStepFailed;
@@ -271,7 +274,7 @@ final class CheckoutService implements CheckoutServiceInterface
     }
 
     /**
-     * @return \AIArmada\Cart\Cart|null
+     * @return Cart|null
      */
     private function resolveCart(string $cartId): mixed
     {
@@ -329,7 +332,7 @@ final class CheckoutService implements CheckoutServiceInterface
         return ! empty($steps) ? $steps[0]->getIdentifier() : null;
     }
 
-    private function processStepInternal(CheckoutSession $session, CheckoutStepInterface $step): \AIArmada\Checkout\Data\StepResult
+    private function processStepInternal(CheckoutSession $session, CheckoutStepInterface $step): StepResult
     {
         $identifier = $step->getIdentifier();
 
@@ -347,7 +350,7 @@ final class CheckoutService implements CheckoutServiceInterface
             $session->setStepState($identifier, StepStatus::Failed);
             $this->events->dispatch(new CheckoutStepFailed($session, $identifier, $errors));
 
-            return \AIArmada\Checkout\Data\StepResult::failed($identifier, 'Validation failed', $errors);
+            return StepResult::failed($identifier, 'Validation failed', $errors);
         }
 
         // Execute step
@@ -522,7 +525,7 @@ final class CheckoutService implements CheckoutServiceInterface
     {
         $paymentData = $session->payment_data ?? [];
 
-        $this->events->dispatch(new \AIArmada\Checkout\Events\CheckoutPaymentCompleted(
+        $this->events->dispatch(new CheckoutPaymentCompleted(
             session: $session,
             paymentData: is_array($paymentData) ? $paymentData : [],
         ));

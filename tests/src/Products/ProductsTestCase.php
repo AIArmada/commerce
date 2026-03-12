@@ -14,6 +14,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 abstract class ProductsTestCase extends Orchestra
 {
@@ -101,7 +104,7 @@ abstract class ProductsTestCase extends Orchestra
 
         $app['config']->set('auth.providers.users.model', User::class);
 
-        $app['config']->set('media-library.media_model', \Spatie\MediaLibrary\MediaCollections\Models\Media::class);
+        $app['config']->set('media-library.media_model', Media::class);
         $app['config']->set('media-library.disk_name', 'public');
 
         $app['config']->set('products.features.owner.enabled', true);
@@ -109,8 +112,8 @@ abstract class ProductsTestCase extends Orchestra
         $app['config']->set('products.features.owner.auto_assign_on_create', true);
 
         // Spatie Permission config (required by commerce-support via team resolver)
-        $app['config']->set('permission.models.permission', \Spatie\Permission\Models\Permission::class);
-        $app['config']->set('permission.models.role', \Spatie\Permission\Models\Role::class);
+        $app['config']->set('permission.models.permission', Permission::class);
+        $app['config']->set('permission.models.role', Role::class);
         $app['config']->set('permission.table_names.roles', 'roles');
         $app['config']->set('permission.table_names.permissions', 'permissions');
         $app['config']->set('permission.table_names.model_has_permissions', 'model_has_permissions');

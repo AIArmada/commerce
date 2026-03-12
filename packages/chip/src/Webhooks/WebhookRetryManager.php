@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Models\Webhook;
+use Illuminate\Database\Eloquent\Collection;
 use Throwable;
 
 /**
@@ -89,9 +90,9 @@ class WebhookRetryManager
     /**
      * Get all webhooks that should be retried.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Webhook>
+     * @return Collection<int, Webhook>
      */
-    public function getRetryableWebhooks(): \Illuminate\Database\Eloquent\Collection
+    public function getRetryableWebhooks(): Collection
     {
         return Webhook::query()
             ->forOwner()

@@ -16,6 +16,7 @@ use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 // CartIntegrationRegistrar Tests
 test('CartIntegrationRegistrar can be instantiated', function (): void {
@@ -60,7 +61,7 @@ test('ProgramService can get available programs', function (): void {
     // getAvailablePrograms() takes no arguments
     $programs = $service->getAvailablePrograms();
 
-    expect($programs)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($programs)->toBeInstanceOf(Collection::class);
 });
 
 test('ProgramService isMember returns false for non-member', function (): void {

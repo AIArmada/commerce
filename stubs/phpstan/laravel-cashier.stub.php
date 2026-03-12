@@ -3,15 +3,19 @@
 declare(strict_types=1);
 
 namespace Laravel\Cashier {
+    use Illuminate\Database\Eloquent\Model;
+    use Stripe\Checkout\Session;
+    use Stripe\StripeClient;
+
     final class Cashier
     {
         public static bool $deactivatePastDue = true;
 
         public static bool $deactivateIncomplete = true;
 
-        public static function stripe(): \Stripe\StripeClient
+        public static function stripe(): StripeClient
         {
-            return new \Stripe\StripeClient;
+            return new StripeClient;
         }
     }
 
@@ -106,7 +110,7 @@ namespace Laravel\Cashier {
         public function delete(): void {}
     }
 
-    class Subscription extends \Illuminate\Database\Eloquent\Model
+    class Subscription extends Model
     {
         public string $id;
 
@@ -209,7 +213,7 @@ namespace Laravel\Cashier {
         }
     }
 
-    class SubscriptionItem extends \Illuminate\Database\Eloquent\Model
+    class SubscriptionItem extends Model
     {
         public function getKey(): mixed
         {
@@ -245,9 +249,9 @@ namespace Laravel\Cashier {
 
     final class Checkout
     {
-        public function asStripeCheckoutSession(): \Stripe\Checkout\Session
+        public function asStripeCheckoutSession(): Session
         {
-            return new \Stripe\Checkout\Session;
+            return new Session;
         }
     }
 

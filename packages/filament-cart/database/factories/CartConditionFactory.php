@@ -11,7 +11,7 @@ use AIArmada\FilamentCart\Models\CartItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\AIArmada\FilamentCart\Models\CartCondition>
+ * @extends Factory<CartCondition>
  */
 final class CartConditionFactory extends Factory
 {

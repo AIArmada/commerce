@@ -9,6 +9,7 @@ use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Throwable;
 
 final class RetryWebhooksCommand extends Command
@@ -94,7 +95,7 @@ final class RetryWebhooksCommand extends Command
                     $w->id,
                     $w->event,
                     $w->retry_count,
-                    \Illuminate\Support\Str::limit($w->last_error ?? 'N/A', 50),
+                    Str::limit($w->last_error ?? 'N/A', 50),
                 ])->toArray()
             );
 

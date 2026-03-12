@@ -11,6 +11,7 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 beforeEach(function (): void {
     AffiliatePayout::query()->delete();
@@ -73,7 +74,7 @@ it('downloads payout as CSV', function (): void {
 
     $response = $service->downloadCsv($payout);
 
-    expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class)
+    expect($response)->toBeInstanceOf(StreamedResponse::class)
         ->and($response->headers->get('Content-Type'))->toBe('text/csv');
 
     ob_start();
@@ -93,7 +94,7 @@ it('download method returns CSV format (backward compatibility)', function (): v
 
     $response = $service->download($payout);
 
-    expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class)
+    expect($response)->toBeInstanceOf(StreamedResponse::class)
         ->and($response->headers->get('Content-Type'))->toBe('text/csv');
 });
 
@@ -103,7 +104,7 @@ it('downloads payout as Excel (XML fallback)', function (): void {
 
     $response = $service->downloadExcel($payout);
 
-    expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
+    expect($response)->toBeInstanceOf(StreamedResponse::class);
 
     ob_start();
     $response->sendContent();
@@ -168,7 +169,7 @@ it('streams an HTML download via the internal fallback', function (): void {
     $streamHtml = $reflection->getMethod('streamHtml');
     $streamHtml->setAccessible(true);
 
-    /** @var Symfony\Component\HttpFoundation\StreamedResponse $response */
+    /** @var StreamedResponse $response */
     $response = $streamHtml->invoke($service, $payout, $data, $payout->reference . '.pdf');
 
     ob_start();
@@ -203,5 +204,5 @@ it('handles payouts with zero conversions', function (): void {
 
     $response = $service->downloadCsv($payout);
 
-    expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\StreamedResponse::class);
+    expect($response)->toBeInstanceOf(StreamedResponse::class);
 });

@@ -12,8 +12,11 @@ use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Vouchers\Models\Voucher;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -45,25 +48,25 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Carbon\CarbonInterface|null $activated_at
- * @property \Carbon\CarbonInterface|null $created_at
- * @property \Carbon\CarbonInterface|null $updated_at
+ * @property CarbonInterface|null $activated_at
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
  * @property-read string|null $email Alias for contact_email
  * @property-read int $commission_rate_basis_points Alias for commission_rate
  * @property-read Affiliate|null $parent
  * @property-read AffiliateRank|null $rank
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Affiliate> $children
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateAttribution> $attributions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateFraudSignal> $fraudSignals
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateDailyStat> $dailyStats
+ * @property-read Collection<int, Affiliate> $children
+ * @property-read Collection<int, AffiliateAttribution> $attributions
+ * @property-read Collection<int, AffiliateConversion> $conversions
+ * @property-read Collection<int, AffiliateFraudSignal> $fraudSignals
+ * @property-read Collection<int, AffiliateDailyStat> $dailyStats
  * @property-read AffiliateBalance|null $balance
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutMethod> $payoutMethods
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutHold> $payoutHolds
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayout> $payouts
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateLink> $links
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateProgram> $programs
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Vouchers\Models\Voucher> $vouchers
+ * @property-read Collection<int, AffiliatePayoutMethod> $payoutMethods
+ * @property-read Collection<int, AffiliatePayoutHold> $payoutHolds
+ * @property-read Collection<int, AffiliatePayout> $payouts
+ * @property-read Collection<int, AffiliateLink> $links
+ * @property-read Collection<int, AffiliateProgram> $programs
+ * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
  */
 class Affiliate extends Model
@@ -218,12 +221,12 @@ class Affiliate extends Model
     /**
      * Get all vouchers linked to this affiliate (when aiarmada/vouchers is installed).
      *
-     * @return HasMany<\AIArmada\Vouchers\Models\Voucher, $this>|HasMany<Model, $this>
+     * @return HasMany<Voucher, $this>|HasMany<Model, $this>
      */
     public function vouchers(): HasMany
     {
-        if (\class_exists(\AIArmada\Vouchers\Models\Voucher::class)) {
-            return $this->hasMany(\AIArmada\Vouchers\Models\Voucher::class, 'affiliate_id');
+        if (\class_exists(Voucher::class)) {
+            return $this->hasMany(Voucher::class, 'affiliate_id');
         }
 
         // Fallback to prevent errors when vouchers package not installed
@@ -293,7 +296,7 @@ class Affiliate extends Model
                 return;
             }
 
-            $owner = \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+            $owner = OwnerContext::resolve();
 
             if ($owner) {
                 $affiliate->owner_type = $owner->getMorphClass();

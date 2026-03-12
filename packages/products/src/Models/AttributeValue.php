@@ -8,12 +8,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 /**
@@ -25,8 +27,8 @@ use InvalidArgumentException;
  * @property string $attributable_id
  * @property string|null $value
  * @property string|null $locale
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Attribute $attribute
  * @property-read Model $attributable
  * @property-read mixed $typed_value
@@ -53,10 +55,10 @@ class AttributeValue extends Model
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
-    public function scopeForOwner(\Illuminate\Database\Eloquent\Builder $query, ?Model $owner = null, bool $includeGlobal = false): \Illuminate\Database\Eloquent\Builder
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = false): Builder
     {
         $ownerToScope = $owner;
 
@@ -70,7 +72,7 @@ class AttributeValue extends Model
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var \Illuminate\Database\Eloquent\Builder<AttributeValue> $scoped */
+        /** @var Builder<AttributeValue> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;
@@ -125,8 +127,8 @@ class AttributeValue extends Model
     /**
      * Scope to a specific locale.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<AttributeValue>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<AttributeValue>
+     * @param  Builder<AttributeValue>  $query
+     * @return Builder<AttributeValue>
      */
     public function scopeForLocale($query, ?string $locale = null)
     {
@@ -136,8 +138,8 @@ class AttributeValue extends Model
     /**
      * Scope to a specific attribute by code.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<AttributeValue>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<AttributeValue>
+     * @param  Builder<AttributeValue>  $query
+     * @return Builder<AttributeValue>
      */
     public function scopeForAttribute($query, string $code)
     {
