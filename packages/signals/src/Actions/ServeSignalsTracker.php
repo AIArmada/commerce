@@ -33,6 +33,11 @@ final class ServeSignalsTracker
 
   var trackerUrl = new URL(script.src, window.location.href);
   var endpoint = script.dataset.endpoint;
+  var identifyEndpoint = script.dataset.identifyEndpoint || null;
+  var anonymousCookieName = script.dataset.anonymousCookieName || 'mi_signals_anonymous_id';
+  var sessionCookieName = script.dataset.sessionCookieName || 'mi_signals_session_id';
+  var externalId = script.dataset.externalId || null;
+  var email = script.dataset.email || null;
 
   if (!endpoint) {
     trackerUrl.pathname = trackerUrl.pathname.replace(/__TRACKER_SCRIPT_PATTERN__$/, '/collect/pageview');
@@ -42,19 +47,69 @@ final class ServeSignalsTracker
   }
 
   var sessionKey = 'signals:session:' + writeKey;
+  var anonymousKey = 'signals:anonymous:' + writeKey;
   var startedAtKey = 'signals:session-started-at:' + writeKey;
   var lastUrl = null;
+
+  function readCookie(name) {
+    var prefix = name + '=';
+    var parts = document.cookie ? document.cookie.split(';') : [];
+
+    for (var index = 0; index < parts.length; index++) {
+      var cookie = parts[index].trim();
+
+      if (cookie.indexOf(prefix) === 0) {
+        return decodeURIComponent(cookie.slice(prefix.length));
+      }
+    }
+
+    return null;
+  }
+
+  function writeCookie(name, value, maxAgeSeconds) {
+    var cookie = name + '=' + encodeURIComponent(value) + '; path=/; SameSite=Lax';
+
+    if (typeof maxAgeSeconds === 'number') {
+      cookie += '; Max-Age=' + maxAgeSeconds;
+    }
+
+    if (window.location.protocol === 'https:') {
+      cookie += '; Secure';
+    }
+
+    document.cookie = cookie;
+  }
+
+  function anonymousIdentifier() {
+    var existing = localStorage.getItem(anonymousKey) || readCookie(anonymousCookieName);
+
+    if (existing) {
+      localStorage.setItem(anonymousKey, existing);
+      writeCookie(anonymousCookieName, existing, 31536000);
+
+      return existing;
+    }
+
+    var created = 'sig_anon_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem(anonymousKey, created);
+    writeCookie(anonymousCookieName, created, 31536000);
+
+    return created;
+  }
 
   function sessionIdentifier() {
     var existing = sessionStorage.getItem(sessionKey);
 
     if (existing) {
+      writeCookie(sessionCookieName, existing);
+
       return existing;
     }
 
     var created = 'sig_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
     sessionStorage.setItem(sessionKey, created);
     sessionStorage.setItem(startedAtKey, new Date().toISOString());
+    writeCookie(sessionCookieName, created);
 
     return created;
   }
@@ -77,6 +132,7 @@ final class ServeSignalsTracker
 
     return {
       write_key: writeKey,
+      anonymous_id: anonymousIdentifier(),
       session_identifier: sessionIdentifier(),
       session_started_at: sessionStartedAt(),
       occurred_at: new Date().toISOString(),
@@ -90,6 +146,45 @@ final class ServeSignalsTracker
       utm_content: params.get('utm_content'),
       utm_term: params.get('utm_term')
     };
+  }
+
+  function sendIdentify() {
+    if (!identifyEndpoint || !externalId) {
+      return;
+    }
+
+    var markerKey = 'signals:identified:' + writeKey + ':' + externalId;
+    var anonymousId = anonymousIdentifier();
+
+    if (sessionStorage.getItem(markerKey) === anonymousId) {
+      return;
+    }
+
+    sessionStorage.setItem(markerKey, anonymousId);
+
+    var body = JSON.stringify({
+      write_key: writeKey,
+      external_id: externalId,
+      anonymous_id: anonymousId,
+      email: email,
+      seen_at: new Date().toISOString(),
+      url: window.location.href
+    });
+
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(identifyEndpoint, new Blob([body], { type: 'application/json' }));
+      return;
+    }
+
+    fetch(identifyEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: body,
+      keepalive: true,
+      credentials: 'omit'
+    }).catch(function () {});
   }
 
   function sendPageView() {
@@ -133,6 +228,7 @@ final class ServeSignalsTracker
     setTimeout(sendPageView, 0);
   });
 
+  sendIdentify();
   sendPageView();
 })();
 JS;

@@ -23,6 +23,7 @@ final class SignalsServiceProvider extends PackageServiceProvider
         $package
             ->name('signals')
             ->hasConfigFile()
+            ->runsMigrations()
             ->discoversMigrations()
             ->hasRoutes(['api'])
             ->hasCommand(AggregateDailyMetricsCommand::class)
