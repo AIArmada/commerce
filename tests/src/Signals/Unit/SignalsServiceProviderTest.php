@@ -37,6 +37,7 @@ it('configures the package name, config, and migrations', function (): void {
     $package = Mockery::mock(Package::class);
     $package->shouldReceive('name')->once()->with('signals')->andReturnSelf();
     $package->shouldReceive('hasConfigFile')->once()->withNoArgs()->andReturnSelf();
+    $package->shouldReceive('runsMigrations')->once()->withNoArgs()->andReturnSelf();
     $package->shouldReceive('discoversMigrations')->once()->withNoArgs()->andReturnSelf();
     $package->shouldReceive('hasRoutes')->once()->with(['api'])->andReturnSelf();
     $package->shouldReceive('hasCommand')->once()->with(AggregateDailyMetricsCommand::class)->andReturnSelf();
