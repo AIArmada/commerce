@@ -7,6 +7,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 }
 
 use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Commerce\Tests\FilamentAuthz\FilamentAuthzTestCase;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
@@ -60,6 +61,8 @@ pest()->extend(JntTestCase::class)->in('src/Jnt');
 pest()->extend(InventoryTestCase::class)->in('src/Inventory');
 
 pest()->extend(FilamentInventoryTestCase::class)->in('src/FilamentInventory');
+
+pest()->extend(FilamentAuthzTestCase::class)->in('src/FilamentAuthzScoped');
 
 // CashierChip tests use their own CashierChipTestCase via uses() in each test file
 // Cashier (unified) tests use their own CashierTestCase via uses() in each test file
@@ -170,4 +173,4 @@ beforeEach(function (): void {
     config()->set('customers.features.owner.include_global', false);
 
     OwnerContext::clearOverride();
-})->in('src/Customers');
+})->in('src/Customers'); // @phpstan-ignore method.notFound

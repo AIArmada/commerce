@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
+use AIArmada\FilamentAuthz\Resources\PermissionResource;
+use AIArmada\FilamentAuthz\Resources\RoleResource;
+use Filament\Pages\Dashboard;
+use Filament\Panel;
+use Filament\Widgets\AccountWidget;
+use Filament\Widgets\FilamentInfoWidget;
+use Mockery\MockInterface;
 
 describe('Tab Configuration', function (): void {
     it('can enable resources tab', function (): void {
@@ -123,42 +130,42 @@ describe('Permission Format Settings', function (): void {
 describe('Exclude Settings', function (): void {
     it('can exclude resources', function (): void {
         $plugin = FilamentAuthzPlugin::make()
-            ->excludeResources(['UserResource', 'SettingResource']);
+            ->excludeResources([RoleResource::class, PermissionResource::class]);
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
     it('can exclude pages', function (): void {
         $plugin = FilamentAuthzPlugin::make()
-            ->excludePages(['Dashboard', 'Profile']);
+            ->excludePages([Dashboard::class]);
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
     it('can exclude widgets', function (): void {
         $plugin = FilamentAuthzPlugin::make()
-            ->excludeWidgets(['StatsWidget', 'ChartWidget']);
+            ->excludeWidgets([AccountWidget::class, FilamentInfoWidget::class]);
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
     it('can use closure for excludeResources', function (): void {
         $plugin = FilamentAuthzPlugin::make()
-            ->excludeResources(fn () => ['UserResource']);
+            ->excludeResources(fn () => [RoleResource::class]);
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
     it('can use closure for excludePages', function (): void {
         $plugin = FilamentAuthzPlugin::make()
-            ->excludePages(fn () => ['Dashboard']);
+            ->excludePages(fn () => [Dashboard::class]);
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
     it('can use closure for excludeWidgets', function (): void {
         $plugin = FilamentAuthzPlugin::make()
-            ->excludeWidgets(fn () => ['StatsWidget']);
+            ->excludeWidgets(fn () => [AccountWidget::class]);
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
@@ -177,5 +184,21 @@ describe('Navigation Settings', function (): void {
             ->registerNavigation(false);
 
         expect($plugin->shouldRegisterNavigation())->toBeFalse();
+    });
+});
+
+describe('Scope Option Configuration', function (): void {
+    it('preserves lazy role scope option closures until the role resource resolves them', function (): void {
+        $resolver = static fn (): array => ['scope-id' => 'Shared Scope'];
+        $plugin = FilamentAuthzPlugin::make()
+            ->roleScopeOptionsUsing($resolver);
+
+        /** @var Panel&MockInterface $panel */
+        $panel = Mockery::mock(Panel::class);
+        $panel->shouldReceive('resources')->andReturn($panel);
+
+        $plugin->register($panel);
+
+        expect(config('filament-authz.role_resource.scope_options'))->toBe($resolver);
     });
 });

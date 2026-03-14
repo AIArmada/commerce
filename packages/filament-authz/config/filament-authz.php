@@ -99,6 +99,7 @@ return [
     */
     'role_resource' => [
         'slug' => 'authz/roles',
+        'scope_options' => null,
         'tabs' => [
             'resources' => true,
             'pages' => true,
@@ -124,6 +125,7 @@ return [
         'form' => [
             'fields' => ['name', 'email', 'password'],
             'roles' => true,
+            'role_scope_mode' => 'all',
             'permissions' => true,
         ],
     ],
