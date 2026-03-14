@@ -10,6 +10,7 @@ use AIArmada\FilamentAuthz\Models\AuthzScope;
 use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Concerns\HasAuthzFormComponents;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
+use Closure;
 use Filament\Actions;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -42,11 +43,11 @@ class RoleResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (config('filament-authz.central_app', false)) {
-            return $query;
+        if (! config('filament-authz.central_app', false)) {
+            $query = static::applyTenantScope($query);
         }
 
-        return static::applyTenantScope($query);
+        return static::applyConfiguredScopeLimit($query);
     }
 
     public static function getModel(): string
@@ -232,7 +233,7 @@ class RoleResource extends Resource
 
             $schema[] = Forms\Components\Select::make($teamsKey)
                 ->label(__('filament-authz::filament-authz.form.scope'))
-                ->options(AuthzScope::query()->orderBy('label')->pluck('label', 'id')->all())
+                ->options(static::getScopeOptions())
                 ->searchable()
                 ->preload()
                 ->nullable()
@@ -263,7 +264,7 @@ class RoleResource extends Resource
 
         if (config('filament-authz.authz_scopes.enabled', false)) {
             $teamsKey = app(PermissionRegistrar::class)->teamsKey;
-            $scopeOptions = AuthzScope::query()->orderBy('label')->pluck('label', 'id')->all();
+            $scopeOptions = static::getScopeOptions();
 
             $filters[] = SelectFilter::make($teamsKey)
                 ->label(__('filament-authz::filament-authz.filter.scope'))
@@ -356,6 +357,68 @@ class RoleResource extends Resource
             'create' => Pages\CreateRole::route('/create'),
             'edit' => Pages\EditRole::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function getScopeOptions(): array
+    {
+        $configured = static::getConfiguredScopeOptions();
+
+        if ($configured !== null) {
+            return $configured;
+        }
+
+        return AuthzScope::query()
+            ->orderBy('label')
+            ->pluck('label', 'id')
+            ->all();
+    }
+
+    /**
+     * @return array<string, string> | null
+     */
+    protected static function getConfiguredScopeOptions(): ?array
+    {
+        $configured = config('filament-authz.role_resource.scope_options');
+
+        if ($configured instanceof Closure) {
+            /** @var mixed $configured */
+            $configured = app()->call($configured);
+        }
+
+        if (! is_array($configured)) {
+            return null;
+        }
+
+        return collect($configured)
+            ->mapWithKeys(static fn (mixed $label, mixed $id): array => [(string) $id => (string) $label])
+            ->all();
+    }
+
+    protected static function applyConfiguredScopeLimit(Builder $query): Builder
+    {
+        if (! config('filament-authz.authz_scopes.enabled', false) || ! config('filament-authz.central_app', false)) {
+            return $query;
+        }
+
+        $configured = static::getConfiguredScopeOptions();
+
+        if ($configured === null) {
+            return $query;
+        }
+
+        $teamsKey = app(PermissionRegistrar::class)->teamsKey;
+        $scopeIds = array_keys($configured);
+
+        return $query->where(function (Builder $query) use ($teamsKey, $scopeIds): void {
+            $query->whereNull($teamsKey);
+
+            if ($scopeIds !== []) {
+                $query->orWhereIn($teamsKey, $scopeIds);
+            }
+        });
     }
 
     protected static function getPlugin(): ?FilamentAuthzPlugin
