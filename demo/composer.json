@@ -11,6 +11,47 @@
     "license": "MIT",
     "repositories": [
         {
+            "type": "package",
+            "package": {
+                "name": "akaunting/laravel-money",
+                "version": "6.0.3",
+                "type": "library",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/akaunting/laravel-money.git",
+                    "reference": "5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a"
+                },
+                "dist": {
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/akaunting/laravel-money/zipball/5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a",
+                    "reference": "5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a"
+                },
+                "require": {
+                    "php": "^8.2",
+                    "illuminate/contracts": "^10.0|^11.0|^12.0|^13.0",
+                    "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+                    "illuminate/validation": "^10.0|^11.0|^12.0|^13.0",
+                    "illuminate/view": "^10.0|^11.0|^12.0|^13.0",
+                    "vlucas/phpdotenv": "^5.4.1"
+                },
+                "autoload": {
+                    "files": [
+                        "src/helpers.php"
+                    ],
+                    "psr-4": {
+                        "Akaunting\\Money\\": "src"
+                    }
+                },
+                "extra": {
+                    "laravel": {
+                        "providers": [
+                            "Akaunting\\Money\\Provider"
+                        ]
+                    }
+                }
+            }
+        },
+        {
             "type": "path",
             "url": "../packages/cart"
         },
@@ -149,8 +190,8 @@
     ],
     "require": {
         "php": "^8.4",
-        "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1",
+        "laravel/framework": "^12.0|^13.0",
+        "laravel/tinker": "^3.0",
         "filament/filament": "^5.0",
         "aiarmada/customers": "*",
         "aiarmada/docs": "*",
@@ -164,7 +205,7 @@
         "aiarmada/cashier": "*",
         "aiarmada/cashier-chip": "*",
         "aiarmada/chip": "*",
-        "aiarmada/commerce-support": "dev-develop as 0.1.0",
+        "aiarmada/commerce-support": "*",
         "aiarmada/vouchers": "*",
         "aiarmada/affiliates": "*",
         "aiarmada/jnt": "*",
@@ -194,7 +235,7 @@
         "laravel/pint": "^1.24",
         "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.6",
+        "nunomaduro/collision": "^8.9.1",
         "pestphp/pest": "^4.1",
         "pestphp/pest-plugin-laravel": "^4.0"
     },

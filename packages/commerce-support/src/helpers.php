@@ -30,6 +30,24 @@ if (! function_exists('commerce_json_column_type')) {
     }
 }
 
+if (! function_exists('commerce_csrf_middleware')) {
+    /**
+     * Resolve the framework CSRF middleware across Laravel 12 and 13.
+     *
+     * @return class-string
+     */
+    function commerce_csrf_middleware(): string
+    {
+        $preventRequestForgery = 'Illuminate\\Foundation\\Http\\Middleware\\PreventRequestForgery';
+
+        if (class_exists($preventRequestForgery)) {
+            return $preventRequestForgery;
+        }
+
+        return \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class;
+    }
+}
+
 if (! function_exists('currency_symbol')) {
     /**
      * Get currency symbol for display in forms/tables.
