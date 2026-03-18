@@ -11,9 +11,9 @@
     "require": {
         "php": "^8.4",
         "akaunting/laravel-money": "^6.0",
-        "illuminate/contracts": "^12.0",
-        "illuminate/database": "^12.0",
-        "illuminate/support": "^12.0",
+        "illuminate/contracts": "^12.0|^13.0",
+        "illuminate/database": "^12.0|^13.0",
+        "illuminate/support": "^12.0|^13.0",
         "lorisleiva/laravel-actions": "^2.9",
         "nunomaduro/essentials": "^1.0",
         "owen-it/laravel-auditing": "^14.0",
