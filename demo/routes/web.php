@@ -9,7 +9,6 @@ use AIArmada\Orders\Models\Order;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ShopController;
 use App\Models\User;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================
@@ -179,5 +178,5 @@ Route::post('/demo/simulate-payment/{order}', function (Order $order) {
         'message' => 'Payment simulated successfully',
         'order_number' => $order->order_number,
     ]);
-})->withoutMiddleware([VerifyCsrfToken::class])
+})->withoutMiddleware([commerce_csrf_middleware()])
     ->name('demo.simulate-payment');
