@@ -106,12 +106,16 @@ The package automatically registers the webhook route. Make sure:
 - The route is excluded from CSRF verification
 - Your firewall allows POST requests from CHIP servers
 
-Add to `app/Http/Middleware/VerifyCsrfToken.php`:
+Configure the middleware in `bootstrap/app.php`:
 
 ```php
-protected $except = [
-    'chip/webhook',
-];
+use Illuminate\Foundation\Configuration\Middleware;
+
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->validateCsrfTokens(except: [
+        'chip/webhook',
+    ]);
+})
 ```
 
 ### 3. Queue Configuration (Recommended)

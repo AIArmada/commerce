@@ -19,9 +19,27 @@ This is the initial public release of AIArmada Commerce. No upgrade path needed.
 ### System Requirements
 
 - PHP: ^8.4 (baseline raised from ^8.2)
-- Laravel: ^12.0
+- Laravel: ^12.0 | ^13.0
 - Filament: ^5.0 (optional, for admin panels)
 - PostgreSQL: 14+ (recommended) or MySQL 8+
+
+## Version 0.2.0 (Laravel 13 Support)
+
+**Release Date**: March 2026
+
+### What's New
+
+- Added Laravel 13 support while retaining Laravel 12 compatibility.
+- Updated package manifests to advertise the Laravel 12/13 support window consistently.
+- Replaced direct CSRF middleware references with a compatibility resolver for Laravel 12 and 13.
+
+### Upgrade Notes
+
+- Root and demo Composer manifests now allow Laravel 13.
+- Demo applications should move to `laravel/tinker:^3.0`.
+- Packages that depended directly on `illuminate/*` components now target `^12.0|^13.0`.
+- If you exclude CSRF middleware manually, prefer the bootstrap middleware API or a compatibility resolver instead of hard-coding `VerifyCsrfToken`.
+- Until upstream publishes Laravel 13 constraints, this repository uses a local Composer metadata override for `akaunting/laravel-money` while still consuming the upstream 6.0.x code.
 
 ### Migration & Schema Changes
 

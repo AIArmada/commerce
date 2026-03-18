@@ -19,7 +19,7 @@
         "larastan/larastan": "^3.0",
         "laravel/boost": "^2.0",
         "laravel/cashier": "^16.0",
-        "laravel/framework": "^12.0",
+        "laravel/framework": "^12.0|^13.0",
         "laravel/pint": "^1.0",
         "laravel/prompts": "^0.3.5",
         "league/csv": "^9.27",
@@ -28,7 +28,7 @@
         "nunomaduro/essentials": "^1.0",
         "nunomaduro/termwind": "^2.0",
         "openspout/openspout": "^4.23",
-        "orchestra/testbench": "^9.0|^10.0",
+        "orchestra/testbench": "^10.0|^11.0",
         "owen-it/laravel-auditing": "^14.0",
         "pestphp/pest": "^4.0",
         "pestphp/pest-plugin-laravel": "^4.0",
@@ -61,6 +61,47 @@
             "name": "filament",
             "type": "composer",
             "url": "https://packages.filamentphp.com/composer"
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "akaunting/laravel-money",
+                "version": "6.0.3",
+                "type": "library",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/akaunting/laravel-money.git",
+                    "reference": "5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a"
+                },
+                "dist": {
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/akaunting/laravel-money/zipball/5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a",
+                    "reference": "5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a"
+                },
+                "require": {
+                    "php": "^8.2",
+                    "illuminate/contracts": "^10.0|^11.0|^12.0|^13.0",
+                    "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+                    "illuminate/validation": "^10.0|^11.0|^12.0|^13.0",
+                    "illuminate/view": "^10.0|^11.0|^12.0|^13.0",
+                    "vlucas/phpdotenv": "^5.4.1"
+                },
+                "autoload": {
+                    "files": [
+                        "src/helpers.php"
+                    ],
+                    "psr-4": {
+                        "Akaunting\\Money\\": "src"
+                    }
+                },
+                "extra": {
+                    "laravel": {
+                        "providers": [
+                            "Akaunting\\Money\\Provider"
+                        ]
+                    }
+                }
+            }
         },
         {
             "type": "path",

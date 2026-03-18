@@ -194,10 +194,13 @@ Webhooks are automatically verified using the secrets in your config:
 Webhook routes are automatically excluded from CSRF protection. If you've customized your routes, ensure they're excluded:
 
 ```php
-// In VerifyCsrfToken middleware
-protected $except = [
-    'cashier/webhook/*',
-];
+use Illuminate\Foundation\Configuration\Middleware;
+
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->validateCsrfTokens(except: [
+        'cashier/webhook/*',
+    ]);
+})
 ```
 
 ## Custom Webhook Handlers
