@@ -55,7 +55,7 @@ it('still validates missing configuration outside package discovery in productio
     };
 
     expect(fn () => $validator->validate('chip', ['unit_test_missing_key']))
-        ->toThrow(\RuntimeException::class, 'Required configuration key [chip.unit_test_missing_key] is not set.');
+        ->toThrow(RuntimeException::class, 'Required configuration key [chip.unit_test_missing_key] is not set.');
 
     if ($previousArgv === null) {
         unset($_SERVER['argv']);

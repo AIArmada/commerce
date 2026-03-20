@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 if (! function_exists('commerce_json_column_type')) {
     /**
@@ -44,7 +45,7 @@ if (! function_exists('commerce_csrf_middleware')) {
             return $preventRequestForgery;
         }
 
-        return \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class;
+        return VerifyCsrfToken::class;
     }
 }
 
