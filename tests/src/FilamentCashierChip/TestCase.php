@@ -31,6 +31,8 @@ abstract class TestCase extends Orchestra
 {
     use RefreshDatabase;
 
+    protected $enablesPackageDiscoveries = false;
+
     protected ?FakeChipCollectService $fakeChip = null;
 
     protected function setUp(): void
@@ -51,6 +53,11 @@ abstract class TestCase extends Orchestra
         }
 
         parent::tearDown();
+    }
+
+    public function ignorePackageDiscoveriesFrom()
+    {
+        return ['*'];
     }
 
     protected function getPackageProviders($app): array
