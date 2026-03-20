@@ -216,10 +216,6 @@
             "AIArmada\\FilamentPricing\\Tests\\": "packages/filament-pricing/tests/",
             "AIArmada\\FilamentTax\\": "packages/filament-tax/src",
             "AIArmada\\FilamentTax\\Tests\\": "packages/filament-tax/tests/",
-            "AIArmada\\AffiliateNetwork\\": "packages/affiliate-network/src",
-            "AIArmada\\AffiliateNetwork\\Tests\\": "packages/affiliate-network/tests/",
-            "AIArmada\\FilamentAffiliateNetwork\\": "packages/filament-affiliate-network/src",
-            "AIArmada\\FilamentAffiliateNetwork\\Tests\\": "packages/filament-affiliate-network/tests/",
             "Tests\\": "tests/"
         }
     },
