@@ -61,7 +61,9 @@ final class IngestSignalEvent
         if ($session instanceof SignalSession) {
             $session->exit_path = $payload['path'] ?? $session->exit_path;
             $session->ended_at = $occurredAt;
-            $session->duration_seconds = max(0, $session->started_at?->diffInSeconds($occurredAt) ?? 0);
+            $durationMilliseconds = max(0, (int) ($session->started_at?->diffInMilliseconds($occurredAt) ?? 0));
+            $session->duration_milliseconds = $durationMilliseconds;
+            $session->duration_seconds = intdiv($durationMilliseconds, 1000);
             $session->is_bounce = ! $session->events()->whereKeyNot($event->id)->exists();
             $session->save();
         }

@@ -6,9 +6,11 @@ namespace AIArmada\FilamentSignals\Resources;
 
 use AIArmada\FilamentSignals\Resources\SavedSignalReportResource\Pages;
 use AIArmada\Signals\Models\SavedSignalReport;
+use AIArmada\Signals\Models\SignalGoal;
 use AIArmada\Signals\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\SavedSignalReportDefinition;
+use AIArmada\Signals\Services\SignalRouteCatalog;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -30,9 +32,9 @@ final class SavedSignalReportResource extends Resource
 {
     protected static ?string $model = SavedSignalReport::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bookmark-square';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bookmark-square';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Insights';
+    protected static string|UnitEnum|null $navigationGroup = 'Insights';
 
     protected static ?int $navigationSort = 32;
 
@@ -77,6 +79,7 @@ final class SavedSignalReportResource extends Resource
                                 TrackedProperty::query()->forOwner()->select('id')
                             ),
                         )
+                        ->live()
                         ->searchable()
                         ->preload(),
 
@@ -120,22 +123,147 @@ final class SavedSignalReportResource extends Resource
                         ->helperText('Supported filters: From Date and To Date.'),
 
                     Section::make('Funnel Settings')
+                        ->description('Build the journey step by step using an existing goal, a page route, a simple event name, or a detailed event rule.')
                         ->schema([
                             Forms\Components\Repeater::make('settings.funnel_steps')
+                                ->label('Funnel steps')
                                 ->schema([
                                     Forms\Components\TextInput::make('label')
+                                        ->label('Step name')
                                         ->required()
-                                        ->maxLength(100),
+                                        ->maxLength(100)
+                                        ->placeholder('Example: Viewed the event page')
+                                        ->helperText('This is the name people will see in the funnel report.'),
+                                    Forms\Components\Select::make('step_type')
+                                        ->label('How this step should be matched')
+                                        ->options([
+                                            'event' => 'A single event name',
+                                            'goal' => 'An existing goal',
+                                            'route' => 'A page or route',
+                                            'conditions' => 'An event with extra rules',
+                                        ])
+                                        ->default('event')
+                                        ->live()
+                                        ->helperText('Choose the simplest option that matches what you want this step to count.')
+                                        ->afterStateHydrated(function (Set $set, Get $get, mixed $state): void {
+                                            if (is_string($state) && $state !== '') {
+                                                return;
+                                            }
+
+                                            if (filled($get('goal_slug'))) {
+                                                $set('step_type', 'goal');
+
+                                                return;
+                                            }
+
+                                            if (filled($get('route_name'))) {
+                                                $set('step_type', 'route');
+
+                                                return;
+                                            }
+
+                                            if (filled($get('conditions'))) {
+                                                $set('step_type', 'conditions');
+
+                                                return;
+                                            }
+
+                                            $set('step_type', 'event');
+                                        }),
+                                    Forms\Components\Select::make('goal_slug')
+                                        ->label('Goal to count')
+                                        ->options(function (Get $get): array {
+                                            $trackedPropertyId = $get('../../tracked_property_id');
+
+                                            return SignalGoal::query()
+                                                ->forOwner()
+                                                ->where('is_active', true)
+                                                ->when(
+                                                    filled($trackedPropertyId),
+                                                    fn (Builder $query): Builder => $query->where(function (Builder $goalQuery) use ($trackedPropertyId): void {
+                                                        $goalQuery->where('tracked_property_id', $trackedPropertyId)
+                                                            ->orWhereNull('tracked_property_id');
+                                                    }),
+                                                )
+                                                ->orderBy('name')
+                                                ->pluck('name', 'slug')
+                                                ->all();
+                                        })
+                                        ->searchable()
+                                        ->preload()
+                                        ->helperText(fn (Get $get): string => filled($get('../../tracked_property_id'))
+                                            ? 'Shows active goals for the selected tracked property, plus shared goals.'
+                                            : 'Choose a tracked property first if you want a shorter list. Without one, all active goals are shown.')
+                                        ->visible(fn (Get $get): bool => $get('step_type') === 'goal'),
+                                    Forms\Components\Select::make('route_name')
+                                        ->label('Page or route')
+                                        ->options(fn (): array => app(SignalRouteCatalog::class)->options())
+                                        ->searchable()
+                                        ->preload()
+                                        ->helperText('Choose a page from your site. Dynamic routes are matched by their path prefix automatically.')
+                                        ->visible(fn (Get $get): bool => $get('step_type') === 'route'),
                                     Forms\Components\TextInput::make('event_name')
-                                        ->required()
-                                        ->maxLength(255),
+                                        ->label('Event name')
+                                        ->helperText('Use this for event-based steps. Leave it empty when you are using a goal or a page route.')
+                                        ->maxLength(255)
+                                        ->placeholder('Example: page_view or affiliate.conversion.recorded')
+                                        ->visible(fn (Get $get): bool => in_array($get('step_type'), ['event', 'conditions'], true)),
                                     Forms\Components\TextInput::make('event_category')
-                                        ->maxLength(100),
+                                        ->label('Event category (optional)')
+                                        ->maxLength(100)
+                                        ->placeholder('Example: conversion')
+                                        ->helperText('Optional. Use this only when the event name on its own is not specific enough.')
+                                        ->visible(fn (Get $get): bool => in_array($get('step_type'), ['event', 'conditions'], true)),
+                                    Forms\Components\Select::make('condition_match_type')
+                                        ->label('How extra rules should match')
+                                        ->options([
+                                            'all' => 'All rules must match',
+                                            'any' => 'Any rule can match',
+                                        ])
+                                        ->default('all')
+                                        ->helperText('Use all rules for a strict step. Use any rule if one matching condition is enough.')
+                                        ->visible(fn (Get $get): bool => $get('step_type') === 'conditions'),
+                                    Forms\Components\Repeater::make('conditions')
+                                        ->label('Extra rules')
+                                        ->helperText('Add the extra checks that define this step more precisely.')
+                                        ->schema([
+                                            Forms\Components\TextInput::make('field')
+                                                ->label('Field to check')
+                                                ->required()
+                                                ->maxLength(255)
+                                                ->placeholder('Example: path or properties.checkout.gateway')
+                                                ->helperText('You can use built-in fields like path, url, source, event_name, or your own properties.* values.'),
+                                            Forms\Components\Select::make('operator')
+                                                ->label('Compare using')
+                                                ->options([
+                                                    'equals' => 'Equals',
+                                                    'not_equals' => 'Not Equals',
+                                                    'contains' => 'Contains',
+                                                    'starts_with' => 'Starts With',
+                                                    'ends_with' => 'Ends With',
+                                                    'greater_than' => 'Greater Than',
+                                                    'greater_than_or_equal' => 'Greater Than or Equal',
+                                                    'less_than' => 'Less Than',
+                                                    'less_than_or_equal' => 'Less Than or Equal',
+                                                    'in' => 'In List',
+                                                ])
+                                                    ->helperText('Use In List for comma-separated values like whatsapp,telegram,email.')
+                                                ->required(),
+                                            Forms\Components\TextInput::make('value')
+                                                    ->label('Value to match')
+                                                ->required()
+                                                    ->maxLength(255)
+                                                    ->placeholder('Example: /majlis or telegram'),
+                                        ])
+                                        ->columns(3)
+                                                ->addActionLabel('Add rule')
+                                        ->columnSpanFull()
+                                        ->visible(fn (Get $get): bool => $get('step_type') === 'conditions'),
                                 ])
                                 ->columns(3)
                                 ->columnSpanFull()
-                                ->addActionLabel('Add Funnel Step')
-                                ->helperText('Leave empty to use the built-in starter funnel template.'),
+                                            ->addActionLabel('Add step')
+                                            ->helperText('Each step is one milestone in the journey you want to measure. Leave this empty to use the starter funnel template.'),
                             Forms\Components\TextInput::make('settings.step_window_minutes')
                                 ->numeric()
                                 ->minValue(1)

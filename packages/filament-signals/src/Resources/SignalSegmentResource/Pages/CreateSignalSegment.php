@@ -11,6 +11,16 @@ final class CreateSignalSegment extends CreateRecord
 {
     protected static string $resource = SignalSegmentResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Create audience segment';
+    }
+
+    public function getSubheading(): ?string
+    {
+        return 'Use simple rules to group people or sessions you want to analyze together later.';
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

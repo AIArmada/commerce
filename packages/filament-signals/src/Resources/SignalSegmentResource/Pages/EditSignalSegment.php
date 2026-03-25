@@ -11,6 +11,16 @@ final class EditSignalSegment extends EditRecord
 {
     protected static string $resource = SignalSegmentResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Edit audience segment';
+    }
+
+    public function getSubheading(): ?string
+    {
+        return 'Update the rules or description for this saved audience segment.';
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

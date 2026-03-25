@@ -12,10 +12,21 @@ final class ListSignalSegments extends ListRecords
 {
     protected static string $resource = SignalSegmentResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Audience Segments';
+    }
+
+    public function getSubheading(): ?string
+    {
+        return 'Group visitors or sessions with reusable rules for reports, filters, and comparisons.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('New audience segment'),
         ];
     }
 }
