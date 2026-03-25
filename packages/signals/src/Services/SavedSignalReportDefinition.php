@@ -287,7 +287,6 @@ final class SavedSignalReportDefinition
     }
 
     /**
-     * @param  mixed  $conditions
      * @return list<array{field:string,operator:string,value:string}>
      */
     private static function normalizeFunnelConditions(mixed $conditions): array
@@ -482,7 +481,7 @@ final class SavedSignalReportDefinition
         $normalized = [];
 
         if ($normalizedSteps !== []) {
-            $normalized['funnel_steps'] = $normalizedSteps;
+            $normalized['funnel_steps'] = self::serializeFunnelSteps($normalizedSteps);
         }
 
         $stepWindowMinutes = self::stepWindowMinutes($settings);
@@ -492,6 +491,49 @@ final class SavedSignalReportDefinition
         }
 
         return $normalized === [] ? null : $normalized;
+    }
+
+    /**
+     * @param  list<array{label:string,step_type:string,event_name:string|null,event_category:string|null,goal_slug:string|null,route_name:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>  $steps
+     * @return list<array<string, mixed>>
+     */
+    private static function serializeFunnelSteps(array $steps): array
+    {
+        $serializedSteps = [];
+
+        foreach ($steps as $step) {
+            $serializedStep = [
+                'label' => $step['label'],
+            ];
+
+            if ($step['event_name'] !== null) {
+                $serializedStep['event_name'] = $step['event_name'];
+            }
+
+            if ($step['event_category'] !== null) {
+                $serializedStep['event_category'] = $step['event_category'];
+            }
+
+            if ($step['goal_slug'] !== null) {
+                $serializedStep['goal_slug'] = $step['goal_slug'];
+            }
+
+            if ($step['route_name'] !== null) {
+                $serializedStep['route_name'] = $step['route_name'];
+            }
+
+            if ($step['condition_match_type'] !== 'all') {
+                $serializedStep['condition_match_type'] = $step['condition_match_type'];
+            }
+
+            if ($step['conditions'] !== null) {
+                $serializedStep['conditions'] = $step['conditions'];
+            }
+
+            $serializedSteps[] = $serializedStep;
+        }
+
+        return $serializedSteps;
     }
 
     /**
