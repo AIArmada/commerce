@@ -63,7 +63,6 @@ final class IngestSignalEvent
             $session->ended_at = $occurredAt;
             $durationMilliseconds = max(0, (int) ($session->started_at?->diffInMilliseconds($occurredAt) ?? 0));
             $session->duration_milliseconds = $durationMilliseconds;
-            $session->duration_seconds = intdiv($durationMilliseconds, 1000);
             $session->is_bounce = ! $session->events()->whereKeyNot($event->id)->exists();
             $session->save();
         }

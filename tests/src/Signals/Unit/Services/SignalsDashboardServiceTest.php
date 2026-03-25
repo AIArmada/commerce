@@ -78,7 +78,7 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         'signal_identity_id' => $identityA->id,
         'session_identifier' => 'session-a',
         'started_at' => CarbonImmutable::parse('2026-03-10 10:00:00'),
-        'duration_seconds' => 180,
+        'duration_milliseconds' => 180000,
     ]);
     $sessionA->assignOwner($ownerA)->save();
 
@@ -89,7 +89,7 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         'signal_identity_id' => $identityB->id,
         'session_identifier' => 'session-b',
         'started_at' => CarbonImmutable::parse('2026-03-10 10:00:00'),
-        'duration_seconds' => 120,
+        'duration_milliseconds' => 120000,
     ]);
     $sessionB->assignOwner($ownerB)->save();
 

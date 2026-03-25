@@ -160,7 +160,7 @@ final class ConversionFunnelReportService
     }
 
     /**
-    * @param  list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>  $steps
+     * @param  list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>  $steps
      * @return list<array{count:int,revenue_minor:int}>
      */
     private function calculateStageProgress(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, array $steps, ?SavedSignalReport $savedReport): array
@@ -189,8 +189,8 @@ final class ConversionFunnelReportService
     }
 
     /**
-    * @param  list<SignalEvent>  $actorEvents
-    * @param  list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>  $steps
+     * @param  list<SignalEvent>  $actorEvents
+     * @param  list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>  $steps
      * @param  array<int, int>  $counts
      * @param  array<int, int>  $revenues
      */
@@ -235,7 +235,7 @@ final class ConversionFunnelReportService
     }
 
     /**
-    * @param  list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>  $steps
+     * @param  list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>  $steps
      * @return Builder<SignalEvent>
      */
     private function relevantEventsQuery(?string $trackedPropertyId, ?string $from, ?string $until, ?string $signalSegmentId, array $steps): Builder
@@ -261,7 +261,7 @@ final class ConversionFunnelReportService
     }
 
     /**
-    * @param  array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}  $step
+     * @param  array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}  $step
      */
     private function matchesStep(SignalEvent $event, array $step): bool
     {
@@ -298,7 +298,7 @@ final class ConversionFunnelReportService
     }
 
     /**
-    * @return list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>
+     * @return list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>
      */
     private function resolveFunnelSteps(?SavedSignalReport $savedReport): array
     {
@@ -358,7 +358,7 @@ final class ConversionFunnelReportService
     }
 
     /**
-    * @return list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>
+     * @return list<array{label:string,event_name:string,event_category:string|null,condition_match_type:string,conditions:array<int, array<string, mixed>>|null}>
      */
     private function defaultFunnelSteps(): array
     {

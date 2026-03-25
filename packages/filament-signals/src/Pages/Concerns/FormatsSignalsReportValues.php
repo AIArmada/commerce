@@ -6,17 +6,18 @@ namespace AIArmada\FilamentSignals\Pages\Concerns;
 
 use AIArmada\FilamentSignals\Support\SignalsUiConfig;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
 
 trait FormatsSignalsReportValues
 {
     public function formatMoney(int $minor): string
     {
-        return config('signals.defaults.currency', 'MYR').' '.number_format($minor / 100, 2);
+        return config('signals.defaults.currency', 'MYR') . ' ' . number_format($minor / 100, 2);
     }
 
     protected function formatAggregateTimestamp(mixed $state): ?string
     {
-        if ($state instanceof \DateTimeInterface) {
+        if ($state instanceof DateTimeInterface) {
             return CarbonImmutable::instance($state)->format('M j, Y g:i A');
         }
 

@@ -12,12 +12,12 @@ return new class extends Migration
     {
         $tableName = config('signals.database.tables.sessions', 'signal_sessions');
 
-        if (! Schema::hasTable($tableName) || Schema::hasColumn($tableName, 'duration_milliseconds')) {
+        if (! Schema::hasTable($tableName) || ! Schema::hasColumn($tableName, 'duration_seconds')) {
             return;
         }
 
         Schema::table($tableName, function (Blueprint $table): void {
-            $table->unsignedBigInteger('duration_milliseconds')->default(0)->after('ended_at');
+            $table->dropColumn('duration_seconds');
         });
     }
 };

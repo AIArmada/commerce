@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $owner_id
  * @property CarbonImmutable $started_at
  * @property CarbonImmutable|null $ended_at
- * @property int $duration_seconds
  * @property int $duration_milliseconds
  * @property string|null $entry_path
  * @property string|null $exit_path
@@ -58,7 +57,6 @@ final class SignalSession extends Model
         'session_identifier',
         'started_at',
         'ended_at',
-        'duration_seconds',
         'duration_milliseconds',
         'entry_path',
         'exit_path',
@@ -81,7 +79,6 @@ final class SignalSession extends Model
     protected $casts = [
         'started_at' => 'immutable_datetime',
         'ended_at' => 'immutable_datetime',
-        'duration_seconds' => 'integer',
         'duration_milliseconds' => 'integer',
         'is_bounce' => 'boolean',
     ];

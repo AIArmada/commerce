@@ -50,7 +50,7 @@ final class SignalRouteCatalog
             ];
         }
 
-        $prefix = strstr($uri, '{', true);
+        $prefix = mb_strstr($uri, '{', true);
         $prefix = $prefix === false ? $uri : $prefix;
 
         if ($prefix === '' || $prefix === false) {
@@ -76,7 +76,7 @@ final class SignalRouteCatalog
             return false;
         }
 
-        $uri = ltrim($this->normalizeUri($route->uri()), '/');
+        $uri = mb_ltrim($this->normalizeUri($route->uri()), '/');
 
         foreach (['api/signals', 'livewire', '_ignition', 'clockwork', 'filament/exports', 'filament/imports'] as $excludedPrefix) {
             if (str_starts_with($uri, $excludedPrefix)) {
@@ -89,12 +89,12 @@ final class SignalRouteCatalog
 
     private function normalizeUri(string $uri): string
     {
-        $path = '/' . ltrim($uri, '/');
+        $path = '/' . mb_ltrim($uri, '/');
 
         if ($path === '//') {
             return '/';
         }
 
-        return $path === '/' ? '/' : rtrim($path, '/');
+        return $path === '/' ? '/' : mb_rtrim($path, '/');
     }
 }

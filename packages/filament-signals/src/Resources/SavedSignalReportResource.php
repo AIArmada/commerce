@@ -32,9 +32,9 @@ final class SavedSignalReportResource extends Resource
 {
     protected static ?string $model = SavedSignalReport::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bookmark-square';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bookmark-square';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Insights';
+    protected static string | UnitEnum | null $navigationGroup = 'Insights';
 
     protected static ?int $navigationSort = 32;
 
@@ -247,23 +247,23 @@ final class SavedSignalReportResource extends Resource
                                                     'less_than_or_equal' => 'Less Than or Equal',
                                                     'in' => 'In List',
                                                 ])
-                                                    ->helperText('Use In List for comma-separated values like whatsapp,telegram,email.')
+                                                ->helperText('Use In List for comma-separated values like whatsapp,telegram,email.')
                                                 ->required(),
                                             Forms\Components\TextInput::make('value')
-                                                    ->label('Value to match')
+                                                ->label('Value to match')
                                                 ->required()
-                                                    ->maxLength(255)
-                                                    ->placeholder('Example: /majlis or telegram'),
+                                                ->maxLength(255)
+                                                ->placeholder('Example: /majlis or telegram'),
                                         ])
                                         ->columns(3)
-                                                ->addActionLabel('Add rule')
+                                        ->addActionLabel('Add rule')
                                         ->columnSpanFull()
                                         ->visible(fn (Get $get): bool => $get('step_type') === 'conditions'),
                                 ])
                                 ->columns(3)
                                 ->columnSpanFull()
-                                            ->addActionLabel('Add step')
-                                            ->helperText('Each step is one milestone in the journey you want to measure. Leave this empty to use the starter funnel template.'),
+                                ->addActionLabel('Add step')
+                                ->helperText('Each step is one milestone in the journey you want to measure. Leave this empty to use the starter funnel template.'),
                             Forms\Components\TextInput::make('settings.step_window_minutes')
                                 ->numeric()
                                 ->minValue(1)
