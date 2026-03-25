@@ -90,7 +90,7 @@ final class SignalEventConditionMatcher
         };
     }
 
-    private function resolveFieldValue(SignalEvent $event, string $field): string|int|float|null
+    private function resolveFieldValue(SignalEvent $event, string $field): string | int | float | null
     {
         $propertySegments = SignalEventConditionDefinition::propertySegments($field);
 

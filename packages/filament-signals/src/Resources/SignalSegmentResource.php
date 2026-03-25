@@ -33,9 +33,9 @@ final class SignalSegmentResource extends Resource
 
     protected static ?string $navigationLabel = 'Audience Segments';
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Insights';
+    protected static string | UnitEnum | null $navigationGroup = 'Insights';
 
     protected static ?int $navigationSort = 31;
 

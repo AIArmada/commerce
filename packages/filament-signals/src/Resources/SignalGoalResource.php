@@ -34,9 +34,9 @@ final class SignalGoalResource extends Resource
 
     protected static ?string $navigationLabel = 'Goals';
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-trophy';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-trophy';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Insights';
+    protected static string | UnitEnum | null $navigationGroup = 'Insights';
 
     protected static ?int $navigationSort = 31;
 
