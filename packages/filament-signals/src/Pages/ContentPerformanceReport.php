@@ -96,6 +96,7 @@ final class ContentPerformanceReport extends Page implements HasTable
                 $this->savedReportId !== '' ? $this->savedReportId : null,
             ))
             ->defaultSort('views', 'desc')
+            ->defaultKeySort(false)
             ->columns([
                 TextColumn::make('trackedProperty.name')
                     ->label('Property')

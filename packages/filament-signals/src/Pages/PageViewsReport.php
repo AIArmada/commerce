@@ -56,6 +56,7 @@ final class PageViewsReport extends Page implements HasTable
         return $table
             ->query(app(PageViewReportService::class)->getTableQuery())
             ->defaultSort('views', 'desc')
+            ->defaultKeySort(false)
             ->columns([
                 TextColumn::make('trackedProperty.name')
                     ->label('Property')
