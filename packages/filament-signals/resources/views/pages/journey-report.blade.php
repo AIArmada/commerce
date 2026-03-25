@@ -39,7 +39,7 @@
 
             <x-filament::section>
                 <div class="text-center">
-                    <div class="text-2xl font-bold text-gray-950 dark:text-white">{{ number_format($summary['avg_duration_seconds'], 2) }}s</div>
+                    <div class="text-2xl font-bold text-gray-950 dark:text-white">{{ number_format($summary['avg_duration_seconds'], 0) }}s</div>
                     <div class="text-sm text-gray-500">Avg Duration</div>
                 </div>
             </x-filament::section>
