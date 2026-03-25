@@ -101,6 +101,7 @@ final class AcquisitionReport extends Page implements HasTable
                 $this->savedReportId !== '' ? $this->savedReportId : null,
             ))
             ->defaultSort('visitors', 'desc')
+            ->defaultKeySort(false)
             ->columns([
                 TextColumn::make('trackedProperty.name')
                     ->label('Property')
