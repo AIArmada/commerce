@@ -12,10 +12,21 @@ final class ListSignalGoals extends ListRecords
 {
     protected static string $resource = SignalGoalResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Goals';
+    }
+
+    public function getSubheading(): ?string
+    {
+        return 'Track the events that count as success for dashboards, funnels, and alerts.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('New goal'),
         ];
     }
 }
