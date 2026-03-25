@@ -39,7 +39,7 @@ This is the initial public release of AIArmada Commerce. No upgrade path needed.
 - Demo applications should move to `laravel/tinker:^3.0`.
 - Packages that depended directly on `illuminate/*` components now target `^12.0|^13.0`.
 - If you exclude CSRF middleware manually, prefer the bootstrap middleware API or a compatibility resolver instead of hard-coding `VerifyCsrfToken`.
-- Until upstream publishes Laravel 13 constraints, this repository uses a local Composer metadata override for `akaunting/laravel-money` while still consuming the upstream 6.0.x code.
+- `akaunting/laravel-money` 6.0.x now advertises Laravel 13 compatibility upstream, so the temporary local Composer metadata override has been removed from the root and demo manifests.
 
 ### Migration & Schema Changes
 

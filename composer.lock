@@ -4,29 +4,95 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4f7496ed60ef67aafcfb20838238d03e",
+    "content-hash": "ef7886e845732a9f96875370e2b81799",
     "packages": [],
     "packages-dev": [
+        {
+            "name": "aiarmada/commerce-support",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "packages/commerce-support",
+                "reference": "a0f2cfad971776b6ea661f9ab2b2050b70eb9fc7"
+            },
+            "require": {
+                "akaunting/laravel-money": "^6.0",
+                "illuminate/contracts": "^12.0|^13.0",
+                "illuminate/database": "^12.0|^13.0",
+                "illuminate/support": "^12.0|^13.0",
+                "lorisleiva/laravel-actions": "^2.9",
+                "nunomaduro/essentials": "^1.0",
+                "owen-it/laravel-auditing": "^14.0",
+                "php": "^8.4",
+                "spatie/laravel-activitylog": "^4.10",
+                "spatie/laravel-data": "^4.18",
+                "spatie/laravel-health": "^1.34",
+                "spatie/laravel-medialibrary": "^11.0",
+                "spatie/laravel-model-states": "^2.0",
+                "spatie/laravel-package-tools": "^1.92",
+                "spatie/laravel-settings": "^3.6",
+                "spatie/laravel-sluggable": "^3.7",
+                "spatie/laravel-tags": "^4.2",
+                "spatie/laravel-webhook-client": "^3.4"
+            },
+            "suggest": {
+                "laravel/octane": "Required for high-performance Octane support"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\CommerceSupport\\SupportServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
+                "psr-4": {
+                    "AIArmada\\CommerceSupport\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Core helper methods and foundation code for all AIArmada Commerce packages.",
+            "homepage": "https://github.com/aiarmada/commerce",
+            "support": {
+                "issues": "https://github.com/aiarmada/commerce/issues",
+                "source": "https://github.com/aiarmada/commerce"
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
         {
             "name": "akaunting/laravel-money",
             "version": "6.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/akaunting/laravel-money.git",
-                "reference": "5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a"
+                "reference": "e301405d6b9c953c6d09ce3432e95e559a91b48f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/akaunting/laravel-money/zipball/5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a",
-                "reference": "5dca81f4297b99f8dbf0f4a6bb4d45c56acbd76a"
+                "url": "https://api.github.com/repos/akaunting/laravel-money/zipball/e301405d6b9c953c6d09ce3432e95e559a91b48f",
+                "reference": "e301405d6b9c953c6d09ce3432e95e559a91b48f",
+                "shasum": ""
             },
             "require": {
-                "illuminate/contracts": "^10.0|^11.0|^12.0|^13.0",
-                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
-                "illuminate/validation": "^10.0|^11.0|^12.0|^13.0",
-                "illuminate/view": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/contracts": "^10.0|^11.0|^12|^13",
+                "illuminate/support": "^10.0|^11.0|^12|^13",
+                "illuminate/validation": "^10.0|^11.0|^12|^13",
+                "illuminate/view": "^10.0|^11.0|^12|^13",
                 "php": "^8.2",
                 "vlucas/phpdotenv": "^5.4.1"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.0|^9.1.4|^10|^11",
+                "phpunit/phpunit": "^10.5|^11.5.50|^12.5.8",
+                "vimeo/psalm": "^6.0"
             },
             "type": "library",
             "extra": {
@@ -43,7 +109,31 @@
                 "psr-4": {
                     "Akaunting\\Money\\": "src"
                 }
-            }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Denis Duliçi",
+                    "email": "info@akaunting.com",
+                    "homepage": "https://akaunting.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Currency formatting and conversion package for Laravel",
+            "keywords": [
+                "convert",
+                "currency",
+                "format",
+                "laravel",
+                "money"
+            ],
+            "support": {
+                "source": "https://github.com/akaunting/laravel-money/tree/6.0.3"
+            },
+            "time": "2026-03-24T11:04:40+00:00"
         },
         {
             "name": "anourvalar/eloquent-serialize",
