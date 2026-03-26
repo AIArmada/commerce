@@ -7,6 +7,7 @@ use AIArmada\FilamentSignals\FilamentSignalsPlugin;
 use AIArmada\FilamentSignals\Pages\AcquisitionReport;
 use AIArmada\FilamentSignals\Pages\ContentPerformanceReport;
 use AIArmada\FilamentSignals\Pages\ConversionFunnelReport;
+use AIArmada\FilamentSignals\Pages\DevicesReport;
 use AIArmada\FilamentSignals\Pages\GoalsReport;
 use AIArmada\FilamentSignals\Pages\JourneyReport;
 use AIArmada\FilamentSignals\Pages\LiveActivityReport;
@@ -33,7 +34,7 @@ it('registers the dashboard, report pages, and tracked property resource', funct
     $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('pages')
         ->once()
-        ->with(Mockery::on(fn (array $pages): bool => $pages === [SignalsDashboard::class, PageViewsReport::class, ConversionFunnelReport::class, AcquisitionReport::class, JourneyReport::class, RetentionReport::class, ContentPerformanceReport::class, LiveActivityReport::class, GoalsReport::class]))
+        ->with(Mockery::on(fn (array $pages): bool => $pages === [SignalsDashboard::class, PageViewsReport::class, ConversionFunnelReport::class, AcquisitionReport::class, JourneyReport::class, RetentionReport::class, ContentPerformanceReport::class, LiveActivityReport::class, GoalsReport::class, DevicesReport::class]))
         ->andReturnSelf();
     $panel->shouldReceive('resources')
         ->once()
