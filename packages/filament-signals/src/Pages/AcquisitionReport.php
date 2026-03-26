@@ -17,7 +17,9 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Url;
 
 final class AcquisitionReport extends Page implements HasTable
@@ -145,6 +147,15 @@ final class AcquisitionReport extends Page implements HasTable
                     ->label('Last Seen')
                     ->formatStateUsing(fn (mixed $state): ?string => $this->formatAggregateTimestamp($state))
                     ->sortable(),
+            ])
+            ->filters([
+                Filter::make('exclude_bots')
+                    ->label('Exclude Bots')
+                    ->toggle()
+                    ->default(true)
+                    ->query(fn (Builder $query, array $data): Builder => ($data['isActive'] ?? false)
+                        ? $query->whereDoesntHave('session', fn (Builder $q): Builder => $q->where('is_bot', true))
+                        : $query),
             ])
             ->emptyStateHeading('No acquisition data recorded yet')
             ->emptyStateDescription('Source, campaign, medium, and referrer data will appear here once traffic events are being collected.');
