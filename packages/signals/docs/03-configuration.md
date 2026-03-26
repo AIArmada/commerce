@@ -50,8 +50,33 @@ Configuration is defined in `config/signals.php`.
         'include_global' => false,
         'auto_assign_on_create' => true,
     ],
+    'ua_parsing' => [
+        'enabled' => true,       // auto-parse User-Agent on every ingestion request
+        'store_raw' => true,     // persist the raw User-Agent string on signal_sessions
+    ],
+    'ip_tracking' => [
+        'enabled' => true,       // capture client IP on session creation
+        'anonymize' => false,    // true = zero last octet (IPv4) / last 80 bits (IPv6)
+    ],
+    'auth_tracking' => [
+        'enabled' => false,      // opt-in: link auth()->user() to SignalIdentity on identify calls
+    ],
 ],
 ```
+
+### `ua_parsing`
+
+When `enabled`, every ingestion request automatically parses the `User-Agent` header using `matomo/device-detector` and populates `device_type`, `device_brand`, `device_model`, `browser`, `browser_version`, `os`, `os_version`, and `is_bot` on the session. Client-supplied values take precedence, but `is_bot` is always server-authoritative.
+
+Set `store_raw => false` to skip persisting the raw User-Agent string.
+
+### `ip_tracking`
+
+When `enabled`, the client IP is captured on session creation. Set `anonymize => true` to truncate the IP before storage (last octet for IPv4, last 80 bits for IPv6).
+
+### `auth_tracking`
+
+Opt-in. When `enabled`, `IdentifySignalIdentity` automatically links the currently authenticated Laravel user (`auth()->user()`) to the identity record via `auth_user_type` / `auth_user_id`. Requires a session authenticated via a standard Laravel guard.
 
 ## Integrations
 

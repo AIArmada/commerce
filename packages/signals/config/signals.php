@@ -57,6 +57,17 @@ return [
             'include_global' => false,
             'auto_assign_on_create' => true,
         ],
+        'ua_parsing' => [
+            'enabled' => true,
+            'store_raw' => true, // store the raw User-Agent string on signal_sessions
+        ],
+        'ip_tracking' => [
+            'enabled' => true,
+            'anonymize' => false, // true = zero-out last octet (IPv4) / last 80 bits (IPv6)
+        ],
+        'auth_tracking' => [
+            'enabled' => false, // opt-in: when true, links auth()->user() to SignalIdentity
+        ],
     ],
 
     /* Integrations */
