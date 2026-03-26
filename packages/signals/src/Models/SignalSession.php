@@ -28,8 +28,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $exit_path
  * @property string|null $country
  * @property string|null $device_type
+ * @property string|null $device_brand
+ * @property string|null $device_model
  * @property string|null $browser
+ * @property string|null $browser_version
  * @property string|null $os
+ * @property string|null $os_version
+ * @property bool $is_bot
+ * @property string|null $user_agent
+ * @property string|null $ip_address
  * @property string|null $referrer
  * @property string|null $utm_source
  * @property string|null $utm_medium
@@ -62,8 +69,15 @@ final class SignalSession extends Model
         'exit_path',
         'country',
         'device_type',
+        'device_brand',
+        'device_model',
         'browser',
+        'browser_version',
         'os',
+        'os_version',
+        'is_bot',
+        'user_agent',
+        'ip_address',
         'referrer',
         'utm_source',
         'utm_medium',
@@ -81,6 +95,7 @@ final class SignalSession extends Model
         'ended_at' => 'immutable_datetime',
         'duration_milliseconds' => 'integer',
         'is_bounce' => 'boolean',
+        'is_bot' => 'boolean',
     ];
 
     public function getTable(): string

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentSignals;
 use AIArmada\FilamentSignals\Pages\AcquisitionReport;
 use AIArmada\FilamentSignals\Pages\ContentPerformanceReport;
 use AIArmada\FilamentSignals\Pages\ConversionFunnelReport;
+use AIArmada\FilamentSignals\Pages\DevicesReport;
 use AIArmada\FilamentSignals\Pages\GoalsReport;
 use AIArmada\FilamentSignals\Pages\JourneyReport;
 use AIArmada\FilamentSignals\Pages\LiveActivityReport;
@@ -81,6 +82,10 @@ final class FilamentSignalsPlugin implements Plugin
 
         if (config('filament-signals.features.goals_report', true)) {
             $pages[] = GoalsReport::class;
+        }
+
+        if (config('filament-signals.features.devices_report', true)) {
+            $pages[] = DevicesReport::class;
         }
 
         if (config('filament-signals.features.properties', true)) {

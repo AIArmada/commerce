@@ -24,6 +24,8 @@ Base path is `signals.http.prefix` (default `api/signals`).
 }
 ```
 
+When `auth_tracking` is enabled the currently authenticated Laravel user is automatically linked. You can also pass `auth_user_type` / `auth_user_id` explicitly:
+
 ### Page View
 
 `POST /api/signals/collect/pageview`
@@ -35,6 +37,21 @@ Base path is `signals.http.prefix` (default `api/signals`).
   "path": "/pricing",
   "url": "https://example.com/pricing",
   "title": "Pricing"
+}
+```
+
+Optional device fields can be passed explicitly. When `ua_parsing` is enabled these are populated automatically from the `User-Agent` header, but client-supplied values take precedence:
+
+```json
+{
+  "device_type": "mobile",
+  "device_brand": "Apple",
+  "device_model": "iPhone 15",
+  "browser": "Safari",
+  "browser_version": "17.0",
+  "os": "iOS",
+  "os_version": "17.0",
+  "is_bot": false
 }
 ```
 

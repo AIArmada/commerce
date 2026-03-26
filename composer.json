@@ -5,7 +5,8 @@
     "require": {
         "php": "^8.4",
         "ext-intl": "*",
-        "composer-runtime-api": "^2.1"
+        "composer-runtime-api": "^2.1",
+        "matomo/device-detector": "^6.4"
     },
     "require-dev": {
         "aiarmada/commerce-support": "*",
