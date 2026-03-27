@@ -68,6 +68,17 @@ return [
         'auth_tracking' => [
             'enabled' => false, // opt-in: when true, links auth()->user() to SignalIdentity
         ],
+        'geolocation' => [
+            'enabled' => true,  // allow browser geolocation coordinate capture via /collect/geo
+            'reverse_geocode' => [
+                'enabled' => false,  // opt-in: reverse-geocode coordinates to address fields
+                'async' => true,     // dispatch ReverseGeocodeSessionJob instead of inline
+                'store_raw_payload' => false, // persist raw provider response in raw_reverse_geocode_payload
+            ],
+        ],
+        'monetary' => [
+            'enabled' => true,  // false = hide all monetary/revenue UI (stat cards, columns, goal types, alert metrics, condition fields)
+        ],
     ],
 
     /* Integrations */

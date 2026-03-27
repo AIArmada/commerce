@@ -37,12 +37,14 @@
                 </div>
             </x-filament::section>
 
+            @if(config('signals.features.monetary.enabled', true))
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-2xl font-bold text-success-700">{{ $this->formatMoney($summary['revenue_minor']) }}</div>
                     <div class="text-sm text-gray-500">{{ $this->monetaryValueLabel() }}</div>
                 </div>
             </x-filament::section>
+            @endif
         </div>
 
         {{ $this->table }}

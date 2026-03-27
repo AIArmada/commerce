@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Signals\Console\Commands\AggregateDailyMetricsCommand;
 use AIArmada\Signals\Console\Commands\ProcessSignalAlertsCommand;
+use AIArmada\Signals\Contracts\SignalLocationResolverContract;
 use AIArmada\Signals\Listeners\RecordAffiliateAttributedSignal;
 use AIArmada\Signals\Listeners\RecordAffiliateConversionRecordedSignal;
 use AIArmada\Signals\Listeners\RecordCartClearedSignal;
@@ -15,9 +16,12 @@ use AIArmada\Signals\Listeners\RecordCheckoutStartedSignal;
 use AIArmada\Signals\Listeners\RecordOrderPaidSignal;
 use AIArmada\Signals\Listeners\RecordVoucherAppliedSignal;
 use AIArmada\Signals\Listeners\RecordVoucherRemovedSignal;
+use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Services\CommerceSignalsRecorder;
+use AIArmada\Signals\Services\Geocoders\NominatimGeocoder;
 use AIArmada\Signals\Services\SignalAlertDispatcher;
 use AIArmada\Signals\Services\SignalAlertEvaluator;
+use AIArmada\Signals\Services\SignalLocationResolverPipeline;
 use AIArmada\Signals\Services\SignalMetricsAggregator;
 use AIArmada\Signals\Services\SignalsDashboardService;
 use AIArmada\Signals\Services\TrackedPropertyResolver;
@@ -55,7 +59,25 @@ it('registers the dashboard and aggregator services as singletons', function ():
         ->and(app()->bound(TrackedPropertyResolver::class))->toBeTrue()
         ->and(app()->bound(CommerceSignalsRecorder::class))->toBeTrue()
         ->and(app()->bound(SignalAlertEvaluator::class))->toBeTrue()
-        ->and(app()->bound(SignalAlertDispatcher::class))->toBeTrue();
+        ->and(app()->bound(SignalAlertDispatcher::class))->toBeTrue()
+        ->and(app()->bound(SignalLocationResolverPipeline::class))->toBeTrue();
+});
+
+it('registers the default reverse geocoder and optional location resolver on the pipeline', function (): void {
+    app()->bind(SignalLocationResolverContract::class, fn (): SignalLocationResolverContract => new class implements SignalLocationResolverContract
+    {
+        public function resolve(SignalSession $session, array $rawPayload): void {}
+    });
+
+    $pipeline = app(SignalLocationResolverPipeline::class);
+
+    $geocoders = Closure::bind(fn (): array => $this->geocoders, $pipeline, $pipeline)();
+    $resolvers = Closure::bind(fn (): array => $this->resolvers, $pipeline, $pipeline)();
+
+    expect($geocoders)->toHaveCount(1)
+        ->and($geocoders[0])->toBeInstanceOf(NominatimGeocoder::class)
+        ->and($resolvers)->toHaveCount(1)
+        ->and($resolvers[0])->toBeInstanceOf(SignalLocationResolverContract::class);
 });
 
 it('registers optional checkout and order listeners', function (): void {

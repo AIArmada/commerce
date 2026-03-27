@@ -109,13 +109,20 @@ final class LiveActivityReport extends Page implements HasTable
                 TextColumn::make('identity.external_id')
                     ->label('Identity')
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('identity.auth_user_id')
+                    ->label('User ID')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('identity.auth_user_type')
+                    ->label('User Type')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('session.session_identifier')
                     ->label('Session')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('revenue_minor')
                     ->label($this->monetaryValueLabel())
                     ->formatStateUsing(fn (mixed $state): string => $this->formatMoney((int) $state))
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(fn (): bool => (bool) config('signals.features.monetary.enabled', true)),
                 TextColumn::make('session.device_type')
                     ->label('Device')
                     ->badge()
@@ -142,6 +149,25 @@ final class LiveActivityReport extends Page implements HasTable
                 TextColumn::make('session.ip_address')
                     ->label('IP Address')
                     ->visible((bool) config('signals.features.ip_tracking.enabled', true))
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('session.country')
+                    ->label('Country')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('session.country_source')
+                    ->label('Country Source')
+                    ->badge()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('session.resolved_city')
+                    ->label('City')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('session.resolved_state')
+                    ->label('State')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('session.resolved_country_name')
+                    ->label('Country Name')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('session.reverse_geocode_provider')
+                    ->label('Geocode Provider')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->emptyStateHeading('No live activity recorded yet')

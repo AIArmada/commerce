@@ -40,12 +40,14 @@
                 </div>
             </x-filament::section>
 
+@if(config('signals.features.monetary.enabled', true))
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-2xl font-bold text-success-700">{{ $this->formatMoney($summary['revenue_minor']) }}</div>
                     <div class="text-sm text-gray-500">{{ $this->monetaryValueLabel() }}</div>
                 </div>
             </x-filament::section>
+            @endif
         </div>
 
         <x-filament::section>
@@ -59,7 +61,9 @@
                             <th class="px-4 py-3 font-medium">From Previous</th>
                             <th class="px-4 py-3 font-medium">From Start</th>
                             <th class="px-4 py-3 font-medium">Drop Off</th>
+                            @if(config('signals.features.monetary.enabled', true))
                             <th class="px-4 py-3 font-medium">{{ $this->monetaryValueLabel() }}</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-white/5">
@@ -71,11 +75,13 @@
                                 <td class="px-4 py-3">{{ number_format($stage['rate_from_previous'], 2) }}%</td>
                                 <td class="px-4 py-3">{{ number_format($stage['rate_from_start'], 2) }}%</td>
                                 <td class="px-4 py-3">{{ number_format($stage['drop_off']) }}</td>
+                                @if(config('signals.features.monetary.enabled', true))
                                 <td class="px-4 py-3">{{ $this->formatMoney($stage['revenue_minor']) }}</td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                                <td colspan="{{ config('signals.features.monetary.enabled', true) ? '7' : '6' }}" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                     Funnel activity will appear here once the selected steps start recording events.
                                 </td>
                             </tr>

@@ -90,12 +90,20 @@ final class SignalGoalResource extends Resource
 
                     Forms\Components\Select::make('goal_type')
                         ->label('Goal type')
-                        ->options([
-                            'conversion' => 'Conversion',
-                            'engagement' => 'Engagement',
-                            'revenue' => 'Revenue',
-                        ])
-                        ->helperText('Use Conversion for success actions, Engagement for softer actions, and Revenue for money-based goals.')
+                        ->options(function (): array {
+                            $options = [
+                                'conversion' => 'Conversion',
+                                'engagement' => 'Engagement',
+                            ];
+                            if (config('signals.features.monetary.enabled', true)) {
+                                $options['revenue'] = 'Revenue';
+                            }
+
+                            return $options;
+                        })
+                        ->helperText(config('signals.features.monetary.enabled', true)
+                            ? 'Use Conversion for success actions, Engagement for softer actions, and Revenue for money-based goals.'
+                            : 'Use Conversion for success actions and Engagement for softer actions.')
                         ->default('conversion')
                         ->required(),
 
@@ -209,11 +217,17 @@ final class SignalGoalResource extends Resource
                     ->label('Active'),
                 Tables\Filters\SelectFilter::make('goal_type')
                     ->label('Type')
-                    ->options([
-                        'conversion' => 'Conversion',
-                        'engagement' => 'Engagement',
-                        'revenue' => 'Revenue',
-                    ]),
+                    ->options(function (): array {
+                        $options = [
+                            'conversion' => 'Conversion',
+                            'engagement' => 'Engagement',
+                        ];
+                        if (config('signals.features.monetary.enabled', true)) {
+                            $options['revenue'] = 'Revenue';
+                        }
+
+                        return $options;
+                    }),
             ])
             ->actions([
                 EditAction::make()

@@ -31,12 +31,14 @@
                 </div>
             </x-filament::section>
 
+@if(config('signals.features.monetary.enabled', true))
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-2xl font-bold text-success-700">{{ $this->formatMoney($summary['revenue_minor']) }}</div>
                     <div class="text-sm text-gray-500">{{ $this->monetaryValueLabel() }}</div>
                 </div>
             </x-filament::section>
+            @endif
 
             <x-filament::section>
                 <div class="text-center">
@@ -58,7 +60,9 @@
                             <th class="px-4 py-3 font-medium">Hits</th>
                             <th class="px-4 py-3 font-medium">Visitors</th>
                             <th class="px-4 py-3 font-medium">Goal Rate</th>
+                            @if(config('signals.features.monetary.enabled', true))
                             <th class="px-4 py-3 font-medium">{{ $this->monetaryValueLabel() }}</th>
+                            @endif
                             <th class="px-4 py-3 font-medium">Last Hit</th>
                         </tr>
                     </thead>
@@ -77,12 +81,14 @@
                                 <td class="px-4 py-3">{{ number_format($row['goal_hits']) }}</td>
                                 <td class="px-4 py-3">{{ number_format($row['visitors']) }}</td>
                                 <td class="px-4 py-3">{{ number_format($row['goal_rate'], 2) }}%</td>
+                                @if(config('signals.features.monetary.enabled', true))
                                 <td class="px-4 py-3">{{ $this->formatMoney($row['revenue_minor']) }}</td>
+                                @endif
                                 <td class="px-4 py-3">{{ $row['last_hit_at'] ? $this->formatAggregateTimestamp($row['last_hit_at']) : 'Never' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                                <td colspan="{{ config('signals.features.monetary.enabled', true) ? '9' : '8' }}" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                     Goal performance will appear here once active goals and matching events have been recorded.
                                 </td>
                             </tr>

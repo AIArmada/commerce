@@ -27,6 +27,8 @@ Configuration is defined in `config/signals.php`.
 ],
 ```
 
+`json_column_type` is also used by the geolocation enrichment migration when storing `raw_reverse_geocode_payload`, so PostgreSQL installs can switch that column to `jsonb` without editing migrations.
+
 ## Defaults
 
 ```php
@@ -61,6 +63,17 @@ Configuration is defined in `config/signals.php`.
     'auth_tracking' => [
         'enabled' => false,      // opt-in: link auth()->user() to SignalIdentity on identify calls
     ],
+    'geolocation' => [
+        'enabled' => true,       // allow browser coordinate capture via /collect/geo
+        'reverse_geocode' => [
+            'enabled' => false,  // enrich sessions with address/location fields
+            'async' => true,     // queue ReverseGeocodeSessionJob instead of resolving inline
+            'store_raw_payload' => false,
+        ],
+    ],
+    'monetary' => [
+        'enabled' => true,       // false = hide revenue-oriented analytics behavior in dependent UIs
+    ],
 ],
 ```
 
@@ -77,6 +90,18 @@ When `enabled`, the client IP is captured on session creation. Set `anonymize =>
 ### `auth_tracking`
 
 Opt-in. When `enabled`, `IdentifySignalIdentity` automatically links the currently authenticated Laravel user (`auth()->user()`) to the identity record via `auth_user_type` / `auth_user_id`. Requires a session authenticated via a standard Laravel guard.
+
+### `geolocation`
+
+When `enabled`, the browser tracker can post coordinates to `POST /collect/geo` for the active session. If `reverse_geocode.enabled` is also true, the package resolves country, region, locality, postal code, and formatted address fields onto the session.
+
+Set `async => false` to resolve reverse geocoding inline. Leave it `true` when you want enrichment handled by the queue via `ReverseGeocodeSessionJob`.
+
+Set `store_raw_payload => true` only when you explicitly need provider-specific debug payloads in `raw_reverse_geocode_payload`.
+
+### `monetary`
+
+When `enabled => false`, dependent packages such as `aiarmada/filament-signals` hide monetary stat cards, columns, goal options, and alert metrics while still keeping outcome/event analytics active.
 
 ## Integrations
 

@@ -74,13 +74,19 @@ final class SignalAlertRuleResource extends Resource
                         ->preload(),
 
                     Forms\Components\Select::make('metric_key')
-                        ->options([
-                            'events' => 'Events',
-                            'page_views' => 'Page Views',
-                            'conversions' => 'Conversions',
-                            'revenue_minor' => 'Revenue (Minor)',
-                            'conversion_rate' => 'Conversion Rate (%)',
-                        ])
+                        ->options(function (): array {
+                            $options = [
+                                'events' => 'Events',
+                                'page_views' => 'Page Views',
+                                'conversions' => 'Conversions',
+                                'conversion_rate' => 'Conversion Rate (%)',
+                            ];
+                            if (config('signals.features.monetary.enabled', true)) {
+                                $options['revenue_minor'] = 'Revenue (Minor)';
+                            }
+
+                            return $options;
+                        })
                         ->required(),
 
                     Forms\Components\Select::make('operator')

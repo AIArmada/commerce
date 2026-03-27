@@ -171,6 +171,7 @@ final class IngestSignalEvent
         /** @var array{device_type: string|null, device_brand: string|null, device_model: string|null, browser: string|null, browser_version: string|null, os: string|null, os_version: string|null, is_bot: bool} $parsed */
         $parsed = ['device_type' => null, 'device_brand' => null, 'device_model' => null, 'browser' => null, 'browser_version' => null, 'os' => null, 'os_version' => null, 'is_bot' => false];
         $capturedIp = null;
+        $request = null;
 
         if (! app()->runningInConsole() && app()->bound('request')) {
             $request = request();
@@ -178,7 +179,7 @@ final class IngestSignalEvent
             $parsed = $this->userAgentParser->parse($rawUserAgent);
 
             if (config('signals.features.ip_tracking.enabled', true)) {
-                $ip = $request->ip();
+                $ip = $this->resolveClientIp($request);
                 if ($ip !== null) {
                     $capturedIp = config('signals.features.ip_tracking.anonymize', false)
                         ? $this->anonymizeIpAddress($ip)
@@ -193,7 +194,8 @@ final class IngestSignalEvent
             'signal_identity_id' => $identity?->id,
             'entry_path' => $session->entry_path ?? ($payload['path'] ?? null),
             'exit_path' => $payload['path'] ?? $session->exit_path,
-            'country' => $payload['country'] ?? $session->country,
+            'country' => $session->country ?? $this->resolveCountry($request, $payload),
+            'country_source' => $session->country_source ?? $this->resolveCountrySource($request, $payload),
             'device_type' => $payload['device_type'] ?? ($parsed['device_type'] ?? $session->device_type),
             'device_brand' => $payload['device_brand'] ?? ($parsed['device_brand'] ?? $session->device_brand),
             'device_model' => $payload['device_model'] ?? ($parsed['device_model'] ?? $session->device_model),
@@ -240,6 +242,58 @@ final class IngestSignalEvent
 
         $model->owner_type = $trackedProperty->owner_type;
         $model->owner_id = $trackedProperty->owner_id;
+    }
+
+    private function resolveCountry(?Request $request, array $payload): ?string
+    {
+        if ($request !== null) {
+            $cfCountry = $request->header('CF-IPCountry');
+            if (
+                $cfCountry !== null
+                && preg_match('/^[A-Z]{2}$/', $cfCountry)
+                && ! in_array($cfCountry, ['XX', 'T1'], true)
+            ) {
+                return $cfCountry;
+            }
+        }
+
+        $payloadCountry = $payload['country'] ?? null;
+        if (is_string($payloadCountry) && preg_match('/^[A-Z]{2}$/', mb_strtoupper($payloadCountry))) {
+            return mb_strtoupper($payloadCountry);
+        }
+
+        return null;
+    }
+
+    private function resolveCountrySource(?Request $request, array $payload): ?string
+    {
+        if ($request !== null) {
+            $cfCountry = $request->header('CF-IPCountry');
+            if (
+                $cfCountry !== null
+                && preg_match('/^[A-Z]{2}$/', $cfCountry)
+                && ! in_array($cfCountry, ['XX', 'T1'], true)
+            ) {
+                return 'cloudflare';
+            }
+        }
+
+        $payloadCountry = $payload['country'] ?? null;
+        if (is_string($payloadCountry) && $payloadCountry !== '') {
+            return 'payload';
+        }
+
+        return null;
+    }
+
+    private function resolveClientIp(Request $request): ?string
+    {
+        $cfIp = $request->header('CF-Connecting-IP');
+        if ($cfIp !== null && filter_var($cfIp, FILTER_VALIDATE_IP) !== false) {
+            return $cfIp;
+        }
+
+        return $request->ip();
     }
 
     private function anonymizeIpAddress(string $ip): string
