@@ -40,6 +40,22 @@ When `auth_tracking` is enabled the currently authenticated Laravel user is auto
 }
 ```
 
+### Geolocation
+
+`POST /api/signals/collect/geo`
+
+```json
+{
+  "write_key": "prop_write_key",
+  "session_identifier": "sig_session_1",
+  "latitude": 3.139,
+  "longitude": 101.6869,
+  "accuracy_meters": 25
+}
+```
+
+This endpoint is intended for the browser tracker after the browser grants geolocation permission. When reverse geocoding is enabled, the session is enriched with resolved location fields and optional raw provider payload data.
+
 Optional device fields can be passed explicitly. When `ua_parsing` is enabled these are populated automatically from the `User-Agent` header, but client-supplied values take precedence:
 
 ```json
@@ -80,6 +96,8 @@ Serve tracker script from:
 `GET /api/signals/tracker.js`
 
 The script sends automatic page-view payloads and tracks SPA navigation via `pushState`, `replaceState`, and `popstate`.
+
+To enable browser-driven coordinate capture, render the script tag with `data-enable-geolocation="true"`. When disabled, the tracker skips `navigator.geolocation` entirely.
 
 ## Server-Side Event Recording
 

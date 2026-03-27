@@ -142,7 +142,8 @@ final class AcquisitionReport extends Page implements HasTable
                 TextColumn::make('revenue_minor')
                     ->label($this->monetaryValueLabel())
                     ->formatStateUsing(fn (mixed $state): string => $this->formatMoney((int) $state))
-                    ->sortable(),
+                    ->sortable()
+                    ->visible(fn (): bool => (bool) config('signals.features.monetary.enabled', true)),
                 TextColumn::make('last_seen_at')
                     ->label('Last Seen')
                     ->formatStateUsing(fn (mixed $state): ?string => $this->formatAggregateTimestamp($state))

@@ -38,6 +38,17 @@ The package ships with widgets used by dashboard/report pages:
 - `EventTrendWidget`
 - `PendingSignalAlertsWidget`
 
+## Monetary-Aware UI
+
+When `signals.features.monetary.enabled` is false in the Signals package:
+
+- dashboard stats omit monetary value cards
+- report tables and summary cards hide monetary columns
+- goal and alert forms omit monetary-only options
+- tracked property forms hide currency fields that are only needed for revenue reporting
+
+Outcome counts and non-monetary reporting continue to function normally.
+
 ## Saved Reports Workflow
 
 1. Build report filters on report pages.
@@ -77,3 +88,5 @@ Bots are excluded by default. Use the **Include/Exclude bots** button to toggle.
 - **Brand** — `device_brand`
 - **Model** — `device_model`
 - **IP Address** — visible only when `signals.features.ip_tracking.enabled = true`
+
+These columns depend on upstream Signals session enrichment. If `signals.features.ua_parsing.enabled` is false, the device/browser/OS columns will remain empty.

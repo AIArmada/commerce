@@ -40,6 +40,10 @@ Each feature flag controls whether corresponding pages/resources/widgets are reg
 ],
 ```
 
+`devices_report` controls registration of the Devices & Technology page.
+
+Feature flags in this plugin only control whether the Filament UI is registered. Some data surfaces still depend on upstream Signals package settings such as `signals.features.ua_parsing.enabled`, `signals.features.ip_tracking.enabled`, and `signals.features.monetary.enabled`.
+
 ## Resources
 
 ```php
@@ -70,3 +74,5 @@ Each feature flag controls whether corresponding pages/resources/widgets are reg
 ```
 
 `labels` are consumed by UI helpers such as `SignalsUiConfig`.
+
+When `signals.features.monetary.enabled` is false, the `monetary_value` label remains configurable but the related UI is intentionally hidden.
