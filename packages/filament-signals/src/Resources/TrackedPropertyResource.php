@@ -78,8 +78,9 @@ final class TrackedPropertyResource extends Resource
 
                     Forms\Components\TextInput::make('currency')
                         ->default(config('signals.defaults.currency', 'MYR'))
-                        ->required()
-                        ->length(3),
+                        ->required(fn (): bool => (bool) config('signals.features.monetary.enabled', true))
+                        ->length(3)
+                        ->visible(fn (): bool => (bool) config('signals.features.monetary.enabled', true)),
 
                     Forms\Components\TextInput::make('write_key')
                         ->required()

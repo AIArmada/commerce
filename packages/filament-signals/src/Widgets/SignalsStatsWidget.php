@@ -19,9 +19,8 @@ final class SignalsStatsWidget extends StatsOverviewWidget
     {
         $summary = app(SignalsDashboardService::class)->summary();
         $outcomesLabel = SignalsUiConfig::outcomesLabel();
-        $monetaryValueLabel = SignalsUiConfig::monetaryValueLabel();
 
-        return [
+        $stats = [
             Stat::make('Tracked Properties', number_format($summary['tracked_properties']))
                 ->description('Sites and apps under analysis')
                 ->color('primary'),
@@ -43,10 +42,15 @@ final class SignalsStatsWidget extends StatsOverviewWidget
             Stat::make($outcomesLabel, number_format($summary['conversions']))
                 ->description('Events matching the primary outcome')
                 ->color('success'),
-            Stat::make($monetaryValueLabel, $this->formatMoney($summary['revenue_minor']))
-                ->description('Tracked monetary value in range')
-                ->color('warning'),
         ];
+
+        if (config('signals.features.monetary.enabled', true)) {
+            $stats[] = Stat::make(SignalsUiConfig::monetaryValueLabel(), $this->formatMoney($summary['revenue_minor']))
+                ->description('Tracked monetary value in range')
+                ->color('warning');
+        }
+
+        return $stats;
     }
 
     private function formatMoney(int $minor): string

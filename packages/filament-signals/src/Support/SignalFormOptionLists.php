@@ -11,22 +11,27 @@ final class SignalFormOptionLists
      */
     public static function conditionFields(): array
     {
-        return [
+        $fields = [
             'path',
             'url',
             'source',
             'medium',
             'campaign',
             'referrer',
-            'currency',
             'event_name',
             'event_category',
-            'revenue_minor',
             'properties.conversion_type',
             'properties.goal_slug',
             'properties.method',
             'properties.checkout.gateway',
         ];
+
+        if (config('signals.features.monetary.enabled', true)) {
+            $fields[] = 'currency';
+            $fields[] = 'revenue_minor';
+        }
+
+        return $fields;
     }
 
     /**
@@ -48,13 +53,18 @@ final class SignalFormOptionLists
      */
     public static function eventCategories(): array
     {
-        return [
+        $categories = [
             'acquisition',
             'auth',
             'content',
             'conversion',
             'engagement',
-            'revenue',
         ];
+
+        if (config('signals.features.monetary.enabled', true)) {
+            $categories[] = 'revenue';
+        }
+
+        return $categories;
     }
 }

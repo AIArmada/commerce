@@ -27,6 +27,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $entry_path
  * @property string|null $exit_path
  * @property string|null $country
+ * @property string|null $country_source
+ * @property float|null $latitude
+ * @property float|null $longitude
+ * @property int|null $accuracy_meters
+ * @property string|null $geolocation_source
+ * @property CarbonImmutable|null $geolocation_captured_at
+ * @property string|null $resolved_country_code
+ * @property string|null $resolved_country_name
+ * @property string|null $resolved_state
+ * @property string|null $resolved_city
+ * @property string|null $resolved_postcode
+ * @property string|null $resolved_formatted_address
+ * @property string|null $reverse_geocode_provider
+ * @property CarbonImmutable|null $reverse_geocoded_at
+ * @property array<string, mixed>|null $raw_reverse_geocode_payload
  * @property string|null $device_type
  * @property string|null $device_brand
  * @property string|null $device_model
@@ -68,6 +83,21 @@ final class SignalSession extends Model
         'entry_path',
         'exit_path',
         'country',
+        'country_source',
+        'latitude',
+        'longitude',
+        'accuracy_meters',
+        'geolocation_source',
+        'geolocation_captured_at',
+        'resolved_country_code',
+        'resolved_country_name',
+        'resolved_state',
+        'resolved_city',
+        'resolved_postcode',
+        'resolved_formatted_address',
+        'reverse_geocode_provider',
+        'reverse_geocoded_at',
+        'raw_reverse_geocode_payload',
         'device_type',
         'device_brand',
         'device_model',
@@ -96,6 +126,12 @@ final class SignalSession extends Model
         'duration_milliseconds' => 'integer',
         'is_bounce' => 'boolean',
         'is_bot' => 'boolean',
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'accuracy_meters' => 'integer',
+        'geolocation_captured_at' => 'immutable_datetime',
+        'reverse_geocoded_at' => 'immutable_datetime',
+        'raw_reverse_geocode_payload' => 'array',
     ];
 
     public function getTable(): string
