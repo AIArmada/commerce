@@ -31,7 +31,7 @@
         "openspout/openspout": "^4.23",
         "orchestra/testbench": "^10.0|^11.0",
         "owen-it/laravel-auditing": "^14.0",
-        "pestphp/pest": "^4.0",
+        "pestphp/pest": "^4.6.0",
         "pestphp/pest-plugin-laravel": "^4.0",
         "phiki/phiki": "^2.0",
         "phpstan/extension-installer": "^1.1",
