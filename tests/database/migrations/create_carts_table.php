@@ -13,6 +13,9 @@ return new class extends Migration
         Schema::create('carts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('identifier')->index();
+            $table->string('owner_type')->nullable();
+            $table->string('owner_id')->nullable();
+            $table->string('owner_scope')->default('global');
             $table->string('instance')->default('default')->index();
             $table->json('items')->nullable();
             $table->json('conditions')->nullable();
@@ -21,7 +24,7 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();
 
-            $table->unique(['identifier', 'instance']);
+            $table->unique(['owner_scope', 'identifier', 'instance']);
         });
     }
 

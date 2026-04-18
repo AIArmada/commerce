@@ -16,19 +16,17 @@ final class CartOwnerScope
 
     public static function applyForOwner(Builder $query, ?string $ownerType, string | int | null $ownerId): Builder
     {
-        if ($ownerType !== null && $ownerId !== null && $ownerType !== '' && (string) $ownerId !== '') {
+        if ($ownerType !== null && $ownerId !== null) {
             return $query->where('owner_type', $ownerType)
                 ->where('owner_id', (string) $ownerId);
         }
 
         return $query
             ->where(function (Builder $builder): void {
-                $builder->whereNull('owner_type')
-                    ->orWhere('owner_type', '');
+                $builder->whereNull('owner_type');
             })
             ->where(function (Builder $builder): void {
-                $builder->whereNull('owner_id')
-                    ->orWhere('owner_id', '');
+                $builder->whereNull('owner_id');
             });
     }
 }

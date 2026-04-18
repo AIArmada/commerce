@@ -4,7 +4,7 @@ title: Cart Package Overview
 
 # Cart Package Overview
 
-The Cart package is a comprehensive, enterprise-grade shopping cart solution for Laravel applications. It provides a sophisticated condition pipeline system, multi-tenancy support, and multiple storage backends.
+The Cart package is a comprehensive, enterprise-grade shopping cart solution for Laravel applications. It provides a sophisticated condition pipeline system, multi-tenancy support, and database-backed storage with an extensible `StorageInterface`.
 
 ## Core Architecture
 
@@ -55,10 +55,14 @@ Result (subtotal, total, per-phase breakdown)
 
 ### Storage Layer
 
-Two storage backends:
+The package ships with `DatabaseStorage`.
 
-- **DatabaseStorage** - Production use with optimistic locking (CAS), TTL support, multi-tenant scoping
-- **SessionStorage** - Development/testing, same interface
+- Production use with optimistic locking (CAS)
+- TTL support for cart expiration
+- Owner scoping for multi-tenant data isolation
+- JSON columns for items, conditions, and metadata
+
+If you need another backend, bind your own `StorageInterface` implementation.
 
 ## Features
 
@@ -181,6 +185,15 @@ Key configuration options in `config/cart.php`:
 return [
     'database' => [
         'table' => 'carts',
+        'table_prefix' => 'cart_',
+        'tables' => [
+            'alert_rules' => null,
+            'alert_logs' => null,
+            'daily_metrics' => null,
+            'recovery_campaigns' => null,
+            'recovery_templates' => null,
+            'recovery_attempts' => null,
+        ],
         'conditions_table' => 'conditions',
         'ttl' => 60 * 60 * 24 * 30, // 30 days
     ],
@@ -203,4 +216,4 @@ return [
 
 - `akaunting/money` - Money formatting
 - `commerce-support` - Owner scoping, Money normalization
-- Laravel 11+ with PHP 8.4+
+- Laravel 12+ with PHP 8.4+

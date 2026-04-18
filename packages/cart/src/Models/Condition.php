@@ -397,7 +397,7 @@ class Condition extends Model
      * @param  bool  $includeGlobal  Whether to include global (ownerless) records
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = false): Builder
     {
         if (! config('cart.owner.enabled', false)) {
             return $query;

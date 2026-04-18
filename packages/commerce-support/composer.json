@@ -16,7 +16,7 @@
         "lorisleiva/laravel-actions": "^2.9",
         "nunomaduro/essentials": "^1.0",
         "owen-it/laravel-auditing": "^14.0",
-        "spatie/laravel-activitylog": "^4.10",
+        "spatie/laravel-activitylog": "^5.0",
         "spatie/laravel-data": "^4.18",
         "spatie/laravel-health": "^1.34",
         "spatie/laravel-medialibrary": "^11.0",
