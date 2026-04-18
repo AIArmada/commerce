@@ -25,6 +25,7 @@ final class ClearAbandonedCartsCommand extends Command
                           {--days=7 : Number of days after which cart is considered abandoned}
                           {--expired : Only delete carts that have passed their expires_at timestamp}
                           {--dry-run : Show what would be deleted without actually deleting}
+                          {--all-owners : Process every owner when no owner context is available}
                           {--batch-size=1000 : Number of records to process in each batch}';
 
     /**
@@ -40,6 +41,7 @@ final class ClearAbandonedCartsCommand extends Command
         $days = (int) $this->option('days');
         $useExpired = $this->option('expired');
         $dryRun = $this->option('dry-run');
+        $allOwners = (bool) $this->option('all-owners');
         $batchSize = max(1, (int) $this->option('batch-size'));
         $table = config('cart.database.table', 'carts');
         $now = now();
@@ -54,6 +56,12 @@ final class ClearAbandonedCartsCommand extends Command
         if ((bool) config('cart.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
             if ($owner === null) {
+                if (! $allOwners) {
+                    $this->error('Owner scoping is enabled but no owner context was resolved. Pass --all-owners to process every owner.');
+
+                    return self::FAILURE;
+                }
+
                 return $this->handleAllOwners(
                     table: $table,
                     useExpired: $useExpired,

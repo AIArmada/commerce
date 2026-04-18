@@ -7,7 +7,7 @@ title: Installation
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel 12+
 - MySQL 8.0+, PostgreSQL 14+, or SQLite 3.35+
 
 ## Installing via Composer
@@ -96,6 +96,19 @@ To automatically migrate guest carts on login:
 ],
 ```
 
+### 5. Configure Custom Storage (Optional)
+
+The package ships with database storage only. If you need a different backend,
+bind your own `StorageInterface` implementation:
+
+```php
+use AIArmada\Cart\Storage\StorageInterface;
+
+$this->app->bind(StorageInterface::class, function ($app): StorageInterface {
+    return new App\Cart\Storage\CustomStorage(...);
+});
+```
+
 ## Database Configuration
 
 ### Table Names
@@ -130,18 +143,9 @@ For PostgreSQL with JSONB support:
 ],
 ```
 
-## Development Setup
+### Development Setup
 
-For development, you may want to use session storage:
-
-```php
-// In a service provider or test setup
-$this->app->bind('cart.storage', function ($app) {
-    return new \AIArmada\Cart\Storage\SessionStorage(
-        session: $app['session']
-    );
-});
-```
+No additional storage setup is required for the built-in database backend.
 
 ## Troubleshooting
 

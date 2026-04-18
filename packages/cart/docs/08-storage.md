@@ -4,11 +4,12 @@ title: Storage
 
 # Storage
 
-The Cart package supports multiple storage backends with a consistent interface.
+The Cart package ships with database storage and exposes a `StorageInterface`
+for applications that want to bind a custom backend.
 
 ## Storage Interface
 
-Both storage implementations implement `StorageInterface`:
+The shipped `DatabaseStorage` implements `StorageInterface`:
 
 ```php
 interface StorageInterface
@@ -120,37 +121,9 @@ CREATE INDEX carts_conditions_gin_index ON carts USING GIN (conditions);
 CREATE INDEX carts_metadata_gin_index ON carts USING GIN (metadata);
 ```
 
-## Session Storage
-
-For development, testing, or stateless applications.
-
-### Usage
-
-```php
-// In service provider
-$this->app->bind('cart.storage', function ($app) {
-    return new \AIArmada\Cart\Storage\SessionStorage(
-        session: $app['session']
-    );
-});
-```
-
-### Features
-
-- **No Database Required** - Uses Laravel session
-- **Same Interface** - Drop-in replacement for DatabaseStorage
-- **Version Tracking** - Simulated versioning via session keys
-- **Owner Scoping** - Supported via key prefixing
-
-### Limitations
-
-- Data lost when session expires
-- No cross-request persistence for API clients
-- Not suitable for load-balanced environments without sticky sessions
-
 ## Owner Scoping
 
-Both storage backends support multi-tenant isolation:
+Database storage supports multi-tenant isolation:
 
 ```php
 // Get storage with owner scope
@@ -169,12 +142,6 @@ WHERE identifier = ?
   AND instance = ?
   AND owner_type = 'App\Models\Tenant'
   AND owner_id = '123'
-```
-
-**Session Storage:**
-```php
-// Key format
-"cart.owner.App\Models\Tenant.123.{identifier}.{instance}.items"
 ```
 
 ## Data Validation

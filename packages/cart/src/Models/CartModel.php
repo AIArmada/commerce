@@ -7,8 +7,7 @@ namespace AIArmada\Cart\Models;
 use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\CommerceSupport\Traits\HasOwner;
-use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Cart\Models\Concerns\HasCartOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,16 +37,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class CartModel extends Model
 {
-    use HasOwner {
-        scopeForOwner as baseScopeForOwner;
-    }
-    use HasOwnerScopeConfig;
+    use HasCartOwner;
     use HasUuids;
-
-    /**
-     * Config key for owner scope configuration.
-     */
-    protected static string $ownerScopeConfigKey = 'cart.owner';
 
     /**
      * The attributes that are mass assignable.

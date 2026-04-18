@@ -137,7 +137,9 @@ final class CartServiceProvider extends PackageServiceProvider
 
     protected function registerMigrationService(): void
     {
-        $this->app->singleton(CartMigrationService::class, fn () => new CartMigrationService);
+        $this->app->singleton(CartMigrationService::class, fn () => new CartMigrationService(
+            config('cart.migration', []),
+        ));
     }
 
     protected function registerEventListeners(): void

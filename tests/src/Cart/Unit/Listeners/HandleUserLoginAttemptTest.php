@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Support\LoginMigrationCacheKey;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -25,7 +26,7 @@ describe('HandleUserLoginAttempt Coverage Tests', function (): void {
 
         // Check that cache was set
         $sessionId = session()->getId();
-        $cachedValue = Cache::get('cart_migration_test@example.com');
+        $cachedValue = Cache::get(LoginMigrationCacheKey::make('test@example.com'));
         expect($cachedValue)->toBe($sessionId);
     });
 
@@ -38,7 +39,7 @@ describe('HandleUserLoginAttempt Coverage Tests', function (): void {
         $this->listener->handle($event);
 
         $sessionId = session()->getId();
-        $cachedValue = Cache::get('cart_migration_testuser');
+        $cachedValue = Cache::get(LoginMigrationCacheKey::make('testuser'));
         expect($cachedValue)->toBe($sessionId);
     });
 
@@ -51,7 +52,7 @@ describe('HandleUserLoginAttempt Coverage Tests', function (): void {
         $this->listener->handle($event);
 
         $sessionId = session()->getId();
-        $cachedValue = Cache::get('cart_migration_+1234567890');
+        $cachedValue = Cache::get(LoginMigrationCacheKey::make('+1234567890'));
         expect($cachedValue)->toBe($sessionId);
     });
 
@@ -72,7 +73,7 @@ describe('HandleUserLoginAttempt Coverage Tests', function (): void {
         $this->listener->handle($event);
 
         // Cache should not be set
-        $cachedValue = Cache::get('cart_migration_test@example.com');
+        $cachedValue = Cache::get(LoginMigrationCacheKey::make('test@example.com'));
         expect($cachedValue)->toBeNull();
     });
 
@@ -112,11 +113,11 @@ describe('HandleUserLoginAttempt Coverage Tests', function (): void {
         $this->listener->handle($event);
 
         // Check cache exists
-        expect(Cache::has('cart_migration_test@example.com'))->toBeTrue();
+        expect(Cache::has(LoginMigrationCacheKey::make('test@example.com')))->toBeTrue();
 
         // The cache should be set for 5 minutes (we can't easily test exact expiry)
         $sessionId = session()->getId();
-        $cachedValue = Cache::get('cart_migration_test@example.com');
+        $cachedValue = Cache::get(LoginMigrationCacheKey::make('test@example.com'));
         expect($cachedValue)->toBe($sessionId);
     });
 });

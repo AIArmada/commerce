@@ -84,7 +84,7 @@ class AlertLog extends Model
                 throw new RuntimeException('Owner scoping is enabled but no owner was resolved while saving an alert log.');
             }
 
-            if ($log->alert_rule_id !== '' && $log->alert_rule_id !== null) {
+            if ($log->alert_rule_id !== null) {
                 $exists = AlertRule::query()
                     ->forOwner($owner, includeGlobal: false)
                     ->whereKey($log->alert_rule_id)
@@ -95,7 +95,7 @@ class AlertLog extends Model
                 }
             }
 
-            if ($log->cart_id !== '' && $log->cart_id !== null) {
+            if ($log->cart_id !== null) {
                 $exists = CartModel::query()
                     ->forOwner($owner, includeGlobal: false)
                     ->whereKey($log->cart_id)

@@ -65,4 +65,56 @@ describe('Condition owner scoping', function (): void {
             ->toContain($owned->id)
             ->not->toContain($global->id);
     });
+
+    it('excludes globals by default even when include_global is enabled', function (): void {
+        $ownerA = User::query()->create([
+            'name' => 'Owner A',
+            'email' => 'owner-a-3@example.com',
+            'password' => 'secret',
+        ]);
+
+        $global = Condition::factory()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+        ]);
+
+        $owned = Condition::factory()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+        ]);
+
+        config()->set('cart.owner.include_global', true);
+
+        $ids = Condition::query()->forOwner($ownerA)->pluck('id')->all();
+
+        expect($ids)
+            ->toContain($owned->id)
+            ->not->toContain($global->id);
+    });
+
+    it('includes globals when explicitly requested', function (): void {
+        $ownerA = User::query()->create([
+            'name' => 'Owner A',
+            'email' => 'owner-a-4@example.com',
+            'password' => 'secret',
+        ]);
+
+        $global = Condition::factory()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+        ]);
+
+        $owned = Condition::factory()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+        ]);
+
+        config()->set('cart.owner.include_global', true);
+
+        $ids = Condition::query()->forOwner($ownerA, includeGlobal: true)->pluck('id')->all();
+
+        expect($ids)
+            ->toContain($owned->id)
+            ->toContain($global->id);
+    });
 });

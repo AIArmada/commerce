@@ -7,6 +7,8 @@ namespace AIArmada\Cart\Services;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
@@ -79,9 +81,17 @@ class CartMigrationService
         $guestIdentifier = $sessionId;
         $userIdentifier = (string) $userId;
 
+        if (config('cart.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+
+            if ($owner instanceof Model && (string) $owner->getKey() === $userIdentifier) {
+                return $this->migrateGuestCartToOwnedUser($owner, $instance, $guestIdentifier, $userIdentifier);
+            }
+        }
+
         // Get the storage directly to work with specific identifiers
         // Uses injected storage if available (for owner-scoped operations)
-        $storage = $this->storage ?: Cart::storage();
+        $storage = $this->storage ?: app(StorageInterface::class);
 
         // Get guest cart items for the specified instance
         $guestItems = $storage->getItems($guestIdentifier, $instance);
@@ -108,8 +118,8 @@ class CartMigrationService
                 event(new CartMerged(
                     targetCart: $targetCartInstance,
                     sourceCart: $targetCartInstance, // Limited by design
-                    totalItemsMerged: array_sum(array_column($guestItems, 'quantity')),
-                    mergeStrategy: $this->config['merge_strategy'] ?? 'add_quantities',
+                    totalItemsMerged: $this->sumItemQuantities($guestItems),
+                    mergeStrategy: $this->resolveMergeStrategy(),
                     hadConflicts: false,
                     originalSourceIdentifier: $guestIdentifier, // Preserve original guest identifier
                     originalTargetIdentifier: $userIdentifier, // Preserve original user identifier
@@ -145,9 +155,9 @@ class CartMigrationService
             event(new CartMerged(
                 targetCart: $targetCartInstance,
                 sourceCart: $targetCartInstance, // Limited by design
-                totalItemsMerged: array_sum(array_column($mergedItems, 'quantity')),
-                mergeStrategy: $this->config['merge_strategy'] ?? 'add_quantities',
-                hadConflicts: count($mergedItems) > count($guestItems),
+                totalItemsMerged: $this->sumItemQuantities($guestItems),
+                mergeStrategy: $this->resolveMergeStrategy(),
+                hadConflicts: $this->hasMergeConflicts($guestItems, $userItems),
                 originalSourceIdentifier: $guestIdentifier, // Preserve original guest identifier
                 originalTargetIdentifier: $userIdentifier, // Preserve original user identifier
             ));
@@ -170,7 +180,27 @@ class CartMigrationService
             ];
         }
 
-        $success = $this->migrateGuestCartToUser($user->id, $instance, $sessionId);
+        if ($user instanceof Model && config('cart.owner.enabled', false)) {
+            $success = $this->migrateGuestCartToOwnedUser(
+                $user,
+                $instance,
+                $sessionId,
+                (string) $user->getKey(),
+            );
+        } else {
+            $userId = is_object($user) && isset($user->id) ? $user->id : null;
+
+            if ($userId === null) {
+                return (object) [
+                    'success' => false,
+                    'itemsMerged' => 0,
+                    'conflicts' => collect(),
+                    'message' => 'Invalid user for migration',
+                ];
+            }
+
+            $success = $this->migrateGuestCartToUser($userId, $instance, $sessionId);
+        }
 
         return (object) [
             'success' => $success,
@@ -315,7 +345,7 @@ class CartMigrationService
     private function mergeItemsArray(array $guestItems, array $userItems): array
     {
         $mergedItems = $userItems; // Start with user items
-        $mergeStrategy = config('cart.migration.merge_strategy', 'add_quantities');
+        $mergeStrategy = $this->resolveMergeStrategy();
 
         foreach ($guestItems as $itemId => $guestItemData) {
             $existingItem = $userItems[$itemId] ?? null;
@@ -337,5 +367,155 @@ class CartMigrationService
         }
 
         return $mergedItems;
+    }
+
+    /**
+     * Migrate a guest cart into an owner-scoped user cart.
+     */
+    private function migrateGuestCartToOwnedUser(Model $owner, string $instance, string $sessionId, string $userIdentifier): bool
+    {
+        $guestIdentifier = $sessionId;
+        $guestStorage = $this->resolveStorage(null);
+        $ownerStorage = $this->resolveStorage($owner);
+
+        $guestItems = $guestStorage->getItems($guestIdentifier, $instance);
+
+        if (empty($guestItems)) {
+            return false;
+        }
+
+        $userItems = $ownerStorage->getItems($userIdentifier, $instance);
+        $mergeStrategy = $this->resolveMergeStrategy();
+        $itemsMerged = $this->sumItemQuantities($guestItems);
+
+        if (empty($userItems)) {
+            $ownerStorage->putItems($userIdentifier, $instance, $guestItems);
+
+            $guestConditions = $guestStorage->getConditions($guestIdentifier, $instance);
+            if (! empty($guestConditions)) {
+                $ownerStorage->putConditions($userIdentifier, $instance, $guestConditions);
+            }
+
+            if (config('cart.events', true)) {
+                $this->dispatchCartMergedEvent(
+                    instance: $instance,
+                    guestIdentifier: $guestIdentifier,
+                    userIdentifier: $userIdentifier,
+                    guestStorage: $guestStorage,
+                    userStorage: $ownerStorage,
+                    totalItemsMerged: $itemsMerged,
+                    mergeStrategy: $mergeStrategy,
+                    hadConflicts: false,
+                );
+            }
+
+            $guestStorage->forget($guestIdentifier, $instance);
+
+            return true;
+        }
+
+        $mergedItems = $this->mergeItemsArray($guestItems, $userItems);
+        $ownerStorage->putItems($userIdentifier, $instance, $mergedItems);
+
+        $guestConditions = $guestStorage->getConditions($guestIdentifier, $instance);
+        if (! empty($guestConditions)) {
+            $userConditions = $ownerStorage->getConditions($userIdentifier, $instance);
+            $mergedConditions = $this->mergeConditionsData($guestConditions, $userConditions);
+            $ownerStorage->putConditions($userIdentifier, $instance, $mergedConditions);
+        }
+
+        if (config('cart.events', true)) {
+            $this->dispatchCartMergedEvent(
+                instance: $instance,
+                guestIdentifier: $guestIdentifier,
+                userIdentifier: $userIdentifier,
+                guestStorage: $guestStorage,
+                userStorage: $ownerStorage,
+                totalItemsMerged: $itemsMerged,
+                mergeStrategy: $mergeStrategy,
+                hadConflicts: $this->hasMergeConflicts($guestItems, $userItems),
+            );
+        }
+
+        $guestStorage->forget($guestIdentifier, $instance);
+
+        return true;
+    }
+
+    /**
+     * Dispatch a cart merged event using explicit source and target storage snapshots.
+     */
+    private function dispatchCartMergedEvent(
+        string $instance,
+        string $guestIdentifier,
+        string $userIdentifier,
+        StorageInterface $guestStorage,
+        StorageInterface $userStorage,
+        int $totalItemsMerged,
+        string $mergeStrategy,
+        bool $hadConflicts,
+    ): void {
+        event(new CartMerged(
+            targetCart: $this->createCartSnapshot($userStorage, $userIdentifier, $instance),
+            sourceCart: $this->createCartSnapshot($guestStorage, $guestIdentifier, $instance),
+            totalItemsMerged: $totalItemsMerged,
+            mergeStrategy: $mergeStrategy,
+            hadConflicts: $hadConflicts,
+            originalSourceIdentifier: $guestIdentifier,
+            originalTargetIdentifier: $userIdentifier,
+        ));
+    }
+
+    /**
+     * Create a lightweight cart snapshot for events.
+     */
+    private function createCartSnapshot(StorageInterface $storage, string $identifier, string $instance): \AIArmada\Cart\Cart
+    {
+        return new \AIArmada\Cart\Cart($storage, $identifier, null, $instance);
+    }
+
+    /**
+     * Resolve the configured merge strategy.
+     */
+    private function resolveMergeStrategy(): string
+    {
+        $strategy = $this->config['merge_strategy'] ?? config('cart.migration.merge_strategy', 'add_quantities');
+
+        return in_array($strategy, ['add_quantities', 'keep_highest_quantity', 'keep_user_cart', 'replace_with_guest'], true)
+            ? $strategy
+            : 'add_quantities';
+    }
+
+    /**
+     * Resolve the cart storage for a given owner.
+     */
+    private function resolveStorage(?Model $owner = null): StorageInterface
+    {
+        $storage = $this->storage ?: app(StorageInterface::class);
+
+        return $storage->withOwner($owner);
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $items
+     */
+    private function sumItemQuantities(array $items): int
+    {
+        $total = 0;
+
+        foreach ($items as $item) {
+            $total += (int) ($item['quantity'] ?? 0);
+        }
+
+        return $total;
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $guestItems
+     * @param  array<string, array<string, mixed>>  $userItems
+     */
+    private function hasMergeConflicts(array $guestItems, array $userItems): bool
+    {
+        return array_intersect_key($guestItems, $userItems) !== [];
     }
 }

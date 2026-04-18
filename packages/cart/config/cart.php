@@ -11,8 +11,16 @@ return [
     */
     'database' => [
         'table' => env('CART_DB_TABLE', 'carts'),
+        'table_prefix' => env('CART_DB_TABLE_PREFIX', 'cart_'),
+        'tables' => [
+            'alert_rules' => env('CART_ALERT_RULES_TABLE'),
+            'alert_logs' => env('CART_ALERT_LOGS_TABLE'),
+            'daily_metrics' => env('CART_DAILY_METRICS_TABLE'),
+            'recovery_campaigns' => env('CART_RECOVERY_CAMPAIGNS_TABLE'),
+            'recovery_templates' => env('CART_RECOVERY_TEMPLATES_TABLE'),
+            'recovery_attempts' => env('CART_RECOVERY_ATTEMPTS_TABLE'),
+        ],
         'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
-        'events_table' => env('CART_EVENTS_TABLE', 'cart_events'),
         'json_column_type' => env('CART_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
         'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30), // 30 days, null to disable
         'lock_for_update' => env('CART_DB_LOCK_FOR_UPDATE', false),

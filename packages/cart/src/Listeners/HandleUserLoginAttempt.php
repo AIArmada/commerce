@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Listeners;
 
+use AIArmada\Cart\Support\LoginMigrationCacheKey;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -15,7 +16,8 @@ final class HandleUserLoginAttempt
      * Store current session ID before authentication regenerates it.
      */
     public function handle(Attempting $event): void
-    {        // Only capture session ID if user is not already authenticated
+    {
+        // Only capture session ID if user is not already authenticated
         if (! Auth::check()) {
             $currentSessionId = session()->getId();
             $userIdentifier = $this->getUserIdentifier($event->credentials);
@@ -23,7 +25,7 @@ final class HandleUserLoginAttempt
             if ($userIdentifier && $currentSessionId) {
                 // Store in cache with user identifier as key, expires in 5 minutes
                 Cache::put(
-                    "cart_migration_{$userIdentifier}",
+                    LoginMigrationCacheKey::make($userIdentifier),
                     $currentSessionId,
                     now()->addMinutes(5)
                 );
