@@ -473,13 +473,23 @@ final readonly class DatabaseStorage implements StorageInterface
 
         $query
             ->where(function (Builder $builder): void {
-                $builder->whereNull('owner_type')
-                    ->orWhere('owner_type', '');
+                $builder->whereNull('owner_type');
             })
             ->where(function (Builder $builder): void {
-                $builder->whereNull('owner_id')
-                    ->orWhere('owner_id', '');
+                $builder->whereNull('owner_id');
             });
+    }
+
+    /**
+     * Resolve the internal uniqueness key for the current owner scope.
+     */
+    private function resolveOwnerScope(): string
+    {
+        if ($this->ownerType === null || $this->ownerId === null) {
+            return 'global';
+        }
+
+        return hash('sha256', $this->ownerType . '|' . (string) $this->ownerId);
     }
 
     /**
@@ -672,8 +682,9 @@ final readonly class DatabaseStorage implements StorageInterface
 
             if ($current) {
                 $updateData = array_merge($data, [
-                    'owner_type' => $this->ownerType ?? '',
-                    'owner_id' => $this->ownerId !== null ? (string) $this->ownerId : '',
+                    'owner_type' => $this->ownerType,
+                    'owner_id' => $this->ownerId !== null ? (string) $this->ownerId : null,
+                    'owner_scope' => $this->resolveOwnerScope(),
                     'version' => $current->version + 1,
                     'updated_at' => now(),
                     'expires_at' => $this->calculateExpiresAt(),
@@ -691,8 +702,9 @@ final readonly class DatabaseStorage implements StorageInterface
                     'id' => Str::uuid(),
                     'identifier' => $identifier,
                     'instance' => $instance,
-                    'owner_type' => $this->ownerType ?? '',
-                    'owner_id' => $this->ownerId !== null ? (string) $this->ownerId : '',
+                    'owner_type' => $this->ownerType,
+                    'owner_id' => $this->ownerId !== null ? (string) $this->ownerId : null,
+                    'owner_scope' => $this->resolveOwnerScope(),
                     'version' => 1,
                     'expires_at' => $this->calculateExpiresAt(),
                     'created_at' => now(),

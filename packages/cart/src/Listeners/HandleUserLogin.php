@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Listeners;
 
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Support\LoginMigrationCacheKey;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Cache;
 
@@ -24,7 +25,7 @@ final class HandleUserLogin
         $oldSessionId = null;
 
         if ($userIdentifier) {
-            $oldSessionId = Cache::pull("cart_migration_{$userIdentifier}");
+            $oldSessionId = Cache::pull(LoginMigrationCacheKey::make($userIdentifier));
         }
 
         // Migrate guest cart to user cart using old session ID

@@ -167,7 +167,7 @@ class RecoveryAttempt extends Model
                 throw new RuntimeException('Owner scoping is enabled but no owner was resolved while saving a recovery attempt.');
             }
 
-            if ($attempt->campaign_id !== '' && $attempt->campaign_id !== null) {
+            if ($attempt->campaign_id !== null) {
                 $exists = RecoveryCampaign::query()
                     ->forOwner($owner, includeGlobal: false)
                     ->whereKey($attempt->campaign_id)
@@ -178,7 +178,7 @@ class RecoveryAttempt extends Model
                 }
             }
 
-            if ($attempt->template_id !== '' && $attempt->template_id !== null) {
+            if ($attempt->template_id !== null) {
                 $exists = RecoveryTemplate::query()
                     ->forOwner($owner, includeGlobal: true)
                     ->whereKey($attempt->template_id)
@@ -186,6 +186,20 @@ class RecoveryAttempt extends Model
 
                 if (! $exists) {
                     throw new RuntimeException('Invalid template_id: does not belong to the current owner scope.');
+                }
+            }
+
+            if ($attempt->cart_id !== null) {
+                /** @var class-string<CartModel> $cartModel */
+                $cartModel = config('cart.models.cart', CartModel::class);
+
+                $exists = $cartModel::query()
+                    ->forOwner($owner, includeGlobal: true)
+                    ->whereKey($attempt->cart_id)
+                    ->exists();
+
+                if (! $exists) {
+                    throw new RuntimeException('Invalid cart_id: does not belong to the current owner scope.');
                 }
             }
         });

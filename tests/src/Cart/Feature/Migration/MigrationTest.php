@@ -26,6 +26,8 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Support\LoginMigrationCacheKey;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -62,8 +64,9 @@ it('can migrate guest cart to user cart', function (): void {
     $connection->getSchemaBuilder()->create('carts', function ($table): void {
         $table->uuid('id')->primary();
         $table->string('identifier')->index();
-        $table->string('owner_type')->default('');
-        $table->string('owner_id')->default('');
+        $table->string('owner_type')->nullable();
+        $table->string('owner_id')->nullable();
+        $table->string('owner_scope')->default('global');
         $table->string('instance')->default('default')->index();
         $table->longText('items')->nullable();
         $table->longText('conditions')->nullable();
@@ -71,7 +74,7 @@ it('can migrate guest cart to user cart', function (): void {
         $table->bigInteger('version')->default(1)->index()->comment('Version number for optimistic locking');
         $table->timestamp('expires_at')->nullable()->index();
         $table->timestamps();
-        $table->unique(['owner_type', 'owner_id', 'identifier', 'instance']);
+        $table->unique(['owner_scope', 'identifier', 'instance']);
     });
 
     $storage = new DatabaseStorage($connection, 'carts');
@@ -286,7 +289,7 @@ it('handles user login event automatically when configured', function (): void {
     ]);
 
     // Set the cache key for migration (matches getUserIdentifier logic)
-    Cache::put('cart_migration_testuser@example.com', 'guest_session_login_123');
+    Cache::put(LoginMigrationCacheKey::make('testuser@example.com'), 'guest_session_login_123');
 
     $listener = new HandleUserLogin($this->cartMigration);
     $event = new Login('web', $this->user, false);
@@ -307,6 +310,51 @@ it('handles user login event automatically when configured', function (): void {
     // Guest cart should be cleared
     $guestItemsAfter = $storage->getItems('guest_session_login_123', 'default');
     expect(array_sum(array_column($guestItemsAfter, 'quantity')))->toBe(0);
+});
+
+it('migrates guest carts into the authenticated owner cart when owner scoping is enabled', function (): void {
+    config(['cart.owner.enabled' => true]);
+    config(['cart.events' => false]);
+    config(['cart.migration.auto_migrate_on_login' => true]);
+
+    $connection = app('db')->connection();
+    $storage = new DatabaseStorage($connection, 'carts');
+
+    $owner = User::query()->create([
+        'name' => 'Owner User',
+        'email' => 'owner-user@example.com',
+        'password' => 'secret',
+    ]);
+
+    $guestSessionId = 'guest_session_owner_login';
+
+    $storage->putItems($guestSessionId, 'default', [
+        'product-1' => [
+            'id' => 'product-1',
+            'name' => 'Owner Scoped Product',
+            'price' => 1000,
+            'quantity' => 2,
+            'attributes' => [],
+        ],
+    ]);
+
+    Cache::put(LoginMigrationCacheKey::make('owner-user@example.com'), $guestSessionId);
+
+    Session::shouldReceive('flash')->withAnyArgs()->andReturnTrue();
+
+    $listener = new HandleUserLogin(app(CartMigrationService::class));
+    $event = new Login('web', $owner, false);
+
+    $listener->handle($event);
+
+    $guestItemsAfter = $storage->getItems($guestSessionId, 'default');
+    expect(array_sum(array_column($guestItemsAfter, 'quantity')))->toBe(0);
+
+    $ownerStorage = $storage->withOwner($owner);
+    $ownerItemsAfter = $ownerStorage->getItems((string) $owner->getKey(), 'default');
+
+    expect(array_sum(array_column($ownerItemsAfter, 'quantity')))->toBe(2);
+    expect($ownerItemsAfter['product-1']['name'])->toBe('Owner Scoped Product');
 });
 
 it('returns false when guest cart is empty', function (): void {

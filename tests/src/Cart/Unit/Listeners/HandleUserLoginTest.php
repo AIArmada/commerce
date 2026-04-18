@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Support\LoginMigrationCacheKey;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Cache;
 
@@ -11,7 +12,7 @@ describe('HandleUserLogin', function (): void {
     it('pulls old session id from cache and triggers migration on login', function (): void {
         $user = (object) ['email' => 'test@example.com'];
         $oldSessionId = 'old-session-123';
-        $cacheKey = "cart_migration_{$user->email}";
+        $cacheKey = LoginMigrationCacheKey::make($user->email);
 
         Cache::put($cacheKey, $oldSessionId);
 

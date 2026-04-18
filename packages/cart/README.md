@@ -4,7 +4,7 @@ A modern, production-grade shopping cart engine for Laravel 12 applications.
 
 ## Features
 
-- **Multiple Storage Drivers** – Session, cache, and database storage with seamless switching
+- **Database Storage** – Built-in persistence with optimistic locking and owner scoping
 - **Multi-Instance Carts** – Support multiple cart buckets per user (cart, wishlist, compare)
 - **Precision Calculations** – Money objects via `akaunting/money` for accurate financial math
 - **Flexible Conditions** – Discounts, taxes, fees, and shipping with targeted application
@@ -65,17 +65,17 @@ Cart::remove('laptop-001');
 Cart::instance('wishlist')->add('monitor-001', 'Display', 599.00);
 ```
 
-## Storage Drivers
+## Storage
 
-| Driver | Best For | Persistence |
-|--------|----------|-------------|
-| `session` | Simple apps, development | Session lifetime |
-| `cache` | High traffic, API backends | TTL-based |
-| `database` | E-commerce, multi-device | Permanent |
+The package ships with `DatabaseStorage` only. If you need a different backend,
+bind your own `StorageInterface` implementation in the service container.
 
 ```php
-// config/cart.php
-'storage' => env('CART_STORAGE', 'database'),
+use AIArmada\Cart\Storage\StorageInterface;
+
+$this->app->bind(StorageInterface::class, function ($app): StorageInterface {
+    return new App\Cart\Storage\CustomStorage(...);
+});
 ```
 
 ## Conditions
@@ -163,14 +163,13 @@ CART_JSON_COLUMN_TYPE=jsonb
 
 ## Documentation
 
-Full documentation is available in the [`docs/`](docs/index.md) directory:
+Full documentation is available in the [`docs/`](docs/) directory:
 
-- [Getting Started](docs/getting-started.md)
-- [Cart Operations](docs/cart-operations.md)
-- [Conditions & Pricing](docs/conditions.md)
-- [Storage Drivers](docs/storage.md)
-- [Payment Integration](docs/payment-integration.md)
-- [Configuration](docs/configuration.md)
+- [Overview](docs/01-overview.md)
+- [Installation](docs/02-installation.md)
+- [Configuration](docs/03-configuration.md)
+- [Usage](docs/04-usage.md)
+- [Storage](docs/08-storage.md)
 
 ## Development
 

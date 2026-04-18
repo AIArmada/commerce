@@ -20,6 +20,19 @@ return [
     'database' => [
         // Main carts table name
         'table' => env('CART_DB_TABLE', 'carts'),
+
+        // Prefix used by secondary cart tables that follow the cart naming scheme
+        'table_prefix' => env('CART_DB_TABLE_PREFIX', 'cart_'),
+
+        // Explicit table overrides for secondary cart models
+        'tables' => [
+            'alert_rules' => env('CART_ALERT_RULES_TABLE'),
+            'alert_logs' => env('CART_ALERT_LOGS_TABLE'),
+            'daily_metrics' => env('CART_DAILY_METRICS_TABLE'),
+            'recovery_campaigns' => env('CART_RECOVERY_CAMPAIGNS_TABLE'),
+            'recovery_templates' => env('CART_RECOVERY_TEMPLATES_TABLE'),
+            'recovery_attempts' => env('CART_RECOVERY_ATTEMPTS_TABLE'),
+        ],
         
         // Conditions table for reusable condition definitions
         'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
@@ -186,6 +199,13 @@ All configuration can be overridden via environment variables:
 ```bash
 # Database
 CART_DB_TABLE=shopping_carts
+CART_DB_TABLE_PREFIX=cart_
+CART_ALERT_RULES_TABLE=
+CART_ALERT_LOGS_TABLE=
+CART_DAILY_METRICS_TABLE=
+CART_RECOVERY_CAMPAIGNS_TABLE=
+CART_RECOVERY_TEMPLATES_TABLE=
+CART_RECOVERY_ATTEMPTS_TABLE=
 CART_CONDITIONS_TABLE=cart_conditions
 CART_JSON_COLUMN_TYPE=jsonb
 CART_DB_TTL=604800

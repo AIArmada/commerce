@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Facades\DB;
 
 describe('DatabaseStorage Integration', function (): void {
     beforeEach(function (): void {
@@ -195,6 +196,29 @@ describe('DatabaseStorage Integration', function (): void {
             expect($scoped->getOwnerId())->toBe($user->id);
         });
 
+        it('stores owner-scoped carts with a derived owner scope key', function (): void {
+            $user = User::query()->create([
+                'name' => 'Storage Owner',
+                'email' => 'storage-owner-scope-' . uniqid() . '@example.com',
+                'password' => 'secret',
+            ]);
+
+            $scoped = $this->storage->withOwner($user);
+            $identifier = 'db-storage-owner-scope-' . uniqid();
+
+            $scoped->putItems($identifier, 'default', ['item' => []]);
+
+            $row = DB::table('carts')
+                ->where('identifier', $identifier)
+                ->where('instance', 'default')
+                ->first();
+
+            expect($row)->not->toBeNull();
+            expect($row->owner_type)->toBe(get_class($user));
+            expect($row->owner_id)->toBe($user->id);
+            expect($row->owner_scope)->not->toBe('global');
+        });
+
         it('creates instance with null owner', function (): void {
             $scoped = $this->storage->withOwner(null);
 
@@ -211,6 +235,22 @@ describe('DatabaseStorage Integration', function (): void {
 
         it('returns null owner id for unscoped storage', function (): void {
             expect($this->storage->getOwnerId())->toBeNull();
+        });
+
+        it('stores global carts with null owner columns', function (): void {
+            $identifier = 'db-storage-null-owner-' . uniqid();
+
+            $this->storage->putItems($identifier, 'default', ['item' => []]);
+
+            $row = DB::table('carts')
+                ->where('identifier', $identifier)
+                ->where('instance', 'default')
+                ->first();
+
+            expect($row)->not->toBeNull();
+            expect($row->owner_type)->toBeNull();
+            expect($row->owner_id)->toBeNull();
+            expect($row->owner_scope)->toBe('global');
         });
     });
 });

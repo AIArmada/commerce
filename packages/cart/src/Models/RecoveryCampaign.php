@@ -188,7 +188,7 @@ class RecoveryCampaign extends Model
                 /** @var string|null $templateId */
                 $templateId = $campaign->getAttribute($column);
 
-                if ($templateId === null || $templateId === '') {
+                if ($templateId === null) {
                     continue;
                 }
 

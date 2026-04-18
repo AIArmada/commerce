@@ -8,8 +8,8 @@ namespace AIArmada\Cart\Storage;
  * Centralized cache key builder for storage implementations.
  *
  * This class provides a single source of truth for all storage key formats,
- * ensuring consistency between CacheStorage and any future storage drivers
- * that need cache-based key generation.
+ * ensuring consistency across the shipped storage implementation and any
+ * custom backends that need deterministic key generation.
  */
 final readonly class StorageKeyBuilder
 {

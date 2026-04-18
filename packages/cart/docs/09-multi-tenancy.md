@@ -53,8 +53,12 @@ The carts table includes owner columns:
 Schema::table('carts', function (Blueprint $table) {
     $table->string('owner_type')->nullable()->index();
     $table->string('owner_id')->nullable()->index();
+    $table->string('owner_scope')->default('global')->index();
 });
 ```
+
+`owner_scope` is an internal uniqueness key used by the storage layer; public
+owner semantics still come from `owner_type` and `owner_id`.
 
 ## Query Behavior
 
@@ -76,8 +80,8 @@ When no owner is set, queries return only global records:
 SELECT * FROM carts 
 WHERE identifier = 'user-123'
   AND instance = 'default'
-  AND (owner_type IS NULL OR owner_type = '')
-  AND (owner_id IS NULL OR owner_id = '')
+    AND owner_type IS NULL
+    AND owner_id IS NULL
 ```
 
 ## Global vs Tenant Records
@@ -85,7 +89,7 @@ WHERE identifier = 'user-123'
 Records can be:
 
 - **Tenant-Scoped**: `owner_type` and `owner_id` set
-- **Global**: `owner_type` and `owner_id` are null/empty
+- **Global**: `owner_type` and `owner_id` are null
 
 ### Including Global Records
 
@@ -104,7 +108,7 @@ WHERE identifier = 'user-123'
   AND instance = 'default'
   AND (
     (owner_type = 'App\Models\Tenant' AND owner_id = '456')
-    OR (owner_type IS NULL AND owner_id IS NULL)
+        OR (owner_type IS NULL AND owner_id IS NULL)
   )
 ```
 
