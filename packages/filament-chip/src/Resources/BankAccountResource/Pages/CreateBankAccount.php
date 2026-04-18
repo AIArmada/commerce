@@ -46,13 +46,13 @@ final class CreateBankAccount extends CreateRecord
 
             Notification::make()
                 ->title('Bank account created successfully')
-                ->body(sprintf('Account ID: %s', $bankAccount->id ?? 'Unknown'))
+                ->body(sprintf('Account ID: %s', $bankAccount->id))
                 ->success()
                 ->send();
 
             return array_merge($data, [
-                'id' => $bankAccount->id ?? null,
-                'status' => $bankAccount->status ?? 'pending',
+                'id' => $bankAccount->id,
+                'status' => $bankAccount->status,
             ]);
         } catch (Throwable $e) {
             Notification::make()

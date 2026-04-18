@@ -74,7 +74,7 @@ class ChipCheckout implements CheckoutContract
      */
     public function status(): string
     {
-        return $this->purchase->status ?? 'pending';
+        return $this->purchase->status;
     }
 
     /**

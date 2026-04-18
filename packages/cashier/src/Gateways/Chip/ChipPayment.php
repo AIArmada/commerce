@@ -233,7 +233,7 @@ class ChipPayment implements PaymentContract
             return $this->payment->currency();
         }
 
-        return $this->payment->purchase->currency ?? 'MYR';
+        return $this->payment->purchase->currency;
     }
 
     /**
@@ -272,7 +272,7 @@ class ChipPayment implements PaymentContract
             return $this->payment->status();
         }
 
-        return $this->payment->status ?? 'unknown';
+        return $this->payment->status;
     }
 
     /**

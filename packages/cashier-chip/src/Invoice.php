@@ -150,7 +150,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      */
     public function invoiceItems(): Collection
     {
-        $products = $this->purchase->purchase->products ?? [];
+        $products = $this->purchase->purchase->products;
 
         return collect($products)->map(function (ProductData $product, int $index) {
             return new InvoiceLineItem($this, $product, $index);
