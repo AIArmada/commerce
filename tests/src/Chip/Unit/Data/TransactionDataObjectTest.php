@@ -18,7 +18,7 @@ describe('TransactionData data object', function (): void {
 
         $transaction = TransactionData::from($data);
 
-        expect($transaction->getLastAttempt())->toBe(['id' => 'attempt_1', 'successful' => false]);
+        expect($transaction->getLastAttempt())->toBe(['id' => 'attempt_2', 'successful' => true]);
         expect($transaction->hasFailedAttempts())->toBeTrue();
         expect($transaction->getFailedAttempts())->toHaveCount(1);
         expect($transaction->getFailedAttempts()[0]['id'])->toBe('attempt_1');

@@ -63,7 +63,11 @@ final class OwnerContext
 
     public static function fromTypeAndId(?string $ownerType, string | int | null $ownerId): ?Model
     {
-        if ($ownerType === null || $ownerId === null || $ownerType === '' || (string) $ownerId === '') {
+        if ($ownerType === '' || (is_string($ownerId) && $ownerId === '')) {
+            throw new InvalidArgumentException('Owner type and owner id must not be empty strings.');
+        }
+
+        if ($ownerType === null || $ownerId === null) {
             return null;
         }
 

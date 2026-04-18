@@ -38,6 +38,13 @@ describe('PurchasePaymentFailure event', function (): void {
                             'code' => 'INSUFFICIENT_FUNDS',
                         ],
                     ],
+                    [
+                        'successful' => false,
+                        'error' => [
+                            'message' => 'Card declined',
+                            'code' => 'CARD_DECLINED',
+                        ],
+                    ],
                 ],
             ],
             'is_test' => true,
@@ -45,8 +52,8 @@ describe('PurchasePaymentFailure event', function (): void {
 
         $event = PurchasePaymentFailure::fromPayload($payload);
 
-        expect($event->getErrorMessage())->toBe('Insufficient funds')
-            ->and($event->getErrorCode())->toBe('INSUFFICIENT_FUNDS');
+        expect($event->getErrorMessage())->toBe('Card declined')
+            ->and($event->getErrorCode())->toBe('CARD_DECLINED');
     });
 
     it('returns null when no error in attempts', function (): void {
@@ -137,6 +144,47 @@ describe('PurchaseSubscriptionChargeFailure event', function (): void {
 
         expect($event->hasRecurringToken())->toBeTrue()
             ->and($event->getRecurringToken())->toBe('token_abc');
+    });
+
+    it('returns error details from the last attempt', function (): void {
+        $payload = [
+            'id' => 'purch_sub_fail_last_attempt',
+            'status' => 'error',
+            'type' => 'purchase',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'purchase' => [
+                'total' => 10000,
+                'currency' => 'MYR',
+                'products' => [['name' => 'Subscription', 'price' => 10000, 'quantity' => 1]],
+                'metadata' => ['subscription_id' => 'sub_123'],
+            ],
+            'transaction_data' => [
+                'attempts' => [
+                    [
+                        'successful' => false,
+                        'error' => [
+                            'message' => 'Temporary network failure',
+                            'code' => 'NETWORK_FAILURE',
+                        ],
+                    ],
+                    [
+                        'successful' => false,
+                        'error' => [
+                            'message' => 'Saved card expired',
+                            'code' => 'CARD_EXPIRED',
+                        ],
+                    ],
+                ],
+            ],
+            'is_test' => true,
+            'recurring_token' => 'token_xyz',
+        ];
+
+        $event = PurchaseSubscriptionChargeFailure::fromPayload($payload);
+
+        expect($event->getErrorMessage())->toBe('Saved card expired')
+            ->and($event->getErrorCode())->toBe('CARD_EXPIRED');
     });
 });
 

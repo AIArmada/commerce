@@ -66,12 +66,19 @@ it('builds owner instances from type and id', function (): void {
         ->and($resolved?->getKey())->toBe($owner->getKey());
 });
 
-it('returns null for empty owner payloads', function (): void {
+it('returns null for null owner payloads', function (): void {
     expect(OwnerContext::fromTypeAndId(null, null))->toBeNull()
-        ->and(OwnerContext::fromTypeAndId('', null))->toBeNull()
         ->and(OwnerContext::fromTypeAndId(User::class, null))->toBeNull()
         ->and(OwnerContext::fromTypeAndId(null, '123'))->toBeNull();
 });
+
+it('throws for empty-string owner payloads', function (): void {
+    OwnerContext::fromTypeAndId('', null);
+})->throws(InvalidArgumentException::class);
+
+it('throws when the owner id is an empty string', function (): void {
+    OwnerContext::fromTypeAndId(User::class, '');
+})->throws(InvalidArgumentException::class);
 
 it('throws when owner type cannot be resolved', function (): void {
     OwnerContext::fromTypeAndId('MissingOwnerType', '123');

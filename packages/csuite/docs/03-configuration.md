@@ -61,10 +61,16 @@ DOCS_JSON_COLUMN_TYPE=jsonb
 return [
     'database' => [
         'tables' => [
-            'carts' => 'carts',
-            'cart_items' => 'cart_items',
-            'cart_conditions' => 'cart_conditions',
+            'alert_rules' => null,
+            'alert_logs' => null,
+            'daily_metrics' => null,
+            'recovery_campaigns' => null,
+            'recovery_templates' => null,
+            'recovery_attempts' => null,
         ],
+        'table_prefix' => 'cart_',
+        'conditions_table' => 'conditions',
+        'table' => 'carts',
     ],
     'money' => [
         'default_currency' => 'MYR',
