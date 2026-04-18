@@ -88,7 +88,7 @@ Define owner types for multi-tenant voucher assignment:
 | `subtitle_attribute` | No | Secondary attribute for display |
 | `search_attributes` | No | Attributes to search when filtering |
 
-Leave empty to only allow global vouchers.
+Leave unset to only allow global vouchers (records where `owner_type` and `owner_id` are `null`).
 
 ## Full Example
 

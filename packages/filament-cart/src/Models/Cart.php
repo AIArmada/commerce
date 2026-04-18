@@ -146,7 +146,7 @@ class Cart extends Model
 
     public static function makeOwnerKey(?string $ownerType, int | string | null $ownerId): string
     {
-        if ($ownerType === null || $ownerId === null || $ownerType === '' || (string) $ownerId === '') {
+        if ($ownerType === null || $ownerId === null) {
             return 'global';
         }
 

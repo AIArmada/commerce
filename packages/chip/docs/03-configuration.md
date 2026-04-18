@@ -86,7 +86,7 @@ Available methods: `fpx`, `visa`, `mastercard`, `maestro`, `duitnow`, `grabpay`,
 | Key | Description |
 |-----|-------------|
 | `enabled` | Enable owner-scoped queries |
-| `include_global` | Include `owner_id = null` records in queries |
+| `include_global` | Include global records where `owner_type` and `owner_id` are `null` |
 | `auto_assign_on_create` | Automatically set owner on new records |
 | `webhook_brand_id_map` | Map brand IDs to owner models for webhooks |
 

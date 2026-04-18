@@ -21,13 +21,13 @@ composer require aiarmada/commerce-support
 
 ### cart
 
-Shopping cart with conditions and persistence.
+Shopping cart with conditions and database-backed persistence.
 
 | Feature | Description |
 |---------|-------------|
 | Items | Add, update, remove cart items |
 | Conditions | Discounts, taxes, shipping fees |
-| Persistence | Session, database, or custom storage |
+| Persistence | Database storage with custom `StorageInterface` support |
 | Events | Cart lifecycle events |
 
 ```bash
