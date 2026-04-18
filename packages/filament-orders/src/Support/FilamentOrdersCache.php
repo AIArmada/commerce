@@ -7,6 +7,7 @@ namespace AIArmada\FilamentOrders\Support;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
+use InvalidArgumentException;
 
 final class FilamentOrdersCache
 {
@@ -38,8 +39,12 @@ final class FilamentOrdersCache
         /** @var string|int|null $ownerId */
         $ownerId = $order->getAttribute('owner_id');
 
-        if ($ownerType === null || $ownerType === '' || $ownerId === null || (string) $ownerId === '') {
+        if ($ownerType === null && $ownerId === null) {
             return 'global';
+        }
+
+        if ($ownerType === null || $ownerId === null || $ownerType === '' || (is_string($ownerId) && $ownerId === '')) {
+            throw new InvalidArgumentException('Order owner type and owner id must be either both null or both non-empty.');
         }
 
         return $ownerType . ':' . (string) $ownerId;

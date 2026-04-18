@@ -173,6 +173,8 @@ Configure owner types to enable voucher assignment to specific entities:
 
 When configured, a searchable owner selector appears in the voucher form.
 
+Global vouchers keep both `owner_type` and `owner_id` set to `null`; empty strings are not used as sentinels.
+
 ---
 
 ## Documentation

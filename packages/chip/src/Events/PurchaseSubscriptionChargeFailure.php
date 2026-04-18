@@ -23,8 +23,11 @@ final class PurchaseSubscriptionChargeFailure extends PurchaseEvent
      */
     public function getErrorMessage(): ?string
     {
-        $attempts = $this->purchase->transaction_data->attempts ?? [];
-        $lastAttempt = end($attempts);
+        $lastAttempt = $this->purchase->transaction_data->getLastAttempt();
+
+        if ($lastAttempt === null) {
+            return null;
+        }
 
         return $lastAttempt['error']['message'] ?? null;
     }
@@ -34,8 +37,11 @@ final class PurchaseSubscriptionChargeFailure extends PurchaseEvent
      */
     public function getErrorCode(): ?string
     {
-        $attempts = $this->purchase->transaction_data->attempts ?? [];
-        $lastAttempt = end($attempts);
+        $lastAttempt = $this->purchase->transaction_data->getLastAttempt();
+
+        if ($lastAttempt === null) {
+            return null;
+        }
 
         return $lastAttempt['error']['code'] ?? null;
     }

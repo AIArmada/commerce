@@ -255,4 +255,4 @@ When owner scoping is enabled, the cart integration respects tenant boundaries:
 
 - Vouchers can only be applied to carts belonging to the same owner
 - Cross-tenant cart access is blocked
-- Global vouchers can be applied based on `include_global` setting
+- Global vouchers can be applied based on `include_global` setting; global rows are stored with `owner_type` and `owner_id` set to `null`

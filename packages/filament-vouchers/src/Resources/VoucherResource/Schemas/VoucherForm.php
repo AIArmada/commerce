@@ -254,11 +254,11 @@ final class VoucherForm
                                 ->helperText('Determines which vendor or store can manage this voucher')
                                 // Always save as morph map alias
                                 ->dehydrateStateUsing(
-                                    static fn (?string $state): ?string => $state !== null && $state !== '' ? Relation::getMorphAlias($state) : null
+                                    static fn (?string $state): ?string => $state !== null ? Relation::getMorphAlias($state) : null
                                 )
                                 // Always load as full class name from morph map alias
                                 ->afterStateHydrated(static function (?string $state, Set $set): void {
-                                    if ($state !== null && $state !== '') {
+                                    if ($state !== null) {
                                         $set('owner_type', Relation::getMorphedModel($state));
                                     }
                                 }),
@@ -270,7 +270,7 @@ final class VoucherForm
                                 ->getSearchResultsUsing(static function (Get $get, ?string $search) use ($ownerRegistry): array {
                                     $ownerType = $get('owner_type');
 
-                                    if (! is_string($ownerType) || $ownerType === '') {
+                                    if (! is_string($ownerType)) {
                                         return [];
                                     }
 
@@ -279,14 +279,14 @@ final class VoucherForm
                                 ->getOptionLabelUsing(static function (Get $get, $value) use ($ownerRegistry): ?string {
                                     $ownerType = $get('owner_type');
 
-                                    if (! is_string($ownerType) || $ownerType === '' || $value === null || $value === '') {
+                                    if (! is_string($ownerType) || $value === null) {
                                         return null;
                                     }
 
                                     return $ownerRegistry->resolveLabelForKey($ownerType, $value);
                                 })
-                                ->hidden(fn (Get $get): bool => ! is_string($get('owner_type')) || $get('owner_type') === '')
-                                ->dehydrated(fn (Get $get): bool => is_string($get('owner_type')) && $get('owner_type') !== '')
+                                ->hidden(fn (Get $get): bool => ! is_string($get('owner_type')))
+                                ->dehydrated(fn (Get $get): bool => is_string($get('owner_type')))
                                 ->helperText('Optional owner assignment when ownership is enabled'),
                         ]),
                 ])

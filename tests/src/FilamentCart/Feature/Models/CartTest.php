@@ -196,6 +196,7 @@ describe('Cart Model', function (): void {
         expect(Cart::resolveCurrentOwner()?->id)->toBe($user->id);
         expect(Cart::resolveOwnerKey($user))->toBe($user->getMorphClass() . ':' . $user->getKey());
         expect(Cart::makeOwnerKey($user->getMorphClass(), $user->getKey()))->toBe($user->getMorphClass() . ':' . $user->getKey());
+        expect(Cart::makeOwnerKey(null, null))->toBe('global');
     });
 
     it('resolves associated user relation', function (): void {

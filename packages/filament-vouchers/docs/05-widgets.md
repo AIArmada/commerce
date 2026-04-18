@@ -210,4 +210,4 @@ Widgets use `Akaunting\Money\Money` for proper currency formatting.
 
 ## Owner Scoping
 
-All widgets respect owner scoping when `vouchers.owner.enabled` is `true`. They will only display data belonging to the resolved owner.
+All widgets respect owner scoping when `vouchers.owner.enabled` is `true`. They will only display data belonging to the resolved owner. Global vouchers use `null` owner columns (`owner_type` and `owner_id`), not empty strings.

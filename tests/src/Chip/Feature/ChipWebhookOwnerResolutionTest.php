@@ -64,3 +64,28 @@ it('fails closed when owner scoping is enabled but brand_id has no owner mapping
 
     expect(Purchase::query()->withoutOwnerScope()->where('id', $payload['id'])->exists())->toBeFalse();
 });
+
+it('fails closed when the brand mapping has an empty owner type', function (): void {
+    Route::post('/chip/webhook-test', [WebhookController::class, 'handle'])
+        ->withoutMiddleware([VerifyWebhookSignature::class]);
+
+    config()->set('chip.owner.enabled', true);
+
+    config()->set('chip.owner.webhook_brand_id_map', [
+        'brand-empty-owner-type' => [
+            'owner_type' => '',
+            'owner_id' => 'owner-123',
+        ],
+    ]);
+
+    OwnerContext::override(null);
+
+    $payload = WebhookFactory::purchaseCreated([
+        'brand_id' => 'brand-empty-owner-type',
+    ]);
+
+    $this->postJson('/chip/webhook-test', $payload)
+        ->assertStatus(500);
+
+    expect(Purchase::query()->withoutOwnerScope()->where('id', $payload['id'])->exists())->toBeFalse();
+});

@@ -30,19 +30,21 @@ final class TransactionData extends ChipData
     /**
      * @return array<string, mixed>|null
      */
-    /**
-     * @return array<string, mixed>|null
-     */
     public function getLastAttempt(): ?array
     {
-        if (! empty($this->attempts)) {
-            $attempts = $this->attempts;
-            $first = reset($attempts);
-
-            return is_array($first) ? $first : null;
+        if ($this->attempts === []) {
+            return null;
         }
 
-        return null;
+        $lastKey = array_key_last($this->attempts);
+
+        if ($lastKey === null) {
+            return null;
+        }
+
+        $lastAttempt = $this->attempts[$lastKey];
+
+        return is_array($lastAttempt) ? $lastAttempt : null;
     }
 
     public function hasFailedAttempts(): bool

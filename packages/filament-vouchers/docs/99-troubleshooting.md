@@ -56,9 +56,11 @@ Check that owner scoping is enabled:
 // config/vouchers.php
 'owner' => [
     'enabled' => true,
-    'include_global' => true, // Include global vouchers?
+    'include_global' => true, // Include global vouchers (null owner columns)?
 ],
 ```
+
+Global vouchers should have both `owner_type` and `owner_id` set to `null`; empty strings are not used in the database or form state.
 
 Verify the `OwnerResolverInterface` is bound:
 

@@ -34,7 +34,7 @@ Or install individual packages as needed (see below).
 | Package | Description |
 |---------|-------------|
 | [commerce-support](../commerce-support) | Core utilities, contracts, and exceptions |
-| [cart](../cart) | Shopping cart with conditions and persistence |
+| [cart](../cart) | Shopping cart with conditions and database-backed persistence |
 | [inventory](../inventory) | Inventory and stock management |
 | [vouchers](../vouchers) | Discount codes and promotional vouchers |
 | [docs](../docs) | Invoice and receipt generation with PDF |

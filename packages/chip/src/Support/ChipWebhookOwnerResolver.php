@@ -40,7 +40,7 @@ final class ChipWebhookOwnerResolver
         $ownerType = $entry['owner_type'] ?? $entry['type'] ?? null;
         $ownerId = $entry['owner_id'] ?? $entry['id'] ?? null;
 
-        if (! is_string($ownerType) || $ownerType === '') {
+        if (! is_string($ownerType)) {
             return null;
         }
 
