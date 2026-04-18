@@ -190,7 +190,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function customer(): mixed
     {
-        return $this->purchase->client ?? null;
+        return $this->purchase->client;
     }
 
     /**

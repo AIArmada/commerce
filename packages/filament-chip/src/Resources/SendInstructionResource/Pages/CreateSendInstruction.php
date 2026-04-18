@@ -68,13 +68,13 @@ final class CreateSendInstruction extends CreateRecord
 
             Notification::make()
                 ->title('Payout created successfully')
-                ->body(sprintf('Instruction ID: %s', $instruction->id ?? 'Unknown'))
+                ->body(sprintf('Instruction ID: %s', $instruction->id))
                 ->success()
                 ->send();
 
             return array_merge($data, [
-                'id' => $instruction->id ?? null,
-                'state' => $instruction->state ?? 'queued',
+                'id' => $instruction->id,
+                'state' => $instruction->state,
             ]);
         } catch (Throwable $e) {
             Notification::make()

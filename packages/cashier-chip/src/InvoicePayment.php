@@ -74,7 +74,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
      */
     public function status(): string
     {
-        return $this->purchase->status ?? 'unknown';
+        return $this->purchase->status;
     }
 
     /**

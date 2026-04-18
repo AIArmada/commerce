@@ -59,8 +59,8 @@ final class ChipProcessor implements PaymentProcessorInterface
                 'cancel_redirect' => $request->cancelUrl,
             ]);
 
-            $checkoutUrl = $purchase->checkout_url ?? null;
-            $purchaseId = $purchase->id ?? 'unknown';
+            $checkoutUrl = $purchase->checkout_url;
+            $purchaseId = $purchase->id;
 
             if ($checkoutUrl !== null) {
                 return PaymentResult::pending(
@@ -132,7 +132,7 @@ final class ChipProcessor implements PaymentProcessorInterface
         try {
             $purchase = Chip::getPurchase($paymentId);
 
-            $status = match ($purchase->status ?? 'unknown') {
+            $status = match ($purchase->status) {
                 'paid', 'completed' => PaymentStatus::Completed,
                 'pending', 'created' => PaymentStatus::Pending,
                 'failed', 'error' => PaymentStatus::Failed,
@@ -144,7 +144,7 @@ final class ChipProcessor implements PaymentProcessorInterface
             return new PaymentResult(
                 status: $status,
                 paymentId: $paymentId,
-                transactionId: $purchase->reference_generated ?? null,
+                transactionId: $purchase->reference_generated,
                 amount: $purchase->purchase->total->getAmount(),
                 gatewayResponse: (array) $purchase,
             );
