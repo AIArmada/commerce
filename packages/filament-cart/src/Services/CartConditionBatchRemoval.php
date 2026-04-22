@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Services;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Models\Condition as StoredCondition;
 use AIArmada\FilamentCart\Models\Cart as CartModel;
 use AIArmada\FilamentCart\Models\CartCondition as CartConditionModel;
 use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -33,7 +35,7 @@ final class CartConditionBatchRemoval
      * 3. Removes the condition (handles both static and dynamic)
      * 4. Saves the cart (which triggers sync to update snapshot)
      *
-     * @param  string  $conditionName  The name of the condition to remove
+     * @param  StoredCondition|string  $condition  The stored condition or condition name to remove
      * @return array{
      *     success: bool,
      *     carts_processed: int,
@@ -41,24 +43,31 @@ final class CartConditionBatchRemoval
      *     errors: array<string>
      * }
      */
-    public function removeConditionFromAllCarts(string $conditionName): array
+    public function removeConditionFromAllCarts(StoredCondition | string $condition): array
     {
         $cartsProcessed = 0;
         $cartsUpdated = 0;
         $errors = [];
+        $conditionLabel = $condition instanceof StoredCondition
+            ? ($condition->display_name ?? $condition->name)
+            : $condition;
 
         try {
-            // Find all cart snapshots that have this condition, via normalized table.
-            $affectedCartIds = CartConditionModel::query()
-                ->where('name', $conditionName)
-                ->distinct()
-                ->pluck('cart_id');
+            $matchedConditions = $this->findMatchingConditions($condition);
+
+            $affectedCartIds = $matchedConditions
+                ->pluck('cart_id')
+                ->unique()
+                ->values();
 
             $affectedSnapshots = CartModel::query()
+                ->forOwner()
                 ->whereIn('id', $affectedCartIds)
                 ->get();
 
-            Log::info("Found {$affectedSnapshots->count()} cart snapshots with condition '{$conditionName}'");
+            Log::info("Found {$affectedSnapshots->count()} cart snapshots with condition '{$conditionLabel}'");
+
+            $conditionsByCart = $matchedConditions->groupBy('cart_id');
 
             foreach ($affectedSnapshots as $snapshot) {
                 $cartsProcessed++;
@@ -75,23 +84,12 @@ final class CartConditionBatchRemoval
 
                     $conditionRemoved = false;
 
-                    // Try removing from regular conditions
-                    if ($cart->removeCondition($conditionName)) {
-                        $conditionRemoved = true;
-                    }
-
-                    // Try removing from dynamic conditions
-                    if ($cart->getDynamicConditions()->has($conditionName)) {
-                        $cart->removeDynamicCondition($conditionName);
-                        $conditionRemoved = true;
-                    }
-
-                    // Try removing from item conditions
-                    foreach ($cart->getItems() as $item) {
-                        if ($item->getConditions()->has($conditionName)) {
-                            $cart->removeItemCondition($item->getId(), $conditionName);
-                            $conditionRemoved = true;
+                    foreach ($conditionsByCart->get($snapshot->id, collect()) as $snapshotCondition) {
+                        if (! $snapshotCondition instanceof CartConditionModel) {
+                            continue;
                         }
+
+                        $conditionRemoved = $this->removeConditionFromCart($cart, $snapshotCondition) || $conditionRemoved;
                     }
 
                     if ($conditionRemoved) {
@@ -103,14 +101,14 @@ final class CartConditionBatchRemoval
                     $errors[] = "Error processing snapshot ID {$snapshot->id}: {$e->getMessage()}";
                     Log::error('Error removing condition from cart', [
                         'snapshot_id' => $snapshot->id,
-                        'condition' => $conditionName,
+                        'condition' => $conditionLabel,
                         'error' => $e->getMessage(),
                     ]);
                 }
             }
 
             Log::info('Batch condition removal completed', [
-                'condition' => $conditionName,
+                'condition' => $conditionLabel,
                 'processed' => $cartsProcessed,
                 'updated' => $cartsUpdated,
                 'errors' => count($errors),
@@ -124,7 +122,7 @@ final class CartConditionBatchRemoval
             ];
         } catch (Exception $e) {
             Log::error('Batch condition removal failed', [
-                'condition' => $conditionName,
+                'condition' => $conditionLabel,
                 'error' => $e->getMessage(),
             ]);
 
@@ -159,5 +157,74 @@ final class CartConditionBatchRemoval
 
             return null;
         }
+    }
+
+    /**
+     * @return Collection<int, CartConditionModel>
+     */
+    private function findMatchingConditions(StoredCondition | string $condition): Collection
+    {
+        $query = CartConditionModel::query()
+            ->whereIn('cart_id', CartModel::query()->forOwner()->select('id'));
+
+        if (is_string($condition)) {
+            return $query
+                ->where('name', $condition)
+                ->get();
+        }
+
+        $candidateNames = array_values(array_unique(array_filter([
+            $condition->display_name,
+            $condition->name,
+        ], static fn (?string $name): bool => is_string($name) && $name !== '')));
+
+        return $query
+            ->where(function ($builder) use ($condition, $candidateNames): void {
+                $builder->where('attributes->condition_id', $condition->getKey());
+
+                if ($candidateNames === []) {
+                    return;
+                }
+
+                $builder->orWhere(function ($fallback) use ($candidateNames): void {
+                    $fallback
+                        ->whereNull('attributes->condition_id')
+                        ->whereIn('name', $candidateNames);
+                });
+            })
+            ->get();
+    }
+
+    private function removeConditionFromCart(Cart $cart, CartConditionModel $snapshotCondition): bool
+    {
+        $conditionName = $snapshotCondition->name;
+
+        if ($snapshotCondition->isCartLevel()) {
+            $removed = $cart->removeCondition($conditionName);
+
+            if ($cart->getDynamicConditions()->has($conditionName)) {
+                $cart->removeDynamicCondition($conditionName);
+                $removed = true;
+            }
+
+            return $removed;
+        }
+
+        $removed = false;
+
+        foreach ($cart->getItems() as $item) {
+            if ($snapshotCondition->item_id !== null && $item->getId() !== $snapshotCondition->item_id) {
+                continue;
+            }
+
+            if (! $item->getConditions()->has($conditionName)) {
+                continue;
+            }
+
+            $cart->removeItemCondition($item->getId(), $conditionName);
+            $removed = true;
+        }
+
+        return $removed;
     }
 }

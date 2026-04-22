@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources;
 
 use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Resources\CartResource\Pages\CreateCart;
-use AIArmada\FilamentCart\Resources\CartResource\Pages\EditCart;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ListCarts;
 use AIArmada\FilamentCart\Resources\CartResource\Pages\ViewCart;
 use AIArmada\FilamentCart\Resources\CartResource\RelationManagers\ConditionsRelationManager;
@@ -20,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class CartResource extends Resource
@@ -71,10 +70,18 @@ final class CartResource extends Resource
     {
         return [
             'index' => ListCarts::route('/'),
-            'create' => CreateCart::route('/create'),
             'view' => ViewCart::route('/{record}'),
-            'edit' => EditCart::route('/{record}/edit'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
     }
 
     public static function getNavigationBadge(): ?string

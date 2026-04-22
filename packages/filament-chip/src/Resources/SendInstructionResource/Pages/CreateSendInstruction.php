@@ -40,12 +40,13 @@ final class CreateSendInstruction extends CreateRecord
         $bankAccount = BankAccount::query()
             ->forOwner()
             ->whereKey($data['bank_account_id'] ?? null)
+            ->whereIn('status', ['active', 'approved'])
             ->first();
 
         if ($bankAccount === null) {
             Notification::make()
                 ->title('Invalid bank account')
-                ->body('Selected bank account is not accessible for the current owner.')
+                ->body('Selected bank account must be active or approved for the current owner.')
                 ->danger()
                 ->send();
 

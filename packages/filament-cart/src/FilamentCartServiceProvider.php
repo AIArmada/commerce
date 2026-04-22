@@ -117,6 +117,7 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        $this->synchronizeOwnerScopeConfiguration();
         $this->registerEventListeners();
         $this->registerRecoveryAttemptCartRelation();
     }
@@ -132,6 +133,27 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
         RecoveryAttempt::resolveRelationUsing('cart', function (RecoveryAttempt $model) {
             return $model->belongsTo(CartSnapshot::class, 'cart_id');
         });
+    }
+
+    protected function synchronizeOwnerScopeConfiguration(): void
+    {
+        $filamentOwnerEnabled = (bool) config('filament-cart.owner.enabled', false);
+        $cartOwnerEnabled = (bool) config('cart.owner.enabled', false);
+
+        $enabled = $filamentOwnerEnabled || $cartOwnerEnabled;
+
+        if ($filamentOwnerEnabled) {
+            $includeGlobal = (bool) config('filament-cart.owner.include_global', false);
+        } elseif ($cartOwnerEnabled) {
+            $includeGlobal = (bool) config('cart.owner.include_global', false);
+        } else {
+            $includeGlobal = false;
+        }
+
+        config()->set('filament-cart.owner.enabled', $enabled);
+        config()->set('filament-cart.owner.include_global', $includeGlobal);
+        config()->set('cart.owner.enabled', $enabled);
+        config()->set('cart.owner.include_global', $includeGlobal);
     }
 
     /**

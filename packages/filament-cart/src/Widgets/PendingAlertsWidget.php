@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Widgets;
 
 use AIArmada\Cart\Models\AlertLog;
+use AIArmada\FilamentCart\Resources\CartResource;
 use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -60,7 +61,7 @@ class PendingAlertsWidget extends BaseWidget
                 Actions\Action::make('view')
                     ->icon('heroicon-o-eye')
                     ->url(fn (AlertLog $record) => $record->cart_id
-                        ? route('filament.admin.resources.carts.view', $record->cart_id)
+                        ? CartResource::getUrl('view', ['record' => $record->cart_id])
                         : null)
                     ->visible(fn (AlertLog $record) => $record->cart_id !== null)
                     ->tooltip('View cart'),

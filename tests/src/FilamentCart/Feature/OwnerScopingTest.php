@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\FilamentCart\FilamentCartServiceProvider;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
@@ -14,6 +15,21 @@ use AIArmada\FilamentCart\Resources\CartResource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+it('synchronizes owner configuration into the core cart package on boot', function (): void {
+    config()->set('filament-cart.owner.enabled', true);
+    config()->set('filament-cart.owner.include_global', true);
+    config()->set('cart.owner.enabled', false);
+    config()->set('cart.owner.include_global', false);
+
+    $provider = new FilamentCartServiceProvider(app());
+    $provider->packageBooted();
+
+    expect(config('filament-cart.owner.enabled'))->toBeTrue();
+    expect(config('filament-cart.owner.include_global'))->toBeTrue();
+    expect(config('cart.owner.enabled'))->toBeTrue();
+    expect(config('cart.owner.include_global'))->toBeTrue();
+});
 
 it('scopes filament-cart snapshots and child resources by resolved owner', function (): void {
     config()->set('cart.owner.enabled', true);

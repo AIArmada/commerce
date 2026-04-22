@@ -11,7 +11,6 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -135,9 +134,6 @@ final class CartsTable
             ->recordActions([
                 ViewAction::make()
                     ->icon(Heroicon::OutlinedEye),
-
-                EditAction::make()
-                    ->icon(Heroicon::OutlinedPencil),
 
                 ActionGroup::make([
                     Action::make('clear_cart')

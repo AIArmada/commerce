@@ -22,6 +22,7 @@ use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ViewPurchase;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\CreateSendInstruction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ListSendInstructions;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ViewSendInstruction;
+use Filament\Support\Exceptions\Halt;
 use Filament\Actions\Exports\Models\Export;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -124,7 +125,7 @@ it('covers resource pages and read-only list base class', function (): void {
 
     $bankAccount = BankAccount::query()->create([
         'id' => 10,
-        'status' => 'pending',
+        'status' => 'approved',
         'name' => 'Acct',
         'account_number' => '123',
         'bank_code' => 'MBBEMYKL',
@@ -188,6 +189,22 @@ it('covers resource pages and read-only list base class', function (): void {
     ]);
 
     expect($data)->toHaveKey('id')->toHaveKey('state');
+
+    BankAccount::query()->create([
+        'id' => 11,
+        'status' => 'pending',
+        'name' => 'Pending Acct',
+        'account_number' => '124',
+        'bank_code' => 'MBBEMYKL',
+    ]);
+
+    expect(fn () => $mutate->invoke($createPayout, [
+        'amount' => 1.23,
+        'bank_account_id' => '11',
+        'description' => 'Test',
+        'reference' => 'ref',
+        'email' => 'to@example.com',
+    ]))->toThrow(Halt::class);
 
     $viewBank = new ViewBankAccount;
     $recordProp->setValue($viewBank, $bankAccount);

@@ -111,9 +111,7 @@ class MetricsAggregator
             ->whereBetween('checkout_started_at', [$start, $end])
             ->count();
 
-        $checkoutsCompleted = Cart::query()->forOwner()
-            ->whereBetween('checkout_completed_at', [$start, $end])
-            ->count();
+        $checkoutsCompleted = 0;
 
         $checkoutsAbandoned = Cart::query()->forOwner()
             ->whereBetween('checkout_abandoned_at', [$start, $end])

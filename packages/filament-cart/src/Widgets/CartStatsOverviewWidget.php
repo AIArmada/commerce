@@ -211,13 +211,7 @@ final class CartStatsOverviewWidget extends BaseWidget
      */
     private function getSubtotalExpression(): string
     {
-        $driver = DB::getDriverName();
-
-        if ($driver === 'pgsql') {
-            return "COALESCE((metadata->>'subtotal')::int, 0)";
-        }
-
-        return "COALESCE(JSON_EXTRACT(metadata, '$.subtotal'), 0)";
+        return 'COALESCE(subtotal, 0)';
     }
 
     private function formatMoney(int $amount): string

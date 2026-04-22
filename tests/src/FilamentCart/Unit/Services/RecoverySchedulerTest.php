@@ -7,6 +7,9 @@ use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\Cart\States\Failed;
 use AIArmada\Cart\States\Queued;
 use AIArmada\Cart\States\Scheduled;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\RecoveryDispatcher;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
@@ -343,5 +346,64 @@ describe('RecoveryScheduler', function (): void {
         $nextAttempt = $this->scheduler->scheduleNextAttempt($previousAttempt->refresh());
 
         expect($nextAttempt)->toBeNull();
+    });
+
+    it('does not let recovered carts from another owner suppress scheduling', function (): void {
+        config()->set('cart.owner.enabled', true);
+        config()->set('filament-cart.owner.enabled', true);
+        config()->set('cart.owner.include_global', false);
+        config()->set('filament-cart.owner.include_global', false);
+
+        $ownerA = User::query()->create([
+            'name' => 'Owner A',
+            'email' => 'recovery-owner-a@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerB = User::query()->create([
+            'name' => 'Owner B',
+            'email' => 'recovery-owner-b@example.com',
+            'password' => 'secret',
+        ]);
+
+        app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
+
+        $campaign = RecoveryCampaign::create([
+            'name' => 'Owner A Campaign',
+            'trigger_type' => 'abandoned',
+            'status' => 'active',
+            'trigger_delay_minutes' => 30,
+            'max_attempts' => 3,
+            'attempt_interval_hours' => 24,
+            'strategy' => 'email',
+        ]);
+
+        Cart::create([
+            'identifier' => 'owner-a-abandoned',
+            'instance' => 'default',
+            'items_count' => 1,
+            'subtotal' => 2500,
+            'checkout_abandoned_at' => now()->subHours(2),
+            'metadata' => ['email' => 'shared-buyer@example.com'],
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
+        ]);
+
+        Cart::create([
+            'identifier' => 'owner-b-recovered',
+            'instance' => 'default',
+            'items_count' => 1,
+            'subtotal' => 3500,
+            'checkout_abandoned_at' => now()->subDays(2),
+            'recovered_at' => now()->subDays(1),
+            'metadata' => ['email' => 'shared-buyer@example.com'],
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => (string) $ownerB->getKey(),
+        ]);
+
+        $scheduled = $this->scheduler->scheduleForCampaign($campaign->refresh());
+
+        expect($scheduled)->toBe(1);
+        expect(RecoveryAttempt::query()->forOwner()->where('campaign_id', $campaign->id)->count())->toBe(1);
     });
 });
