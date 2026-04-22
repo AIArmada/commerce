@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Integrations\TaxAdapter;
+use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\CalculateTaxStep;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
 use AIArmada\Tax\Data\TaxResultData;

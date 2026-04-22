@@ -16105,16 +16105,16 @@
         },
         {
             "name": "symplify/monorepo-builder",
-            "version": "12.5.2",
+            "version": "12.6.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symplify/monorepo-builder.git",
-                "reference": "438102e3343930f23472fcce4021da3485dde812"
+                "reference": "cdd3782164d65b33948e353f0da5b4cedbe98fb6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symplify/monorepo-builder/zipball/438102e3343930f23472fcce4021da3485dde812",
-                "reference": "438102e3343930f23472fcce4021da3485dde812",
+                "url": "https://api.github.com/repos/symplify/monorepo-builder/zipball/cdd3782164d65b33948e353f0da5b4cedbe98fb6",
+                "reference": "cdd3782164d65b33948e353f0da5b4cedbe98fb6",
                 "shasum": ""
             },
             "require": {
@@ -16170,7 +16170,7 @@
             "description": "Not only Composer tools to build a Monorepo.",
             "support": {
                 "issues": "https://github.com/symplify/monorepo-builder/issues",
-                "source": "https://github.com/symplify/monorepo-builder/tree/12.5.2"
+                "source": "https://github.com/symplify/monorepo-builder/tree/12.6.2"
             },
             "funding": [
                 {
@@ -16182,7 +16182,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-03-26T02:21:57+00:00"
+            "time": "2026-04-22T03:37:37+00:00"
         },
         {
             "name": "ta-tikoma/phpunit-architecture-test",

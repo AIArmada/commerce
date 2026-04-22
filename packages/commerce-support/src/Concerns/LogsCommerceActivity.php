@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Concerns;
 
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * Shared trait for logging commerce activity across all packages.
@@ -45,7 +45,7 @@ trait LogsCommerceActivity // @phpstan-ignore trait.unused
         return LogOptions::defaults()
             ->logOnly($this->getLoggableAttributes())
             ->logOnlyDirty()
-            ->dontSubmitEmptyLogs()
+            ->dontLogEmptyChanges()
             ->useLogName($this->getActivityLogName());
     }
 

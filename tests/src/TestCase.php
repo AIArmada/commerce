@@ -279,7 +279,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('chip.collect.environment', 'sandbox');
         $app['config']->set('chip.send.api_key', 'test_api_key');
         $app['config']->set('chip.send.api_secret', 'test_send_secret');
-        $app['config']->set('chip.webhooks.public_key', 'test_public_key');
+        $app['config']->set('chip.webhooks.company_public_key', 'test_public_key');
 
         // Ownership defaults (avoid host env vars affecting tests)
         $app['config']->set('chip.owner.enabled', false);
