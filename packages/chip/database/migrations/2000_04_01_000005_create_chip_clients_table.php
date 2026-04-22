@@ -63,7 +63,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes for optimal query performance
-            $table->unique('email'); // Email must be unique
+            $table->index('email');
             $table->index('phone');
             $table->index(['country', 'city']);
             $table->index('created_on');

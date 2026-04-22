@@ -12,6 +12,7 @@ use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\SessionDataTransformerInterface;
 use AIArmada\Checkout\Data\CheckoutResult;
+use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Enums\StepStatus;
@@ -459,16 +460,14 @@ final class CheckoutService implements CheckoutServiceInterface
             $status = $payload['status'] ?? $payload['data']['object']['status'] ?? null;
 
             $paymentResult = match ($status) {
-                'paid', 'completed', 'succeeded', 'complete' => 
-                    \AIArmada\Checkout\Data\PaymentResult::success($session->payment_id ?? 'unknown'),
-                'failed', 'error', 'payment_failed' => 
-                    \AIArmada\Checkout\Data\PaymentResult::failed('Payment failed', paymentId: $session->payment_id),
-                'cancelled', 'canceled', 'expired' => new \AIArmada\Checkout\Data\PaymentResult(
+                'paid', 'completed', 'succeeded', 'complete' => PaymentResult::success($session->payment_id ?? 'unknown'),
+                'failed', 'error', 'payment_failed' => PaymentResult::failed('Payment failed', paymentId: $session->payment_id),
+                'cancelled', 'canceled', 'expired' => new PaymentResult(
                     status: PaymentStatus::Cancelled,
                     paymentId: $session->payment_id,
                     gatewayResponse: $payload,
                 ),
-                default => new \AIArmada\Checkout\Data\PaymentResult(
+                default => new PaymentResult(
                     status: PaymentStatus::Processing,
                     paymentId: $session->payment_id,
                     gatewayResponse: $payload,

@@ -29,23 +29,6 @@ class WebhookController extends Controller
         $payload = $request->all();
         $eventType = $payload['event_type'] ?? 'unknown';
 
-        // Generate idempotency key from payload for deduplication
-        $idempotencyKey = $this->generateIdempotencyKey($payload);
-
-        // Check for duplicate webhook (deduplication)
-        if ($this->isDuplicateWebhook($idempotencyKey)) {
-            Log::channel(config('chip.logging.channel', 'stack'))
-                ->info('CHIP webhook skipped - duplicate', [
-                    'idempotency_key' => $idempotencyKey,
-                    'event_type' => $eventType,
-                ]);
-
-            return response()->json([
-                'status' => 'ok',
-                'message' => 'Duplicate webhook ignored',
-            ]);
-        }
-
         if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
             $owner = ChipWebhookOwnerResolver::resolveFromPayload($payload);
 
@@ -61,10 +44,10 @@ class WebhookController extends Controller
                 ], 500);
             }
 
-            return OwnerContext::withOwner($owner, fn (): JsonResponse => $this->handleScoped($eventType, $payload, $idempotencyKey));
+            return OwnerContext::withOwner($owner, fn (): JsonResponse => $this->handleScoped($eventType, $payload));
         }
 
-        return $this->handleScoped($eventType, $payload, $idempotencyKey);
+        return $this->handleScoped($eventType, $payload);
     }
 
     /**
@@ -74,13 +57,21 @@ class WebhookController extends Controller
      */
     private function generateIdempotencyKey(array $payload): string
     {
-        // Combine unique identifiers from the payload
         $components = [
             $payload['event_type'] ?? 'unknown',
             $payload['id'] ?? '',
             $payload['status'] ?? '',
             $payload['updated_on'] ?? $payload['created_on'] ?? '',
         ];
+
+        if ((bool) config('chip.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+
+            if ($owner !== null) {
+                $components[] = $owner->getMorphClass();
+                $components[] = (string) $owner->getKey();
+            }
+        }
 
         return hash('sha256', implode(':', $components));
     }
@@ -94,19 +85,34 @@ class WebhookController extends Controller
             return false;
         }
 
-        return Webhook::where('idempotency_key', $idempotencyKey)
-            ->where('processed', true)
-            ->exists();
+        $webhook = $this->findWebhookByIdempotencyKey($idempotencyKey);
+
+        return $webhook !== null
+            && ($webhook->processed || $webhook->status === 'processed');
     }
 
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function handleScoped(string $eventType, array $payload, string $idempotencyKey): JsonResponse
+    private function handleScoped(string $eventType, array $payload): JsonResponse
     {
+        $idempotencyKey = $this->generateIdempotencyKey($payload);
+
+        if ($this->isDuplicateWebhook($idempotencyKey)) {
+            Log::channel(config('chip.logging.channel', 'stack'))
+                ->info('CHIP webhook skipped - duplicate', [
+                    'idempotency_key' => $idempotencyKey,
+                    'event_type' => $eventType,
+                ]);
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'Duplicate webhook ignored',
+            ]);
+        }
+
         $startTime = microtime(true);
 
-        // Store webhook record with idempotency key
         $webhook = $this->storeWebhookRecord($eventType, $payload, $idempotencyKey);
 
         try {
@@ -148,19 +154,34 @@ class WebhookController extends Controller
             return null;
         }
 
-        return Webhook::create([
-            'event' => $eventType,
-            'payload' => $payload,
-            'idempotency_key' => $idempotencyKey,
-            'status' => 'pending',
-            'verified' => true, // Already verified by middleware
-            'processed' => false,
-            // Required fields from original schema (webhook configuration fields)
-            'title' => 'Incoming: ' . $eventType,
-            'events' => [$eventType],
-            'callback' => request()->url(),
-            'created_on' => $payload['created_on'] ?? time(),
-            'updated_on' => $payload['updated_on'] ?? time(),
-        ]);
+        return Webhook::query()
+            ->forOwner()
+            ->updateOrCreate(
+                ['idempotency_key' => $idempotencyKey],
+                [
+                    'event_type' => $eventType,
+                    'event' => $eventType,
+                    'payload' => $payload,
+                    'status' => 'pending',
+                    'verified' => true,
+                    'processed' => false,
+                    'processed_at' => null,
+                    'last_error' => null,
+                    'processing_time_ms' => null,
+                    'title' => 'Incoming: ' . $eventType,
+                    'events' => [$eventType],
+                    'callback' => request()->url(),
+                    'created_on' => $payload['created_on'] ?? time(),
+                    'updated_on' => $payload['updated_on'] ?? time(),
+                ]
+            );
+    }
+
+    private function findWebhookByIdempotencyKey(string $idempotencyKey): ?Webhook
+    {
+        return Webhook::query()
+            ->forOwner()
+            ->where('idempotency_key', $idempotencyKey)
+            ->first();
     }
 }

@@ -17,7 +17,7 @@ describe('StoreWebhookData listener', function (): void {
     });
 
     it('returns early when config disabled', function (): void {
-        config(['chip.webhooks.store_data' => false]);
+        config(['chip.webhooks.store_webhooks' => false]);
 
         $listener = new StoreWebhookData;
         $event = new WebhookReceived(
@@ -31,7 +31,7 @@ describe('StoreWebhookData listener', function (): void {
     });
 
     it('returns early for non-purchase type', function (): void {
-        config(['chip.webhooks.store_data' => true]);
+        config(['chip.webhooks.store_webhooks' => true]);
 
         $listener = new StoreWebhookData;
         $event = new WebhookReceived(
@@ -45,7 +45,7 @@ describe('StoreWebhookData listener', function (): void {
     });
 
     it('returns early when no purchase ID', function (): void {
-        config(['chip.webhooks.store_data' => true]);
+        config(['chip.webhooks.store_webhooks' => true]);
 
         $listener = new StoreWebhookData;
         $event = new WebhookReceived(

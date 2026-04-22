@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Http\Controllers\WebhookController;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Http\Request;
@@ -13,7 +14,7 @@ describe('WebhookController', function (): void {
     beforeEach(function (): void {
         // Disable listeners that require database
         Event::fake();
-        config(['chip.webhooks.store_data' => false]);
+        config(['chip.webhooks.store_webhooks' => false]);
 
         // Mock the dispatcher
         $this->dispatcher = Mockery::mock(WebhookEventDispatcher::class);
@@ -127,6 +128,46 @@ describe('WebhookController', function (): void {
 
         expect($response->getStatusCode())->toBe(200)
             ->and($response->getData()->event_type)->toBe('unknown');
+    });
+
+    it('ignores duplicate webhook payloads after the first successful processing', function (): void {
+        config([
+            'chip.webhooks.store_webhooks' => true,
+            'chip.webhooks.deduplication' => true,
+        ]);
+
+        $dispatcher = Mockery::mock(WebhookEventDispatcher::class);
+        $dispatcher->shouldReceive('dispatch')->once()->andReturn(null);
+        $dispatcher->shouldReceive('extractPurchase')->once()->andReturn(null);
+        $dispatcher->shouldReceive('extractPayout')->once()->andReturn(null);
+        $dispatcher->shouldReceive('extractBillingTemplateClient')->once()->andReturn(null);
+
+        $controller = new WebhookController($dispatcher);
+
+        $payload = [
+            'id' => 'purch_duplicate_123',
+            'type' => 'purchase',
+            'event_type' => 'purchase.paid',
+            'status' => 'paid',
+            'brand_id' => 'brand_123',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'purchase' => [
+                'total' => 10000,
+                'currency' => 'MYR',
+                'products' => [['name' => 'Test', 'price' => 10000, 'quantity' => 1]],
+            ],
+            'is_test' => true,
+        ];
+
+        $responseOne = $controller->handle(Request::create('/webhook', 'POST', $payload));
+        $responseTwo = $controller->handle(Request::create('/webhook', 'POST', $payload));
+
+        expect($responseOne->getStatusCode())->toBe(200)
+            ->and($responseTwo->getStatusCode())->toBe(200)
+            ->and($responseTwo->getData()->message)->toBe('Duplicate webhook ignored')
+            ->and(Webhook::count())->toBe(1)
+            ->and(Webhook::query()->first()?->processed)->toBeTrue();
     });
 });
 

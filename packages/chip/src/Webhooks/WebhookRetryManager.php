@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Models\Webhook;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Throwable;
 
@@ -68,7 +69,9 @@ class WebhookRetryManager
             if ($result->isSuccess()) {
                 $webhook->update([
                     'status' => 'processed',
+                    'processed' => true,
                     'processed_at' => now(),
+                    'last_error' => null,
                 ]);
             } else {
                 $webhook->update([
@@ -94,15 +97,15 @@ class WebhookRetryManager
      */
     public function getRetryableWebhooks(): Collection
     {
+        $now = CarbonImmutable::now();
+
         return Webhook::query()
             ->forOwner()
             ->where('status', 'failed')
             ->where('retry_count', '<', count($this->backoffSchedule))
-            ->where(function ($query): void {
-                $query->whereNull('last_retry_at')
-                    ->orWhereRaw('last_retry_at < DATE_SUB(NOW(), INTERVAL retry_count * 60 SECOND)');
-            })
-            ->get();
+            ->get()
+            ->filter(fn (Webhook $webhook): bool => $this->isEligibleForRetry($webhook, $now))
+            ->values();
     }
 
     /**
@@ -115,5 +118,17 @@ class WebhookRetryManager
         $this->backoffSchedule = $schedule;
 
         return $this;
+    }
+
+    private function isEligibleForRetry(Webhook $webhook, CarbonImmutable $now): bool
+    {
+        if ($webhook->last_retry_at === null) {
+            return true;
+        }
+
+        $nextEligibleAt = CarbonImmutable::parse($webhook->last_retry_at)
+            ->addSeconds($this->getNextRetryDelay($webhook));
+
+        return $nextEligibleAt->lessThanOrEqualTo($now);
     }
 }

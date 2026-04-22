@@ -110,7 +110,7 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     protected function registerEventListeners(): void
     {
-        if (config('chip.webhooks.store_data', true)) {
+        if (config('chip.webhooks.store_webhooks', true)) {
             Event::listen(WebhookReceived::class, StoreWebhookData::class);
         }
     }

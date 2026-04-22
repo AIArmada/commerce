@@ -8,6 +8,7 @@ use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
+use Carbon\CarbonImmutable;
 
 describe('WebhookRetryManager', function (): void {
     beforeEach(function (): void {
@@ -17,6 +18,7 @@ describe('WebhookRetryManager', function (): void {
     });
 
     afterEach(function (): void {
+        CarbonImmutable::setTestNow();
         Mockery::close();
     });
 
@@ -158,6 +160,8 @@ describe('WebhookRetryManager', function (): void {
             $webhook->refresh();
             expect($webhook->retry_count)->toBe(2);
             expect($webhook->status)->toBe('processed');
+            expect($webhook->processed)->toBeTrue();
+            expect($webhook->last_error)->toBeNull();
             expect($webhook->processed_at)->not->toBeNull();
         });
 
@@ -251,6 +255,60 @@ describe('WebhookRetryManager', function (): void {
             ]);
 
             expect($this->manager->getNextRetryDelay($webhook))->toBe(30);
+        });
+    });
+
+    describe('getRetryableWebhooks', function (): void {
+        it('returns only failed webhooks whose retry delay has elapsed', function (): void {
+            $now = CarbonImmutable::parse('2026-04-22 12:00:00');
+            CarbonImmutable::setTestNow($now);
+
+            $this->manager->setBackoffSchedule([
+                1 => 60,
+            ]);
+
+            $eligibleWebhook = Webhook::create([
+                'title' => 'Eligible webhook',
+                'event' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['id' => 'purchase-eligible', 'type' => 'purchase'],
+                'status' => 'failed',
+                'retry_count' => 0,
+                'last_retry_at' => $now->subSeconds(61),
+                'created_on' => $now->subMinutes(5)->timestamp,
+                'updated_on' => $now->subSeconds(61)->timestamp,
+                'callback' => 'http://example.com/webhook',
+            ]);
+
+            Webhook::create([
+                'title' => 'Too recent webhook',
+                'event' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['id' => 'purchase-recent', 'type' => 'purchase'],
+                'status' => 'failed',
+                'retry_count' => 0,
+                'last_retry_at' => $now->subSeconds(30),
+                'created_on' => $now->subMinutes(5)->timestamp,
+                'updated_on' => $now->subSeconds(30)->timestamp,
+                'callback' => 'http://example.com/webhook',
+            ]);
+
+            Webhook::create([
+                'title' => 'Processed webhook',
+                'event' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['id' => 'purchase-processed', 'type' => 'purchase'],
+                'status' => 'processed',
+                'retry_count' => 0,
+                'last_retry_at' => $now->subSeconds(120),
+                'created_on' => $now->subMinutes(5)->timestamp,
+                'updated_on' => $now->subSeconds(120)->timestamp,
+                'callback' => 'http://example.com/webhook',
+            ]);
+
+            $retryable = $this->manager->getRetryableWebhooks();
+
+            expect($retryable->pluck('id')->all())->toBe([$eligibleWebhook->id]);
         });
     });
 });

@@ -93,8 +93,14 @@ Available methods: `fpx`, `visa`, `mastercard`, `maestro`, `duitnow`, `grabpay`,
 Example brand ID mapping:
 ```php
 'webhook_brand_id_map' => [
-    'brand-uuid-1' => \App\Models\Tenant::class . ':tenant-uuid-1',
-    'brand-uuid-2' => \App\Models\Tenant::class . ':tenant-uuid-2',
+    'brand-uuid-1' => [
+        'owner_type' => \App\Models\Tenant::class,
+        'owner_id' => 'tenant-uuid-1',
+    ],
+    'brand-uuid-2' => [
+        'owner_type' => \App\Models\Tenant::class,
+        'owner_id' => 'tenant-uuid-2',
+    ],
 ],
 ```
 
@@ -145,7 +151,8 @@ When the `aiarmada/docs` package is installed, CHIP can automatically generate:
     'webhook_keys' => $webhookKeys, // Parsed from CHIP_WEBHOOK_PUBLIC_KEYS JSON
     'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
     'log_payloads' => env('CHIP_WEBHOOK_LOG_PAYLOADS', false),
-    'store_data' => env('CHIP_WEBHOOK_STORE_DATA', true),
+    'store_webhooks' => env('CHIP_WEBHOOK_STORE', true),
+    'deduplication' => env('CHIP_WEBHOOK_DEDUPLICATION', true),
 ],
 ```
 
