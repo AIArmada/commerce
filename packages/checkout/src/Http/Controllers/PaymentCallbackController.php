@@ -9,6 +9,9 @@ use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\Completed;
+use AIArmada\Checkout\States\Pending;
+use AIArmada\Checkout\States\PaymentProcessing;
+use AIArmada\Checkout\States\Processing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,7 +40,7 @@ final class PaymentCallbackController extends Controller
         }
 
         // Verify payment and complete checkout
-        $result = $this->checkoutService->handlePaymentCallback($session, 'success');
+        $result = $this->checkoutService->handlePaymentCallback($session, 'success', $request->query());
 
         if ($result->success) {
             return $this->respondSuccess($session->fresh());
@@ -58,7 +61,13 @@ final class PaymentCallbackController extends Controller
         }
 
         // Mark payment as failed if still awaiting
-        if ($session->status instanceof AwaitingPayment) {
+        if (
+            $session->status instanceof Pending
+            ||
+            $session->status instanceof AwaitingPayment
+            || $session->status instanceof PaymentProcessing
+            || $session->status instanceof Processing
+        ) {
             $this->checkoutService->handlePaymentCallback($session, 'failure');
         }
 
@@ -77,7 +86,13 @@ final class PaymentCallbackController extends Controller
         }
 
         // Mark as cancelled if still awaiting
-        if ($session->status instanceof AwaitingPayment) {
+        if (
+            $session->status instanceof Pending
+            ||
+            $session->status instanceof AwaitingPayment
+            || $session->status instanceof PaymentProcessing
+            || $session->status instanceof Processing
+        ) {
             $this->checkoutService->handlePaymentCallback($session, 'cancel');
         }
 
@@ -93,7 +108,22 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
-        return CheckoutSession::find($sessionId);
+        $session = CheckoutSession::withoutOwnerScope()->find($sessionId);
+
+        if ($session === null) {
+            return null;
+        }
+
+        $providedToken = $request->query('checkout_callback_token')
+            ?? $request->query('callback_token')
+            ?? $request->query('token');
+        $expectedToken = $session->payment_data['callback_token'] ?? null;
+
+        if (! is_string($providedToken) || ! is_string($expectedToken) || $expectedToken === '') {
+            return null;
+        }
+
+        return hash_equals($expectedToken, $providedToken) ? $session : null;
     }
 
     /**

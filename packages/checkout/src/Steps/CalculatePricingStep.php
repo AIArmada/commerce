@@ -93,7 +93,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
      */
     private function applyPricingRules(CheckoutSession $session, array $pricingData, int $subtotal): array
     {
-        if (! class_exists(PriceCalculatorInterface::class)) {
+        if (! interface_exists(PriceCalculatorInterface::class)) {
             $pricingData['subtotal'] = $subtotal;
 
             return $pricingData;
