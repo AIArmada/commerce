@@ -77,4 +77,21 @@ describe('MetricsAggregator', function (): void {
         expect($metrics->carts_with_items)->toBe(0);
         expect($metrics->average_cart_value_cents)->toBe(0);
     });
+
+    it('does not query a nonexistent checkout completion column', function (): void {
+        Cart::create([
+            'instance' => 'default',
+            'identifier' => 'session-checkout-started',
+            'quantity' => 1,
+            'subtotal' => 5000,
+            'items' => json_encode([['id' => 1]]),
+            'checkout_started_at' => now()->subMinutes(15),
+        ]);
+
+        $aggregator = new MetricsAggregator;
+        $metrics = $aggregator->aggregateForDate(now());
+
+        expect($metrics->checkouts_started)->toBe(1);
+        expect($metrics->checkouts_completed)->toBe(0);
+    });
 });

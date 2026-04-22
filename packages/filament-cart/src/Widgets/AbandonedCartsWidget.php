@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Widgets;
 
 use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\FilamentCart\Resources\CartResource;
 use Akaunting\Money\Money;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Widget showing abandoned carts ready for recovery.
@@ -73,15 +73,7 @@ final class AbandonedCartsWidget extends BaseWidget
             ->actions([
                 Action::make('view')
                     ->icon('heroicon-o-eye')
-                    ->url(fn (Cart $record): string => route('filament.admin.resources.carts.view', $record)),
-
-                Action::make('send_recovery')
-                    ->label('Send Recovery Email')
-                    ->icon('heroicon-o-envelope')
-                    ->color('primary')
-                    ->requiresConfirmation()
-                    ->action(fn (Cart $record) => $this->sendRecoveryEmail($record))
-                    ->visible(fn (Cart $record): bool => $record->recovery_attempts < 3),
+                    ->url(fn (Cart $record): string => CartResource::getUrl('view', ['record' => $record])),
             ])
             ->emptyStateHeading('No abandoned carts')
             ->emptyStateDescription('Great! There are no abandoned carts to recover.')
@@ -120,17 +112,9 @@ final class AbandonedCartsWidget extends BaseWidget
 
     private function getCartValue(Cart $record): string
     {
-        $metadata = $record->metadata ?? [];
-        $subtotal = $metadata['subtotal'] ?? 0;
-
-        if (is_string($metadata)) {
-            $decoded = json_decode($metadata, true) ?? [];
-            $subtotal = $decoded['subtotal'] ?? 0;
-        }
-
         $currency = mb_strtoupper(config('cart.money.default_currency', 'USD'));
 
-        return (string) Money::{$currency}((int) $subtotal);
+        return (string) Money::{$currency}((int) $record->subtotal);
     }
 
     private function getTimeSinceAbandonment(Cart $record): string
@@ -142,17 +126,4 @@ final class AbandonedCartsWidget extends BaseWidget
         return $record->checkout_abandoned_at->diffForHumans(['short' => true]);
     }
 
-    private function sendRecoveryEmail(Cart $record): void
-    {
-        // Dispatch recovery email job
-        // This would integrate with your email system
-        $record->increment('recovery_attempts');
-
-        // Log the recovery attempt
-        Log::info('Recovery email sent for cart', [
-            'cart_id' => $record->id,
-            'identifier' => $record->identifier,
-            'attempt' => $record->recovery_attempts,
-        ]);
-    }
 }

@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 
 use AIArmada\FilamentCart\Resources\CartResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
-use Filament\Support\Icons\Heroicon;
 
 final class ListCarts extends ListRecords
 {
@@ -25,10 +23,7 @@ final class ListCarts extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\CreateAction::make()
-                ->icon(Heroicon::OutlinedPlus),
-        ];
+        return [];
     }
 
     protected function getHeaderWidgets(): array

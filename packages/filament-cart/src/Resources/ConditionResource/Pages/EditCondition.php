@@ -29,7 +29,7 @@ final class EditCondition extends EditRecord
                 ->visible(fn (Condition $record) => $record->is_global)
                 ->action(function (Condition $record): void {
                     $batchRemoval = app(CartConditionBatchRemoval::class);
-                    $result = $batchRemoval->removeConditionFromAllCarts($record->name);
+                    $result = $batchRemoval->removeConditionFromAllCarts($record);
 
                     if ($result['success']) {
                         Notification::make()

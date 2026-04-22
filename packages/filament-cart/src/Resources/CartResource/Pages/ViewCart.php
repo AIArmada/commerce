@@ -59,10 +59,7 @@ final class ViewCart extends ViewRecord
     {
         \assert($this->record instanceof Cart);
 
-        $actions = [
-            Actions\EditAction::make()
-                ->icon(Heroicon::OutlinedPencil),
-        ];
+        $actions = [];
 
         // Add voucher management actions if filament-vouchers is available
         if (class_exists(CartVoucherActions::class)) {
@@ -124,8 +121,21 @@ final class ViewCart extends ViewRecord
                 );
             });
 
-        $actions[] = Actions\DeleteAction::make()
-            ->icon(Heroicon::OutlinedTrash);
+        $actions[] = Actions\Action::make('delete_cart')
+            ->label('Delete Cart')
+            ->icon(Heroicon::OutlinedTrash)
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete Cart')
+            ->modalDescription('This will delete the live cart and its synchronized snapshot.')
+            ->action(function (): void {
+                /** @var Cart $record */
+                $record = $this->record;
+                app(CartInstanceManager::class)
+                    ->resolve($record->instance, $record->identifier)
+                    ->destroy();
+                $this->redirect($this->getResource()::getUrl('index'));
+            });
 
         return $actions;
     }

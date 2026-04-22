@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Models\Condition;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\FilamentCart\Models\Cart as CartModel;
 use AIArmada\FilamentCart\Models\CartCondition as CartConditionModel;
@@ -11,7 +12,17 @@ use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentCart\Services\CartSyncManager;
 
 describe('CartConditionBatchRemoval service', function (): void {
-    it('removes condition from affected carts', function (): void {
+    it('removes condition from affected carts using stored condition identity', function (): void {
+        $storedCondition = Condition::factory()->create([
+            'name' => 'bad-condition-rule',
+            'display_name' => 'Bad Condition',
+            'type' => 'coupon',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'value' => '-10',
+            'is_active' => true,
+            'is_global' => true,
+        ]);
+
         $snapshot = CartModel::create([
             'instance' => 'default',
             'identifier' => 'session-123',
@@ -31,6 +42,7 @@ describe('CartConditionBatchRemoval service', function (): void {
             'value' => '-10',
             'order' => 0,
             'is_global' => true,
+            'attributes' => ['condition_id' => $storedCondition->id],
         ]);
 
         // Create Real Cart with Mocked Storage
@@ -70,7 +82,7 @@ describe('CartConditionBatchRemoval service', function (): void {
 
         $service = new CartConditionBatchRemoval($cartManager, $syncManager);
 
-        $result = $service->removeConditionFromAllCarts('Bad Condition');
+        $result = $service->removeConditionFromAllCarts($storedCondition);
 
         expect($result['success'])->toBeTrue();
         expect($result['carts_processed'])->toBe(1);
@@ -78,6 +90,16 @@ describe('CartConditionBatchRemoval service', function (): void {
     });
 
     it('handles cart loading failures', function (): void {
+        $storedCondition = Condition::factory()->create([
+            'name' => 'bad-condition-rule',
+            'display_name' => 'Bad Condition',
+            'type' => 'coupon',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'value' => '-10',
+            'is_active' => true,
+            'is_global' => true,
+        ]);
+
         $snapshot = CartModel::create([
             'instance' => 'default',
             'identifier' => 'session-bad',
@@ -97,6 +119,7 @@ describe('CartConditionBatchRemoval service', function (): void {
             'value' => '-10',
             'order' => 0,
             'is_global' => true,
+            'attributes' => ['condition_id' => $storedCondition->id],
         ]);
 
         $cartManager = Mockery::mock(CartInstanceManager::class);
@@ -106,7 +129,7 @@ describe('CartConditionBatchRemoval service', function (): void {
 
         $service = new CartConditionBatchRemoval($cartManager, $syncManager);
 
-        $result = $service->removeConditionFromAllCarts('Bad Condition');
+        $result = $service->removeConditionFromAllCarts($storedCondition);
 
         expect($result['success'])->toBeTrue();
         expect($result['carts_processed'])->toBe(1);
@@ -114,7 +137,95 @@ describe('CartConditionBatchRemoval service', function (): void {
         expect($result['errors'])->not->toBeEmpty();
     });
 
+    it('records per-cart processing errors without triggering an undefined variable failure', function (): void {
+        $storedCondition = Condition::factory()->create([
+            'name' => 'bad-condition-rule',
+            'display_name' => 'Bad Condition',
+            'type' => 'coupon',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'value' => '-10',
+            'is_active' => true,
+            'is_global' => true,
+        ]);
+
+        $snapshot = CartModel::create([
+            'instance' => 'default',
+            'identifier' => 'session-sync-fail',
+            'subtotal' => 1000,
+        ]);
+
+        CartConditionModel::create([
+            'cart_id' => $snapshot->id,
+            'name' => 'Bad Condition',
+            'type' => 'coupon',
+            'target' => 'cart.subtotal',
+            'target_definition' => [
+                'scope' => 'cart',
+                'phase' => 'cart_subtotal',
+                'application' => 'aggregate',
+            ],
+            'value' => '-10',
+            'order' => 0,
+            'is_global' => true,
+            'attributes' => ['condition_id' => $storedCondition->id],
+        ]);
+
+        $storage = Mockery::mock(StorageInterface::class);
+        $storage->shouldReceive('getConditions')->andReturn([
+            'Bad Condition' => [
+                'name' => 'Bad Condition',
+                'type' => 'coupon',
+                'target' => 'cart.subtotal',
+                'target_definition' => [
+                    'scope' => 'cart',
+                    'phase' => 'cart_subtotal',
+                    'application' => 'aggregate',
+                ],
+                'value' => '-10',
+            ],
+        ]);
+        $storage->shouldReceive('getItems')->andReturn([]);
+        $storage->shouldReceive('getId')->andReturn('cart-id');
+        $storage->shouldReceive('getVersion')->andReturn(1);
+        $storage->shouldReceive('getCreatedAt')->andReturn(now()->toIso8601String());
+        $storage->shouldReceive('getUpdatedAt')->andReturn(now()->toIso8601String());
+        $storage->shouldReceive('putConditions')->once();
+
+        $realCart = new Cart($storage, 'session-sync-fail');
+
+        $cartManager = Mockery::mock(CartInstanceManager::class);
+        $cartManager->shouldReceive('resolve')
+            ->with('default', 'session-sync-fail')
+            ->andReturn($realCart);
+
+        $syncManager = Mockery::mock(CartSyncManager::class);
+        $syncManager->shouldReceive('sync')
+            ->with($realCart)
+            ->once()
+            ->andThrow(new Exception('sync failed'));
+
+        $service = new CartConditionBatchRemoval($cartManager, $syncManager);
+
+        $result = $service->removeConditionFromAllCarts($storedCondition);
+
+        expect($result['success'])->toBeTrue();
+        expect($result['carts_processed'])->toBe(1);
+        expect($result['carts_updated'])->toBe(0);
+        expect($result['errors'])->toHaveCount(1);
+        expect($result['errors'][0])->toContain('sync failed');
+    });
+
     it('returns 0 processed if no carts match', function (): void {
+        $storedCondition = Condition::factory()->create([
+            'name' => 'bad-condition-rule',
+            'display_name' => 'Bad Condition',
+            'type' => 'coupon',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'value' => '-10',
+            'is_active' => true,
+            'is_global' => true,
+        ]);
+
         $snapshot = CartModel::create([
             'instance' => 'default',
             'identifier' => 'session-ok',
@@ -141,7 +252,7 @@ describe('CartConditionBatchRemoval service', function (): void {
 
         $service = new CartConditionBatchRemoval($cartManager, $syncManager);
 
-        $result = $service->removeConditionFromAllCarts('Bad Condition');
+        $result = $service->removeConditionFromAllCarts($storedCondition);
 
         expect($result['carts_processed'])->toBe(0);
     });
