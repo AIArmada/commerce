@@ -14,4 +14,6 @@ test('cart resource navigation uses configuration', function (): void {
     expect(CartResource::getNavigationGroup())->toBe('Operations');
     expect(CartResource::getNavigationSort())->toBe(42);
     expect(CartResource::getNavigationIcon())->toBe(Heroicon::OutlinedShoppingCart);
+    expect(CartResource::canCreate())->toBeFalse();
+    expect(array_keys(CartResource::getPages()))->toBe(['index', 'view']);
 });

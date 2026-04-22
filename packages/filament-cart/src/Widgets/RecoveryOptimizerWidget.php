@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Widgets;
 
 use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\FilamentCart\Resources\CartResource;
 use Akaunting\Money\Money;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Widget showing carts ready for AI-powered recovery.
@@ -80,27 +80,9 @@ final class RecoveryOptimizerWidget extends BaseWidget
             ])
             ->defaultSort('subtotal', 'desc')
             ->actions([
-                Action::make('send_discount')
-                    ->label('Discount 10%')
-                    ->icon('heroicon-o-receipt-percent')
-                    ->color('success')
-                    ->action(fn (Cart $record) => $this->executeRecovery($record, 'discount', 10)),
-
-                Action::make('send_free_shipping')
-                    ->label('Free Ship')
-                    ->icon('heroicon-o-truck')
-                    ->color('info')
-                    ->action(fn (Cart $record) => $this->executeRecovery($record, 'free_shipping')),
-
-                Action::make('send_reminder')
-                    ->label('Remind')
-                    ->icon('heroicon-o-envelope')
-                    ->color('warning')
-                    ->action(fn (Cart $record) => $this->executeRecovery($record, 'reminder')),
-
                 Action::make('view')
                     ->icon('heroicon-o-eye')
-                    ->url(fn (Cart $record): string => route('filament.admin.resources.carts.view', $record)),
+                    ->url(fn (Cart $record): string => CartResource::getUrl('view', ['record' => $record])),
             ])
             ->emptyStateHeading('No carts to recover')
             ->emptyStateDescription('All abandoned carts have been processed or recovered.')
@@ -191,30 +173,4 @@ final class RecoveryOptimizerWidget extends BaseWidget
         return $record->checkout_abandoned_at->diffForHumans(['short' => true]);
     }
 
-    private function executeRecovery(Cart $record, string $strategy, ?int $discountPercent = null): void
-    {
-        $record->increment('recovery_attempts');
-
-        $metadata = $record->metadata ?? [];
-        $metadata['last_recovery_strategy'] = $strategy;
-        $metadata['last_recovery_at'] = now()->toISOString();
-
-        if ($discountPercent !== null) {
-            $metadata['recovery_discount_percent'] = $discountPercent;
-        }
-
-        $record->update(['metadata' => $metadata]);
-
-        Log::info('Recovery action executed', [
-            'cart_id' => $record->id,
-            'identifier' => $record->identifier,
-            'strategy' => $strategy,
-            'discount_percent' => $discountPercent,
-            'attempt' => $record->recovery_attempts,
-        ]);
-
-        // Here you would dispatch the actual recovery job
-        // For example:
-        // dispatch(new \AIArmada\Cart\Jobs\ExecuteRecoveryIntervention($record->id, $strategy));
-    }
 }

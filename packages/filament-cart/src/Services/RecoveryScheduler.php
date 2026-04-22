@@ -216,6 +216,24 @@ class RecoveryScheduler
                         $match->whereColumn("{$cartTable}.metadata->email", 'recovered_cart.metadata->email')
                             ->orWhereColumn("{$cartTable}.metadata->phone", 'recovered_cart.metadata->phone');
                     });
+
+                if (! Cart::ownerScopingEnabled()) {
+                    return;
+                }
+
+                $owner = Cart::resolveCurrentOwner();
+
+                if ($owner !== null) {
+                    $subquery
+                        ->where('recovered_cart.owner_type', $owner->getMorphClass())
+                        ->where('recovered_cart.owner_id', (string) $owner->getKey());
+
+                    return;
+                }
+
+                $subquery
+                    ->whereNull('recovered_cart.owner_type')
+                    ->whereNull('recovered_cart.owner_id');
             });
         }
 
