@@ -7,7 +7,9 @@ namespace AIArmada\Checkout\Models;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\States\CheckoutState;
 use AIArmada\Checkout\States\Completed;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Models\Order;
 use Carbon\CarbonImmutable;
@@ -51,8 +53,19 @@ use Spatie\ModelStates\HasStates;
 class CheckoutSession extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasStates;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'checkout.owner';
+
+    public function initializeHasStates(): void
+    {
+        // CheckoutSession keeps its own pending default in $attributes and via
+        // explicit writes in the service layer. Skipping the trait initializer
+        // here prevents freshly hydrated models from being primed with the
+        // default state before database attributes are read back.
+    }
 
     protected $fillable = [
         'cart_id',
@@ -167,6 +180,45 @@ class CheckoutSession extends Model
     }
 
     /**
+     * Persist a checkout status transition reliably for cross-request flows.
+     *
+     * @param  class-string<CheckoutState>  $stateClass
+     */
+    public function transitionStatus(string $stateClass): self
+    {
+        $this->status->transitionTo($stateClass);
+
+        $updates = [
+            'status' => $stateClass::getMorphClass(),
+        ];
+
+        if (is_a($stateClass, Completed::class, true)) {
+            $updates['completed_at'] = CarbonImmutable::now();
+        }
+
+        $updates['updated_at'] = CarbonImmutable::now();
+
+        $this->getConnection()
+            ->table($this->getTable())
+            ->where($this->getKeyName(), $this->getKey())
+            ->update($updates);
+
+        $this->forceFill(['status' => $stateClass]);
+
+        if (array_key_exists('completed_at', $updates)) {
+            $this->completed_at = $updates['completed_at'];
+        }
+
+        $this->updated_at = $updates['updated_at'];
+
+        unset($this->classCastCache['status'], $this->attributeCastCache['status']);
+
+        $this->syncOriginal();
+
+        return $this;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     protected function casts(): array
@@ -199,6 +251,14 @@ class CheckoutSession extends Model
     protected static function booted(): void
     {
         static::creating(function (CheckoutSession $session): void {
+            if ((bool) config('checkout.owner.enabled', false) && ! $session->hasOwner()) {
+                $owner = OwnerContext::resolve();
+
+                if ($owner !== null) {
+                    $session->assignOwner($owner);
+                }
+            }
+
             $session->currency ??= config('checkout.defaults.currency', 'MYR');
         });
 

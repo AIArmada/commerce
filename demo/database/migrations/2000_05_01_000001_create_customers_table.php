@@ -33,6 +33,7 @@ return new class extends Migration
 
             // Preferences
             $table->boolean('accepts_marketing')->default(true);
+            $table->boolean('is_guest')->default(false);
 
             // Metadata
             $table->{$jsonColumnType}('metadata')->nullable();
@@ -42,6 +43,7 @@ return new class extends Migration
             // Indexes - email unique per owner for multitenancy
             $table->unique(['owner_type', 'owner_id', 'email'], 'customers_owner_email_unique');
             $table->index(['status', 'accepts_marketing']);
+            $table->index('is_guest');
         });
     }
 

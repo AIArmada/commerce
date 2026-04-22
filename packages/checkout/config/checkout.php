@@ -164,17 +164,15 @@ return [
         'gateway_priority' => ['chip', 'cashier-chip', 'cashier'],
         'retry_limit' => env('CHECKOUT_PAYMENT_RETRY_LIMIT', 3),
 
-        // Gateway-specific: reference related package config keys
-        // These are NOT duplicated - they reference the actual package configs
         'gateways' => [
-            'chip' => [
-                // Uses config('chip.collect.brand_id'), config('chip.webhooks.verify_signature'), etc.
-                'enabled' => env('CHECKOUT_CHIP_ENABLED', true),
-                'config_namespace' => 'chip', // Reference to chip package config
+            'cashier' => [
+                'enabled' => env('CHECKOUT_CASHIER_ENABLED', true),
             ],
-            'stripe' => [
-                'enabled' => env('CHECKOUT_STRIPE_ENABLED', false),
-                'config_namespace' => 'cashier', // Reference to cashier package config
+            'cashier-chip' => [
+                'enabled' => env('CHECKOUT_CASHIER_CHIP_ENABLED', true),
+            ],
+            'chip' => [
+                'enabled' => env('CHECKOUT_CHIP_ENABLED', true),
             ],
         ],
     ],

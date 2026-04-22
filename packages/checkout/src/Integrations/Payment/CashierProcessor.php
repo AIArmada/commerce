@@ -141,10 +141,30 @@ final class CashierProcessor implements PaymentProcessorInterface
     public function checkStatus(string $paymentId): PaymentResult
     {
         try {
+            $payment = app(GatewayManager::class)
+                ->gateway()
+                ->findPayment($paymentId);
+
+            if ($payment === null) {
+                return PaymentResult::failed('Payment not found', [], $paymentId);
+            }
+
+            $status = match (true) {
+                $payment->isSucceeded() => PaymentStatus::Completed,
+                $payment->isFailed() => PaymentStatus::Failed,
+                $payment->isCanceled() => PaymentStatus::Cancelled,
+                $payment->isPending() => PaymentStatus::Pending,
+                default => PaymentStatus::Processing,
+            };
+
             return new PaymentResult(
-                status: PaymentStatus::Processing,
-                paymentId: $paymentId,
-                message: 'Status check requires gateway-specific implementation',
+                status: $status,
+                paymentId: $payment->id(),
+                redirectUrl: $payment->redirectUrl(),
+                amount: $payment->rawAmount(),
+                currency: $payment->currency(),
+                message: $payment->status(),
+                gatewayResponse: $payment->toArray(),
             );
         } catch (Throwable $e) {
             return PaymentResult::failed($e->getMessage(), [], $paymentId);

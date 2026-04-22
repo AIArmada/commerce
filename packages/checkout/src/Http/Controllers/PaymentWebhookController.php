@@ -9,7 +9,9 @@ use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\Completed;
+use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\PaymentProcessing;
+use AIArmada\Checkout\States\Processing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -42,7 +44,7 @@ final class PaymentWebhookController extends Controller
             return response()->json(['status' => 'ignored', 'reason' => 'no_session_reference']);
         }
 
-        $session = CheckoutSession::find($sessionId);
+        $session = CheckoutSession::withoutOwnerScope()->find($sessionId);
 
         if ($session === null) {
             Log::warning('Webhook session not found', ['session_id' => $sessionId]);
@@ -55,8 +57,19 @@ final class PaymentWebhookController extends Controller
             return response()->json(['status' => 'acknowledged', 'reason' => 'already_completed']);
         }
 
-        // Only process if in awaiting/processing payment state
-        if (! $session->status instanceof AwaitingPayment && ! $session->status instanceof PaymentProcessing) {
+        // Determine payment outcome from webhook
+        $paymentStatus = $this->extractPaymentStatus($payload);
+
+        $isInPaymentState = $session->status instanceof AwaitingPayment
+            || $session->status instanceof PaymentProcessing
+            || $session->status instanceof Processing;
+
+        $canCancelFromPending = $session->status instanceof Pending
+            && in_array($paymentStatus, [PaymentStatus::Failed, PaymentStatus::Cancelled], true);
+
+        // Only process if in awaiting/processing payment state, or if a verified
+        // failure/cancel notification races with the payment-state persistence.
+        if (! $isInPaymentState && ! $canCancelFromPending) {
             Log::info('Webhook for session in unexpected state', [
                 'session_id' => $sessionId,
                 'status' => $session->status->name(),
@@ -65,12 +78,10 @@ final class PaymentWebhookController extends Controller
             return response()->json(['status' => 'ignored', 'reason' => 'invalid_state']);
         }
 
-        // Determine payment outcome from webhook
-        $paymentStatus = $this->extractPaymentStatus($payload);
-
         $callbackType = match ($paymentStatus) {
             PaymentStatus::Completed => 'success',
-            PaymentStatus::Failed, PaymentStatus::Cancelled => 'failure',
+            PaymentStatus::Failed => 'failure',
+            PaymentStatus::Cancelled => 'cancel',
             default => null,
         };
 

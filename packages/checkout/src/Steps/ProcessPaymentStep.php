@@ -14,6 +14,7 @@ use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\PaymentProcessing;
 use AIArmada\Checkout\States\Processing;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 final class ProcessPaymentStep extends AbstractCheckoutStep
 {
@@ -71,7 +72,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                 ],
             ]);
             if (! $session->status->is(Processing::class)) {
-                $session->status->transitionTo(Processing::class);
+                $session->transitionStatus(Processing::class);
             }
 
             return $this->success('No payment required - free order');
@@ -87,6 +88,8 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             ]);
         }
 
+        $callbackToken = $this->ensureCallbackToken($session);
+
         // Build payment request
         $paymentRequest = $this->buildPaymentRequest($session);
 
@@ -95,7 +98,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             'payment_attempts' => $session->payment_attempts + 1,
             'selected_payment_gateway' => $processor->getIdentifier(),
         ]);
-        $session->status->transitionTo(PaymentProcessing::class);
+        $session->transitionStatus(PaymentProcessing::class);
 
         // Process payment
         $result = $processor->createPayment($session, $paymentRequest);
@@ -120,7 +123,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         // Handle redirect-based payments
         if ($result->requiresRedirect()) {
             $session->update(['payment_redirect_url' => $result->redirectUrl]);
-            $session->status->transitionTo(AwaitingPayment::class);
+            $session->transitionStatus(AwaitingPayment::class);
 
             return $this->success('Payment initiated - redirect required', [
                 'redirect_url' => $result->redirectUrl,
@@ -135,7 +138,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                 paymentData: $paymentData,
             ));
             if (! $session->status->is(Processing::class)) {
-                $session->status->transitionTo(Processing::class);
+                $session->transitionStatus(Processing::class);
             }
 
             return $this->success('Payment completed', [
@@ -145,7 +148,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         }
 
         // Handle failure
-        $session->status->transitionTo(PaymentFailed::class);
+        $session->transitionStatus(PaymentFailed::class);
 
         return $this->failed($result->message ?? 'Payment failed', $result->errors);
     }
@@ -188,6 +191,8 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
 
     private function buildCallbackUrl(string $type, CheckoutSession $session): string
     {
+        $callbackToken = $session->payment_data['callback_token'] ?? null;
+
         $routeName = match ($type) {
             'success' => 'checkout.payment.success',
             'failure' => 'checkout.payment.failure',
@@ -197,19 +202,38 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
 
         // Use route if available, fall back to config path
         if (Route::has($routeName)) {
-            return route($routeName, ['session' => $session->id]);
+            return route($routeName, [
+                'session' => $session->id,
+                'checkout_callback_token' => $callbackToken,
+            ]);
         }
 
-        $configKey = match ($type) {
-            'success' => 'checkout.payment.success_redirect',
-            'failure' => 'checkout.payment.failure_redirect',
-            'cancel' => 'checkout.payment.cancel_redirect',
-            default => 'checkout.payment.success_redirect',
-        };
-
-        $path = config($configKey, "/checkout/{$type}");
+        $prefix = trim((string) config('checkout.routes.prefix', 'checkout'), '/');
+        $callbackPath = trim((string) config("checkout.routes.callbacks.{$type}", "payment/{$type}"), '/');
+        $path = trim($prefix . '/' . $callbackPath, '/');
         $separator = str_contains($path, '?') ? '&' : '?';
 
-        return url($path . $separator . 'session=' . $session->id);
+        return url($path . $separator . http_build_query([
+            'session' => $session->id,
+            'checkout_callback_token' => $callbackToken,
+        ]));
+    }
+
+    private function ensureCallbackToken(CheckoutSession $session): string
+    {
+        $paymentData = $session->payment_data ?? [];
+        $callbackToken = $paymentData['callback_token'] ?? null;
+
+        if (is_string($callbackToken) && $callbackToken !== '') {
+            return $callbackToken;
+        }
+
+        $callbackToken = Str::random(40);
+        $paymentData['callback_token'] = $callbackToken;
+        $paymentData['callback_token_created_at'] = now()->toIso8601String();
+
+        $session->update(['payment_data' => $paymentData]);
+
+        return $callbackToken;
     }
 }

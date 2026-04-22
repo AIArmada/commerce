@@ -121,7 +121,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $this->app->singleton(function (): PaymentGatewayResolver {
             $resolver = new PaymentGatewayResolver(
                 config('checkout.payment.default_gateway'),
-                config('checkout.payment.gateway_priority', ['cashier', 'cashier-chip', 'chip']),
+                config('checkout.payment.gateway_priority', ['chip', 'cashier-chip', 'cashier']),
             );
 
             $this->registerPaymentProcessors($resolver);
@@ -174,7 +174,9 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $registry->registerLazy('calculate_pricing', fn () => $this->app->make(CalculatePricingStep::class));
         $registry->registerLazy('calculate_shipping', fn () => $this->app->make(CalculateShippingStep::class));
         $registry->registerLazy('process_payment', fn () => $this->app->make(ProcessPaymentStep::class));
-        $registry->registerLazy('create_order', fn () => $this->app->make(CreateOrderStep::class));
+        $registry->registerLazy('create_order', fn () => new CreateOrderStep(
+            vouchersAdapter: $this->app->make(Integrations\VouchersAdapter::class),
+        ));
         $registry->registerLazy('dispatch_documents', fn () => $this->app->make(DispatchDocumentGenerationStep::class));
     }
 
@@ -186,21 +188,28 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         if ($this->hasInventoryPackage() && config('checkout.integrations.inventory.enabled', true)) {
             // Bind InventoryAdapter so it can be injected into ReserveInventoryStep
             $this->app->singleton(Integrations\InventoryAdapter::class);
-            $registry->register('reserve_inventory', $this->app->make(ReserveInventoryStep::class));
+            $registry->register('reserve_inventory', new ReserveInventoryStep(
+                inventoryAdapter: $this->app->make(Integrations\InventoryAdapter::class),
+            ));
         } else {
             $registry->disable('reserve_inventory');
         }
 
         // Tax integration (optional)
         if ($this->hasTaxPackage() && config('checkout.integrations.tax.enabled', true)) {
-            $registry->register('calculate_tax', $this->app->make(CalculateTaxStep::class));
+            $registry->register('calculate_tax', new CalculateTaxStep(
+                taxAdapter: $this->app->make(Integrations\TaxAdapter::class),
+            ));
         } else {
             $registry->disable('calculate_tax');
         }
 
         // Discounts integration (promotions + vouchers, optional)
         if ($this->hasDiscountPackages() && $this->isDiscountsEnabled()) {
-            $registry->register('apply_discounts', $this->app->make(ApplyDiscountsStep::class));
+            $registry->register('apply_discounts', new ApplyDiscountsStep(
+                promotionsAdapter: $this->app->make(Integrations\PromotionsAdapter::class),
+                vouchersAdapter: $this->app->make(Integrations\VouchersAdapter::class),
+            ));
         } else {
             $registry->disable('apply_discounts');
         }
