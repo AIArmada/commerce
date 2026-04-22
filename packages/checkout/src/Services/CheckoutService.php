@@ -96,7 +96,7 @@ final class CheckoutService implements CheckoutServiceInterface
         $this->transformSessionData($session);
 
         if (! $session->status->is(Processing::class)) {
-            $session->status->transitionTo(Processing::class);
+            $session->transitionStatus(Processing::class);
         }
 
         try {
@@ -130,7 +130,7 @@ final class CheckoutService implements CheckoutServiceInterface
                 }
 
                 if (! $session->status->is(Completed::class)) {
-                    $session->status->transitionTo(Completed::class);
+                    $session->transitionStatus(Completed::class);
                 }
                 $this->events->dispatch(new CheckoutCompleted($session));
 
@@ -175,8 +175,11 @@ final class CheckoutService implements CheckoutServiceInterface
 
         // Reset payment step state
         $session->setStepState('process_payment', StepStatus::Pending);
-        $session->update(['payment_attempts' => $session->payment_attempts + 1]);
-        $session->status->transitionTo(Processing::class);
+        $session->update([
+            'payment_redirect_url' => null,
+            'error_message' => null,
+        ]);
+        $session->transitionStatus(Processing::class);
 
         // Re-process from payment step
         $paymentStep = $this->stepRegistry->get('process_payment');
@@ -186,13 +189,13 @@ final class CheckoutService implements CheckoutServiceInterface
 
         $result = $this->processStepInternal($session, $paymentStep);
 
+        if ($session->payment_redirect_url !== null) {
+            return CheckoutResult::awaitingPayment($session, $session->payment_redirect_url);
+        }
+
         if ($result->isSuccessful()) {
             // Continue with remaining steps
             return $this->continueFromStep($session, 'process_payment');
-        }
-
-        if ($session->payment_redirect_url !== null) {
-            return CheckoutResult::awaitingPayment($session, $session->payment_redirect_url);
         }
 
         return CheckoutResult::failed($session, $result->message ?? 'Payment failed', $result->errors);
@@ -207,7 +210,7 @@ final class CheckoutService implements CheckoutServiceInterface
         // Rollback completed steps in reverse order
         $this->rollbackCompletedSteps($session);
 
-        $session->status->transitionTo(Cancelled::class);
+        $session->transitionStatus(Cancelled::class);
 
         $this->events->dispatch(new CheckoutCancelled($session));
 
@@ -225,7 +228,8 @@ final class CheckoutService implements CheckoutServiceInterface
         // Handle cancellation
         if ($callbackType === 'cancel') {
             if ($session->status->canCancel()) {
-                $session->status->transitionTo(Cancelled::class);
+                $this->rollbackCompletedSteps($session);
+                $session->transitionStatus(Cancelled::class);
                 $this->events->dispatch(new CheckoutCancelled($session));
             }
 
@@ -234,7 +238,8 @@ final class CheckoutService implements CheckoutServiceInterface
 
         // Handle failure
         if ($callbackType === 'failure') {
-            $session->status->transitionTo(PaymentFailed::class);
+            $this->rollbackCompletedSteps($session);
+            $session->transitionStatus(PaymentFailed::class);
             $session->update(['error_message' => 'Payment failed at gateway']);
             $this->events->dispatch(new CheckoutFailed($session, 'Payment failed'));
 
@@ -405,7 +410,7 @@ final class CheckoutService implements CheckoutServiceInterface
         }
 
         if (! $session->status->is(Completed::class)) {
-            $session->status->transitionTo(Completed::class);
+            $session->transitionStatus(Completed::class);
         }
         $this->events->dispatch(new CheckoutCompleted($session));
 
@@ -429,7 +434,7 @@ final class CheckoutService implements CheckoutServiceInterface
     private function handleCheckoutFailure(CheckoutSession $session, Throwable $e): void
     {
         if (! $session->status->isTerminal() && ! $session->status->is(PaymentFailed::class)) {
-            $session->status->transitionTo(PaymentFailed::class);
+            $session->transitionStatus(PaymentFailed::class);
         }
 
         $session->update(['error_message' => $e->getMessage()]);
@@ -442,28 +447,55 @@ final class CheckoutService implements CheckoutServiceInterface
      */
     private function verifyAndCompletePayment(CheckoutSession $session, array $payload): CheckoutResult
     {
-        // If webhook payload provided, use it; otherwise verify with gateway
+        // If webhook payload provided, use the gateway processor; otherwise verify with gateway lookup.
         $paymentVerified = false;
+        $paymentResult = null;
 
-        if (! empty($payload)) {
-            // Trust webhook payload - gateway has already verified
-            $status = $payload['status'] ?? $payload['data']['object']['status'] ?? null;
-            $paymentVerified = in_array($status, ['paid', 'completed', 'succeeded', 'complete'], true);
-        } elseif ($this->paymentResolver !== null && $session->payment_id !== null) {
-            // Verify payment status with gateway
+        if (! empty($payload) && $this->paymentResolver !== null) {
             $gateway = $session->selected_payment_gateway;
             $processor = $this->paymentResolver->resolve($gateway);
-            $result = $processor->checkStatus($session->payment_id);
+            $paymentResult = $processor->handleCallback($payload);
+        } elseif (! empty($payload)) {
+            $status = $payload['status'] ?? $payload['data']['object']['status'] ?? null;
 
-            $paymentVerified = $result->status === PaymentStatus::Completed;
+            $paymentResult = match ($status) {
+                'paid', 'completed', 'succeeded', 'complete' => 
+                    \AIArmada\Checkout\Data\PaymentResult::success($session->payment_id ?? 'unknown'),
+                'failed', 'error', 'payment_failed' => 
+                    \AIArmada\Checkout\Data\PaymentResult::failed('Payment failed', paymentId: $session->payment_id),
+                'cancelled', 'canceled', 'expired' => new \AIArmada\Checkout\Data\PaymentResult(
+                    status: PaymentStatus::Cancelled,
+                    paymentId: $session->payment_id,
+                    gatewayResponse: $payload,
+                ),
+                default => new \AIArmada\Checkout\Data\PaymentResult(
+                    status: PaymentStatus::Processing,
+                    paymentId: $session->payment_id,
+                    gatewayResponse: $payload,
+                ),
+            };
+        } elseif ($this->paymentResolver !== null && $session->payment_id !== null) {
+            $gateway = $session->selected_payment_gateway;
+            $processor = $this->paymentResolver->resolve($gateway);
+            $paymentResult = $processor->checkStatus($session->payment_id);
+        }
 
-            // Update payment data with verification result - update both 'status' and 'verification_status'
-            // so CreateOrderStep validation passes
+        if ($paymentResult !== null) {
+            $paymentVerified = $paymentResult->status === PaymentStatus::Completed;
+
             $session->update([
+                'payment_id' => $paymentResult->paymentId ?? $session->payment_id,
                 'payment_data' => array_merge($session->payment_data ?? [], [
-                    'status' => $result->status->value,
+                    'status' => $paymentResult->status->value,
+                    'verification_status' => $paymentResult->status->value,
                     'verified_at' => now()->toIso8601String(),
-                    'verification_status' => $result->status->value,
+                    'payment_id' => $paymentResult->paymentId ?? $session->payment_id,
+                    'transaction_id' => $paymentResult->transactionId ?? ($session->payment_data['transaction_id'] ?? null),
+                    'amount' => $paymentResult->amount ?? ($session->payment_data['amount'] ?? null),
+                    'currency' => $paymentResult->currency ?? ($session->payment_data['currency'] ?? $session->currency),
+                    'gateway_response' => $paymentResult->gatewayResponse !== []
+                        ? $paymentResult->gatewayResponse
+                        : ($session->payment_data['gateway_response'] ?? null),
                 ]),
             ]);
         }
@@ -477,7 +509,7 @@ final class CheckoutService implements CheckoutServiceInterface
 
         // Payment confirmed - mark payment step complete and continue
         $session->setStepState('process_payment', StepStatus::Completed);
-        $session->status->transitionTo(Processing::class);
+        $session->transitionStatus(Processing::class);
         $session->update(['payment_redirect_url' => null]); // Clear redirect URL
 
         // Continue with remaining steps (create_order, etc.)

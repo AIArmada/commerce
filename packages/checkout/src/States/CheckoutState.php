@@ -67,6 +67,7 @@ abstract class CheckoutState extends State
             ->default(Pending::class)
             // Initial flow
             ->allowTransition(Pending::class, Processing::class)
+            ->allowTransition(Pending::class, PaymentFailed::class)
             ->allowTransition(Pending::class, Cancelled::class)
             ->allowTransition(Pending::class, Expired::class)
             // Processing flow

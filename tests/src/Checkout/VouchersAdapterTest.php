@@ -21,7 +21,7 @@ it('normalizes voucher validation results', function (): void {
 
     $adapter = new VouchersAdapter;
 
-    if (! class_exists(VoucherServiceInterface::class)) {
+    if (! interface_exists(VoucherServiceInterface::class)) {
         $result = $adapter->validateVoucher('CODE', $session);
 
         expect($result['valid'])->toBeFalse()

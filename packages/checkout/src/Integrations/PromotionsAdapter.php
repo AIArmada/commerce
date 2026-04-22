@@ -17,7 +17,7 @@ final class PromotionsAdapter
      */
     public function applyEligiblePromotions(CheckoutSession $session): array
     {
-        if (! class_exists(PromotionServiceInterface::class) || ! class_exists(TargetingContext::class)) {
+        if (! interface_exists(PromotionServiceInterface::class) || ! class_exists(TargetingContext::class)) {
             return ['applied' => [], 'discount' => 0];
         }
 

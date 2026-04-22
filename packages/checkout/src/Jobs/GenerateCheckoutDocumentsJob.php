@@ -30,7 +30,7 @@ final class GenerateCheckoutDocumentsJob implements ShouldQueue
 
     public function handle(): void
     {
-        if (! class_exists(DocumentServiceInterface::class)) {
+        if (! interface_exists(DocumentServiceInterface::class)) {
             return;
         }
 
