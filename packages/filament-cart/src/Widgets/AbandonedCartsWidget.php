@@ -125,5 +125,4 @@ final class AbandonedCartsWidget extends BaseWidget
 
         return $record->checkout_abandoned_at->diffForHumans(['short' => true]);
     }
-
 }
