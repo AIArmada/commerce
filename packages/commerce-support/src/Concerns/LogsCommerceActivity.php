@@ -14,7 +14,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * spatie/laravel-activitylog with consistent defaults for commerce operations.
  *
  * @example
- * ```php
+        return $this->fillable;
  * use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
  *
  * class Order extends Model
@@ -73,7 +73,7 @@ trait LogsCommerceActivity // @phpstan-ignore trait.unused
      */
     protected function getLoggableAttributes(): array
     {
-        return $this->fillable ?? [];
+        return $this->fillable;
     }
 
     /**
