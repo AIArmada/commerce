@@ -1064,9 +1064,12 @@ abstract class TestCase extends Orchestra
             $table->nullableUuidMorphs('owner');
             $table->uuid('product_id');
             $table->string('name');
+            $table->string('display_name')->nullable();
             $table->integer('position')->default(0);
-            $table->boolean('is_visible')->default(true); // Added this
+            $table->boolean('is_visible')->default(true);
             $table->timestamps();
+
+            $table->index(['product_id', 'position']);
         });
 
         Schema::create('product_option_values', function (Blueprint $table): void {

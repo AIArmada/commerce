@@ -12,6 +12,7 @@ use Filament\Actions\EditAction;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Schema as SchemaFacade;
 
 uses(TestCase::class);
 
@@ -20,6 +21,8 @@ afterEach(function (): void {
 });
 
 it('executes option manage_values action to create/update/delete values', function (): void {
+    expect(SchemaFacade::hasColumn((new Option)->getTable(), 'display_name'))->toBeTrue();
+
     $product = Product::query()->create([
         'name' => 'P',
         'slug' => 'p',
