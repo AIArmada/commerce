@@ -172,5 +172,4 @@ final class RecoveryOptimizerWidget extends BaseWidget
 
         return $record->checkout_abandoned_at->diffForHumans(['short' => true]);
     }
-
 }
