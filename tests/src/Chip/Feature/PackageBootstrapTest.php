@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
 describe('Package bootstrap', function (): void {
@@ -23,8 +25,18 @@ describe('Package bootstrap', function (): void {
     });
 
     it('loads configuration from chip config file', function (): void {
-        expect(config('chip.collect.secret_key'))->toBe('test_secret_key');
+        expect(config('chip.collect.api_key'))->toBe('test_secret_key');
         expect(config('chip.send.api_key'))->toBe('test_api_key');
-        expect(config('chip.is_sandbox'))->toBeTrue();
+        expect(config('chip.environment'))->toBe('sandbox');
+        expect(config('chip.webhooks.company_public_key'))->toBe('test_public_key');
+        expect(config('chip.webhooks.store_webhooks'))->toBeTrue();
+    });
+
+    it('registers the package webhook route with signature middleware', function (): void {
+        $route = Route::getRoutes()->getByName('chip.webhook');
+
+        expect($route)->not->toBeNull();
+        expect($route?->uri())->toBe(mb_ltrim((string) config('chip.webhooks.route'), '/'));
+        expect($route?->gatherMiddleware())->toContain(VerifyWebhookSignature::class);
     });
 });

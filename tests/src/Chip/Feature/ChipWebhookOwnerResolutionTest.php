@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Chip\Http\Controllers\WebhookController;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -88,4 +89,69 @@ it('fails closed when the brand mapping has an empty owner type', function (): v
         ->assertStatus(500);
 
     expect(Purchase::query()->withoutOwnerScope()->where('id', $payload['id'])->exists())->toBeFalse();
+});
+
+it('stores matching webhook payloads separately for different owners', function (): void {
+    Route::post('/chip/webhook-test', [WebhookController::class, 'handle'])
+        ->withoutMiddleware([VerifyWebhookSignature::class]);
+
+    config()->set('chip.owner.enabled', true);
+
+    $ownerOne = User::query()->create([
+        'name' => 'Webhook Owner One',
+        'email' => 'webhook-owner-one@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerTwo = User::query()->create([
+        'name' => 'Webhook Owner Two',
+        'email' => 'webhook-owner-two@example.com',
+        'password' => 'secret',
+    ]);
+
+    config()->set('chip.owner.webhook_brand_id_map', [
+        'brand-owner-one' => [
+            'owner_type' => $ownerOne->getMorphClass(),
+            'owner_id' => (string) $ownerOne->getKey(),
+        ],
+        'brand-owner-two' => [
+            'owner_type' => $ownerTwo->getMorphClass(),
+            'owner_id' => (string) $ownerTwo->getKey(),
+        ],
+    ]);
+
+    OwnerContext::override(null);
+
+    $timestamp = time();
+
+    $payloadOne = WebhookFactory::payoutSuccess([
+        'id' => 'payout-shared-id',
+        'brand_id' => 'brand-owner-one',
+        'created_on' => $timestamp,
+        'updated_on' => $timestamp,
+    ]);
+
+    $payloadTwo = WebhookFactory::payoutSuccess([
+        'id' => 'payout-shared-id',
+        'brand_id' => 'brand-owner-two',
+        'created_on' => $timestamp,
+        'updated_on' => $timestamp,
+    ]);
+
+    $this->postJson('/chip/webhook-test', $payloadOne)
+        ->assertStatus(200);
+
+    OwnerContext::override(null);
+
+    $this->postJson('/chip/webhook-test', $payloadTwo)
+        ->assertStatus(200);
+
+    $webhooks = Webhook::query()
+        ->withoutOwnerScope()
+        ->where('event_type', 'payout.success')
+        ->get();
+
+    expect($webhooks)->toHaveCount(2)
+        ->and($webhooks->pluck('owner_id')->sort()->values()->all())
+        ->toBe(collect([(string) $ownerOne->getKey(), (string) $ownerTwo->getKey()])->sort()->values()->all());
 });

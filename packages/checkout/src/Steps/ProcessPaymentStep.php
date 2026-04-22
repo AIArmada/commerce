@@ -208,9 +208,9 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             ]);
         }
 
-        $prefix = trim((string) config('checkout.routes.prefix', 'checkout'), '/');
-        $callbackPath = trim((string) config("checkout.routes.callbacks.{$type}", "payment/{$type}"), '/');
-        $path = trim($prefix . '/' . $callbackPath, '/');
+        $prefix = mb_trim((string) config('checkout.routes.prefix', 'checkout'), '/');
+        $callbackPath = mb_trim((string) config("checkout.routes.callbacks.{$type}", "payment/{$type}"), '/');
+        $path = mb_trim($prefix . '/' . $callbackPath, '/');
         $separator = str_contains($path, '?') ? '&' : '?';
 
         return url($path . $separator . http_build_query([

@@ -14,14 +14,11 @@ describe('ChipHealthCheckCommand', function (): void {
             'chip.environment' => 'sandbox',
             'chip.collect.brand_id' => 'test-brand-id',
             'chip.collect.api_key' => 'test-collect-api-key',
-            'chip.collect.secret_key' => 'test-secret-key',
-            'chip.send.brand_id' => 'test-send-brand-id',
             'chip.send.api_key' => 'test-send-api-key',
             'chip.send.api_secret' => 'test-send-api-secret',
             'chip.logging.enabled' => true,
             'chip.logging.log_requests' => true,
             'chip.webhooks.events' => ['purchase.paid', 'purchase.refunded'],
-            'chip.send.environment' => 'sandbox',
         ]);
     });
 

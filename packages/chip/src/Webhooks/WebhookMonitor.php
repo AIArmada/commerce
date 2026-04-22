@@ -21,24 +21,22 @@ class WebhookMonitor
     {
         $since ??= now()->subDay();
 
-        $stats = Webhook::query()
+        $webhooks = Webhook::query()
             ->forOwner()
             ->where('created_at', '>=', $since)
-            ->selectRaw("
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed,
-                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                AVG(processing_time_ms) as avg_processing_time
-            ")
-            ->first();
+            ->select(['status', 'processing_time_ms'])
+            ->get();
+
+        $processingTimes = $webhooks
+            ->pluck('processing_time_ms')
+            ->filter(static fn (mixed $value): bool => $value !== null);
 
         return WebhookHealth::fromStats(
-            total: (int) ($stats->total ?? 0),
-            processed: (int) ($stats->processed ?? 0),
-            failed: (int) ($stats->failed ?? 0),
-            pending: (int) ($stats->pending ?? 0),
-            avgProcessingTimeMs: (float) ($stats->avg_processing_time ?? 0),
+            total: $webhooks->count(),
+            processed: $webhooks->where('status', 'processed')->count(),
+            failed: $webhooks->where('status', 'failed')->count(),
+            pending: $webhooks->where('status', 'pending')->count(),
+            avgProcessingTimeMs: (float) ($processingTimes->avg() ?? 0),
         );
     }
 
