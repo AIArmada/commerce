@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * Represents a price for a specific product/variant in a price list.
@@ -40,7 +40,7 @@ class Price extends Model
     }
     use HasOwnerScopeConfig;
     use HasUuids;
-    use LogsActivity;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'pricing.features.owner';
 

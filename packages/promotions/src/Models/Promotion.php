@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Promotions\Models;
 
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -18,7 +19,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * Represents an automatic promotional discount campaign.
@@ -52,7 +52,7 @@ class Promotion extends Model
     }
     use HasOwnerScopeConfig;
     use HasUuids;
-    use LogsActivity;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'promotions.features.owner';
 
