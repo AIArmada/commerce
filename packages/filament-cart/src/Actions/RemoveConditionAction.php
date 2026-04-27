@@ -32,7 +32,7 @@ final class RemoveConditionAction extends Action
                     // Get the cart instance
                     $cart = $record->cart;
                     $cartInstance = app(CartInstanceManager::class)
-                        ->resolve($cart->instance, $cart->identifier);
+                        ->resolveForSnapshot($cart);
 
                     if ($record->isItemLevel()) {
                         // Remove item-level condition
@@ -87,7 +87,7 @@ final class RemoveConditionAction extends Action
                 try {
                     // Get the cart instance
                     $cartInstance = app(CartInstanceManager::class)
-                        ->resolve($cart->instance, $cart->identifier);
+                        ->resolveForSnapshot($cart);
 
                     // Clear all cart-level conditions
                     $cartInstance->clearConditions();
@@ -148,7 +148,7 @@ final class RemoveConditionAction extends Action
                 try {
                     // Get the cart instance
                     $cartInstance = app(CartInstanceManager::class)
-                        ->resolve($cart->instance, $cart->identifier);
+                        ->resolveForSnapshot($cart);
 
                     // Remove conditions by type
                     $cartInstance->removeConditionsByType($data['type']);

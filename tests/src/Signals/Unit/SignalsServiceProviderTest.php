@@ -26,6 +26,7 @@ use AIArmada\Signals\Services\SignalMetricsAggregator;
 use AIArmada\Signals\Services\SignalsDashboardService;
 use AIArmada\Signals\Services\TrackedPropertyResolver;
 use AIArmada\Signals\SignalsServiceProvider;
+use AIArmada\Signals\Support\CommerceSignalsIntegrationRegistrar;
 use Illuminate\Support\Facades\Event;
 use Mockery\MockInterface;
 use Spatie\LaravelPackageTools\Package;
@@ -81,7 +82,10 @@ it('registers the default reverse geocoder and optional location resolver on the
 });
 
 it('registers optional checkout and order listeners', function (): void {
+    config()->set('signals.integrations.cart.enabled', true);
     Event::fake();
+
+    app(CommerceSignalsIntegrationRegistrar::class)->boot();
 
     Event::assertListening('AIArmada\\Affiliates\\Events\\AffiliateAttributed', RecordAffiliateAttributedSignal::class);
     Event::assertListening('AIArmada\\Affiliates\\Events\\AffiliateConversionRecorded', RecordAffiliateConversionRecordedSignal::class);

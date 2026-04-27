@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -33,17 +34,13 @@ it('resolves only records accessible to the owner context', function (): void {
         'password' => 'secret',
     ]);
 
-    $ownerRecord = OwnerWriteGuardFixture::query()->create([
+    $ownerRecord = OwnerContext::withOwner($ownerA, fn () => OwnerWriteGuardFixture::query()->create([
         'label' => 'owner-a',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    $globalRecord = OwnerWriteGuardFixture::query()->create([
+    $globalRecord = OwnerContext::withOwner(null, fn () => OwnerWriteGuardFixture::query()->create([
         'label' => 'global',
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
+    ]));
 
     $resolved = OwnerWriteGuard::findOrFailForOwner(OwnerWriteGuardFixture::class, (string) $ownerRecord->getKey(), $ownerA);
 

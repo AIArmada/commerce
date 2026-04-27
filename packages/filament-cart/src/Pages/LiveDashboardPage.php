@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Pages;
 
 use AIArmada\FilamentCart\Widgets\LiveStatsWidget;
-use AIArmada\FilamentCart\Widgets\PendingAlertsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;
 use BackedEnum;
 use Filament\Pages\Page;
@@ -55,7 +54,6 @@ class LiveDashboardPage extends Page
     {
         return [
             RecentActivityWidget::class,
-            PendingAlertsWidget::class,
         ];
     }
 }

@@ -246,9 +246,9 @@ public function failed(\Throwable $exception): void
 **Solution:** Implement idempotency.
 
 ```php
-public function process(WebhookCall $webhookCall): void
+protected function processEvent(string $eventType, array $payload): void
 {
-    $eventId = $webhookCall->payload['event_id'];
+    $eventId = $payload['event_id'];
 
     // Check if already processed
     $processed = Cache::has("webhook:processed:{$eventId}");
@@ -284,11 +284,11 @@ Health::checks([
 
 ```php
 // Add timeout
-public function run(): Result
+protected function performCheck(): Result
 {
     return Cache::remember('health:cart', 60, function () {
         // Expensive check cached for 60 seconds
-        return $this->performCheck();
+        return Result::make()->ok('Cart health cached');
     });
 }
 ```

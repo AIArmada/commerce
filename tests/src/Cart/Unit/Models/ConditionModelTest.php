@@ -15,7 +15,8 @@ beforeEach(function (): void {
     if (! Schema::hasTable('conditions')) {
         Schema::create('conditions', function ($table): void {
             $table->uuid('id')->primary();
-            $table->string('name')->unique();
+            $table->string('owner_scope')->default('global');
+            $table->string('name');
             $table->string('display_name')->nullable();
             $table->text('description')->nullable();
             $table->string('type');
@@ -33,7 +34,9 @@ beforeEach(function (): void {
             $table->json('rules')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_global')->default(false);
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
+            $table->unique(['owner_scope', 'name']);
         });
     }
 });
@@ -720,13 +723,22 @@ describe('Model Scopes', function (): void {
         expect($percentages->every(fn ($c) => $c->is_percentage))->toBeTrue();
     });
 
-    it('filters for items scope filters by target item', function (): void {
-        // Note: The forItems scope filters by target = 'item' which is not a valid ConditionTarget
-        // This test verifies the scope works at query level, but we cannot create a condition with target='item'
-        // because the saving event validates the target format
-        $query = Condition::query()->forItems();
+    it('filters for items scope by item target DSL conditions', function (): void {
+        $itemCondition = Condition::factory()->forItems()->create([
+            'name' => 'item-scope-condition',
+            'is_active' => true,
+        ]);
 
-        expect($query->toSql())->toContain('target');
+        Condition::factory()->create([
+            'name' => 'cart-scope-condition',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'is_active' => true,
+        ]);
+
+        $conditions = Condition::query()->forItems()->get();
+
+        expect($conditions->pluck('id')->all())->toContain($itemCondition->id);
+        expect($conditions->every(fn (Condition $condition): bool => str_starts_with($condition->target, 'items@')))->toBeTrue();
     });
 });
 

@@ -33,7 +33,7 @@ final class EditCart extends EditRecord
                     /** @var Cart $record */
                     $record = $this->record;
                     app(CartInstanceManager::class)
-                        ->resolve($record->instance, $record->identifier)
+                        ->resolveForSnapshot($record)
                         ->clear();
                     $this->redirect($this->getResource()::getUrl('index'));
                 })
