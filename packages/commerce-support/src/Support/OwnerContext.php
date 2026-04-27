@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class OwnerContext
 {
@@ -43,6 +44,25 @@ final class OwnerContext
     {
         self::$override = null;
         self::$hasOverride = false;
+    }
+
+    public static function hasOverride(): bool
+    {
+        return self::$hasOverride;
+    }
+
+    public static function isExplicitGlobal(): bool
+    {
+        return self::$hasOverride && self::$override === null;
+    }
+
+    public static function assertResolvedOrExplicitGlobal(?Model $owner, ?string $message = null): void
+    {
+        if ($owner !== null || self::isExplicitGlobal()) {
+            return;
+        }
+
+        throw new RuntimeException($message ?? 'Owner context is required for this owner-protected operation. Use OwnerContext::withOwner(null, ...) for explicit global access.');
     }
 
     public static function withOwner(?Model $owner, callable $callback): mixed

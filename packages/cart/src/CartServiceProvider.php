@@ -112,6 +112,13 @@ final class CartServiceProvider extends PackageServiceProvider
                 if ($owner !== null) {
                     return $storage->withOwner($owner);
                 }
+
+                if (! OwnerContext::isExplicitGlobal()) {
+                    throw new RuntimeException(
+                        'Cart owner is enabled but no owner was resolved while resolving cart storage. ' .
+                        'Use ' . OwnerContext::class . '::withOwner(null, ...) for explicit global cart access.'
+                    );
+                }
             }
 
             return $storage;

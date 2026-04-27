@@ -43,8 +43,6 @@ return new class extends Migration
         if ($driver === 'pgsql') {
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_lookup_covering');
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_active');
-            DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_active_no_expiry');
-            DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_active_with_expiry');
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_expired');
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_analytics');
         } else {
@@ -61,23 +59,23 @@ return new class extends Migration
     {
         $jsonType = (string) config('cart.database.json_column_type', commerce_json_column_type('cart', 'json'));
 
-        // Covering index for primary lookup (avoids table access)
+        // Covering index for owner-scoped primary lookup (avoids table access)
         DB::statement("
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_lookup_covering
-            ON \"{$tableName}\" (identifier, instance)
+            ON \"{$tableName}\" (owner_type, owner_id, identifier, instance)
             INCLUDE (id, version, updated_at, expires_at)
         ");
 
-        // Index to support active cart lookups (PostgreSQL requires immutable predicates for partial indexes)
+        // Index to support owner-scoped active cart lookups
         DB::statement("
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_active
-            ON \"{$tableName}\" (identifier, instance, expires_at)
+            ON \"{$tableName}\" (owner_type, owner_id, expires_at, identifier, instance)
         ");
 
-        // Index for cleanup job (expired carts)
+        // Index for owner-aware cleanup job (expired carts)
         DB::statement("
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_expired
-            ON \"{$tableName}\" (expires_at)
+            ON \"{$tableName}\" (owner_type, owner_id, expires_at)
             WHERE expires_at IS NOT NULL
         ");
 
@@ -86,14 +84,14 @@ return new class extends Migration
             // jsonb supports equality operators
             DB::statement("
                 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_analytics
-                ON \"{$tableName}\" (updated_at, instance)
+                ON \"{$tableName}\" (owner_type, owner_id, updated_at, instance)
                 WHERE items IS NOT NULL AND items != '[]'::jsonb
             ");
         } else {
             // json does not support equality operators in PostgreSQL
             DB::statement("
                 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_analytics
-                ON \"{$tableName}\" (updated_at, instance)
+                ON \"{$tableName}\" (owner_type, owner_id, updated_at, instance)
                 WHERE items IS NOT NULL
             ");
         }
@@ -104,22 +102,22 @@ return new class extends Migration
      */
     private function addMySQLIndexes(string $tableName): void
     {
-        // Standard composite index for lookups
+        // Standard composite index for owner-scoped lookups
         DB::statement("
             CREATE INDEX idx_carts_lookup_covering
-            ON `{$tableName}` (identifier, instance, id, version, updated_at, expires_at)
+            ON `{$tableName}` (owner_type, owner_id, identifier, instance, id, version, updated_at, expires_at)
         ");
 
-        // Index for expired cart cleanup
+        // Index for owner-aware expired cart cleanup
         DB::statement("
             CREATE INDEX idx_carts_expired
-            ON `{$tableName}` (expires_at)
+            ON `{$tableName}` (owner_type, owner_id, expires_at)
         ");
 
-        // Index for analytics queries
+        // Index for owner-aware activity queries
         DB::statement("
             CREATE INDEX idx_carts_analytics
-            ON `{$tableName}` (updated_at, instance)
+            ON `{$tableName}` (owner_type, owner_id, updated_at, instance)
         ");
     }
 };

@@ -49,12 +49,12 @@ final class CartConditionsTable
                 TextColumn::make('value')
                     ->label('Value')
                     ->alignEnd()
-                    ->formatStateUsing(fn (?string $state) => match (true) {
-                        $state === null => Money::MYR(0),
+                    ->formatStateUsing(fn (?string $state, $record) => match (true) {
+                        $state === null => self::formatMoney(0, $record->cart?->currency ?? null),
                         str_contains($state, '%') => $state,
                         default => (str_starts_with($state, '+')
-                            ? '+' . Money::MYR(mb_ltrim($state, '+'))
-                            : Money::MYR($state))
+                            ? '+' . self::formatMoney((int) mb_ltrim($state, '+'), $record->cart?->currency ?? null)
+                            : self::formatMoney((int) $state, $record->cart?->currency ?? null))
                     })
                     ->sortable(),
 
@@ -193,5 +193,14 @@ final class CartConditionsTable
             ->bulkActions([])
             ->defaultSort('created_at', 'desc')
             ->poll('30s');
+    }
+
+    private static function formatMoney(int $amount, ?string $currency = null): string
+    {
+        $resolvedCurrency = is_string($currency) && $currency !== ''
+            ? mb_strtoupper($currency)
+            : mb_strtoupper(config('cart.money.default_currency', 'USD'));
+
+        return (string) Money::{$resolvedCurrency}($amount);
     }
 }

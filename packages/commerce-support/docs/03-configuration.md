@@ -26,10 +26,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Owner (Multi-tenancy)
+    | Features
     |--------------------------------------------------------------------------
     */
     'owner' => [
+        // Global safety switch for owner resolver enforcement
+        'enabled' => env('COMMERCE_OWNER_ENABLED', false),
+
         // Class implementing OwnerResolverInterface
         'resolver' => env('COMMERCE_OWNER_RESOLVER', NullOwnerResolver::class),
     ],
@@ -58,11 +61,28 @@ Controls the Schema default morph key type for polymorphic relationships.
 
 ### Owner Settings
 
+#### `enabled`
+
+Global safety switch for owner-aware applications.
+
+**Default:** `false`
+
+When `true`, Commerce Support fails closed during boot if `OwnerResolverInterface` resolves to `NullOwnerResolver`. This prevents an application from enabling owner mode while silently running without tenant isolation.
+
+```php
+'owner' => [
+    'enabled' => true,
+    'resolver' => App\Support\TenantOwnerResolver::class,
+],
+```
+
+This is not a replacement for package-level owner flags such as `cart.owner.enabled` or `products.features.owner.enabled`; those flags decide whether individual package models apply owner scopes.
+
 #### `resolver`
 
 The class responsible for resolving the current tenant/owner context.
 
-**Default:** `NullOwnerResolver::class` (disables multi-tenancy)
+**Default:** `NullOwnerResolver::class` (single-tenant/no-owner mode)
 
 ```php
 'owner' => [
@@ -76,6 +96,7 @@ The class responsible for resolving the current tenant/owner context.
 |----------|---------|-------------|
 | `COMMERCE_MORPH_KEY_TYPE` | `uuid` | Polymorphic key type |
 | `COMMERCE_JSON_COLUMN_TYPE` | `json` | JSON column type (json/jsonb) |
+| `COMMERCE_OWNER_ENABLED` | `false` | Fail closed unless a concrete owner resolver is configured |
 | `COMMERCE_OWNER_RESOLVER` | `NullOwnerResolver::class` | Owner resolver class |
 
 ## JSON Column Type Helper
@@ -103,6 +124,7 @@ Each commerce package can define its own owner scope configuration:
 'owner' => [
     'enabled' => env('CART_OWNER_ENABLED', false),
     'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', false),
+    'auto_assign_on_create' => env('CART_OWNER_AUTO_ASSIGN_ON_CREATE', true),
 ],
 ```
 

@@ -22,6 +22,23 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class CartsTable
 {
+    public static function resolvePollingInterval(): string
+    {
+        $interval = config('filament-cart.polling_interval', '30s');
+
+        if (is_int($interval) || is_float($interval)) {
+            return (string) $interval . 's';
+        }
+
+        if (! is_string($interval)) {
+            return '30s';
+        }
+
+        return is_numeric($interval)
+            ? $interval . 's'
+            : $interval;
+    }
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -143,7 +160,7 @@ final class CartsTable
                         ->requiresConfirmation()
                         ->action(function (Cart $record): void {
                             app(CartInstanceManager::class)
-                                ->resolve($record->instance, $record->identifier)
+                                ->resolveForSnapshot($record)
                                 ->clear();
                         })
                         ->visible(fn (Cart $record): bool => $record->items_count > 0)
@@ -158,7 +175,7 @@ final class CartsTable
                         ->icon(Heroicon::OutlinedXMark)
                         ->using(function (Cart $record): void {
                             app(CartInstanceManager::class)
-                                ->resolve($record->instance, $record->identifier)
+                                ->resolveForSnapshot($record)
                                 ->destroy();
                         })
                         ->successNotificationTitle('Cart deleted'),
@@ -176,7 +193,7 @@ final class CartsTable
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
                             app(CartInstanceManager::class)
-                                ->resolve($record->instance, $record->identifier)
+                                ->resolveForSnapshot($record)
                                 ->clear();
                         });
                     }),
@@ -190,13 +207,13 @@ final class CartsTable
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
                             app(CartInstanceManager::class)
-                                ->resolve($record->instance, $record->identifier)
+                                ->resolveForSnapshot($record)
                                 ->destroy();
                         });
                     }),
             ])
             ->defaultSort('updated_at', 'desc')
-            ->poll(fn () => config('filament-cart.polling_interval', 30) . 's')
+            ->poll(fn (): string => self::resolvePollingInterval())
             ->striped();
     }
 }

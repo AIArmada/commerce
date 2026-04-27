@@ -6,6 +6,9 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 
 describe('CartInstanceManager', function (): void {
@@ -49,6 +52,43 @@ describe('CartInstanceManager', function (): void {
 
         $manager = new CartInstanceManager($rulesFactory);
         $result = $manager->prepare($cart);
+
+        expect($result)->toBe($cart);
+    });
+
+    it('resolves a cart instance within the snapshot owner context', function (): void {
+        $rulesFactory = Mockery::mock(RulesFactoryInterface::class);
+
+        $storage = Mockery::mock(StorageInterface::class);
+        $storage->shouldReceive('getMetadata')
+            ->with('session-123', 'default', 'dynamic_conditions')
+            ->andReturn([]);
+
+        $cart = new Cart($storage, 'session-123');
+
+        $owner = new User;
+        $owner->id = 'owner-123';
+
+        $snapshot = new CartSnapshot;
+        $snapshot->instance = 'default';
+        $snapshot->identifier = 'session-123';
+        $snapshot->owner_type = $owner->getMorphClass();
+        $snapshot->owner_id = (string) $owner->getKey();
+
+        $facadeMock = Mockery::mock();
+        $facadeMock->shouldReceive('getCartInstance')
+            ->with('default', 'session-123')
+            ->andReturnUsing(function () use ($cart, $owner) {
+                expect(OwnerContext::resolve()?->getMorphClass())->toBe($owner->getMorphClass());
+                expect((string) OwnerContext::resolve()?->getKey())->toBe((string) $owner->getKey());
+
+                return $cart;
+            });
+
+        CartFacade::swap($facadeMock);
+
+        $manager = new CartInstanceManager($rulesFactory);
+        $result = $manager->resolveForSnapshot($snapshot);
 
         expect($result)->toBe($cart);
     });
