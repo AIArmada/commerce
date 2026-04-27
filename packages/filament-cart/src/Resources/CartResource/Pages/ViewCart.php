@@ -8,6 +8,7 @@ use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Services\CartDownloadService;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 use AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
@@ -77,7 +78,7 @@ final class ViewCart extends ViewRecord
             ->modalDescription('Are you sure you want to clear all items from this cart? This action cannot be undone.')
             ->action(function (): void {
                 /** @var Cart $record */
-                $record = $this->record;
+                $record = OwnerActionGuard::resolveCartRecord($this->record);
                 app(CartInstanceManager::class)
                     ->resolveForSnapshot($record)
                     ->clear();
@@ -91,7 +92,7 @@ final class ViewCart extends ViewRecord
             ->color('info')
             ->action(function () {
                 /** @var Cart $record */
-                $record = $this->record;
+                $record = OwnerActionGuard::resolveCartRecord($this->record);
 
                 return app(CartDownloadService::class)->download($record);
             });
@@ -105,7 +106,7 @@ final class ViewCart extends ViewRecord
             ->modalDescription('This will delete the live cart and its synchronized snapshot.')
             ->action(function (): void {
                 /** @var Cart $record */
-                $record = $this->record;
+                $record = OwnerActionGuard::resolveCartRecord($this->record);
                 app(CartInstanceManager::class)
                     ->resolveForSnapshot($record)
                     ->destroy();

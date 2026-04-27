@@ -17,7 +17,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class ConditionResource extends Resource
@@ -65,11 +64,18 @@ final class ConditionResource extends Resource
             return $query;
         }
 
-        /** @var Model|null $owner */
         $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('cart.owner.include_global', false);
 
-        return $query->forOwner($owner, $includeGlobal);
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            Condition::class . ' requires an owner context or explicit global context.',
+        );
+
+        if ($owner === null) {
+            return $query->globalOnly();
+        }
+
+        return $query->forOwner($owner, (bool) config('cart.owner.include_global', false));
     }
 
     public static function getRelations(): array

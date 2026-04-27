@@ -14,7 +14,7 @@ describe('Condition owner scoping', function (): void {
         config()->set('cart.owner.enabled', true);
     });
 
-    it('scopes owner=null to global-only records (never owner_type-only corrupt rows)', function (): void {
+    it('scopes explicit global context to global-only records (never owner_type-only corrupt rows)', function (): void {
         $ownerA = User::query()->create([
             'name' => 'Owner A',
             'email' => 'owner-a@example.com',
@@ -54,12 +54,17 @@ describe('Condition owner scoping', function (): void {
             'updated_at' => now(),
         ]);
 
-        $ids = Condition::query()->forOwner(null)->pluck('id')->all();
+        $ids = OwnerContext::withOwner(null, fn (): array => Condition::query()->forOwner(null)->pluck('id')->all());
 
         expect($ids)
             ->toContain($global->id)
             ->not->toContain($owned->id)
             ->not->toContain($corruptId);
+    });
+
+    it('fails closed when global-only condition scope is requested without explicit global context', function (): void {
+        expect(fn () => Condition::query()->forOwner(null)->pluck('id')->all())
+            ->toThrow(RuntimeException::class, 'AIArmada\\Cart\\Models\\Condition requires an owner context or explicit global context.');
     });
 
     it('respects cart.owner.include_global for owner-scoped queries', function (): void {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Storage;
 
 use AIArmada\Cart\Exceptions\CartConflictException;
+use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Closure;
 use DateTimeInterface;
@@ -465,20 +466,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     private function applyOwnerConstraints(Builder $query): void
     {
-        if ($this->ownerType !== null && $this->ownerId !== null) {
-            $query->where('owner_type', $this->ownerType)
-                ->where('owner_id', (string) $this->ownerId);
-
-            return;
-        }
-
-        $query
-            ->where(function (Builder $builder): void {
-                $builder->whereNull('owner_type');
-            })
-            ->where(function (Builder $builder): void {
-                $builder->whereNull('owner_id');
-            });
+        CartOwnerScope::applyForOwner($query, $this->ownerType, $this->ownerId);
     }
 
     /**
