@@ -39,21 +39,14 @@ it('filters carts with savings', function (): void {
     expect($results->contains($noSavings))->toBeFalse();
 });
 
-it('filters abandoned and recovered carts', function (): void {
+it('filters abandoned carts', function (): void {
     $abandoned = Cart::factory()->create([
         'checkout_abandoned_at' => now()->subHour(),
-        'recovered_at' => null,
     ]);
-    $recovered = Cart::factory()->create([
-        'checkout_abandoned_at' => now()->subHour(),
-        'recovered_at' => now(),
-    ]);
+    $active = Cart::factory()->create();
 
     expect(Cart::query()->abandoned()->pluck('id')->all())->toContain($abandoned->id);
-    expect(Cart::query()->abandoned()->pluck('id')->all())->not->toContain($recovered->id);
-
-    expect(Cart::query()->recovered()->pluck('id')->all())->toContain($recovered->id);
-    expect(Cart::query()->recovered()->pluck('id')->all())->not->toContain($abandoned->id);
+    expect(Cart::query()->abandoned()->pluck('id')->all())->not->toContain($active->id);
 });
 
 it('filters carts in checkout', function (): void {
@@ -71,23 +64,4 @@ it('filters carts in checkout', function (): void {
     expect($results)->toHaveCount(1);
     expect($results->first()->id)->toBe($checkout->id);
     expect($results->contains($abandoned))->toBeFalse();
-});
-
-it('filters carts needing recovery', function (): void {
-    $needsRecovery = Cart::factory()->create([
-        'checkout_abandoned_at' => now()->subHour(),
-        'recovered_at' => null,
-        'recovery_attempts' => 1,
-    ]);
-
-    Cart::factory()->create([
-        'checkout_abandoned_at' => now()->subHour(),
-        'recovered_at' => null,
-        'recovery_attempts' => 3,
-    ]);
-
-    $results = Cart::query()->needsRecovery()->get();
-
-    expect($results)->toHaveCount(1);
-    expect($results->first()->id)->toBe($needsRecovery->id);
 });

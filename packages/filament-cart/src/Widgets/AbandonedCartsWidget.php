@@ -14,10 +14,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Widget showing abandoned carts ready for recovery.
- *
- * Lists carts that have been abandoned during checkout,
- * with recovery attempt tracking.
+ * Widget showing carts abandoned during checkout.
  */
 final class AbandonedCartsWidget extends BaseWidget
 {
@@ -55,16 +52,6 @@ final class AbandonedCartsWidget extends BaseWidget
                     ->dateTime()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('recovery_attempts')
-                    ->label('Recovery Attempts')
-                    ->sortable()
-                    ->badge()
-                    ->color(fn (int $state): string => match (true) {
-                        $state === 0 => 'gray',
-                        $state < 3 => 'warning',
-                        default => 'danger',
-                    }),
-
                 Tables\Columns\TextColumn::make('time_since_abandonment')
                     ->label('Age')
                     ->getStateUsing(fn (Cart $record): string => $this->getTimeSinceAbandonment($record)),
@@ -76,7 +63,7 @@ final class AbandonedCartsWidget extends BaseWidget
                     ->url(fn (Cart $record): string => CartResource::getUrl('view', ['record' => $record])),
             ])
             ->emptyStateHeading('No abandoned carts')
-            ->emptyStateDescription('Great! There are no abandoned carts to recover.')
+            ->emptyStateDescription('Great! There are no currently abandoned carts.')
             ->emptyStateIcon('heroicon-o-check-circle')
             ->paginated([10, 25, 50]);
     }
@@ -88,7 +75,6 @@ final class AbandonedCartsWidget extends BaseWidget
     {
         return Cart::query()->forOwner()
             ->whereNotNull('checkout_abandoned_at')
-            ->whereNull('recovered_at')
             ->where('checkout_abandoned_at', '>=', now()->subDays(7));
     }
 
@@ -112,7 +98,7 @@ final class AbandonedCartsWidget extends BaseWidget
 
     private function getCartValue(Cart $record): string
     {
-        $currency = mb_strtoupper(config('cart.money.default_currency', 'USD'));
+        $currency = mb_strtoupper($record->currency ?: config('cart.money.default_currency', 'USD'));
 
         return (string) Money::{$currency}((int) $record->subtotal);
     }

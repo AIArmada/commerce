@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Listeners;
 
 use AIArmada\Cart\Events\CartMerged;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
+use AIArmada\FilamentCart\Services\CartSyncManager;
 use Throwable;
 
 /**
@@ -34,14 +36,12 @@ final class CleanupSnapshotOnCartMerged
             $instance = $event->sourceCart->instance();
 
             $owner = CartSnapshot::resolveCurrentOwner();
-            $targetOwnerKey = CartSnapshot::resolveOwnerKey($owner);
 
             // Find the source cart snapshot (guest cart)
-            $sourceSnapshot = CartSnapshot::query()
+            $sourceSnapshot = OwnerContext::withOwner(null, fn () => CartSnapshot::query()
                 ->where('identifier', $sourceIdentifier)
                 ->where('instance', $instance)
-                ->when(CartSnapshot::ownerScopingEnabled(), fn ($q) => $q->where('owner_key', 'global'))
-                ->first();
+                ->first());
 
             if (! $sourceSnapshot) {
                 return;
@@ -49,9 +49,9 @@ final class CleanupSnapshotOnCartMerged
 
             // Check if target user already has a cart snapshot
             $targetSnapshot = CartSnapshot::query()
+                ->forOwner($owner)
                 ->where('identifier', $targetIdentifier)
                 ->where('instance', $instance)
-                ->when(CartSnapshot::ownerScopingEnabled(), fn ($q) => $q->where('owner_key', $targetOwnerKey))
                 ->first();
 
             if ($targetSnapshot) {
@@ -63,7 +63,7 @@ final class CleanupSnapshotOnCartMerged
                     ->update(['cart_id' => $targetSnapshot->id]);
 
                 // Delete the source snapshot
-                $sourceSnapshot->delete();
+                OwnerContext::withOwner(null, fn (): bool => $sourceSnapshot->delete());
             } else {
                 // No target snapshot exists, simply update the identifier
                 $sourceSnapshot->identifier = $targetIdentifier;
@@ -73,6 +73,14 @@ final class CleanupSnapshotOnCartMerged
                 }
 
                 $sourceSnapshot->save();
+            }
+
+            if (
+                $event->targetCart->countItems() > 0
+                || $event->targetCart->getStoredConditions()->isNotEmpty()
+                || $event->targetCart->getAllMetadata() !== []
+            ) {
+                app(CartSyncManager::class)->sync($event->targetCart);
             }
 
             // Note: The target cart snapshot data (totals, metadata, etc.) will be updated

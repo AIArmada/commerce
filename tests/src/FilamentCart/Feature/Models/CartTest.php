@@ -5,10 +5,12 @@ declare(strict_types=1);
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as TestUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -79,8 +81,8 @@ describe('Cart Model', function (): void {
             eventsEnabled: false,
         );
         $manager = Mockery::mock(CartInstanceManager::class);
-        $manager->shouldReceive('resolve')
-            ->with('default', 'session-123')
+        $manager->shouldReceive('resolveForSnapshot')
+            ->once()
             ->andReturn($mockInstance);
 
         $this->app->instance(CartInstanceManager::class, $manager);
@@ -96,8 +98,8 @@ describe('Cart Model', function (): void {
 
     it('returns null and logs when cart instance cannot be resolved', function (): void {
         $manager = Mockery::mock(CartInstanceManager::class);
-        $manager->shouldReceive('resolve')
-            ->with('default', 'session-err')
+        $manager->shouldReceive('resolveForSnapshot')
+            ->once()
             ->andThrow(new RuntimeException('nope'));
 
         $this->app->instance(CartInstanceManager::class, $manager);
@@ -171,7 +173,7 @@ describe('Cart Model', function (): void {
         expect($cart->itemLevelConditions()->pluck('id')->all())->not->toContain($cartLevel->id);
     });
 
-    it('resolves current owner context and owner key', function (): void {
+    it('resolves current owner context', function (): void {
         config([
             'filament-cart.owner.enabled' => true,
             'filament-cart.owner.include_global' => false,
@@ -194,9 +196,6 @@ describe('Cart Model', function (): void {
         });
 
         expect(Cart::resolveCurrentOwner()?->id)->toBe($user->id);
-        expect(Cart::resolveOwnerKey($user))->toBe($user->getMorphClass() . ':' . $user->getKey());
-        expect(Cart::makeOwnerKey($user->getMorphClass(), $user->getKey()))->toBe($user->getMorphClass() . ':' . $user->getKey());
-        expect(Cart::makeOwnerKey(null, null))->toBe('global');
     });
 
     it('resolves associated user relation', function (): void {
@@ -212,6 +211,84 @@ describe('Cart Model', function (): void {
         ]);
 
         expect($cart->user()->first()?->id)->toBe($user->id);
+    });
+
+    it('auto-assigns the resolved owner when direct snapshot writes occur in owner mode', function (): void {
+        config()->set('filament-cart.owner.enabled', true);
+        config()->set('filament-cart.owner.include_global', false);
+
+        $owner = TestUser::create([
+            'name' => 'Snapshot Owner',
+            'email' => 'snapshot-owner@example.com',
+            'password' => 'secret',
+        ]);
+
+        $this->app->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
+        {
+            public function __construct(private TestUser $owner) {}
+
+            public function resolve(): ?Model
+            {
+                return $this->owner;
+            }
+        });
+
+        $cart = Cart::create([
+            'instance' => 'default',
+            'identifier' => 'owner-assigned-snapshot',
+        ]);
+
+        expect($cart->owner_type)->toBe($owner->getMorphClass());
+        expect($cart->owner_id)->toBe((string) $owner->getKey());
+        expect($cart->getRawOriginal('owner_scope'))->not->toBe('global');
+    });
+
+    it('allows explicit global snapshot writes in owner mode', function (): void {
+        config()->set('filament-cart.owner.enabled', true);
+        config()->set('filament-cart.owner.include_global', false);
+
+        $cart = OwnerContext::withOwner(null, fn () => Cart::create([
+            'instance' => 'default',
+            'identifier' => 'explicit-global-snapshot',
+        ]));
+
+        expect($cart->owner_type)->toBeNull();
+        expect($cart->owner_id)->toBeNull();
+        expect($cart->getRawOriginal('owner_scope'))->toBe('global');
+    });
+
+    it('rejects snapshot writes with an explicit owner that mismatches the current owner context', function (): void {
+        config()->set('filament-cart.owner.enabled', true);
+        config()->set('filament-cart.owner.include_global', false);
+
+        $ownerA = TestUser::create([
+            'name' => 'Snapshot Owner A',
+            'email' => 'snapshot-owner-a@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerB = TestUser::create([
+            'name' => 'Snapshot Owner B',
+            'email' => 'snapshot-owner-b@example.com',
+            'password' => 'secret',
+        ]);
+
+        $this->app->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+        {
+            public function __construct(private TestUser $owner) {}
+
+            public function resolve(): ?Model
+            {
+                return $this->owner;
+            }
+        });
+
+        expect(fn () => Cart::create([
+            'instance' => 'default',
+            'identifier' => 'mismatched-snapshot-owner',
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => (string) $ownerB->getKey(),
+        ]))->toThrow(AuthorizationException::class);
     });
 
     it('scopes query properly', function (): void {
@@ -236,13 +313,6 @@ describe('Cart Model', function (): void {
             'identifier' => 'abandoned',
             'checkout_started_at' => now()->subDay(),
             'checkout_abandoned_at' => now()->subHours(5),
-            'recovered_at' => null,
-        ]);
-        $recovered = Cart::create([
-            'instance' => 'default',
-            'identifier' => 'recovered',
-            'checkout_abandoned_at' => now()->subHours(5),
-            'recovered_at' => now(),
         ]);
         $checkout = Cart::create([
             'instance' => 'default',
@@ -253,8 +323,6 @@ describe('Cart Model', function (): void {
 
         expect($active->isAbandoned())->toBeFalse();
         expect($abandoned->isAbandoned())->toBeTrue();
-        expect($recovered->isAbandoned())->toBeFalse();
-        expect($recovered->isRecovered())->toBeTrue();
         expect($checkout->isInCheckout())->toBeTrue();
     });
 

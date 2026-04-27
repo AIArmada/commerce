@@ -127,6 +127,38 @@ final class CommerceSignalsRecorder
         );
     }
 
+    public function recordCartSnapshotSynced(object $event): ?SignalEvent
+    {
+        return $this->recordFilamentCartEvent(
+            event: $event,
+            eventName: (string) config('signals.integrations.filament_cart.snapshot_synced_event_name', 'cart.snapshot.synced'),
+        );
+    }
+
+    public function recordCartCheckoutStarted(object $event): ?SignalEvent
+    {
+        return $this->recordFilamentCartEvent(
+            event: $event,
+            eventName: (string) config('signals.integrations.filament_cart.checkout_started_event_name', 'cart.checkout.started'),
+        );
+    }
+
+    public function recordCartAbandoned(object $event): ?SignalEvent
+    {
+        return $this->recordFilamentCartEvent(
+            event: $event,
+            eventName: (string) config('signals.integrations.filament_cart.abandoned_event_name', 'cart.abandoned'),
+        );
+    }
+
+    public function recordHighValueCartDetected(object $event): ?SignalEvent
+    {
+        return $this->recordFilamentCartEvent(
+            event: $event,
+            eventName: (string) config('signals.integrations.filament_cart.high_value_detected_event_name', 'cart.high_value.detected'),
+        );
+    }
+
     public function recordVoucherApplied(object $cart, object $voucher): ?SignalEvent
     {
         return $this->recordVoucherEvent(
@@ -385,7 +417,46 @@ final class CommerceSignalsRecorder
         return $this->trackedPropertyResolver->resolveForOwnerReference(
             is_string($ownerType) ? $ownerType : null,
             is_string($ownerId) || is_int($ownerId) ? $ownerId : null,
+            null,
+            'cart',
         );
+    }
+
+    private function recordFilamentCartEvent(object $event, string $eventName): ?SignalEvent
+    {
+        $ownerType = $this->readPublicScalar($event, 'ownerType');
+        $ownerId = $this->readPublicScalar($event, 'ownerId');
+        $trackedProperty = $this->trackedPropertyResolver->resolveForOwnerReference($ownerType, $ownerId, null, 'filament_cart');
+
+        if ($trackedProperty === null) {
+            return null;
+        }
+
+        $cartIdentifier = $this->readPublicScalar($event, 'cartIdentifier');
+        $cartInstance = $this->readPublicScalar($event, 'cartInstance') ?? 'default';
+
+        return $this->ingestSignalEvent->handle($trackedProperty, [
+            'event_name' => $eventName,
+            'event_category' => (string) config('signals.integrations.filament_cart.event_category', 'cart'),
+            'anonymous_id' => $cartIdentifier,
+            'session_identifier' => $this->buildCartSessionIdentifier($cartIdentifier, $cartInstance),
+            'occurred_at' => $this->readPublicScalar($event, 'occurredAt'),
+            'revenue_minor' => $this->readPublicInt($event, 'totalMinor') ?? 0,
+            'currency' => $this->readPublicScalar($event, 'currency') ?? (string) config('signals.defaults.currency', 'MYR'),
+            'source_event_id' => $this->readPublicScalar($event, 'sourceEventId'),
+            'properties' => array_filter([
+                'source_event_id' => $this->readPublicScalar($event, 'sourceEventId'),
+                'cart_id' => $this->readPublicScalar($event, 'cartId'),
+                'cart_identifier' => $cartIdentifier,
+                'cart_instance' => $cartInstance,
+                'cart_total_minor' => $this->readPublicInt($event, 'totalMinor'),
+                'subtotal_minor' => $this->readPublicInt($event, 'subtotalMinor'),
+                'total_quantity' => $this->readPublicInt($event, 'totalQuantity'),
+                'unique_item_count' => $this->readPublicInt($event, 'uniqueItemCount'),
+                'item_count' => $this->readPublicInt($event, 'itemCount'),
+                'currency' => $this->readPublicScalar($event, 'currency'),
+            ], static fn (mixed $value): bool => $value !== null),
+        ]);
     }
 
     private function resolveTrackedPropertyForAffiliateModel(Model $model): ?TrackedProperty

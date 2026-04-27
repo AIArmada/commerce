@@ -6,11 +6,15 @@ namespace AIArmada\Signals\Support;
 
 use AIArmada\Signals\Listeners\RecordAffiliateAttributedSignal;
 use AIArmada\Signals\Listeners\RecordAffiliateConversionRecordedSignal;
+use AIArmada\Signals\Listeners\RecordCartAbandonedSignal;
+use AIArmada\Signals\Listeners\RecordCartCheckoutStartedSignal;
 use AIArmada\Signals\Listeners\RecordCartClearedSignal;
 use AIArmada\Signals\Listeners\RecordCartItemAddedSignal;
 use AIArmada\Signals\Listeners\RecordCartItemRemovedSignal;
+use AIArmada\Signals\Listeners\RecordCartSnapshotSyncedSignal;
 use AIArmada\Signals\Listeners\RecordCheckoutCompletedSignal;
 use AIArmada\Signals\Listeners\RecordCheckoutStartedSignal;
+use AIArmada\Signals\Listeners\RecordHighValueCartDetectedSignal;
 use AIArmada\Signals\Listeners\RecordOrderPaidSignal;
 use AIArmada\Signals\Listeners\RecordVoucherAppliedSignal;
 use AIArmada\Signals\Listeners\RecordVoucherRemovedSignal;
@@ -22,6 +26,7 @@ final class CommerceSignalsIntegrationRegistrar
     {
         $this->bootAffiliatesIntegration();
         $this->bootCartIntegration();
+        $this->bootFilamentCartIntegration();
         $this->bootCheckoutIntegration();
         $this->bootOrdersIntegration();
         $this->bootVoucherIntegration();
@@ -58,6 +63,29 @@ final class CommerceSignalsIntegrationRegistrar
 
         if (config('signals.integrations.cart.listen_for_cleared', true)) {
             $this->listenIfAvailable('AIArmada\\Cart\\Events\\CartCleared', RecordCartClearedSignal::class);
+        }
+    }
+
+    private function bootFilamentCartIntegration(): void
+    {
+        if (! config('signals.integrations.filament_cart.enabled', false)) {
+            return;
+        }
+
+        if (config('signals.integrations.filament_cart.listen_for_snapshot_synced', true)) {
+            $this->listenIfAvailable('AIArmada\\FilamentCart\\Events\\CartSnapshotSynced', RecordCartSnapshotSyncedSignal::class);
+        }
+
+        if (config('signals.integrations.filament_cart.listen_for_checkout_started', true)) {
+            $this->listenIfAvailable('AIArmada\\FilamentCart\\Events\\CartCheckoutStarted', RecordCartCheckoutStartedSignal::class);
+        }
+
+        if (config('signals.integrations.filament_cart.listen_for_abandoned', true)) {
+            $this->listenIfAvailable('AIArmada\\FilamentCart\\Events\\CartAbandoned', RecordCartAbandonedSignal::class);
+        }
+
+        if (config('signals.integrations.filament_cart.listen_for_high_value_detected', true)) {
+            $this->listenIfAvailable('AIArmada\\FilamentCart\\Events\\HighValueCartDetected', RecordHighValueCartDetectedSignal::class);
         }
     }
 

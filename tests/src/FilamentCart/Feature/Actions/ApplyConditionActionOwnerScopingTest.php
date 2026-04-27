@@ -6,6 +6,7 @@ use AIArmada\Cart\Models\Condition;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Actions\ApplyConditionAction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -43,17 +44,16 @@ it('scopes ApplyConditionAction condition options and lookups by resolved owner'
     ]);
     $conditionA->assignOwner($ownerA)->save();
 
-    $conditionB = Condition::factory()->create([
+    $conditionB = OwnerContext::withOwner($ownerB, fn () => Condition::factory()->create([
         'name' => 'owner-b-discount',
         'type' => 'discount',
         'target' => 'cart@cart_subtotal/aggregate',
         'value' => '-5%',
         'is_active' => true,
         'is_global' => false,
-    ]);
-    $conditionB->assignOwner($ownerB)->save();
+    ]));
 
-    $globalCondition = Condition::factory()->create([
+    $globalCondition = OwnerContext::withOwner(null, fn () => Condition::factory()->create([
         'name' => 'global-discount',
         'type' => 'discount',
         'target' => 'cart@cart_subtotal/aggregate',
@@ -62,7 +62,7 @@ it('scopes ApplyConditionAction condition options and lookups by resolved owner'
         'is_global' => true,
         'owner_type' => null,
         'owner_id' => null,
-    ]);
+    ]));
 
     $optionsMethod = new ReflectionMethod(ApplyConditionAction::class, 'getConditionOptions');
     $optionsMethod->setAccessible(true);
@@ -92,4 +92,54 @@ it('scopes ApplyConditionAction condition options and lookups by resolved owner'
 
     expect($query->findOrFail($conditionA->id)->id)->toBe($conditionA->id);
     expect(fn () => $query->findOrFail($conditionB->id))->toThrow(ModelNotFoundException::class);
+});
+
+it('returns only item-level conditions for item actions', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
+    config()->set('filament-cart.owner.enabled', true);
+    config()->set('filament-cart.owner.include_global', true);
+
+    $owner = User::query()->create([
+        'name' => 'Owner A',
+        'email' => 'owner-a-item-condition@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($owner));
+
+    $itemCondition = Condition::factory()->forItems()->create([
+        'name' => 'owner-item-discount',
+        'display_name' => 'Owner Item Discount',
+        'is_active' => true,
+    ]);
+    $itemCondition->assignOwner($owner)->save();
+
+    $cartCondition = Condition::factory()->create([
+        'name' => 'owner-cart-discount',
+        'display_name' => 'Owner Cart Discount',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'is_active' => true,
+    ]);
+    $cartCondition->assignOwner($owner)->save();
+
+    $optionsMethod = new ReflectionMethod(ApplyConditionAction::class, 'getConditionOptions');
+    $optionsMethod->setAccessible(true);
+
+    /** @var array<string, array<string, string>> $options */
+    $options = $optionsMethod->invoke(null, true);
+
+    $flattened = collect($options)->collapse()->all();
+
+    expect(array_key_exists($itemCondition->id, $flattened))->toBeTrue();
+    expect(array_key_exists($cartCondition->id, $flattened))->toBeFalse();
+
+    $queryMethod = new ReflectionMethod(ApplyConditionAction::class, 'getScopedConditionQuery');
+    $queryMethod->setAccessible(true);
+
+    /** @var Builder<Condition> $query */
+    $query = $queryMethod->invoke(null, true);
+
+    expect($query->findOrFail($itemCondition->id)->id)->toBe($itemCondition->id);
+    expect(fn () => $query->findOrFail($cartCondition->id))->toThrow(ModelNotFoundException::class);
 });

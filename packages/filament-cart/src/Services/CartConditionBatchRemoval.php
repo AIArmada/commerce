@@ -9,6 +9,7 @@ use AIArmada\Cart\Models\Condition as StoredCondition;
 use AIArmada\FilamentCart\Models\Cart as CartModel;
 use AIArmada\FilamentCart\Models\CartCondition as CartConditionModel;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -60,8 +61,7 @@ final class CartConditionBatchRemoval
                 ->unique()
                 ->values();
 
-            $affectedSnapshots = CartModel::query()
-                ->forOwner()
+            $affectedSnapshots = $this->snapshotQuery($condition)
                 ->whereIn('id', $affectedCartIds)
                 ->get();
 
@@ -148,7 +148,7 @@ final class CartConditionBatchRemoval
             $identifier = $snapshot->identifier;
 
             // Get the cart for this specific instance and identifier
-            return $this->cartInstances->resolve($instance, $identifier);
+            return $this->cartInstances->resolveForSnapshot($snapshot);
         } catch (Exception $e) {
             Log::error('Failed to load cart from snapshot', [
                 'snapshot_id' => $snapshot->id,
@@ -165,7 +165,7 @@ final class CartConditionBatchRemoval
     private function findMatchingConditions(StoredCondition | string $condition): Collection
     {
         $query = CartConditionModel::query()
-            ->whereIn('cart_id', CartModel::query()->forOwner()->select('id'));
+            ->whereIn('cart_id', $this->snapshotQuery($condition)->select('id'));
 
         if (is_string($condition)) {
             return $query
@@ -193,6 +193,18 @@ final class CartConditionBatchRemoval
                 });
             })
             ->get();
+    }
+
+    /**
+     * @return Builder<CartModel>
+     */
+    private function snapshotQuery(StoredCondition | string $condition)
+    {
+        if ($condition instanceof StoredCondition && $condition->owner_type === null && $condition->owner_id === null && config('cart.owner.enabled', false)) {
+            return CartModel::query()->withoutOwnerScope();
+        }
+
+        return CartModel::query()->forOwner();
     }
 
     private function removeConditionFromCart(Cart $cart, CartConditionModel $snapshotCondition): bool
