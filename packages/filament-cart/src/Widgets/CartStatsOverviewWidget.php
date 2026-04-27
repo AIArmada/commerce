@@ -15,8 +15,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Enhanced cart statistics overview widget.
  *
- * Shows key metrics including conversion funnel data
- * and abandonment statistics.
+ * Shows live cart and abandonment statistics.
  */
 final class CartStatsOverviewWidget extends BaseWidget
 {
@@ -51,21 +50,12 @@ final class CartStatsOverviewWidget extends BaseWidget
                 ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color($stats['abandoned_carts'] > 0 ? 'warning' : 'success'),
 
-            Stat::make('Recovered', number_format($stats['recovered_carts']))
-                ->description($this->getRecoveryRate($stats) . '% recovery rate')
-                ->descriptionIcon(Heroicon::OutlinedCheckCircle)
-                ->color($stats['recovered_carts'] > 0 ? 'success' : 'gray'),
-
-            Stat::make('Recovery Value', $this->formatMoney($stats['recovered_value']))
-                ->description('Revenue saved')
-                ->descriptionIcon(Heroicon::OutlinedBanknotes)
-                ->color('success'),
         ];
     }
 
     protected function getColumns(): int
     {
-        return 6;
+        return 4;
     }
 
     /**
@@ -100,15 +90,6 @@ final class CartStatsOverviewWidget extends BaseWidget
                 ->where('checkout_abandoned_at', '>=', $yesterday)
                 ->count(),
 
-            'recovered_carts' => (clone $base)
-                ->whereNotNull('recovered_at')
-                ->where('recovered_at', '>=', $yesterday)
-                ->count(),
-
-            'recovered_value' => (int) (clone $base)
-                ->whereNotNull('recovered_at')
-                ->where('recovered_at', '>=', $yesterday)
-                ->sum(DB::raw($this->getSubtotalExpression())),
         ];
     }
 
@@ -124,22 +105,6 @@ final class CartStatsOverviewWidget extends BaseWidget
         }
 
         $rate = ($stats['abandoned_carts'] / $stats['checkouts_started']) * 100;
-
-        return number_format($rate, 1);
-    }
-
-    /**
-     * Get recovery rate as percentage.
-     *
-     * @param  array<string, int>  $stats
-     */
-    private function getRecoveryRate(array $stats): string
-    {
-        if ($stats['abandoned_carts'] === 0) {
-            return '0';
-        }
-
-        $rate = ($stats['recovered_carts'] / $stats['abandoned_carts']) * 100;
 
         return number_format($rate, 1);
     }

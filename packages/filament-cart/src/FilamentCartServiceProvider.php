@@ -16,32 +16,18 @@ use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
-use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
-use AIArmada\FilamentCart\Commands\AggregateMetricsCommand;
 use AIArmada\FilamentCart\Commands\MarkAbandonedCartsCommand;
-use AIArmada\FilamentCart\Commands\MonitorCartsCommand;
-use AIArmada\FilamentCart\Commands\ProcessAlertsCommand;
-use AIArmada\FilamentCart\Commands\ProcessRecoveryCommand;
-use AIArmada\FilamentCart\Commands\ScheduleRecoveryCommand;
 use AIArmada\FilamentCart\Listeners\ApplyGlobalConditions;
 use AIArmada\FilamentCart\Listeners\CleanupSnapshotOnCartMerged;
 use AIArmada\FilamentCart\Listeners\SyncCartOnEvent;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
-use AIArmada\FilamentCart\Services\AlertDispatcher;
-use AIArmada\FilamentCart\Services\AlertEvaluator;
-use AIArmada\FilamentCart\Services\CartAnalyticsService;
 use AIArmada\FilamentCart\Services\CartConditionBatchRemoval;
 use AIArmada\FilamentCart\Services\CartConditionValidator;
+use AIArmada\FilamentCart\Services\CartDownloadService;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentCart\Services\CartMonitor;
 use AIArmada\FilamentCart\Services\CartSyncManager;
-use AIArmada\FilamentCart\Services\ExportService;
-use AIArmada\FilamentCart\Services\MetricsAggregator;
 use AIArmada\FilamentCart\Services\NormalizedCartSynchronizer;
-use AIArmada\FilamentCart\Services\RecoveryAnalytics;
-use AIArmada\FilamentCart\Services\RecoveryDispatcher;
-use AIArmada\FilamentCart\Services\RecoveryScheduler;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -54,11 +40,6 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
             ->hasConfigFile('filament-cart')
             ->hasViews('filament-cart')
             ->hasCommands([
-                AggregateMetricsCommand::class,
-                ScheduleRecoveryCommand::class,
-                ProcessRecoveryCommand::class,
-                MonitorCartsCommand::class,
-                ProcessAlertsCommand::class,
                 MarkAbandonedCartsCommand::class,
             ])
             ->discoversMigrations();
@@ -85,23 +66,9 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
         $this->app->singleton(CartInstanceManager::class);
         $this->app->singleton(NormalizedCartSynchronizer::class);
         $this->app->singleton(CartSyncManager::class);
+        $this->app->singleton(CartDownloadService::class);
         $this->app->singleton(CartConditionValidator::class);
         $this->app->singleton(CartConditionBatchRemoval::class);
-
-        // Analytics services
-        $this->app->singleton(MetricsAggregator::class);
-        $this->app->singleton(CartAnalyticsService::class);
-        $this->app->singleton(ExportService::class);
-
-        // Recovery services
-        $this->app->singleton(RecoveryScheduler::class);
-        $this->app->singleton(RecoveryDispatcher::class);
-        $this->app->singleton(RecoveryAnalytics::class);
-
-        // Monitoring & Alert services
-        $this->app->singleton(CartMonitor::class);
-        $this->app->singleton(AlertDispatcher::class);
-        $this->app->singleton(AlertEvaluator::class);
     }
 
     public function bootingPackage(): void
@@ -119,20 +86,6 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
     {
         $this->synchronizeOwnerScopeConfiguration();
         $this->registerEventListeners();
-        $this->registerRecoveryAttemptCartRelation();
-    }
-
-    /**
-     * Register the cart() relationship on RecoveryAttempt.
-     *
-     * This relationship is defined here rather than in core cart package
-     * to avoid circular dependency (core cart should not depend on filament-cart).
-     */
-    protected function registerRecoveryAttemptCartRelation(): void
-    {
-        RecoveryAttempt::resolveRelationUsing('cart', function (RecoveryAttempt $model) {
-            return $model->belongsTo(CartSnapshot::class, 'cart_id');
-        });
     }
 
     protected function synchronizeOwnerScopeConfiguration(): void
@@ -164,15 +117,7 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
         return [
             NormalizedCartSynchronizer::class,
             CartSyncManager::class,
-            MetricsAggregator::class,
-            CartAnalyticsService::class,
-            ExportService::class,
-            RecoveryScheduler::class,
-            RecoveryDispatcher::class,
-            RecoveryAnalytics::class,
-            CartMonitor::class,
-            AlertDispatcher::class,
-            AlertEvaluator::class,
+            CartDownloadService::class,
         ];
     }
 

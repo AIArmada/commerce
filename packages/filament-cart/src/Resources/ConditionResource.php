@@ -97,4 +97,28 @@ final class ConditionResource extends Resource
     {
         return 'primary';
     }
+
+    /**
+     * @param  Condition  $record
+     */
+    public static function canEdit($record): bool
+    {
+        return ! self::isGlobalRecordOutsideExplicitGlobalContext($record);
+    }
+
+    /**
+     * @param  Condition  $record
+     */
+    public static function canDelete($record): bool
+    {
+        return ! self::isGlobalRecordOutsideExplicitGlobalContext($record);
+    }
+
+    public static function isGlobalRecordOutsideExplicitGlobalContext(Condition $record): bool
+    {
+        return config('cart.owner.enabled', false)
+            && $record->owner_type === null
+            && $record->owner_id === null
+            && ! OwnerContext::isExplicitGlobal();
+    }
 }

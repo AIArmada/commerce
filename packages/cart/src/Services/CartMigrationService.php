@@ -84,7 +84,7 @@ class CartMigrationService
         if (config('cart.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
 
-            if ($owner instanceof Model && (string) $owner->getKey() === $userIdentifier) {
+            if ($owner instanceof Model) {
                 return $this->migrateGuestCartToOwnedUser($owner, $instance, $guestIdentifier, $userIdentifier);
             }
         }
@@ -103,6 +103,7 @@ class CartMigrationService
 
         // Get existing user cart items for the same instance
         $userItems = $storage->getItems($userIdentifier, $instance);
+        $guestMetadata = $storage->getAllMetadata($guestIdentifier, $instance);
 
         // If user cart is empty, forget it and swap guest cart to user
         if (empty($userItems)) {
@@ -143,6 +144,11 @@ class CartMigrationService
             $storage->putConditions($userIdentifier, $instance, $mergedConditions);
         }
 
+        if ($guestMetadata !== []) {
+            $userMetadata = $storage->getAllMetadata($userIdentifier, $instance);
+            $storage->putMetadataBatch($userIdentifier, $instance, $this->mergeMetadataData($guestMetadata, $userMetadata));
+        }
+
         // Forget guest cart
         $storage->forget($guestIdentifier, $instance);
 
@@ -181,12 +187,18 @@ class CartMigrationService
         }
 
         if ($user instanceof Model && config('cart.owner.enabled', false)) {
-            $success = $this->migrateGuestCartToOwnedUser(
-                $user,
-                $instance,
-                $sessionId,
-                (string) $user->getKey(),
-            );
+            $owner = OwnerContext::resolve();
+
+            if ($owner instanceof Model) {
+                $success = $this->migrateGuestCartToOwnedUser(
+                    $owner,
+                    $instance,
+                    $sessionId,
+                    (string) $user->getKey(),
+                );
+            } else {
+                $success = $this->migrateGuestCartToUser((string) $user->getKey(), $instance, $sessionId);
+            }
         } else {
             $userId = is_object($user) && isset($user->id) ? $user->id : null;
 
@@ -336,6 +348,16 @@ class CartMigrationService
     }
 
     /**
+     * @param  array<string, mixed>  $guestMetadata
+     * @param  array<string, mixed>  $userMetadata
+     * @return array<string, mixed>
+     */
+    private function mergeMetadataData(array $guestMetadata, array $userMetadata): array
+    {
+        return array_merge($guestMetadata, $userMetadata);
+    }
+
+    /**
      * Merge items arrays from guest cart and user cart.
      *
      * @param  array<string, mixed>  $guestItems
@@ -379,6 +401,7 @@ class CartMigrationService
         $ownerStorage = $this->resolveStorage($owner);
 
         $guestItems = $guestStorage->getItems($guestIdentifier, $instance);
+        $guestMetadata = $guestStorage->getAllMetadata($guestIdentifier, $instance);
 
         if (empty($guestItems)) {
             return false;
@@ -394,6 +417,10 @@ class CartMigrationService
             $guestConditions = $guestStorage->getConditions($guestIdentifier, $instance);
             if (! empty($guestConditions)) {
                 $ownerStorage->putConditions($userIdentifier, $instance, $guestConditions);
+            }
+
+            if ($guestMetadata !== []) {
+                $ownerStorage->putMetadataBatch($userIdentifier, $instance, $guestMetadata);
             }
 
             if (config('cart.events', true)) {
@@ -422,6 +449,11 @@ class CartMigrationService
             $userConditions = $ownerStorage->getConditions($userIdentifier, $instance);
             $mergedConditions = $this->mergeConditionsData($guestConditions, $userConditions);
             $ownerStorage->putConditions($userIdentifier, $instance, $mergedConditions);
+        }
+
+        if ($guestMetadata !== []) {
+            $userMetadata = $ownerStorage->getAllMetadata($userIdentifier, $instance);
+            $ownerStorage->putMetadataBatch($userIdentifier, $instance, $this->mergeMetadataData($guestMetadata, $userMetadata));
         }
 
         if (config('cart.events', true)) {

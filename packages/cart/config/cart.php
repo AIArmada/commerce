@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 use AIArmada\Cart\Models\CartModel;
 
 return [
@@ -12,14 +13,6 @@ return [
     'database' => [
         'table' => env('CART_DB_TABLE', 'carts'),
         'table_prefix' => env('CART_DB_TABLE_PREFIX', 'cart_'),
-        'tables' => [
-            'alert_rules' => env('CART_ALERT_RULES_TABLE'),
-            'alert_logs' => env('CART_ALERT_LOGS_TABLE'),
-            'daily_metrics' => env('CART_DAILY_METRICS_TABLE'),
-            'recovery_campaigns' => env('CART_RECOVERY_CAMPAIGNS_TABLE'),
-            'recovery_templates' => env('CART_RECOVERY_TEMPLATES_TABLE'),
-            'recovery_attempts' => env('CART_RECOVERY_ATTEMPTS_TABLE'),
-        ],
         'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
         'json_column_type' => env('CART_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
         'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30), // 30 days, null to disable
@@ -62,6 +55,7 @@ return [
     'owner' => [
         'enabled' => env('CART_OWNER_ENABLED', false),
         'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', false),
+        'auto_assign_on_create' => env('CART_OWNER_AUTO_ASSIGN_ON_CREATE', true),
     ],
 
     /*

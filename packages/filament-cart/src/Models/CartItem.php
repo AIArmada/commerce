@@ -231,8 +231,10 @@ final class CartItem extends Model
     #[Scope]
     protected function withoutConditions(Builder $query): void
     {
-        $query->whereNull('conditions')
-            ->orWhereJsonLength('conditions', '=', 0);
+        $query->where(function (Builder $builder): void {
+            $builder->whereNull('conditions')
+                ->orWhereJsonLength('conditions', '=', 0);
+        });
     }
 
     private function formatMoney(int $amount): string

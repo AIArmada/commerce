@@ -83,7 +83,6 @@ class MarkAbandonedCartsCommand extends Command
             ->where('items_count', '>', 0)
             ->whereNotNull('checkout_started_at')
             ->whereNull('checkout_abandoned_at')
-            ->whereNull('recovered_at')
             ->where(function ($q) use ($cutoff): void {
                 $q->where('last_activity_at', '<', $cutoff)
                     ->orWhere(function ($sub) use ($cutoff): void {

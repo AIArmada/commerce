@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\ItemAdded;
+use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -11,13 +13,27 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\Signals\Support\CommerceSignalsIntegrationRegistrar;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
+use AIArmada\Vouchers\Events\VoucherRemoved;
 use AIArmada\Vouchers\States\Active;
 use Illuminate\Support\Facades\Event;
 
 uses(SignalsTestCase::class);
+
+beforeEach(function (): void {
+    config()->set('signals.integrations.cart.enabled', true);
+
+    Event::forget(ItemAdded::class);
+    Event::forget(ItemRemoved::class);
+    Event::forget(CartCleared::class);
+    Event::forget(VoucherApplied::class);
+    Event::forget(VoucherRemoved::class);
+
+    app(CommerceSignalsIntegrationRegistrar::class)->boot();
+});
 
 it('records a cart item added signal for the owner-scoped property', function (): void {
     $owner = User::query()->firstOrFail();

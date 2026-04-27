@@ -21,7 +21,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('identifier');
             $table->string('instance')->default('default');
-            $table->string('owner_key', 191)->default('global');
+            $table->string('owner_scope', 191)->default('global');
             $table->nullableUuidMorphs('owner');
             $table->unsignedInteger('items_count')->default(0);
             $table->unsignedInteger('quantity')->default(0);
@@ -35,14 +35,12 @@ return new class extends Migration
             $table->timestamp('last_activity_at')->nullable();
             $table->timestamp('checkout_started_at')->nullable();
             $table->timestamp('checkout_abandoned_at')->nullable();
-            $table->unsignedTinyInteger('recovery_attempts')->default(0);
-            $table->timestamp('recovered_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['owner_key', 'identifier', 'instance'], $tableName . '_owner_key_identifier_instance_unique');
+            $table->unique(['owner_scope', 'identifier', 'instance'], $tableName . '_owner_scope_identifier_instance_unique');
             $table->index('identifier');
             $table->index('instance');
-            $table->index('owner_key', $tableName . '_owner_key_index');
+            $table->index('owner_scope', $tableName . '_owner_scope_index');
             $table->index('items_count');
             $table->index('quantity');
             $table->index('subtotal');
@@ -51,8 +49,6 @@ return new class extends Migration
             $table->index('last_activity_at');
             $table->index('checkout_started_at');
             $table->index('checkout_abandoned_at');
-            $table->index('recovered_at');
-            $table->index(['checkout_abandoned_at', 'recovered_at'], $tableName . '_abandonment_idx');
             $table->index('created_at');
             $table->index('updated_at');
         });

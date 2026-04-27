@@ -11,7 +11,8 @@
     "aiarmada/commerce-support": "self.version"
   },
   "suggest": {
-    "aiarmada/cart-graphql": "GraphQL API layer with queries, mutations, and subscriptions"
+    "aiarmada/cart-graphql": "GraphQL API layer with queries, mutations, and subscriptions",
+    "aiarmada/signals": "Optional cart analytics and alerting through the Signals package"
   },
   "autoload": {
     "psr-4": {

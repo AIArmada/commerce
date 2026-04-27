@@ -45,6 +45,13 @@ final class SignalFormOptionLists
             'affiliate.conversion.recorded',
             'auth.login',
             'auth.registered',
+            'cart.snapshot.synced',
+            'cart.checkout.started',
+            'cart.abandoned',
+            'cart.high_value.detected',
+            'cart.item.added',
+            'cart.item.removed',
+            'cart.cleared',
         ];
     }
 
@@ -58,7 +65,9 @@ final class SignalFormOptionLists
             'auth',
             'content',
             'conversion',
+            'cart',
             'engagement',
+            'promotion',
         ];
 
         if (config('signals.features.monetary.enabled', true)) {

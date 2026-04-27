@@ -11,8 +11,11 @@ use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -155,6 +158,45 @@ it('integration: registers database storage', function (): void {
         expect($app->make('cart.storage'))->toBeInstanceOf(DatabaseStorage::class);
         expect($app->make(StorageInterface::class))->toBeInstanceOf(DatabaseStorage::class);
     }
+});
+
+it('integration: fails fast when cart storage is resolved without an owner in owner mode', function (): void {
+    config()->set('cart.owner.enabled', true);
+    OwnerContext::clearOverride();
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    $provider = new CartServiceProvider(app());
+    $provider->register();
+
+    expect(fn () => app()->make('cart.storage'))
+        ->toThrow(RuntimeException::class, 'Cart owner is enabled but no owner was resolved while resolving cart storage.');
+});
+
+it('integration: allows explicit global cart storage resolution in owner mode', function (): void {
+    config()->set('cart.owner.enabled', true);
+    OwnerContext::clearOverride();
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    $provider = new CartServiceProvider(app());
+    $provider->register();
+
+    $storage = OwnerContext::withOwner(null, fn () => app()->make('cart.storage'));
+
+    expect($storage)->toBeInstanceOf(DatabaseStorage::class);
 });
 
 it('integration: registers cart manager and aliases', function (): void {

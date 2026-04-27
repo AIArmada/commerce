@@ -7,7 +7,6 @@ namespace AIArmada\FilamentCart\Pages;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
-use AIArmada\FilamentCart\Widgets\RecoveryOptimizerWidget;
 use BackedEnum;
 use Filament\Pages\Page;
 use UnitEnum;
@@ -15,7 +14,7 @@ use UnitEnum;
 /**
  * Cart analytics dashboard page.
  *
- * Provides an overview of cart activity, abandonment rates, and recovery.
+ * Provides an overview of cart activity and abandonment.
  */
 class CartDashboard extends Page
 {
@@ -73,10 +72,6 @@ class CartDashboard extends Page
     {
         $widgets = [];
 
-        if (config('filament-cart.widgets.recovery_optimizer', true) && config('filament-cart.features.recovery', true)) {
-            $widgets[] = RecoveryOptimizerWidget::class;
-        }
-
         if (config('filament-cart.widgets.abandoned_carts', true) && config('filament-cart.features.abandonment_tracking', true)) {
             $widgets[] = AbandonedCartsWidget::class;
         }
@@ -92,7 +87,6 @@ class CartDashboard extends Page
 
         return Cart::query()->forOwner()
             ->whereNotNull('checkout_abandoned_at')
-            ->whereNull('recovered_at')
             ->where('checkout_abandoned_at', '>=', now()->subDay())
             ->count();
     }

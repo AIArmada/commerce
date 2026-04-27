@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
-use AIArmada\FilamentCart\Services\CartMonitor;
+use AIArmada\FilamentCart\Models\Cart;
+use Akaunting\Money\Money;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -19,34 +20,44 @@ class LiveStatsWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $monitor = app(CartMonitor::class);
-        $stats = $monitor->getLiveStats();
+        $recentCutoff = now()->subMinutes(30);
+        $highValueThreshold = (int) config('filament-cart.analytics.high_value_threshold_minor', 10000);
+
+        $base = Cart::query()->forOwner();
+        $activeCarts = (clone $base)->where('last_activity_at', '>=', $recentCutoff)->count();
+        $cartsWithItems = (clone $base)->where('items_count', '>', 0)->where('last_activity_at', '>=', $recentCutoff)->count();
+        $checkoutsInProgress = (clone $base)->whereNotNull('checkout_started_at')->whereNull('checkout_abandoned_at')->count();
+        $recentAbandonments = (clone $base)->where('checkout_abandoned_at', '>=', $recentCutoff)->count();
+        $totalValue = (int) (clone $base)->where('items_count', '>', 0)->sum('total');
+        $highValueCarts = (clone $base)->where('total', '>=', $highValueThreshold)->count();
 
         return [
-            Stat::make('Active Carts', (string) $stats->active_carts)
-                ->description("{$stats->carts_with_items} with items")
+            Stat::make('Active Carts', (string) $activeCarts)
+                ->description("{$cartsWithItems} with items")
                 ->icon('heroicon-o-shopping-cart')
                 ->color('primary'),
 
-            Stat::make('Checkouts', (string) $stats->checkouts_in_progress)
+            Stat::make('Checkouts', (string) $checkoutsInProgress)
                 ->description('In progress')
                 ->icon('heroicon-o-credit-card')
                 ->color('success'),
 
-            Stat::make('Recent Abandonments', (string) $stats->recent_abandonments)
+            Stat::make('Recent Abandonments', (string) $recentAbandonments)
                 ->description('Last 30 minutes')
                 ->icon('heroicon-o-exclamation-triangle')
-                ->color($stats->recent_abandonments > 0 ? 'warning' : 'gray'),
+                ->color($recentAbandonments > 0 ? 'warning' : 'gray'),
 
-            Stat::make('Total Value', $stats->getFormattedTotalValue())
-                ->description("{$stats->high_value_carts} high-value")
+            Stat::make('Total Value', $this->formatMoney($totalValue))
+                ->description("{$highValueCarts} high-value")
                 ->icon('heroicon-o-currency-dollar')
                 ->color('info'),
-
-            Stat::make('Pending Alerts', (string) $stats->pending_alerts)
-                ->description('Unread')
-                ->icon('heroicon-o-bell')
-                ->color($stats->pending_alerts > 0 ? 'danger' : 'gray'),
         ];
+    }
+
+    private function formatMoney(int $amount): string
+    {
+        $currency = mb_strtoupper(config('cart.money.default_currency', 'USD'));
+
+        return (string) Money::{$currency}($amount);
     }
 }

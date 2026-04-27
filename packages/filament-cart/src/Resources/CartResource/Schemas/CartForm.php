@@ -75,12 +75,12 @@ final class CartForm
                                         TextInput::make('price')
                                             ->label('Price')
                                             ->numeric()
-                                            ->prefix('$')
+                                            ->prefix(self::resolveCurrencyPrefix())
                                             ->required(),
 
                                         TextInput::make('subtotal')
                                             ->label('Subtotal')
-                                            ->prefix('$')
+                                            ->prefix(self::resolveCurrencyPrefix())
                                             ->disabled()
                                             ->dehydrated(false),
 
@@ -156,5 +156,10 @@ final class CartForm
                     ])
                     ->collapsible(),
             ]);
+    }
+
+    private static function resolveCurrencyPrefix(): string
+    {
+        return mb_strtoupper(config('cart.money.default_currency', 'USD'));
     }
 }

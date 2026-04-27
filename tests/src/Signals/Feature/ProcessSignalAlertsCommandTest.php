@@ -12,6 +12,7 @@ use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Http;
 
 uses(SignalsTestCase::class);
 
@@ -206,4 +207,114 @@ it('processes signal alert rules for each owner when no ambient owner is resolve
         ->and($logs->pluck('signal_alert_rule_id')->all())->toContain($ruleA->id, $ruleB->id)
         ->and($ruleA->fresh()?->last_triggered_at)->not()->toBeNull()
         ->and($ruleB->fresh()?->last_triggered_at)->not()->toBeNull();
+});
+
+it('applies generic event and property filters before dispatching alerts', function (): void {
+    /** @var User $owner */
+    $owner = User::query()->create([
+        'name' => 'Filtered Alert Owner',
+        'email' => 'filtered-alert-owner@signals.test',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Filtered Alert Property',
+        'slug' => 'filtered-alert-property',
+        'write_key' => 'filtered-alert-property-key',
+    ]);
+
+    $rule = SignalAlertRule::query()->create([
+        'tracked_property_id' => $property->id,
+        'name' => 'High Value Cart',
+        'slug' => 'high-value-cart',
+        'metric_key' => 'events',
+        'operator' => '>=',
+        'threshold' => 1,
+        'timeframe_minutes' => 60,
+        'cooldown_minutes' => 30,
+        'severity' => 'critical',
+        'event_filters' => [
+            'event_names' => ['cart.high_value.detected'],
+            'properties' => [
+                ['key' => 'cart_total_minor', 'operator' => '>=', 'value' => 10000],
+            ],
+        ],
+    ]);
+
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'occurred_at' => CarbonImmutable::now()->subMinutes(5),
+        'event_name' => 'cart.snapshot.synced',
+        'event_category' => 'cart',
+        'properties' => ['cart_total_minor' => 50000],
+    ]);
+
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'occurred_at' => CarbonImmutable::now()->subMinutes(5),
+        'event_name' => 'cart.high_value.detected',
+        'event_category' => 'cart',
+        'properties' => ['cart_total_minor' => 15000],
+    ]);
+
+    $this->artisan('signals:process-alerts')
+        ->expectsOutputToContain('Summary: 1 processed, 0 skipped, 1 dispatched')
+        ->assertSuccessful();
+
+    expect(SignalAlertLog::query()->forOwner()->first()?->signal_alert_rule_id)->toBe($rule->id);
+});
+
+it('dispatches signal alerts to named webhook destinations', function (): void {
+    Http::fake();
+
+    config()->set('signals.features.alerts.destinations.webhook.ops', [
+        'url' => 'https://alerts.example.test/signals',
+    ]);
+
+    /** @var User $owner */
+    $owner = User::query()->create([
+        'name' => 'Webhook Alert Owner',
+        'email' => 'webhook-alert-owner@signals.test',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Webhook Alert Property',
+        'slug' => 'webhook-alert-property',
+        'write_key' => 'webhook-alert-property-key',
+    ]);
+
+    SignalAlertRule::query()->create([
+        'tracked_property_id' => $property->id,
+        'name' => 'Webhook Alert',
+        'slug' => 'webhook-alert',
+        'metric_key' => 'events',
+        'operator' => '>=',
+        'threshold' => 1,
+        'timeframe_minutes' => 60,
+        'cooldown_minutes' => 30,
+        'severity' => 'warning',
+        'channels' => ['database', 'webhook'],
+        'destination_keys' => ['ops'],
+    ]);
+
+    SignalEvent::query()->create([
+        'tracked_property_id' => $property->id,
+        'occurred_at' => CarbonImmutable::now()->subMinutes(5),
+        'event_name' => 'cart.abandoned',
+        'event_category' => 'cart',
+    ]);
+
+    $this->artisan('signals:process-alerts')->assertSuccessful();
+
+    Http::assertSentCount(1);
+
+    $log = SignalAlertLog::query()->forOwner()->firstOrFail();
+
+    expect($log->channels_notified)->toContain('database', 'webhook')
+        ->and($log->delivery_results['webhook']['status'] ?? null)->toBe('sent');
 });

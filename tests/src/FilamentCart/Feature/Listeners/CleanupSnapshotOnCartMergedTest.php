@@ -5,6 +5,10 @@ declare(strict_types=1);
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Listeners\CleanupSnapshotOnCartMerged;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Models\CartCondition;
@@ -156,6 +160,55 @@ describe('CartMerged Event Updates', function (): void {
         expect(CartCondition::where('name', 'user-tax')->first()->cart_id)->toBe($userSnapshot->id);
     });
 
+    it('refreshes the target snapshot from the live merged cart when storage has post-merge data', function (): void {
+        $guestSnapshot = CartSnapshot::create([
+            'identifier' => 'guest_session_refresh',
+            'instance' => 'default',
+            'items' => ['product-1' => ['id' => 'product-1', 'quantity' => 1]],
+            'items_count' => 1,
+            'quantity' => 1,
+            'subtotal' => 1000,
+            'total' => 1000,
+            'currency' => 'MYR',
+        ]);
+
+        $targetSnapshot = CartSnapshot::create([
+            'identifier' => '91',
+            'instance' => 'default',
+            'items' => ['product-2' => ['id' => 'product-2', 'quantity' => 1]],
+            'items_count' => 1,
+            'quantity' => 1,
+            'subtotal' => 2000,
+            'total' => 2000,
+            'currency' => 'MYR',
+        ]);
+
+        $storage = Cart::storage();
+        $storage->putItems('91', 'default', [
+            'product-1' => ['id' => 'product-1', 'name' => 'Guest Product', 'price' => 1000, 'quantity' => 1, 'attributes' => [], 'conditions' => []],
+            'product-2' => ['id' => 'product-2', 'name' => 'User Product', 'price' => 2000, 'quantity' => 1, 'attributes' => [], 'conditions' => []],
+        ]);
+        $storage->putMetadataBatch('91', 'default', ['email' => 'merged@example.com']);
+
+        $event = new CartMerged(
+            targetCart: Cart::getCartInstance('default', '91'),
+            sourceCart: Cart::getCartInstance('default', '91'),
+            totalItemsMerged: 2,
+            mergeStrategy: 'add_quantities',
+            hadConflicts: false,
+            originalSourceIdentifier: 'guest_session_refresh',
+            originalTargetIdentifier: '91'
+        );
+
+        (new CleanupSnapshotOnCartMerged)->handle($event);
+
+        $targetSnapshot->refresh();
+
+        expect($targetSnapshot->items_count)->toBe(2);
+        expect($targetSnapshot->quantity)->toBe(2);
+        expect($targetSnapshot->metadata['email'])->toBe('merged@example.com');
+    });
+
     it('handles updates for multiple instances separately', function (): void {
         // Create guest snapshots for different instances
         $defaultSnapshot = CartSnapshot::create([
@@ -232,6 +285,70 @@ describe('CartMerged Event Updates', function (): void {
 
         // Should complete without error
         expect(true)->toBeTrue();
+    });
+
+    it('moves a global guest snapshot into the current owner scope when owner mode is enabled', function (): void {
+        config()->set('cart.owner.enabled', true);
+        config()->set('filament-cart.owner.enabled', true);
+        config()->set('cart.owner.include_global', false);
+        config()->set('filament-cart.owner.include_global', false);
+
+        $owner = User::query()->create([
+            'name' => 'Snapshot Owner',
+            'email' => 'snapshot-owner@example.com',
+            'password' => 'secret',
+        ]);
+
+        app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($owner));
+
+        $guestSnapshot = OwnerContext::withOwner(null, fn () => CartSnapshot::create([
+            'identifier' => 'guest-owner-session',
+            'instance' => 'default',
+            'items' => ['product-1' => ['id' => 'product-1', 'quantity' => 1]],
+            'items_count' => 1,
+            'quantity' => 1,
+            'currency' => 'MYR',
+        ]));
+
+        OwnerContext::withOwner(null, function () use ($guestSnapshot): void {
+            $guestSnapshot->cartItems()->create([
+                'item_id' => 'product-1',
+                'name' => 'Guest Product',
+                'price' => 2500,
+                'quantity' => 1,
+            ]);
+        });
+
+        $targetSnapshot = CartSnapshot::create([
+            'identifier' => 'owner-42',
+            'instance' => 'default',
+            'items' => ['product-2' => ['id' => 'product-2', 'quantity' => 1]],
+            'items_count' => 1,
+            'quantity' => 1,
+            'currency' => 'MYR',
+        ]);
+
+        $targetSnapshot->cartItems()->create([
+            'item_id' => 'product-2',
+            'name' => 'Owned Product',
+            'price' => 5000,
+            'quantity' => 1,
+        ]);
+
+        $event = new CartMerged(
+            targetCart: Cart::getCartInstance('default', 'owner-42'),
+            sourceCart: Cart::getCartInstance('default', 'owner-42'),
+            totalItemsMerged: 1,
+            mergeStrategy: 'add_quantities',
+            hadConflicts: false,
+            originalSourceIdentifier: 'guest-owner-session',
+            originalTargetIdentifier: 'owner-42',
+        );
+
+        (new CleanupSnapshotOnCartMerged)->handle($event);
+
+        expect(CartSnapshot::query()->withoutOwnerScope()->whereKey($guestSnapshot->id)->exists())->toBeFalse();
+        expect(CartItem::query()->where('cart_id', $targetSnapshot->id)->count())->toBe(2);
     });
 });
 
@@ -396,9 +513,14 @@ describe('Integration with Cart Migration', function (): void {
         // Guest snapshot should be deleted
         expect(CartSnapshot::where('identifier', $guestIdentifier)->exists())->toBeFalse();
 
-        // User snapshot should exist with all items
+        // User snapshot should exist and now mirror the swapped live cart state
         expect(CartSnapshot::where('identifier', '75')->exists())->toBeTrue();
-        expect(CartItem::where('cart_id', $userSnapshot->id)->count())->toBe(3);
+
+        $userSnapshot->refresh();
+
+        expect($userSnapshot->items_count)->toBe(2);
+        expect($userSnapshot->quantity)->toBe(3);
+        expect(CartItem::where('cart_id', $userSnapshot->id)->count())->toBe(2);
     });
 });
 

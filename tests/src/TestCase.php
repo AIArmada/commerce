@@ -504,7 +504,8 @@ abstract class TestCase extends Orchestra
         Schema::create('conditions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
-            $table->string('name')->unique();
+            $table->string('owner_scope')->default('global');
+            $table->string('name');
             $table->string('display_name')->nullable();
             $table->text('description')->nullable();
 
@@ -532,6 +533,7 @@ abstract class TestCase extends Orchestra
 
             $table->timestamps();
 
+            $table->unique(['owner_scope', 'name']);
             $table->index(['type', 'is_active']);
             $table->index(['target', 'is_active']);
             $table->index('is_charge');
@@ -549,7 +551,7 @@ abstract class TestCase extends Orchestra
             $table->string('identifier');
             $table->string('instance')->default('default');
 
-            $table->string('owner_key', 191)->default('global');
+            $table->string('owner_scope', 191)->default('global');
             $table->nullableUuidMorphs('owner');
 
             $table->unsignedInteger('items_count')->default(0);
@@ -567,8 +569,6 @@ abstract class TestCase extends Orchestra
             $table->timestamp('last_activity_at')->nullable();
             $table->timestamp('checkout_started_at')->nullable();
             $table->timestamp('checkout_abandoned_at')->nullable();
-            $table->unsignedTinyInteger('recovery_attempts')->default(0);
-            $table->timestamp('recovered_at')->nullable();
 
             // Collaborative Cart Support
             $table->boolean('is_collaborative')->default(false);
@@ -580,18 +580,16 @@ abstract class TestCase extends Orchestra
 
             $table->timestamps();
 
-            $table->unique(['owner_key', 'identifier', 'instance']);
-            $table->index('owner_key');
+            $table->unique(['owner_scope', 'identifier', 'instance']);
+            $table->index('owner_scope');
             $table->index('identifier');
             $table->index('instance');
 
             $table->index('last_activity_at');
             $table->index('checkout_started_at');
             $table->index('checkout_abandoned_at');
-            $table->index('recovered_at');
             $table->index('is_collaborative');
             $table->index('fraud_risk_level');
-            $table->index(['checkout_abandoned_at', 'recovered_at']);
         });
 
         Schema::dropIfExists('cart_snapshot_items');
@@ -684,253 +682,6 @@ abstract class TestCase extends Orchestra
             $table->string('message');
             $table->json('metadata')->nullable();
             $table->timestamp('created_at')->nullable()->index();
-        });
-
-        // Filament Cart analytics table
-        Schema::dropIfExists('cart_daily_metrics');
-        Schema::create('cart_daily_metrics', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->date('date')->index();
-            $table->string('segment')->nullable()->index();
-
-            $table->nullableUuidMorphs('owner');
-
-            $table->unsignedInteger('carts_created')->default(0);
-            $table->unsignedInteger('carts_active')->default(0);
-            $table->unsignedInteger('carts_empty')->default(0);
-            $table->unsignedInteger('carts_with_items')->default(0);
-
-            $table->unsignedInteger('checkouts_started')->default(0);
-            $table->unsignedInteger('checkouts_completed')->default(0);
-            $table->unsignedInteger('checkouts_abandoned')->default(0);
-
-            $table->unsignedInteger('recovery_emails_sent')->default(0);
-            $table->unsignedInteger('carts_recovered')->default(0);
-            $table->unsignedBigInteger('recovered_revenue_cents')->default(0);
-
-            $table->unsignedBigInteger('total_cart_value_cents')->default(0);
-            $table->unsignedBigInteger('average_cart_value_cents')->default(0);
-            $table->unsignedInteger('total_items')->default(0);
-            $table->decimal('average_items_per_cart', 8, 2)->default(0);
-
-            $table->unsignedInteger('fraud_alerts_high')->default(0);
-            $table->unsignedInteger('fraud_alerts_medium')->default(0);
-            $table->unsignedInteger('carts_blocked')->default(0);
-
-            $table->unsignedInteger('collaborative_carts')->default(0);
-            $table->unsignedInteger('total_collaborators')->default(0);
-
-            $table->timestamps();
-
-            $table->unique(['date', 'segment']);
-        });
-
-        // Filament Cart recovery tables
-        Schema::dropIfExists('cart_recovery_campaigns');
-        Schema::create('cart_recovery_campaigns', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-
-            $table->nullableUuidMorphs('owner');
-
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->string('status')->default('draft');
-            $table->string('trigger_type');
-            $table->integer('trigger_delay_minutes')->default(60);
-            $table->integer('max_attempts')->default(3);
-            $table->integer('attempt_interval_hours')->default(24);
-
-            $table->integer('min_cart_value_cents')->nullable();
-            $table->integer('max_cart_value_cents')->nullable();
-            $table->integer('min_items')->nullable();
-            $table->integer('max_items')->nullable();
-            $table->json('target_segments')->nullable();
-            $table->json('exclude_segments')->nullable();
-
-            $table->string('strategy')->default('email');
-            $table->boolean('offer_discount')->default(false);
-            $table->string('discount_type')->nullable();
-            $table->integer('discount_value')->nullable();
-            $table->boolean('offer_free_shipping')->default(false);
-            $table->integer('urgency_hours')->nullable();
-
-            $table->boolean('ab_testing_enabled')->default(false);
-            $table->integer('ab_test_split_percent')->default(50);
-            $table->foreignUuid('control_template_id')->nullable();
-            $table->foreignUuid('variant_template_id')->nullable();
-
-            $table->integer('total_targeted')->default(0);
-            $table->integer('total_sent')->default(0);
-            $table->integer('total_opened')->default(0);
-            $table->integer('total_clicked')->default(0);
-            $table->integer('total_recovered')->default(0);
-            $table->integer('recovered_revenue_cents')->default(0);
-
-            $table->timestamp('starts_at')->nullable();
-            $table->timestamp('ends_at')->nullable();
-            $table->timestamp('last_run_at')->nullable();
-
-            $table->timestamps();
-
-            $table->index(['status', 'trigger_type']);
-            $table->index('starts_at');
-            $table->index('ends_at');
-        });
-
-        Schema::dropIfExists('cart_recovery_templates');
-        Schema::create('cart_recovery_templates', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-
-            $table->nullableUuidMorphs('owner');
-
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->string('type');
-            $table->string('status')->default('draft');
-            $table->boolean('is_default')->default(false);
-
-            $table->string('email_subject')->nullable();
-            $table->string('email_preheader')->nullable();
-            $table->text('email_body_html')->nullable();
-            $table->text('email_body_text')->nullable();
-            $table->string('email_from_name')->nullable();
-            $table->string('email_from_email')->nullable();
-
-            $table->text('sms_body')->nullable();
-
-            $table->string('push_title')->nullable();
-            $table->text('push_body')->nullable();
-            $table->string('push_icon')->nullable();
-            $table->string('push_action_url')->nullable();
-
-            $table->integer('times_used')->default(0);
-            $table->integer('times_opened')->default(0);
-            $table->integer('times_clicked')->default(0);
-            $table->integer('times_converted')->default(0);
-
-            $table->timestamps();
-
-            $table->index(['type', 'status']);
-            $table->index('is_default');
-        });
-
-        Schema::dropIfExists('cart_recovery_attempts');
-        Schema::create('cart_recovery_attempts', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-
-            $table->nullableUuidMorphs('owner');
-
-            $table->foreignUuid('campaign_id');
-            $table->foreignUuid('cart_id');
-            $table->foreignUuid('template_id')->nullable();
-
-            $table->string('recipient_email')->nullable();
-            $table->string('recipient_phone')->nullable();
-            $table->string('recipient_name')->nullable();
-
-            $table->string('channel');
-            $table->string('status')->default('scheduled');
-            $table->integer('attempt_number')->default(1);
-
-            $table->boolean('is_control')->default(false);
-            $table->boolean('is_variant')->default(false);
-
-            $table->string('discount_code')->nullable();
-            $table->integer('discount_value_cents')->nullable();
-            $table->boolean('free_shipping_offered')->default(false);
-            $table->timestamp('offer_expires_at')->nullable();
-
-            $table->integer('cart_value_cents')->default(0);
-            $table->integer('cart_items_count')->default(0);
-
-            $table->timestamp('scheduled_for')->nullable();
-            $table->timestamp('queued_at')->nullable();
-            $table->timestamp('sent_at')->nullable();
-            $table->timestamp('delivered_at')->nullable();
-            $table->timestamp('opened_at')->nullable();
-            $table->timestamp('clicked_at')->nullable();
-            $table->timestamp('converted_at')->nullable();
-            $table->timestamp('failed_at')->nullable();
-
-            $table->string('message_id')->nullable();
-            $table->json('metadata')->nullable();
-            $table->text('failure_reason')->nullable();
-
-            $table->timestamps();
-
-            $table->index(['campaign_id', 'status']);
-            $table->index(['cart_id', 'status']);
-            $table->index('scheduled_for');
-            $table->index('status');
-        });
-
-        // Filament Cart alerting tables
-        Schema::dropIfExists('cart_alert_rules');
-        Schema::create('cart_alert_rules', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-
-            $table->nullableUuidMorphs('owner');
-
-            $table->string('name');
-            $table->text('description')->nullable();
-
-            $table->string('event_type');
-            $table->json('conditions');
-
-            $table->boolean('notify_email')->default(true);
-            $table->boolean('notify_slack')->default(false);
-            $table->boolean('notify_webhook')->default(false);
-            $table->boolean('notify_database')->default(true);
-
-            $table->json('email_recipients')->nullable();
-            $table->string('slack_webhook_url')->nullable();
-            $table->string('webhook_url')->nullable();
-
-            $table->unsignedInteger('cooldown_minutes')->default(60);
-            $table->timestamp('last_triggered_at')->nullable();
-
-            $table->string('severity')->default('info');
-            $table->unsignedInteger('priority')->default(0);
-
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-
-            $table->index(['event_type', 'is_active']);
-            $table->index('severity');
-        });
-
-        Schema::dropIfExists('cart_alert_logs');
-        Schema::create('cart_alert_logs', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-
-            $table->nullableUuidMorphs('owner');
-
-            $table->foreignUuid('alert_rule_id');
-            $table->string('event_type');
-            $table->string('severity')->default('info');
-            $table->string('title');
-            $table->text('message')->nullable();
-
-            $table->json('event_data');
-            $table->json('channels_notified');
-
-            $table->foreignUuid('cart_id')->nullable();
-            $table->string('session_id')->nullable();
-
-            $table->boolean('is_read')->default(false);
-            $table->timestamp('read_at')->nullable();
-            $table->foreignUuid('read_by')->nullable();
-
-            $table->boolean('action_taken')->default(false);
-            $table->string('action_type')->nullable();
-            $table->timestamp('action_at')->nullable();
-
-            $table->timestamps();
-
-            $table->index(['alert_rule_id', 'created_at']);
-            $table->index(['is_read', 'severity']);
-            $table->index('cart_id');
-            $table->index('event_type');
         });
 
         // Stock tables

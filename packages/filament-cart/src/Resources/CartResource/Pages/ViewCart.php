@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
+use AIArmada\FilamentCart\Services\CartDownloadService;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
 use AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget;
@@ -78,7 +79,7 @@ final class ViewCart extends ViewRecord
                 /** @var Cart $record */
                 $record = $this->record;
                 app(CartInstanceManager::class)
-                    ->resolve($record->instance, $record->identifier)
+                    ->resolveForSnapshot($record)
                     ->clear();
                 $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
             })
@@ -92,33 +93,7 @@ final class ViewCart extends ViewRecord
                 /** @var Cart $record */
                 $record = $this->record;
 
-                return response()->download(
-                    storage_path('app/temp/cart_' . $record->identifier . '.json'),
-                    'cart_' . $record->identifier . '.json',
-                    ['Content-Type' => 'application/json']
-                );
-            })
-            ->before(function (): void {
-                // Create the export file
-                /** @var Cart $record */
-                $record = $this->record;
-                $cartData = [
-                    'identifier' => $record->identifier,
-                    'instance' => $record->instance,
-                    'items' => $record->items,
-                    'conditions' => $record->conditions,
-                    'metadata' => $record->metadata,
-                    'exported_at' => now()->toISOString(),
-                ];
-
-                if (! file_exists(storage_path('app/temp'))) {
-                    mkdir(storage_path('app/temp'), 0755, true);
-                }
-
-                file_put_contents(
-                    storage_path('app/temp/cart_' . $record->identifier . '.json'),
-                    json_encode($cartData, JSON_PRETTY_PRINT)
-                );
+                return app(CartDownloadService::class)->download($record);
             });
 
         $actions[] = Actions\Action::make('delete_cart')
@@ -132,7 +107,7 @@ final class ViewCart extends ViewRecord
                 /** @var Cart $record */
                 $record = $this->record;
                 app(CartInstanceManager::class)
-                    ->resolve($record->instance, $record->identifier)
+                    ->resolveForSnapshot($record)
                     ->destroy();
                 $this->redirect($this->getResource()::getUrl('index'));
             });

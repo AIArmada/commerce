@@ -80,3 +80,22 @@ it('ignores properties belonging to other owners when resolving', function (): v
 
     expect($resolver->resolveForOwner($owner)?->is($property))->toBeTrue();
 });
+
+it('auto-creates a deterministic tracked property only for explicitly enabled integrations', function (): void {
+    $owner = User::query()->firstOrFail();
+    $resolver = app(TrackedPropertyResolver::class);
+
+    expect($resolver->resolveForOwner($owner, integration: 'cart'))->toBeNull();
+
+    config()->set('signals.integrations.cart.enabled', true);
+    config()->set('signals.integrations.cart.tracked_property.auto_create', true);
+    config()->set('signals.integrations.cart.tracked_property.slug', 'commerce-cart');
+    config()->set('signals.integrations.cart.tracked_property.name', 'Commerce Cart');
+
+    $property = $resolver->resolveForOwner($owner, integration: 'cart');
+
+    expect($property)->toBeInstanceOf(TrackedProperty::class)
+        ->and($property?->slug)->toBe('commerce-cart')
+        ->and($property?->settings['integration'] ?? null)->toBe('cart')
+        ->and($resolver->resolveForOwner($owner, integration: 'cart')?->is($property))->toBeTrue();
+});

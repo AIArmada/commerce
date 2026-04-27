@@ -29,6 +29,11 @@ final class OwnerWriteGuard
 
         if ($owner === OwnerContext::CURRENT) {
             $owner = OwnerContext::resolve();
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                sprintf('%s requires an owner context or explicit global context.', $modelClass),
+            );
         }
 
         if (is_string($owner)) {
@@ -43,7 +48,7 @@ final class OwnerWriteGuard
                 $query = OwnerQuery::applyToEloquentBuilder(
                     $query->withoutGlobalScope(OwnerScope::class),
                     $owner,
-                    $includeGlobal && $config->includeGlobal,
+                    $includeGlobal,
                     $config->ownerTypeColumn,
                     $config->ownerIdColumn,
                 );
