@@ -38,7 +38,6 @@ class RecentActivityWidget extends BaseWidget
                         'checkout' => 'success',
                         'active' => 'info',
                         'abandoned' => 'warning',
-                        'completed' => 'primary',
                         default => 'gray',
                     }),
 
@@ -48,7 +47,9 @@ class RecentActivityWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('total_cents')
                     ->label('Value')
-                    ->money('USD', divideBy: 100),
+                    ->money(fn ($record): string => is_string($record->currency ?? null) && $record->currency !== ''
+                        ? mb_strtoupper($record->currency)
+                        : $this->resolveCurrency(), divideBy: 100),
 
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Updated')
@@ -74,6 +75,7 @@ class RecentActivityWidget extends BaseWidget
                     ELSE 'active'
                 END as status,
                 items_count,
+                currency,
                 total as total_cents,
                 updated_at
             ")
@@ -88,5 +90,10 @@ class RecentActivityWidget extends BaseWidget
         }
 
         return $query;
+    }
+
+    private function resolveCurrency(): string
+    {
+        return mb_strtoupper(config('cart.money.default_currency', 'USD'));
     }
 }

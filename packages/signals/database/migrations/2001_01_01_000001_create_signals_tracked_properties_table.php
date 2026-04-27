@@ -15,6 +15,7 @@ return new class extends Migration
 
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
+            $table->string('owner_scope')->default('global');
             $table->string('name');
             $table->string('slug');
             $table->string('write_key')->unique();
@@ -26,7 +27,7 @@ return new class extends Migration
             $table->{$jsonColumnType}('settings')->nullable();
             $table->timestamps();
 
-            $table->unique(['owner_type', 'owner_id', 'slug']);
+            $table->unique(['owner_scope', 'slug']);
             $table->index(['type', 'is_active']);
         });
     }

@@ -50,13 +50,15 @@ return [
         'session_duration_seconds' => 1800,
     ],
 
+    /* Owner */
+    'owner' => [
+        'enabled' => true,
+        'include_global' => false,
+        'auto_assign_on_create' => true,
+    ],
+
     /* Features / Behavior */
     'features' => [
-        'owner' => [
-            'enabled' => true,
-            'include_global' => false,
-            'auto_assign_on_create' => true,
-        ],
         'ua_parsing' => [
             'enabled' => true,
             'store_raw' => true, // store the raw User-Agent string on signal_sessions
@@ -79,12 +81,78 @@ return [
         'monetary' => [
             'enabled' => true,  // false = hide all monetary/revenue UI (stat cards, columns, goal types, alert metrics, condition fields)
         ],
+        'privacy' => [
+            'property_allowlist' => [
+                'affiliate_code',
+                'affiliate_id',
+                'attribution_id',
+                'cart_id',
+                'cart_identifier',
+                'cart_instance',
+                'cart_total_minor',
+                'channel',
+                'checkout',
+                'checkout_session_id',
+                'commission_minor',
+                'conversion_id',
+                'conversion_type',
+                'cookie_value',
+                'currency',
+                'external_reference',
+                'first_order',
+                'gateway',
+                'item_count',
+                'item_id',
+                'item_name',
+                'items_count',
+                'landing_url',
+                'line_total_minor',
+                'medium',
+                'order_id',
+                'order_number',
+                'order_reference',
+                'payment_gateway',
+                'quantity',
+                'referrer_url',
+                'shipping_method',
+                'source_event_id',
+                'status',
+                'subtotal_minor',
+                'subject_identifier',
+                'subject_instance',
+                'title',
+                'total_minor',
+                'total_quantity',
+                'transaction_id',
+                'unique_item_count',
+                'unit_price_minor',
+                'value_minor',
+                'voucher_code',
+                'voucher_id',
+                'voucher_name',
+                'voucher_type',
+                'voucher_value',
+            ],
+        ],
+        'alerts' => [
+            'evaluate_on_ingest' => [
+                'enabled' => false,
+                'queue' => true,
+            ],
+            'allow_inline_destinations' => false,
+            'default_channels' => ['database'],
+            'destinations' => [
+                'email' => [],
+                'webhook' => [],
+                'slack' => [],
+            ],
+        ],
     ],
 
     /* Integrations */
     'integrations' => [
         'cart' => [
-            'enabled' => true,
+            'enabled' => false,
             'listen_for_item_added' => true,
             'listen_for_item_removed' => true,
             'listen_for_cleared' => true,
@@ -92,6 +160,28 @@ return [
             'item_removed_event_name' => 'cart.item.removed',
             'cleared_event_name' => 'cart.cleared',
             'event_category' => 'cart',
+            'tracked_property' => [
+                'auto_create' => true,
+                'slug' => 'commerce-cart',
+                'name' => 'Commerce Cart',
+            ],
+        ],
+        'filament_cart' => [
+            'enabled' => false,
+            'listen_for_snapshot_synced' => true,
+            'listen_for_checkout_started' => true,
+            'listen_for_abandoned' => true,
+            'listen_for_high_value_detected' => true,
+            'snapshot_synced_event_name' => 'cart.snapshot.synced',
+            'checkout_started_event_name' => 'cart.checkout.started',
+            'abandoned_event_name' => 'cart.abandoned',
+            'high_value_detected_event_name' => 'cart.high_value.detected',
+            'event_category' => 'cart',
+            'tracked_property' => [
+                'auto_create' => true,
+                'slug' => 'commerce-cart',
+                'name' => 'Commerce Cart',
+            ],
         ],
         'checkout' => [
             'enabled' => true,

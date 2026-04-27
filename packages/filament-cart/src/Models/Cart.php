@@ -8,7 +8,10 @@ use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\FilamentCart\Database\Factories\CartFactory;
+use AIArmada\FilamentCart\Events\CartAbandoned;
+use AIArmada\FilamentCart\Events\CartCheckoutStarted;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -23,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -39,12 +43,12 @@ use Throwable;
  * @property string $currency
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property string $owner_key
+ * @property string $owner_scope
  * @property Carbon|null $last_activity_at
  * @property Carbon|null $checkout_started_at
  * @property Carbon|null $checkout_abandoned_at
- * @property int $recovery_attempts
- * @property Carbon|null $recovered_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class Cart extends Model
 {
@@ -61,14 +65,19 @@ class Cart extends Model
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
+    use HasOwnerScopeKey;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'filament-cart.owner';
 
+    /** @var list<string> */
+    protected $hidden = [
+        'owner_scope',
+    ];
+
     protected $fillable = [
         'owner_type',
         'owner_id',
-        'owner_key',
         'identifier',
         'instance',
         'items',
@@ -83,8 +92,6 @@ class Cart extends Model
         'last_activity_at',
         'checkout_started_at',
         'checkout_abandoned_at',
-        'recovery_attempts',
-        'recovered_at',
     ];
 
     protected $casts = [
@@ -101,12 +108,9 @@ class Cart extends Model
         'last_activity_at' => 'datetime',
         'checkout_started_at' => 'datetime',
         'checkout_abandoned_at' => 'datetime',
-        'recovery_attempts' => 'integer',
-        'recovered_at' => 'datetime',
     ];
 
     protected $attributes = [
-        'owner_key' => 'global',
         'items' => null,
         'conditions' => null,
         'metadata' => null,
@@ -116,7 +120,6 @@ class Cart extends Model
         'total' => 0,
         'savings' => 0,
         'currency' => 'USD',
-        'recovery_attempts' => 0,
     ];
 
     public function getTable(): string
@@ -144,39 +147,28 @@ class Cart extends Model
         return $owner;
     }
 
-    public static function makeOwnerKey(?string $ownerType, int | string | null $ownerId): string
-    {
-        if ($ownerType === null || $ownerId === null) {
-            return 'global';
-        }
-
-        return $ownerType . ':' . (string) $ownerId;
-    }
-
-    public static function resolveOwnerKey(?EloquentModel $owner): string
-    {
-        if (! $owner) {
-            return 'global';
-        }
-
-        return $owner->getMorphClass() . ':' . (string) $owner->getKey();
-    }
-
     /**
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?EloquentModel $owner = null, bool $includeGlobal = false): Builder
+    public function scopeForOwner(Builder $query, EloquentModel | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
     {
         if (! self::ownerScopingEnabled()) {
             return $query;
         }
 
-        if ($owner === null) {
+        if ($owner === OwnerContext::CURRENT) {
             $owner = self::resolveCurrentOwner();
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                self::class . ' requires an owner context or explicit global context.',
+            );
         }
 
-        $includeGlobal = $includeGlobal && (bool) config('filament-cart.owner.include_global', false);
+        if (is_string($owner)) {
+            throw new InvalidArgumentException('Owner must be an Eloquent model, null, or omitted.');
+        }
 
         /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
@@ -187,7 +179,7 @@ class Cart extends Model
     public function getCartInstance(): ?BaseCart
     {
         try {
-            return app(CartInstanceManager::class)->resolve($this->instance, $this->identifier);
+            return app(CartInstanceManager::class)->resolveForSnapshot($this);
         } catch (Throwable $exception) {
             Log::warning('Failed to resolve cart instance', [
                 'identifier' => $this->identifier,
@@ -197,13 +189,6 @@ class Cart extends Model
 
             return null;
         }
-    }
-
-    protected static function booted(): void
-    {
-        static::saving(function (Cart $cart): void {
-            $cart->owner_key = self::makeOwnerKey($cart->owner_type, $cart->owner_id);
-        });
     }
 
     public function getSubtotalInDollarsAttribute(): float
@@ -276,7 +261,7 @@ class Cart extends Model
      */
     public function isAbandoned(): bool
     {
-        return $this->checkout_abandoned_at !== null && $this->recovered_at === null;
+        return $this->checkout_abandoned_at !== null;
     }
 
     /**
@@ -285,14 +270,6 @@ class Cart extends Model
     public function isInCheckout(): bool
     {
         return $this->checkout_started_at !== null && $this->checkout_abandoned_at === null;
-    }
-
-    /**
-     * Check if cart was recovered.
-     */
-    public function isRecovered(): bool
-    {
-        return $this->recovered_at !== null;
     }
 
     /**
@@ -346,17 +323,7 @@ class Cart extends Model
     #[Scope]
     protected function abandoned(Builder $query): void
     {
-        $query->whereNotNull('checkout_abandoned_at')
-            ->whereNull('recovered_at');
-    }
-
-    /**
-     * @param  Builder<self>  $query
-     */
-    #[Scope]
-    protected function recovered(Builder $query): void
-    {
-        $query->whereNotNull('recovered_at');
+        $query->whereNotNull('checkout_abandoned_at');
     }
 
     /**
@@ -367,17 +334,6 @@ class Cart extends Model
     {
         $query->whereNotNull('checkout_started_at')
             ->whereNull('checkout_abandoned_at');
-    }
-
-    /**
-     * @param  Builder<self>  $query
-     */
-    #[Scope]
-    protected function needsRecovery(Builder $query): void
-    {
-        $query->whereNotNull('checkout_abandoned_at')
-            ->whereNull('recovered_at')
-            ->where('recovery_attempts', '<', 3);
     }
 
     /** @return Attribute<string, never> */
@@ -408,6 +364,8 @@ class Cart extends Model
                 'checkout_started_at' => now(),
                 'last_activity_at' => now(),
             ]);
+
+            event(CartCheckoutStarted::fromCart($this));
         } else {
             $this->update([
                 'last_activity_at' => now(),
@@ -422,24 +380,12 @@ class Cart extends Model
      */
     public function markAsAbandoned(): static
     {
-        if ($this->checkout_abandoned_at === null && $this->recovered_at === null) {
+        if ($this->checkout_abandoned_at === null) {
             $this->update([
                 'checkout_abandoned_at' => now(),
             ]);
-        }
 
-        return $this;
-    }
-
-    /**
-     * Mark this cart as recovered (customer completed purchase or returned).
-     */
-    public function markAsRecovered(): static
-    {
-        if ($this->checkout_abandoned_at !== null && $this->recovered_at === null) {
-            $this->update([
-                'recovered_at' => now(),
-            ]);
+            event(CartAbandoned::fromCart($this));
         }
 
         return $this;
@@ -451,16 +397,6 @@ class Cart extends Model
     public function touchActivity(): static
     {
         $this->update(['last_activity_at' => now()]);
-
-        return $this;
-    }
-
-    /**
-     * Increment recovery attempts counter.
-     */
-    public function incrementRecoveryAttempts(): static
-    {
-        $this->increment('recovery_attempts');
 
         return $this;
     }

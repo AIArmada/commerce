@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Storage;
 
 use AIArmada\Cart\Exceptions\CartConflictException;
+use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use Closure;
 use DateTimeInterface;
 use Illuminate\Database\ConnectionInterface as Database;
@@ -485,11 +486,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     private function resolveOwnerScope(): string
     {
-        if ($this->ownerType === null || $this->ownerId === null) {
-            return 'global';
-        }
-
-        return hash('sha256', $this->ownerType . '|' . (string) $this->ownerId);
+        return OwnerScopeKey::forTypeAndId($this->ownerType, $this->ownerId);
     }
 
     /**
