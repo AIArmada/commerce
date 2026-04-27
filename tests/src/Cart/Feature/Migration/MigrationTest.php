@@ -28,7 +28,10 @@ use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Support\LoginMigrationCacheKey;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -326,6 +329,16 @@ it('migrates guest carts into the authenticated owner cart when owner scoping is
         'password' => 'secret',
     ]);
 
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($owner) implements OwnerResolverInterface
+    {
+        public function __construct(private User $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
     $guestSessionId = 'guest_session_owner_login';
 
     $storage->putItems($guestSessionId, 'default', [
@@ -345,13 +358,107 @@ it('migrates guest carts into the authenticated owner cart when owner scoping is
     $listener = new HandleUserLogin(app(CartMigrationService::class));
     $event = new Login('web', $owner, false);
 
-    $listener->handle($event);
+    OwnerContext::withOwner($owner, fn () => $listener->handle($event));
 
     $guestItemsAfter = $storage->getItems($guestSessionId, 'default');
     expect(array_sum(array_column($guestItemsAfter, 'quantity')))->toBe(0);
 
     $ownerStorage = $storage->withOwner($owner);
     $ownerItemsAfter = $ownerStorage->getItems((string) $owner->getKey(), 'default');
+
+    expect(array_sum(array_column($ownerItemsAfter, 'quantity')))->toBe(2);
+    expect($ownerItemsAfter['product-1']['name'])->toBe('Owner Scoped Product');
+});
+
+it('migrates guest cart metadata into an existing user cart', function (): void {
+    $storage = Cart::storage();
+    $guestSessionId = 'guest_session_metadata_merge';
+
+    $storage->putItems($guestSessionId, 'default', [
+        'product-1' => [
+            'id' => 'product-1',
+            'name' => 'Guest Product',
+            'price' => 1000,
+            'quantity' => 1,
+            'attributes' => [],
+            'conditions' => [],
+        ],
+    ]);
+    $storage->putMetadataBatch($guestSessionId, 'default', [
+        'email' => 'guest@example.com',
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $storage->putItems('1', 'default', [
+        'product-2' => [
+            'id' => 'product-2',
+            'name' => 'User Product',
+            'price' => 1500,
+            'quantity' => 1,
+            'attributes' => [],
+            'conditions' => [],
+        ],
+    ]);
+    $storage->putMetadataBatch('1', 'default', [
+        'customer_note' => 'Keep me',
+    ]);
+
+    $this->cartMigration->migrateGuestCartToUser(1, 'default', $guestSessionId);
+
+    $userMetadata = $storage->getAllMetadata('1', 'default');
+
+    expect($userMetadata['email'])->toBe('guest@example.com');
+    expect($userMetadata['timezone'])->toBe('Asia/Kuala_Lumpur');
+    expect($userMetadata['customer_note'])->toBe('Keep me');
+});
+
+it('uses the resolved owner boundary when migrating carts in owner mode', function (): void {
+    config(['cart.owner.enabled' => true]);
+    config(['cart.events' => false]);
+
+    $connection = app('db')->connection();
+    $storage = new DatabaseStorage($connection, 'carts');
+
+    $owner = User::query()->create([
+        'name' => 'Store Owner',
+        'email' => 'store-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $user = User::query()->create([
+        'name' => 'Customer User',
+        'email' => 'customer-user@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($owner) implements OwnerResolverInterface
+    {
+        public function __construct(private User $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    $guestSessionId = 'guest_session_distinct_owner';
+
+    $storage->putItems($guestSessionId, 'default', [
+        'product-1' => [
+            'id' => 'product-1',
+            'name' => 'Owner Scoped Product',
+            'price' => 1000,
+            'quantity' => 2,
+            'attributes' => [],
+        ],
+    ]);
+
+    $result = OwnerContext::withOwner($owner, fn () => $this->cartMigration->migrateGuestCartToUser((string) $user->getKey(), 'default', $guestSessionId));
+
+    expect($result)->toBeTrue();
+
+    $ownerStorage = $storage->withOwner($owner);
+    $ownerItemsAfter = $ownerStorage->getItems((string) $user->getKey(), 'default');
 
     expect(array_sum(array_column($ownerItemsAfter, 'quantity')))->toBe(2);
     expect($ownerItemsAfter['product-1']['name'])->toBe('Owner Scoped Product');

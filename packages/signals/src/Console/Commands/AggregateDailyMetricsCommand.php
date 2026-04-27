@@ -23,7 +23,7 @@ final class AggregateDailyMetricsCommand extends Command
 
     public function handle(SignalMetricsAggregator $aggregator): int
     {
-        if ((bool) config('signals.features.owner.enabled', true) && OwnerContext::resolve() === null) {
+        if ((bool) config('signals.owner.enabled', true) && OwnerContext::resolve() === null) {
             $owners = TrackedProperty::query()
                 ->withoutOwnerScope()
                 ->select(['owner_type', 'owner_id'])

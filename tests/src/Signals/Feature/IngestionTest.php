@@ -7,12 +7,14 @@ use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Signals\Actions\ServeSignalsTracker;
+use AIArmada\Signals\Jobs\EvaluateSignalAlertsForEvent;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 
 uses(SignalsTestCase::class);
@@ -143,6 +145,111 @@ it('accepts event payloads and creates identity and session records', function (
                 'completed_at' => 'date',
             ],
         ]);
+});
+
+it('deduplicates event payloads by idempotency key per tracked property', function (): void {
+    /** @var User $owner */
+    $owner = User::query()->create([
+        'name' => 'Idempotent Owner',
+        'email' => 'idempotent-owner@signals.test',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Idempotent Property',
+        'slug' => 'idempotent-property',
+        'write_key' => 'idempotent-write-key',
+    ]);
+
+    $payload = [
+        'write_key' => 'idempotent-write-key',
+        'event_name' => 'cart.snapshot.synced',
+        'event_category' => 'cart',
+        'idempotency_key' => 'snapshot-1',
+        'properties' => [
+            'cart_total_minor' => 12000,
+        ],
+    ];
+
+    $first = $this->postJson('/api/signals/collect/event', $payload);
+    $second = $this->postJson('/api/signals/collect/event', $payload);
+
+    $first->assertAccepted();
+    $second->assertAccepted();
+
+    expect(SignalEvent::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->count())->toBe(1);
+});
+
+it('filters raw PII and non-allowlisted properties from event payloads', function (): void {
+    /** @var User $owner */
+    $owner = User::query()->create([
+        'name' => 'Privacy Owner',
+        'email' => 'privacy-owner@signals.test',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    TrackedProperty::query()->create([
+        'name' => 'Privacy Property',
+        'slug' => 'privacy-property',
+        'write_key' => 'privacy-write-key',
+    ]);
+
+    $response = $this->postJson('/api/signals/collect/event', [
+        'write_key' => 'privacy-write-key',
+        'event_name' => 'cart.high_value.detected',
+        'event_category' => 'cart',
+        'properties' => [
+            'cart_total_minor' => 25000,
+            'email' => 'customer@example.test',
+            'customer_name' => 'Sensitive Customer',
+            'metadata' => ['anything' => 'goes'],
+            'unknown_key' => 'not allowed',
+        ],
+    ]);
+
+    $response->assertAccepted();
+
+    $event = SignalEvent::query()->withoutOwnerScope()->firstOrFail();
+
+    expect($event->properties)->toBe([
+        'cart_total_minor' => 25000,
+    ]);
+});
+
+it('queues alert evaluation when on-ingest evaluation is explicitly enabled', function (): void {
+    Queue::fake();
+
+    config()->set('signals.features.alerts.evaluate_on_ingest.enabled', true);
+    config()->set('signals.features.alerts.evaluate_on_ingest.queue', true);
+
+    /** @var User $owner */
+    $owner = User::query()->create([
+        'name' => 'Queued Alert Owner',
+        'email' => 'queued-alert-owner@signals.test',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    TrackedProperty::query()->create([
+        'name' => 'Queued Alert Property',
+        'slug' => 'queued-alert-property',
+        'write_key' => 'queued-alert-write-key',
+    ]);
+
+    $response = $this->postJson('/api/signals/collect/event', [
+        'write_key' => 'queued-alert-write-key',
+        'event_name' => 'cart.abandoned',
+        'event_category' => 'cart',
+    ]);
+
+    $response->assertAccepted();
+
+    Queue::assertPushed(EvaluateSignalAlertsForEvent::class);
 });
 
 it('accepts pageview payloads and records a page_view event', function (): void {

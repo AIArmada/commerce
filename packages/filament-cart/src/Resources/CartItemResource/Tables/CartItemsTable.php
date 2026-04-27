@@ -33,7 +33,7 @@ final class CartItemsTable
                 TextColumn::make('price')
                     ->label('Price')
                     ->alignEnd()
-                    ->formatStateUsing(fn ($state) => Money::MYR($state ?? 0))
+                    ->formatStateUsing(fn ($state, $record) => self::formatMoney((int) ($state ?? 0), $record->cart->currency ?? null))
                     ->sortable(),
 
                 TextColumn::make('quantity')
@@ -43,7 +43,7 @@ final class CartItemsTable
                 TextColumn::make('subtotal')
                     ->label('Subtotal')
                     ->alignEnd()
-                    ->formatStateUsing(fn ($state) => Money::MYR($state ?? 0))
+                    ->formatStateUsing(fn ($state, $record) => self::formatMoney((int) ($state ?? 0), $record->cart->currency ?? null))
                     ->sortable(),
 
                 // IconColumn::make('conditions')
@@ -111,21 +111,21 @@ final class CartItemsTable
                         TextInput::make('price_from')
                             ->label('Price From')
                             ->numeric()
-                            ->prefix('RM'),
+                            ->prefix(self::resolveCurrency()),
                         TextInput::make('price_to')
                             ->label('Price To')
                             ->numeric()
-                            ->prefix('RM'),
+                            ->prefix(self::resolveCurrency()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
                                 $data['price_from'] ?? null,
-                                fn (Builder $query, $price): Builder => $query->where('price', '>=', $price),
+                                fn (Builder $query, $price): Builder => $query->where('price', '>=', self::toMinorUnits($price)),
                             )
                             ->when(
                                 $data['price_to'] ?? null,
-                                fn (Builder $query, $price): Builder => $query->where('price', '<=', $price),
+                                fn (Builder $query, $price): Builder => $query->where('price', '<=', self::toMinorUnits($price)),
                             );
                     }),
 
@@ -156,5 +156,22 @@ final class CartItemsTable
             ->bulkActions([])
             ->defaultSort('created_at', 'desc')
             ->poll('30s');
+    }
+
+    private static function resolveCurrency(): string
+    {
+        return mb_strtoupper(config('cart.money.default_currency', 'USD'));
+    }
+
+    private static function formatMoney(int $amount, ?string $currency = null): string
+    {
+        $resolvedCurrency = is_string($currency) && $currency !== '' ? mb_strtoupper($currency) : self::resolveCurrency();
+
+        return (string) Money::{$resolvedCurrency}($amount);
+    }
+
+    private static function toMinorUnits(mixed $amount): int
+    {
+        return (int) round(((float) $amount) * 100);
     }
 }

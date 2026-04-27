@@ -66,6 +66,17 @@ final class SignalAlertLogResource extends Resource
                 Tables\Columns\TextColumn::make('threshold_value')
                     ->numeric(decimalPlaces: 2)
                     ->label('Threshold'),
+                Tables\Columns\TextColumn::make('channels_notified')
+                    ->badge()
+                    ->separator(',')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('context.metric_key')
+                    ->label('Context Metric')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('delivery_results')
+                    ->label('Delivery')
+                    ->formatStateUsing(fn (mixed $state): string => is_array($state) ? implode(', ', array_keys($state)) : '')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('is_read')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')

@@ -9,10 +9,10 @@ use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingEngine;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use Laravel\Octane\Events\RequestReceived;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -48,7 +48,7 @@ final class SupportServiceProvider extends PackageServiceProvider
     public function bootingPackage(): void
     {
         $this->validateMorphKeyType();
-        $this->warnAboutNullOwnerResolver();
+        $this->ensureOwnerResolverIsConfiguredWhenOwnerModeEnabled();
 
         // Commerce Support - Octane Compatibility
         // Ensure static state is cleared between requests
@@ -73,43 +73,32 @@ final class SupportServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * Warn developers when using NullOwnerResolver with owner mode enabled.
+     * Ensure owner mode is not enabled with the no-op resolver.
      *
      * NullOwnerResolver always returns null for the current owner, which means:
      * - Multi-tenancy is effectively disabled
      * - All data is treated as "global" (no tenant isolation)
      * - Owner scopes will not filter data
-     *
-     * This is fine for single-tenant applications, but dangerous if you expect
-     * multi-tenant behavior. The warning helps catch configuration mistakes.
      */
-    private function warnAboutNullOwnerResolver(): void
+    private function ensureOwnerResolverIsConfiguredWhenOwnerModeEnabled(): void
     {
-        $resolverClass = (string) config('commerce-support.owner.resolver', NullOwnerResolver::class);
         $ownerModeEnabled = (bool) config('commerce-support.owner.enabled', false);
-
-        if ($resolverClass !== NullOwnerResolver::class && ! is_a($resolverClass, NullOwnerResolver::class, true)) {
-            return;
-        }
 
         if (! $ownerModeEnabled) {
             return;
         }
 
-        if ($this->app->runningUnitTests()) {
-            return;
+        if (! $this->app->bound(OwnerResolverInterface::class)) {
+            throw new RuntimeException('OwnerResolverInterface must be bound when commerce-support owner mode is enabled.');
         }
 
-        $message = sprintf(
-            '[commerce-support] NullOwnerResolver is configured but owner mode is enabled (commerce-support.owner.enabled=true). ' .
-            'This means multi-tenancy is NOT enforced. To enable multi-tenancy, configure a real owner resolver: ' .
-            'config/commerce-support.php -> owner.resolver = YourOwnerResolver::class'
-        );
+        $resolver = $this->app->make(OwnerResolverInterface::class);
 
-        if ($this->app->isProduction()) {
-            Log::warning($message);
-        } else {
-            Log::debug($message);
+        if ($resolver instanceof NullOwnerResolver) {
+            throw new RuntimeException(
+                'NullOwnerResolver is configured while commerce-support owner mode is enabled. ' .
+                'Configure commerce-support.owner.resolver with a resolver that implements ' . OwnerResolverInterface::class . '.'
+            );
         }
     }
 

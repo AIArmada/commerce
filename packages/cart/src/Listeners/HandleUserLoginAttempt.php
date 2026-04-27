@@ -20,30 +20,36 @@ final class HandleUserLoginAttempt
         // Only capture session ID if user is not already authenticated
         if (! Auth::check()) {
             $currentSessionId = session()->getId();
-            $userIdentifier = $this->getUserIdentifier($event->credentials);
+            $userIdentifiers = $this->getUserIdentifiers($event->credentials);
 
-            if ($userIdentifier && $currentSessionId) {
-                // Store in cache with user identifier as key, expires in 5 minutes
-                Cache::put(
-                    LoginMigrationCacheKey::make($userIdentifier),
-                    $currentSessionId,
-                    now()->addMinutes(5)
-                );
+            if ($userIdentifiers !== [] && $currentSessionId) {
+                foreach ($userIdentifiers as $userIdentifier) {
+                    Cache::put(
+                        LoginMigrationCacheKey::make($userIdentifier),
+                        $currentSessionId,
+                        now()->addMinutes(5)
+                    );
+                }
             }
         }
     }
 
     /**
-     * Extract user identifier from login credentials.
+     * Extract possible user identifiers from login credentials.
      *
      * @param  array<string, mixed>  $credentials
+     * @return array<int, string>
      */
-    private function getUserIdentifier(array $credentials): ?string
+    private function getUserIdentifiers(array $credentials): array
     {
-        // Try common credential fields
-        return $credentials['email']
-            ?? $credentials['username']
-            ?? $credentials['phone']
-            ?? null;
+        return collect([
+            $credentials['email'] ?? null,
+            $credentials['username'] ?? null,
+            $credentials['phone'] ?? null,
+        ])
+            ->filter(fn (mixed $identifier): bool => is_string($identifier) && $identifier !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 }

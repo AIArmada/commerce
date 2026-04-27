@@ -38,17 +38,13 @@ it('resolves route-bound models inside the current owner scope', function (): vo
         'password' => 'secret',
     ]);
 
-    $ownerRecord = OwnerRouteBindingFixture::query()->create([
+    $ownerRecord = OwnerContext::withOwner($ownerA, fn () => OwnerRouteBindingFixture::query()->create([
         'label' => 'owner-a',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    $globalRecord = OwnerRouteBindingFixture::query()->create([
+    $globalRecord = OwnerContext::withOwner(null, fn () => OwnerRouteBindingFixture::query()->create([
         'label' => 'global',
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
+    ]));
 
     OwnerContext::override($ownerA);
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use Akaunting\Money\Money;
@@ -47,7 +48,7 @@ describe('CartStatsWidget', function (): void {
             'password' => 'secret',
         ]);
 
-        $cartA = CartSnapshot::query()->create([
+        $cartA = OwnerContext::withOwner($ownerA, fn () => CartSnapshot::query()->create([
             'identifier' => 'owner-a',
             'instance' => 'default',
             'currency' => 'USD',
@@ -55,10 +56,9 @@ describe('CartStatsWidget', function (): void {
             'quantity' => 2,
             'subtotal' => 2500,
             'total' => 2500,
-        ]);
-        $cartA->assignOwner($ownerA)->save();
+        ]));
 
-        $cartB = CartSnapshot::query()->create([
+        $cartB = OwnerContext::withOwner($ownerB, fn () => CartSnapshot::query()->create([
             'identifier' => 'owner-b',
             'instance' => 'default',
             'currency' => 'USD',
@@ -66,8 +66,7 @@ describe('CartStatsWidget', function (): void {
             'quantity' => 5,
             'subtotal' => 9900,
             'total' => 9900,
-        ]);
-        $cartB->assignOwner($ownerB)->save();
+        ]));
 
         app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 

@@ -65,9 +65,9 @@ abstract class SignalsTestCase extends Orchestra
 
         $app['config']->set('auth.providers.users.model', User::class);
 
-        $app['config']->set('signals.features.owner.enabled', true);
-        $app['config']->set('signals.features.owner.include_global', false);
-        $app['config']->set('signals.features.owner.auto_assign_on_create', true);
+        $app['config']->set('signals.owner.enabled', true);
+        $app['config']->set('signals.owner.include_global', false);
+        $app['config']->set('signals.owner.auto_assign_on_create', true);
 
         $app['config']->set('permission.models.permission', Permission::class);
         $app['config']->set('permission.models.role', Role::class);

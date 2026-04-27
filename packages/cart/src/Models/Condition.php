@@ -8,8 +8,10 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Database\Factories\ConditionFactory;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use Akaunting\Money\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -20,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Condition model for creating reusable condition configurations.
@@ -29,6 +32,7 @@ use InvalidArgumentException;
  *
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property string $owner_scope
  * @property string $id
  * @property string $name
  * @property string|null $display_name
@@ -60,9 +64,15 @@ class Condition extends Model
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
+    use HasOwnerScopeKey;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'cart.owner';
+
+    /** @var list<string> */
+    protected $hidden = [
+        'owner_scope',
+    ];
 
     /**
      * Indicates if the model should be timestamped.
@@ -148,6 +158,23 @@ class Condition extends Model
     public function getTable(): string
     {
         return config('cart.database.conditions_table', 'conditions');
+    }
+
+    public static function ownerScopingEnabled(): bool
+    {
+        return (bool) config('cart.owner.enabled', false);
+    }
+
+    public static function resolveCurrentOwner(): ?EloquentModel
+    {
+        if (! self::ownerScopingEnabled()) {
+            return null;
+        }
+
+        /** @var EloquentModel|null $owner */
+        $owner = OwnerContext::resolve();
+
+        return $owner;
     }
 
     /**
@@ -409,8 +436,6 @@ class Condition extends Model
                 ->whereNull('owner_id');
         }
 
-        $includeGlobal = $includeGlobal && (bool) config('cart.owner.include_global', false);
-
         /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
@@ -423,6 +448,35 @@ class Condition extends Model
     protected static function booted(): void
     {
         self::saving(function (Condition $condition): void {
+            if (config('cart.owner.enabled', false)) {
+                $ownerType = $condition->owner_type;
+                $ownerId = $condition->owner_id;
+                $currentOwner = self::resolveCurrentOwner();
+
+                if (($ownerType === null) xor ($ownerId === null)) {
+                    throw new InvalidArgumentException('Condition owner_type and owner_id must both be set or both be null.');
+                }
+
+                if ($ownerType !== null && $ownerId !== null) {
+                    if ($currentOwner !== null) {
+                        if (
+                            $ownerType !== $currentOwner->getMorphClass()
+                            || (string) $ownerId !== (string) $currentOwner->getKey()
+                        ) {
+                            throw new RuntimeException('Conditions cannot be saved with an owner that does not match the current owner context.');
+                        }
+                    } elseif (OwnerContext::isExplicitGlobal()) {
+                        throw new RuntimeException('Conditions cannot be saved with an explicit owner inside an explicit global owner context.');
+                    } else {
+                        throw new RuntimeException('Conditions cannot be saved with an explicit owner when no owner context is active.');
+                    }
+                } elseif ($currentOwner !== null) {
+                    $condition->assignOwner($currentOwner);
+                } elseif (! OwnerContext::isExplicitGlobal()) {
+                    throw new RuntimeException('Conditions require an owner context when cart.owner.enabled=true.');
+                }
+            }
+
             $condition->computeDerivedFields();
             $condition->target_definition = ConditionTarget::from($condition->target)->toArray();
 
@@ -491,7 +545,7 @@ class Condition extends Model
     #[Scope]
     protected function forItems(Builder $query): void
     {
-        $query->where('target', 'item');
+        $query->where('target', 'like', 'items@%');
     }
 
     /**

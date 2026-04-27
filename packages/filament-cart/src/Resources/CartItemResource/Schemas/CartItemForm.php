@@ -31,7 +31,7 @@ final class CartItemForm
 
                                 TextInput::make('price')
                                     ->label('Price')
-                                    ->prefix('RM')
+                                    ->prefix(self::resolveCurrency())
                                     ->disabled()
                                     ->dehydrated(false),
 
@@ -42,7 +42,7 @@ final class CartItemForm
 
                                 TextInput::make('subtotal')
                                     ->label('Subtotal')
-                                    ->prefix('RM')
+                                    ->prefix(self::resolveCurrency())
                                     ->disabled()
                                     ->dehydrated(false),
 
@@ -74,5 +74,10 @@ final class CartItemForm
                             ]),
                     ]),
             ]);
+    }
+
+    private static function resolveCurrency(): string
+    {
+        return mb_strtoupper(config('cart.money.default_currency', 'USD'));
     }
 }

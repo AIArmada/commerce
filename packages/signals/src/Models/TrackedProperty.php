@@ -6,6 +6,7 @@ namespace AIArmada\Signals\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeKey;
 use AIArmada\Signals\Models\Concerns\AutoAssignsSignalOwnerOnCreate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -17,6 +18,7 @@ use Illuminate\Support\Str;
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property string $owner_scope
  * @property string $name
  * @property string $slug
  * @property string $write_key
@@ -40,9 +42,15 @@ final class TrackedProperty extends Model
     use AutoAssignsSignalOwnerOnCreate;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasOwnerScopeKey;
     use HasUuids;
 
-    protected static string $ownerScopeConfigKey = 'signals.features.owner';
+    protected static string $ownerScopeConfigKey = 'signals.owner';
+
+    /** @var list<string> */
+    protected $hidden = [
+        'owner_scope',
+    ];
 
     /** @var list<string> */
     protected $fillable = [

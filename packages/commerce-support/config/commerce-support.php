@@ -20,6 +20,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'owner' => [
+        'enabled' => env('COMMERCE_OWNER_ENABLED', false),
         'resolver' => env('COMMERCE_OWNER_RESOLVER', NullOwnerResolver::class),
     ],
 ];

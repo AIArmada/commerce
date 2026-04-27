@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Models\Condition;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\FilamentCartServiceProvider;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Models\CartCondition;
@@ -12,6 +14,7 @@ use AIArmada\FilamentCart\Models\CartItem;
 use AIArmada\FilamentCart\Resources\CartConditionResource;
 use AIArmada\FilamentCart\Resources\CartItemResource;
 use AIArmada\FilamentCart\Resources\CartResource;
+use AIArmada\FilamentCart\Resources\ConditionResource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -60,9 +63,8 @@ it('scopes filament-cart snapshots and child resources by resolved owner', funct
         'subtotal' => 1000,
         'total' => 1000,
     ]);
-    $cartA->assignOwner($ownerA)->save();
 
-    $cartB = CartSnapshot::query()->create([
+    $cartB = OwnerContext::withOwner($ownerB, fn () => CartSnapshot::query()->create([
         'identifier' => 'same-id',
         'instance' => 'default',
         'currency' => 'USD',
@@ -70,8 +72,7 @@ it('scopes filament-cart snapshots and child resources by resolved owner', funct
         'quantity' => 2,
         'subtotal' => 2000,
         'total' => 2000,
-    ]);
-    $cartB->assignOwner($ownerB)->save();
+    ]));
 
     $cartAItem = CartItem::query()->create([
         'cart_id' => $cartA->id,
@@ -120,7 +121,35 @@ it('scopes filament-cart snapshots and child resources by resolved owner', funct
 
     expect(CartItemResource::getEloquentQuery()->count())->toBe(1);
     expect(CartItemResource::getEloquentQuery()->first()?->cart_id)->toBe($cartA->id);
+    expect(CartItemResource::getEloquentQuery()->withoutConditions()->count())->toBe(1);
+    expect(CartItemResource::getEloquentQuery()->withoutConditions()->first()?->cart_id)->toBe($cartA->id);
 
     expect(CartConditionResource::getEloquentQuery()->count())->toBe(1);
     expect(CartConditionResource::getEloquentQuery()->first()?->cart_id)->toBe($cartA->id);
+});
+
+it('treats shared global conditions as read-only in tenant contexts', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('filament-cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
+    config()->set('filament-cart.owner.include_global', true);
+
+    $owner = User::query()->create([
+        'name' => 'Tenant Owner',
+        'email' => 'tenant-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($owner));
+
+    $globalCondition = OwnerContext::withOwner(null, fn () => Condition::factory()->create([
+        'name' => 'shared-global-condition',
+        'is_active' => true,
+        'is_global' => true,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]));
+
+    expect(ConditionResource::canEdit($globalCondition))->toBeFalse();
+    expect(ConditionResource::canDelete($globalCondition))->toBeFalse();
 });

@@ -59,7 +59,7 @@ final class ApplyConditionAction extends Action
                 try {
                     // Get a cart instance for this specific cart record
                     $cartInstance = app(CartInstanceManager::class)
-                        ->resolve($cart->instance, $cart->identifier);
+                        ->resolveForSnapshot($cart);
 
                     // Create condition from stored definition
                     $condition = $conditionModel->createCondition($customName);
@@ -120,7 +120,7 @@ final class ApplyConditionAction extends Action
                     // Get the cart and item
                     $cart = $record->cart;
                     $cartInstance = app(CartInstanceManager::class)
-                        ->resolve($cart->instance, $cart->identifier);
+                        ->resolveForSnapshot($cart);
 
                     // Create condition from stored definition
                     $condition = $conditionModel->createCondition($customName);
@@ -309,7 +309,7 @@ final class ApplyConditionAction extends Action
                 try {
                     // Get a cart instance for this specific cart record
                     $cartInstance = app(CartInstanceManager::class)
-                        ->resolve($cart->instance, $cart->identifier);
+                        ->resolveForSnapshot($cart);
 
                     $rulesDefinition = Condition::normalizeRulesDefinition(
                         $data['dynamic_rules'] ?? null,

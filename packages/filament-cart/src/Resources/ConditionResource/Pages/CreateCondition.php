@@ -19,6 +19,15 @@ final class CreateCondition extends CreateRecord
             ! empty($data['rules']['factory_keys'] ?? [])
         );
 
+        if (config('cart.owner.enabled', false)) {
+            $owner = Condition::resolveCurrentOwner();
+
+            if ($owner !== null) {
+                $data['owner_type'] = $owner->getMorphClass();
+                $data['owner_id'] = (string) $owner->getKey();
+            }
+        }
+
         return $data;
     }
 

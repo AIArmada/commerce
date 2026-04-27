@@ -6,11 +6,14 @@ use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentCart\Events\CartSnapshotSynced;
+use AIArmada\FilamentCart\Events\HighValueCartDetected;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
 use AIArmada\FilamentCart\Services\NormalizedCartSynchronizer;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     Carbon::setTestNow(Carbon::create(2025, 1, 15, 12, 0, 0));
@@ -186,5 +189,92 @@ describe('NormalizedCartSynchronizer', function (): void {
         expect($ownerACart?->items_count)->toBe(0);
 
         expect($ownerBCart->refresh()->items_count)->toBe(99);
+        expect($ownerBCart->owner_type)->toBe($ownerB->getMorphClass());
+        expect($ownerBCart->owner_id)->toBe((string) $ownerB->getKey());
+    });
+
+    it('syncs metadata and lifecycle timestamps from the cart storage snapshot', function (): void {
+        $this->storage->shouldReceive('getItems')->andReturn([]);
+        $this->storage->shouldReceive('getConditions')->andReturn([]);
+        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => null);
+        $this->storage->shouldReceive('getAllMetadata')->andReturn([
+            'email' => 'buyer@example.com',
+            'last_step' => 'payment',
+            'last_activity_at' => now()->subMinutes(45)->toIso8601String(),
+            'checkout_started_at' => now()->subHours(2)->toIso8601String(),
+            'checkout_abandoned_at' => now()->subHour()->toIso8601String(),
+        ]);
+        $this->storage->shouldReceive('getCreatedAt')->andReturn(now()->subDay()->toIso8601String());
+        $this->storage->shouldReceive('getUpdatedAt')->andReturn(now()->subMinutes(45)->toIso8601String());
+
+        $cart = new BaseCart($this->storage, 'user-456', null, 'default');
+
+        $this->synchronizer->syncFromCart($cart);
+
+        $cartModel = Cart::instance('default')->byIdentifier('user-456')->first();
+
+        expect($cartModel)->not->toBeNull();
+        expect($cartModel?->metadata)->toMatchArray([
+            'email' => 'buyer@example.com',
+            'last_step' => 'payment',
+        ]);
+        expect($cartModel?->last_activity_at?->toDateTimeString())->toBe(now()->subMinutes(45)->toDateTimeString());
+        expect($cartModel?->checkout_started_at?->toDateTimeString())->toBe(now()->subHours(2)->toDateTimeString());
+        expect($cartModel?->checkout_abandoned_at?->toDateTimeString())->toBe(now()->subHour()->toDateTimeString());
+    });
+
+    it('preserves existing recovery lifecycle timestamps when the cart metadata does not provide replacements', function (): void {
+        Cart::create([
+            'instance' => 'default',
+            'identifier' => 'user-789',
+            'last_activity_at' => now()->subHour(),
+            'checkout_started_at' => now()->subHours(4),
+            'checkout_abandoned_at' => now()->subHours(2),
+        ]);
+
+        $this->storage->shouldReceive('getItems')->andReturn([]);
+        $this->storage->shouldReceive('getConditions')->andReturn([]);
+        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => null);
+        $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+        $this->storage->shouldReceive('getCreatedAt')->andReturn(now()->subDay()->toIso8601String());
+        $this->storage->shouldReceive('getUpdatedAt')->andReturn(now()->subMinutes(15)->toIso8601String());
+
+        $cart = new BaseCart($this->storage, 'user-789', null, 'default');
+
+        $this->synchronizer->syncFromCart($cart);
+
+        $cartModel = Cart::instance('default')->byIdentifier('user-789')->firstOrFail();
+
+        expect($cartModel->metadata)->toBeNull();
+        expect($cartModel->last_activity_at?->toDateTimeString())->toBe(now()->subHour()->toDateTimeString());
+        expect($cartModel->checkout_started_at?->toDateTimeString())->toBe(now()->subHours(4)->toDateTimeString());
+        expect($cartModel->checkout_abandoned_at?->toDateTimeString())->toBe(now()->subHours(2)->toDateTimeString());
+    });
+
+    it('emits snapshot and high-value events only when material fields change', function (): void {
+        Event::fake([CartSnapshotSynced::class, HighValueCartDetected::class]);
+
+        config()->set('filament-cart.analytics.high_value_threshold_minor', 1000);
+
+        $this->storage->shouldReceive('getItems')->andReturn([
+            'item-1' => [
+                'id' => 'item-1',
+                'name' => 'Product A',
+                'quantity' => 1,
+                'price' => 1500,
+                'attributes' => [],
+                'conditions' => [],
+            ],
+        ]);
+        $this->storage->shouldReceive('getConditions')->andReturn([]);
+        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
+        $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+
+        $cart = new BaseCart($this->storage, 'high-value-user', null, 'default');
+
+        $this->synchronizer->syncFromCart($cart);
+
+        Event::assertDispatched(CartSnapshotSynced::class);
+        Event::assertDispatched(HighValueCartDetected::class);
     });
 });
