@@ -7,6 +7,7 @@
     <testsuites>
         <testsuite name="Support">
             <directory>../tests/src/Support</directory>
+            <directory>../tests/src/CommerceSupport</directory>
         </testsuite>
     </testsuites>
     <source>

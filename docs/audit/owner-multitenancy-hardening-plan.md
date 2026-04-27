@@ -6,6 +6,8 @@ title: Owner Multitenancy Hardening Plan
 
 This playbook standardizes owner scoping across Commerce packages after the `commerce-support` owner foundation hardening.
 
+For package-by-package review, use the broader [Commerce Support Consumer Audit Standard](commerce-support-consumer-audit-standard.md). It expands this owner checklist to include targeting, webhooks, health checks, Filament actions, and non-request surfaces.
+
 ## Goals
 
 - Make `commerce-support` the single source of truth for owner context, scopes, route binding, write guards, and nullable-owner uniqueness helpers.
@@ -21,6 +23,7 @@ This playbook standardizes owner scoping across Commerce packages after the `com
 - `forOwner($owner, includeGlobal: true)` returns owner rows plus global rows.
 - `globalOnly()` returns only ownerless rows.
 - Missing owner context fails fast when owner mode is enabled.
+- `commerce-support.owner.enabled=true` fails closed unless `OwnerResolverInterface` resolves through a concrete resolver instead of `NullOwnerResolver`.
 - `OwnerContext::withOwner(null, ...)` is the explicit global context.
 - Global rows visible from tenant contexts are not mutable unless the call site enters explicit global context.
 
@@ -37,6 +40,17 @@ Each owner-enabled package should expose:
 ```
 
 Defaults should keep `include_global` false.
+
+The global support package should expose:
+
+```php
+'owner' => [
+    'enabled' => env('COMMERCE_OWNER_ENABLED', false),
+    'resolver' => env('COMMERCE_OWNER_RESOLVER', NullOwnerResolver::class),
+],
+```
+
+`COMMERCE_OWNER_ENABLED` is not a replacement for per-package owner flags. It is the resolver safety switch that prevents an application from booting in an apparently owner-enabled state while still using the no-op resolver.
 
 ## Model checklist
 
