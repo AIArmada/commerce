@@ -56,6 +56,19 @@ final class ClearAbandonedCartsCommand extends Command
         if ((bool) config('cart.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
             if ($owner === null) {
+                if (OwnerContext::isExplicitGlobal()) {
+                    return $this->handleForOwner(
+                        table: $table,
+                        useExpired: $useExpired,
+                        days: $days,
+                        now: $now,
+                        dryRun: (bool) $dryRun,
+                        batchSize: $batchSize,
+                        ownerType: null,
+                        ownerId: null,
+                    );
+                }
+
                 if (! $allOwners) {
                     $this->error('Owner scoping is enabled but no owner context was resolved. Pass --all-owners to process every owner.');
 
@@ -107,7 +120,7 @@ final class ClearAbandonedCartsCommand extends Command
         $owners = DB::table($table)->select(['owner_type', 'owner_id'])->distinct()->get();
 
         if ($owners->isEmpty()) {
-            return $this->handleForOwner(
+            return OwnerContext::withOwner(null, fn (): int => $this->handleForOwner(
                 table: $table,
                 useExpired: $useExpired,
                 days: $days,
@@ -116,7 +129,7 @@ final class ClearAbandonedCartsCommand extends Command
                 batchSize: $batchSize,
                 ownerType: null,
                 ownerId: null,
-            );
+            ));
         }
 
         $ownerBatches = [];
@@ -125,6 +138,16 @@ final class ClearAbandonedCartsCommand extends Command
         foreach ($owners as $row) {
             $ownerType = $this->normalizeOwnerValue($row->owner_type ?? null);
             $ownerId = $this->normalizeOwnerValue($row->owner_id ?? null);
+
+            if (! $this->hasValidOwnerPair($ownerType, $ownerId)) {
+                warning(sprintf(
+                    'Skipping malformed owner tuple while clearing abandoned carts (owner_type: %s, owner_id: %s).',
+                    $ownerType ?? 'null',
+                    $ownerId === null ? 'null' : (string) $ownerId,
+                ));
+
+                continue;
+            }
 
             $count = $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId);
             $ownerBatches[] = [
@@ -335,5 +358,11 @@ final class ClearAbandonedCartsCommand extends Command
         }
 
         return $value;
+    }
+
+    private function hasValidOwnerPair(?string $ownerType, string | int | null $ownerId): bool
+    {
+        return ($ownerType === null && $ownerId === null)
+            || ($ownerType !== null && $ownerId !== null);
     }
 }

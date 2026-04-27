@@ -305,3 +305,98 @@ final class OwnerScopedNoConfigFixture extends Model
         return 'owner_scope_fixtures';
     }
 }
+
+// ---------------------------------------------------------------------------
+// Custom owner column tests
+// ---------------------------------------------------------------------------
+
+it('instance helpers honour custom owner column names', function (): void {
+    Schema::dropIfExists('custom_col_fixtures');
+    Schema::create('custom_col_fixtures', function (Blueprint $table): void {
+        $table->id();
+        $table->nullableMorphs('tenant');
+        $table->string('label');
+        $table->timestamps();
+    });
+
+    $owner = User::query()->create([
+        'name' => 'Custom Col Owner',
+        'email' => 'custom-col-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    // assignOwner on a new (unsaved) model uses custom columns
+    $unsaved = new CustomColFixture(['label' => 'new']);
+    $unsaved->assignOwner($owner);
+
+    expect($unsaved->hasOwner())->toBeTrue()
+        ->and($unsaved->isGlobal())->toBeFalse()
+        ->and($unsaved->belongsToOwner($owner))->toBeTrue();
+
+    // Persist via normal owner-context creation path
+    $model = OwnerContext::withOwner($owner, fn () => CustomColFixture::query()->create(['label' => 'owned']));
+
+    expect($model->hasOwner())->toBeTrue()
+        ->and($model->isGlobal())->toBeFalse()
+        ->and($model->belongsToOwner($owner))->toBeTrue();
+
+    // removeOwner on a persisted model uses custom columns
+    OwnerContext::withOwner(null, function () use ($model): void {
+        $model->removeOwner();
+        $model->save();
+    });
+
+    $model->refresh();
+
+    expect($model->isGlobal())->toBeTrue()
+        ->and($model->hasOwner())->toBeFalse();
+
+    Schema::dropIfExists('custom_col_fixtures');
+});
+
+it('owner() relation honours custom owner column names', function (): void {
+    Schema::dropIfExists('custom_col_fixtures');
+    Schema::create('custom_col_fixtures', function (Blueprint $table): void {
+        $table->id();
+        $table->nullableMorphs('tenant');
+        $table->string('label');
+        $table->timestamps();
+    });
+
+    $owner = User::query()->create([
+        'name' => 'Relation Owner',
+        'email' => 'relation-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $model = OwnerContext::withOwner($owner, fn () => CustomColFixture::query()->create(['label' => 'rel-test']));
+
+    $resolved = $model->owner;
+
+    expect($resolved)->not->toBeNull()
+        ->and($resolved->getKey())->toBe($owner->getKey());
+
+    Schema::dropIfExists('custom_col_fixtures');
+});
+
+final class CustomColFixture extends Model
+{
+    use HasOwner;
+
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'custom_col_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(
+            enabled: true,
+            includeGlobal: false,
+            ownerTypeColumn: 'tenant_type',
+            ownerIdColumn: 'tenant_id',
+        );
+    }
+}

@@ -8,8 +8,8 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Models\Cart as CartModel;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\KeyValue;
@@ -49,11 +49,8 @@ final class ApplyConditionAction extends Action
                     ->helperText('Override the default condition name if needed'),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                // Get the cart record - either directly or from relation manager
-                $cart = $record instanceof CartModel ? $record : $livewire->getOwnerRecord();
-
-                $conditionModel = self::getScopedConditionQuery(forItems: false)
-                    ->findOrFail($data['condition_id']);
+                $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
+                $conditionModel = OwnerActionGuard::findStoredCondition((string) $data['condition_id'], forItems: false);
                 $customName = ! empty($data['custom_name']) ? $data['custom_name'] : null;
 
                 try {
@@ -112,13 +109,11 @@ final class ApplyConditionAction extends Action
                     ->helperText('Override the default condition name if needed'),
             ])
             ->action(function (array $data, $record): void {
-                $conditionModel = self::getScopedConditionQuery(forItems: true)
-                    ->findOrFail($data['condition_id']);
+                $conditionModel = OwnerActionGuard::findStoredCondition((string) $data['condition_id'], forItems: true);
                 $customName = ! empty($data['custom_name']) ? $data['custom_name'] : null;
+                $cart = OwnerActionGuard::resolveCartRecord($record->cart ?? null);
 
                 try {
-                    // Get the cart and item
-                    $cart = $record->cart;
                     $cartInstance = app(CartInstanceManager::class)
                         ->resolveForSnapshot($cart);
 
@@ -175,31 +170,22 @@ final class ApplyConditionAction extends Action
             $query->forItems();
         }
 
-        if (! (bool) config('filament-cart.owner.enabled', false)) {
+        if (! Condition::ownerScopingEnabled()) {
             return $query;
         }
 
         $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('filament-cart.owner.include_global', false);
+
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            Condition::class . ' requires an owner context or explicit global context.',
+        );
 
         if ($owner === null) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
+            return $query->globalOnly();
         }
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where(function (Builder $inner) use ($owner): void {
-                $inner->where('owner_type', $owner->getMorphClass())
-                    ->where('owner_id', (string) $owner->getKey());
-            });
-
-            if (! $includeGlobal) {
-                return;
-            }
-
-            $builder->orWhere(function (Builder $inner): void {
-                $inner->whereNull('owner_type')->whereNull('owner_id');
-            });
-        });
+        return $query->forOwner($owner, (bool) config('cart.owner.include_global', false));
     }
 
     /**
@@ -303,8 +289,7 @@ final class ApplyConditionAction extends Action
                     ->default([]),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                // Get the cart record - either directly or from relation manager
-                $cart = $record instanceof CartModel ? $record : $livewire->getOwnerRecord();
+                $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
 
                 try {
                     // Get a cart instance for this specific cart record

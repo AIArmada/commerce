@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Resources\CartResource\Tables;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -159,8 +160,10 @@ final class CartsTable
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Cart $record): void {
+                            $cart = OwnerActionGuard::authorizeCart($record);
+
                             app(CartInstanceManager::class)
-                                ->resolveForSnapshot($record)
+                                ->resolveForSnapshot($cart)
                                 ->clear();
                         })
                         ->visible(fn (Cart $record): bool => $record->items_count > 0)
@@ -174,8 +177,10 @@ final class CartsTable
                     DeleteAction::make()
                         ->icon(Heroicon::OutlinedXMark)
                         ->using(function (Cart $record): void {
+                            $cart = OwnerActionGuard::authorizeCart($record);
+
                             app(CartInstanceManager::class)
-                                ->resolveForSnapshot($record)
+                                ->resolveForSnapshot($cart)
                                 ->destroy();
                         })
                         ->successNotificationTitle('Cart deleted'),
@@ -192,8 +197,10 @@ final class CartsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
+                            $cart = OwnerActionGuard::authorizeCart($record);
+
                             app(CartInstanceManager::class)
-                                ->resolveForSnapshot($record)
+                                ->resolveForSnapshot($cart)
                                 ->clear();
                         });
                     }),
@@ -206,8 +213,10 @@ final class CartsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
+                            $cart = OwnerActionGuard::authorizeCart($record);
+
                             app(CartInstanceManager::class)
-                                ->resolveForSnapshot($record)
+                                ->resolveForSnapshot($cart)
                                 ->destroy();
                         });
                     }),

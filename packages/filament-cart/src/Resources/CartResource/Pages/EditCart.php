@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
@@ -22,7 +23,12 @@ final class EditCart extends EditRecord
                 ->icon(Heroicon::OutlinedEye),
 
             Actions\DeleteAction::make()
-                ->icon(Heroicon::OutlinedTrash),
+                ->icon(Heroicon::OutlinedTrash)
+                ->using(function (Cart $record): void {
+                    app(CartInstanceManager::class)
+                        ->resolveForSnapshot(OwnerActionGuard::authorizeCart($record))
+                        ->destroy();
+                }),
 
             Actions\Action::make('clear_cart')
                 ->label('Clear Cart')
@@ -31,7 +37,7 @@ final class EditCart extends EditRecord
                 ->requiresConfirmation()
                 ->action(function (): void {
                     /** @var Cart $record */
-                    $record = $this->record;
+                    $record = OwnerActionGuard::resolveCartRecord($this->record);
                     app(CartInstanceManager::class)
                         ->resolveForSnapshot($record)
                         ->clear();

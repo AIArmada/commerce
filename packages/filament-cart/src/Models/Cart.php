@@ -170,6 +170,11 @@ class Cart extends Model
             throw new InvalidArgumentException('Owner must be an Eloquent model, null, or omitted.');
         }
 
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            self::class . ' requires an owner context or explicit global context.',
+        );
+
         /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 

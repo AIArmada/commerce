@@ -21,7 +21,6 @@ use AIArmada\FilamentCart\Commands\MarkAbandonedCartsCommand;
 use AIArmada\FilamentCart\Listeners\ApplyGlobalConditions;
 use AIArmada\FilamentCart\Listeners\CleanupSnapshotOnCartMerged;
 use AIArmada\FilamentCart\Listeners\SyncCartOnEvent;
-use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Services\CartConditionBatchRemoval;
 use AIArmada\FilamentCart\Services\CartConditionValidator;
 use AIArmada\FilamentCart\Services\CartDownloadService;
@@ -48,9 +47,6 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->singleton(FilamentCartPlugin::class);
-
-        // Configure cart package to use filament Cart model for relationships
-        config(['cart.models.cart' => CartSnapshot::class]);
 
         if (! $this->app->bound(RulesFactoryInterface::class)) {
             $this->app->singleton(function ($app): RulesFactoryInterface {

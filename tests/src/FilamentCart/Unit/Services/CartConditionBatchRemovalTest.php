@@ -376,7 +376,12 @@ describe('CartConditionBatchRemoval service', function (): void {
 
         $service = new CartConditionBatchRemoval($cartManager, $syncManager);
 
-        $result = OwnerContext::withOwner($ownerA, fn () => $service->removeConditionFromAllCarts($storedCondition));
+        $tenantResult = OwnerContext::withOwner($ownerA, fn () => $service->removeConditionFromAllCarts($storedCondition));
+
+        expect($tenantResult['success'])->toBeFalse();
+        expect($tenantResult['errors'][0])->toContain('explicit global owner context');
+
+        $result = OwnerContext::withOwner(null, fn () => $service->removeConditionFromAllCarts($storedCondition));
 
         expect($result['success'])->toBeTrue();
         expect($result['carts_processed'])->toBe(2);

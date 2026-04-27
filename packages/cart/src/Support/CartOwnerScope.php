@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Support;
 
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Query\Builder;
 
 final class CartOwnerScope
@@ -16,17 +18,9 @@ final class CartOwnerScope
 
     public static function applyForOwner(Builder $query, ?string $ownerType, string | int | null $ownerId): Builder
     {
-        if ($ownerType !== null && $ownerId !== null) {
-            return $query->where('owner_type', $ownerType)
-                ->where('owner_id', (string) $ownerId);
-        }
-
-        return $query
-            ->where(function (Builder $builder): void {
-                $builder->whereNull('owner_type');
-            })
-            ->where(function (Builder $builder): void {
-                $builder->whereNull('owner_id');
-            });
+        return OwnerQuery::applyToQueryBuilder(
+            $query,
+            OwnerContext::fromTypeAndId($ownerType, $ownerId),
+        );
     }
 }

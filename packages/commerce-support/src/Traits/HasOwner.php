@@ -174,7 +174,9 @@ trait HasOwner // @phpstan-ignore trait.unused
      */
     public function owner(): MorphTo
     {
-        return $this->morphTo();
+        $config = static::resolveOwnerScopeConfig();
+
+        return $this->morphTo(__FUNCTION__, $config->ownerTypeColumn, $config->ownerIdColumn);
     }
 
     /**
@@ -253,7 +255,10 @@ trait HasOwner // @phpstan-ignore trait.unused
      */
     public function hasOwner(): bool
     {
-        return $this->owner_type !== null && $this->owner_id !== null;
+        $config = static::resolveOwnerScopeConfig();
+
+        return $this->getAttribute($config->ownerTypeColumn) !== null
+            && $this->getAttribute($config->ownerIdColumn) !== null;
     }
 
     /**
@@ -269,8 +274,10 @@ trait HasOwner // @phpstan-ignore trait.unused
      */
     public function belongsToOwner(Model $owner): bool
     {
-        return $this->owner_type === $owner->getMorphClass()
-            && $this->owner_id === $owner->getKey();
+        $config = static::resolveOwnerScopeConfig();
+
+        return $this->getAttribute($config->ownerTypeColumn) === $owner->getMorphClass()
+            && (string) $this->getAttribute($config->ownerIdColumn) === (string) $owner->getKey();
     }
 
     /**
@@ -278,8 +285,10 @@ trait HasOwner // @phpstan-ignore trait.unused
      */
     public function assignOwner(Model $owner): static
     {
-        $this->owner_type = $owner->getMorphClass();
-        $this->owner_id = $owner->getKey();
+        $config = static::resolveOwnerScopeConfig();
+
+        $this->setAttribute($config->ownerTypeColumn, $owner->getMorphClass());
+        $this->setAttribute($config->ownerIdColumn, $owner->getKey());
 
         return $this;
     }
@@ -289,8 +298,10 @@ trait HasOwner // @phpstan-ignore trait.unused
      */
     public function removeOwner(): static
     {
-        $this->owner_type = null;
-        $this->owner_id = null;
+        $config = static::resolveOwnerScopeConfig();
+
+        $this->setAttribute($config->ownerTypeColumn, null);
+        $this->setAttribute($config->ownerIdColumn, null);
 
         return $this;
     }

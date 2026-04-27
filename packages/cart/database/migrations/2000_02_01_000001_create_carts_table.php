@@ -17,9 +17,8 @@ return new class extends Migration
         Schema::create(config('cart.database.table', 'carts'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('identifier')->index();
-            $table->string('owner_type')->nullable();
-            $table->string('owner_id')->nullable();
             $table->string('owner_scope')->default('global');
+            $table->nullableUuidMorphs('owner');
             $table->string('instance')->default('default')->index();
             $jsonType = (string) commerce_json_column_type('cart', 'json');
             $table->{$jsonType}('items')->nullable();

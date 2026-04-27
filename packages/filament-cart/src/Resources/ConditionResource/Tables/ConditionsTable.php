@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCart\Resources\ConditionResource\Tables;
 
 use AIArmada\Cart\Models\Condition;
 use AIArmada\FilamentCart\Resources\ConditionResource;
+use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Akaunting\Money\Money;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -213,7 +214,10 @@ final class ConditionsTable
                 EditAction::make()
                     ->visible(fn (Condition $record): bool => ConditionResource::canEdit($record)),
                 DeleteAction::make()
-                    ->visible(fn (Condition $record): bool => ConditionResource::canDelete($record)),
+                    ->visible(fn (Condition $record): bool => ConditionResource::canDelete($record))
+                    ->using(function (Condition $record): void {
+                        OwnerActionGuard::authorizeStoredCondition($record)->delete();
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -227,7 +231,7 @@ final class ConditionsTable
                                     throw new RuntimeException('Shared global conditions can only be modified from explicit global context.');
                                 }
 
-                                $record->delete();
+                                OwnerActionGuard::authorizeStoredCondition($record)->delete();
                             }
                         }),
                 ]),

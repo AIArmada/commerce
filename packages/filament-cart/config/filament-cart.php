@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Services\BuiltInRulesFactory;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -17,6 +19,13 @@ return [
             'snapshot_conditions' => 'cart_snapshot_conditions',
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Integrations
+    |--------------------------------------------------------------------------
+    */
+    'dynamic_rules_factory' => BuiltInRulesFactory::class,
 
     /*
     |--------------------------------------------------------------------------

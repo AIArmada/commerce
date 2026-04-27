@@ -415,26 +415,37 @@ class Condition extends Model
     /**
      * Scope query to the specified owner.
      *
-     * When null is explicitly passed, this returns global-only records
-     * (owner_type IS NULL AND owner_id IS NULL). This overrides the base
-     * trait behavior which would fall back to OwnerContext::resolve().
+     * When null is explicitly passed inside an explicit global context, this
+     * returns global-only records (owner_type IS NULL AND owner_id IS NULL).
      *
      * @param  Builder<static>  $query
-     * @param  EloquentModel|null  $owner  The owner to scope to, or null for global-only
+     * @param  EloquentModel|string|null  $owner  The owner to scope to; omit to resolve current owner; pass null only in explicit global context
      * @param  bool  $includeGlobal  Whether to include global (ownerless) records
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = false): Builder
+    public function scopeForOwner(Builder $query, EloquentModel | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
     {
         if (! config('cart.owner.enabled', false)) {
             return $query;
         }
 
-        if ($owner === null) {
-            return $query->withoutOwnerScope()
-                ->whereNull('owner_type')
-                ->whereNull('owner_id');
+        if ($owner === OwnerContext::CURRENT) {
+            $owner = self::resolveCurrentOwner();
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                self::class . ' requires an owner context or explicit global context.',
+            );
         }
+
+        if (is_string($owner)) {
+            throw new InvalidArgumentException('Owner must be an Eloquent model, null, or omitted.');
+        }
+
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            self::class . ' requires an owner context or explicit global context.',
+        );
 
         /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);

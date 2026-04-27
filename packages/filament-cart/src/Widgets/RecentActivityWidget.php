@@ -84,9 +84,17 @@ class RecentActivityWidget extends BaseWidget
 
         if ((bool) config('filament-cart.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('filament-cart.owner.include_global', false);
 
-            $query->forOwner($owner, $includeGlobal);
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                Cart::class . ' requires an owner context or explicit global context.',
+            );
+
+            if ($owner === null) {
+                $query->globalOnly();
+            } else {
+                $query->forOwner($owner, (bool) config('filament-cart.owner.include_global', false));
+            }
         }
 
         return $query;

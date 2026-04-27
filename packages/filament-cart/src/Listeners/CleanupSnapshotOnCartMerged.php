@@ -37,6 +37,13 @@ final class CleanupSnapshotOnCartMerged
 
             $owner = CartSnapshot::resolveCurrentOwner();
 
+            if (CartSnapshot::ownerScopingEnabled()) {
+                OwnerContext::assertResolvedOrExplicitGlobal(
+                    $owner,
+                    CartSnapshot::class . ' requires an owner context or explicit global context.',
+                );
+            }
+
             // Find the source cart snapshot (guest cart)
             $sourceSnapshot = OwnerContext::withOwner(null, fn () => CartSnapshot::query()
                 ->where('identifier', $sourceIdentifier)

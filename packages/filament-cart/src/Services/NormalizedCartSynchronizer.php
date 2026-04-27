@@ -9,6 +9,7 @@ use AIArmada\Cart\Conditions\CartCondition as BaseCartCondition;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
 use AIArmada\Cart\Models\CartItem as BaseCartItem;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Events\CartSnapshotSynced;
 use AIArmada\FilamentCart\Events\HighValueCartDetected;
 use AIArmada\FilamentCart\Models\Cart;
@@ -36,6 +37,13 @@ class NormalizedCartSynchronizer
             $metadata = $cart->getAllMetadata();
 
             $currency = $this->resolveCurrency();
+
+            if (Cart::ownerScopingEnabled()) {
+                OwnerContext::assertResolvedOrExplicitGlobal(
+                    $owner,
+                    Cart::class . ' requires an owner context or explicit global context.',
+                );
+            }
 
             $cartModel = Cart::query()->forOwner($owner)->firstOrNew([
                 'identifier' => $identifier,
@@ -102,6 +110,13 @@ class NormalizedCartSynchronizer
     public function deleteNormalizedCart(string $identifier, string $instance): void
     {
         $owner = Cart::resolveCurrentOwner();
+
+        if (Cart::ownerScopingEnabled()) {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                Cart::class . ' requires an owner context or explicit global context.',
+            );
+        }
 
         $cartModel = Cart::query()->forOwner($owner)
             ->where('identifier', $identifier)
