@@ -12,14 +12,17 @@ use Illuminate\Database\Eloquent\Model;
 class MarkAbandonedCartsCommand extends Command
 {
     protected $signature = 'cart:mark-abandoned
-                            {--minutes=30 : Minutes of inactivity before marking as abandoned}
+                            {--minutes= : Minutes of inactivity before marking as abandoned}
                             {--dry-run : Show what would be marked without actually updating}';
 
     protected $description = 'Mark carts as abandoned based on inactivity after starting checkout';
 
     public function handle(): int
     {
-        $minutes = (int) $this->option('minutes');
+        $minutesOption = $this->option('minutes');
+        $minutes = is_numeric($minutesOption)
+            ? (int) $minutesOption
+            : (int) config('filament-cart.monitoring.abandonment_detection_minutes', 30);
         $dryRun = (bool) $this->option('dry-run');
 
         if ($dryRun) {
@@ -29,7 +32,7 @@ class MarkAbandonedCartsCommand extends Command
 
         $this->info("Checking for abandoned carts (inactive for {$minutes}+ minutes after starting checkout)...");
 
-        if (Cart::ownerScopingEnabled() && OwnerContext::resolve() === null) {
+        if (Cart::ownerScopingEnabled() && OwnerContext::resolve() === null && ! OwnerContext::isExplicitGlobal()) {
             return $this->handleAllOwners($minutes, $dryRun);
         }
 
@@ -50,7 +53,7 @@ class MarkAbandonedCartsCommand extends Command
             ->get();
 
         if ($owners->isEmpty()) {
-            $marked = $this->processAbandonedCarts($minutes, $dryRun);
+            $marked = OwnerContext::withOwner(null, fn (): int => $this->processAbandonedCarts($minutes, $dryRun));
 
             $this->newLine();
             $this->info("Marked {$marked} cart(s) as abandoned.");
@@ -61,6 +64,16 @@ class MarkAbandonedCartsCommand extends Command
         $totalMarked = 0;
 
         foreach ($owners as $row) {
+            if (! $this->hasValidOwnerPair($row->owner_type ?? null, $row->owner_id ?? null)) {
+                $this->warn(sprintf(
+                    'Skipping malformed owner tuple while marking abandoned carts (owner_type: %s, owner_id: %s).',
+                    is_string($row->owner_type ?? null) && $row->owner_type !== '' ? $row->owner_type : 'null',
+                    is_string($row->owner_id ?? null) || is_int($row->owner_id ?? null) ? (string) $row->owner_id : 'null',
+                ));
+
+                continue;
+            }
+
             $owner = $this->resolveOwnerFromRow($row);
 
             $totalMarked += (int) OwnerContext::withOwner(
@@ -129,5 +142,14 @@ class MarkAbandonedCartsCommand extends Command
             is_string($ownerType) ? $ownerType : null,
             is_string($ownerId) || is_int($ownerId) ? $ownerId : null
         );
+    }
+
+    private function hasValidOwnerPair(mixed $ownerType, mixed $ownerId): bool
+    {
+        $normalizedOwnerType = is_string($ownerType) && $ownerType !== '' ? $ownerType : null;
+        $normalizedOwnerId = is_string($ownerId) || is_int($ownerId) ? $ownerId : null;
+
+        return ($normalizedOwnerType === null && $normalizedOwnerId === null)
+            || ($normalizedOwnerType !== null && $normalizedOwnerId !== null);
     }
 }

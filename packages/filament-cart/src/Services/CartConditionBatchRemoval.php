@@ -6,12 +6,14 @@ namespace AIArmada\FilamentCart\Services;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition as StoredCondition;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart as CartModel;
 use AIArmada\FilamentCart\Models\CartCondition as CartConditionModel;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * Removes conditions from all active carts.
@@ -201,6 +203,10 @@ final class CartConditionBatchRemoval
     private function snapshotQuery(StoredCondition | string $condition)
     {
         if ($condition instanceof StoredCondition && $condition->owner_type === null && $condition->owner_id === null && config('cart.owner.enabled', false)) {
+            if (! OwnerContext::isExplicitGlobal()) {
+                throw new RuntimeException('Removing shared global conditions from all carts requires explicit global owner context.');
+            }
+
             return CartModel::query()->withoutOwnerScope();
         }
 

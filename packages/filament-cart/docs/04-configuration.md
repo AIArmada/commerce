@@ -32,6 +32,12 @@ Configuration lives in `config/filament-cart.php`.
 ],
 ```
 
+## Tables
+
+```php
+'polling_interval' => '30s',
+```
+
 ## Features
 
 ```php
@@ -42,6 +48,14 @@ Configuration lives in `config/filament-cart.php`.
     'abandonment_tracking' => true,
 ],
 ```
+
+## Integrations
+
+```php
+'dynamic_rules_factory' => AIArmada\Cart\Services\BuiltInRulesFactory::class,
+```
+
+Override this class when custom dynamic condition rule factories are needed.
 
 ## Owner scoping
 
@@ -82,4 +96,14 @@ This threshold controls when `HighValueCartDetected` is emitted. The package doe
 ],
 ```
 
-Use `cart:mark-abandoned` to mark abandoned snapshots. Alert evaluation and notification dispatch belong to Signals.
+Use `cart:mark-abandoned` to mark abandoned snapshots. The command uses this value when `--minutes` is not provided. Alert evaluation and notification dispatch belong to Signals.
+
+## Synchronization
+
+```php
+'synchronization' => [
+    'queue_sync' => false,
+    'queue_connection' => 'default',
+    'queue_name' => 'cart-sync',
+],
+```

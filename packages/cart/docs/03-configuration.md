@@ -11,7 +11,6 @@ The cart config is intentionally small. If a key is present, it is actively used
 ```php
 'database' => [
     'table' => env('CART_DB_TABLE', 'carts'),
-    'table_prefix' => env('CART_DB_TABLE_PREFIX', 'cart_'),
     'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
     'json_column_type' => env('CART_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
     'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30),
@@ -22,10 +21,6 @@ The cart config is intentionally small. If a key is present, it is actively used
 ## Defaults
 
 ```php
-'models' => [
-    'cart' => AIArmada\Cart\Models\CartModel::class,
-],
-
 'money' => [
     'default_currency' => env('CART_DEFAULT_CURRENCY', 'MYR'),
     'rounding_mode' => env('CART_ROUNDING_MODE', 'half_up'),

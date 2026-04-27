@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
-use AIArmada\FilamentCart\Models\Cart as CartModel;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -28,9 +28,9 @@ final class RemoveConditionAction extends Action
             ->modalDescription('Are you sure you want to remove this condition from the cart?')
             ->modalSubmitActionLabel('Remove Condition')
             ->action(function (CartCondition $record): void {
+                $cart = OwnerActionGuard::authorizeCartCondition($record);
+
                 try {
-                    // Get the cart instance
-                    $cart = $record->cart;
                     $cartInstance = app(CartInstanceManager::class)
                         ->resolveForSnapshot($cart);
 
@@ -81,8 +81,7 @@ final class RemoveConditionAction extends Action
             ->modalDescription('Are you sure you want to remove all conditions from this cart? This action cannot be undone.')
             ->modalSubmitActionLabel('Clear All Conditions')
             ->action(function ($record, $livewire): void {
-                // Get the cart record - either directly or from relation manager
-                $cart = $record instanceof CartModel ? $record : $livewire->getOwnerRecord();
+                $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
 
                 try {
                     // Get the cart instance
@@ -142,8 +141,7 @@ final class RemoveConditionAction extends Action
                     ->helperText('All conditions of this type will be removed'),
             ])
             ->action(function (array $data, $record, $livewire): void {
-                // Get the cart record - either directly or from relation manager
-                $cart = $record instanceof CartModel ? $record : $livewire->getOwnerRecord();
+                $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
 
                 try {
                     // Get the cart instance
