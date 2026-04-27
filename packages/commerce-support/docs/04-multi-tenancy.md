@@ -24,6 +24,8 @@ In this system, "owner" is the polymorphic relationship that represents your ten
 | Tenant-owned | `App\Models\Store` | `store-uuid` | Only visible to that store |
 | Global | `null` | `null` | Visible to all tenants (when `include_global` enabled) |
 
+Commerce Support treats owner isolation as security-sensitive. Missing owner context fails fast for owner-protected operations, and global rows require an explicit global context before mutation.
+
 ## Setting Up Multi-tenancy
 
 ### 1. Create an Owner Resolver
@@ -51,9 +53,12 @@ class TenantOwnerResolver implements OwnerResolverInterface
 ```php
 // config/commerce-support.php
 'owner' => [
+    'enabled' => true,
     'resolver' => App\Support\TenantOwnerResolver::class,
 ],
 ```
+
+When `enabled` is `true`, the application will not boot with `NullOwnerResolver`. Leave this global switch disabled only for single-tenant/no-owner installs.
 
 ### 3. Enable in Package Configs
 
@@ -62,6 +67,7 @@ class TenantOwnerResolver implements OwnerResolverInterface
 'owner' => [
     'enabled' => true,
     'include_global' => false,
+    'auto_assign_on_create' => true,
 ],
 ```
 
@@ -119,9 +125,11 @@ Product::forOwner($store, includeGlobal: true)->get();
 // Global-only records
 Product::globalOnly()->get();
 
-// Bypass owner scope entirely (dangerous!)
+// Bypass owner scope entirely (system-only escape hatch)
 Product::withoutOwnerScope()->get();
 ```
+
+Any `withoutOwnerScope()` usage should be intentional, greppable, and surrounded by explicit owner iteration or system context.
 
 ## Owner Context Management
 
@@ -133,12 +141,21 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 $owner = OwnerContext::resolve();
 ```
 
+If an operation requires owner isolation, do not continue when this returns `null`. Either enter an explicit owner context or use `OwnerContext::withOwner(null, ...)` for intentional global records.
+
 ### Override Context Temporarily
 
 ```php
 // Override for a callback
 $result = OwnerContext::withOwner($differentOwner, function () {
     return Product::all(); // Scoped to $differentOwner
+});
+
+// Create or mutate global rows intentionally
+OwnerContext::withOwner(null, function () {
+    return Product::globalOnly()->create([
+        'name' => 'Global product',
+    ]);
 });
 
 // Manual override (careful - persistent!)
@@ -205,6 +222,8 @@ OwnerQuery::applyToQueryBuilder(
 );
 ```
 
+Raw query-builder paths must always be audited separately because Eloquent global scopes do not apply to `DB::table()`.
+
 ## Model Methods
 
 The `HasOwner` trait provides:
@@ -244,6 +263,24 @@ Store::all()->each(function (Store $store) {
     });
 });
 ```
+
+Webhook processors, health checks, reports, exports, and imports follow the same rule: pass or iterate owners explicitly, then enter `OwnerContext::withOwner($owner, ...)` before touching tenant-owned data.
+
+## Filament and Submitted IDs
+
+Filament option lists are not authorization. Scope the options for good UX, then revalidate submitted IDs inside action handlers:
+
+```php
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+
+$category = OwnerWriteGuard::findOrFailForOwner(
+    Category::class,
+    $categoryId,
+    includeGlobal: false,
+);
+```
+
+Apply the same pattern to bulk actions, relation managers, imports, exports, and custom page actions.
 
 ## Best Practices
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Commands\SetupCommand;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\SupportServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelPackageTools\Package;
@@ -34,6 +35,34 @@ it('throws when configured owner resolver is invalid', function (): void {
         ->toThrow(InvalidArgumentException::class);
 
     putenv('COMMERCE_OWNER_RESOLVER');
+});
+
+it('allows the null owner resolver when commerce owner mode is disabled', function (): void {
+    putenv('COMMERCE_OWNER_ENABLED=false');
+    putenv('COMMERCE_OWNER_RESOLVER=' . NullOwnerResolver::class);
+
+    try {
+        $this->refreshApplication();
+
+        expect(config('commerce-support.owner.enabled'))->toBeFalse()
+            ->and(app(OwnerResolverInterface::class))->toBeInstanceOf(NullOwnerResolver::class);
+    } finally {
+        putenv('COMMERCE_OWNER_ENABLED');
+        putenv('COMMERCE_OWNER_RESOLVER');
+    }
+});
+
+it('fails closed when commerce owner mode uses the null owner resolver', function (): void {
+    putenv('COMMERCE_OWNER_ENABLED=true');
+    putenv('COMMERCE_OWNER_RESOLVER=' . NullOwnerResolver::class);
+
+    try {
+        expect(fn () => $this->refreshApplication())
+            ->toThrow(RuntimeException::class, 'NullOwnerResolver is configured while commerce-support owner mode is enabled');
+    } finally {
+        putenv('COMMERCE_OWNER_ENABLED');
+        putenv('COMMERCE_OWNER_RESOLVER');
+    }
 });
 
 class SupportTestOwnerResolver implements OwnerResolverInterface
