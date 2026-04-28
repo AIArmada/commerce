@@ -16,6 +16,7 @@ use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -107,9 +108,49 @@ class NormalizedCartSynchronizer
      * Delete the normalized cart representation from database
      * This is called when the cart is destroyed or cleared
      */
-    public function deleteNormalizedCart(string $identifier, string $instance): void
+    public function deleteNormalizedCart(
+        string $identifier,
+        string $instance,
+        ?string $ownerType = null,
+        string | int | null $ownerId = null,
+    ): void
     {
-        $owner = Cart::resolveCurrentOwner();
+        $hasExplicitOwnerTuple = func_num_args() >= 3;
+
+        $owner = $hasExplicitOwnerTuple
+            ? OwnerContext::fromTypeAndId($ownerType, $ownerId)
+            : Cart::resolveCurrentOwner();
+
+        $runDelete = function (?EloquentModel $scopedOwner) use ($identifier, $instance): void {
+            $cartModel = Cart::query()->forOwner($scopedOwner)
+                ->where('identifier', $identifier)
+                ->where('instance', $instance)
+                ->first();
+
+            if (! $cartModel) {
+                return;
+            }
+
+            CartCondition::query()->where('cart_id', $cartModel->id)->delete();
+            CartItem::query()->where('cart_id', $cartModel->id)->delete();
+            $cartModel->delete();
+        };
+
+        if (Cart::ownerScopingEnabled() && $hasExplicitOwnerTuple && $ownerType === null && $ownerId === null) {
+            OwnerContext::withOwner(null, function () use ($runDelete): void {
+                $runDelete(null);
+            });
+
+            return;
+        }
+
+        if (Cart::ownerScopingEnabled() && $hasExplicitOwnerTuple) {
+            OwnerContext::withOwner($owner, function () use ($owner, $runDelete): void {
+                $runDelete($owner);
+            });
+
+            return;
+        }
 
         if (Cart::ownerScopingEnabled()) {
             OwnerContext::assertResolvedOrExplicitGlobal(
@@ -118,18 +159,7 @@ class NormalizedCartSynchronizer
             );
         }
 
-        $cartModel = Cart::query()->forOwner($owner)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->first();
-
-        if (! $cartModel) {
-            return;
-        }
-
-        CartCondition::query()->where('cart_id', $cartModel->id)->delete();
-        CartItem::query()->where('cart_id', $cartModel->id)->delete();
-        $cartModel->delete();
+        $runDelete($owner);
     }
 
     /**

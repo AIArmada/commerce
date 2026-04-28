@@ -279,7 +279,12 @@ final class IngestSignalEvent
         }
 
         if ((bool) config('signals.features.alerts.evaluate_on_ingest.queue', true)) {
-            EvaluateSignalAlertsForEvent::dispatch((string) $event->getKey());
+            EvaluateSignalAlertsForEvent::dispatch(
+                signalEventId: (string) $event->getKey(),
+                ownerType: $event->owner_type,
+                ownerId: $event->owner_id,
+                ownerIsGlobal: $event->owner_type === null && $event->owner_id === null,
+            );
 
             return;
         }

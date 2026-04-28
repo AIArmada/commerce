@@ -80,8 +80,16 @@ trait ManagesInstances
         // Remove cart completely from storage
         $this->storage->forget($identifier, $instance);
 
-        // Dispatch CartDestroyed event
-        $this->dispatchEvent(new CartDestroyed($identifier, $instance));
+        $ownerType = $this->storage->getOwnerType();
+        $ownerId = $this->storage->getOwnerId();
+
+        $this->dispatchEvent(new CartDestroyed(
+            identifier: $identifier,
+            instance: $instance,
+            cartId: null,
+            owner_type: $ownerType,
+            owner_id: $ownerId,
+        ));
     }
 
     /**

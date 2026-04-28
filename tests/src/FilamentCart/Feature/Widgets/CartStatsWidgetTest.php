@@ -84,4 +84,52 @@ describe('CartStatsWidget', function (): void {
         expect($stats[2]->getValue())->toBe(2);
         expect($stats[3]->getValue())->toBe((string) Money::USD(2500));
     });
+
+    it('includes global snapshots when include_global is enabled', function (): void {
+        config()->set('cart.owner.enabled', true);
+        config()->set('filament-cart.owner.enabled', true);
+        config()->set('cart.owner.include_global', true);
+        config()->set('filament-cart.owner.include_global', true);
+        config()->set('cart.money.default_currency', 'USD');
+
+        $owner = User::query()->create([
+            'name' => 'Owner Include Global',
+            'email' => 'owner-include-global-widget@example.com',
+            'password' => 'secret',
+        ]);
+
+        OwnerContext::withOwner($owner, fn () => CartSnapshot::query()->create([
+            'identifier' => 'owner-only',
+            'instance' => 'default',
+            'currency' => 'USD',
+            'items_count' => 1,
+            'quantity' => 1,
+            'subtotal' => 2000,
+            'total' => 2000,
+        ]));
+
+        OwnerContext::withOwner(null, fn () => CartSnapshot::query()->create([
+            'identifier' => 'global-only',
+            'instance' => 'default',
+            'currency' => 'USD',
+            'items_count' => 1,
+            'quantity' => 1,
+            'subtotal' => 500,
+            'total' => 500,
+        ]));
+
+        app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($owner));
+
+        $widget = new CartStatsWidget;
+        $reflection = new ReflectionClass($widget);
+        $method = $reflection->getMethod('getStats');
+        $method->setAccessible(true);
+
+        /** @var array<int, Stat> $stats */
+        $stats = $method->invoke($widget);
+
+        expect($stats[0]->getValue())->toBe(2);
+        expect($stats[2]->getValue())->toBe(2);
+        expect($stats[3]->getValue())->toBe((string) Money::USD(2500));
+    });
 });

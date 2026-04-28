@@ -122,6 +122,14 @@ trait HasOwner // @phpstan-ignore trait.unused
             $originalOwnerType = $model->getOriginal($config->ownerTypeColumn);
             $originalOwnerId = $model->getOriginal($config->ownerIdColumn);
 
+            // Block promotion: persisted global record being assigned to any owner
+            if ($originalOwnerType === null && $originalOwnerId === null && ($ownerType !== null || $ownerId !== null)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Owner cannot be assigned to a persisted global %s record. Use a privileged TransferOwnerAction instead.',
+                    $model::class,
+                ));
+            }
+
             // Block demotion: persisted owned record being set to global
             if (($originalOwnerType !== null || $originalOwnerId !== null) && $ownerType === null && $ownerId === null) {
                 throw new InvalidArgumentException(sprintf(

@@ -25,6 +25,7 @@ class CartSyncManager
                 instance: $cart->instance(),
                 ownerType: $storage->getOwnerType(),
                 ownerId: $storage->getOwnerId(),
+                ownerIsGlobal: $storage->getOwnerType() === null && $storage->getOwnerId() === null,
             );
 
             return;
@@ -39,8 +40,13 @@ class CartSyncManager
         $this->sync($cart, force: true);
     }
 
-    public function deleteByIdentity(string $instance, string $identifier): void
+    public function deleteByIdentity(
+        string $instance,
+        string $identifier,
+        ?string $ownerType = null,
+        string | int | null $ownerId = null,
+    ): void
     {
-        $this->synchronizer->deleteNormalizedCart($identifier, $instance);
+        $this->synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId);
     }
 }

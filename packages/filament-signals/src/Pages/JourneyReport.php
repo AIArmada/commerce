@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Pages;
 
 use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
+use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Services\JourneyReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
@@ -22,6 +23,7 @@ use Livewire\Attributes\Url;
 final class JourneyReport extends Page implements HasTable
 {
     use FormatsSignalsReportValues;
+    use InteractsWithSavedSignalReportState;
     use InteractsWithSignalsDateRange;
     use InteractsWithTable;
 
@@ -53,6 +55,12 @@ final class JourneyReport extends Page implements HasTable
     public function mount(): void
     {
         $this->initializeDefaultDateRange();
+        $this->sanitizeSavedReportState();
+    }
+
+    protected function savedReportType(): string
+    {
+        return 'journeys';
     }
 
     public static function getNavigationGroup(): ?string
@@ -151,6 +159,7 @@ final class JourneyReport extends Page implements HasTable
                 ])
                 ->action(function (array $data): void {
                     $this->savedReportId = (string) ($data['savedReportId'] ?? '');
+                    $this->sanitizeSavedReportState();
                 }),
         ];
     }

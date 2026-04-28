@@ -110,7 +110,7 @@ final class CartsTable
             ->filters([
                 SelectFilter::make('instance')
                     ->options(
-                        fn () => Cart::query()->forOwner()
+                        fn () => Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
                             ->select('instance')
                             ->distinct()
                             ->orderBy('instance')
@@ -121,7 +121,7 @@ final class CartsTable
 
                 SelectFilter::make('currency')
                     ->options(
-                        fn () => Cart::query()->forOwner()
+                        fn () => Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
                             ->select('currency')
                             ->distinct()
                             ->orderBy('currency')

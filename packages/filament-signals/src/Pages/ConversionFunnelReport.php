@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Pages;
 
 use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
+use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Services\ConversionFunnelReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
@@ -18,6 +19,7 @@ use Livewire\Attributes\Url;
 final class ConversionFunnelReport extends Page
 {
     use FormatsSignalsReportValues;
+    use InteractsWithSavedSignalReportState;
     use InteractsWithSignalsDateRange;
 
     #[Url]
@@ -48,6 +50,12 @@ final class ConversionFunnelReport extends Page
     public function mount(): void
     {
         $this->initializeDefaultDateRange();
+        $this->sanitizeSavedReportState();
+    }
+
+    protected function savedReportType(): string
+    {
+        return 'conversion_funnel';
     }
 
     public static function getNavigationGroup(): ?string
@@ -114,6 +122,8 @@ final class ConversionFunnelReport extends Page
                     $this->savedReportId = is_string($data['saved_report_id'] ?? null)
                         ? $data['saved_report_id']
                         : '';
+
+                    $this->sanitizeSavedReportState();
                 }),
         ];
     }

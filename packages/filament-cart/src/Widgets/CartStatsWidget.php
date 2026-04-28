@@ -15,22 +15,22 @@ final class CartStatsWidget extends BaseWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Total Carts', Cart::query()->forOwner()->count())
+            Stat::make('Total Carts', Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())->count())
                 ->description('All cart sessions')
                 ->descriptionIcon(Heroicon::OutlinedShoppingCart)
                 ->color('primary'),
 
-            Stat::make('Active Carts', Cart::query()->forOwner()->notEmpty()->count())
+            Stat::make('Active Carts', Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())->notEmpty()->count())
                 ->description('Carts with items')
                 ->descriptionIcon(Heroicon::OutlinedCheckCircle)
                 ->color('success'),
 
-            Stat::make('Total Items', (int) Cart::query()->forOwner()->sum('quantity'))
+            Stat::make('Total Items', (int) Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())->sum('quantity'))
                 ->description('Across all carts')
                 ->descriptionIcon(Heroicon::OutlinedShoppingBag)
                 ->color('info'),
 
-            Stat::make('Cart Value', $this->formatMoney((int) Cart::query()->forOwner()->sum('subtotal')))
+            Stat::make('Cart Value', $this->formatMoney((int) Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())->sum('subtotal')))
                 ->description('Total potential revenue')
                 ->descriptionIcon(Heroicon::OutlinedCurrencyDollar)
                 ->color('warning'),

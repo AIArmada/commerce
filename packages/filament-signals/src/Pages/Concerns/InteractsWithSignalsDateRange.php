@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages\Concerns;
 
+use AIArmada\FilamentSignals\Support\SignalsReportStateSanitizer;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -21,6 +22,8 @@ trait InteractsWithSignalsDateRange
         if ($this->dateTo === '') {
             $this->dateTo = CarbonImmutable::now()->toDateString();
         }
+
+        $this->sanitizeSignalsFilterState();
     }
 
     /**
@@ -63,6 +66,8 @@ trait InteractsWithSignalsDateRange
                     $this->signalSegmentId = is_string($data['signal_segment_id'] ?? null)
                         ? $data['signal_segment_id']
                         : '';
+
+                    $this->sanitizeSignalsFilterState();
                 }),
             Action::make('last7days')
                 ->label('Last 7 Days')
@@ -85,5 +90,25 @@ trait InteractsWithSignalsDateRange
         $this->dateTo = CarbonImmutable::now()->toDateString();
 
         return true;
+    }
+
+    protected function sanitizeSignalsFilterState(): void
+    {
+        $sanitizer = app(SignalsReportStateSanitizer::class);
+
+        $this->trackedPropertyId = $sanitizer->sanitizeTrackedPropertyId($this->trackedPropertyId);
+        $this->signalSegmentId = $sanitizer->sanitizeSignalSegmentId($this->signalSegmentId);
+    }
+
+    public function updatedTrackedPropertyId(): void
+    {
+        $this->trackedPropertyId = app(SignalsReportStateSanitizer::class)
+            ->sanitizeTrackedPropertyId($this->trackedPropertyId);
+    }
+
+    public function updatedSignalSegmentId(): void
+    {
+        $this->signalSegmentId = app(SignalsReportStateSanitizer::class)
+            ->sanitizeSignalSegmentId($this->signalSegmentId);
     }
 }

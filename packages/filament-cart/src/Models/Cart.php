@@ -135,6 +135,11 @@ class Cart extends Model
         return (bool) config('filament-cart.owner.enabled', false);
     }
 
+    public static function includeGlobalRecords(): bool
+    {
+        return (bool) config('filament-cart.owner.include_global', config('cart.owner.include_global', false));
+    }
+
     public static function resolveCurrentOwner(): ?EloquentModel
     {
         if (! self::ownerScopingEnabled()) {

@@ -8,6 +8,7 @@ use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Signals\Actions\ServeSignalsTracker;
 use AIArmada\Signals\Jobs\EvaluateSignalAlertsForEvent;
+use AIArmada\Signals\Jobs\ReverseGeocodeSessionJob;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
@@ -249,7 +250,61 @@ it('queues alert evaluation when on-ingest evaluation is explicitly enabled', fu
 
     $response->assertAccepted();
 
-    Queue::assertPushed(EvaluateSignalAlertsForEvent::class);
+    Queue::assertPushed(EvaluateSignalAlertsForEvent::class, function (EvaluateSignalAlertsForEvent $job): bool {
+        expect($job->signalEventId)->not()->toBe('')
+            ->and($job->ownerType)->toBeString()
+            ->and($job->ownerId)->not()->toBeNull()
+            ->and($job->ownerIsGlobal)->toBeFalse();
+
+        return true;
+    });
+});
+
+it('queues reverse geocoding with explicit owner payload context', function (): void {
+    Queue::fake();
+
+    config()->set('signals.features.geolocation.enabled', true);
+    config()->set('signals.features.geolocation.reverse_geocode.enabled', true);
+    config()->set('signals.features.geolocation.reverse_geocode.async', true);
+
+    /** @var User $owner */
+    $owner = User::query()->create([
+        'name' => 'Geo Owner',
+        'email' => 'geo-owner@signals.test',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    TrackedProperty::query()->create([
+        'name' => 'Geo Property',
+        'slug' => 'geo-property',
+        'write_key' => 'geo-write-key',
+    ]);
+
+    $this->postJson('/api/signals/collect/event', [
+        'write_key' => 'geo-write-key',
+        'event_name' => 'page_view',
+        'event_category' => 'page_view',
+        'session_identifier' => 'geo-sess-1',
+    ])->assertAccepted();
+
+    $this->postJson('/api/signals/collect/geo', [
+        'write_key' => 'geo-write-key',
+        'session_identifier' => 'geo-sess-1',
+        'latitude' => 3.139,
+        'longitude' => 101.6869,
+        'accuracy' => 18,
+    ])->assertAccepted();
+
+    Queue::assertPushed(ReverseGeocodeSessionJob::class, function (ReverseGeocodeSessionJob $job): bool {
+        expect($job->sessionId)->not()->toBe('')
+            ->and($job->ownerType)->toBeString()
+            ->and($job->ownerId)->not()->toBeNull()
+            ->and($job->ownerIsGlobal)->toBeFalse();
+
+        return true;
+    });
 });
 
 it('accepts pageview payloads and records a page_view event', function (): void {

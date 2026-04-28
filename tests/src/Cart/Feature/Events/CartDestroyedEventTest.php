@@ -25,7 +25,10 @@ describe('CartDestroyed Event Dispatch', function (): void {
 
         // Assert CartDestroyed event was dispatched
         Event::assertDispatched(CartDestroyed::class, function (CartDestroyed $event) use ($identifier, $instance) {
-            return $event->identifier === $identifier && $event->instance === $instance;
+            return $event->identifier === $identifier
+                && $event->instance === $instance
+                && $event->owner_type === null
+                && $event->owner_id === null;
         });
     });
 
@@ -60,6 +63,8 @@ describe('CartDestroyed Event Dispatch', function (): void {
 
             return $data['identifier'] === $identifier &&
                    $data['instance_name'] === $instance &&
+                     array_key_exists('owner_type', $data) &&
+                     array_key_exists('owner_id', $data) &&
                    isset($data['timestamp']);
         });
     });

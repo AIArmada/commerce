@@ -98,7 +98,9 @@ describe('CartDestroyed Event', function (): void {
         $this->event = new CartDestroyed(
             identifier: 'destroyed-user',
             instance: 'wishlist',
-            cartId: 'cart-uuid-123'
+            cartId: 'cart-uuid-123',
+            owner_type: 'App\\Models\\User',
+            owner_id: '42',
         );
     });
 
@@ -126,10 +128,12 @@ describe('CartDestroyed Event', function (): void {
         $array = $this->event->toArray();
 
         expect($array)->toBeArray()
-            ->and($array)->toHaveKeys(['identifier', 'instance_name', 'cart_id', 'timestamp'])
+            ->and($array)->toHaveKeys(['identifier', 'instance_name', 'cart_id', 'owner_type', 'owner_id', 'timestamp'])
             ->and($array['identifier'])->toBe('destroyed-user')
             ->and($array['instance_name'])->toBe('wishlist')
-            ->and($array['cart_id'])->toBe('cart-uuid-123');
+            ->and($array['cart_id'])->toBe('cart-uuid-123')
+            ->and($array['owner_type'])->toBe('App\\Models\\User')
+            ->and($array['owner_id'])->toBe('42');
     });
 });
 

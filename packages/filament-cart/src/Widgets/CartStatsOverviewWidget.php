@@ -68,7 +68,7 @@ final class CartStatsOverviewWidget extends BaseWidget
         $yesterday = now()->subDay();
 
         // Use raw queries for performance
-        $base = Cart::query()->forOwner();
+        $base = Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords());
 
         return [
             'active_carts' => (clone $base)
@@ -121,7 +121,7 @@ final class CartStatsOverviewWidget extends BaseWidget
 
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
-            $count = Cart::query()->forOwner()
+            $count = Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
                 ->where(fn ($q) => $this->whereHasItems($q))
                 ->whereDate('updated_at', $date->toDateString())
                 ->count();
@@ -143,7 +143,7 @@ final class CartStatsOverviewWidget extends BaseWidget
 
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
-            $value = (int) Cart::query()->forOwner()
+            $value = (int) Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
                 ->where(fn ($q) => $this->whereHasItems($q))
                 ->whereDate('updated_at', $date->toDateString())
                 ->sum(DB::raw($this->getSubtotalExpression()));

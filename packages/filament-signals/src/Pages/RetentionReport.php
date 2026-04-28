@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages;
 
+use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Services\RetentionReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
@@ -16,6 +17,7 @@ use Livewire\Attributes\Url;
 
 final class RetentionReport extends Page
 {
+    use InteractsWithSavedSignalReportState;
     use InteractsWithSignalsDateRange;
 
     #[Url]
@@ -46,6 +48,12 @@ final class RetentionReport extends Page
     public function mount(): void
     {
         $this->initializeDefaultDateRange();
+        $this->sanitizeSavedReportState();
+    }
+
+    protected function savedReportType(): string
+    {
+        return 'retention';
     }
 
     public static function getNavigationGroup(): ?string
@@ -112,6 +120,7 @@ final class RetentionReport extends Page
                 ])
                 ->action(function (array $data): void {
                     $this->savedReportId = (string) ($data['savedReportId'] ?? '');
+                    $this->sanitizeSavedReportState();
                 }),
         ];
     }

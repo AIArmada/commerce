@@ -362,15 +362,23 @@ OwnerContext::withOwner(null, function () {
     return Product::globalOnly()->get();
 });
 
-`OwnerContext::setForRequest()` is reserved for middleware/framework integrations during active HTTP requests. It throws outside HTTP request lifecycle; use `OwnerContext::withOwner(...)` in jobs/commands and other non-HTTP surfaces.
-
-
 // Reconstruct from database values
 $owner = OwnerContext::fromTypeAndId(
     'App\\Models\\Store',
     'store-uuid-here'
 );
 ```
+
+`OwnerContext::setForRequest()` is reserved for middleware/framework integrations during active HTTP requests. It throws outside HTTP request lifecycle; use `OwnerContext::withOwner(...)` in jobs/commands and other non-HTTP surfaces.
+
+When using `OwnerContextJob`, prefer an explicit `OwnerScopedJob` implementation that returns `OwnerJobContext`.
+
+Laravel convention guidance:
+
+- Use camelCase for PHP fields (`ownerType`, `ownerId`, `ownerIsGlobal`)
+- Keep snake_case for persistence/wire payload keys (`owner_type`, `owner_id`)
+
+`ownerIsGlobal=true` is mutually exclusive with owner-bearing payload data (`ownerType`/`ownerId` or owner-bearing model payloads). Contradictory payloads fail closed.
 
 ## OwnerScopeIdentifiable
 
@@ -397,6 +405,40 @@ final readonly class OwnerReference implements OwnerScopeIdentifiable
     }
 }
 ```
+
+## OwnerTuple utilities
+
+Use the `Support/OwnerTuple` helpers when code works with raw rows, queue payloads, event payloads, or configurable owner columns.
+
+### `OwnerTupleColumns`
+
+Resolves the physical owner tuple column names for a model or config key.
+
+```php
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+
+$columns = OwnerTupleColumns::forModelClass(Product::class);
+```
+
+### `OwnerTupleParser`
+
+Parses owner tuple data into a tri-state result:
+
+- owner tuple
+- explicit global tuple
+- unresolved/malformed tuple
+
+```php
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+
+$parsed = OwnerTupleParser::fromRow($row, $columns);
+
+if ($parsed->isOwner()) {
+    $owner = $parsed->toOwnerModel();
+}
+```
+
+For security-sensitive paths, malformed tuples should throw. Batch tooling may opt into unresolved results and skip malformed rows deliberately.
 
 This is the supported alternative to raw duck-typing for `OwnerScopeKey`, `OwnerCache`, and `OwnerFilesystem`.
 

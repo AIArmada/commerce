@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Events\ForgotCurrentOwnerEvent;
+use AIArmada\CommerceSupport\Events\ForgettingCurrentOwnerEvent;
+use AIArmada\CommerceSupport\Events\MadeOwnerCurrentEvent;
+use AIArmada\CommerceSupport\Events\MakingOwnerCurrentEvent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -64,7 +68,26 @@ final class OwnerContext
             throw new RuntimeException('OwnerContext::setForRequest() may only be used during an active HTTP request. Use OwnerContext::withOwner() for scoped non-HTTP operations.');
         }
 
+        $previousState = self::readState();
+        $previousOwner = $previousState['hasOverride'] ? $previousState['override'] : null;
+
+        if ($owner !== null && ! self::sameOwner($previousOwner, $owner)) {
+            event(new MakingOwnerCurrentEvent($owner));
+        }
+
+        if ($owner === null && $previousOwner !== null) {
+            event(new ForgettingCurrentOwnerEvent($previousOwner));
+        }
+
         $request->attributes->set(self::REQUEST_KEY, ['hasOverride' => true, 'override' => $owner]);
+
+        if ($owner !== null && ! self::sameOwner($previousOwner, $owner)) {
+            event(new MadeOwnerCurrentEvent($owner));
+        }
+
+        if ($owner === null && $previousOwner !== null) {
+            event(new ForgotCurrentOwnerEvent($previousOwner));
+        }
     }
 
     public static function hasOverride(): bool
@@ -92,12 +115,28 @@ final class OwnerContext
     {
         $previous = self::readState();
 
+        if ($owner !== null) {
+            event(new MakingOwnerCurrentEvent($owner));
+        }
+
         self::writeState(['hasOverride' => true, 'override' => $owner]);
+
+        if ($owner !== null) {
+            event(new MadeOwnerCurrentEvent($owner));
+        }
 
         try {
             return $callback();
         } finally {
+            if ($owner !== null) {
+                event(new ForgettingCurrentOwnerEvent($owner));
+            }
+
             self::writeState($previous);
+
+            if ($owner !== null) {
+                event(new ForgotCurrentOwnerEvent($owner));
+            }
         }
     }
 
@@ -170,5 +209,15 @@ final class OwnerContext
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private static function sameOwner(?Model $left, ?Model $right): bool
+    {
+        if ($left === null || $right === null) {
+            return false;
+        }
+
+        return $left->getMorphClass() === $right->getMorphClass()
+            && (string) $left->getKey() === (string) $right->getKey();
     }
 }

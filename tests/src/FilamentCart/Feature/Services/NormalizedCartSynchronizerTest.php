@@ -148,6 +148,63 @@ describe('NormalizedCartSynchronizer', function (): void {
         expect(CartItem::where('cart_id', $cart->id)->count())->toBe(0);
     });
 
+    it('deletes only the targeted owner snapshot when identifiers collide across owners', function (): void {
+        config()->set('cart.owner.enabled', true);
+        config()->set('filament-cart.owner.enabled', true);
+
+        $ownerA = User::query()->create([
+            'name' => 'Owner A',
+            'email' => 'owner-a-delete-sync@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerB = User::query()->create([
+            'name' => 'Owner B',
+            'email' => 'owner-b-delete-sync@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerACart = OwnerContext::withOwner($ownerA, fn () => Cart::query()->create([
+            'instance' => 'default',
+            'identifier' => 'collision-user',
+            'items_count' => 1,
+        ]));
+
+        $ownerBCart = OwnerContext::withOwner($ownerB, fn () => Cart::query()->create([
+            'instance' => 'default',
+            'identifier' => 'collision-user',
+            'items_count' => 2,
+        ]));
+
+        CartItem::query()->create([
+            'cart_id' => $ownerACart->id,
+            'item_id' => 'owner-a-item',
+            'name' => 'Owner A Item',
+            'price' => 100,
+            'quantity' => 1,
+        ]);
+
+        CartItem::query()->create([
+            'cart_id' => $ownerBCart->id,
+            'item_id' => 'owner-b-item',
+            'name' => 'Owner B Item',
+            'price' => 200,
+            'quantity' => 1,
+        ]);
+
+        $this->synchronizer->deleteNormalizedCart(
+            identifier: 'collision-user',
+            instance: 'default',
+            ownerType: $ownerA->getMorphClass(),
+            ownerId: $ownerA->getKey(),
+        );
+
+        expect(Cart::query()->withoutOwnerScope()->find($ownerACart->id))->toBeNull();
+        expect(Cart::query()->withoutOwnerScope()->find($ownerBCart->id))->not->toBeNull();
+        expect(CartItem::query()->where('cart_id', $ownerACart->id)->count())->toBe(0);
+        expect(CartItem::query()->where('cart_id', $ownerBCart->id)->count())->toBe(1);
+    });
+
     it('does not overwrite another owners cart snapshot when owner mode is enabled', function (): void {
         config()->set('cart.owner.enabled', true);
         config()->set('filament-cart.owner.enabled', true);

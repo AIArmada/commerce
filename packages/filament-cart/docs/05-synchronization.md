@@ -55,7 +55,12 @@ final class SyncCartOnEvent
     public function handle($event): void
     {
         if ($event instanceof CartDestroyed) {
-            $this->syncManager->deleteByIdentity($event->instance, $event->identifier);
+            $this->syncManager->deleteByIdentity(
+                instance: $event->instance,
+                identifier: $event->identifier,
+                ownerType: $event->owner_type,
+                ownerId: $event->owner_id,
+            );
             return;
         }
 
@@ -103,8 +108,8 @@ $synchronizer = app(NormalizedCartSynchronizer::class);
 // Sync a cart to database
 $synchronizer->syncFromCart($cart);
 
-// Delete normalized cart
-$synchronizer->deleteNormalizedCart($identifier, $instance);
+// Delete normalized cart with explicit owner tuple
+$synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId);
 ```
 
 **Synchronization Process:**
@@ -140,8 +145,8 @@ $manager = app(CartSyncManager::class);
 // Sync a cart
 $manager->sync($cart);
 
-// Delete by identity
-$manager->deleteByIdentity($instance, $identifier);
+// Delete by identity in explicit owner scope
+$manager->deleteByIdentity($instance, $identifier, $ownerType, $ownerId);
 ```
 
 ### CartInstanceManager
