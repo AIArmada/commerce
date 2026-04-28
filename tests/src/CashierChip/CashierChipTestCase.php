@@ -11,9 +11,10 @@ use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Cache\CacheServiceProvider;
 use Illuminate\Database\DatabaseServiceProvider;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Events\EventServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -139,7 +140,15 @@ abstract class CashierChipTestCase extends Orchestra
             'email' => 'test-' . uniqid() . '@example.com',
         ], $attributes));
 
-        OwnerContext::override($user);
+        app()->instance(OwnerResolverInterface::class, new class($user) implements OwnerResolverInterface
+        {
+            public function __construct(private readonly User $owner) {}
+
+            public function resolve(): ?Model
+            {
+                return $this->owner;
+            }
+        });
 
         return $user;
     }

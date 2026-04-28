@@ -316,27 +316,27 @@ class NormalizedCartSynchronizer
     /**
      * @param  array<string, mixed>  $metadata
      */
-    private function resolveLastActivityAt(BaseCart $cart, array $metadata, ?Carbon $existingLastActivityAt): ?Carbon
+    private function resolveLastActivityAt(BaseCart $cart, array $metadata, ?DateTimeInterface $existingLastActivityAt): ?Carbon
     {
         if (array_key_exists('last_activity_at', $metadata)) {
             return $this->parseTimestamp($metadata['last_activity_at']);
         }
 
         return $this->parseTimestamp($cart->getUpdatedAt())
-            ?? $existingLastActivityAt
+            ?? $this->parseTimestamp($existingLastActivityAt)
             ?? $this->parseTimestamp($cart->getCreatedAt());
     }
 
     /**
      * @param  array<string, mixed>  $metadata
      */
-    private function resolveMetadataTimestamp(array $metadata, string $key, ?Carbon $existingValue): ?Carbon
+    private function resolveMetadataTimestamp(array $metadata, string $key, ?DateTimeInterface $existingValue): ?Carbon
     {
         if (array_key_exists($key, $metadata)) {
             return $this->parseTimestamp($metadata[$key]);
         }
 
-        return $existingValue;
+        return $this->parseTimestamp($existingValue);
     }
 
     private function parseTimestamp(mixed $value): ?Carbon

@@ -43,7 +43,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner($ownerA, fn () => Category::create(['name' => 'Owned Category']));
 
@@ -65,7 +65,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner($ownerB, fn () => Category::create(['name' => 'Other Owner Category']));
 
@@ -83,7 +83,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner(null, fn () => Category::create(['name' => 'Global Category']));
 
@@ -101,7 +101,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner(null, fn () => Category::create(['name' => 'Global Category 2']));
 
@@ -133,7 +133,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner($ownerA, fn () => Category::create(['name' => 'Update Owned Category']));
 
@@ -155,7 +155,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner($ownerB, fn () => Category::create(['name' => 'Update Other Owner Category']));
 
@@ -173,7 +173,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner($ownerA, fn () => Category::create(['name' => 'Delete Owned Category']));
 
@@ -189,7 +189,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner($ownerA, fn () => Category::create(['name' => 'Category With Products']));
             $product = OwnerContext::withOwner($ownerA, fn () => Product::create([
@@ -217,7 +217,7 @@ describe('Category Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $category = OwnerContext::withOwner($ownerB, fn () => Category::create(['name' => 'Delete Other Owner Category']));
 
@@ -251,7 +251,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner($ownerA, fn () => Product::create([
                 'name' => 'Owned View Product',
@@ -277,7 +277,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner($ownerB, fn () => Product::create([
                 'name' => 'Other Owner Product',
@@ -299,7 +299,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner(null, fn () => Product::create([
                 'name' => 'Global Product',
@@ -321,7 +321,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner(null, fn () => Product::create([
                 'name' => 'Global Product 2',
@@ -357,7 +357,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner($ownerA, fn () => Product::create([
                 'name' => 'Update Owned Product',
@@ -383,7 +383,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner($ownerB, fn () => Product::create([
                 'name' => 'Update Other Owner Product',
@@ -405,7 +405,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner($ownerA, fn () => Product::create([
                 'name' => 'Delete Owned Product',
@@ -431,7 +431,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner($ownerB, fn () => Product::create([
                 'name' => 'Delete Other Owner Product',
@@ -453,7 +453,7 @@ describe('Product Policy', function (): void {
                 'password' => 'secret',
             ]);
 
-            OwnerContext::override($ownerA);
+            OwnerContext::setForRequest($ownerA);
 
             $product = OwnerContext::withOwner($ownerA, fn () => Product::create([
                 'name' => 'Duplicate Owned Product',

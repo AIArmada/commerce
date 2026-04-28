@@ -21,7 +21,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('identifier');
             $table->string('instance')->default('default');
-            $table->string('owner_key', 191)->default('global');
+            $table->string('owner_scope', 191)->default('global');
             $table->nullableUuidMorphs('owner');
             $table->unsignedInteger('items_count')->default(0);
             $table->unsignedInteger('quantity')->default(0);
@@ -39,10 +39,10 @@ return new class extends Migration
             $table->timestamp('recovered_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['owner_key', 'identifier', 'instance'], $tableName . '_owner_key_identifier_instance_unique');
+            $table->unique(['owner_scope', 'identifier', 'instance'], $tableName . '_owner_scope_identifier_instance_unique');
             $table->index('identifier');
             $table->index('instance');
-            $table->index('owner_key', $tableName . '_owner_key_index');
+            $table->index('owner_scope', $tableName . '_owner_scope_index');
             $table->index('items_count');
             $table->index('quantity');
             $table->index('subtotal');

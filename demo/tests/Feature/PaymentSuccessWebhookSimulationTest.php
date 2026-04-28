@@ -16,7 +16,7 @@ test('payment success simulates CHIP webhook without morph map violations', func
         'email' => 'admin@commerce.demo',
     ]);
 
-    OwnerContext::override($owner);
+    OwnerContext::setForRequest($owner);
 
     $order = OwnerContext::withOwner($owner, function () use ($owner): Order {
         $order = Order::create([
@@ -48,8 +48,7 @@ test('payment success simulates CHIP webhook without morph map violations', func
             'city' => 'Kuala Lumpur',
             'state' => 'WP Kuala Lumpur',
             'postcode' => '50000',
-            'country_code' => 'MY',
-            'phone' => '+60123456789',
+            'country' => 'MY',
             'email' => 'demo-buyer@example.com',
         ]);
 

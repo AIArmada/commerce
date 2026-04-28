@@ -8,7 +8,8 @@ use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Support\Facades\Route;
 
 it('assigns purchase owner from brand_id mapping when owner context is missing', function (): void {
@@ -30,7 +31,7 @@ it('assigns purchase owner from brand_id mapping when owner context is missing',
         ],
     ]);
 
-    OwnerContext::override(null);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
     $payload = WebhookFactory::purchaseCreated([
         'brand_id' => 'brand-1',
@@ -53,8 +54,7 @@ it('fails closed when owner scoping is enabled but brand_id has no owner mapping
 
     config()->set('chip.owner.enabled', true);
     config()->set('chip.owner.webhook_brand_id_map', []);
-
-    OwnerContext::override(null);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
     $payload = WebhookFactory::purchaseCreated([
         'brand_id' => 'brand-missing',
@@ -78,8 +78,7 @@ it('fails closed when the brand mapping has an empty owner type', function (): v
             'owner_id' => 'owner-123',
         ],
     ]);
-
-    OwnerContext::override(null);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
     $payload = WebhookFactory::purchaseCreated([
         'brand_id' => 'brand-empty-owner-type',
@@ -119,8 +118,7 @@ it('stores matching webhook payloads separately for different owners', function 
             'owner_id' => (string) $ownerTwo->getKey(),
         ],
     ]);
-
-    OwnerContext::override(null);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
     $timestamp = time();
 
@@ -140,8 +138,6 @@ it('stores matching webhook payloads separately for different owners', function 
 
     $this->postJson('/chip/webhook-test', $payloadOne)
         ->assertStatus(200);
-
-    OwnerContext::override(null);
 
     $this->postJson('/chip/webhook-test', $payloadTwo)
         ->assertStatus(200);

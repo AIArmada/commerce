@@ -12,6 +12,7 @@ use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
 use AIArmada\FilamentCart\Services\NormalizedCartSynchronizer;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 
@@ -306,6 +307,33 @@ describe('NormalizedCartSynchronizer', function (): void {
         expect($cartModel->last_activity_at?->toDateTimeString())->toBe(now()->subHour()->toDateTimeString());
         expect($cartModel->checkout_started_at?->toDateTimeString())->toBe(now()->subHours(4)->toDateTimeString());
         expect($cartModel->checkout_abandoned_at?->toDateTimeString())->toBe(now()->subHours(2)->toDateTimeString());
+    });
+
+    it('accepts immutable existing timestamps when synchronizing cart snapshots', function (): void {
+        Cart::create([
+            'instance' => 'default',
+            'identifier' => 'user-immutable',
+            'last_activity_at' => CarbonImmutable::now()->subHour(),
+            'checkout_started_at' => CarbonImmutable::now()->subHours(3),
+            'checkout_abandoned_at' => CarbonImmutable::now()->subHours(2),
+        ]);
+
+        $this->storage->shouldReceive('getItems')->andReturn([]);
+        $this->storage->shouldReceive('getConditions')->andReturn([]);
+        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => null);
+        $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+        $this->storage->shouldReceive('getCreatedAt')->andReturn(CarbonImmutable::now()->subDay());
+        $this->storage->shouldReceive('getUpdatedAt')->andReturn(CarbonImmutable::now()->subMinutes(10));
+
+        $cart = new BaseCart($this->storage, 'user-immutable', null, 'default');
+
+        $this->synchronizer->syncFromCart($cart);
+
+        $cartModel = Cart::instance('default')->byIdentifier('user-immutable')->firstOrFail();
+
+        expect($cartModel->last_activity_at?->toDateTimeString())->toBe(Carbon::now()->subHour()->toDateTimeString())
+            ->and($cartModel->checkout_started_at?->toDateTimeString())->toBe(Carbon::now()->subHours(3)->toDateTimeString())
+            ->and($cartModel->checkout_abandoned_at?->toDateTimeString())->toBe(Carbon::now()->subHours(2)->toDateTimeString());
     });
 
     it('emits snapshot and high-value events only when material fields change', function (): void {

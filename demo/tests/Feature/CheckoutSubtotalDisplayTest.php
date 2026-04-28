@@ -17,7 +17,7 @@ test('checkout displays pre-discount subtotal when a voucher is applied', functi
         'email' => 'admin@commerce.demo',
     ]);
 
-    OwnerContext::override($owner);
+    OwnerContext::setForRequest($owner);
 
     $product = Product::create([
         'name' => 'AirPods Pro',
