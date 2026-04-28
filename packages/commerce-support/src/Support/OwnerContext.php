@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 final class OwnerContext
 {
@@ -171,7 +172,7 @@ final class OwnerContext
             $request = app('request');
 
             return $request instanceof Request ? $request : null;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }
