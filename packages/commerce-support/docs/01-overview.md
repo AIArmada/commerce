@@ -45,7 +45,6 @@ commerce-support/
 ├── Traits/                 # Model traits
 │   ├── HasOwner            # Multi-tenancy support
 │   ├── HasOwnerScopeConfig # Config-based scope setup
-│   ├── CachesComputedValues # Request-level caching
 │   └── ValidatesConfiguration
 ├── Support/                # Core utilities
 │   ├── MoneyNormalizer     # Price normalization

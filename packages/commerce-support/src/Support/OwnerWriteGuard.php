@@ -44,21 +44,31 @@ final class OwnerWriteGuard
             /** @var OwnerScopeConfig $config */
             $config = $modelClass::ownerScopeConfig();
 
-            if ($config->enabled) {
-                $query = OwnerQuery::applyToEloquentBuilder(
-                    $query->withoutGlobalScope(OwnerScope::class),
-                    $owner,
-                    $includeGlobal,
-                    $config->ownerTypeColumn,
-                    $config->ownerIdColumn,
-                );
+            if (! $config->enabled) {
+                throw new InvalidArgumentException(sprintf(
+                    '%s has owner scoping disabled. Do not use OwnerWriteGuard on models that opt out of owner scoping.',
+                    $modelClass,
+                ));
             }
+
+            $query = OwnerQuery::applyToEloquentBuilder(
+                $query->withoutGlobalScope(OwnerScope::class),
+                $owner,
+                $includeGlobal,
+                $config->ownerTypeColumn,
+                $config->ownerIdColumn,
+            );
         } elseif (method_exists($modelClass, 'scopeForOwner')) {
             $query = OwnerQuery::applyToEloquentBuilder(
                 $query->withoutGlobalScope(OwnerScope::class),
                 $owner,
                 $includeGlobal,
             );
+        } else {
+            throw new InvalidArgumentException(sprintf(
+                '%s does not implement owner scoping. Use the HasOwner trait before using OwnerWriteGuard.',
+                $modelClass,
+            ));
         }
 
         $model = $query->whereKey($id)->first();

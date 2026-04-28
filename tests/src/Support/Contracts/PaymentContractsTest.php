@@ -154,13 +154,25 @@ describe('Payment Contracts', function (): void {
 
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
-            expect($methods)->toContain('createPayment')
+            expect($methods)->toContain('getName')
+                ->and($methods)->toContain('getDisplayName')
+                ->and($methods)->toContain('isTestMode')
+                ->and($methods)->toContain('createPayment')
                 ->and($methods)->toContain('getPayment')
                 ->and($methods)->toContain('cancelPayment')
                 ->and($methods)->toContain('refundPayment')
                 ->and($methods)->toContain('capturePayment')
+                ->and($methods)->toContain('getPaymentMethods')
                 ->and($methods)->toContain('supports')
-                ->and($methods)->toContain('getName');
+                ->and($methods)->toContain('getWebhookHandler');
+        });
+
+        it('requires string and bool return types for identity methods', function (): void {
+            $reflection = new ReflectionClass(PaymentGatewayInterface::class);
+
+            expect((string) $reflection->getMethod('getName')->getReturnType())->toBe('string')
+                ->and((string) $reflection->getMethod('getDisplayName')->getReturnType())->toBe('string')
+                ->and((string) $reflection->getMethod('isTestMode')->getReturnType())->toBe('bool');
         });
 
         it('requires PaymentIntentInterface return type for createPayment', function (): void {
@@ -178,6 +190,13 @@ describe('Payment Contracts', function (): void {
             expect((string) $params[0]->getType())->toBe(CheckoutableInterface::class);
             // Second parameter is nullable CustomerInterface
             expect($params[1]->allowsNull())->toBeTrue();
+        });
+
+        it('defines return types for getPaymentMethods and getWebhookHandler', function (): void {
+            $reflection = new ReflectionClass(PaymentGatewayInterface::class);
+
+            expect((string) $reflection->getMethod('getPaymentMethods')->getReturnType())->toBe('array')
+                ->and((string) $reflection->getMethod('getWebhookHandler')->getReturnType())->toBe(WebhookHandlerInterface::class);
         });
     });
 

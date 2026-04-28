@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingRuleEvaluator;
 use AIArmada\CommerceSupport\Targeting\Enums\TargetingMode;
 use AIArmada\CommerceSupport\Targeting\Enums\TargetingRuleType;
+use AIArmada\CommerceSupport\Targeting\Exceptions\TargetingRuleEvaluationException;
 
 /**
  * Engine for evaluating targeting rules.
@@ -217,7 +218,16 @@ class TargetingEngine implements TargetingEngineInterface
             return false;
         }
 
-        return $evaluator->evaluate($rule, $context);
+        try {
+            return $evaluator->evaluate($rule, $context);
+        } catch (TargetingRuleEvaluationException $exception) {
+            logger()->warning('Targeting rule evaluation failed; failing closed.', [
+                'type' => $type,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
