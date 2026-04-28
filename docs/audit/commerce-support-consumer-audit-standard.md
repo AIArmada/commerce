@@ -11,6 +11,7 @@ Use this checklist to audit any package that consumes `commerce-support` primiti
 - Fail closed for security-sensitive behavior.
 - Never treat UI scoping as authorization.
 - Treat `commerce-support` as the source of truth for owner primitives.
+- Non-Eloquent owner references passed into owner-scoped helpers must implement `AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable`; do not rely on raw duck-typing.
 - Treat `owner_type` and `owner_id` as the default tenant boundary columns. Custom column names are supported by implementing `ownerScopeConfig()` on the model and returning an `OwnerScopeConfig` with `ownerTypeColumn`/`ownerIdColumn` set. All `HasOwner` helpers and the `owner()` relation must respect the configured columns.
 - Prefer small package-scoped changes and tests.
 - Document intentional cross-owner/system operations with a greppable escape hatch.
@@ -317,3 +318,57 @@ title: <Package> Commerce Support Audit
 
 ## Follow-ups
 ```
+
+---
+
+## Implementation Plan: Isolation Primitives (Q3 2026)
+
+**Locked decision (grilled 2026-04-28):** Build isolation helpers in `commerce-support` without cross-package changes.
+
+### Five primitives to build (v1)
+
+1. **`OwnerCache`** — owner-scoped cache key builder
+   - Enforces `owner:{ownerScopeKey}:{logicalKey}` pattern
+   - Prevents cache cross-tenant bleed
+    - Uses tagged owner groups on tag-capable drivers; `forgetOwner()` is intentionally a no-op on stores without tags
+
+2. **`OwnerFilesystem`** — owner-scoped artifact path builder
+   - Enforces `owners/{ownerScopeKey}/...` structure
+   - Guards downloads/serving via owner-checked resolver
+    - Accepts Eloquent owners or `OwnerScopeIdentifiable` adapters
+
+3. **`OwnerContextJob` trait** — auto-enters owner context for queued jobs
+   - Requires `owner_type`/`owner_id` in job payload
+   - Fails closed if owner missing when owner mode enabled
+   - Prevents queue cross-tenant leakage
+
+4. **`OwnerIdentificationMiddleware` base middleware** — app-level request identification hook
+   - Service provider binds resolver (static + known)
+   - Middleware identifies owner from domain/auth/header at request time
+   - Resolves before any owner-scoped queries
+
+5. **Updated documentation** — 08-webhooks, 04-multi-tenancy, 10-traits-utilities
+   - Usage examples for each primitive
+   - Integration patterns for optional adoption
+
+### What is deferred
+
+- **Provisioning pipeline** — only needed when enabling multitenancy in packages; skip v1
+- **Package retrofits** — primitives are optional/advisory; packages adopt on their own timeline
+
+### Implementation sequence
+
+1. `OwnerCache` (simplest, no side effects)
+2. `OwnerFilesystem` (next, also isolated)
+3. `OwnerContextJob` trait (touches job lifecycle)
+4. `OwnerIdentificationMiddleware` base middleware (defines request-time hook)
+5. Documentation + comprehensive tests
+
+**Estimated effort:** 1–2 weeks, commerce-support only.
+
+### Validation (required before merge)
+
+- All primitives pass unit tests in `tests/src/Support`
+- All primitives have complete PHPDoc + usage examples
+- PHPStan level 6 clean
+- Test coverage ≥80%
