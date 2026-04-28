@@ -107,6 +107,10 @@ abstract class CashierChipTestCase extends Orchestra
         $app['config']->set('cashier-chip.currency_locale', 'ms_MY');
         $app['config']->set('cashier-chip.webhooks.secret', 'test_webhook_secret');
         $app['config']->set('cashier-chip.webhooks.verify_signature', false);
+        $app['config']->set('cashier-chip.features.owner.enabled', false);
+        $app['config']->set('cashier-chip.features.owner.include_global', false);
+        $app['config']->set('cashier-chip.features.owner.auto_assign_on_create', true);
+        $app['config']->set('cashier-chip.features.owner.validate_billable_owner', false);
     }
 
     /**
@@ -117,6 +121,7 @@ abstract class CashierChipTestCase extends Orchestra
         // Create users table first (before cashier-chip migrations run)
         Schema::create('users', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('email')->unique();
             $table->string('phone')->nullable();
@@ -128,6 +133,20 @@ abstract class CashierChipTestCase extends Orchestra
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamps();
         });
+
+        // Create webhook_calls table for Spatie webhook-client
+        if (! Schema::hasTable('webhook_calls')) {
+            Schema::create('webhook_calls', function (Blueprint $table): void {
+                $table->bigIncrements('id');
+                $table->string('name');
+                $table->string('url')->nullable();
+                $table->json('headers')->nullable();
+                $table->json('payload')->nullable();
+                $table->timestamp('processed_at')->nullable();
+                $table->text('exception')->nullable();
+                $table->timestamps();
+            });
+        }
 
         // Load package migrations
         $this->loadMigrationsFrom(__DIR__ . '/../../../packages/cashier-chip/database/migrations');

@@ -31,8 +31,7 @@ return new class extends Migration
             $table->string('user_agent')->nullable();
             $table->string('ip_address', 64)->nullable();
             $table->uuid('user_id')->nullable()->index();
-            $table->string('owner_type')->nullable();
-            $table->uuid('owner_id')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamp('first_seen_at')->nullable();
             $table->timestamp('last_seen_at')->nullable();
@@ -42,7 +41,7 @@ return new class extends Migration
 
             $table->index(['cart_identifier', 'cart_instance'], 'affiliate_attributions_cart_index');
             $table->index('cookie_value', 'affiliate_attributions_cookie_index');
-            $table->index(['owner_type', 'owner_id'], 'affiliate_attributions_owner_idx');
+
             $table->index(['affiliate_id', 'first_seen_at'], 'affiliate_attributions_timeline_idx');
         });
     }

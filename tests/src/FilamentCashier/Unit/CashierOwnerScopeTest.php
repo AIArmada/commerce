@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
 use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -59,19 +60,23 @@ it('scopes user_id queries to current owner billables', function (): void {
 
     config()->set('cashier.models.billable', TenantBillableUser::class);
 
-    $billableA = TenantBillableUser::query()->create([
-        'name' => 'Billable A',
-        'email' => 'billable-a@example.com',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-    ]);
+    $billableA = OwnerContext::withOwner($ownerA, function () use ($ownerA): TenantBillableUser {
+        return TenantBillableUser::query()->create([
+            'name' => 'Billable A',
+            'email' => 'billable-a@example.com',
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+        ]);
+    });
 
-    $billableB = TenantBillableUser::query()->create([
-        'name' => 'Billable B',
-        'email' => 'billable-b@example.com',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-    ]);
+    $billableB = OwnerContext::withOwner($ownerB, function () use ($ownerB): TenantBillableUser {
+        return TenantBillableUser::query()->create([
+            'name' => 'Billable B',
+            'email' => 'billable-b@example.com',
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+        ]);
+    });
 
     TenantRecord::query()->create([
         'user_id' => $billableA->getKey(),
@@ -132,12 +137,14 @@ it('fails closed when billable supports owner scoping but no owner context exist
 
     config()->set('cashier.models.billable', TenantBillableUser::class);
 
-    $billableA = TenantBillableUser::query()->create([
-        'name' => 'Billable A3',
-        'email' => 'billable-a3@example.com',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-    ]);
+    $billableA = OwnerContext::withOwner($ownerA, function () use ($ownerA): TenantBillableUser {
+        return TenantBillableUser::query()->create([
+            'name' => 'Billable A3',
+            'email' => 'billable-a3@example.com',
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+        ]);
+    });
 
     TenantRecord::query()->create([
         'user_id' => $billableA->getKey(),
@@ -181,19 +188,23 @@ it('blocks selecting a cross-tenant customer when an owner context exists', func
 
     config()->set('cashier.models.billable', TenantBillableUser::class);
 
-    $billableA = TenantBillableUser::query()->create([
-        'name' => 'Billable A2',
-        'email' => 'billable-a2@example.com',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-    ]);
+    $billableA = OwnerContext::withOwner($ownerA, function () use ($ownerA): TenantBillableUser {
+        return TenantBillableUser::query()->create([
+            'name' => 'Billable A2',
+            'email' => 'billable-a2@example.com',
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+        ]);
+    });
 
-    $billableB = TenantBillableUser::query()->create([
-        'name' => 'Billable B2',
-        'email' => 'billable-b2@example.com',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-    ]);
+    $billableB = OwnerContext::withOwner($ownerB, function () use ($ownerB): TenantBillableUser {
+        return TenantBillableUser::query()->create([
+            'name' => 'Billable B2',
+            'email' => 'billable-b2@example.com',
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+        ]);
+    });
 
     app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
     {

@@ -103,8 +103,10 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         // Process payment
         $result = $processor->createPayment($session, $paymentRequest);
 
-        // Handle payment result
-        $paymentData = [
+        // Handle payment result - merge into existing payment_data to preserve callback_token
+        // (ensureCallbackToken() stored it above; replacing the whole array would wipe it,
+        //  causing all redirect-based callbacks to fail token validation).
+        $paymentData = array_merge($session->payment_data ?? [], [
             'gateway' => $processor->getIdentifier(),
             'payment_id' => $result->paymentId,
             'transaction_id' => $result->transactionId,
@@ -113,7 +115,7 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             'currency' => $result->currency ?? $session->currency,
             'gateway_response' => $result->gatewayResponse,
             'processed_at' => now()->toIso8601String(),
-        ];
+        ]);
 
         $session->update([
             'payment_id' => $result->paymentId,

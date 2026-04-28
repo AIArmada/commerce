@@ -37,6 +37,8 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
         });
     };
 
+    $setOwner($ownerA);
+
     $affiliateA = Affiliate::create([
         'code' => 'AFF-REL-A',
         'name' => 'Affiliate A',
@@ -48,6 +50,8 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
         'owner_id' => $ownerA->getKey(),
     ]);
 
+    $setOwner($ownerB);
+
     $affiliateB = Affiliate::create([
         'code' => 'AFF-REL-B',
         'name' => 'Affiliate B',
@@ -58,6 +62,8 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
+
+    $setOwner($ownerA);
 
     $program = AffiliateProgram::create([
         'name' => 'Global Program',

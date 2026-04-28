@@ -17,9 +17,7 @@ return new class extends Migration
             $table->foreignUuid('affiliate_id');
             $table->date('date');
 
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
-            $table->index(['owner_type', 'owner_id'], 'affiliate_daily_stats_owner_idx');
+            $table->nullableUuidMorphs('owner');
 
             $table->integer('clicks')->default(0);
             $table->integer('unique_clicks')->default(0);

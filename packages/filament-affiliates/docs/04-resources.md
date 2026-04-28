@@ -52,6 +52,28 @@ class AffiliateResource extends BaseResource
 }
 ```
 
+Relationship option lists should still be revalidated on the server before save. UI scoping is helpful, but it is not a security boundary:
+
+```php
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+
+protected function mutateFormDataBeforeSave(array $data): array
+{
+    $data = parent::mutateFormDataBeforeSave($data);
+
+    if (($data['parent_affiliate_id'] ?? null) !== null) {
+        OwnerWriteGuard::findOrFailForOwner(
+            Affiliate::class,
+            $data['parent_affiliate_id'],
+            includeGlobal: (bool) config('affiliates.owner.include_global', false),
+        );
+    }
+
+    return $data;
+}
+```
+
 ### Available Actions
 
 | Action | Description |
@@ -207,15 +229,18 @@ Review and manage fraud alerts.
 ### Actions
 
 ```php
+use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
+
 Tables\Actions\Action::make('dismiss')
     ->label('Dismiss')
-    ->action(fn (FraudSignal $record) => $record->dismiss()),
+    ->action(fn (FraudSignal $record) => UpdateAffiliateFraudSignalStatus::run($record, FraudSignalStatus::Dismissed)),
 
 Tables\Actions\Action::make('confirm')
     ->label('Confirm Fraud')
     ->color('danger')
     ->requiresConfirmation()
-    ->action(fn (FraudSignal $record) => $record->confirmFraud()),
+    ->action(fn (FraudSignal $record) => UpdateAffiliateFraudSignalStatus::run($record, FraudSignalStatus::Confirmed)),
 
 Tables\Actions\Action::make('block_affiliate')
     ->label('Block Affiliate')

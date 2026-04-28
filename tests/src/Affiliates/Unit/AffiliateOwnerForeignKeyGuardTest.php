@@ -44,6 +44,18 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
         'owner_id' => $ownerA->getKey(),
     ]);
 
+    app()->instance(OwnerResolverInterface::class, new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
     $affiliateB = Affiliate::create([
         'code' => 'AFF-GUARD-B',
         'name' => 'Affiliate B',
@@ -54,6 +66,18 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
 
     $program = AffiliateProgram::create([
         'name' => 'Global Program',

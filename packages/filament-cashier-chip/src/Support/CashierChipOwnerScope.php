@@ -35,11 +35,11 @@ final class CashierChipOwnerScope
         $includeGlobal ??= (bool) config('cashier-chip.features.owner.include_global', false);
 
         if ($owner === null) {
-            return $query->whereKey([]);
+            return $query->withoutGlobalScope(OwnerScope::class)->whereKey([]);
         }
 
         if (! method_exists($model, 'scopeForOwner')) {
-            return $query->whereKey([]);
+            return $query->withoutGlobalScope(OwnerScope::class)->whereKey([]);
         }
 
         $ownerTypeColumn = 'owner_type';

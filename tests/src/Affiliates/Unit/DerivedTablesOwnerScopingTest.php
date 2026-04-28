@@ -34,6 +34,8 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         });
     };
 
+    $setOwner($ownerA);
+
     $affiliateA = Affiliate::create([
         'code' => 'AFF-OWN-A',
         'name' => 'Affiliate A',
@@ -44,6 +46,8 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
+
+    $setOwner($ownerB);
 
     $affiliateB = Affiliate::create([
         'code' => 'AFF-OWN-B',
@@ -56,6 +60,8 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         'owner_id' => $ownerB->getKey(),
     ]);
 
+    $setOwner($ownerA);
+
     AffiliateTouchpoint::create([
         'affiliate_attribution_id' => fake()->uuid(),
         'affiliate_id' => $affiliateA->getKey(),
@@ -65,6 +71,8 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         'source' => 'facebook',
         'touched_at' => now(),
     ]);
+
+    $setOwner($ownerB);
 
     AffiliateTouchpoint::create([
         'affiliate_attribution_id' => fake()->uuid(),
@@ -76,6 +84,8 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         'touched_at' => now(),
     ]);
 
+    $setOwner($ownerA);
+
     AffiliateDailyStat::create([
         'affiliate_id' => $affiliateA->getKey(),
         'date' => Carbon::parse('2025-01-01')->toDateString(),
@@ -92,6 +102,8 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         'conversion_rate' => 0,
         'epc_cents' => 0,
     ]);
+
+    $setOwner($ownerB);
 
     AffiliateDailyStat::create([
         'affiliate_id' => $affiliateB->getKey(),
@@ -110,7 +122,12 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         'epc_cents' => 0,
     ]);
 
+    $setOwner($ownerA);
+
     AffiliateNetwork::addToNetwork($affiliateA, null);
+
+    $setOwner($ownerB);
+
     AffiliateNetwork::addToNetwork($affiliateB, null);
 
     $setOwner($ownerA);

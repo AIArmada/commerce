@@ -39,8 +39,9 @@ final class PaymentCallbackController extends Controller
             return $this->respondSuccess($session);
         }
 
-        // Verify payment and complete checkout
-        $result = $this->checkoutService->handlePaymentCallback($session, 'success', $request->query());
+        // Verify payment via gateway API — never trust redirect query params as payment proof.
+        // Query params are user-controlled; passing them would allow forging ?status=paid.
+        $result = $this->checkoutService->handlePaymentCallback($session, 'success', []);
 
         if ($result->success) {
             return $this->respondSuccess($session->fresh());

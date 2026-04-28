@@ -233,8 +233,17 @@ Configure webhook middleware in `config/checkout.php`:
 
 ```php
 'routes' => [
-    'webhook_middleware' => ['api', VerifyWebhookSignature::class],
+    'webhook_middleware' => ['api'], // Signature verification is handled by the checkout webhook signature validator
 ],
+```
+
+When an incoming webhook carries an event ID that has already been processed for the same event type, checkout returns:
+
+```json
+{
+    "status": "acknowledged",
+    "reason": "duplicate_event"
+}
 ```
 
 ## State Transitions During Payment

@@ -57,6 +57,9 @@ final class StoreWebhookData
 
     /**
      * @param  array<string, mixed>  $payload
+     *
+     * CHIP guarantees purchase IDs are globally unique UUIDs across brands/tenants.
+     * We therefore upsert purchases by `id` only and then apply owner attribution.
      */
     private function storePurchase(array $payload): void
     {

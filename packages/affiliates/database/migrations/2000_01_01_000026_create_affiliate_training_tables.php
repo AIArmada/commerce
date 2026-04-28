@@ -28,11 +28,10 @@ return new class extends Migration
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_required')->default(false);
             $table->boolean('is_active')->default(true);
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
-            $table->index(['owner_type', 'owner_id'], 'affiliate_training_modules_owner_idx');
+
         });
 
         Schema::create($progressTable, function (Blueprint $table): void {

@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Checkout\Http\Controllers\CheckoutWebhookController;
 use AIArmada\Checkout\Http\Controllers\PaymentCallbackController;
-use AIArmada\Checkout\Http\Controllers\PaymentWebhookController;
-use AIArmada\Checkout\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,13 +34,10 @@ Route::prefix(config('checkout.routes.prefix', 'checkout'))
     });
 
 // Webhook route (uses different middleware - no CSRF, no session)
-// Signature verification is enforced via VerifyWebhookSignature middleware
+// Signature verification is enforced via checkout Spatie signature validator.
 Route::prefix(config('checkout.routes.webhook_prefix', 'webhooks'))
-    ->middleware(array_merge(
-        config('checkout.routes.webhook_middleware', ['api']),
-        config('checkout.webhooks.verify_signature', true) ? [VerifyWebhookSignature::class] : []
-    ))
+    ->middleware(config('checkout.routes.webhook_middleware', ['api']))
     ->group(function (): void {
-        Route::post(config('checkout.routes.webhook_path', 'checkout'), PaymentWebhookController::class)
+        Route::post(config('checkout.routes.webhook_path', 'checkout'), CheckoutWebhookController::class)
             ->name('checkout.webhook');
     });

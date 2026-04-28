@@ -105,12 +105,13 @@ class SubscriptionItem extends Model
                 return;
             }
 
-            if ($item->hasOwner()) {
-                return;
-            }
-
             $currentOwner = $item->resolveOwner();
 
+            if ($currentOwner === null) {
+                throw new AuthorizationException('Owner context is required to create subscription items when owner scoping is enabled.');
+            }
+
+            // If the relation is loaded, copy owner from subscription
             if ($item->relationLoaded('subscription') && $item->subscription !== null && $item->subscription->hasOwner()) {
                 if ($currentOwner !== null && ! $item->subscription->belongsToOwner($currentOwner)) {
                     throw new AuthorizationException('Cross-tenant subscription item write blocked.');
@@ -122,10 +123,7 @@ class SubscriptionItem extends Model
                 return;
             }
 
-            if ($currentOwner === null) {
-                throw new AuthorizationException('Owner context is required to create subscription items when owner scoping is enabled.');
-            }
-
+            // Otherwise, load subscription to get owner details
             if ($item->subscription_id !== null) {
                 /** @var class-string<Subscription> $subscriptionModel */
                 $subscriptionModel = Cashier::$subscriptionModel;
@@ -145,9 +143,16 @@ class SubscriptionItem extends Model
                 if ($subscription->hasOwner() && ! $subscription->belongsToOwner($currentOwner)) {
                     throw new AuthorizationException('Cross-tenant subscription item write blocked.');
                 }
+
+                $item->owner_type = $subscription->owner_type;
+                $item->owner_id = $subscription->owner_id;
+
+                return;
             }
 
-            $item->assignOwner($currentOwner);
+            if (! $item->hasOwner()) {
+                $item->assignOwner($currentOwner);
+            }
         });
     }
 

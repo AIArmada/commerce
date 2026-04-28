@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
+use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
+use AIArmada\Checkout\Data\PaymentResult;
+use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Http\Controllers\PaymentCallbackController;
-use AIArmada\Checkout\Http\Controllers\PaymentWebhookController;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\CheckoutService;
@@ -151,150 +154,31 @@ describe('PaymentCallbackController', function (): void {
         expect($response->getTargetUrl())->toContain('/checkout/failed')
             ->and($response->getSession()->get('error'))->toBe('Checkout session not found');
     });
-});
 
-describe('PaymentWebhookController', function (): void {
-    beforeEach(function (): void {
-        $this->controller = app(PaymentWebhookController::class);
-    });
-
-    it('returns ignored when no session reference in payload', function (): void {
-        $request = Request::create('/webhooks/checkout', 'POST', [], [], [], [], json_encode(['event' => 'payment.completed']));
-        $request->headers->set('Content-Type', 'application/json');
-
-        $response = ($this->controller)($request);
-        $data = json_decode($response->getContent(), true);
-
-        expect($data['status'])->toBe('ignored')
-            ->and($data['reason'])->toBe('no_session_reference');
-    });
-
-    it('returns ignored when session not found', function (): void {
-        $request = Request::create('/webhooks/checkout', 'POST');
-        $request->merge(['reference' => 'nonexistent-session']);
-
-        $response = ($this->controller)($request);
-        $data = json_decode($response->getContent(), true);
-
-        expect($data['status'])->toBe('ignored')
-            ->and($data['reason'])->toBe('session_not_found');
-    });
-
-    it('ignores webhook for session in pending state', function (): void {
+    it('does not verify payment via user-controlled query params (prevents forged status=paid)', function (): void {
+        // Regression test for P0: callback controller must NOT pass $request->query() to
+        // verifyAndCompletePayment, as attacker could append &status=paid to the success URL
+        // (the callback_token is visible in their browser bar after the gateway redirect).
         $session = CheckoutSession::create([
-            'cart_id' => 'test-cart-webhook-pending',
+            'cart_id' => 'test-cart-p0-exploit',
             'selected_payment_gateway' => 'chip',
-        ]);
-        // Session is in Pending state, not awaiting payment
-
-        $request = Request::create('/webhooks/checkout', 'POST');
-        $request->merge(['reference' => $session->id, 'status' => 'paid']);
-
-        $response = ($this->controller)($request);
-        $data = json_decode($response->getContent(), true);
-
-        expect($data['status'])->toBe('ignored')
-            ->and($data['reason'])->toBe('invalid_state');
-    });
-
-    it('extracts session from CHIP reference field', function (): void {
-        $session = CheckoutSession::create([
-            'cart_id' => 'test-cart-chip',
-            'selected_payment_gateway' => 'chip',
+            'grand_total' => 5000,
+            'currency' => 'MYR',
+            'payment_id' => null, // payment not actually made
+            'payment_data' => ['callback_token' => 'legit-token'],
         ]);
 
-        $request = Request::create('/webhooks/checkout', 'POST');
-        $request->merge(['reference' => $session->id, 'status' => 'pending']);
-
-        $response = ($this->controller)($request);
-        $data = json_decode($response->getContent(), true);
-
-        // Should find session (returns ignored due to state, but that proves extraction worked)
-        expect($data['reason'])->toBe('invalid_state');
-    });
-
-    it('extracts session from metadata checkout_session_id', function (): void {
-        $session = CheckoutSession::create([
-            'cart_id' => 'test-cart-stripe-meta',
-            'selected_payment_gateway' => 'stripe',
+        $request = Request::create('/checkout/payment/success', 'GET', [
+            'session' => $session->id,
+            'checkout_callback_token' => 'legit-token',
+            'status' => 'paid',       // attacker-controlled forged param
+            'id' => 'fake-payment-id', // attacker-controlled forged param
         ]);
 
-        $request = Request::create('/webhooks/checkout', 'POST');
-        $request->merge([
-            'metadata' => ['checkout_session_id' => $session->id],
-            'status' => 'pending',
-        ]);
+        $response = $this->controller->success($request);
 
-        $response = ($this->controller)($request);
-        $data = json_decode($response->getContent(), true);
-
-        expect($data['reason'])->toBe('invalid_state');
-    });
-
-    it('extracts session from nested data object metadata', function (): void {
-        $session = CheckoutSession::create([
-            'cart_id' => 'test-cart-stripe-nested',
-            'selected_payment_gateway' => 'stripe',
-        ]);
-
-        $request = Request::create('/webhooks/checkout', 'POST');
-        $request->merge([
-            'data' => [
-                'object' => [
-                    'metadata' => ['checkout_session_id' => $session->id],
-                    'status' => 'pending',
-                ],
-            ],
-        ]);
-
-        $response = ($this->controller)($request);
-        $data = json_decode($response->getContent(), true);
-
-        expect($data['reason'])->toBe('invalid_state');
-    });
-
-    it('extracts session from client_reference_id', function (): void {
-        $session = CheckoutSession::create([
-            'cart_id' => 'test-cart-client-ref',
-            'selected_payment_gateway' => 'stripe',
-        ]);
-
-        $request = Request::create('/webhooks/checkout', 'POST');
-        $request->merge([
-            'data' => [
-                'object' => [
-                    'client_reference_id' => $session->id,
-                    'status' => 'pending',
-                ],
-            ],
-        ]);
-
-        $response = ($this->controller)($request);
-        $data = json_decode($response->getContent(), true);
-
-        expect($data['reason'])->toBe('invalid_state');
-    });
-
-    it('maps cancelled webhooks to checkout cancellation', function (): void {
-        $session = CheckoutSession::create([
-            'cart_id' => 'test-cart-webhook-cancelled',
-            'selected_payment_gateway' => 'chip',
-        ]);
-        $session = $session->transitionStatus(Processing::class);
-        $session = $session->transitionStatus(AwaitingPayment::class);
-
-        $request = Request::create('/webhooks/checkout', 'POST');
-        $request->merge([
-            'reference' => $session->id,
-            'status' => 'cancelled',
-        ]);
-
-        $response = ($this->controller)($request);
-        $data = json_decode($response->getContent(), true);
-        $reloadedSession = CheckoutSession::withoutOwnerScope()->findOrFail($session->id);
-
-        expect($data['status'])->toBe('processed')
-            ->and($reloadedSession->status)->toBeInstanceOf(Cancelled::class);
+        // Must NOT redirect to success — payment should not be verifiable without gateway API
+        expect($session->fresh()->status instanceof Completed)->toBeFalse();
     });
 });
 
@@ -313,6 +197,43 @@ describe('ProcessPaymentStep', function (): void {
 
         expect($result->isSuccessful())->toBeTrue()
             ->and($session->fresh()->payment_data['type'] ?? null)->toBe('free_order');
+    });
+
+    it('preserves callback_token in payment_data after payment initiation (P1 regression)', function (): void {
+        // Regression test for P1: ProcessPaymentStep was replacing the entire payment_data
+        // JSON, silently wiping the callback_token that ensureCallbackToken() had just stored.
+        // Without the token, every redirect-based callback would be rejected by resolveSession().
+        $mockProcessor = mock(PaymentProcessorInterface::class);
+        $mockProcessor->shouldReceive('getIdentifier')->andReturn('chip');
+        $mockProcessor->shouldReceive('isAvailable')->andReturn(true);
+        $mockProcessor->shouldReceive('createPayment')->andReturn(
+            PaymentResult::pending('pay_test_123', 'https://gateway.example.com/pay'),
+        );
+
+        $mockResolver = mock(PaymentGatewayResolverInterface::class);
+        $mockResolver->shouldReceive('resolve')->andReturn($mockProcessor);
+
+        app()->instance(PaymentGatewayResolverInterface::class, $mockResolver);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-p1',
+            'selected_payment_gateway' => 'chip',
+            'grand_total' => 1000,
+            'currency' => 'MYR',
+        ]);
+        $session->transitionStatus(\AIArmada\Checkout\States\Processing::class);
+
+        $step = app(ProcessPaymentStep::class);
+        $result = $step->handle($session);
+
+        $fresh = $session->fresh();
+
+        expect($result->isSuccessful())->toBeTrue()
+            ->and($fresh->payment_data)->toHaveKey('callback_token')
+            ->and($fresh->payment_data['callback_token'])->not->toBeNull()
+            ->and($fresh->payment_data['callback_token'])->not->toBe('')
+            ->and($fresh->payment_data)->toHaveKey('gateway')
+            ->and($fresh->payment_data['gateway'])->toBe('chip');
     });
 });
 

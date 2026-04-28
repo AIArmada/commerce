@@ -33,6 +33,7 @@ return [
         'default_updated' => 'Default payment method updated.',
         'deleted' => 'Payment method deleted.',
         'error' => 'An error occurred.',
+        'unauthorized' => 'You are not authorized to use this payment method.',
         'gateway_not_available' => 'Gateway is not available.',
     ],
 

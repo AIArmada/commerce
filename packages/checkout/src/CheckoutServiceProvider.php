@@ -34,6 +34,8 @@ use Illuminate\Contracts\Events\Dispatcher;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Spatie\WebhookClient\Models\WebhookCall;
+use Spatie\WebhookClient\WebhookClientServiceProvider;
 
 final class CheckoutServiceProvider extends PackageServiceProvider
 {
@@ -59,6 +61,8 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
+        $this->configureSpatieWebhookClient();
+        $this->registerSpatieWebhookClient();
         $this->registerStepRegistry();
         $this->registerPaymentGatewayResolver();
         $this->registerCheckoutService();
@@ -229,8 +233,77 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         }
     }
 
+    protected function configureSpatieWebhookClient(): void
+    {
+        if (! class_exists(WebhookCall::class)) {
+            return;
+        }
+
+        $configName = 'checkout.webhook';
+        $configs = config('webhook-client.configs', []);
+
+        if (! is_array($configs)) {
+            $configs = [];
+        }
+
+        $configs = array_values(array_filter($configs, static function (mixed $existingConfig): bool {
+            if (! is_array($existingConfig)) {
+                return false;
+            }
+
+            $processWebhookJob = $existingConfig['process_webhook_job'] ?? null;
+
+            return is_string($processWebhookJob) && $processWebhookJob !== '';
+        }));
+
+        foreach ($configs as $existingConfig) {
+            if (is_array($existingConfig) && ($existingConfig['name'] ?? null) === $configName) {
+                return;
+            }
+        }
+
+        $configs[] = [
+            'name' => $configName,
+            'signing_secret' => '',
+            'signature_header_name' => 'x-signature',
+            'signature_validator' => Webhooks\CheckoutSpatieSignatureValidator::class,
+            'webhook_profile' => Webhooks\CheckoutWebhookProfile::class,
+            'webhook_response' => Webhooks\CheckoutWebhookResponse::class,
+            'webhook_model' => WebhookCall::class,
+            'store_headers' => [
+                'x-signature',
+                'stripe-signature',
+            ],
+            'process_webhook_job' => Webhooks\ProcessCheckoutWebhook::class,
+        ];
+
+        config([
+            'webhook-client.configs' => $configs,
+        ]);
+    }
+
+    protected function registerSpatieWebhookClient(): void
+    {
+        if (! class_exists(WebhookClientServiceProvider::class)) {
+            return;
+        }
+
+        if (method_exists($this->app, 'getProvider') && $this->app->getProvider(WebhookClientServiceProvider::class) instanceof WebhookClientServiceProvider) {
+            return;
+        }
+
+        $this->app->register(WebhookClientServiceProvider::class);
+    }
+
     protected function validatePaymentGatewayConfiguration(): void
     {
+        // Skip validation when the payment step is explicitly disabled (e.g. free-order-only flows).
+        $stepEnabled = config('checkout.steps.enabled.process_payment', true);
+
+        if (! $stepEnabled) {
+            return;
+        }
+
         // Check if at least one payment package exists
         $hasCashier = class_exists(GatewayManager::class);
         $hasCashierChip = class_exists(Cashier::class);

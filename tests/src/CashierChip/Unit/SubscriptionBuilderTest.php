@@ -189,6 +189,9 @@ class SubscriptionBuilderTest extends CashierChipTestCase
 
     public function test_create_requires_owner_context_when_owner_scoping_enabled(): void
     {
+        config()->set('cashier-chip.features.owner.enabled', true);
+        config()->set('cashier-chip.features.owner.include_global', false);
+
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test-' . uniqid() . '@example.com',

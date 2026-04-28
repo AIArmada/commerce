@@ -6,6 +6,8 @@ namespace AIArmada\Chip\Commands;
 
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -141,12 +143,6 @@ final class CleanWebhooksCommand extends Command
 
     private function resolveOwnerFromRow(object $row): ?Model
     {
-        $ownerType = $row->owner_type ?? null;
-        $ownerId = $row->owner_id ?? null;
-
-        return OwnerContext::fromTypeAndId(
-            is_string($ownerType) ? $ownerType : null,
-            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
-        );
+        return OwnerTupleParser::fromRow($row, OwnerTupleColumns::forModelClass(Webhook::class))->toOwnerModel();
     }
 }

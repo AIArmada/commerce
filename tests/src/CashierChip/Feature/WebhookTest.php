@@ -30,7 +30,7 @@ beforeEach(function (): void {
     ]);
 
     // Manually register the webhook route for testing
-    Route::post('/chip/webhook', WebhookController::class)
+    Route::post('/chip/webhook', [WebhookController::class, 'handle'])
         ->name('cashier-chip.webhook');
 });
 
@@ -219,7 +219,7 @@ it('handles unknown webhook events gracefully', function (): void {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    $response->assertSee('Webhook received');
+    $response->assertJson(['status' => 'accepted']);
 });
 
 it('handles missing client id gracefully', function (): void {

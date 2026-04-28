@@ -22,14 +22,13 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->string('payee_type')->nullable()->index();
             $table->uuid('payee_id')->nullable()->index();
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
+            $table->nullableUuidMorphs('owner');
             $table->timestamp('scheduled_at')->nullable()->index();
             $table->timestamp('paid_at')->nullable()->index();
             $table->timestamps();
 
             $table->index(['payee_type', 'payee_id'], 'affiliate_payouts_payee_idx');
-            $table->index(['owner_type', 'owner_id'], 'affiliate_payouts_owner_idx');
+
             $table->index(['status', 'scheduled_at'], 'affiliate_payouts_pending_idx');
         });
     }

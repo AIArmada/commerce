@@ -16,6 +16,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
+use Illuminate\Auth\Access\AuthorizationException;
 use Livewire\Component;
 
 afterEach(function (): void {
@@ -147,4 +148,42 @@ it('builds customer options, plans, payment methods, and can create a subscripti
 
     $notification = filamentCashier_invokeProtectedMethod($page, 'getCreatedNotification');
     expect($notification)->toBeInstanceOf(Notification::class);
+});
+
+it('rejects creating a subscription with an inaccessible payment method id', function (): void {
+    config()->set('cashier.models.billable', ChipBillableUser::class);
+
+    $user = ChipBillableUser::query()->create([
+        'name' => 'Portal User 2',
+        'email' => 'portal2@example.com',
+        'password' => bcrypt('secret'),
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($user));
+
+    $gateway = Mockery::mock(GatewayContract::class);
+    $builder = Mockery::mock(SubscriptionBuilderContract::class);
+
+    Cashier::shouldReceive('gateway')->with('chip')->once()->andReturn($gateway);
+
+    $gateway
+        ->shouldReceive('newSubscription')
+        ->once()
+        ->with(Mockery::type(ChipBillableUser::class), 'default', 'plan_a')
+        ->andReturn($builder);
+
+    $builder->shouldNotReceive('create');
+
+    $page = app(CreateSubscription::class);
+
+    expect(fn () => filamentCashier_invokeProtectedMethod($page, 'handleRecordCreation', [[
+        'user_id' => $user->getKey(),
+        'gateway' => 'chip',
+        'type' => 'default',
+        'plan_id' => 'plan_a',
+        'quantity' => 1,
+        'has_trial' => false,
+        'trial_days' => 14,
+        'payment_method' => 'chip_pm_not_owned',
+    ]]))->toThrow(AuthorizationException::class, 'Selected payment method is not accessible.');
 });

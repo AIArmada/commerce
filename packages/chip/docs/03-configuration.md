@@ -88,9 +88,18 @@ Available methods: `fpx`, `visa`, `mastercard`, `maestro`, `duitnow`, `grabpay`,
 | `enabled` | Enable owner-scoped queries |
 | `include_global` | Include global records where `owner_type` and `owner_id` are `null` |
 | `auto_assign_on_create` | Automatically set owner on new records |
-| `webhook_brand_id_map` | Map brand IDs to owner models for webhooks |
+| `webhook_brand_id_map` | Map brand IDs to owner models for incoming webhooks |
 
-Example brand ID mapping:
+### Webhook Brand ID Mapping
+
+When owner scoping is enabled, incoming CHIP webhooks must be mapped to the correct tenant (owner). The `webhook_brand_id_map` configuration associates CHIP brand IDs with your tenant models.
+
+**Why it's needed:**
+- CHIP webhooks arrive without tenant/request context
+- The brand ID in the webhook payload is the only way to identify which tenant owns the payment
+- Webhooks are fail-closed: if a brand ID cannot be mapped to an owner, the webhook is rejected
+
+**Configuration:**
 ```php
 'webhook_brand_id_map' => [
     'brand-uuid-1' => [
@@ -98,11 +107,44 @@ Example brand ID mapping:
         'owner_id' => 'tenant-uuid-1',
     ],
     'brand-uuid-2' => [
-        'owner_type' => \App\Models\Tenant::class,
-        'owner_id' => 'tenant-uuid-2',
+        'owner_type' => \App\Models\Organization::class,
+        'owner_id' => 'org-uuid-2',
     ],
 ],
 ```
+
+**Fields:**
+- `owner_type`: Full class name or morph alias of the owner model (e.g., `\App\Models\Tenant::class` or `'tenant'` if using `morphMap`)
+- `owner_id`: ID of the owner record in your database (string or integer)
+- Both fields are required when owner scoping is enabled
+
+**Environment-based mapping:**
+```php
+'webhook_brand_id_map' => array_filter([
+    env('CHIP_BRAND_ID_STAGING') => [
+        'owner_type' => \App\Models\Tenant::class,
+        'owner_id' => env('TENANT_ID_STAGING'),
+    ],
+    env('CHIP_BRAND_ID_PRODUCTION') => [
+        'owner_type' => \App\Models\Tenant::class,
+        'owner_id' => env('TENANT_ID_PRODUCTION'),
+    ],
+]),
+```
+
+**Validation:**
+The configuration is validated at boot time when owner scoping is enabled. Invalid mappings will raise `InvalidArgumentException`:
+- Missing `owner_type` or `owner_id`
+- Non-string `owner_type`
+- Non-string/non-integer `owner_id`
+
+**Troubleshooting:**
+If webhooks are failing with "Owner resolution failed", check:
+1. Does your CHIP brand ID appear in the map?
+2. Does the mapped `owner_id` exist in your database?
+3. Is `owner_type` the correct morph alias or class name?
+
+See [Webhooks](webhooks.md) for detailed webhook handling.
 
 ## Integrations
 

@@ -32,6 +32,7 @@ return [
         'default_updated' => 'Kaedah pembayaran lalai dikemaskini.',
         'deleted' => 'Kaedah pembayaran dipadam.',
         'error' => 'Ralat berlaku.',
+        'unauthorized' => 'Anda tidak dibenarkan menggunakan kaedah pembayaran ini.',
         'gateway_not_available' => 'Gateway tidak tersedia.',
     ],
 

@@ -434,6 +434,12 @@ final class CheckoutService implements CheckoutServiceInterface
 
     private function handleCheckoutFailure(CheckoutSession $session, Throwable $e): void
     {
+        // Release external state (inventory reservations, etc.) that the DB transaction
+        // rollback cannot undo. The in-memory session model still carries the step-state
+        // changes that were fill()ed during the transaction, so the loop correctly
+        // identifies which steps completed before the exception.
+        $this->rollbackCompletedSteps($session);
+
         if (! $session->status->isTerminal() && ! $session->status->is(PaymentFailed::class)) {
             $session->transitionStatus(PaymentFailed::class);
         }

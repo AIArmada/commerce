@@ -24,6 +24,7 @@ beforeEach(function (): void {
     Schema::create('cart_snapshots', function (Blueprint $table): void {
         $table->uuid('id')->primary();
         $table->string('owner_key')->default('global');
+        $table->string('owner_scope')->nullable();
         $table->string('identifier');
         $table->string('instance')->default('default');
         $table->json('items')->nullable();
@@ -108,6 +109,16 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'total' => 90,
     ]);
 
+    app()->instance(OwnerResolverInterface::class, new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
     $affiliateB = Affiliate::create([
         'code' => 'AFF-B-' . Str::uuid(),
         'name' => 'Affiliate B',
@@ -133,6 +144,16 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => (string) $ownerB->getKey(),
     ]);
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
 
     expect(app(CartBridge::class)->resolveUrl($cart->identifier, $cart->instance))->toBeNull();
 
@@ -209,6 +230,16 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
         }
     });
 
+    app()->instance(OwnerResolverInterface::class, new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
     Voucher::create([
         'code' => 'BRIDGE-VOUCHER-OTHER',
         'name' => 'Other Owner Voucher',
@@ -219,6 +250,16 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
 
     expect(app(VoucherBridge::class)->resolveUrl('BRIDGE-VOUCHER-OTHER'))->toBeNull();
 

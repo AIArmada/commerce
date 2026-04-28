@@ -33,13 +33,10 @@ return new class extends Migration
             $table->string('website_url')->nullable();
             $table->string('payout_terms')->nullable();
             $table->string('tracking_domain')->nullable();
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
+            $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamp('activated_at')->nullable();
             $table->timestamps();
-
-            $table->index(['owner_type', 'owner_id'], 'affiliates_owner_index');
             $table->index(['status', 'activated_at'], 'affiliates_active_idx');
         });
     }

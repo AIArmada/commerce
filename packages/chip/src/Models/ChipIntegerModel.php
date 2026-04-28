@@ -57,13 +57,16 @@ abstract class ChipIntegerModel extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    final public function scopeForOwner(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
+    final public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, ?bool $includeGlobal = null): Builder
     {
         if (! (bool) config('chip.owner.enabled', false)) {
             return $query;
         }
 
-        $owner ??= $this->resolveOwner();
+        if ($owner === OwnerContext::CURRENT) {
+            $owner = $this->resolveOwner();
+        }
+
         $includeGlobal ??= (bool) config('chip.owner.include_global', false);
 
         return $this->scopeForOwnerUsingTrait($query, $owner, $includeGlobal);
@@ -73,7 +76,7 @@ abstract class ChipIntegerModel extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    final public function scopeForOwnerIncludingGlobal(Builder $query, ?Model $owner = null): Builder
+    final public function scopeForOwnerIncludingGlobal(Builder $query, Model | string | null $owner = OwnerContext::CURRENT): Builder
     {
         return $this->scopeForOwner($query, $owner, true);
     }
