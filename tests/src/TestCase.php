@@ -70,6 +70,10 @@ use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
 use Spatie\LaravelData\Transformers\EnumTransformer;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\PermissionServiceProvider;
+use Spatie\Sluggable\Actions\BuildSelfHealingRouteKeyAction;
+use Spatie\Sluggable\Actions\ExtractIdentifierFromSelfHealingRouteKeyAction;
+use Spatie\Sluggable\Actions\GenerateSlugAction;
+use Spatie\Sluggable\SluggableServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -117,6 +121,7 @@ abstract class TestCase extends Orchestra
     {
         return [
             LaravelDataServiceProvider::class,
+            SluggableServiceProvider::class,
             SupportServiceProvider::class,
             EventServiceProvider::class,
             SessionServiceProvider::class,
@@ -189,6 +194,12 @@ abstract class TestCase extends Orchestra
         // Configure Spatie Activitylog
         $app['config']->set('activitylog.default_auth_driver', null);
         $app['config']->set('activitylog.enabled', false);
+
+        $app['config']->set('sluggable.actions', [
+            'generate_slug' => GenerateSlugAction::class,
+            'build_self_healing_route_key' => BuildSelfHealingRouteKeyAction::class,
+            'extract_identifier_from_self_healing_route_key' => ExtractIdentifierFromSelfHealingRouteKeyAction::class,
+        ]);
 
         // Configure session
         $app['config']->set('session.driver', 'array');

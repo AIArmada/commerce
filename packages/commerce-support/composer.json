@@ -10,9 +10,9 @@
     "require": {
         "php": "^8.4",
         "akaunting/laravel-money": "^6.0",
-        "illuminate/contracts": "^12.0|^13.0",
-        "illuminate/database": "^12.0|^13.0",
-        "illuminate/support": "^12.0|^13.0",
+        "illuminate/contracts": "^13.0",
+        "illuminate/database": "^13.0",
+        "illuminate/support": "^13.0",
         "lorisleiva/laravel-actions": "^2.9",
         "nunomaduro/essentials": "^1.0",
         "owen-it/laravel-auditing": "^14.0",
@@ -22,7 +22,7 @@
         "spatie/laravel-medialibrary": "^11.0",
         "spatie/laravel-package-tools": "^1.92",
         "spatie/laravel-settings": "^3.6",
-        "spatie/laravel-sluggable": "^3.7",
+        "spatie/laravel-sluggable": "^4.0",
         "spatie/laravel-model-states": "^2.0",
         "spatie/laravel-tags": "^4.2",
         "spatie/laravel-webhook-client": "^3.4"

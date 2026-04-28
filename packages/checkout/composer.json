@@ -17,8 +17,8 @@
         "aiarmada/pricing": "self.version",
         "aiarmada/products": "self.version",
         "aiarmada/shipping": "self.version",
-        "illuminate/contracts": "^12.0|^13.0",
-        "illuminate/support": "^12.0|^13.0"
+        "illuminate/contracts": "^13.0",
+        "illuminate/support": "^13.0"
     },
     "suggest": {
         "aiarmada/cashier": "For unified multi-gateway payment processing (recommended)",

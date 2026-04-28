@@ -10,9 +10,9 @@
   "require": {
     "ext-curl": "*",
     "aiarmada/commerce-support": "self.version",
-    "illuminate/http": "^12.0|^13.0",
-    "illuminate/queue": "^12.0|^13.0",
-    "illuminate/validation": "^12.0|^13.0"
+    "illuminate/http": "^13.0",
+    "illuminate/queue": "^13.0",
+    "illuminate/validation": "^13.0"
   },
   "autoload": {
     "psr-4": {
