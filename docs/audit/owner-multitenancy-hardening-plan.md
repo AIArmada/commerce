@@ -22,6 +22,7 @@ Related hardening semantics to carry into consumer packages:
 ## Core semantics
 
 - Tenant ownership uses `owner_type` and `owner_id` as the default column names. Custom column names are supported by implementing `ownerScopeConfig()` on the model and returning an `OwnerScopeConfig` with `ownerTypeColumn`/`ownerIdColumn` set. All `HasOwner` helpers and the `owner()` relation respect the configured columns.
+- Non-Eloquent owner references passed into helper APIs must implement `AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable` instead of relying on raw duck-typed objects.
 - `owner_scope` is an internal hidden uniqueness helper, not public API and not an authorization boundary.
 - `forOwner($owner)` returns owner-only rows.
 - `forOwner($owner, includeGlobal: true)` returns owner rows plus global rows.
@@ -136,3 +137,71 @@ Every owner-enabled package should have tests for:
 - Do not change package dependencies unless explicitly needed.
 - Keep per-package tests and PHPStan runs scoped to touched packages.
 - Treat owner hardening as security-sensitive: prefer false negatives over cross-tenant access.
+
+---
+
+## Implementation Plan: Isolation Primitives (Q3 2026)
+
+**Locked decision (grilled 2026-04-28):** Build isolation helpers in `commerce-support` without cross-package changes.
+
+### Decision matrix
+
+| Decision | Status | Reasoning |
+|---|---|---|
+| Fail-closed owner context globally | ✅ Locked | Explicit `withOwner(null, ...)` for intentional global access |
+| Queue jobs carry owner reference | ✅ Locked | Auto-enter owner context via shared `OwnerContextJob` trait |
+| Strict cache key isolation | ✅ Locked | `OwnerCache` helper enforces `owner:{key}:{logicalKey}` namespace |
+| Filesystem path isolation | ✅ Locked | `OwnerFilesystem` helper enforces `owners/{ownerKey}/...` structure |
+| Tenant identification (A+B hybrid) | ✅ Locked | Service provider binds resolver; middleware identifies at request time |
+| Provisioning pipeline | ⏸️ Deferred | Only needed when enabling multitenancy in a package; skip v1 |
+| Package retrofits | ⏸️ Deferred | Build primitives only; packages adopt on their own timeline |
+
+### Five primitives to build (v1)
+
+1. **`OwnerCache`** — owner-scoped cache key builder
+   - Enforces `owner:{ownerScopeKey}:{logicalKey}` pattern
+   - Prevents cache cross-tenant bleed
+   - Uses tagged owner groups where supported; on non-tag drivers `forgetOwner()` is intentionally best-effort/no-op
+
+2. **`OwnerFilesystem`** — owner-scoped artifact path builder
+   - Enforces `owners/{ownerScopeKey}/...` structure
+   - Guards downloads/serving via owner-checked resolver
+   - Accepts Eloquent owners or `OwnerScopeIdentifiable` adapters
+
+3. **`OwnerContextJob` trait** — auto-enters owner context for queued jobs
+   - Requires `owner_type`/`owner_id` in job payload
+   - Fails closed if owner missing when owner mode enabled
+   - Prevents queue cross-tenant leakage
+
+4. **`OwnerIdentificationMiddleware` base middleware** — app-level request identification hook
+   - Service provider binds resolver (static + known)
+   - Middleware identifies owner from domain/auth/header at request time
+   - Resolves before any owner-scoped queries
+
+5. **Updated documentation** — 08-webhooks, 04-multi-tenancy, 10-traits-utilities
+   - Usage examples for each primitive
+   - Integration patterns for optional adoption
+
+### Implementation sequence
+
+1. `OwnerCache` (simplest, no side effects)
+2. `OwnerFilesystem` (next, also isolated)
+3. `OwnerContextJob` trait (touches job lifecycle)
+4. `OwnerIdentificationMiddleware` base middleware (defines request-time hook)
+5. Documentation + comprehensive tests
+
+**Estimated effort:** 1–2 weeks, commerce-support only.
+
+### Validation (required before merge)
+
+- All primitives pass unit tests in `tests/src/Support`
+- All primitives have complete PHPDoc + usage examples
+- PHPStan level 6 clean
+- Test coverage ≥80%
+
+### What is deferred (non-v1)
+
+- **Provisioning pipeline** — only needed when enabling multitenancy in packages
+- **Package retrofits** — primitives are optional/advisory; packages adopt on their own timeline
+- **Config key standardization** — separate effort after primitives stabilize
+- **Conformance audit** — separate sweep after adoption patterns emerge

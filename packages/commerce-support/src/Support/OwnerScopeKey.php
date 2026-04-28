@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Support;
 
+use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -11,7 +12,7 @@ final class OwnerScopeKey
 {
     public const string GLOBAL = 'global';
 
-    public static function forOwner(?Model $owner): string
+    public static function forOwner(Model | OwnerScopeIdentifiable | null $owner): string
     {
         if ($owner === null) {
             return self::GLOBAL;

@@ -272,6 +272,45 @@ Store::all()->each(function (Store $store) {
 
 Webhook processors, health checks, reports, exports, and imports follow the same rule: pass or iterate owners explicitly, then enter `OwnerContext::withOwner($owner, ...)` before touching tenant-owned data.
 
+## Owner Scope Contract
+
+Owner-scoped helper APIs accept either an Eloquent model or an `AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable` implementation.
+
+```php
+use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
+
+final readonly class OwnerReference implements OwnerScopeIdentifiable
+{
+    public function __construct(
+        private string $ownerType,
+        private string $ownerId,
+    ) {}
+
+    public function getMorphClass(): string
+    {
+        return $this->ownerType;
+    }
+
+    public function getKey(): string
+    {
+        return $this->ownerId;
+    }
+}
+```
+
+Use this contract for lightweight adapters, DTOs, or test doubles. Do not rely on arbitrary duck-typed objects.
+
+## Isolation Helpers
+
+For non-query isolation boundaries, `commerce-support` also provides:
+
+- `OwnerCache` for owner-scoped cache keys and tagged groups on supported drivers
+- `OwnerFilesystem` for owner-scoped paths under `owners/{ownerScopeKey}/...`
+- `OwnerContextJob` for queued jobs that must enter owner context before running
+- `OwnerIdentificationMiddleware` as an HTTP middleware base class for request-time owner identification
+
+These helpers are optional primitives for package/app adoption; they do not alter owner scoping automatically unless you use them.
+
 ## Filament and Submitted IDs
 
 Filament option lists are not authorization. Scope the options for good UX, then revalidate submitted IDs inside action handlers:

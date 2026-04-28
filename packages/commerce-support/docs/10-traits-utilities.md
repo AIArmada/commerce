@@ -371,6 +371,45 @@ $owner = OwnerContext::fromTypeAndId(
 );
 ```
 
+## OwnerScopeIdentifiable
+
+If you need to use owner-scoped helpers with non-Eloquent objects, implement `OwnerScopeIdentifiable`.
+
+```php
+use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
+
+final readonly class OwnerReference implements OwnerScopeIdentifiable
+{
+    public function __construct(
+        private string $ownerType,
+        private string $ownerId,
+    ) {}
+
+    public function getMorphClass(): string
+    {
+        return $this->ownerType;
+    }
+
+    public function getKey(): string
+    {
+        return $this->ownerId;
+    }
+}
+```
+
+This is the supported alternative to raw duck-typing for `OwnerScopeKey`, `OwnerCache`, and `OwnerFilesystem`.
+
+## Isolation Primitives
+
+`commerce-support` includes non-query isolation helpers for shared-database tenancy:
+
+- `OwnerCache` — owner-scoped cache keys and tagged owner groups when the driver supports tags
+- `OwnerFilesystem` — owner-scoped filesystem paths and access helpers
+- `OwnerContextJob` — queued-job helper that enters owner context automatically
+- `OwnerIdentificationMiddleware` — base middleware for request-time owner identification
+
+See [`11-isolation-primitives.md`](./11-isolation-primitives.md) for end-to-end usage patterns.
+
 ## OwnerWriteGuard
 
 Secure record access with owner validation:
