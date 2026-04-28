@@ -23,6 +23,7 @@ use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Spatie\WebhookClient\Models\WebhookCall;
@@ -282,14 +283,14 @@ final class ChipServiceProvider extends PackageServiceProvider
         $map = config('chip.owner.webhook_brand_id_map', []);
 
         if (! is_array($map)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Configuration error: "chip.owner.webhook_brand_id_map" must be an array.'
             );
         }
 
         foreach ($map as $brandId => $entry) {
             if (! is_array($entry)) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     sprintf(
                         'Configuration error: "chip.owner.webhook_brand_id_map[%s]" must be an array with "owner_type" and "owner_id" keys.',
                         $brandId
@@ -301,7 +302,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             $ownerId = $entry['owner_id'] ?? $entry['id'] ?? null;
 
             if (empty($ownerType)) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     sprintf(
                         'Configuration error: "chip.owner.webhook_brand_id_map[%s]" must include "owner_type".',
                         $brandId
@@ -310,7 +311,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             }
 
             if (empty($ownerId)) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     sprintf(
                         'Configuration error: "chip.owner.webhook_brand_id_map[%s]" must include "owner_id".',
                         $brandId
@@ -319,7 +320,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             }
 
             if (! is_string($ownerType)) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     sprintf(
                         'Configuration error: "chip.owner.webhook_brand_id_map[%s][owner_type]" must be a string.',
                         $brandId
@@ -328,7 +329,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             }
 
             if (! is_string($ownerId) && ! is_int($ownerId)) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     sprintf(
                         'Configuration error: "chip.owner.webhook_brand_id_map[%s][owner_id]" must be a string or integer.',
                         $brandId

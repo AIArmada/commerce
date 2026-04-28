@@ -53,7 +53,7 @@ class FilamentAuthzServiceProvider extends ServiceProvider
 
         $this->configureSpatiePermissions();
 
-        $this->app->scoped(AuthzScopeContext::class, static fn (): AuthzScopeContext => new AuthzScopeContext());
+        $this->app->scoped(AuthzScopeContext::class, static fn (): AuthzScopeContext => new AuthzScopeContext);
 
         $this->app->singleton(FilamentAuthzPlugin::class);
         $this->app->singleton(WildcardPermissionResolver::class);

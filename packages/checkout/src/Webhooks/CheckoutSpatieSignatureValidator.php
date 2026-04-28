@@ -6,13 +6,12 @@ namespace AIArmada\Checkout\Webhooks;
 
 use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Spatie\WebhookClient\SignatureValidator\SignatureValidator;
+use Spatie\WebhookClient\WebhookConfig;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
 use Throwable;
-use Spatie\WebhookClient\SignatureValidator\SignatureValidator;
-use Spatie\WebhookClient\WebhookConfig;
 
 final class CheckoutSpatieSignatureValidator implements SignatureValidator
 {

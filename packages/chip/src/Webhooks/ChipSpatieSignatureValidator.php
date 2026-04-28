@@ -7,9 +7,9 @@ namespace AIArmada\Chip\Webhooks;
 use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Throwable;
 use Spatie\WebhookClient\SignatureValidator\SignatureValidator;
 use Spatie\WebhookClient\WebhookConfig;
+use Throwable;
 
 final class ChipSpatieSignatureValidator implements SignatureValidator
 {
