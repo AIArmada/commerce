@@ -7,6 +7,8 @@ namespace AIArmada\CommerceSupport\Traits;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\SerializesModels;
+use ReflectionClass;
+use ReflectionProperty;
 use RuntimeException;
 
 /**
@@ -89,16 +91,14 @@ trait OwnerContextJob
      *
      * Looks for properties that are Eloquent models or have `owner_type`/`owner_id` attributes.
      * Override this method if your job's owner data is structured differently.
-     *
-     * @return Model|null
      */
     protected function resolveOwnerFromJob(): ?Model
     {
-        $reflection = new \ReflectionClass($this);
+        $reflection = new ReflectionClass($this);
         $ownerType = null;
         $ownerId = null;
 
-        foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
+        foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
             $value = $property->getValue($this);
 
             if ($property->getName() === 'owner_type' && is_string($value) && $value !== '') {
