@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Inventory;
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\InventoryServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
