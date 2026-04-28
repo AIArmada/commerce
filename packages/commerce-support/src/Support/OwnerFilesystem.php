@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
+use DateInterval;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Owner-scoped filesystem path builder and resolver.
@@ -41,9 +44,9 @@ final class OwnerFilesystem
     /**
      * Build an owner-scoped filesystem path.
      *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner  The owner model or scope-identifiable object (null = global context)
+     * @param  Model|OwnerScopeIdentifiable|null  $owner  The owner model or scope-identifiable object (null = global context)
      * @param  string  $relativePath  The relative path within owner's scope (e.g., 'invoices/2025-01.pdf')
-     * @return string  The full scoped path (e.g., 'owners/sha256hash/invoices/2025-01.pdf')
+     * @return string The full scoped path (e.g., 'owners/sha256hash/invoices/2025-01.pdf')
      *
      * @throws InvalidArgumentException if relativePath contains invalid traversal attempts
      */
@@ -66,11 +69,9 @@ final class OwnerFilesystem
     /**
      * Store a file for an owner.
      *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
      * @param  string  $relativePath  Path relative to owner scope
      * @param  string|resource  $contents
      * @param  array<string, mixed>  $options  Storage options (visibility, etc.)
-     * @return bool
      */
     public static function put(Model | OwnerScopeIdentifiable | null $owner, string $relativePath, $contents, array $options = []): bool
     {
@@ -84,10 +85,7 @@ final class OwnerFilesystem
     /**
      * Retrieve a file for an owner (with scope verification).
      *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $relativePath
      * @param  string|null  $default  Default content if file not found
-     * @return string|null
      */
     public static function get(Model | OwnerScopeIdentifiable | null $owner, string $relativePath, ?string $default = null): ?string
     {
@@ -102,10 +100,6 @@ final class OwnerFilesystem
 
     /**
      * Check if a file exists for an owner.
-     *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $relativePath
-     * @return bool
      */
     public static function exists(Model | OwnerScopeIdentifiable | null $owner, string $relativePath): bool
     {
@@ -114,10 +108,6 @@ final class OwnerFilesystem
 
     /**
      * Delete a file for an owner.
-     *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $relativePath
-     * @return bool
      */
     public static function delete(Model | OwnerScopeIdentifiable | null $owner, string $relativePath): bool
     {
@@ -128,10 +118,6 @@ final class OwnerFilesystem
      * Get the URL for an owner-scoped file (if driver supports public URLs).
      *
      * Use this only for files that should be publicly accessible, or guard with route auth.
-     *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $relativePath
-     * @return string|null
      */
     public static function url(Model | OwnerScopeIdentifiable | null $owner, string $relativePath): ?string
     {
@@ -147,10 +133,7 @@ final class OwnerFilesystem
     /**
      * Get the temporary URL for an owner-scoped file (if driver supports it).
      *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $relativePath
-     * @param  \DateTimeInterface|\DateInterval|int  $expiration
-     * @return string|null
+     * @param  DateTimeInterface|DateInterval|int  $expiration
      */
     public static function temporaryUrl(Model | OwnerScopeIdentifiable | null $owner, string $relativePath, $expiration): ?string
     {
@@ -162,7 +145,7 @@ final class OwnerFilesystem
 
         try {
             return Storage::disk()->temporaryUrl($fullPath, $expiration);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }
@@ -170,10 +153,8 @@ final class OwnerFilesystem
     /**
      * Copy a file for an owner to a new path within the same owner scope.
      *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
      * @param  string  $from  Source path (relative to owner scope)
      * @param  string  $to  Destination path (relative to owner scope)
-     * @return bool
      */
     public static function copy(Model | OwnerScopeIdentifiable | null $owner, string $from, string $to): bool
     {
@@ -185,11 +166,6 @@ final class OwnerFilesystem
 
     /**
      * Move a file for an owner within the same owner scope.
-     *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $from
-     * @param  string  $to
-     * @return bool
      */
     public static function move(Model | OwnerScopeIdentifiable | null $owner, string $from, string $to): bool
     {
