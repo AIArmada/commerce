@@ -35,7 +35,6 @@ return new class extends Migration
 
             $table->timestamps();
 
-
             $table->index('status');
             $table->index(['is_public', 'status']);
         });

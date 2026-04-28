@@ -13,8 +13,9 @@ use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
-use Throwable;
+use RuntimeException;
 use Spatie\WebhookClient\Models\WebhookCall;
+use Throwable;
 
 /**
  * Process CHIP webhook events using spatie/laravel-webhook-client.
@@ -37,7 +38,7 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
 
         $owner = $this->resolveOwner($payload);
         if ((bool) config('chip.owner.enabled', false) && $owner === null) {
-            throw new \RuntimeException('Owner resolution failed');
+            throw new RuntimeException('Owner resolution failed');
         }
 
         $executor = function () use ($eventType, $payload, $dispatcher): void {

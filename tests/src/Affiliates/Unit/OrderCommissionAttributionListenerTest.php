@@ -88,7 +88,7 @@ it('fails closed when an order carries a malformed owner tuple', function (): vo
 
     Log::shouldHaveReceived('warning')
         ->once()
-        ->with('affiliates.order_commission_skipped_malformed_owner_tuple', \Mockery::on(function (array $context) use ($order, $bogusType): bool {
+        ->with('affiliates.order_commission_skipped_malformed_owner_tuple', Mockery::on(function (array $context) use ($order, $bogusType): bool {
             return ($context['order_id'] ?? null) === $order->id
                 && ($context['owner_type'] ?? null) === $bogusType
                 && array_key_exists('message', $context);
