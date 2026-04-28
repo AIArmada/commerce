@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Events\ForgotCurrentOwnerEvent;
 use AIArmada\CommerceSupport\Events\ForgettingCurrentOwnerEvent;
+use AIArmada\CommerceSupport\Events\ForgotCurrentOwnerEvent;
 use AIArmada\CommerceSupport\Events\MadeOwnerCurrentEvent;
 use AIArmada\CommerceSupport\Events\MakingOwnerCurrentEvent;
 use Illuminate\Database\Eloquent\Model;
