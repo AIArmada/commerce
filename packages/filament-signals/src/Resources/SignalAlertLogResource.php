@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Resources;
 
 use AIArmada\FilamentSignals\Resources\SignalAlertLogResource\Pages;
+use AIArmada\Signals\Actions\MarkAllSignalAlertsAsRead;
+use AIArmada\Signals\Actions\MarkSignalAlertAsRead;
+use AIArmada\Signals\Actions\MarkSignalAlertAsUnread;
 use AIArmada\Signals\Models\SignalAlertLog;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -98,16 +101,12 @@ final class SignalAlertLogResource extends Resource
                     ->label('Mark Read')
                     ->icon('heroicon-o-check')
                     ->visible(fn (SignalAlertLog $record): bool => ! $record->is_read)
-                    ->action(function (SignalAlertLog $record): void {
-                        $record->markAsRead();
-                    }),
+                    ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsRead::class)($record)),
                 Action::make('mark_unread')
                     ->label('Mark Unread')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->visible(fn (SignalAlertLog $record): bool => $record->is_read)
-                    ->action(function (SignalAlertLog $record): void {
-                        $record->markAsUnread();
-                    }),
+                    ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsUnread::class)($record)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

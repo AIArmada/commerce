@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Widgets;
 
 use AIArmada\FilamentSignals\Resources\SignalAlertLogResource;
+use AIArmada\Signals\Actions\MarkAllSignalAlertsAsRead;
+use AIArmada\Signals\Actions\MarkSignalAlertAsRead;
 use AIArmada\Signals\Models\SignalAlertLog;
 use Filament\Actions;
 use Filament\Tables;
@@ -61,19 +63,13 @@ final class PendingSignalAlertsWidget extends BaseWidget
                 Actions\Action::make('markRead')
                     ->label('Mark Read')
                     ->icon('heroicon-o-check')
-                    ->action(function (SignalAlertLog $record): void {
-                        $record->markAsRead();
-                    }),
+                    ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsRead::class)($record)),
             ])
             ->bulkActions([
                 Actions\BulkAction::make('markAllRead')
                     ->label('Mark as Read')
                     ->icon('heroicon-o-check')
-                    ->action(function (Collection $records): void {
-                        $records->each(static function (SignalAlertLog $record): void {
-                            $record->markAsRead();
-                        });
-                    }),
+                    ->action(fn (Collection $records) => app(MarkAllSignalAlertsAsRead::class)($records)),
             ])
             ->emptyStateHeading('No pending alerts')
             ->emptyStateDescription('All Signals alerts are currently acknowledged.')

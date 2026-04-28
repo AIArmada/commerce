@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Actions;
 
 use AIArmada\FilamentCart\Models\CartCondition;
-use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use Exception;
 use Filament\Actions\Action;
@@ -31,26 +30,14 @@ final class RemoveConditionAction extends Action
                 $cart = OwnerActionGuard::authorizeCartCondition($record);
 
                 try {
-                    $cartInstance = app(CartInstanceManager::class)
-                        ->resolveForSnapshot($cart);
+                    $action = app(RemoveConditionFromCartAction::class);
+                    $action->removeCondition($record);
 
-                    if ($record->isItemLevel()) {
-                        // Remove item-level condition
-                        $success = $cartInstance->removeItemCondition($record->item_id, $record->name);
-                    } else {
-                        // Remove cart-level condition
-                        $success = $cartInstance->removeCondition($record->name);
-                    }
-
-                    if ($success) {
-                        Notification::make()
-                            ->title('Condition Removed')
-                            ->body("The '{$record->name}' condition has been removed.")
-                            ->success()
-                            ->send();
-                    } else {
-                        throw new Exception('Condition not found or could not be removed');
-                    }
+                    Notification::make()
+                        ->title('Condition Removed')
+                        ->body("The '{$record->name}' condition has been removed.")
+                        ->success()
+                        ->send();
 
                 } catch (Exception $e) {
                     Notification::make()
@@ -84,18 +71,8 @@ final class RemoveConditionAction extends Action
                 $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
 
                 try {
-                    // Get the cart instance
-                    $cartInstance = app(CartInstanceManager::class)
-                        ->resolveForSnapshot($cart);
-
-                    // Clear all cart-level conditions
-                    $cartInstance->clearConditions();
-
-                    // Clear all item-level conditions
-                    $items = $cartInstance->getItems();
-                    foreach ($items as $item) {
-                        $cartInstance->clearItemConditions($item->id);
-                    }
+                    $action = app(RemoveConditionFromCartAction::class);
+                    $action->clearAll($cart);
 
                     Notification::make()
                         ->title('All Conditions Cleared')
@@ -144,12 +121,8 @@ final class RemoveConditionAction extends Action
                 $cart = OwnerActionGuard::resolveCartRecord($record, $livewire);
 
                 try {
-                    // Get the cart instance
-                    $cartInstance = app(CartInstanceManager::class)
-                        ->resolveForSnapshot($cart);
-
-                    // Remove conditions by type
-                    $cartInstance->removeConditionsByType($data['type']);
+                    $action = app(RemoveConditionFromCartAction::class);
+                    $action->clearByType($cart, $data['type']);
 
                     Notification::make()
                         ->title('Conditions Cleared')
