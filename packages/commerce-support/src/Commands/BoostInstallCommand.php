@@ -114,5 +114,4 @@ final class BoostInstallCommand extends Command
         $property->setAccessible(true);
         $property->setValue(app(), $namespace);
     }
-
 }

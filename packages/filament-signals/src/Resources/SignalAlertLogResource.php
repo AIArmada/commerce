@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Resources;
 
 use AIArmada\FilamentSignals\Resources\SignalAlertLogResource\Pages;
-use AIArmada\Signals\Actions\MarkAllSignalAlertsAsRead;
 use AIArmada\Signals\Actions\MarkSignalAlertAsRead;
 use AIArmada\Signals\Actions\MarkSignalAlertAsUnread;
 use AIArmada\Signals\Models\SignalAlertLog;
