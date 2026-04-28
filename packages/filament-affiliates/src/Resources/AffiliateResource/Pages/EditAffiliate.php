@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages;
 
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\FilamentAffiliates\Actions\ValidateAffiliateParentAssignment;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -18,5 +20,17 @@ final class EditAffiliate extends EditRecord
             Actions\ViewAction::make(),
             Actions\DeleteAction::make(),
         ];
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data = parent::mutateFormDataBeforeSave($data);
+
+        $record = $this->getRecord();
+
+        return ValidateAffiliateParentAssignment::run(
+            $data,
+            $record instanceof Affiliate ? $record : null,
+        );
     }
 }

@@ -18,9 +18,7 @@ return new class extends Migration
             $table->foreignUuid('descendant_id');
             $table->integer('depth');
 
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
-            $table->index(['owner_type', 'owner_id'], 'affiliate_network_owner_idx');
+            $table->nullableUuidMorphs('owner');
 
             $table->unique(['ancestor_id', 'descendant_id']);
             $table->index(['descendant_id', 'depth']);

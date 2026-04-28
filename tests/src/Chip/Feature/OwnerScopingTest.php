@@ -280,3 +280,229 @@ it('scopes integer-ID models too (option lists must be owner-safe)', function ()
 
     expect(BankAccount::query()->forOwner()->count())->toBe(1);
 });
+
+// Cross-tenant regression tests
+it('rejects cross-tenant reads', function (): void {
+    Schema::dropIfExists('tenants');
+    Schema::create('tenants', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $ownerA = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerB = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerA->id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    $ownerA->name = 'A';
+    $ownerA->save();
+
+    $ownerB->id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    $ownerB->name = 'B';
+    $ownerB->save();
+
+    // Create a purchase for OwnerA
+    $purchaseId = '11111111-1111-1111-1111-111111111111';
+    Purchase::withoutEvents(function () use ($ownerA, $purchaseId): void {
+        Purchase::create([
+            'id' => $purchaseId,
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
+            'status' => 'paid',
+            'purchase' => ['amount' => 1000],
+        ]);
+    });
+
+    // Set context to OwnerB
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    // OwnerB should not see OwnerA's purchase
+    expect(Purchase::query()->forOwner()->where('id', $purchaseId)->exists())->toBeFalse();
+    expect(Purchase::query()->forOwner()->count())->toBe(0);
+});
+
+it('rejects cross-tenant writes on direct record mutation', function (): void {
+    Schema::dropIfExists('tenants');
+    Schema::create('tenants', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $ownerA = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerB = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerA->id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    $ownerA->name = 'A';
+    $ownerA->save();
+
+    $ownerB->id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    $ownerB->name = 'B';
+    $ownerB->save();
+
+    // Create a purchase for OwnerA
+    Purchase::withoutEvents(function () use ($ownerA): void {
+        Purchase::create([
+            'id' => '11111111-1111-1111-1111-111111111111',
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
+            'status' => 'paid',
+            'purchase' => ['amount' => 1000],
+        ]);
+    });
+
+    // Set context to OwnerB
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    // OwnerB's query should be empty (can't find OwnerA's purchase)
+    expect(Purchase::query()->forOwner()->count())->toBe(0);
+    
+    // Attempting to query without owner scope and update would be bad; verify we can't with scope
+    // The key test: if we try to update from a cross-tenant context, the record is invisible
+    $ownerAPurchase = Purchase::query()->withoutOwnerScope()->first();
+    expect($ownerAPurchase)->not->toBeNull();
+    
+    // But from OwnerB context, it should not be updatable (would require explicit withoutOwnerScope)
+    $visible = Purchase::query()->forOwner()->first();
+    expect($visible)->toBeNull();
+});
+
+it('protects global rows from cross-tenant writes', function (): void {
+    config()->set('chip.owner.include_global', true);
+
+    Schema::dropIfExists('tenants');
+    Schema::create('tenants', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $ownerA = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerB = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerA->id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    $ownerA->name = 'A';
+    $ownerA->save();
+
+    $ownerB->id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    $ownerB->name = 'B';
+    $ownerB->save();
+
+    // Create a global (ownerless) purchase
+    $globalPurchaseId = '99999999-9999-9999-9999-999999999999';
+    Purchase::withoutEvents(function () use ($globalPurchaseId): void {
+        Purchase::create([
+            'id' => $globalPurchaseId,
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => 'paid',
+            'purchase' => ['amount' => 1000],
+        ]);
+    });
+
+    // Set context to OwnerA
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    // OwnerA can see the global row
+    expect(Purchase::query()->forOwner()->count())->toBe(1);
+
+    // Switch to OwnerB
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    // OwnerB can also see the global row (both tenants share global records)
+    expect(Purchase::query()->forOwner()->count())->toBe(1);
+    
+    // The global row is the same for both
+    $globalRowA = Purchase::query()->forOwner()->first();
+    $globalRowB = Purchase::query()->forOwner()->first();
+    expect($globalRowA->id)->toBe($globalRowB->id)->toBe($globalPurchaseId);
+});

@@ -29,14 +29,13 @@ return new class extends Migration
             $table->string('commission_currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
             $table->string('status', 32)->default(config('affiliates.commissions.default_status', 'pending'))->index();
             $table->string('channel')->nullable();
-            $table->string('owner_type')->nullable();
-            $table->uuid('owner_id')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamp('occurred_at')->nullable()->index();
             $table->timestamp('approved_at')->nullable()->index();
             $table->timestamps();
 
-            $table->index(['owner_type', 'owner_id'], 'affiliate_conversions_owner_index');
+
             $table->index(['affiliate_id', 'status'], 'affiliate_conversions_affiliate_status_idx');
             $table->index(['status', 'occurred_at'], 'affiliate_conversions_status_date_idx');
         });

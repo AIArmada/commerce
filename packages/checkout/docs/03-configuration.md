@@ -86,6 +86,7 @@ return [
     'owner' => [
         'enabled' => env('CHECKOUT_OWNER_ENABLED', false),
         'include_global' => false,
+        'auto_assign_on_create' => env('CHECKOUT_OWNER_AUTO_ASSIGN_ON_CREATE', true),
     ],
 
     /*
@@ -136,13 +137,14 @@ return [
         'gateway_priority' => ['chip', 'cashier-chip', 'cashier'],
         'retry_limit' => env('CHECKOUT_PAYMENT_RETRY_LIMIT', 3),
         'gateways' => [
+            'cashier' => [
+                'enabled' => env('CHECKOUT_CASHIER_ENABLED', true),
+            ],
+            'cashier-chip' => [
+                'enabled' => env('CHECKOUT_CASHIER_CHIP_ENABLED', true),
+            ],
             'chip' => [
                 'enabled' => env('CHECKOUT_CHIP_ENABLED', true),
-                'config_namespace' => 'chip',
-            ],
-            'stripe' => [
-                'enabled' => env('CHECKOUT_STRIPE_ENABLED', false),
-                'config_namespace' => 'cashier',
             ],
         ],
     ],
@@ -264,8 +266,9 @@ Each transformer must implement `AIArmada\Checkout\Contracts\SessionDataTransfor
 | `payment.retry_limit` | int | `3` | Max payment retry attempts |
 
 Gateway-specific configuration references the related package configs:
-- **CHIP**: Uses `config('chip.*')` 
-- **Stripe**: Uses `config('cashier.*')`
+- **CHIP** (`chip`): Uses `config('chip.*')`
+- **Cashier CHIP** (`cashier-chip`): Uses `config('cashier-chip.*')`
+- **Cashier** (`cashier`): Uses `config('cashier.*')`
 
 ### Routes
 
@@ -299,6 +302,8 @@ Webhooks are verified using the source gateway's mechanism:
 ],
 ```
 
+`webhooks.verify_signature` should remain enabled in production. If disabled, checkout rejects webhook requests in production environments.
+
 ### Integration Settings
 
 Control which integrations are active:
@@ -330,6 +335,7 @@ Enable multi-tenancy:
 'owner' => [
     'enabled' => true,
     'include_global' => false,
+    'auto_assign_on_create' => true,
 ],
 ```
 
@@ -342,6 +348,9 @@ CHECKOUT_CURRENCY=MYR
 # Payment gateway
 CHECKOUT_DEFAULT_GATEWAY=chip
 CHECKOUT_PAYMENT_RETRY_LIMIT=3
+CHECKOUT_CASHIER_ENABLED=true
+CHECKOUT_CASHIER_CHIP_ENABLED=true
+CHECKOUT_CHIP_ENABLED=true
 
 # Routes
 CHECKOUT_ROUTES_ENABLED=true
@@ -357,6 +366,7 @@ CHECKOUT_WEBHOOK_LOG_PAYLOADS=false
 
 # Multi-tenancy
 CHECKOUT_OWNER_ENABLED=false
+CHECKOUT_OWNER_AUTO_ASSIGN_ON_CREATE=true
 
 # Documents
 CHECKOUT_DOCUMENTS_QUEUE=default

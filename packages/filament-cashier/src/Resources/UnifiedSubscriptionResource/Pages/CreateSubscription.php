@@ -257,6 +257,10 @@ final class CreateSubscription extends CreateRecord
         }
 
         if (! empty($data['payment_method']) && is_string($data['payment_method'])) {
+            if (! $this->userOwnsPaymentMethod($user, $gateway, $data['payment_method'])) {
+                throw new AuthorizationException('Selected payment method is not accessible.');
+            }
+
             $builder->create($data['payment_method']);
 
             return $user;
@@ -265,6 +269,43 @@ final class CreateSubscription extends CreateRecord
         $builder->create();
 
         return $user;
+    }
+
+    private function userOwnsPaymentMethod(BillableContract $user, string $gateway, string $paymentMethodId): bool
+    {
+        if ($gateway === 'stripe') {
+            if (! method_exists($user, 'paymentMethods')) {
+                return false;
+            }
+
+            try {
+                $methods = $user->paymentMethods();
+
+                return collect($methods)->contains(
+                    fn (mixed $paymentMethod): bool => (string) data_get($paymentMethod, 'id') === $paymentMethodId
+                );
+            } catch (Throwable) {
+                return false;
+            }
+        }
+
+        if ($gateway === 'chip') {
+            if (! method_exists($user, 'chipPaymentMethods')) {
+                return false;
+            }
+
+            try {
+                $methods = $user->chipPaymentMethods();
+
+                return collect($methods)->contains(
+                    fn (mixed $paymentMethod): bool => (string) data_get($paymentMethod, 'id') === $paymentMethodId
+                );
+            } catch (Throwable) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     protected function getCreatedNotification(): ?Notification

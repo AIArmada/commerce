@@ -5,23 +5,34 @@ declare(strict_types=1);
 use AIArmada\Chip\Http\Controllers\WebhookController;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\Models\Webhook;
-use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Services\WebhookService;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
 
 describe('WebhookController', function (): void {
     beforeEach(function (): void {
         // Disable listeners that require database
         Event::fake();
-        config(['chip.webhooks.store_webhooks' => false]);
+        config([
+            'chip.webhooks.store_webhooks' => false,
+            'chip.webhooks.verify_signature' => false,
+        ]);
 
-        // Mock the dispatcher
-        $this->dispatcher = Mockery::mock(WebhookEventDispatcher::class);
-        $this->dispatcher->shouldReceive('dispatch')->andReturn(null);
-        $this->dispatcher->shouldReceive('extractPurchase')->andReturn(null);
-        $this->dispatcher->shouldReceive('extractPayout')->andReturn(null);
-        $this->dispatcher->shouldReceive('extractBillingTemplateClient')->andReturn(null);
+        if (! Schema::hasTable('webhook_calls')) {
+            Schema::create('webhook_calls', function (Blueprint $table): void {
+                $table->bigIncrements('id');
+                $table->string('name');
+                $table->string('url')->nullable();
+                $table->json('headers')->nullable();
+                $table->json('payload')->nullable();
+                $table->timestamp('processed_at')->nullable();
+                $table->json('attachments')->nullable();
+                $table->text('exception')->nullable();
+                $table->timestamps();
+            });
+        }
     });
 
     afterEach(function (): void {
@@ -29,12 +40,12 @@ describe('WebhookController', function (): void {
     });
 
     it('can be instantiated', function (): void {
-        $controller = new WebhookController($this->dispatcher);
+        $controller = new WebhookController();
         expect($controller)->toBeInstanceOf(WebhookController::class);
     });
 
     it('handles purchase.paid webhook', function (): void {
-        $controller = new WebhookController($this->dispatcher);
+        $controller = new WebhookController();
 
         $payload = [
             'id' => 'purch_test123',
@@ -56,12 +67,11 @@ describe('WebhookController', function (): void {
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getData()->status)->toBe('ok')
-            ->and($response->getData()->event_type)->toBe('purchase.paid');
+            ->and($response->getData()->status)->toBe('accepted');
     });
 
     it('handles payout webhook', function (): void {
-        $controller = new WebhookController($this->dispatcher);
+        $controller = new WebhookController();
 
         $payload = [
             'id' => 'payout_test123',
@@ -79,11 +89,11 @@ describe('WebhookController', function (): void {
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getData()->event_type)->toBe('payout.success');
+            ->and($response->getData()->status)->toBe('accepted');
     });
 
     it('handles billing template client webhook', function (): void {
-        $controller = new WebhookController($this->dispatcher);
+        $controller = new WebhookController();
 
         $payload = [
             'id' => 'btc_test123',
@@ -101,11 +111,11 @@ describe('WebhookController', function (): void {
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getData()->event_type)->toBe('billing_template_client.subscription_billing_cancelled');
+            ->and($response->getData()->status)->toBe('accepted');
     });
 
     it('handles unknown event type gracefully', function (): void {
-        $controller = new WebhookController($this->dispatcher);
+        $controller = new WebhookController();
 
         $payload = [
             'id' => 'unknown_123',
@@ -117,17 +127,17 @@ describe('WebhookController', function (): void {
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getData()->event_type)->toBe('unknown.event');
+            ->and($response->getData()->status)->toBe('accepted');
     });
 
     it('handles missing event_type', function (): void {
-        $controller = new WebhookController($this->dispatcher);
+        $controller = new WebhookController();
 
         $request = Request::create('/webhook', 'POST', []);
         $response = $controller->handle($request);
 
         expect($response->getStatusCode())->toBe(200)
-            ->and($response->getData()->event_type)->toBe('unknown');
+            ->and($response->getData()->status)->toBe('accepted');
     });
 
     it('ignores duplicate webhook payloads after the first successful processing', function (): void {
@@ -136,13 +146,7 @@ describe('WebhookController', function (): void {
             'chip.webhooks.deduplication' => true,
         ]);
 
-        $dispatcher = Mockery::mock(WebhookEventDispatcher::class);
-        $dispatcher->shouldReceive('dispatch')->once()->andReturn(null);
-        $dispatcher->shouldReceive('extractPurchase')->once()->andReturn(null);
-        $dispatcher->shouldReceive('extractPayout')->once()->andReturn(null);
-        $dispatcher->shouldReceive('extractBillingTemplateClient')->once()->andReturn(null);
-
-        $controller = new WebhookController($dispatcher);
+        $controller = new WebhookController();
 
         $payload = [
             'id' => 'purch_duplicate_123',
@@ -165,7 +169,7 @@ describe('WebhookController', function (): void {
 
         expect($responseOne->getStatusCode())->toBe(200)
             ->and($responseTwo->getStatusCode())->toBe(200)
-            ->and($responseTwo->getData()->message)->toBe('Duplicate webhook ignored')
+            ->and($responseTwo->getData()->status)->toBe('accepted')
             ->and(Webhook::count())->toBe(1)
             ->and(Webhook::query()->first()?->processed)->toBeTrue();
     });

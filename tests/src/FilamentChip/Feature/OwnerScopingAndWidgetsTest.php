@@ -183,3 +183,205 @@ it('generates revenue data for the last 30 days', function (): void {
     expect($data['amounts'])->toHaveCount(30);
     expect(max($data['amounts']))->toBeGreaterThanOrEqual(30);
 });
+
+// Cross-tenant regression tests for Filament resource
+it('resource rejects cross-tenant reads', function (): void {
+    Schema::dropIfExists('tenants');
+    Schema::create('tenants', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $ownerA = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerB = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerA->id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    $ownerA->name = 'A';
+    $ownerA->save();
+
+    $ownerB->id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    $ownerB->name = 'B';
+    $ownerB->save();
+
+    // Create purchases for both owners
+    Purchase::withoutEvents(function () use ($ownerA, $ownerB): void {
+        Purchase::create([
+            'id' => '11111111-1111-1111-1111-111111111111',
+            'status' => 'paid',
+            'is_test' => false,
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
+            'purchase' => ['amount' => 1000],
+        ]);
+
+        Purchase::create([
+            'id' => '22222222-2222-2222-2222-222222222222',
+            'status' => 'paid',
+            'is_test' => false,
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => (string) $ownerB->getKey(),
+            'purchase' => ['amount' => 2000],
+        ]);
+    });
+
+    // Set context to OwnerA
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    // OwnerA's resource should show 1 record
+    expect(PurchaseResource::getEloquentQuery()->count())->toBe(1);
+
+    // Switch context to OwnerB
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    // OwnerB's resource should show 1 record (only their own)
+    expect(PurchaseResource::getEloquentQuery()->count())->toBe(1);
+    expect(PurchaseResource::getEloquentQuery()->first()->id)->toBe('22222222-2222-2222-2222-222222222222');
+});
+
+it('widget metrics reject cross-tenant data', function (): void {
+    Schema::dropIfExists('tenants');
+    Schema::create('tenants', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $ownerA = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerB = new class extends Model
+    {
+        protected $table = 'tenants';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerA->id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    $ownerA->name = 'A';
+    $ownerA->save();
+
+    $ownerB->id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+    $ownerB->name = 'B';
+    $ownerB->save();
+
+    $today = now();
+
+    // Create purchases for both owners
+    Purchase::withoutEvents(function () use ($ownerA, $ownerB, $today): void {
+        Purchase::create([
+            'status' => 'paid',
+            'is_test' => false,
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
+            'created_on' => $today->getTimestamp(),
+            'purchase' => ['amount' => 5000],
+            'payment' => ['payment_type' => 'fpx'],
+        ]);
+
+        Purchase::create([
+            'status' => 'paid',
+            'is_test' => false,
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => (string) $ownerB->getKey(),
+            'created_on' => $today->getTimestamp(),
+            'purchase' => ['amount' => 10000],
+            'payment' => ['payment_type' => 'card'],
+        ]);
+    });
+
+    // Set context to OwnerA
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    $widgetA = app(PaymentMethodsWidget::class);
+    $refA = new ReflectionClass($widgetA);
+    $methodA = $refA->getMethod('getPaymentMethodBreakdown');
+    $methodA->setAccessible(true);
+
+    /** @var array<string, array{count: int, amount: int}> $breakdownA */
+    $breakdownA = $methodA->invoke($widgetA);
+
+    // OwnerA should only see FPX (5000)
+    expect($breakdownA)->toHaveKey('FPX');
+    expect($breakdownA['FPX']['amount'])->toBe(5000);
+
+    // Switch context to OwnerB
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    // Recreate widget with new context
+    app()->forgetInstance(PaymentMethodsWidget::class);
+    $widgetB = app(PaymentMethodsWidget::class);
+    $refB = new ReflectionClass($widgetB);
+    $methodB = $refB->getMethod('getPaymentMethodBreakdown');
+    $methodB->setAccessible(true);
+
+    /** @var array<string, array{count: int, amount: int}> $breakdownB */
+    $breakdownB = $methodB->invoke($widgetB);
+
+    // OwnerB should only see Card (10000)
+    expect($breakdownB)->toHaveKey('Card');
+    expect($breakdownB['Card']['amount'])->toBe(10000);
+});

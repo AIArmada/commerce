@@ -223,18 +223,16 @@ class CheckoutSession extends Model
      */
     protected function casts(): array
     {
-        $jsonType = config('checkout.database.json_column_type', 'json') === 'jsonb' ? 'array' : 'array';
-
         return [
             'status' => CheckoutState::class,
-            'cart_snapshot' => $jsonType,
-            'step_states' => $jsonType,
-            'shipping_data' => $jsonType,
-            'billing_data' => $jsonType,
-            'pricing_data' => $jsonType,
-            'discount_data' => $jsonType,
-            'tax_data' => $jsonType,
-            'payment_data' => $jsonType,
+            'cart_snapshot' => 'array',
+            'step_states' => 'array',
+            'shipping_data' => 'array',
+            'billing_data' => 'array',
+            'pricing_data' => 'array',
+            'discount_data' => 'array',
+            'tax_data' => 'array',
+            'payment_data' => 'array',
             'payment_attempts' => 'integer',
             'subtotal' => 'integer',
             'discount_total' => 'integer',
@@ -251,7 +249,11 @@ class CheckoutSession extends Model
     protected static function booted(): void
     {
         static::creating(function (CheckoutSession $session): void {
-            if ((bool) config('checkout.owner.enabled', false) && ! $session->hasOwner()) {
+            if (
+                (bool) config('checkout.owner.enabled', false)
+                && (bool) config('checkout.owner.auto_assign_on_create', true)
+                && ! $session->hasOwner()
+            ) {
                 $owner = OwnerContext::resolve();
 
                 if ($owner !== null) {

@@ -10,7 +10,27 @@ use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
+
+beforeEach(function (): void {
+    config()->set('chip.webhooks.verify_signature', false);
+
+    if (! Schema::hasTable('webhook_calls')) {
+        Schema::create('webhook_calls', function (Blueprint $table): void {
+            $table->bigIncrements('id');
+            $table->string('name');
+            $table->string('url')->nullable();
+            $table->json('headers')->nullable();
+            $table->json('payload')->nullable();
+            $table->timestamp('processed_at')->nullable();
+            $table->json('attachments')->nullable();
+            $table->text('exception')->nullable();
+            $table->timestamps();
+        });
+    }
+});
 
 it('assigns purchase owner from brand_id mapping when owner context is missing', function (): void {
     Route::post('/chip/webhook-test', [WebhookController::class, 'handle'])

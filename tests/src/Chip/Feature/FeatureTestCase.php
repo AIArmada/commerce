@@ -42,6 +42,7 @@ abstract class FeatureTestCase extends TestCase
                 $table->string('url')->nullable();
                 $table->json('headers')->nullable();
                 $table->json('payload')->nullable();
+                $table->timestamp('processed_at')->nullable();
                 $table->text('exception')->nullable();
                 $table->timestamps();
             });

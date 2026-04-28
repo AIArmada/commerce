@@ -71,6 +71,7 @@ it('blocks subscription creation when billable differs from owner and owner-scop
     config()->set('cashier-chip.features.owner.enabled', true);
     config()->set('cashier-chip.features.owner.include_global', false);
     config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
+    config()->set('cashier-chip.features.owner.validate_billable_owner', true);
 
     $owner = User::query()->create([
         'name' => 'Owner XT',

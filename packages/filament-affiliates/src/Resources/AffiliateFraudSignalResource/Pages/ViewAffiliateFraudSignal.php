@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Pag
 
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
@@ -28,19 +29,13 @@ final class ViewAffiliateFraudSignal extends ViewRecord
                 ->color('gray')
                 ->requiresConfirmation()
                 ->visible(fn (): bool => $record->status === FraudSignalStatus::Detected)
-                ->action(fn (): bool => $record->update([
-                    'status' => FraudSignalStatus::Dismissed,
-                    'reviewed_at' => now(),
-                ])),
+                ->action(fn () => UpdateAffiliateFraudSignalStatus::run($record, FraudSignalStatus::Dismissed)),
             Actions\Action::make('confirm')
                 ->icon('heroicon-o-check')
                 ->color('danger')
                 ->requiresConfirmation()
                 ->visible(fn (): bool => $record->status === FraudSignalStatus::Detected)
-                ->action(fn (): bool => $record->update([
-                    'status' => FraudSignalStatus::Confirmed,
-                    'reviewed_at' => now(),
-                ])),
+                ->action(fn () => UpdateAffiliateFraudSignalStatus::run($record, FraudSignalStatus::Confirmed)),
         ];
     }
 }

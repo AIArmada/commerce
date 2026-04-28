@@ -17,6 +17,7 @@ use AIArmada\Affiliates\States\Draft;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\Pending;
 use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -42,27 +43,44 @@ describe('Affiliate Model - Owner Scopes', function (): void {
             }
         };
 
-        $affiliate1 = Affiliate::create([
-            'code' => 'AFF1',
-            'name' => 'Test Affiliate 1',
-            'status' => Active::class,
-            'commission_type' => 'percentage',
-            'commission_rate' => 500,
-            'currency' => 'USD',
-            'owner_type' => 'User',
-            'owner_id' => 1,
-        ]);
+        $affiliate1 = OwnerContext::withOwner($owner1, function (): Affiliate {
+            return Affiliate::create([
+                'code' => 'AFF1',
+                'name' => 'Test Affiliate 1',
+                'status' => Active::class,
+                'commission_type' => 'percentage',
+                'commission_rate' => 500,
+                'currency' => 'USD',
+                'owner_type' => 'User',
+                'owner_id' => 1,
+            ]);
+        });
 
-        $affiliate2 = Affiliate::create([
-            'code' => 'AFF2',
-            'name' => 'Test Affiliate 2',
-            'status' => Active::class,
-            'commission_type' => 'percentage',
-            'commission_rate' => 500,
-            'currency' => 'USD',
-            'owner_type' => 'User',
-            'owner_id' => 2,
-        ]);
+        $owner2 = new class extends Model
+        {
+            public function getMorphClass()
+            {
+                return 'User';
+            }
+
+            public function getKey()
+            {
+                return 2;
+            }
+        };
+
+        $affiliate2 = OwnerContext::withOwner($owner2, function (): Affiliate {
+            return Affiliate::create([
+                'code' => 'AFF2',
+                'name' => 'Test Affiliate 2',
+                'status' => Active::class,
+                'commission_type' => 'percentage',
+                'commission_rate' => 500,
+                'currency' => 'USD',
+                'owner_type' => 'User',
+                'owner_id' => 2,
+            ]);
+        });
 
         $results = Affiliate::forOwner($owner1)->pluck('id');
 

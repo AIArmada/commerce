@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Spatie\WebhookClient\Models\WebhookCall;
+use Spatie\WebhookClient\WebhookClientServiceProvider;
 
 final class ChipServiceProvider extends PackageServiceProvider
 {
@@ -56,10 +58,73 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->configureSpatieWebhookClient();
+        $this->registerSpatieWebhookClient();
         $this->registerServices();
         $this->registerClients();
         $this->registerGateway();
         $this->registerMiddleware();
+    }
+
+    protected function configureSpatieWebhookClient(): void
+    {
+        if (! class_exists(WebhookCall::class)) {
+            return;
+        }
+
+        $configName = 'chip.webhook';
+        $configs = config('webhook-client.configs', []);
+
+        if (! is_array($configs)) {
+            $configs = [];
+        }
+
+        $configs = array_values(array_filter($configs, static function (mixed $existingConfig): bool {
+            if (! is_array($existingConfig)) {
+                return false;
+            }
+
+            $processWebhookJob = $existingConfig['process_webhook_job'] ?? null;
+
+            return is_string($processWebhookJob) && $processWebhookJob !== '';
+        }));
+
+        foreach ($configs as $existingConfig) {
+            if (is_array($existingConfig) && ($existingConfig['name'] ?? null) === $configName) {
+                return;
+            }
+        }
+
+        $configs[] = [
+            'name' => $configName,
+            'signing_secret' => '',
+            'signature_header_name' => 'x-signature',
+            'signature_validator' => Webhooks\ChipSpatieSignatureValidator::class,
+            'webhook_profile' => Webhooks\ChipWebhookProfile::class,
+            'webhook_response' => Webhooks\ChipWebhookResponse::class,
+            'webhook_model' => WebhookCall::class,
+            'store_headers' => [
+                'x-signature',
+            ],
+            'process_webhook_job' => Webhooks\ProcessChipWebhook::class,
+        ];
+
+        config([
+            'webhook-client.configs' => $configs,
+        ]);
+    }
+
+    protected function registerSpatieWebhookClient(): void
+    {
+        if (! class_exists(WebhookClientServiceProvider::class)) {
+            return;
+        }
+
+        if (method_exists($this->app, 'getProvider') && $this->app->getProvider(WebhookClientServiceProvider::class) instanceof WebhookClientServiceProvider) {
+            return;
+        }
+
+        $this->app->register(WebhookClientServiceProvider::class);
     }
 
     public function packageBooted(): void
@@ -69,6 +134,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             'collect.brand_id',
         ]);
 
+        $this->validateWebhookBrandIdMap();
         $this->configureWebhookRoutes();
         $this->registerEventListeners();
         $this->bootDocsIntegration();
@@ -205,5 +271,70 @@ final class ChipServiceProvider extends PackageServiceProvider
         }
 
         $this->app->alias(ChipGateway::class, 'chip.gateway');
+    }
+
+    protected function validateWebhookBrandIdMap(): void
+    {
+        if (! config('chip.owner.enabled', false)) {
+            return;
+        }
+
+        $map = config('chip.owner.webhook_brand_id_map', []);
+
+        if (! is_array($map)) {
+            throw new \InvalidArgumentException(
+                'Configuration error: "chip.owner.webhook_brand_id_map" must be an array.'
+            );
+        }
+
+        foreach ($map as $brandId => $entry) {
+            if (! is_array($entry)) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'Configuration error: "chip.owner.webhook_brand_id_map[%s]" must be an array with "owner_type" and "owner_id" keys.',
+                        $brandId
+                    )
+                );
+            }
+
+            $ownerType = $entry['owner_type'] ?? $entry['type'] ?? null;
+            $ownerId = $entry['owner_id'] ?? $entry['id'] ?? null;
+
+            if (empty($ownerType)) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'Configuration error: "chip.owner.webhook_brand_id_map[%s]" must include "owner_type".',
+                        $brandId
+                    )
+                );
+            }
+
+            if (empty($ownerId)) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'Configuration error: "chip.owner.webhook_brand_id_map[%s]" must include "owner_id".',
+                        $brandId
+                    )
+                );
+            }
+
+            if (! is_string($ownerType)) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'Configuration error: "chip.owner.webhook_brand_id_map[%s][owner_type]" must be a string.',
+                        $brandId
+                    )
+                );
+            }
+
+            if (! is_string($ownerId) && ! is_int($ownerId)) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'Configuration error: "chip.owner.webhook_brand_id_map[%s][owner_id]" must be a string or integer.',
+                        $brandId
+                    )
+                );
+            }
+        }
     }
 }

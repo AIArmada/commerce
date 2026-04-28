@@ -27,8 +27,7 @@ return new class extends Migration
             $table->integer('cookie_lifetime_days')->default(30);
             $table->string('terms_url')->nullable();
 
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
+            $table->nullableUuidMorphs('owner');
 
             $jsonType = config('affiliates.database.json_column_type', 'json');
             $table->addColumn($jsonType, 'eligibility_rules')->nullable();
@@ -36,7 +35,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['owner_type', 'owner_id'], 'affiliate_programs_owner_idx');
+
             $table->index('status');
             $table->index(['is_public', 'status']);
         });

@@ -22,11 +22,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->{$jsonType}('rules');
             $table->{$jsonType}('metadata')->nullable();
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
-
-            $table->index(['owner_type', 'owner_id'], 'affiliate_commission_templates_owner_idx');
             $table->index(['is_default', 'is_active']);
         });
     }

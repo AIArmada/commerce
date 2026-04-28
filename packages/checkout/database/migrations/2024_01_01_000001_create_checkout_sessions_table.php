@@ -71,11 +71,6 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
-    {
-        Schema::dropIfExists($this->getTableName());
-    }
-
     private function getTableName(): string
     {
         $tables = config('checkout.database.tables', []);

@@ -7,8 +7,9 @@ namespace AIArmada\Affiliates\Console\Commands;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\RankQualificationService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Model;
 
 final class ProcessRankUpgradesCommand extends Command
 {
@@ -43,34 +44,46 @@ final class ProcessRankUpgradesCommand extends Command
             return (int) $callback();
         }
 
+        $columns = OwnerTupleColumns::forModelClass(Affiliate::class);
+
         $owners = Affiliate::query()
             ->withoutOwnerScope()
-            ->select(['owner_type', 'owner_id'])
+            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
             ->distinct()
             ->get();
 
         if ($owners->isEmpty()) {
-            return (int) $callback();
+            return (int) OwnerContext::withOwner(null, $callback);
+        }
+
+        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+        if ($includeGlobal) {
+            config()->set('affiliates.owner.include_global', false);
         }
 
         $total = 0;
+        $processedGlobal = false;
 
-        foreach ($owners as $row) {
-            $owner = $this->resolveOwnerFromRow($row);
-            $total += (int) OwnerContext::withOwner($owner, $callback);
+        try {
+            foreach ($owners as $row) {
+                $parsed = OwnerTupleParser::fromRow($row, $columns);
+
+                if ($parsed->isExplicitGlobal()) {
+                    if ($processedGlobal) {
+                        continue;
+                    }
+
+                    $processedGlobal = true;
+                }
+
+                $total += (int) OwnerContext::withOwner($parsed->toOwnerModel(), $callback);
+            }
+        } finally {
+            if ($includeGlobal) {
+                config()->set('affiliates.owner.include_global', true);
+            }
         }
 
         return $total;
-    }
-
-    private function resolveOwnerFromRow(object $row): ?Model
-    {
-        $ownerType = $row->owner_type ?? null;
-        $ownerId = $row->owner_id ?? null;
-
-        return OwnerContext::fromTypeAndId(
-            is_string($ownerType) ? $ownerType : null,
-            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
-        );
     }
 }
