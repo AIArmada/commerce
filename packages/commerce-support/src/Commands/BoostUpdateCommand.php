@@ -238,6 +238,4 @@ final class BoostUpdateCommand extends Command
 
         return $testCount >= 6;
     }
-
 }
-

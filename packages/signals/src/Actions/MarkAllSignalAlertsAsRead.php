@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 final class MarkAllSignalAlertsAsRead
 {
     /**
-     * @param Collection<int, SignalAlertLog> $alertLogs
+     * @param  Collection<int, SignalAlertLog>  $alertLogs
      */
     public function __invoke(Collection $alertLogs): void
     {

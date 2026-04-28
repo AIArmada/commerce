@@ -7,7 +7,7 @@ namespace AIArmada\Cart\Actions;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 
 final class MigrateGuestCartToUserAction
@@ -125,7 +125,7 @@ final class MigrateGuestCartToUserAction
                 'conflicts' => collect(),
                 'message' => $success ? 'Cart migration completed successfully' : 'No items to migrate',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return (object) [
                 'success' => false,
                 'itemsMerged' => 0,
