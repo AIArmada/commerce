@@ -60,6 +60,7 @@ final class ApplyConditionToCartAction
      * Apply a custom condition to a cart
      *
      * @param  array<string, mixed>  $data
+     *
      * @throws Exception
      */
     public function applyCustom(Cart $cart, array $data): CartCondition

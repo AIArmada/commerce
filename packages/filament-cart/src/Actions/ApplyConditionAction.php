@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
-use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\CommerceSupport\Support\OwnerContext;
