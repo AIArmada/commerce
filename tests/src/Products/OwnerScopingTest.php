@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
