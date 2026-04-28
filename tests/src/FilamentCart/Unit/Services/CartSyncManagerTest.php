@@ -60,7 +60,8 @@ describe('CartSyncManager', function (): void {
             return $job->identifier === 'user-123'
                 && $job->instance === 'default'
                 && $job->ownerType === null
-                && $job->ownerId === null;
+                && $job->ownerId === null
+                && $job->ownerIsGlobal === true;
         });
 
         $this->synchronizer->shouldNotReceive('syncFromCart');
@@ -100,8 +101,16 @@ describe('CartSyncManager', function (): void {
     });
 
     it('deletes by identity', function (): void {
-        $this->synchronizer->shouldReceive('deleteNormalizedCart')->with('user-123', 'default')->once();
+        $this->synchronizer->shouldReceive('deleteNormalizedCart')->with('user-123', 'default', null, null)->once();
 
         $this->manager->deleteByIdentity('default', 'user-123');
+    });
+
+    it('deletes by identity with explicit owner tuple', function (): void {
+        $this->synchronizer->shouldReceive('deleteNormalizedCart')
+            ->with('user-123', 'default', 'App\\Models\\Tenant', 'tenant-1')
+            ->once();
+
+        $this->manager->deleteByIdentity('default', 'user-123', 'App\\Models\\Tenant', 'tenant-1');
     });
 });

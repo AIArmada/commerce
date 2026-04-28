@@ -55,7 +55,7 @@ final class CartResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return Cart::query()->forOwner();
+        return Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords());
     }
 
     public static function getRelations(): array

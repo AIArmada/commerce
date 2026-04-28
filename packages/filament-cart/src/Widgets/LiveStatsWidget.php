@@ -23,7 +23,7 @@ class LiveStatsWidget extends StatsOverviewWidget
         $recentCutoff = now()->subMinutes(30);
         $highValueThreshold = (int) config('filament-cart.analytics.high_value_threshold_minor', 10000);
 
-        $base = Cart::query()->forOwner();
+        $base = Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords());
         $activeCarts = (clone $base)->where('last_activity_at', '>=', $recentCutoff)->count();
         $cartsWithItems = (clone $base)->where('items_count', '>', 0)->where('last_activity_at', '>=', $recentCutoff)->count();
         $checkoutsInProgress = (clone $base)->whereNotNull('checkout_started_at')->whereNull('checkout_abandoned_at')->count();

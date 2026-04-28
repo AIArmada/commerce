@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Support;
 
+use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Illuminate\Database\Query\Builder;
 
 final class CartOwnerScope
@@ -18,9 +20,14 @@ final class CartOwnerScope
 
     public static function applyForOwner(Builder $query, ?string $ownerType, string | int | null $ownerId): Builder
     {
+        $columns = OwnerTupleColumns::forModelClass(CartModel::class);
+        $owner = OwnerTupleParser::fromTypeAndId($ownerType, $ownerId)->toOwnerModel();
+
         return OwnerQuery::applyToQueryBuilder(
             $query,
-            OwnerContext::fromTypeAndId($ownerType, $ownerId),
+            $owner,
+            ownerTypeColumn: $columns->ownerTypeColumn,
+            ownerIdColumn: $columns->ownerIdColumn,
         );
     }
 }

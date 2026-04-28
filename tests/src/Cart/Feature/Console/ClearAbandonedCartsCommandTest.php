@@ -163,3 +163,30 @@ it('skips malformed owner tuples during all-owner dry runs instead of treating t
         ->expectsOutputToContain('Would delete 1 abandoned carts.')
         ->assertSuccessful();
 });
+
+it('aborts when malformed owner tuples are encountered in strict mode', function (): void {
+    config()->set('cart.owner.enabled', true);
+
+    $now = now();
+    DB::table('carts')->truncate();
+
+    DB::table('carts')->insert([
+        [
+            'id' => (string) Str::uuid(),
+            'identifier' => 'corrupt-cart',
+            'instance' => 'default',
+            'owner_type' => 'users',
+            'owner_id' => null,
+            'owner_scope' => 'global',
+            'items' => json_encode([], JSON_THROW_ON_ERROR),
+            'conditions' => null,
+            'metadata' => null,
+            'version' => 1,
+            'created_at' => $now->copy()->subDays(10),
+            'updated_at' => $now->copy()->subDays(10),
+        ],
+    ]);
+
+    $this->artisan('cart:clear-abandoned --days=0 --dry-run --all-owners --strict-owner-tuples')
+        ->assertFailed();
+});

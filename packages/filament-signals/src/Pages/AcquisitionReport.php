@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Pages;
 
 use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
+use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Services\AcquisitionReportService;
 use AIArmada\Signals\Services\SavedSignalReportDefinition;
@@ -25,6 +26,7 @@ use Livewire\Attributes\Url;
 final class AcquisitionReport extends Page implements HasTable
 {
     use FormatsSignalsReportValues;
+    use InteractsWithSavedSignalReportState;
     use InteractsWithSignalsDateRange;
     use InteractsWithTable;
 
@@ -59,6 +61,12 @@ final class AcquisitionReport extends Page implements HasTable
     public function mount(): void
     {
         $this->initializeDefaultDateRange();
+        $this->sanitizeSavedReportState();
+    }
+
+    protected function savedReportType(): string
+    {
+        return 'acquisition';
     }
 
     public static function getNavigationGroup(): ?string
@@ -183,6 +191,8 @@ final class AcquisitionReport extends Page implements HasTable
                     $this->savedReportId = is_string($data['saved_report_id'] ?? null)
                         ? $data['saved_report_id']
                         : '';
+
+                    $this->sanitizeSavedReportState();
                 }),
             Action::make('eventTouch')
                 ->label('Event Touch')

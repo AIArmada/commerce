@@ -73,7 +73,7 @@ final class AbandonedCartsWidget extends BaseWidget
      */
     protected function getTableQuery(): Builder
     {
-        return Cart::query()->forOwner()
+        return Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
             ->whereNotNull('checkout_abandoned_at')
             ->where('checkout_abandoned_at', '>=', now()->subDays(7));
     }

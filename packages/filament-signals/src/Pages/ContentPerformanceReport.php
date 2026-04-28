@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Pages;
 
 use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
+use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Services\ContentPerformanceReportService;
@@ -23,6 +24,7 @@ use Livewire\Attributes\Url;
 final class ContentPerformanceReport extends Page implements HasTable
 {
     use FormatsSignalsReportValues;
+    use InteractsWithSavedSignalReportState;
     use InteractsWithSignalsDateRange;
     use InteractsWithTable;
 
@@ -54,6 +56,12 @@ final class ContentPerformanceReport extends Page implements HasTable
     public function mount(): void
     {
         $this->initializeDefaultDateRange();
+        $this->sanitizeSavedReportState();
+    }
+
+    protected function savedReportType(): string
+    {
+        return 'content_performance';
     }
 
     public static function getNavigationGroup(): ?string
@@ -158,6 +166,7 @@ final class ContentPerformanceReport extends Page implements HasTable
                 ])
                 ->action(function (array $data): void {
                     $this->savedReportId = (string) ($data['savedReportId'] ?? '');
+                    $this->sanitizeSavedReportState();
                 }),
         ];
     }
