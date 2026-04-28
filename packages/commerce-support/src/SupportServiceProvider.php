@@ -6,12 +6,10 @@ namespace AIArmada\CommerceSupport;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingEngine;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
-use Laravel\Octane\Events\RequestReceived;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -49,14 +47,6 @@ final class SupportServiceProvider extends PackageServiceProvider
     {
         $this->validateMorphKeyType();
         $this->ensureOwnerResolverIsConfiguredWhenOwnerModeEnabled();
-
-        // Commerce Support - Octane Compatibility
-        // Ensure static state is cleared between requests
-        if (class_exists(RequestReceived::class)) {
-            $this->app['events']->listen(RequestReceived::class, function (): void {
-                OwnerContext::clearOverride();
-            });
-        }
     }
 
     private function validateMorphKeyType(): void

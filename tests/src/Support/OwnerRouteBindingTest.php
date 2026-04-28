@@ -21,10 +21,6 @@ beforeEach(function (): void {
     });
 });
 
-afterEach(function (): void {
-    OwnerContext::clearOverride();
-});
-
 it('resolves route-bound models inside the current owner scope', function (): void {
     $ownerA = User::query()->create([
         'name' => 'Owner A',
@@ -46,22 +42,18 @@ it('resolves route-bound models inside the current owner scope', function (): vo
         'label' => 'global',
     ]));
 
-    OwnerContext::override($ownerA);
-
-    $resolvedOwnerRecord = OwnerRouteBinding::resolve(OwnerRouteBindingFixture::class, (string) $ownerRecord->getKey());
+    $resolvedOwnerRecord = OwnerContext::withOwner($ownerA, fn (): Model => OwnerRouteBinding::resolve(OwnerRouteBindingFixture::class, (string) $ownerRecord->getKey()));
 
     expect($resolvedOwnerRecord->label)->toBe('owner-a');
 
-    expect(fn (): Model => OwnerRouteBinding::resolve(OwnerRouteBindingFixture::class, (string) $globalRecord->getKey()))
+    expect(fn (): Model => OwnerContext::withOwner($ownerA, fn (): Model => OwnerRouteBinding::resolve(OwnerRouteBindingFixture::class, (string) $globalRecord->getKey())))
         ->toThrow(AuthorizationException::class);
 
-    $resolvedGlobalRecord = OwnerRouteBinding::resolve(OwnerRouteBindingFixture::class, (string) $globalRecord->getKey(), true);
+    $resolvedGlobalRecord = OwnerContext::withOwner($ownerA, fn (): Model => OwnerRouteBinding::resolve(OwnerRouteBindingFixture::class, (string) $globalRecord->getKey(), true));
 
     expect($resolvedGlobalRecord->label)->toBe('global');
 
-    OwnerContext::override($ownerB);
-
-    expect(fn (): Model => OwnerRouteBinding::resolve(OwnerRouteBindingFixture::class, (string) $ownerRecord->getKey()))
+    expect(fn (): Model => OwnerContext::withOwner($ownerB, fn (): Model => OwnerRouteBinding::resolve(OwnerRouteBindingFixture::class, (string) $ownerRecord->getKey())))
         ->toThrow(AuthorizationException::class);
 });
 

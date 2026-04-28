@@ -11,6 +11,7 @@
 - **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
 - **Modern PHP**: 8.4+ (readonly, match, modern typing).
 - **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
+- **Octane-safe by default**: Avoid process-wide mutable statics/singletons for request data; use request attributes, scoped container bindings, or explicit context wrappers that always restore state.
 - **Logic**: Action Classes only. No logic in Controllers/Models.
 - **Structure**: SOLID, Repository for access, Factory for creation.
 

@@ -22,7 +22,7 @@ final class OwnerContextTeamResolver implements PermissionsTeamResolver
     public function setPermissionsTeamId($id): void
     {
         if ($id instanceof Model || $id === null) {
-            OwnerContext::override($id);
+            OwnerContext::setForRequest($id);
 
             return;
         }
@@ -35,6 +35,6 @@ final class OwnerContextTeamResolver implements PermissionsTeamResolver
 
         $owner = OwnerContext::fromTypeAndId($teamType, $id);
 
-        OwnerContext::override($owner);
+        OwnerContext::setForRequest($owner);
     }
 }

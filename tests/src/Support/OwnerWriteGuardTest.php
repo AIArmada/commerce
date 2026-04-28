@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScopeConfig;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -52,6 +53,16 @@ it('resolves only records accessible to the owner context', function (): void {
         ->toThrow(AuthorizationException::class);
 });
 
+it('throws when the model does not implement owner scoping', function (): void {
+    expect(fn () => OwnerWriteGuard::findOrFailForOwner(OwnerWriteGuardUnscopedFixture::class, '1'))
+        ->toThrow(InvalidArgumentException::class, 'does not implement owner scoping');
+});
+
+it('throws when the model has owner scoping disabled', function (): void {
+    expect(fn () => OwnerWriteGuard::findOrFailForOwner(OwnerWriteGuardDisabledFixture::class, '1'))
+        ->toThrow(InvalidArgumentException::class, 'has owner scoping disabled');
+});
+
 final class OwnerWriteGuardFixture extends Model
 {
     use HasOwner;
@@ -61,5 +72,32 @@ final class OwnerWriteGuardFixture extends Model
     public function getTable(): string
     {
         return 'owner_write_guard_fixtures';
+    }
+}
+
+/** Model with no owner scoping at all — plain Eloquent model. */
+final class OwnerWriteGuardUnscopedFixture extends Model
+{
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'owner_write_guard_fixtures';
+    }
+}
+
+/** Model that has ownerScopeConfig() but with enabled=false. */
+final class OwnerWriteGuardDisabledFixture extends Model
+{
+    protected $guarded = [];
+
+    public function getTable(): string
+    {
+        return 'owner_write_guard_fixtures';
+    }
+
+    public static function ownerScopeConfig(): OwnerScopeConfig
+    {
+        return new OwnerScopeConfig(enabled: false);
     }
 }

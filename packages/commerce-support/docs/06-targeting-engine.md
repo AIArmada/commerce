@@ -264,6 +264,8 @@ $context = new TargetingContext(
 ]
 ```
 
+`date_range` is fail-closed: malformed or missing date fields are treated as rule evaluation failures, logged by the engine, and return `false` (not eligible).
+
 #### time_window
 ```php
 [

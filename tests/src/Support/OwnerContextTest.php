@@ -37,7 +37,7 @@ it('resolves the current owner from the resolver and supports overrides', functi
 
     expect(OwnerContext::resolve()?->getKey())->toBe($ownerA->getKey());
 
-    OwnerContext::override(null);
+    OwnerContext::setForRequest(null);
 
     expect(OwnerContext::resolve())->toBeNull();
 
@@ -93,7 +93,7 @@ it('bridges spatie team resolution to the owner context', function (): void {
 
     $resolver = new OwnerContextTeamResolver;
 
-    OwnerContext::override($owner);
+    OwnerContext::setForRequest($owner);
 
     expect($resolver->getPermissionsTeamId())->toBe($owner->getKey());
 

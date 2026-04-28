@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Webhooks;
 
+use Illuminate\Support\Facades\DB;
 use Spatie\WebhookClient\Jobs\ProcessWebhookJob;
 use Spatie\WebhookClient\Models\WebhookCall;
 
@@ -42,15 +43,31 @@ abstract class CommerceWebhookProcessor extends ProcessWebhookJob
      */
     final public function handle(): void
     {
-        $payload = $this->webhookCall->payload;
-        $eventType = $this->extractEventType($payload);
+        DB::transaction(function (): void {
+            /** @var WebhookCall|null $locked */
+            $locked = WebhookCall::query()
+                ->whereKey($this->webhookCall->getKey())
+                ->lockForUpdate()
+                ->first();
 
-        $this->processEvent($eventType, $payload);
+            if (! $locked instanceof WebhookCall) {
+                return;
+            }
 
-        // Mark as processed
-        $this->webhookCall->update([
-            'processed_at' => now(),
-        ]);
+            if ($locked->getAttribute('processed_at') !== null) {
+                return;
+            }
+
+            /** @var array<string, mixed> $payload */
+            $payload = $locked->payload;
+            $eventType = $this->extractEventType($payload);
+
+            $this->processEvent($eventType, $payload);
+
+            $locked->update([
+                'processed_at' => now(),
+            ]);
+        });
     }
 
     /**

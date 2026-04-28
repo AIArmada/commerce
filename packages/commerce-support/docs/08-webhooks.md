@@ -197,11 +197,11 @@ class ProcessPaymentWebhook extends CommerceWebhookProcessor
 }
 ```
 
-The base job extracts the event type from `event_type`, `event`, or `type`, calls `processEvent()`, and marks the `WebhookCall` as processed.
+The base job extracts the event type from `event_type`, `event`, or `type`, acquires a row lock, skips already-processed rows, calls `processEvent()`, then marks the `WebhookCall` as processed. This gives safe default idempotency for duplicate webhook deliveries.
 
 ### Idempotent Processing
 
-Always check for duplicate processing:
+The base handler is already idempotent at the webhook-call level. You should still make your domain writes idempotent (for example, avoid double-marking paid orders):
 
 ```php
 class ProcessPaymentWebhook extends CommerceWebhookProcessor

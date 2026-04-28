@@ -11,6 +11,7 @@ Use this checklist to audit any package that consumes `commerce-support` primiti
 - Fail closed for security-sensitive behavior.
 - Never treat UI scoping as authorization.
 - Treat `commerce-support` as the source of truth for owner primitives.
+- Treat `owner_type` and `owner_id` as the default tenant boundary columns. Custom column names are supported by implementing `ownerScopeConfig()` on the model and returning an `OwnerScopeConfig` with `ownerTypeColumn`/`ownerIdColumn` set. All `HasOwner` helpers and the `owner()` relation must respect the configured columns.
 - Prefer small package-scoped changes and tests.
 - Document intentional cross-owner/system operations with a greppable escape hatch.
 

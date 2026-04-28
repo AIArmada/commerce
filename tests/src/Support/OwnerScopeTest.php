@@ -59,33 +59,33 @@ it('applies the owner scope and supports explicit opt-out', function (): void {
         ]);
     });
 
-    OwnerContext::override($ownerA);
+    OwnerContext::withOwner($ownerA, function (): void {
+        $scoped = OwnerScopedFixture::query()
+            ->orderBy('label')
+            ->pluck('label')
+            ->all();
 
-    $scoped = OwnerScopedFixture::query()
-        ->orderBy('label')
-        ->pluck('label')
-        ->all();
+        expect($scoped)->toBe(['owner-a']);
 
-    expect($scoped)->toBe(['owner-a']);
+        $unscoped = OwnerScopedFixture::query()
+            ->withoutOwnerScope()
+            ->orderBy('label')
+            ->pluck('label')
+            ->all();
 
-    $unscoped = OwnerScopedFixture::query()
-        ->withoutOwnerScope()
-        ->orderBy('label')
-        ->pluck('label')
-        ->all();
+        expect($unscoped)->toBe(['global', 'owner-a', 'owner-b']);
+    });
 
-    expect($unscoped)->toBe(['global', 'owner-a', 'owner-b']);
+    OwnerContext::withOwner($ownerB, function (): void {
+        $forOwner = OwnerScopedFixture::query()
+            ->withoutOwnerScope()
+            ->forOwner()
+            ->orderBy('label')
+            ->pluck('label')
+            ->all();
 
-    OwnerContext::override($ownerB);
-
-    $forOwner = OwnerScopedFixture::query()
-        ->withoutOwnerScope()
-        ->forOwner()
-        ->orderBy('label')
-        ->pluck('label')
-        ->all();
-
-    expect($forOwner)->toBe(['owner-b']);
+        expect($forOwner)->toBe(['owner-b']);
+    });
 });
 
 it('scopes query builder owner columns with optional include-global', function (): void {
@@ -340,16 +340,15 @@ it('instance helpers honour custom owner column names', function (): void {
         ->and($model->isGlobal())->toBeFalse()
         ->and($model->belongsToOwner($owner))->toBeTrue();
 
-    // removeOwner on a persisted model uses custom columns
-    OwnerContext::withOwner(null, function () use ($model): void {
-        $model->removeOwner();
-        $model->save();
-    });
+    // removeOwner on a persisted owned record must throw — strict immutability
+    expect(fn () => $model->removeOwner())
+        ->toThrow(InvalidArgumentException::class, 'Owner cannot be removed from a persisted');
 
-    $model->refresh();
-
-    expect($model->isGlobal())->toBeTrue()
-        ->and($model->hasOwner())->toBeFalse();
+    // removeOwner on an unsaved model is still allowed
+    $unsaved2 = new CustomColFixture(['label' => 'new2']);
+    $unsaved2->assignOwner($owner);
+    $unsaved2->removeOwner();
+    expect($unsaved2->isGlobal())->toBeTrue();
 
     Schema::dropIfExists('custom_col_fixtures');
 });

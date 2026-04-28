@@ -15,6 +15,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - **PHP**: Target **PHP 8.4+** only.
 - **Filament**: Use Filament v5 APIs. Filament v5 is API-compatible with Filament v4; the primary difference is Livewire (v5 uses Livewire v4, v4 uses Livewire v3). When official v5 docs are missing, Filament v4 docs/examples are acceptable.
+- **Octane compatibility**: Assume long-lived workers. Avoid request-leaking static mutable state, prefer request-scoped/container-scoped state, and ensure code is safe under Laravel Octane.
 
 ## Verification mindset
 
@@ -72,6 +73,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
 - **Modern PHP**: 8.4+ (readonly, match, modern typing).
 - **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
+- **Octane-safe by default**: Avoid process-wide mutable statics/singletons for request data; use request attributes, scoped container bindings, or explicit context wrappers that always restore state.
 - **Logic**: Action Classes only. No logic in Controllers/Models.
 - **Structure**: SOLID, Repository for access, Factory for creation.
 
@@ -215,7 +217,8 @@ These files are intentionally split by concern for easier maintenance. Read and 
 # Packages Guidelines
 
 - **Independence**: Packages must work standalone. Prefer `suggest` over hard `require` for optional integrations.
-- **Foundation**: Always check `commerce-support` for existing primitives, traits, or contracts before building custom logic or requiring external packages directly.
+- **Foundation-first**: Always check `commerce-support` for existing primitives, traits, helpers, and contracts before building custom logic or requiring external packages directly.
+- **Standardize shared capabilities**: If functionality is useful across packages (now or soon), implement it in `commerce-support` so behavior stays consistent and maintainable long term.
 - **Integration**: When related packages are installed together, auto-enable integrations via `class_exists()` checks in service providers.
 - **DTOs**: Use `spatie/laravel-data`.
 - **Deletes**: No soft deletes (`SoftDeletes`).

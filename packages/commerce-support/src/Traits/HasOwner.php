@@ -118,17 +118,26 @@ trait HasOwner // @phpstan-ignore trait.unused
             throw new InvalidArgumentException('Owner type and owner id must both be present or both be null.');
         }
 
-        if ($ownerType === null && $ownerId === null) {
-            return;
-        }
-
         if ($model->exists) {
             $originalOwnerType = $model->getOriginal($config->ownerTypeColumn);
             $originalOwnerId = $model->getOriginal($config->ownerIdColumn);
 
-            if ($originalOwnerType !== $ownerType || (string) $originalOwnerId !== (string) $ownerId) {
+            // Block demotion: persisted owned record being set to global
+            if (($originalOwnerType !== null || $originalOwnerId !== null) && $ownerType === null && $ownerId === null) {
+                throw new InvalidArgumentException(sprintf(
+                    'Owner cannot be removed from a persisted %s record. Use a privileged TransferOwnerAction instead.',
+                    $model::class,
+                ));
+            }
+
+            // Block reassignment: owned record being switched to a different owner
+            if ($ownerType !== null && ($originalOwnerType !== $ownerType || (string) $originalOwnerId !== (string) $ownerId)) {
                 throw new InvalidArgumentException('Owner columns cannot be reassigned after creation.');
             }
+        }
+
+        if ($ownerType === null && $ownerId === null) {
+            return;
         }
 
         static::assertOwnerMatchesCurrentContext($model, $config, $operation);
@@ -295,10 +304,20 @@ trait HasOwner // @phpstan-ignore trait.unused
 
     /**
      * Remove the owner from this model (make it global).
+     *
+     * Only valid on unsaved (new) model instances. Persisted owned records
+     * are strictly immutable — use a privileged TransferOwnerAction instead.
      */
     public function removeOwner(): static
     {
         $config = static::resolveOwnerScopeConfig();
+
+        if ($this->exists && $this->hasOwner()) {
+            throw new InvalidArgumentException(sprintf(
+                'Owner cannot be removed from a persisted %s record. Use a privileged TransferOwnerAction instead.',
+                static::class,
+            ));
+        }
 
         $this->setAttribute($config->ownerTypeColumn, null);
         $this->setAttribute($config->ownerIdColumn, null);

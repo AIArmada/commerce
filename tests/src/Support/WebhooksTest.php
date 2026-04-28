@@ -67,6 +67,23 @@ it('processes commerce webhooks and marks webhook calls as processed', function 
     ])->and($webhookCall->fresh()?->processed_at)->not->toBeNull();
 });
 
+it('processes duplicate webhook deliveries only once', function (): void {
+    $webhookCall = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['event' => 'payment.completed', 'id' => 'evt_dupe'],
+        'exception' => null,
+    ]);
+
+    (new SupportWebhookProcessor($webhookCall))->handle();
+    (new SupportWebhookProcessor($webhookCall->fresh()))->handle();
+
+    expect(SupportWebhookProcessor::$processed)->toBe([
+        ['payment.completed', ['event' => 'payment.completed', 'id' => 'evt_dupe']],
+    ])->and($webhookCall->fresh()?->processed_at)->not->toBeNull();
+});
+
 it('processes all commerce webhooks by default', function (): void {
     expect((new CommerceWebhookProfile)->shouldProcess(Request::create('/webhooks/test', 'POST')))->toBeTrue();
 });

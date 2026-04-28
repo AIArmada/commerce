@@ -266,6 +266,7 @@ class AdminPanelProvider extends PanelProvider
 - Color-coded status (green/yellow/red)
 - Auto-refresh capability
 - Click to view details
+- Explicit gate authorization via `commerce-support.health.view_ability`
 
 ### Customizing the Widget
 
@@ -278,7 +279,9 @@ class CommerceHealthWidget extends Widget
 
     public static function canView(): bool
     {
-        return auth()->user()?->can('view_health_checks') ?? false;
+        $ability = config('commerce-support.health.view_ability', 'viewCommerceHealth');
+
+        return auth()->user()?->can($ability) ?? false;
     }
 
     protected function getPollingInterval(): ?string
@@ -286,6 +289,14 @@ class CommerceHealthWidget extends Widget
         return '30s'; // Auto-refresh every 30 seconds
     }
 }
+```
+
+Configure the required ability in `config/commerce-support.php`:
+
+```php
+'health' => [
+    'view_ability' => 'viewCommerceHealth',
+],
 ```
 
 ## HTTP Endpoints

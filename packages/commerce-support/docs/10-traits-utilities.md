@@ -140,20 +140,16 @@ $order->isPaymentFailed();  // bool
 $order->isRefundable();     // bool
 ```
 
-## CachesComputedValues
+## Request-Level Memoization (`once()`)
 
-Request-level memoization for expensive computations:
+Use Laravel's `once()` helper for memoization inside a single request lifecycle. This is Octane-safe and avoids long-lived static cache leakage.
 
 ```php
-use AIArmada\CommerceSupport\Traits\CachesComputedValues;
-
 class Cart extends Model
 {
-    use CachesComputedValues;
-
     public function getTotal(): int
     {
-        return $this->cacheComputedValue('total', function () {
+        return once(function (): int {
             return $this->items->sum(
                 fn ($item) => $item->quantity * $item->unit_price
             );
@@ -162,45 +158,11 @@ class Cart extends Model
 
     public function getFormattedTotal(): string
     {
-        return $this->cacheComputedValue('formatted_total', function () {
+        return once(function (): string {
             return money($this->getTotal(), $this->currency)->format();
         });
     }
 }
-```
-
-### API
-
-```php
-// Cache a value
-$value = $this->cacheComputedValue('key', fn () => expensive_computation());
-
-// Check if cached
-$this->hasComputedValue('key');
-
-// Get without recalculating
-$this->getComputedValue('key'); // null if not cached
-
-// Clear single key
-$this->forgetComputedValue('key');
-
-// Clear all cached values
-$this->clearComputedValues();
-```
-
-### When Cache Clears
-
-The cache is automatically cleared when:
-- Model is saved (`saving` event)
-- Model relationships are updated
-- `clearComputedValues()` is called explicitly
-
-```php
-$cart = Cart::find($id);
-$cart->getTotal(); // Calculated and cached
-
-$cart->addItem($product); // Cache cleared on save
-$cart->getTotal(); // Recalculated
 ```
 
 ## ValidatesConfiguration
@@ -394,10 +356,10 @@ $result = OwnerContext::withOwner($store, function () {
     return Product::all();
 });
 
-// Manual override (use carefully)
-OwnerContext::override($store);
-// ... operations ...
-OwnerContext::clearOverride();
+// Explicit global context
+OwnerContext::withOwner(null, function () {
+    return Product::globalOnly()->get();
+});
 
 // Reconstruct from database values
 $owner = OwnerContext::fromTypeAndId(

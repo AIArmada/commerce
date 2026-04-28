@@ -26,6 +26,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Defaults
+    |--------------------------------------------------------------------------
+    */
+    'currency' => [
+        'default' => env('COMMERCE_DEFAULT_CURRENCY', 'MYR'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Features
     |--------------------------------------------------------------------------
     */
@@ -35,6 +44,11 @@ return [
 
         // Class implementing OwnerResolverInterface
         'resolver' => env('COMMERCE_OWNER_RESOLVER', NullOwnerResolver::class),
+    ],
+
+    'health' => [
+        // Gate ability required to view CommerceHealthWidget
+        'view_ability' => 'viewCommerceHealth',
     ],
 ];
 ```
@@ -90,12 +104,33 @@ The class responsible for resolving the current tenant/owner context.
 ],
 ```
 
+### Health Settings
+
+#### `view_ability`
+
+Gate ability required by `CommerceHealthWidget::canView()`.
+
+**Default:** `viewCommerceHealth`
+
+```php
+'health' => [
+    'view_ability' => 'viewCommerceHealth',
+],
+```
+
+Define the ability in your application's authorization layer:
+
+```php
+Gate::define('viewCommerceHealth', fn (User $user): bool => $user->isAdmin());
+```
+
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `COMMERCE_MORPH_KEY_TYPE` | `uuid` | Polymorphic key type |
 | `COMMERCE_JSON_COLUMN_TYPE` | `json` | JSON column type (json/jsonb) |
+| `COMMERCE_DEFAULT_CURRENCY` | `MYR` | Default currency code used by `FormatsMoney` and `currency_symbol()` |
 | `COMMERCE_OWNER_ENABLED` | `false` | Fail closed unless a concrete owner resolver is configured |
 | `COMMERCE_OWNER_RESOLVER` | `NullOwnerResolver::class` | Owner resolver class |
 
