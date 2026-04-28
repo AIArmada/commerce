@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "74429924024497294680f81f45d2b40e",
+    "content-hash": "ebb11928894604e882cedb51dbd03fb2",
     "packages": [
         {
             "name": "aiarmada/affiliates",
@@ -206,14 +206,14 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/chip",
-                "reference": "f1f5a4b6aec26ba197c3c7a2c38ec38aea625066"
+                "reference": "cfbad9d492d67d21da4f39affab63f8765465617"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
                 "ext-curl": "*",
-                "illuminate/http": "^13.0",
-                "illuminate/queue": "^13.0",
-                "illuminate/validation": "^13.0"
+                "illuminate/http": "^13.6",
+                "illuminate/queue": "^13.6",
+                "illuminate/validation": "^13.6"
             },
             "type": "library",
             "extra": {
@@ -251,13 +251,13 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/commerce-support",
-                "reference": "3f4a087f128002c07a3baad8d1da4d421baf98ea"
+                "reference": "18934ae95bef2478f940938cefcf93c61449f722"
             },
             "require": {
                 "akaunting/laravel-money": "^6.0",
-                "illuminate/contracts": "^13.0",
-                "illuminate/database": "^13.0",
-                "illuminate/support": "^13.0",
+                "illuminate/contracts": "^13.6",
+                "illuminate/database": "^13.6",
+                "illuminate/support": "^13.6",
                 "lorisleiva/laravel-actions": "^2.9",
                 "nunomaduro/essentials": "^1.0",
                 "owen-it/laravel-auditing": "^14.0",
@@ -400,11 +400,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-affiliates",
-                "reference": "7ea946ff68b1c1abfaaf838ff32509464b1e6f37"
+                "reference": "32ac4898ef280e696d13480f8612d37e6a7de195"
             },
             "require": {
                 "aiarmada/affiliates": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "type": "library",
             "extra": {
@@ -440,11 +440,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-authz",
-                "reference": "bdf7bce821ba95b63f8e9dd253a1d6959d880c1b"
+                "reference": "42fbc1834310909bec6de1898a5afc28ec5fe45a"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
-                "filament/filament": "^5.0",
+                "filament/filament": "^5.6",
                 "spatie/laravel-permission": "^7.2"
             },
             "type": "library",
@@ -484,11 +484,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-cart",
-                "reference": "3ec4dda72562d2d1da75201ac79933244b048ce9"
+                "reference": "5b79cf17b07beda5fb9d1d216037ed74a9bc18df"
             },
             "require": {
                 "aiarmada/cart": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "suggest": {
                 "aiarmada/filament-signals": "Optional analytics and alert management UI for cart Signals events"
@@ -527,11 +527,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-cashier",
-                "reference": "602307a2c161deac680baf5f8b9cd4f6e41e74bd"
+                "reference": "e5df34d18fed55bffd71ad153918cfd4a969c491"
             },
             "require": {
                 "aiarmada/cashier": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "suggest": {
                 "aiarmada/cashier-chip": "Required for CHIP gateway features",
@@ -582,11 +582,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-cashier-chip",
-                "reference": "5f06597185a21d97be4130853f28f4946321b989"
+                "reference": "4cea0b9d413b506e2c941b53126d2ae0d2cdf6b2"
             },
             "require": {
                 "aiarmada/cashier-chip": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "suggest": {
                 "aiarmada/filament-chip": "Shared resources for Chip purchases",
@@ -624,11 +624,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-chip",
-                "reference": "3fd396e8c81cee072404f1311a616c7d70a4903e"
+                "reference": "2bb59bc0ba677994fa0be161a8a468c68182313b"
             },
             "require": {
                 "aiarmada/chip": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "suggest": {
                 "aiarmada/cashier-chip": "Required for the customer billing portal features"
@@ -665,11 +665,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-customers",
-                "reference": "b0272d3fb2aa8f3f276d8c3b2cda8677221e4cc4"
+                "reference": "7dab2744e00baa8430565b1a130d22f54ba1b84e"
             },
             "require": {
                 "aiarmada/customers": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "type": "library",
             "extra": {
@@ -712,11 +712,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-docs",
-                "reference": "0910e859323b009d25c66c157e79b27509a011b2"
+                "reference": "2cfc61c511467b156e0308f00e35f988dea558fb"
             },
             "require": {
                 "aiarmada/docs": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "type": "library",
             "extra": {
@@ -752,11 +752,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-inventory",
-                "reference": "9d8913c449336512bc010366c783db0c5a9204f3"
+                "reference": "80c2cecbbb2aa00a30b0f53b89e883ef8a998c92"
             },
             "require": {
                 "aiarmada/inventory": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "type": "library",
             "extra": {
@@ -790,11 +790,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-jnt",
-                "reference": "23f36963552cb398fa45dc0246cb029b1b3607fd"
+                "reference": "917f5080eb6d79814930091ed9f4a3d809643241"
             },
             "require": {
                 "aiarmada/jnt": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "type": "library",
             "extra": {
@@ -828,11 +828,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-orders",
-                "reference": "85f5115dd3ee7831b22042ffd451a61f5337ffec"
+                "reference": "5eff3c0f186c18daab4f3b235d23ad1896a26968"
             },
             "require": {
                 "aiarmada/orders": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "type": "library",
             "extra": {
@@ -874,12 +874,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-pricing",
-                "reference": "a7d9451a7da53e668a91ad47ed850ce21cf3b91c"
+                "reference": "220c167377f4b2718bcf60e4040a43b5898d0cef"
             },
             "require": {
                 "aiarmada/pricing": "self.version",
-                "filament/filament": "^5.0",
-                "filament/spatie-laravel-settings-plugin": "^5.0"
+                "filament/filament": "^5.6",
+                "filament/spatie-laravel-settings-plugin": "^5.6"
             },
             "suggest": {
                 "aiarmada/promotions": "For promotion management features"
@@ -925,13 +925,13 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-products",
-                "reference": "e4749bdbe84388fd491289d49735d08ff83c943f"
+                "reference": "d6318f76af1b71999897462bf13dce87183b9fd2"
             },
             "require": {
                 "aiarmada/products": "self.version",
-                "filament/filament": "^5.0",
-                "filament/spatie-laravel-media-library-plugin": "^5.0",
-                "filament/spatie-laravel-tags-plugin": "^5.0"
+                "filament/filament": "^5.6",
+                "filament/spatie-laravel-media-library-plugin": "^5.6",
+                "filament/spatie-laravel-tags-plugin": "^5.6"
             },
             "type": "library",
             "extra": {
@@ -973,11 +973,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-promotions",
-                "reference": "2ec60dc856fc9685bd16cfc31853353ae3875f2a"
+                "reference": "49dee7c242f1fc08a37a615abaa4c6208bc7bd69"
             },
             "require": {
                 "aiarmada/promotions": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "suggest": {
                 "aiarmada/filament-cart": "Enables deep linking from promotion usage to cart snapshots",
@@ -1017,11 +1017,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-shipping",
-                "reference": "55b26c258ef9419e37530135f975aef5dd59c6bc"
+                "reference": "5724ab8f1722520d3960c800069c214b90cd03ae"
             },
             "require": {
                 "aiarmada/shipping": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "type": "library",
             "extra": {
@@ -1055,11 +1055,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-tax",
-                "reference": "723d46f911fec7799e3cfd0420f954f4d440f8f0"
+                "reference": "2b353b54abfa2a9b737c352277829d09d99b9870"
             },
             "require": {
                 "aiarmada/tax": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "suggest": {
                 "filament/spatie-laravel-settings-plugin": "Required for the ManageTaxSettings page"
@@ -1105,11 +1105,11 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/filament-vouchers",
-                "reference": "0dd97bb99a2cafeef35b9446a54ff0d655d20aa2"
+                "reference": "0e42023c4ea3c1eb38a5c0e2caca4e382350abad"
             },
             "require": {
                 "aiarmada/vouchers": "self.version",
-                "filament/filament": "^5.0"
+                "filament/filament": "^5.6"
             },
             "suggest": {
                 "aiarmada/filament-cart": "Enables deep linking from voucher usage records to cart snapshots"
@@ -1377,12 +1377,12 @@
             "dist": {
                 "type": "path",
                 "url": "../packages/promotions",
-                "reference": "86e2ee3dd9539e93f596e6afc6e2eedaf1e22090"
+                "reference": "727776120d674ad9a321d622ed839a5f8d83456c"
             },
             "require": {
                 "aiarmada/commerce-support": "self.version",
-                "illuminate/database": "^13.0",
-                "illuminate/support": "^13.0",
+                "illuminate/database": "^13.6",
+                "illuminate/support": "^13.6",
                 "php": "^8.4",
                 "spatie/laravel-activitylog": "^5.0",
                 "spatie/laravel-data": "^4.0"
@@ -8469,16 +8469,16 @@
         },
         {
             "name": "spatie/laravel-medialibrary",
-            "version": "11.21.2",
+            "version": "11.22.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-medialibrary.git",
-                "reference": "7279da79ec065d0882da1d7b0a1bf37e6cbe37be"
+                "reference": "a80f584d93bad370ca7a0efa52c16a1a81e6e9fe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-medialibrary/zipball/7279da79ec065d0882da1d7b0a1bf37e6cbe37be",
-                "reference": "7279da79ec065d0882da1d7b0a1bf37e6cbe37be",
+                "url": "https://api.github.com/repos/spatie/laravel-medialibrary/zipball/a80f584d93bad370ca7a0efa52c16a1a81e6e9fe",
+                "reference": "a80f584d93bad370ca7a0efa52c16a1a81e6e9fe",
                 "shasum": ""
             },
             "require": {
@@ -8563,7 +8563,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-medialibrary/issues",
-                "source": "https://github.com/spatie/laravel-medialibrary/tree/11.21.2"
+                "source": "https://github.com/spatie/laravel-medialibrary/tree/11.22.0"
             },
             "funding": [
                 {
@@ -8575,7 +8575,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-04-23T08:14:11+00:00"
+            "time": "2026-04-28T09:18:56+00:00"
         },
         {
             "name": "spatie/laravel-model-states",
@@ -8901,16 +8901,16 @@
         },
         {
             "name": "spatie/laravel-settings",
-            "version": "3.7.2",
+            "version": "3.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-settings.git",
-                "reference": "3e4e9ca8b16ef327839ed5486511b91186cdbbdb"
+                "reference": "09b788ee96d205699420dedb8a6aa8c4c8af84fe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-settings/zipball/3e4e9ca8b16ef327839ed5486511b91186cdbbdb",
-                "reference": "3e4e9ca8b16ef327839ed5486511b91186cdbbdb",
+                "url": "https://api.github.com/repos/spatie/laravel-settings/zipball/09b788ee96d205699420dedb8a6aa8c4c8af84fe",
+                "reference": "09b788ee96d205699420dedb8a6aa8c4c8af84fe",
                 "shasum": ""
             },
             "require": {
@@ -8970,7 +8970,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-settings/issues",
-                "source": "https://github.com/spatie/laravel-settings/tree/3.7.2"
+                "source": "https://github.com/spatie/laravel-settings/tree/3.8.0"
             },
             "funding": [
                 {
@@ -8982,7 +8982,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-03-17T09:11:43+00:00"
+            "time": "2026-04-28T07:05:06+00:00"
         },
         {
             "name": "spatie/laravel-sluggable",
@@ -9216,16 +9216,16 @@
         },
         {
             "name": "spatie/laravel-webhook-client",
-            "version": "3.5.0",
+            "version": "3.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-webhook-client.git",
-                "reference": "b282e08fc625fab6e685b14f45c192926ce648cf"
+                "reference": "c27da1f65c72eec6cecaef7f264ec2614226bd5c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-webhook-client/zipball/b282e08fc625fab6e685b14f45c192926ce648cf",
-                "reference": "b282e08fc625fab6e685b14f45c192926ce648cf",
+                "url": "https://api.github.com/repos/spatie/laravel-webhook-client/zipball/c27da1f65c72eec6cecaef7f264ec2614226bd5c",
+                "reference": "c27da1f65c72eec6cecaef7f264ec2614226bd5c",
                 "shasum": ""
             },
             "require": {
@@ -9282,7 +9282,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-webhook-client/issues",
-                "source": "https://github.com/spatie/laravel-webhook-client/tree/3.5.0"
+                "source": "https://github.com/spatie/laravel-webhook-client/tree/3.6.0"
             },
             "funding": [
                 {
@@ -9290,7 +9290,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-02-21T14:39:13+00:00"
+            "time": "2026-04-28T07:38:31+00:00"
         },
         {
             "name": "spatie/php-attribute-reader",
@@ -9352,16 +9352,16 @@
         },
         {
             "name": "spatie/php-structure-discoverer",
-            "version": "2.4.1",
+            "version": "2.4.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/php-structure-discoverer.git",
-                "reference": "53565b3c4770c061b08e8ab755d109344e847799"
+                "reference": "10cd4e0018450d23e2bd8f8472569ad0c445c0fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/php-structure-discoverer/zipball/53565b3c4770c061b08e8ab755d109344e847799",
-                "reference": "53565b3c4770c061b08e8ab755d109344e847799",
+                "url": "https://api.github.com/repos/spatie/php-structure-discoverer/zipball/10cd4e0018450d23e2bd8f8472569ad0c445c0fc",
+                "reference": "10cd4e0018450d23e2bd8f8472569ad0c445c0fc",
                 "shasum": ""
             },
             "require": {
@@ -9419,7 +9419,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/php-structure-discoverer/issues",
-                "source": "https://github.com/spatie/php-structure-discoverer/tree/2.4.1"
+                "source": "https://github.com/spatie/php-structure-discoverer/tree/2.4.2"
             },
             "funding": [
                 {
@@ -9427,7 +9427,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-04-17T07:00:45+00:00"
+            "time": "2026-04-28T06:26:02+00:00"
         },
         {
             "name": "spatie/regex",

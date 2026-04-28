@@ -70,6 +70,7 @@ use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
 use Spatie\LaravelData\Transformers\EnumTransformer;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\PermissionServiceProvider;
+use Spatie\Sluggable\SluggableServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -146,6 +147,7 @@ abstract class TestCase extends Orchestra
             FilamentCartServiceProvider::class,
             FilamentChipServiceProvider::class,
             PermissionServiceProvider::class,
+            SluggableServiceProvider::class,
             FilamentAuthzServiceProvider::class,
             FilamentVouchersServiceProvider::class,
             AffiliatesServiceProvider::class,

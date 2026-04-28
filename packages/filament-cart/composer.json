@@ -9,7 +9,7 @@
   },
   "require": {
     "aiarmada/cart": "self.version",
-    "filament/filament": "^5.0"
+    "filament/filament": "^5.6"
   },
   "suggest": {
     "aiarmada/filament-signals": "Optional analytics and alert management UI for cart Signals events"

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentProducts\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\Products\Enums\ProductStatus;
@@ -41,32 +42,34 @@ it('scopes ProductResource query to current owner plus global', function (): voi
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $productA = Product::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A',
-        'slug' => 'a',
-        'status' => ProductStatus::Active,
-        'price' => 1000,
-    ]);
+    $productA = OwnerContext::withOwner($ownerA, static function (): Product {
+        return Product::query()->create([
+            'name' => 'A',
+            'slug' => 'a',
+            'status' => ProductStatus::Active,
+            'price' => 1000,
+        ]);
+    });
 
-    $productB = Product::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'name' => 'B',
-        'slug' => 'b',
-        'status' => ProductStatus::Active,
-        'price' => 1000,
-    ]);
+    $productB = OwnerContext::withOwner($ownerB, static function (): Product {
+        return Product::query()->create([
+            'name' => 'B',
+            'slug' => 'b',
+            'status' => ProductStatus::Active,
+            'price' => 1000,
+        ]);
+    });
 
-    $productGlobal = Product::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'name' => 'G',
-        'slug' => 'g',
-        'status' => ProductStatus::Active,
-        'price' => 1000,
-    ]);
+    $productGlobal = OwnerContext::withOwner(null, static function (): Product {
+        return Product::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'G',
+            'slug' => 'g',
+            'status' => ProductStatus::Active,
+            'price' => 1000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -90,26 +93,28 @@ it('scopes CategoryResource query to current owner plus global', function (): vo
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $catA = Category::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'CatA',
-        'slug' => 'cata',
-    ]);
+    $catA = OwnerContext::withOwner($ownerA, static function (): Category {
+        return Category::query()->create([
+            'name' => 'CatA',
+            'slug' => 'cata',
+        ]);
+    });
 
-    $catB = Category::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'name' => 'CatB',
-        'slug' => 'catb',
-    ]);
+    $catB = OwnerContext::withOwner($ownerB, static function (): Category {
+        return Category::query()->create([
+            'name' => 'CatB',
+            'slug' => 'catb',
+        ]);
+    });
 
-    $catGlobal = Category::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'name' => 'CatG',
-        'slug' => 'catg',
-    ]);
+    $catGlobal = OwnerContext::withOwner(null, static function (): Category {
+        return Category::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'CatG',
+            'slug' => 'catg',
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
