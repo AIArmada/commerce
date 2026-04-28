@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 it('configures uuid morph key type by default', function (): void {
-    $repoRoot = dirname(__DIR__, 4);
+    $repoRoot = dirname(__DIR__, 3);
 
     $configPath = $repoRoot . '/packages/commerce-support/config/commerce-support.php';
     $providerPath = $repoRoot . '/packages/commerce-support/src/SupportServiceProvider.php';

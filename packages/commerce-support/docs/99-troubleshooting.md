@@ -263,6 +263,56 @@ protected function processEvent(string $eventType, array $payload): void
 }
 ```
 
+## Isolation Primitive Issues
+
+### OwnerCache bulk cleanup does nothing
+
+**Cause:** The active cache driver does not support tags.
+
+`OwnerCache::forgetOwner()` only bulk-clears owner groups on tag-capable stores such as Redis or Memcached. On file/array/database stores it is intentionally a no-op.
+
+**Solution:**
+
+- use explicit `OwnerCache::forget($owner, $logicalKey)` when you know the keys to clear
+- or move owner-sensitive caching to a tag-capable store if owner-wide invalidation is required
+
+### Non-Eloquent owner object rejected by OwnerCache / OwnerFilesystem
+
+**Cause:** The helper received an arbitrary object instead of a model or supported owner reference.
+
+**Solution:** implement `OwnerScopeIdentifiable` on your adapter/reference object:
+
+```php
+use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
+
+final readonly class OwnerReference implements OwnerScopeIdentifiable
+{
+    public function __construct(
+        private string $ownerType,
+        private string $ownerId,
+    ) {}
+
+    public function getMorphClass(): string
+    {
+        return $this->ownerType;
+    }
+
+    public function getKey(): string
+    {
+        return $this->ownerId;
+    }
+}
+```
+
+### OwnerContextJob cannot resolve explicit owner payload
+
+**Cause:** The job payload does not expose owner data through either:
+
+- a public owner-bearing model property, or
+- public `owner_type` + `owner_id` fields
+
+**Solution:** expose one of those patterns publicly so the trait can resolve the owner before `performJob()` runs.
+
 ## Health Check Issues
 
 ### Health Checks Not Showing
