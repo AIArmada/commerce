@@ -14,7 +14,6 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     config()->set('cart.owner.enabled', true);
-    OwnerContext::clearOverride();
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
         public function resolve(): ?Model

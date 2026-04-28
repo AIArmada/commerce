@@ -175,6 +175,7 @@ Expected patterns:
 - Reconstruct owner models with `OwnerContext::fromTypeAndId()` where needed.
 - Iterate all owners with an explicit opt-out, then enter `OwnerContext::withOwner($owner, ...)` for owner-scoped work.
 - Use `OwnerContext::withOwner(null, ...)` only for intentional global records.
+- Treat `OwnerContext::setForRequest()` as HTTP-only framework integration API; do not call it from jobs/commands/other non-request surfaces.
 
 Search:
 
@@ -216,6 +217,7 @@ Audit checks:
 - `validate($targeting)` runs before storing admin-authored rules.
 - Non-empty invalid targeting does not grant eligibility.
 - Empty targeting is used only for intentional “no restrictions”.
+- Non-custom modes (`all` / `any`) use a present, non-empty `rules` array; missing/empty `rules` is invalid and fails closed.
 - Consumer docs use current operator names for each evaluator.
 - Custom evaluators implement `TargetingRuleEvaluator::validate()` and fail closed.
 
@@ -235,7 +237,8 @@ Required checks:
 - `signing_secret` is required in production.
 - The validator rejects missing signatures, invalid signatures, and empty secrets.
 - Processors extend `CommerceWebhookProcessor` and implement `processEvent(string $eventType, array $payload): void`.
-- Processing is idempotent.
+- Processing is idempotent at webhook-call level (row lock + `processed_at` guard) and provider-event level (cross-row dedupe when event IDs are present).
+- Cross-row dedupe matches strictly by event type when the payload carries one (`event_type`, `event`, or `type`); type-less rows dedupe only against other type-less rows with the same event ID. Same event ID + different type = two distinct events, both processed.
 - Owner context is resolved explicitly before tenant-owned writes.
 - Raw payloads are preserved by Spatie's `WebhookCall` model.
 
@@ -272,7 +275,8 @@ Every owner-enabled package should include tests for:
 - nested `OwnerContext::withOwner()` restoration,
 - Filament submitted-ID validation where applicable,
 - non-request owner context for jobs/commands/webhooks,
-- targeting invalid-rule fail-closed behavior if targeting is used.
+- targeting invalid-rule fail-closed behavior if targeting is used,
+- webhook cross-row dedupe: same event_id + same type deduped, same event_id + different type both processed, no event_id means row-level only.
 
 Run package-scoped tests only:
 

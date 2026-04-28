@@ -10,8 +10,6 @@ use Illuminate\Support\Str;
 
 describe('AttributeSet Model', function (): void {
     beforeEach(function (): void {
-        OwnerContext::clearOverride();
-
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
             public function resolve(): ?Model

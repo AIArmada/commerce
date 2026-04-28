@@ -12,7 +12,6 @@ beforeEach(function (): void {
     config()->set('cart.owner.enabled', true);
     config()->set('filament-cart.owner.enabled', true);
     config()->set('filament-cart.monitoring.abandonment_detection_minutes', 30);
-    OwnerContext::clearOverride();
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {

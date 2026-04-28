@@ -252,9 +252,17 @@ class TargetingEngine implements TargetingEngineInterface
                 $errors = array_merge($errors, $this->validateExpression($targeting['expression']));
             }
         } else {
-            $rules = $targeting['rules'] ?? [];
+            if (! array_key_exists('rules', $targeting)) {
+                $errors[] = 'Non-custom targeting requires a non-empty rules array';
+
+                return $errors;
+            }
+
+            $rules = $targeting['rules'];
             if (! is_array($rules)) {
                 $errors[] = 'Rules must be an array';
+            } elseif ($rules === []) {
+                $errors[] = 'Non-custom targeting requires at least one rule';
             } else {
                 foreach ($rules as $i => $rule) {
                     if (! is_array($rule)) {

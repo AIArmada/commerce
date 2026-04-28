@@ -162,7 +162,6 @@ it('integration: registers database storage', function (): void {
 
 it('integration: fails fast when cart storage is resolved without an owner in owner mode', function (): void {
     config()->set('cart.owner.enabled', true);
-    OwnerContext::clearOverride();
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {
@@ -181,7 +180,6 @@ it('integration: fails fast when cart storage is resolved without an owner in ow
 
 it('integration: allows explicit global cart storage resolution in owner mode', function (): void {
     config()->set('cart.owner.enabled', true);
-    OwnerContext::clearOverride();
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class implements OwnerResolverInterface
     {

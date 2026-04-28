@@ -84,6 +84,112 @@ it('processes duplicate webhook deliveries only once', function (): void {
     ])->and($webhookCall->fresh()?->processed_at)->not->toBeNull();
 });
 
+it('deduplicates processed provider events across separate webhook rows', function (): void {
+    $first = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['event' => 'payment.completed', 'id' => 'evt_provider_1'],
+        'exception' => null,
+    ]);
+
+    $second = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['event' => 'payment.completed', 'id' => 'evt_provider_1'],
+        'exception' => null,
+    ]);
+
+    (new SupportWebhookProcessor($first))->handle();
+    (new SupportWebhookProcessor($second))->handle();
+
+    expect(SupportWebhookProcessor::$processed)->toBe([
+        ['payment.completed', ['event' => 'payment.completed', 'id' => 'evt_provider_1']],
+    ])->and($first->fresh()?->processed_at)->not->toBeNull()
+        ->and($second->fresh()?->processed_at)->not->toBeNull();
+});
+
+it('does not deduplicate rows that share an event_id but have different event types', function (): void {
+    $first = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['event' => 'payment.completed', 'id' => 'evt_shared_id'],
+        'exception' => null,
+    ]);
+
+    $second = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['event' => 'payment.refunded', 'id' => 'evt_shared_id'],
+        'exception' => null,
+    ]);
+
+    (new SupportWebhookProcessor($first))->handle();
+    (new SupportWebhookProcessor($second))->handle();
+
+    // Both must be processed: same ID but different event types are distinct events.
+    expect(SupportWebhookProcessor::$processed)->toBe([
+        ['payment.completed', ['event' => 'payment.completed', 'id' => 'evt_shared_id']],
+        ['payment.refunded', ['event' => 'payment.refunded', 'id' => 'evt_shared_id']],
+    ])->and($first->fresh()?->processed_at)->not->toBeNull()
+        ->and($second->fresh()?->processed_at)->not->toBeNull();
+});
+
+it('deduplicates type-less rows with a shared event_id', function (): void {
+    $first = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['id' => 'evt_typeless'],
+        'exception' => null,
+    ]);
+
+    $second = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['id' => 'evt_typeless'],
+        'exception' => null,
+    ]);
+
+    (new SupportWebhookProcessor($first))->handle();
+    (new SupportWebhookProcessor($second))->handle();
+
+    // Both lack any event type: treated as the same typeless event, so only processed once.
+    expect(SupportWebhookProcessor::$processed)->toHaveCount(1)
+        ->and($first->fresh()?->processed_at)->not->toBeNull()
+        ->and($second->fresh()?->processed_at)->not->toBeNull();
+});
+
+it('does not cross-row deduplicate when no event_id is present', function (): void {
+    $first = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['event' => 'payment.completed'],
+        'exception' => null,
+    ]);
+
+    $second = WebhookCall::query()->create([
+        'name' => 'support-test',
+        'url' => 'https://example.test/webhooks/support-test',
+        'headers' => [],
+        'payload' => ['event' => 'payment.completed'],
+        'exception' => null,
+    ]);
+
+    (new SupportWebhookProcessor($first))->handle();
+    (new SupportWebhookProcessor($second))->handle();
+
+    // Without an event_id, cross-row dedupe cannot run; both rows are processed independently.
+    expect(SupportWebhookProcessor::$processed)->toHaveCount(2)
+        ->and($first->fresh()?->processed_at)->not->toBeNull()
+        ->and($second->fresh()?->processed_at)->not->toBeNull();
+});
+
 it('processes all commerce webhooks by default', function (): void {
     expect((new CommerceWebhookProfile)->shouldProcess(Request::create('/webhooks/test', 'POST')))->toBeTrue();
 });

@@ -8,6 +8,10 @@ This playbook standardizes owner scoping across Commerce packages after the `com
 
 For package-by-package review, use the broader [Commerce Support Consumer Audit Standard](commerce-support-consumer-audit-standard.md). It expands this owner checklist to include targeting, webhooks, health checks, Filament actions, and non-request surfaces.
 
+Related hardening semantics to carry into consumer packages:
+- Non-custom targeting modes (`all` / `any`) require a present, non-empty `rules` array (missing/empty rules fail closed).
+- Webhook processing is idempotent at both webhook-call level (row lock + `processed_at`) and provider-event level (cross-row dedupe by event ID + normalized event type). Cross-row dedupe requires an exact event type match when the payload carries one; type-less payloads dedupe only against other type-less rows. Same event ID with different types are distinct events and must both be processed.
+
 ## Goals
 
 - Make `commerce-support` the single source of truth for owner context, scopes, route binding, write guards, and nullable-owner uniqueness helpers.
@@ -25,6 +29,7 @@ For package-by-package review, use the broader [Commerce Support Consumer Audit 
 - Missing owner context fails fast when owner mode is enabled.
 - `commerce-support.owner.enabled=true` fails closed unless `OwnerResolverInterface` resolves through a concrete resolver instead of `NullOwnerResolver`.
 - `OwnerContext::withOwner(null, ...)` is the explicit global context.
+- `OwnerContext::setForRequest()` is HTTP-only and reserved for framework integrations (middleware/team resolvers); non-HTTP surfaces must use `OwnerContext::withOwner(...)`.
 - Global rows visible from tenant contexts are not mutable unless the call site enters explicit global context.
 
 ## Standard config shape

@@ -85,8 +85,6 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
     $migration = require __DIR__ . '/../../../../packages/docs/database/migrations/2000_06_01_000006_ensure_owner_columns_on_docs_related_tables.php';
     $migration->up();
 
-    OwnerContext::clearOverride();
-
     $ownerA = User::create([
         'name' => 'Owner A',
         'email' => 'owner-a@example.com',
@@ -147,6 +145,4 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
         expect($revenueData['datasets'][0]['data'])->toHaveCount(30);
         expect((float) end($revenueData['datasets'][0]['data']))->toBe(100.0);
     });
-
-    OwnerContext::clearOverride();
 });

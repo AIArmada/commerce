@@ -112,3 +112,26 @@ it('fails closed and does not throw for malformed date_range rules', function ()
     expect($engine->validate($targeting))->toBeEmpty()
         ->and($engine->evaluate($targeting, new TargetingContext(null)))->toBeFalse();
 });
+
+it('fails validation when non-custom mode omits rules', function (): void {
+    $engine = new TargetingEngine;
+
+    $targeting = [
+        'mode' => 'all',
+    ];
+
+    expect($engine->validate($targeting))->toContain('Non-custom targeting requires a non-empty rules array')
+        ->and($engine->evaluate($targeting, new TargetingContext(null)))->toBeFalse();
+});
+
+it('fails validation when non-custom mode provides empty rules', function (): void {
+    $engine = new TargetingEngine;
+
+    $targeting = [
+        'mode' => 'any',
+        'rules' => [],
+    ];
+
+    expect($engine->validate($targeting))->toContain('Non-custom targeting requires at least one rule')
+        ->and($engine->evaluate($targeting, new TargetingContext(null)))->toBeFalse();
+});

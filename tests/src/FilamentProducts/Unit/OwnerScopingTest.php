@@ -29,8 +29,6 @@ beforeEach(function (): void {
     config()->set('products.features.owner.enabled', true);
     config()->set('products.features.owner.include_global', true);
 
-    OwnerContext::clearOverride();
-
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
         public function resolve(): ?Model

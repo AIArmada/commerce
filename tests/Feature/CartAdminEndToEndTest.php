@@ -397,14 +397,13 @@ describe('Cart Conditions End-to-End', function (): void {
         ]);
 
         // Set owner context to userA
-        OwnerContext::override($userA);
+        OwnerContext::withOwner($userA, function () use ($conditionA, $conditionB): void {
+            Livewire::test(CartConditionResource\Pages\ListCartConditions::class)
+                ->assertSuccessful()
+                ->assertCanSeeTableRecords([$conditionA])
+                ->assertCanNotSeeTableRecords([$conditionB]);
+        });
 
-        $component = Livewire::test(CartConditionResource\Pages\ListCartConditions::class)
-            ->assertSuccessful()
-            ->assertCanSeeTableRecords([$conditionA])
-            ->assertCanNotSeeTableRecords([$conditionB]);
-
-        OwnerContext::clearOverride();
         config(['filament-cart.owner.enabled' => false]);
     });
 });

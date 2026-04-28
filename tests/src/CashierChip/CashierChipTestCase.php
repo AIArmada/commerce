@@ -35,8 +35,6 @@ abstract class CashierChipTestCase extends Orchestra
     {
         parent::setUp();
 
-        OwnerContext::clearOverride();
-
         Cashier::useCustomerModel(User::class);
         Cashier::useSubscriptionModel(Subscription::class);
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);
@@ -57,8 +55,6 @@ abstract class CashierChipTestCase extends Orchestra
     {
         // Reset and disable fake after each test
         Cashier::unfake();
-
-        OwnerContext::clearOverride();
 
         parent::tearDown();
     }

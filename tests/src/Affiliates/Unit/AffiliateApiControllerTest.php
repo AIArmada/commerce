@@ -14,8 +14,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Request;
 
 beforeEach(function (): void {
-    OwnerContext::clearOverride();
-
     $this->affiliate = Affiliate::create([
         'code' => 'API-TEST-' . uniqid(),
         'name' => 'API Test Affiliate',

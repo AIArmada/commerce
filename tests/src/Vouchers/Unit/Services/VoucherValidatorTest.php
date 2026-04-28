@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Session;
 
 describe('VoucherValidator', function (): void {
     beforeEach(function (): void {
-        OwnerContext::clearOverride();
         app()->forgetInstance(OwnerResolverInterface::class);
     });
 
