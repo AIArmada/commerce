@@ -143,4 +143,5 @@ final class SupportServiceProvider extends PackageServiceProvider
             return new TargetingEngine;
         });
     }
+
 }
