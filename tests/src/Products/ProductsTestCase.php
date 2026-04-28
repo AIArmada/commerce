@@ -17,6 +17,10 @@ use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Sluggable\Actions\BuildSelfHealingRouteKeyAction;
+use Spatie\Sluggable\Actions\ExtractIdentifierFromSelfHealingRouteKeyAction;
+use Spatie\Sluggable\Actions\GenerateSlugAction;
+use Spatie\Sluggable\SluggableServiceProvider;
 
 abstract class ProductsTestCase extends Orchestra
 {
@@ -106,6 +110,11 @@ abstract class ProductsTestCase extends Orchestra
 
         $app['config']->set('media-library.media_model', Media::class);
         $app['config']->set('media-library.disk_name', 'public');
+        $app['config']->set('sluggable.actions', [
+            'generate_slug' => GenerateSlugAction::class,
+            'build_self_healing_route_key' => BuildSelfHealingRouteKeyAction::class,
+            'extract_identifier_from_self_healing_route_key' => ExtractIdentifierFromSelfHealingRouteKeyAction::class,
+        ]);
 
         $app['config']->set('products.features.owner.enabled', true);
         $app['config']->set('products.features.owner.include_global', false);
@@ -133,6 +142,7 @@ abstract class ProductsTestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
+            SluggableServiceProvider::class,
             CommerceSupportServiceProvider::class,
             ProductsServiceProvider::class,
         ];
