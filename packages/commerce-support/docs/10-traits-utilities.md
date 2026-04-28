@@ -248,17 +248,18 @@ return [
 ### How It Works
 
 ```php
-// In HasOwnerScopeConfig
-protected static function bootHasOwnerScopeConfig(): void
+// In your model
+public static function ownerScopeConfig(): OwnerScopeConfig
 {
-    $config = static::getOwnerScopeConfig();
-
-    if ($config->enabled) {
-        static::addGlobalScope(new OwnerScope(
-            includeGlobal: $config->includeGlobal
-        ));
-    }
+    return OwnerScopeConfig::fromConfig(
+        'products.owner',
+        enabledDefault: false,
+        includeGlobalDefault: false,
+    );
 }
+
+// HasOwner::bootHasOwner() reads ownerScopeConfig()
+// and applies OwnerScope automatically when enabled.
 ```
 
 ## MoneyNormalizer

@@ -22,7 +22,7 @@ describe('OwnerIdentificationMiddleware', function (): void {
         $middleware = new class($owner) extends OwnerIdentificationMiddleware {
             public function __construct(private Model $owner) {}
 
-            protected function resolveOwnerFromRequest(Request $request)
+            protected function resolveOwnerFromRequest(Request $request): ?Model
             {
                 return $this->owner;
             }
@@ -47,7 +47,7 @@ describe('OwnerIdentificationMiddleware', function (): void {
 
     it('sets null owner for global requests', function (): void {
         $middleware = new class extends OwnerIdentificationMiddleware {
-            protected function resolveOwnerFromRequest(Request $request)
+            protected function resolveOwnerFromRequest(Request $request): ?Model
             {
                 return null;
             }
@@ -75,7 +75,7 @@ describe('OwnerIdentificationMiddleware', function (): void {
         $middleware = new class($owner) extends OwnerIdentificationMiddleware {
             public function __construct(private Model $owner) {}
 
-            protected function resolveOwnerFromRequest(Request $request)
+            protected function resolveOwnerFromRequest(Request $request): ?Model
             {
                 $subdomain = explode('.', $request->getHost())[0];
 
@@ -110,7 +110,7 @@ describe('OwnerIdentificationMiddleware', function (): void {
         $middleware = new class($owner) extends OwnerIdentificationMiddleware {
             public function __construct(private Model $owner) {}
 
-            protected function resolveOwnerFromRequest(Request $request)
+            protected function resolveOwnerFromRequest(Request $request): ?Model
             {
                 if ($request->user()) {
                     return $this->owner;
@@ -153,7 +153,7 @@ describe('OwnerIdentificationMiddleware', function (): void {
         $middleware = new class($owner1, $owner2) extends OwnerIdentificationMiddleware {
             public function __construct(private Model $owner1, private Model $owner2) {}
 
-            protected function resolveOwnerFromRequest(Request $request)
+            protected function resolveOwnerFromRequest(Request $request): ?Model
             {
                 return $request->query('owner') === '1' ? $this->owner1 : $this->owner2;
             }
