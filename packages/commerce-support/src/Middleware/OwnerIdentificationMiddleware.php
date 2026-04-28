@@ -7,7 +7,9 @@ namespace AIArmada\CommerceSupport\Middleware;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use RuntimeException;
 
 /**
@@ -53,8 +55,8 @@ abstract class OwnerIdentificationMiddleware
     /**
      * Handle the incoming request.
      *
-     * @param  Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+     * @param  Closure(Request): (Response|RedirectResponse)  $next
+     * @return Response|RedirectResponse
      */
     public function handle(Request $request, Closure $next)
     {
@@ -78,7 +80,6 @@ abstract class OwnerIdentificationMiddleware
      *
      * Return `null` for global/unauthenticated/multi-tenant contexts.
      *
-     * @return \Illuminate\Database\Eloquent\Model|null
      *
      * @throws RuntimeException if owner mode is enabled but owner cannot be resolved
      *                          and the route requires explicit owner context
