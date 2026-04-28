@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable;
+use DateInterval;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
@@ -39,9 +41,9 @@ final class OwnerCache
     /**
      * Build an owner-scoped cache key.
      *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner  The owner model or scope-identifiable object (null = global context)
+     * @param  Model|OwnerScopeIdentifiable|null  $owner  The owner model or scope-identifiable object (null = global context)
      * @param  string  $logicalKey  The application logical key (e.g., 'cart.summary')
-     * @return string  The full scoped cache key (e.g., 'owner:sha256hash:cart.summary')
+     * @return string The full scoped cache key (e.g., 'owner:sha256hash:cart.summary')
      *
      * @throws InvalidArgumentException if logicalKey is empty or contains invalid characters
      */
@@ -65,8 +67,6 @@ final class OwnerCache
      *
      * @template T
      *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $logicalKey
      * @param  T|null  $default
      * @return T|null
      */
@@ -80,13 +80,8 @@ final class OwnerCache
 
     /**
      * Store a value in the owner-scoped cache.
-     *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $logicalKey
-     * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
      */
-    public static function put(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey, mixed $value, \DateTimeInterface|\DateInterval|int|null $ttl = null): void
+    public static function put(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey, mixed $value, DateTimeInterface | DateInterval | int | null $ttl = null): void
     {
         self::repository($owner)->put(
             self::key($owner, $logicalKey),
@@ -100,13 +95,10 @@ final class OwnerCache
      *
      * @template T
      *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $logicalKey
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
      * @param  callable(): T  $callback
      * @return T
      */
-    public static function remember(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey, \DateTimeInterface|\DateInterval|int|null $ttl, callable $callback): mixed
+    public static function remember(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey, DateTimeInterface | DateInterval | int | null $ttl, callable $callback): mixed
     {
         return self::repository($owner)->remember(
             self::key($owner, $logicalKey),
@@ -117,9 +109,6 @@ final class OwnerCache
 
     /**
      * Forget an owner-scoped cache key.
-     *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
-     * @param  string  $logicalKey
      */
     public static function forget(Model | OwnerScopeIdentifiable | null $owner, string $logicalKey): bool
     {
@@ -130,10 +119,8 @@ final class OwnerCache
      * Forget all cache keys for an owner by prefix.
      *
      * Note: This uses the cache driver's tag support if available, otherwise
-    * it is a no-op for drivers that don't support tagged cache groups.
+     * it is a no-op for drivers that don't support tagged cache groups.
      * For production, ensure your cache driver (Redis, Memcached) supports tagging.
-     *
-    * @param  Model|OwnerScopeIdentifiable|null  $owner
      */
     public static function forgetOwner(Model | OwnerScopeIdentifiable | null $owner): void
     {

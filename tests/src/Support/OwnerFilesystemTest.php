@@ -13,9 +13,17 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('builds owner-scoped filesystem paths', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-123'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-123';
+            }
         };
 
         $path = OwnerFilesystem::path($owner, 'invoices/2025-01.pdf');
@@ -31,21 +39,29 @@ describe('OwnerFilesystem', function (): void {
 
     it('rejects empty relative paths', function (): void {
         expect(fn () => OwnerFilesystem::path(null, ''))
-            ->toThrow(\InvalidArgumentException::class, 'cannot be empty');
+            ->toThrow(InvalidArgumentException::class, 'cannot be empty');
     });
 
     it('rejects paths with directory traversal', function (): void {
         expect(fn () => OwnerFilesystem::path(null, '../../../etc/passwd'))
-            ->toThrow(\InvalidArgumentException::class, 'invalid traversal');
+            ->toThrow(InvalidArgumentException::class, 'invalid traversal');
 
         expect(fn () => OwnerFilesystem::path(null, '/etc/passwd'))
-            ->toThrow(\InvalidArgumentException::class, 'invalid traversal');
+            ->toThrow(InvalidArgumentException::class, 'invalid traversal');
     });
 
     it('stores files for an owner', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-put'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-put';
+            }
         };
 
         $result = OwnerFilesystem::put($owner, 'test.txt', 'Hello, Owner!');
@@ -55,9 +71,17 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('retrieves files for an owner', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-get'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-get';
+            }
         };
 
         OwnerFilesystem::put($owner, 'data.txt', 'Data content');
@@ -68,9 +92,17 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('returns default when owner file not found', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-404'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-404';
+            }
         };
 
         $result = OwnerFilesystem::get($owner, 'nonexistent.txt', 'default-content');
@@ -79,9 +111,17 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('checks if owner file exists', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-exists'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-exists';
+            }
         };
 
         OwnerFilesystem::put($owner, 'exists.txt', 'exists');
@@ -91,9 +131,17 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('deletes owner files', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-del'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-del';
+            }
         };
 
         OwnerFilesystem::put($owner, 'delete-me.txt', 'content');
@@ -107,14 +155,30 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('prevents file access across different owners', function (): void {
-        $owner1 = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-1'; }
+        $owner1 = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-1';
+            }
         };
 
-        $owner2 = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-2'; }
+        $owner2 = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-2';
+            }
         };
 
         OwnerFilesystem::put($owner1, 'secret.txt', 'owner1-data');
@@ -123,9 +187,17 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('copies files within owner scope', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-copy'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-copy';
+            }
         };
 
         OwnerFilesystem::put($owner, 'original.txt', 'original content');
@@ -136,9 +208,17 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('moves files within owner scope', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-move'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-move';
+            }
         };
 
         OwnerFilesystem::put($owner, 'source.txt', 'source content');
@@ -150,9 +230,17 @@ describe('OwnerFilesystem', function (): void {
     });
 
     it('isolates global and owner files', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-iso'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-iso';
+            }
         };
 
         OwnerFilesystem::put(null, 'shared.txt', 'global');
