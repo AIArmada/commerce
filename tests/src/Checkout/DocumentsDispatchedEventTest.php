@@ -30,7 +30,10 @@ describe('DocumentsDispatched event', function (): void {
         Bus::assertDispatched(GenerateCheckoutDocumentsJob::class, function (GenerateCheckoutDocumentsJob $job) use ($session): bool {
             return $job->orderId === $session->order_id
                 && $job->sessionId === $session->id
-                && $job->documentTypes === ['invoice'];
+                && $job->documentTypes === ['invoice']
+                && $job->ownerType === null
+                && $job->ownerId === null
+                && $job->ownerIsGlobal === true;
         });
 
         Event::assertDispatched(DocumentsDispatched::class, function (DocumentsDispatched $event) use ($session): bool {

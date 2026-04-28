@@ -52,6 +52,8 @@ class HandleBillingCancelledTest extends CashierChipTestCase
     public function test_handle_billing_cancelled_fails_closed_without_owner_context(): void
     {
         Event::fake([SubscriptionCanceled::class]);
+        config()->set('cashier-chip.features.owner.enabled', true);
+        config()->set('cashier-chip.features.owner.include_global', false);
 
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([

@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Event;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Spatie\WebhookClient\Models\WebhookCall;
+use Spatie\WebhookClient\WebhookClientServiceProvider;
 
 final class CashierChipServiceProvider extends PackageServiceProvider
 {
@@ -41,12 +43,75 @@ final class CashierChipServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->configureSpatieWebhookClient();
+        $this->registerSpatieWebhookClient();
         $this->bindInvoiceRenderer();
     }
 
     public function bootingPackage(): void
     {
         $this->registerEventListeners();
+    }
+
+    protected function configureSpatieWebhookClient(): void
+    {
+        if (! class_exists(WebhookCall::class)) {
+            return;
+        }
+
+        $configName = 'cashier-chip.webhook';
+        $configs = config('webhook-client.configs', []);
+
+        if (! is_array($configs)) {
+            $configs = [];
+        }
+
+        $configs = array_values(array_filter($configs, static function (mixed $existingConfig): bool {
+            if (! is_array($existingConfig)) {
+                return false;
+            }
+
+            $processWebhookJob = $existingConfig['process_webhook_job'] ?? null;
+
+            return is_string($processWebhookJob) && $processWebhookJob !== '';
+        }));
+
+        foreach ($configs as $existingConfig) {
+            if (is_array($existingConfig) && ($existingConfig['name'] ?? null) === $configName) {
+                return;
+            }
+        }
+
+        $configs[] = [
+            'name' => $configName,
+            'signing_secret' => '',
+            'signature_header_name' => 'x-signature',
+            'signature_validator' => Webhooks\CashierChipSpatieSignatureValidator::class,
+            'webhook_profile' => Webhooks\CashierChipWebhookProfile::class,
+            'webhook_response' => Webhooks\CashierChipWebhookResponse::class,
+            'webhook_model' => WebhookCall::class,
+            'store_headers' => [
+                'x-signature',
+            ],
+            'process_webhook_job' => Webhooks\ProcessCashierChipWebhook::class,
+        ];
+
+        config([
+            'webhook-client.configs' => $configs,
+        ]);
+    }
+
+    protected function registerSpatieWebhookClient(): void
+    {
+        if (! class_exists(WebhookClientServiceProvider::class)) {
+            return;
+        }
+
+        if (method_exists($this->app, 'getProvider') && $this->app->getProvider(WebhookClientServiceProvider::class) instanceof WebhookClientServiceProvider) {
+            return;
+        }
+
+        $this->app->register(WebhookClientServiceProvider::class);
     }
 
     /**

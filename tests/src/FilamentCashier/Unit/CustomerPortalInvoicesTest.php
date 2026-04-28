@@ -60,3 +60,40 @@ it('handles customer portal payment method failures gracefully', function (): vo
     $page->setDefaultPaymentMethod('chip', 'chip_pm_1');
     $page->deletePaymentMethod('chip', 'chip_pm_1');
 });
+
+it('fails closed for non-owned payment method ids in customer portal mutations', function (): void {
+    $user = new class extends ChipBillableUser
+    {
+        public bool $setDefaultCalled = false;
+
+        public bool $deleteCalled = false;
+
+        public function chipPaymentMethods(): \Illuminate\Support\Collection
+        {
+            return collect([
+                (object) ['id' => 'chip_pm_1', 'type' => 'card', 'last4' => '1111', 'is_default' => true],
+            ]);
+        }
+
+        public function updateDefaultChipPaymentMethod(string $paymentMethodId): void
+        {
+            $this->setDefaultCalled = true;
+        }
+
+        public function deleteChipPaymentMethod(string $paymentMethodId): void
+        {
+            $this->deleteCalled = true;
+        }
+    };
+
+    $user->forceFill(['id' => 1001, 'name' => 'Owned PM User', 'email' => 'owned-pm@example.com', 'password' => bcrypt('secret')]);
+
+    Auth::guard()->setUser($user);
+
+    $page = app(ManagePaymentMethods::class);
+    $page->setDefaultPaymentMethod('chip', 'chip_pm_not_owned');
+    $page->deletePaymentMethod('chip', 'chip_pm_not_owned');
+
+    expect($user->setDefaultCalled)->toBeFalse()
+        ->and($user->deleteCalled)->toBeFalse();
+});

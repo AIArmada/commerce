@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Listeners;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use InvalidArgumentException;
 
@@ -39,12 +40,19 @@ final readonly class RecordCommissionForOrder
             return;
         }
 
-        $owner = null;
-
         try {
-            $owner = OwnerContext::fromTypeAndId($order->owner_type, $order->owner_id);
-        } catch (InvalidArgumentException) {
-            $owner = null;
+            $owner = OwnerTupleParser::fromTypeAndId($order->owner_type, $order->owner_id)
+                ->toOwnerModel();
+        } catch (InvalidArgumentException $exception) {
+            logger()->warning('affiliates.order_commission_skipped_malformed_owner_tuple', [
+                'order_id' => $order->id,
+                'order_reference' => $reference,
+                'owner_type' => $order->owner_type,
+                'owner_id' => $order->owner_id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return;
         }
 
         OwnerContext::withOwner($owner, function () use ($cartId, $order, $reference): void {

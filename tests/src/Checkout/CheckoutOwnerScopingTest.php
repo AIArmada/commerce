@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 beforeEach(function (): void {
     config()->set('checkout.owner.enabled', true);
     config()->set('checkout.owner.include_global', false);
+    config()->set('checkout.owner.auto_assign_on_create', true);
 });
 
 it('assigns the current owner when starting checkout', function (): void {
@@ -38,4 +39,18 @@ it('prevents resuming a checkout session from another owner context', function (
         expect(fn () => app(CheckoutServiceInterface::class)->resumeCheckout($session->id))
             ->toThrow(InvalidCheckoutStateException::class);
     });
+});
+
+it('does not auto assign owner when auto assignment is disabled', function (): void {
+    config()->set('checkout.owner.auto_assign_on_create', false);
+
+    $owner = User::factory()->create();
+
+    Cart::setIdentifier('checkout-owner-auto-assign-disabled-test');
+    Cart::add('checkout-owner-auto-assign-disabled-sku', 'Owner Scoped Item', 1500, 1);
+
+    $session = OwnerContext::withOwner($owner, fn () => app(CheckoutServiceInterface::class)->startCheckout(Cart::getId()));
+
+    expect($session->owner_type)->toBeNull()
+        ->and($session->owner_id)->toBeNull();
 });

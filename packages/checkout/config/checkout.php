@@ -100,7 +100,7 @@ return [
     |
     */
     'create_order' => [
-        'confirm_payment' => env('CHECKOUT_CREATE_ORDER_CONFIRM_PAYMENT', true),
+        'confirm_payment' => true,
     ],
 
     /*
@@ -111,6 +111,7 @@ return [
     'owner' => [
         'enabled' => env('CHECKOUT_OWNER_ENABLED', false),
         'include_global' => false,
+        'auto_assign_on_create' => true,
     ],
 
     /*
@@ -162,17 +163,17 @@ return [
     'payment' => [
         'default_gateway' => env('CHECKOUT_DEFAULT_GATEWAY', 'chip'),
         'gateway_priority' => ['chip', 'cashier-chip', 'cashier'],
-        'retry_limit' => env('CHECKOUT_PAYMENT_RETRY_LIMIT', 3),
+        'retry_limit' => 3,
 
         'gateways' => [
             'cashier' => [
-                'enabled' => env('CHECKOUT_CASHIER_ENABLED', true),
+                'enabled' => true,
             ],
             'cashier-chip' => [
-                'enabled' => env('CHECKOUT_CASHIER_CHIP_ENABLED', true),
+                'enabled' => true,
             ],
             'chip' => [
-                'enabled' => env('CHECKOUT_CHIP_ENABLED', true),
+                'enabled' => true,
             ],
         ],
     ],
@@ -233,7 +234,7 @@ return [
     |          Use this for simpler setups without custom controllers.
     |
     */
-    'response_mode' => env('CHECKOUT_RESPONSE_MODE', 'redirect'),
+    'response_mode' => 'redirect',
 
     /*
     |--------------------------------------------------------------------------
@@ -247,8 +248,8 @@ return [
     |
     */
     'views' => [
-        'enabled' => env('CHECKOUT_VIEWS_ENABLED', true),
-        'layout' => env('CHECKOUT_VIEWS_LAYOUT', 'layouts.app'),
+        'enabled' => true,
+        'layout' => 'layouts.app',
         'routes' => [
             'success' => 'checkout::success',
             'failure' => 'checkout::failure',
@@ -269,7 +270,6 @@ return [
     */
     'webhooks' => [
         'verify_signature' => env('CHECKOUT_WEBHOOK_VERIFY_SIGNATURE', true),
-        'log_payloads' => env('CHECKOUT_WEBHOOK_LOG_PAYLOADS', false),
         'log_channel' => env('CHECKOUT_WEBHOOK_LOG_CHANNEL'),
     ],
 

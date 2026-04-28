@@ -22,8 +22,7 @@ return new class extends Migration
             $table->integer('min_active_downlines')->default(0);
             $table->integer('commission_rate_basis_points');
 
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
+            $table->nullableUuidMorphs('owner');
 
             $jsonType = config('affiliates.database.json_column_type', 'json');
             $table->addColumn($jsonType, 'override_rates')->nullable();
@@ -32,7 +31,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['owner_type', 'owner_id'], 'affiliate_ranks_owner_idx');
+
         });
     }
 

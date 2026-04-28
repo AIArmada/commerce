@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 it('scopes attributions to current owner and global when enabled', function (): void {
     config()->set('affiliates.owner.enabled', true);
@@ -61,14 +62,16 @@ it('scopes attributions to current owner and global when enabled', function (): 
         'owner_id' => $ownerA->getKey(),
     ]);
 
-    $ownedB = AffiliateAttribution::create([
-        'affiliate_id' => $affiliate->id,
-        'affiliate_code' => $affiliate->code,
-        'cookie_value' => 'owner-b-cookie',
-        'cart_instance' => 'default',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-    ]);
+    $ownedB = OwnerContext::withOwner($ownerB, function () use ($affiliate, $ownerB): AffiliateAttribution {
+        return AffiliateAttribution::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'cookie_value' => 'owner-b-cookie',
+            'cart_instance' => 'default',
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+        ]);
+    });
 
     $corrupt = AffiliateAttribution::create([
         'affiliate_id' => $affiliate->id,
@@ -76,8 +79,12 @@ it('scopes attributions to current owner and global when enabled', function (): 
         'cookie_value' => 'corrupt-cookie',
         'cart_instance' => 'default',
         'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => null,
+        'owner_id' => $ownerA->getKey(),
     ]);
+
+    DB::table((new AffiliateAttribution)->getTable())
+        ->where('id', $corrupt->getKey())
+        ->update(['owner_id' => null]);
 
     $ids = AffiliateAttribution::query()->forOwner(OwnerContext::CURRENT, true)->pluck('id');
 
@@ -142,17 +149,19 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'owner_id' => $ownerA->getKey(),
     ]);
 
-    $ownedB = AffiliateConversion::create([
-        'affiliate_id' => $affiliate->id,
-        'affiliate_code' => $affiliate->code,
-        'order_reference' => 'OWN-B',
-        'total_minor' => 10000,
-        'commission_minor' => 500,
-        'commission_currency' => 'USD',
-        'status' => PendingConversion::class,
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-    ]);
+    $ownedB = OwnerContext::withOwner($ownerB, function () use ($affiliate, $ownerB): AffiliateConversion {
+        return AffiliateConversion::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'order_reference' => 'OWN-B',
+            'total_minor' => 10000,
+            'commission_minor' => 500,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+        ]);
+    });
 
     $corrupt = AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
@@ -163,8 +172,12 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'commission_currency' => 'USD',
         'status' => PendingConversion::class,
         'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => null,
+        'owner_id' => $ownerA->getKey(),
     ]);
+
+    DB::table((new AffiliateConversion)->getTable())
+        ->where('id', $corrupt->getKey())
+        ->update(['owner_id' => null]);
 
     $ids = AffiliateConversion::query()->forOwner(OwnerContext::CURRENT, true)->pluck('id');
 
@@ -177,15 +190,17 @@ it('scopes conversions to current owner and global when enabled', function (): v
 it('returns strict global-only when enabled and resolved owner is null', function (): void {
     config()->set('affiliates.owner.enabled', true);
 
-    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+    $owner = AffiliatesTestOwner::create(['name' => 'Owner']);
+
+    app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
     {
+        public function __construct(private readonly Model $owner) {}
+
         public function resolve(): ?Model
         {
-            return null;
+            return $this->owner;
         }
     });
-
-    $owner = AffiliatesTestOwner::create(['name' => 'Owner']);
 
     $affiliate = Affiliate::create([
         'code' => 'AFF-NULL-OWNER',
@@ -198,14 +213,16 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         'owner_id' => $owner->getKey(),
     ]);
 
-    $globalAttribution = AffiliateAttribution::create([
-        'affiliate_id' => $affiliate->id,
-        'affiliate_code' => $affiliate->code,
-        'cookie_value' => 'global-only-attribution',
-        'cart_instance' => 'default',
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
+    $globalAttribution = OwnerContext::withOwner(null, function () use ($affiliate): AffiliateAttribution {
+        return AffiliateAttribution::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'cookie_value' => 'global-only-attribution',
+            'cart_instance' => 'default',
+            'owner_type' => null,
+            'owner_id' => null,
+        ]);
+    });
 
     AffiliateAttribution::create([
         'affiliate_id' => $affiliate->id,
@@ -222,20 +239,26 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         'cookie_value' => 'corrupt-attribution',
         'cart_instance' => 'default',
         'owner_type' => $owner->getMorphClass(),
-        'owner_id' => null,
+        'owner_id' => $owner->getKey(),
     ]);
 
-    $globalConversion = AffiliateConversion::create([
-        'affiliate_id' => $affiliate->id,
-        'affiliate_code' => $affiliate->code,
-        'order_reference' => 'GLOBAL',
-        'total_minor' => 10000,
-        'commission_minor' => 500,
-        'commission_currency' => 'USD',
-        'status' => PendingConversion::class,
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
+    DB::table((new AffiliateAttribution)->getTable())
+        ->where('id', $corruptAttribution->getKey())
+        ->update(['owner_id' => null]);
+
+    $globalConversion = OwnerContext::withOwner(null, function () use ($affiliate): AffiliateConversion {
+        return AffiliateConversion::create([
+            'affiliate_id' => $affiliate->id,
+            'affiliate_code' => $affiliate->code,
+            'order_reference' => 'GLOBAL',
+            'total_minor' => 10000,
+            'commission_minor' => 500,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'owner_type' => null,
+            'owner_id' => null,
+        ]);
+    });
 
     AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
@@ -258,11 +281,23 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         'commission_currency' => 'USD',
         'status' => PendingConversion::class,
         'owner_type' => $owner->getMorphClass(),
-        'owner_id' => null,
+        'owner_id' => $owner->getKey(),
     ]);
 
-    $attributionIds = AffiliateAttribution::query()->forOwner()->pluck('id');
-    $conversionIds = AffiliateConversion::query()->forOwner()->pluck('id');
+    DB::table((new AffiliateConversion)->getTable())
+        ->where('id', $corruptConversion->getKey())
+        ->update(['owner_id' => null]);
+
+    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    $attributionIds = OwnerContext::withOwner(null, fn () => AffiliateAttribution::query()->forOwner()->pluck('id'));
+    $conversionIds = OwnerContext::withOwner(null, fn () => AffiliateConversion::query()->forOwner()->pluck('id'));
 
     expect($attributionIds)->toContain($globalAttribution->id)
         ->and($attributionIds)->not->toContain($corruptAttribution->id)

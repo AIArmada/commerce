@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Jobs;
 
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
+use AIArmada\CommerceSupport\Support\OwnerJobContext;
+use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Docs\Contracts\DocumentServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
-final class GenerateCheckoutDocumentsJob implements ShouldQueue
+final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
+    use OwnerContextJob;
     use Queueable;
-    use SerializesModels;
 
     /**
      * @param  array<string>  $documentTypes
@@ -26,9 +28,21 @@ final class GenerateCheckoutDocumentsJob implements ShouldQueue
         public readonly string $sessionId,
         public readonly string $orderId,
         public readonly array $documentTypes,
+        public readonly ?string $ownerType = null,
+        public readonly string | int | null $ownerId = null,
+        public readonly bool $ownerIsGlobal = false,
     ) {}
 
-    public function handle(): void
+    public function ownerContext(): OwnerJobContext
+    {
+        return new OwnerJobContext(
+            ownerType: $this->ownerType,
+            ownerId: $this->ownerId,
+            ownerIsGlobal: $this->ownerIsGlobal,
+        );
+    }
+
+    protected function performJob(): void
     {
         if (! interface_exists(DocumentServiceInterface::class)) {
             return;

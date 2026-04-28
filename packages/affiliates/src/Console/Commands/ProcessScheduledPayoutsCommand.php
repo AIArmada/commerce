@@ -12,9 +12,10 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 final class ProcessScheduledPayoutsCommand extends Command
@@ -59,14 +60,16 @@ final class ProcessScheduledPayoutsCommand extends Command
             return $this->processScoped($dryRun, $affiliateId, $minAmount);
         }
 
+        $columns = OwnerTupleColumns::forModelClass(Affiliate::class);
+
         $owners = Affiliate::query()
             ->withoutOwnerScope()
-            ->select(['owner_type', 'owner_id'])
+            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
             ->distinct()
             ->get();
 
         if ($owners->isEmpty()) {
-            return $this->processScoped($dryRun, $affiliateId, $minAmount);
+            return OwnerContext::withOwner(null, fn (): array => $this->processScoped($dryRun, $affiliateId, $minAmount));
         }
 
         $totals = [
@@ -75,17 +78,38 @@ final class ProcessScheduledPayoutsCommand extends Command
             'errors' => 0,
         ];
 
-        foreach ($owners as $row) {
-            $owner = $this->resolveOwnerFromRow($row);
+        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+        if ($includeGlobal) {
+            config()->set('affiliates.owner.include_global', false);
+        }
 
-            $result = OwnerContext::withOwner(
-                $owner,
-                fn (): array => $this->processScoped($dryRun, $affiliateId, $minAmount)
-            );
+        $processedGlobal = false;
 
-            $totals['processed'] += $result['processed'];
-            $totals['skipped'] += $result['skipped'];
-            $totals['errors'] += $result['errors'];
+        try {
+            foreach ($owners as $row) {
+                $parsed = OwnerTupleParser::fromRow($row, $columns);
+
+                if ($parsed->isExplicitGlobal()) {
+                    if ($processedGlobal) {
+                        continue;
+                    }
+
+                    $processedGlobal = true;
+                }
+
+                $result = OwnerContext::withOwner(
+                    $parsed->toOwnerModel(),
+                    fn (): array => $this->processScoped($dryRun, $affiliateId, $minAmount)
+                );
+
+                $totals['processed'] += $result['processed'];
+                $totals['skipped'] += $result['skipped'];
+                $totals['errors'] += $result['errors'];
+            }
+        } finally {
+            if ($includeGlobal) {
+                config()->set('affiliates.owner.include_global', true);
+            }
         }
 
         return $totals;
@@ -148,17 +172,6 @@ final class ProcessScheduledPayoutsCommand extends Command
         if ($errors > 0) {
             $this->error("Errors: {$errors}");
         }
-    }
-
-    private function resolveOwnerFromRow(object $row): ?Model
-    {
-        $ownerType = $row->owner_type ?? null;
-        $ownerId = $row->owner_id ?? null;
-
-        return OwnerContext::fromTypeAndId(
-            is_string($ownerType) ? $ownerType : null,
-            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
-        );
     }
 
     private function processAffiliate(Affiliate $affiliate, int $minAmount, bool $dryRun): string

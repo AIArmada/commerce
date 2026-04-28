@@ -128,6 +128,10 @@ abstract class TestCase extends Orchestra
         $app['config']->set('cashier-chip.currency_locale', 'ms_MY');
         $app['config']->set('cashier-chip.webhooks.secret', 'test_webhook_secret');
         $app['config']->set('cashier-chip.webhooks.verify_signature', false);
+        $app['config']->set('cashier-chip.features.owner.enabled', false);
+        $app['config']->set('cashier-chip.features.owner.include_global', false);
+        $app['config']->set('cashier-chip.features.owner.auto_assign_on_create', true);
+        $app['config']->set('cashier-chip.features.owner.validate_billable_owner', false);
 
         // Configure filament-cashier-chip settings
         $app['config']->set('filament-cashier-chip.navigation.group', 'Billing');

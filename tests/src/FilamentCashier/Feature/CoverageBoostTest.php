@@ -149,6 +149,10 @@ function filamentCashier_callMethod(object $object, string $method, array $argum
 }
 
 it('covers the filament-cashier public surface', function (): void {
+    config()->set('cashier-chip.features.owner.enabled', true);
+    config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
+    config()->set('cashier-chip.features.owner.include_global', false);
+
     config()->set('filament-cashier.gateways.stripe', [
         'label' => 'Stripe',
         'icon' => 'heroicon-o-credit-card',

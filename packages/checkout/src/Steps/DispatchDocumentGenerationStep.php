@@ -71,6 +71,9 @@ final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
             sessionId: $session->id,
             orderId: $session->order_id,
             documentTypes: $documentsToGenerate,
+            ownerType: $session->owner_type,
+            ownerId: $session->owner_id,
+            ownerIsGlobal: $session->owner_type === null && $session->owner_id === null,
         )->onQueue($queue);
 
         event(new DocumentsDispatched(

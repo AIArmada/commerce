@@ -119,7 +119,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
             $promotionName = null;
             $pricingBreakdown = [];
 
-            $priceable = $this->resolvePriceable($item);
+            $priceable = $this->resolvePriceable($item, $session);
             if ($priceable !== null) {
                 $result = $calculator->calculate($priceable, $quantity, [
                     'customer_id' => $session->customer_id,
@@ -164,7 +164,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
     /**
      * @param  array<string, mixed>  $item
      */
-    private function resolvePriceable(array $item): ?Priceable
+    private function resolvePriceable(array $item, CheckoutSession $session): ?Priceable
     {
         $associated = $item['associated_model'] ?? null;
 
@@ -189,6 +189,21 @@ final class CalculatePricingStep extends AbstractCheckoutStep
 
         /** @var Model|null $model */
         $model = $class::query()->find((string) $id);
+
+        if ($model === null) {
+            return null;
+        }
+
+        // Defense-in-depth: when checkout owner mode is enabled, reject any model whose
+        // owner morph doesn't match the session's owner, preventing cross-tenant pricing
+        // lookups via a crafted cart snapshot's associated_model.class/id pair.
+        if (
+            config('checkout.owner.enabled', false)
+            && property_exists($model, 'owner_type')
+            && ($model->owner_type ?? null) !== ($session->owner_type ?? null)
+        ) {
+            return null;
+        }
 
         return $model instanceof Priceable ? $model : null;
     }

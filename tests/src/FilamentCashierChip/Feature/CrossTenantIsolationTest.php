@@ -7,6 +7,7 @@ use AIArmada\Chip\Models\Purchase;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use Illuminate\Database\Eloquent\Model;
@@ -44,7 +45,7 @@ it('scopes SubscriptionResource queries to the current owner', function (): void
 
     bindFilamentCashierChipOwner($ownerB);
 
-    $subscriptionB = Subscription::query()->create([
+    $subscriptionB = OwnerContext::withOwner($ownerB, fn (): Subscription => Subscription::query()->create([
         // Safe fast-path: billable == owner for strict owner validation.
         'user_id' => $ownerB->id,
         'type' => 'default',
@@ -54,7 +55,7 @@ it('scopes SubscriptionResource queries to the current owner', function (): void
         'billing_interval_count' => 1,
         'recurring_token' => 'tok_' . Str::random(32),
         'next_billing_at' => now()->addMonth(),
-    ]);
+    ]));
 
     bindFilamentCashierChipOwner($ownerA);
 
@@ -90,7 +91,7 @@ it('scopes InvoiceResource queries even if chip owner scoping is disabled', func
         'status_history' => [],
         'status' => 'paid',
     ]);
-    $purchaseA->assignOwner($ownerA)->save();
+    OwnerContext::withOwner($ownerA, fn (): bool => (bool) $purchaseA->assignOwner($ownerA)->save());
 
     $purchaseB = Purchase::query()->create([
         'id' => (string) Str::uuid(),
@@ -105,7 +106,7 @@ it('scopes InvoiceResource queries even if chip owner scoping is disabled', func
         'status_history' => [],
         'status' => 'paid',
     ]);
-    $purchaseB->assignOwner($ownerB)->save();
+    OwnerContext::withOwner($ownerB, fn (): bool => (bool) $purchaseB->assignOwner($ownerB)->save());
 
     bindFilamentCashierChipOwner($ownerA);
 
@@ -122,7 +123,9 @@ it('fails closed when owner scoping is enabled but no owner can be resolved', fu
         'email' => 'filament-cashier-chip-owner-null@example.com',
     ]);
 
-    $subscription = Subscription::query()->create([
+    bindFilamentCashierChipOwner($owner);
+
+    $subscription = OwnerContext::withOwner($owner, fn (): Subscription => Subscription::query()->create([
         // Safe fast-path: billable == owner for strict owner validation.
         'user_id' => $owner->id,
         'type' => 'default',
@@ -132,7 +135,7 @@ it('fails closed when owner scoping is enabled but no owner can be resolved', fu
         'billing_interval_count' => 1,
         'recurring_token' => 'tok_' . Str::random(32),
         'next_billing_at' => now()->addMonth(),
-    ]);
+    ]));
 
     $purchase = Purchase::query()->create([
         'id' => (string) Str::uuid(),
@@ -147,7 +150,7 @@ it('fails closed when owner scoping is enabled but no owner can be resolved', fu
         'status_history' => [],
         'status' => 'paid',
     ]);
-    $purchase->assignOwner($owner)->save();
+    OwnerContext::withOwner($owner, fn (): bool => (bool) $purchase->assignOwner($owner)->save());
 
     bindFilamentCashierChipOwner(null);
 

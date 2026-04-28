@@ -32,11 +32,11 @@ describe('Package bootstrap', function (): void {
         expect(config('chip.webhooks.store_webhooks'))->toBeTrue();
     });
 
-    it('registers the package webhook route with signature middleware', function (): void {
+    it('registers the package webhook route without signature middleware', function (): void {
         $route = Route::getRoutes()->getByName('chip.webhook');
 
         expect($route)->not->toBeNull();
         expect($route?->uri())->toBe(mb_ltrim((string) config('chip.webhooks.route'), '/'));
-        expect($route?->gatherMiddleware())->toContain(VerifyWebhookSignature::class);
+        expect($route?->gatherMiddleware())->not->toContain(VerifyWebhookSignature::class);
     });
 });

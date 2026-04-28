@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Enumerable;
 use Throwable;
 
 final class ManagePaymentMethods extends Page
@@ -104,6 +105,16 @@ final class ManagePaymentMethods extends Page
             return;
         }
 
+        if (! $this->userOwnsPaymentMethod($user, $gateway, $methodId)) {
+            Notification::make()
+                ->title(__('filament-cashier::portal.payment_methods.error'))
+                ->body(__('filament-cashier::portal.payment_methods.unauthorized'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         try {
             if ($gateway === 'stripe' && method_exists($user, 'updateDefaultPaymentMethod')) {
                 $user->updateDefaultPaymentMethod($methodId);
@@ -151,6 +162,16 @@ final class ManagePaymentMethods extends Page
             return;
         }
 
+        if (! $this->userOwnsPaymentMethod($user, $gateway, $methodId)) {
+            Notification::make()
+                ->title(__('filament-cashier::portal.payment_methods.error'))
+                ->body(__('filament-cashier::portal.payment_methods.unauthorized'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         try {
             if ($gateway === 'stripe' && method_exists($user, 'findPaymentMethod')) {
                 $method = $user->findPaymentMethod($methodId);
@@ -177,5 +198,44 @@ final class ManagePaymentMethods extends Page
                 ->danger()
                 ->send();
         }
+    }
+
+    private function userOwnsPaymentMethod(object $user, string $gateway, string $methodId): bool
+    {
+        if ($gateway === 'stripe') {
+            if (! method_exists($user, 'paymentMethods')) {
+                return false;
+            }
+
+            try {
+                /** @var Collection<int, mixed>|Enumerable<int, mixed>|array<int, mixed> $methods */
+                $methods = $user->paymentMethods();
+
+                return collect($methods)->contains(
+                    fn (mixed $method): bool => (string) data_get($method, 'id') === $methodId
+                );
+            } catch (Throwable) {
+                return false;
+            }
+        }
+
+        if ($gateway === 'chip') {
+            if (! method_exists($user, 'chipPaymentMethods')) {
+                return false;
+            }
+
+            try {
+                /** @var Collection<int, mixed>|Enumerable<int, mixed>|array<int, mixed> $methods */
+                $methods = $user->chipPaymentMethods();
+
+                return collect($methods)->contains(
+                    fn (mixed $method): bool => (string) data_get($method, 'id') === $methodId
+                );
+            } catch (Throwable) {
+                return false;
+            }
+        }
+
+        return false;
     }
 }
