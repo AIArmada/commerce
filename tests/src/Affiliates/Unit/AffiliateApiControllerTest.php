@@ -87,7 +87,7 @@ describe('AffiliateApiController', function (): void {
                 'owner_id' => $ownerA->getKey(),
             ]);
 
-            OwnerContext::override($ownerB);
+            OwnerContext::setForRequest($ownerB);
 
             $response = $this->controller->summary($affiliateA->code);
 
@@ -98,7 +98,7 @@ describe('AffiliateApiController', function (): void {
             config()->set('affiliates.owner.enabled', true);
             config()->set('affiliates.owner.include_global', false);
 
-            OwnerContext::override(null);
+            OwnerContext::setForRequest(null);
 
             $response = $this->controller->summary($this->affiliate->code);
 
@@ -203,7 +203,7 @@ describe('AffiliateApiController', function (): void {
             config()->set('affiliates.owner.enabled', true);
             config()->set('affiliates.owner.include_global', false);
 
-            OwnerContext::override(null);
+            OwnerContext::setForRequest(null);
 
             $request = Request::create('/api/affiliates/links', 'POST');
 
@@ -257,7 +257,7 @@ describe('AffiliateApiController', function (): void {
             config()->set('affiliates.owner.enabled', true);
             config()->set('affiliates.owner.include_global', false);
 
-            OwnerContext::override(null);
+            OwnerContext::setForRequest(null);
 
             $response = $this->controller->creatives($this->affiliate->code);
 

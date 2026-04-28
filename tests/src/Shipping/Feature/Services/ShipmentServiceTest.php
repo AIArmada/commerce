@@ -94,7 +94,7 @@ describe('ShipmentService', function (): void {
         };
         $owner->setAttribute('id', 'test-owner-123');
 
-        OwnerContext::override($owner);
+        OwnerContext::setForRequest($owner);
 
         $origin = new AddressData(
             name: 'Test Origin',

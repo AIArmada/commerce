@@ -290,7 +290,7 @@ describe('JntTrackingService', function (): void {
         config()->set('jnt.owner.include_global', false);
 
         // Force a null owner even if a test-bound OwnerResolverInterface exists.
-        OwnerContext::override(null);
+        OwnerContext::setForRequest(null);
 
         JntOrder::query()->create([
             'order_id' => 'ORD-NEEDS-TRACKING-1',
