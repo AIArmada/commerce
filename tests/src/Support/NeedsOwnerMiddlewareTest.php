@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Events\OwnerNotResolvedForRequestEvent;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Events\OwnerNotResolvedForRequestEvent;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Middleware\NeedsOwner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -13,10 +13,19 @@ use Illuminate\Support\Facades\Event;
 
 describe('NeedsOwner middleware', function (): void {
     it('allows the request when an owner context is resolved', function (): void {
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-allowed'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-allowed';
+            }
         };
 
         $middleware = new NeedsOwner;

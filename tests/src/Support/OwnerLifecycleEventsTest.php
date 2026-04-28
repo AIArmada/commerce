@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Events\ForgotCurrentOwnerEvent;
 use AIArmada\CommerceSupport\Events\ForgettingCurrentOwnerEvent;
+use AIArmada\CommerceSupport\Events\ForgotCurrentOwnerEvent;
 use AIArmada\CommerceSupport\Events\MadeOwnerCurrentEvent;
 use AIArmada\CommerceSupport\Events\MakingOwnerCurrentEvent;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -20,10 +20,19 @@ describe('Owner lifecycle events', function (): void {
             ForgotCurrentOwnerEvent::class,
         ]);
 
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-evt-1'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-1';
+            }
         };
 
         OwnerContext::withOwner($owner, function (): void {
@@ -48,10 +57,19 @@ describe('Owner lifecycle events', function (): void {
             ForgotCurrentOwnerEvent::class,
         ]);
 
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-evt-2'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-2';
+            }
         };
 
         $originalRequest = app('request');
@@ -79,10 +97,19 @@ describe('Owner lifecycle events', function (): void {
             ForgotCurrentOwnerEvent::class,
         ]);
 
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-evt-same-request'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-same-request';
+            }
         };
 
         $originalRequest = app('request');
@@ -111,10 +138,19 @@ describe('Owner lifecycle events', function (): void {
             ForgotCurrentOwnerEvent::class,
         ]);
 
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-evt-same-nested'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-evt-same-nested';
+            }
         };
 
         OwnerContext::withOwner($owner, function () use ($owner): void {
