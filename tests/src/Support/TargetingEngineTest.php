@@ -93,3 +93,22 @@ it('validates evaluator-backed targeting rule types not listed in the legacy enu
 
     expect($engine->validate($targeting))->toBeEmpty();
 });
+
+it('fails closed and does not throw for malformed date_range rules', function (): void {
+    $engine = new TargetingEngine;
+
+    $targeting = [
+        'mode' => 'all',
+        'rules' => [
+            [
+                'type' => 'date_range',
+                'operator' => 'between',
+                'start' => 'not-a-date',
+                'end' => 'also-not-a-date',
+            ],
+        ],
+    ];
+
+    expect($engine->validate($targeting))->toBeEmpty()
+        ->and($engine->evaluate($targeting, new TargetingContext(null)))->toBeFalse();
+});

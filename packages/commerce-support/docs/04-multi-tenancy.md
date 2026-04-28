@@ -157,12 +157,9 @@ OwnerContext::withOwner(null, function () {
         'name' => 'Global product',
     ]);
 });
-
-// Manual override (careful - persistent!)
-OwnerContext::override($owner);
-// ... operations ...
-OwnerContext::clearOverride();
 ```
+
+`OwnerContext::setForRequest()` is reserved for framework-level integrations (for example, team resolvers/middleware). Application code should prefer `OwnerContext::withOwner(...)` so state is always restored safely.
 
 ### Reconstruct Owner from Columns
 
@@ -190,6 +187,12 @@ $product = OwnerWriteGuard::findOrFailForOwner(
     includeGlobal: false
 );
 ```
+
+`OwnerWriteGuard` now fails closed for unsupported models:
+- throws when the model does not implement owner scoping
+- throws when owner scoping is explicitly disabled for that model
+
+This prevents accidental unscoped primary-key lookups through owner-safe helper APIs.
 
 ### Route Model Binding
 
@@ -234,9 +237,10 @@ $product->hasOwner();              // Has any owner
 $product->isGlobal();              // No owner (global record)
 $product->belongsToOwner($store);  // Belongs to specific owner
 
-// Modify ownership
-$product->assignOwner($store);     // Set owner
-$product->removeOwner();           // Make global
+// Modify ownership (on unsaved models only — owner columns are immutable after creation)
+$product = new Product();
+$product->assignOwner($store);     // Set owner before first save
+$product->removeOwner();           // Clear owner before first save (makes it global)
 
 // Display
 $product->owner_display_name;      // Human-readable owner name

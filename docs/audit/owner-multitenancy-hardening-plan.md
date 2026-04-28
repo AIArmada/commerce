@@ -17,7 +17,7 @@ For package-by-package review, use the broader [Commerce Support Consumer Audit 
 
 ## Core semantics
 
-- Tenant ownership uses `owner_type` and `owner_id` only.
+- Tenant ownership uses `owner_type` and `owner_id` as the default column names. Custom column names are supported by implementing `ownerScopeConfig()` on the model and returning an `OwnerScopeConfig` with `ownerTypeColumn`/`ownerIdColumn` set. All `HasOwner` helpers and the `owner()` relation respect the configured columns.
 - `owner_scope` is an internal hidden uniqueness helper, not public API and not an authorization boundary.
 - `forOwner($owner)` returns owner-only rows.
 - `forOwner($owner, includeGlobal: true)` returns owner rows plus global rows.
