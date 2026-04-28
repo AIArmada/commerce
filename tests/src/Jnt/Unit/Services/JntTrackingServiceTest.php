@@ -303,11 +303,7 @@ describe('JntTrackingService', function (): void {
 
         $service = new JntTrackingService($expressService, $statusMapper);
 
-        try {
-            expect(fn (): Collection => $service->getOrdersNeedingTrackingUpdate(limit: 10))
+        expect(fn (): Collection => $service->getOrdersNeedingTrackingUpdate(limit: 10))
                 ->toThrow(AuthorizationException::class);
-        } finally {
-            OwnerContext::clearOverride();
-        }
     });
 });

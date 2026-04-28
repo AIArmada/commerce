@@ -87,13 +87,11 @@ it('scopes the OrderResource list query to the single tenant', function (): void
 });
 
 it('fails closed when no owner is resolved for OrderResource', function (): void {
-    OwnerContext::override(null);
+    OwnerContext::withOwner(null, function (): void {
+        $badge = OrderResource::getNavigationBadge();
+        $count = OrderResource::getEloquentQuery()->count();
 
-    $badge = OrderResource::getNavigationBadge();
-    $count = OrderResource::getEloquentQuery()->count();
-
-    OwnerContext::clearOverride();
-
-    expect($badge)->toBeNull();
-    expect($count)->toBe(0);
+        expect($badge)->toBeNull();
+        expect($count)->toBe(0);
+    });
 });

@@ -26,11 +26,6 @@ beforeEach(function (): void {
     AffiliatePayout::query()->delete();
     Affiliate::query()->delete();
 
-    OwnerContext::clearOverride();
-});
-
-afterEach(function (): void {
-    OwnerContext::clearOverride();
 });
 
 it('prevents cross-tenant reads and writes on admin payout and fraud pages', function (): void {

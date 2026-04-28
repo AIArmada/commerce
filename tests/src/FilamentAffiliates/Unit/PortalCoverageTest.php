@@ -24,7 +24,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
-    OwnerContext::clearOverride();
     config(['affiliates.owner.enabled' => false]);
 
     AffiliatePayout::query()->delete();
@@ -35,7 +34,6 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
-    OwnerContext::clearOverride();
     config(['affiliates.owner.enabled' => false]);
 });
 

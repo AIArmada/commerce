@@ -129,7 +129,6 @@ describe('ShipmentService', function (): void {
         expect($shipment->owner_id)->toBe('test-owner-123');
         expect($shipment->owner_type)->toBe($owner->getMorphClass());
 
-        OwnerContext::clearOverride();
         config(['shipping.features.owner.enabled' => false]);
     });
 

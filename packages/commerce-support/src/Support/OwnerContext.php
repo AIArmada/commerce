@@ -58,18 +58,13 @@ final class OwnerContext
      */
     public static function setForRequest(?Model $owner): void
     {
-        self::writeState(['hasOverride' => true, 'override' => $owner]);
-    }
-
-    public static function clearOverride(): void
-    {
         $request = self::httpRequest();
 
-        if ($request !== null) {
-            $request->attributes->remove(self::REQUEST_KEY);
+        if (! $request instanceof Request) {
+            throw new RuntimeException('OwnerContext::setForRequest() may only be used during an active HTTP request. Use OwnerContext::withOwner() for scoped non-HTTP operations.');
         }
 
-        self::$fallback = ['hasOverride' => false, 'override' => null];
+        $request->attributes->set(self::REQUEST_KEY, ['hasOverride' => true, 'override' => $owner]);
     }
 
     public static function hasOverride(): bool

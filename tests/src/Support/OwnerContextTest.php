@@ -8,10 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
 use Illuminate\Database\Eloquent\Model;
 
-afterEach(function (): void {
-    OwnerContext::clearOverride();
-});
-
 it('resolves the current owner from the resolver and supports overrides', function (): void {
     $ownerA = User::query()->create([
         'name' => 'Owner A',
@@ -41,7 +37,7 @@ it('resolves the current owner from the resolver and supports overrides', functi
 
     expect(OwnerContext::resolve())->toBeNull();
 
-    OwnerContext::clearOverride();
+    app('request')->attributes->remove(OwnerContext::REQUEST_KEY);
 
     $result = OwnerContext::withOwner($ownerB, function () use ($ownerB): string {
         expect(OwnerContext::resolve()?->getKey())->toBe($ownerB->getKey());
@@ -97,15 +93,28 @@ it('bridges spatie team resolution to the owner context', function (): void {
 
     expect($resolver->getPermissionsTeamId())->toBe($owner->getKey());
 
-    OwnerContext::clearOverride();
+    app('request')->attributes->remove(OwnerContext::REQUEST_KEY);
 
     $resolver->setPermissionsTeamId($owner);
 
     expect(OwnerContext::resolve()?->getKey())->toBe($owner->getKey());
 
-    OwnerContext::clearOverride();
+    app('request')->attributes->remove(OwnerContext::REQUEST_KEY);
 
     $resolver->setPermissionsTeamId($owner->getKey());
 
     expect(OwnerContext::resolve()?->getKey())->toBe($owner->getKey());
+});
+
+it('throws when setForRequest is called outside an active HTTP request', function (): void {
+    $originalRequest = app('request');
+
+    app()->offsetUnset('request');
+
+    try {
+        expect(fn () => OwnerContext::setForRequest(null))
+            ->toThrow(RuntimeException::class, 'may only be used during an active HTTP request');
+    } finally {
+        app()->instance('request', $originalRequest);
+    }
 });

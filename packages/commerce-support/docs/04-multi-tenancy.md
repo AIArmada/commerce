@@ -161,6 +161,8 @@ OwnerContext::withOwner(null, function () {
 
 `OwnerContext::setForRequest()` is reserved for framework-level integrations (for example, team resolvers/middleware). Application code should prefer `OwnerContext::withOwner(...)` so state is always restored safely.
 
+`OwnerContext::setForRequest()` is HTTP-only and will throw outside an active request lifecycle. For jobs/commands/non-HTTP surfaces, always use `OwnerContext::withOwner(...)`.
+
 ### Reconstruct Owner from Columns
 
 ```php

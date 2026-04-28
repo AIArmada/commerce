@@ -197,11 +197,21 @@ class ProcessPaymentWebhook extends CommerceWebhookProcessor
 }
 ```
 
-The base job extracts the event type from `event_type`, `event`, or `type`, acquires a row lock, skips already-processed rows, calls `processEvent()`, then marks the `WebhookCall` as processed. This gives safe default idempotency for duplicate webhook deliveries.
+The base job extracts the event type from `event_type`, `event`, or `type`, acquires a row lock, skips already-processed rows, deduplicates processed provider event IDs across webhook rows when an event ID is present, calls `processEvent()`, then marks the `WebhookCall` as processed.
 
 ### Idempotent Processing
 
-The base handler is already idempotent at the webhook-call level. You should still make your domain writes idempotent (for example, avoid double-marking paid orders):
+The base handler is idempotent at two levels:
+
+**Row-level** — a `SELECT ... FOR UPDATE` lock plus `processed_at` check prevents a single row from being processed twice even under concurrent delivery.
+
+**Provider-event level** — when the payload carries an event ID (`event_id`, `eventId`, `id`, or `data.id`) the processor checks for another already-processed row with the same webhook name and event ID. The event type is matched strictly:
+
+- If the current payload has an event type field (`event_type`, `event`, or `type`), a candidate row must carry the **same type value** in at least one of those fields. A row with the same event ID but a different event type (e.g. `payment.completed` vs `payment.refunded`) is **not** considered a duplicate and will be processed independently.
+- If the current payload has **no** event type in any field, only rows that also have no event type are treated as duplicates, preventing accidental suppression when a provider starts adding type fields in a later webhook version.
+- If the payload has **no event ID**, cross-row deduplication is skipped entirely and only row-level idempotency applies.
+
+You should still make your own domain writes idempotent inside `processEvent()` (for example, avoid double-marking paid orders):
 
 ```php
 class ProcessPaymentWebhook extends CommerceWebhookProcessor

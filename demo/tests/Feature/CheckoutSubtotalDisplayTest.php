@@ -69,6 +69,4 @@ test('checkout displays pre-discount subtotal when a voucher is applied', functi
 
     expect($html)->toMatch('/<span>\s*Subtotal\s*<\/span>\s*<span>\s*RM\s*2,198\.00\s*<\/span>/');
     expect($html)->not()->toContain('voucher_LOYAL100-TEST');
-
-    OwnerContext::clearOverride();
 });

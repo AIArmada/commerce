@@ -19,12 +19,6 @@ beforeEach(function (): void {
 
     config()->set('docs.storage.disk', 'local');
     Storage::fake('local');
-
-    OwnerContext::clearOverride();
-});
-
-afterEach(function (): void {
-    OwnerContext::clearOverride();
 });
 
 it('allows same-tenant PDF downloads and blocks cross-tenant downloads', function (): void {

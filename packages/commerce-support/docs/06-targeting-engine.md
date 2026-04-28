@@ -53,6 +53,8 @@ $eligible = $engine->evaluate($targeting, $context);
 
 Empty targeting (`[]`) means “no restrictions” and returns `true`. Non-empty invalid targeting fails closed and returns `false`; validate admin-authored targeting before storing it.
 
+For non-custom modes (`all` / `any`), `rules` must be present and non-empty. Payloads like `['mode' => 'all']` or `['mode' => 'any', 'rules' => []]` are invalid and fail closed.
+
 ## Evaluation Modes
 
 ### All Mode (AND Logic)

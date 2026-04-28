@@ -19,11 +19,6 @@ beforeEach(function (): void {
 
     Voucher::query()->delete();
 
-    OwnerContext::clearOverride();
-});
-
-afterEach(function (): void {
-    OwnerContext::clearOverride();
 });
 
 it('does not leak cross-tenant voucher urls by code', function (): void {

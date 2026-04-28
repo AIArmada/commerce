@@ -28,10 +28,6 @@ beforeEach(function (): void {
     });
 });
 
-afterEach(function (): void {
-    OwnerContext::clearOverride();
-});
-
 it('applies the owner scope and supports explicit opt-out', function (): void {
     $ownerA = User::query()->create([
         'name' => 'Owner A',
@@ -165,7 +161,6 @@ it('defaults to excluding global rows for models without explicit config', funct
 
 it('fails fast when owner scope is used without an owner or explicit global context', function (): void {
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
-    OwnerContext::clearOverride();
 
     expect(fn () => OwnerScopedFixture::query()->count())
         ->toThrow(RuntimeException::class, 'requires an owner context');

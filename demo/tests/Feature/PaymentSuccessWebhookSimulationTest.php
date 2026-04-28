@@ -65,6 +65,4 @@ test('payment success simulates CHIP webhook without morph map violations', func
 
     expect($order->paid_at)->not()->toBeNull();
     expect($order->payments()->count())->toBeGreaterThan(0);
-
-    OwnerContext::clearOverride();
 });

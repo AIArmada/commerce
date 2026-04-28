@@ -133,7 +133,6 @@ describe('CreateShipment Action', function (): void {
             expect(fn () => $action->handle($data))
                 ->toThrow(AuthorizationException::class);
         } finally {
-            OwnerContext::clearOverride();
             config(['shipping.features.owner.enabled' => false]);
         }
     });

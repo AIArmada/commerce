@@ -15,8 +15,6 @@ abstract class InventoryTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        OwnerContext::clearOverride();
     }
 
     protected function getPackageProviders($app): array

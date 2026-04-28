@@ -13,10 +13,6 @@ beforeEach(function (): void {
     config()->set('checkout.owner.include_global', false);
 });
 
-afterEach(function (): void {
-    OwnerContext::clearOverride();
-});
-
 it('assigns the current owner when starting checkout', function (): void {
     $owner = User::factory()->create();
 

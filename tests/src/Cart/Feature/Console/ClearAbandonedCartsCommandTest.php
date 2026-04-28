@@ -10,7 +10,6 @@ use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     config()->set('cart.owner.enabled', false);
-    OwnerContext::clearOverride();
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
         public function resolve(): ?Model

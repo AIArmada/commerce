@@ -24,11 +24,6 @@ beforeEach(function (): void {
     Affiliate::query()->delete();
     Cart::query()->delete();
 
-    OwnerContext::clearOverride();
-});
-
-afterEach(function (): void {
-    OwnerContext::clearOverride();
 });
 
 it('does not leak cross-tenant cart urls by identifier', function (): void {
