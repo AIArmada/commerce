@@ -13,6 +13,7 @@ Use this checklist to audit any package that consumes `commerce-support` primiti
 - Treat `commerce-support` as the source of truth for owner primitives.
 - Non-Eloquent owner references passed into owner-scoped helpers must implement `AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable`; do not rely on raw duck-typing.
 - Treat `owner_type` and `owner_id` as the default tenant boundary columns. Custom column names are supported by implementing `ownerScopeConfig()` on the model and returning an `OwnerScopeConfig` with `ownerTypeColumn`/`ownerIdColumn` set. All `HasOwner` helpers and the `owner()` relation must respect the configured columns.
+- For cross-package payload contracts (events/jobs/DTOs), use snake_case owner tuple fields (`owner_type`, `owner_id`) at wire/persistence boundaries, but prefer camelCase fields (`ownerType`, `ownerId`, `ownerIsGlobal`) in PHP APIs.
 - Prefer small package-scoped changes and tests.
 - Document intentional cross-owner/system operations with a greppable escape hatch.
 
@@ -146,6 +147,22 @@ OwnerRouteBinding::bind('product', Product::class);
 
 Use `includeGlobal: true` only when global rows are explicitly readable from tenant context.
 
+## Tenant-required route audit
+
+Routes that require tenant/owner context should fail closed.
+
+Required checks:
+
+- Tenant-required route groups include `NeedsOwner` after owner-identification middleware.
+- Missing owner context dispatches `OwnerNotResolvedForRequestEvent` and aborts via `NoCurrentOwnerException` (or mapped handler).
+- Global/admin/public routes intentionally remain outside `NeedsOwner`.
+
+Search:
+
+```bash
+rg -n -- "NeedsOwner|OwnerNotResolvedForRequestEvent|NoCurrentOwnerException" packages/<pkg>/src packages/<pkg>/routes
+```
+
 ## Filament audit
 
 Filament tenancy is not sufficient. Audit resources, pages, relation managers, widgets, actions, imports, and exports.
@@ -174,6 +191,7 @@ Expected patterns:
 
 - Pass owner IDs into jobs.
 - Reconstruct owner models with `OwnerContext::fromTypeAndId()` where needed.
+- Prefer `OwnerTupleColumns` + `OwnerTupleParser` when reading owner tuples from raw rows or configurable columns.
 - Iterate all owners with an explicit opt-out, then enter `OwnerContext::withOwner($owner, ...)` for owner-scoped work.
 - Use `OwnerContext::withOwner(null, ...)` only for intentional global records.
 - Treat `OwnerContext::setForRequest()` as HTTP-only framework integration API; do not call it from jobs/commands/other non-request surfaces.
@@ -183,6 +201,23 @@ Search:
 ```bash
 rg -n -- "handle\(|schedule|ShouldQueue|Command|Export|Report|HealthCheck|Webhook" packages/<pkg>/src
 ```
+
+## Owner lifecycle event audit
+
+Owner transitions should be observable for auditing and integrations.
+
+Required checks:
+
+- Event listeners (if any) handle owner lifecycle events idempotently.
+- No listener assumes lifecycle events imply authorization.
+- Event handlers avoid mutating cross-owner state unless explicitly scoped.
+
+Lifecycle events:
+
+- `MakingOwnerCurrentEvent`
+- `MadeOwnerCurrentEvent`
+- `ForgettingCurrentOwnerEvent`
+- `ForgotCurrentOwnerEvent`
 
 ## Targeting audit
 
@@ -274,6 +309,8 @@ Every owner-enabled package should include tests for:
 - query-builder owner scoping,
 - route binding owner scoping,
 - nested `OwnerContext::withOwner()` restoration,
+- tenant-required routes fail closed with `NeedsOwner` when owner is missing,
+- owner lifecycle events dispatch on owner transition boundaries (where package listeners depend on them),
 - Filament submitted-ID validation where applicable,
 - non-request owner context for jobs/commands/webhooks,
 - targeting invalid-rule fail-closed behavior if targeting is used,
@@ -323,9 +360,9 @@ title: <Package> Commerce Support Audit
 
 ## Implementation Status: Isolation Primitives (Q3 2026)
 
-**Status update (2026-04-28):** Isolation helpers were delivered in `commerce-support` without cross-package retrofit changes.
+**Status update (2026-04-28):** Isolation helpers were delivered in `commerce-support`, and selective consumer-package retrofits are now active (notably `cart`, `filament-cart`, and owner-scoped `signals` surfaces).
 
-### Five primitives delivered (v1)
+### Foundation capabilities delivered (v1)
 
 1. **`OwnerCache`** — owner-scoped cache key builder
    - Enforces `owner:{ownerScopeKey}:{logicalKey}` pattern
@@ -338,7 +375,8 @@ title: <Package> Commerce Support Audit
     - Accepts Eloquent owners or `OwnerScopeIdentifiable` adapters
 
 3. **`OwnerContextJob` trait** — auto-enters owner context for queued jobs
-   - Requires `owner_type`/`owner_id` in job payload
+    - Supports owner-bearing model payloads or explicit typed payloads (recommended via `OwnerScopedJob` + `OwnerJobContext`)
+    - Supports explicit global execution with `ownerIsGlobal=true`
    - Fails closed if owner missing when owner mode enabled
    - Prevents queue cross-tenant leakage
 
@@ -347,14 +385,25 @@ title: <Package> Commerce Support Audit
    - Middleware identifies owner from domain/auth/header at request time
    - Resolves before any owner-scoped queries
 
-5. **Updated documentation** — 08-webhooks, 04-multi-tenancy, 10-traits-utilities
-   - Usage examples for each primitive
-   - Integration patterns for optional adoption
+5. **`NeedsOwner` middleware** — tenant-required request hardening
+    - Fails closed when owner context is missing
+    - Dispatches `OwnerNotResolvedForRequestEvent`
+    - Throws `NoCurrentOwnerException`
+
+6. **Owner lifecycle events** — transition observability hooks
+    - `MakingOwnerCurrentEvent`
+    - `MadeOwnerCurrentEvent`
+    - `ForgettingCurrentOwnerEvent`
+    - `ForgotCurrentOwnerEvent`
+
+7. **Updated documentation** — 04-multi-tenancy, 10-traits-utilities, 11-isolation-primitives
+    - Usage examples for each primitive and middleware
+    - Integration patterns for optional adoption
 
 ### What remains deferred
 
 - **Provisioning pipeline** — only needed when enabling multitenancy in packages
-- **Package retrofits** — primitives remain optional/advisory; packages adopt on their own timeline
+- **Broad package retrofits** — foundation is complete and selective adoptions are in place; full-repo convergence continues package-by-package
 
 ### Delivery sequence (completed)
 
@@ -362,9 +411,11 @@ title: <Package> Commerce Support Audit
 2. `OwnerFilesystem` (next, also isolated)
 3. `OwnerContextJob` trait (touches job lifecycle)
 4. `OwnerIdentificationMiddleware` base middleware (defines request-time hook)
-5. Documentation + comprehensive tests
+5. `NeedsOwner` middleware (fail-closed tenant-required routes)
+6. Owner lifecycle events
+7. Documentation + comprehensive tests
 
-**Delivery scope:** `commerce-support` only.
+**Delivery scope:** foundation in `commerce-support`, with downstream adoption tracked per package.
 
 ### Validation status
 
@@ -372,3 +423,12 @@ title: <Package> Commerce Support Audit
 - ✅ PHPStan level 6 is clean for `packages/commerce-support/src`
 - ✅ Documentation for primitives exists in `04-multi-tenancy.md`, `10-traits-utilities.md`, and `11-isolation-primitives.md`
 - 📌 Package consumer adoption/coverage targets are tracked separately per package rollout
+
+### Traceability updates (2026-04-28)
+
+- ✅ Commit `4b972f2e` is the reference fix for audit findings on owner-context correctness:
+    - `OwnerContextJob` static-analysis hardening (`ReflectionObject` in trait job contexts).
+    - `signals:process-alerts` and `signals:aggregate-daily` migrated from ad-hoc owner-row parsing to shared tuple helpers (`OwnerTupleColumns` + `OwnerTupleParser`), enforcing strict owner tuple semantics.
+- ✅ Evidence captured with the fix:
+    - PHPStan level 6 run on `commerce-support`, `cart`, `filament-cart`, `signals`, and `filament-signals` source trees returned no errors.
+    - `tests/src/Signals` passed in parallel.
