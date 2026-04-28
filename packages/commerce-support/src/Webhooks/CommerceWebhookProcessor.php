@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Webhooks;
 
+use AIArmada\CommerceSupport\Actions\ProcessWebhookCallAction;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Spatie\WebhookClient\Jobs\ProcessWebhookJob;
 use Spatie\WebhookClient\Models\WebhookCall;
 
@@ -44,39 +44,14 @@ abstract class CommerceWebhookProcessor extends ProcessWebhookJob
      */
     final public function handle(): void
     {
-        DB::transaction(function (): void {
-            /** @var WebhookCall|null $locked */
-            $locked = WebhookCall::query()
-                ->whereKey($this->webhookCall->getKey())
-                ->lockForUpdate()
-                ->first();
-
-            if (! $locked instanceof WebhookCall) {
-                return;
-            }
-
-            if ($locked->getAttribute('processed_at') !== null) {
-                return;
-            }
-
-            /** @var array<string, mixed> $payload */
-            $payload = $locked->payload;
-            $eventType = $this->extractEventType($payload);
-
-            if ($this->isDuplicateProcessedEvent($locked, $payload, $eventType)) {
-                $locked->update([
-                    'processed_at' => now(),
-                ]);
-
-                return;
-            }
-
-            $this->processEvent($eventType, $payload);
-
-            $locked->update([
-                'processed_at' => now(),
-            ]);
-        });
+        ProcessWebhookCallAction::run(
+            webhookCall: $this->webhookCall,
+            extractEventType: fn (array $payload): string => $this->extractEventType($payload),
+            isDuplicateProcessedEvent: fn (WebhookCall $current, array $payload, string $eventType): bool => $this->isDuplicateProcessedEvent($current, $payload, $eventType),
+            processEvent: function (string $eventType, array $payload): void {
+                $this->processEvent($eventType, $payload);
+            },
+        );
     }
 
     /**
