@@ -13,9 +13,17 @@ describe('OwnerCache', function (): void {
     });
 
     it('builds owner-scoped cache keys', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'test-owner'; }
-            public function getKey(): mixed { return '123'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'test-owner';
+            }
+
+            public function getKey(): mixed
+            {
+                return '123';
+            }
         };
 
         $key = OwnerCache::key($owner, 'cart.summary');
@@ -33,12 +41,12 @@ describe('OwnerCache', function (): void {
 
     it('rejects empty logical keys', function (): void {
         expect(fn () => OwnerCache::key(null, ''))
-            ->toThrow(\InvalidArgumentException::class, 'cannot be empty');
+            ->toThrow(InvalidArgumentException::class, 'cannot be empty');
     });
 
     it('rejects keys with colons', function (): void {
         expect(fn () => OwnerCache::key(null, 'cart:items'))
-            ->toThrow(\InvalidArgumentException::class, 'cannot contain colons');
+            ->toThrow(InvalidArgumentException::class, 'cannot contain colons');
     });
 
     it('rejects objects that are not owner-scope compatible', function (): void {
@@ -47,9 +55,17 @@ describe('OwnerCache', function (): void {
     });
 
     it('stores and retrieves owner-scoped cache values', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-123'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-123';
+            }
         };
 
         OwnerCache::put($owner, 'user.theme', 'dark', now()->addHour());
@@ -58,9 +74,17 @@ describe('OwnerCache', function (): void {
     });
 
     it('returns default when owner-scoped key not found', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-456'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-456';
+            }
         };
 
         $result = OwnerCache::get($owner, 'nonexistent', 'default-value');
@@ -69,9 +93,17 @@ describe('OwnerCache', function (): void {
     });
 
     it('remembers values with callback', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-789'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-789';
+            }
         };
 
         $callCount = 0;
@@ -94,9 +126,17 @@ describe('OwnerCache', function (): void {
     });
 
     it('forgets owner-scoped cache keys', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-del'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-del';
+            }
         };
 
         OwnerCache::put($owner, 'test.key', 'value');
@@ -109,14 +149,30 @@ describe('OwnerCache', function (): void {
     });
 
     it('prevents cache bleed between different owners', function (): void {
-        $owner1 = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-1'; }
+        $owner1 = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-1';
+            }
         };
 
-        $owner2 = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-2'; }
+        $owner2 = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-2';
+            }
         };
 
         OwnerCache::put($owner1, 'config', 'value-1');
@@ -127,9 +183,17 @@ describe('OwnerCache', function (): void {
     });
 
     it('isolates global and owner caches', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-iso'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-iso';
+            }
         };
 
         OwnerCache::put(null, 'shared', 'global-value');
@@ -140,9 +204,17 @@ describe('OwnerCache', function (): void {
     });
 
     it('forgetOwner is safe on stores without tag support', function (): void {
-        $owner = new class implements OwnerScopeIdentifiable {
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-noop'; }
+        $owner = new class implements OwnerScopeIdentifiable
+        {
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-noop';
+            }
         };
 
         OwnerCache::put($owner, 'shared', 'value');

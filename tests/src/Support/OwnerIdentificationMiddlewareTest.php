@@ -13,13 +13,23 @@ describe('OwnerIdentificationMiddleware', function (): void {
     });
 
     it('identifies owner from request and sets context', function (): void {
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-123'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-123';
+            }
         };
 
-        $middleware = new class($owner) extends OwnerIdentificationMiddleware {
+        $middleware = new class($owner) extends OwnerIdentificationMiddleware
+        {
             public function __construct(private Model $owner) {}
 
             protected function resolveOwnerFromRequest(Request $request): ?Model
@@ -46,7 +56,8 @@ describe('OwnerIdentificationMiddleware', function (): void {
     });
 
     it('sets null owner for global requests', function (): void {
-        $middleware = new class extends OwnerIdentificationMiddleware {
+        $middleware = new class extends OwnerIdentificationMiddleware
+        {
             protected function resolveOwnerFromRequest(Request $request): ?Model
             {
                 return null;
@@ -66,13 +77,23 @@ describe('OwnerIdentificationMiddleware', function (): void {
     });
 
     it('identifies owner from subdomain example', function (): void {
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'tenant-123'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'tenant-123';
+            }
         };
 
-        $middleware = new class($owner) extends OwnerIdentificationMiddleware {
+        $middleware = new class($owner) extends OwnerIdentificationMiddleware
+        {
             public function __construct(private Model $owner) {}
 
             protected function resolveOwnerFromRequest(Request $request): ?Model
@@ -101,13 +122,23 @@ describe('OwnerIdentificationMiddleware', function (): void {
     });
 
     it('identifies owner from auth context example', function (): void {
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'user'; }
-            public function getKey(): mixed { return 'user-456'; }
+
+            public function getMorphClass(): string
+            {
+                return 'user';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'user-456';
+            }
         };
 
-        $middleware = new class($owner) extends OwnerIdentificationMiddleware {
+        $middleware = new class($owner) extends OwnerIdentificationMiddleware
+        {
             public function __construct(private Model $owner) {}
 
             protected function resolveOwnerFromRequest(Request $request): ?Model
@@ -138,19 +169,38 @@ describe('OwnerIdentificationMiddleware', function (): void {
     });
 
     it('context cleanup is automatic (request attributes)', function (): void {
-        $owner1 = new class extends Model {
+        $owner1 = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-1'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-1';
+            }
         };
 
-        $owner2 = new class extends Model {
+        $owner2 = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'store-2'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'store-2';
+            }
         };
 
-        $middleware = new class($owner1, $owner2) extends OwnerIdentificationMiddleware {
+        $middleware = new class($owner1, $owner2) extends OwnerIdentificationMiddleware
+        {
             public function __construct(private Model $owner1, private Model $owner2) {}
 
             protected function resolveOwnerFromRequest(Request $request): ?Model

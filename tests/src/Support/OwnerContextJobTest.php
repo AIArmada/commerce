@@ -11,14 +11,22 @@ describe('OwnerContextJob', function (): void {
     it('executes performJob hook', function (): void {
         $executed = false;
 
-        $job = new class($executed) {
+        $job = new class($executed)
+        {
             use OwnerContextJob;
             use SerializesModels;
 
             private $executed;
 
-            public function __construct(&$exec) { $this->executed = &$exec; }
-            public function performJob(): void { $this->executed = true; }
+            public function __construct(&$exec)
+            {
+                $this->executed = &$exec;
+            }
+
+            public function performJob(): void
+            {
+                $this->executed = true;
+            }
         };
 
         $job->handle();
@@ -27,20 +35,34 @@ describe('OwnerContextJob', function (): void {
     });
 
     it('enters owner context from public model property', function (): void {
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'ctx-123'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'ctx-123';
+            }
         };
 
         $contextInJob = null;
 
-        $job = new class($owner, $contextInJob) {
+        $job = new class($owner, $contextInJob)
+        {
             use OwnerContextJob;
             use SerializesModels;
 
             public function __construct(public $storeModel, private &$ctx) {}
-            public function performJob(): void { $this->ctx = OwnerContext::resolve(); }
+
+            public function performJob(): void
+            {
+                $this->ctx = OwnerContext::resolve();
+            }
         };
 
         $job->handle();
@@ -51,17 +73,28 @@ describe('OwnerContextJob', function (): void {
     });
 
     it('restores previous context after job', function (): void {
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
-            public function getMorphClass(): string { return 'store'; }
-            public function getKey(): mixed { return 'test'; }
+
+            public function getMorphClass(): string
+            {
+                return 'store';
+            }
+
+            public function getKey(): mixed
+            {
+                return 'test';
+            }
         };
 
-        $job = new class($owner) {
+        $job = new class($owner)
+        {
             use OwnerContextJob;
             use SerializesModels;
 
             public function __construct(public $storeModel) {}
+
             public function performJob(): void {}
         };
 
@@ -74,7 +107,8 @@ describe('OwnerContextJob', function (): void {
 
     it('resolves owner from explicit owner_type and owner_id payload fields', function (): void {
         $contextInJob = null;
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
 
             public $incrementing = false;
@@ -82,7 +116,8 @@ describe('OwnerContextJob', function (): void {
             protected $keyType = 'string';
         };
 
-        $job = new class($contextInJob, $owner::class) {
+        $job = new class($contextInJob, $owner::class)
+        {
             use OwnerContextJob;
             use SerializesModels;
 
@@ -95,7 +130,10 @@ describe('OwnerContextJob', function (): void {
                 $this->ownerType = $ownerType;
             }
 
-            public function performJob(): void { $this->ctx = OwnerContext::resolve(); }
+            public function performJob(): void
+            {
+                $this->ctx = OwnerContext::resolve();
+            }
         };
 
         $job->handle();
@@ -108,7 +146,8 @@ describe('OwnerContextJob', function (): void {
     it('throws when owner missing and owner mode enabled', function (): void {
         config(['commerce-support.owner.enabled' => true]);
 
-        $job = new class {
+        $job = new class
+        {
             use OwnerContextJob;
             use SerializesModels;
 
@@ -124,14 +163,22 @@ describe('OwnerContextJob', function (): void {
 
         $executed = false;
 
-        $job = new class($executed) {
+        $job = new class($executed)
+        {
             use OwnerContextJob;
             use SerializesModels;
 
             private $executed;
 
-            public function __construct(&$exec) { $this->executed = &$exec; }
-            public function performJob(): void { $this->executed = true; }
+            public function __construct(&$exec)
+            {
+                $this->executed = &$exec;
+            }
+
+            public function performJob(): void
+            {
+                $this->executed = true;
+            }
         };
 
         $job->handle();
