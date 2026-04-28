@@ -59,7 +59,7 @@ final class CartItemResource extends Resource
         /** @var Builder<CartItem> $query */
         $query = parent::getEloquentQuery();
 
-        return $query->whereIn('cart_id', Cart::query()->forOwner()->select('id'));
+        return $query->whereIn('cart_id', Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())->select('id'));
     }
 
     public static function getRelations(): array

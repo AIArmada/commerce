@@ -4,7 +4,7 @@ title: Multi-Tenancy
 
 # Multi-Tenancy
 
-The Cart package provides built-in support for multi-tenant applications through owner scoping.
+The Cart package uses `commerce-support` owner scoping for cart rows, storage queries, condition definitions, and operational commands.
 
 ## Enabling Owner Scoping
 
@@ -16,26 +16,34 @@ The Cart package provides built-in support for multi-tenant applications through
 ],
 ```
 
-## How It Works
+## Contract summary
 
-When owner scoping is enabled:
+When owner mode is enabled:
 
-1. **Storage Operations** - All database queries include owner constraints
-2. **Cart Access** - Carts are isolated per owner
-3. **Conditions** - Condition definitions can be owner-scoped
+1. cart rows are isolated by owner tuple
+2. missing owner context fails closed
+3. global rows require explicit global context
+4. commands and listeners must pass or iterate owners explicitly
+5. malformed owner tuples are treated as invalid data, not as safe globals
 
 ## Setting the Owner
 
-### Via Facade
+### Via cart manager
 
 ```php
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
-// Set owner for all subsequent operations
-Cart::forOwner($tenant);
+// Create a scoped cart manager for this owner
+$tenantCart = Cart::forOwner($tenant);
 
 // Or get a scoped cart instance
-$cart = Cart::forOwner($tenant)->instance('default');
+$cart = $tenantCart->instance('default');
+
+// For non-request operations, use explicit owner context
+OwnerContext::withOwner($tenant, function () {
+    Cart::add('SKU-001', 'Product', 999, 1);
+});
 ```
 
 ### Via Storage
@@ -45,9 +53,10 @@ $storage = Cart::storage()->withOwner($tenant);
 $items = $storage->getItems('user-123', 'default');
 ```
 
-## Database Schema
+## Schema
 
-The carts table includes owner columns:
+The carts table stores the public owner boundary using `owner_type` and `owner_id`.
+The storage layer also maintains `owner_scope` as an internal uniqueness key.
 
 ```php
 Schema::table('carts', function (Blueprint $table) {
@@ -57,10 +66,11 @@ Schema::table('carts', function (Blueprint $table) {
 });
 ```
 
-`owner_scope` is an internal uniqueness key used by the storage layer; public
-owner semantics still come from `owner_type` and `owner_id`.
+`owner_scope` is an internal implementation detail. Do not authorize against it and do not expose it as the tenancy contract.
 
-## Query Behavior
+The current physical columns remain `owner_type` / `owner_id`, but the package now aligns with `commerce-support`'s configurable owner-column contract in code paths that work with raw rows and tuple parsing.
+
+## Query behavior
 
 ### With Owner Set
 
@@ -72,9 +82,9 @@ WHERE identifier = 'user-123'
   AND owner_id = '456'
 ```
 
-### Without Owner (Global)
+### Explicit global
 
-When no owner is set, queries return only global records:
+When the call site enters explicit global context, cart queries return only global rows:
 
 ```sql
 SELECT * FROM carts 
@@ -84,14 +94,14 @@ WHERE identifier = 'user-123'
     AND owner_id IS NULL
 ```
 
-## Global vs Tenant Records
+## Global vs tenant rows
 
 Records can be:
 
 - **Tenant-Scoped**: `owner_type` and `owner_id` set
 - **Global**: `owner_type` and `owner_id` are null
 
-### Including Global Records
+### Including global rows
 
 ```php
 'owner' => [
@@ -112,7 +122,7 @@ WHERE identifier = 'user-123'
   )
 ```
 
-## Condition Model Scoping
+## Condition model scoping
 
 The `Condition` model also supports owner scoping:
 
@@ -129,17 +139,19 @@ $globalConditions = Condition::forOwner(null)->active()->get();
 $allConditions = Condition::forOwner($tenant, includeGlobal: true)->get();
 ```
 
-## Middleware Integration
+## HTTP middleware integration
 
 Create middleware to set the owner context:
 
 ```php
+use AIArmada\CommerceSupport\Support\OwnerContext;
+
 class SetCartOwner
 {
     public function handle($request, Closure $next)
     {
         if ($tenant = $request->route('tenant')) {
-            Cart::forOwner($tenant);
+            OwnerContext::setForRequest($tenant);
         }
         
         return $next($request);
@@ -147,7 +159,22 @@ class SetCartOwner
 }
 ```
 
-## Service Provider Setup
+Use `OwnerContext::setForRequest()` only in HTTP middleware/integration points.
+For jobs, commands, listeners, and other non-request surfaces, use `OwnerContext::withOwner(...)`.
+
+## Commands
+
+`cart:clear-abandoned` is fail-closed in owner mode.
+
+- without resolved owner context: command fails
+- with explicit global context: command operates on global rows only
+- with `--all-owners`: command iterates owner tuples intentionally
+- with malformed tuples: command warns and skips by default
+- with `--strict-owner-tuples`: command aborts on malformed tuples
+
+This command now uses the shared `commerce-support` owner tuple parser rather than re-implementing tuple validation locally.
+
+## Testing multi-tenancy
 
 Configure owner context in your service provider:
 
@@ -164,8 +191,6 @@ class AppServiceProvider extends ServiceProvider
     }
 }
 ```
-
-## Testing Multi-Tenancy
 
 ```php
 use AIArmada\Cart\Facades\Cart;
@@ -192,30 +217,41 @@ it('isolates carts between tenants', function () {
 });
 ```
 
-## HasOwner Trait
+## Storage and raw queries
 
-The `CartModel` and `Condition` models use the `HasOwner` trait from `commerce-support`:
+Storage-level query builder paths use the package-level `CartOwnerScope`, which now delegates to the shared `commerce-support` owner tuple utilities and `OwnerQuery`.
+
+That means raw storage queries, abandoned-cart cleanup, and event payload reconstruction follow the same tuple rules as the model layer.
+
+## Models
+
+`CartModel` and `Condition` both consume `commerce-support` traits:
 
 ```php
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 
 class CartModel extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     
     protected static string $ownerScopeConfigKey = 'cart.owner';
 }
 ```
 
-This provides:
+## Operational events
 
-- `scopeForOwner($query, $owner, $includeGlobal)` - Query scope
-- Automatic owner assignment on create (when configured)
-- Owner relationship accessors
+`CartDestroyed` now carries explicit snake_case owner tuple fields:
 
-## Important Notes
+- `owner_type`
+- `owner_id`
 
-1. **Owner Context is Request-Scoped** - Set owner early in request lifecycle
-2. **No Implicit Scoping** - Without setting owner, global records only
-3. **Migration Safety** - Run migrations for owner columns if upgrading
-4. **Index Performance** - Owner columns are indexed for query performance
+Consumers should treat those as the canonical owner payload contract.
+
+## Best practices
+
+1. Prefer `OwnerContext::withOwner(...)` outside HTTP middleware.
+2. Treat malformed owner tuples as invalid data.
+3. Use `--strict-owner-tuples` for hard-stop cleanup sweeps.
+4. Keep global mutations explicit.

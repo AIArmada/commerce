@@ -56,11 +56,13 @@ describe('CartCreated Event', function (): void {
 
 describe('CartDestroyed Event', function (): void {
     it('creates event with identifier and instance', function (): void {
-        $event = new CartDestroyed('test-identifier', 'default');
+        $event = new CartDestroyed('test-identifier', 'default', null, 'App\\Models\\Tenant', 'tenant-1');
 
         expect($event)->toBeInstanceOf(CartDestroyed::class);
         expect($event->identifier)->toBe('test-identifier');
         expect($event->instance)->toBe('default');
+        expect($event->owner_type)->toBe('App\\Models\\Tenant');
+        expect($event->owner_id)->toBe('tenant-1');
     });
 
     it('converts to array', function (): void {
@@ -70,9 +72,13 @@ describe('CartDestroyed Event', function (): void {
         expect($array)->toBeArray();
         expect($array)->toHaveKey('identifier');
         expect($array)->toHaveKey('instance_name');
+        expect($array)->toHaveKey('owner_type');
+        expect($array)->toHaveKey('owner_id');
         expect($array)->toHaveKey('timestamp');
         expect($array['identifier'])->toBe('test-identifier');
         expect($array['instance_name'])->toBe('wishlist');
+        expect($array['owner_type'])->toBeNull();
+        expect($array['owner_id'])->toBeNull();
     });
 
     it('handles different instance names', function (): void {

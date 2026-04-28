@@ -85,7 +85,7 @@ class CartDashboard extends Page
             return 0;
         }
 
-        return Cart::query()->forOwner()
+        return Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())
             ->whereNotNull('checkout_abandoned_at')
             ->where('checkout_abandoned_at', '>=', now()->subDay())
             ->count();

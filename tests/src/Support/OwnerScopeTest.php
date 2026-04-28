@@ -220,18 +220,28 @@ it('protects global rows from owner-context writes', function (): void {
         'label' => 'global',
     ]));
 
-    OwnerContext::withOwner($ownerA, function () use ($global): void {
+    OwnerContext::withOwner($ownerA, function () use ($global, $ownerA): void {
         $global->label = 'changed';
 
         expect(fn () => $global->save())->toThrow(AuthorizationException::class);
         expect(fn () => $global->delete())->toThrow(AuthorizationException::class);
+
+        $global->owner_type = $ownerA->getMorphClass();
+        $global->owner_id = $ownerA->getKey();
+
+        expect(fn () => $global->save())
+            ->toThrow(InvalidArgumentException::class, 'Owner cannot be assigned to a persisted global');
     });
 
     OwnerContext::withOwner(null, function () use ($global): void {
-        $global->label = 'changed';
-        $global->save();
+        $freshGlobal = $global->fresh();
 
-        expect($global->fresh()?->label)->toBe('changed');
+        expect($freshGlobal)->not->toBeNull();
+
+        $freshGlobal->label = 'changed';
+        $freshGlobal->save();
+
+        expect($freshGlobal->fresh()?->label)->toBe('changed');
     });
 });
 

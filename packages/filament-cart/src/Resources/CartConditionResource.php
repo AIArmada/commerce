@@ -59,7 +59,7 @@ final class CartConditionResource extends Resource
         /** @var Builder<CartCondition> $query */
         $query = parent::getEloquentQuery();
 
-        return $query->whereIn('cart_id', Cart::query()->forOwner()->select('id'));
+        return $query->whereIn('cart_id', Cart::query()->forOwner(includeGlobal: Cart::includeGlobalRecords())->select('id'));
     }
 
     public static function getRelations(): array

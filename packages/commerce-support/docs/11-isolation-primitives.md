@@ -2,7 +2,7 @@
 title: Isolation Primitives for Single-Database Multitenancy
 ---
 
-This guide covers four powerful isolation primitives in `commerce-support` that prevent cross-tenant data access in shared-database, single-database multitenancy models.
+This guide covers the core isolation primitives in `commerce-support` that prevent cross-tenant data access in shared-database multitenancy.
 
 These primitives live in `commerce-support` even before broad package adoption because they define the standard isolation contract the rest of the ecosystem can converge on.
 
@@ -10,12 +10,14 @@ These primitives live in `commerce-support` even before broad package adoption b
 
 When using single-database multitenancy (all tenants in one database with owner-scoped queries), you need to enforce owner boundaries **outside** of database queries: in caches, filesystems, job queues, and request-level context.
 
-The four primitives are:
+The main primitives are:
 
 1. **`OwnerCache`** — Scoped cache key builder and accessor
 2. **`OwnerFilesystem`** — Scoped file path builder and storage helper
 3. **`OwnerContextJob`** — Trait for queued jobs that auto-enter owner context
 4. **`OwnerIdentificationMiddleware`** — Base middleware for tenant identification
+5. **`NeedsOwner`** — Middleware to enforce owner context on tenant-required routes
+6. **`OwnerTuple` utilities** — Shared owner tuple column and parsing helpers for raw rows/payloads
 
 All owner-taking helpers accept either:
 
@@ -209,7 +211,45 @@ public function __construct(
 ) {}
 ```
 
-If a public model property has `owner_type` and `owner_id` attributes, it uses those to resolve the owner. If the job instead carries explicit public `owner_type` and `owner_id` payload fields, the trait resolves from those. Otherwise, it treats the model itself as the owner (useful for Job models where the model **is** the owner).
+If a public model property has `owner_type` and `owner_id` attributes, it uses those to resolve the owner. If the job instead carries explicit owner payload fields, the trait resolves from those. Otherwise, it treats the model itself as the owner (useful for jobs where the model itself is the owner).
+
+Best-practice job shape is explicit and typed:
+
+- Implement `OwnerScopedJob`
+- Return `OwnerJobContext`
+- Use camelCase PHP fields (`ownerType`, `ownerId`, `ownerIsGlobal`)
+
+The trait keeps a compatibility fallback for snake_case payload field names where needed.
+
+## OwnerTuple utilities
+
+Use the `Support/OwnerTuple` helpers when code needs to reason about owner tuples outside Eloquent model APIs.
+
+### `OwnerTupleColumns`
+
+```php
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+
+$columns = OwnerTupleColumns::forModelClass(Product::class);
+```
+
+This resolves the physical owner tuple column names, including model-specific overrides supplied through `HasOwnerScopeConfig`.
+
+### `OwnerTupleParser`
+
+```php
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+
+$parsed = OwnerTupleParser::fromRow($row, $columns);
+```
+
+The parser distinguishes between:
+
+- a real owner tuple
+- an explicit global tuple
+- an unresolved / malformed tuple
+
+That distinction is important because missing owner data must never be silently treated as explicit global access.
 
 ### When to Use
 
@@ -312,6 +352,36 @@ Route::middleware(IdentifyOwnerFromAuth::class)->group(function () {
 - **Request-scoped**: Owner context is stored in request attributes (automatic cleanup per request)
 - **Octane-safe**: No process-wide state pollution
 - **Framework integration**: Works with Filament multitenancy, Spatie permissions team resolver, etc.
+
+## NeedsOwner
+
+Use `NeedsOwner` to fail closed on routes that require an owner context.
+
+```php
+use AIArmada\CommerceSupport\Middleware\NeedsOwner;
+
+Route::middleware([
+    IdentifyOwnerFromSubdomain::class,
+    NeedsOwner::class,
+])->group(function () {
+    Route::get('/tenant/orders', TenantOrderController::class);
+});
+```
+
+When no owner is resolved, the middleware dispatches `OwnerNotResolvedForRequestEvent` and throws `NoCurrentOwnerException`.
+
+Keep global/admin/public routes outside this middleware when owner context is intentionally optional.
+
+## Owner Lifecycle Events
+
+`OwnerContext` dispatches lifecycle events during owner transitions:
+
+- `MakingOwnerCurrentEvent`
+- `MadeOwnerCurrentEvent`
+- `ForgettingCurrentOwnerEvent`
+- `ForgotCurrentOwnerEvent`
+
+These hooks are intended for observability, auditing, and integration glue.
 
 ## Integration Example: Full Workflow
 

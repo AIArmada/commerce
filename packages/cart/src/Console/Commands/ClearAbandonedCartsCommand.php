@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Console\Commands;
 
+use AIArmada\Cart\Models\CartModel;
 use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
@@ -26,6 +29,7 @@ final class ClearAbandonedCartsCommand extends Command
                           {--expired : Only delete carts that have passed their expires_at timestamp}
                           {--dry-run : Show what would be deleted without actually deleting}
                           {--all-owners : Process every owner when no owner context is available}
+                          {--strict-owner-tuples : Abort when encountering malformed owner tuples}
                           {--batch-size=1000 : Number of records to process in each batch}';
 
     /**
@@ -42,6 +46,7 @@ final class ClearAbandonedCartsCommand extends Command
         $useExpired = $this->option('expired');
         $dryRun = $this->option('dry-run');
         $allOwners = (bool) $this->option('all-owners');
+        $strictOwnerTuples = (bool) $this->option('strict-owner-tuples');
         $batchSize = max(1, (int) $this->option('batch-size'));
         $table = config('cart.database.table', 'carts');
         $now = now();
@@ -81,7 +86,8 @@ final class ClearAbandonedCartsCommand extends Command
                     days: $days,
                     now: $now,
                     dryRun: (bool) $dryRun,
-                    batchSize: $batchSize
+                    batchSize: $batchSize,
+                    strictOwnerTuples: $strictOwnerTuples,
                 );
             }
 
@@ -116,8 +122,16 @@ final class ClearAbandonedCartsCommand extends Command
         CarbonInterface $now,
         bool $dryRun,
         int $batchSize,
+        bool $strictOwnerTuples,
     ): int {
-        $owners = DB::table($table)->select(['owner_type', 'owner_id'])->distinct()->get();
+        $columns = OwnerTupleColumns::forModelClass(CartModel::class);
+        $owners = DB::table($table)
+            ->select([
+                $columns->ownerTypeColumn . ' as owner_type',
+                $columns->ownerIdColumn . ' as owner_id',
+            ])
+            ->distinct()
+            ->get();
 
         if ($owners->isEmpty()) {
             return OwnerContext::withOwner(null, fn (): int => $this->handleForOwner(
@@ -136,23 +150,39 @@ final class ClearAbandonedCartsCommand extends Command
         $totalCount = 0;
 
         foreach ($owners as $row) {
-            $ownerType = $this->normalizeOwnerValue($row->owner_type ?? null);
-            $ownerId = $this->normalizeOwnerValue($row->owner_id ?? null);
+            $parsed = OwnerTupleParser::fromRow(
+                row: $row,
+                columns: new OwnerTupleColumns,
+                allowMalformed: true,
+            );
 
-            if (! $this->hasValidOwnerPair($ownerType, $ownerId)) {
+            if ($parsed->isUnresolved()) {
+                if ($strictOwnerTuples) {
+                    $this->error(sprintf(
+                        'Malformed owner tuple encountered (owner_type: %s, owner_id: %s).',
+                        $row->owner_type ?? 'null',
+                        $row->owner_id === null ? 'null' : (string) $row->owner_id,
+                    ));
+
+                    return self::FAILURE;
+                }
+
                 warning(sprintf(
                     'Skipping malformed owner tuple while clearing abandoned carts (owner_type: %s, owner_id: %s).',
-                    $ownerType ?? 'null',
-                    $ownerId === null ? 'null' : (string) $ownerId,
+                    $row->owner_type ?? 'null',
+                    $row->owner_id === null ? 'null' : (string) $row->owner_id,
                 ));
 
                 continue;
             }
 
-            $count = $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId);
+            $owner_type = $parsed->owner_type;
+            $owner_id = $parsed->owner_id;
+
+            $count = $this->countForOwner($table, $useExpired, $days, $now, $owner_type, $owner_id);
             $ownerBatches[] = [
-                'owner_type' => $ownerType,
-                'owner_id' => $ownerId,
+                'owner_type' => $owner_type,
+                'owner_id' => $owner_id,
                 'count' => $count,
             ];
             $totalCount += $count;
@@ -351,18 +381,4 @@ final class ClearAbandonedCartsCommand extends Command
             ->where('updated_at', '<', $cutoffDate);
     }
 
-    private function normalizeOwnerValue(string | int | null $value): string | int | null
-    {
-        if (is_string($value) && $value === '') {
-            return null;
-        }
-
-        return $value;
-    }
-
-    private function hasValidOwnerPair(?string $ownerType, string | int | null $ownerId): bool
-    {
-        return ($ownerType === null && $ownerId === null)
-            || ($ownerType !== null && $ownerId !== null);
-    }
 }

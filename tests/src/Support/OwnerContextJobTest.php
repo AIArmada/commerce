@@ -86,13 +86,13 @@ describe('OwnerContextJob', function (): void {
             use OwnerContextJob;
             use SerializesModels;
 
-            public string $owner_type;
+            public string $ownerType;
 
-            public string $owner_id = 'ctx-explicit';
+            public string $ownerId = 'ctx-explicit';
 
             public function __construct(private &$ctx, string $ownerType)
             {
-                $this->owner_type = $ownerType;
+                $this->ownerType = $ownerType;
             }
 
             public function performJob(): void { $this->ctx = OwnerContext::resolve(); }
@@ -137,5 +137,62 @@ describe('OwnerContextJob', function (): void {
         $job->handle();
 
         expect($executed)->toBeTrue();
+    });
+
+    it('allows explicit global execution when owner mode is enabled', function (): void {
+        config(['commerce-support.owner.enabled' => true]);
+
+        $contextInJob = 'uninitialized';
+
+        $job = new class($contextInJob) {
+            use OwnerContextJob;
+            use SerializesModels;
+
+            public bool $ownerIsGlobal = true;
+
+            public function __construct(private &$ctx) {}
+
+            public function performJob(): void
+            {
+                $this->ctx = OwnerContext::resolve();
+            }
+        };
+
+        $job->handle();
+
+        expect($contextInJob)->toBeNull();
+    });
+
+    it('throws on contradictory explicit-global owner payload', function (): void {
+        config(['commerce-support.owner.enabled' => true]);
+
+        $owner = new class extends Model {
+            public $timestamps = false;
+
+            public $incrementing = false;
+
+            protected $keyType = 'string';
+        };
+
+        $job = new class($owner::class) {
+            use OwnerContextJob;
+            use SerializesModels;
+
+            public bool $ownerIsGlobal = true;
+
+            public string $ownerType;
+
+            public string $ownerId = 'ctx-contradictory';
+
+            public function __construct(string $ownerType)
+            {
+                $this->ownerType = $ownerType;
+            }
+
+            public function performJob(): void {}
+        };
+
+        expect(fn () => $job->handle())
+            ->toThrow(RuntimeException::class, 'ownerIsGlobal=true cannot be combined');
     });
 });

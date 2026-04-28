@@ -153,3 +153,82 @@ it('treats shared global conditions as read-only in tenant contexts', function (
     expect(ConditionResource::canEdit($globalCondition))->toBeFalse();
     expect(ConditionResource::canDelete($globalCondition))->toBeFalse();
 });
+
+it('includes global snapshot rows across resources when include_global is enabled', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('filament-cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
+    config()->set('filament-cart.owner.include_global', true);
+
+    $owner = User::query()->create([
+        'name' => 'Owner Scoped',
+        'email' => 'owner-scoped-include-global@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($owner));
+
+    $ownerCart = OwnerContext::withOwner($owner, fn () => CartSnapshot::query()->create([
+        'identifier' => 'owner-cart',
+        'instance' => 'default',
+        'currency' => 'USD',
+        'items_count' => 1,
+        'quantity' => 1,
+        'subtotal' => 1000,
+        'total' => 1000,
+    ]));
+
+    $globalCart = OwnerContext::withOwner(null, fn () => CartSnapshot::query()->create([
+        'identifier' => 'global-cart',
+        'instance' => 'default',
+        'currency' => 'USD',
+        'items_count' => 1,
+        'quantity' => 1,
+        'subtotal' => 1500,
+        'total' => 1500,
+    ]));
+
+    CartItem::query()->create([
+        'cart_id' => $ownerCart->id,
+        'item_id' => 'sku-owner',
+        'name' => 'Owner Item',
+        'price' => 1000,
+        'quantity' => 1,
+    ]);
+
+    CartItem::query()->create([
+        'cart_id' => $globalCart->id,
+        'item_id' => 'sku-global',
+        'name' => 'Global Item',
+        'price' => 1500,
+        'quantity' => 1,
+    ]);
+
+    CartCondition::query()->create([
+        'cart_id' => $ownerCart->id,
+        'name' => 'owner-discount',
+        'type' => 'discount',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+        'value' => '-5%',
+        'is_discount' => true,
+        'is_percentage' => true,
+        'order' => 1,
+    ]);
+
+    CartCondition::query()->create([
+        'cart_id' => $globalCart->id,
+        'name' => 'global-discount',
+        'type' => 'discount',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+        'value' => '-3%',
+        'is_discount' => true,
+        'is_percentage' => true,
+        'order' => 1,
+    ]);
+
+    expect(CartResource::getEloquentQuery()->count())->toBe(2);
+    expect(CartItemResource::getEloquentQuery()->count())->toBe(2);
+    expect(CartConditionResource::getEloquentQuery()->count())->toBe(2);
+});
