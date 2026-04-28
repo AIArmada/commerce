@@ -14,12 +14,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use RuntimeException;
+use Throwable;
 
 class ReverseGeocodeSessionJob implements OwnerScopedJob, ShouldQueue
 {
-    use OwnerContextJob;
     use Dispatchable;
     use InteractsWithQueue;
+    use OwnerContextJob;
     use Queueable;
 
     public int $tries = 3;
@@ -75,7 +76,7 @@ class ReverseGeocodeSessionJob implements OwnerScopedJob, ShouldQueue
 
         try {
             $pipeline->run($session);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new RuntimeException(
                 sprintf(
                     'Reverse geocode failed for session context. [job=%s session_id=%s owner_type=%s owner_id=%s owner_is_global=%s]',

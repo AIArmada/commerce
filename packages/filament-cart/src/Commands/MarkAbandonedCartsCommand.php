@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\FilamentCart\Models\Cart;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class MarkAbandonedCartsCommand extends Command
@@ -104,8 +105,7 @@ class MarkAbandonedCartsCommand extends Command
         bool $forceThreshold,
         string $correlationId,
         bool $strictOwnerTuples,
-    ): int
-    {
+    ): int {
         $columns = OwnerTupleColumns::forModelClass(Cart::class);
 
         $owners = Cart::query()
@@ -250,9 +250,9 @@ class MarkAbandonedCartsCommand extends Command
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<Cart>
+     * @return Builder<Cart>
      */
-    private function abandonedCartsQuery(int $minutes): \Illuminate\Database\Eloquent\Builder
+    private function abandonedCartsQuery(int $minutes): Builder
     {
         $cutoff = now()->subMinutes($minutes);
 
@@ -268,5 +268,4 @@ class MarkAbandonedCartsCommand extends Command
                     });
             });
     }
-
 }

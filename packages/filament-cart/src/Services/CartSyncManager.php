@@ -45,8 +45,7 @@ class CartSyncManager
         string $identifier,
         ?string $ownerType = null,
         string | int | null $ownerId = null,
-    ): void
-    {
+    ): void {
         $this->synchronizer->deleteNormalizedCart($identifier, $instance, $ownerType, $ownerId);
     }
 }
