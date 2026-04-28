@@ -22,6 +22,7 @@ Related hardening semantics to carry into consumer packages:
 ## Core semantics
 
 - Tenant ownership uses `owner_type` and `owner_id` as the default column names. Custom column names are supported by implementing `ownerScopeConfig()` on the model and returning an `OwnerScopeConfig` with `ownerTypeColumn`/`ownerIdColumn` set. All `HasOwner` helpers and the `owner()` relation respect the configured columns.
+- Cross-package payload contracts should use snake_case owner tuple fields (`owner_type`, `owner_id`) at wire/persistence boundaries. PHP APIs should prefer camelCase fields (`ownerType`, `ownerId`, `ownerIsGlobal`).
 - Non-Eloquent owner references passed into helper APIs must implement `AIArmada\CommerceSupport\Contracts\OwnerScopeIdentifiable` instead of relying on raw duck-typed objects.
 - `owner_scope` is an internal hidden uniqueness helper, not public API and not an authorization boundary.
 - `forOwner($owner)` returns owner-only rows.
@@ -108,6 +109,11 @@ For each match:
 
 Commands, jobs, schedules, exports, reports, health checks, and webhooks must not rely on ambient web auth. Pass or iterate owner explicitly, then call `OwnerContext::withOwner($owner, ...)`.
 
+When reading owner tuples from raw rows (especially with configurable owner columns), prefer shared tuple helpers:
+
+- `OwnerTupleColumns` for column resolution
+- `OwnerTupleParser` for tri-state tuple parsing (owner / explicit global / unresolved)
+
 ## Test checklist
 
 Every owner-enabled package should have tests for:
@@ -142,7 +148,7 @@ Every owner-enabled package should have tests for:
 
 ## Implementation Status: Isolation Primitives (Q3 2026)
 
-**Status update (2026-04-28):** Isolation helpers were delivered in `commerce-support` without cross-package retrofits.
+**Status update (2026-04-28):** Isolation helpers were delivered in `commerce-support`; selective downstream retrofits are now active (including `cart`, `filament-cart`, and owner-scoped `signals` surfaces).
 
 ### Decision matrix
 
@@ -153,10 +159,12 @@ Every owner-enabled package should have tests for:
 | Strict cache key isolation | ✅ Shipped | `OwnerCache` helper enforces `owner:{key}:{logicalKey}` namespace |
 | Filesystem path isolation | ✅ Shipped | `OwnerFilesystem` helper enforces `owners/{ownerKey}/...` structure |
 | Tenant identification (A+B hybrid) | ✅ Shipped | Service provider binds resolver; middleware identifies at request time |
+| Tenant-required routes fail closed | ✅ Shipped | `NeedsOwner` dispatches `OwnerNotResolvedForRequestEvent` and throws `NoCurrentOwnerException` |
+| Owner transition observability | ✅ Shipped | Owner lifecycle events dispatched on make/forget boundaries |
 | Provisioning pipeline | ⏸️ Deferred | Only needed when enabling multitenancy in a package; skip v1 |
-| Package retrofits | ⏸️ Deferred | Build primitives only; packages adopt on their own timeline |
+| Package retrofits | ▶️ In progress | Foundation shipped; selective packages adopted, full convergence continues package-by-package |
 
-### Five primitives delivered (v1)
+### Foundation capabilities delivered (v1)
 
 1. **`OwnerCache`** — owner-scoped cache key builder
    - Enforces `owner:{ownerScopeKey}:{logicalKey}` pattern
@@ -169,7 +177,9 @@ Every owner-enabled package should have tests for:
    - Accepts Eloquent owners or `OwnerScopeIdentifiable` adapters
 
 3. **`OwnerContextJob` trait** — auto-enters owner context for queued jobs
-   - Requires `owner_type`/`owner_id` in job payload
+   - Supports owner-bearing model payloads or explicit owner context payloads (recommended via `OwnerScopedJob` + `OwnerJobContext`)
+   - Supports explicit global execution with `ownerIsGlobal=true`
+   - Rejects contradictory payloads (`ownerIsGlobal=true` combined with owner-bearing payload fields)
    - Fails closed if owner missing when owner mode enabled
    - Prevents queue cross-tenant leakage
 
@@ -178,8 +188,19 @@ Every owner-enabled package should have tests for:
    - Middleware identifies owner from domain/auth/header at request time
    - Resolves before any owner-scoped queries
 
-5. **Updated documentation** — 08-webhooks, 04-multi-tenancy, 10-traits-utilities
-   - Usage examples for each primitive
+5. **`NeedsOwner` middleware** — tenant-required request hardening
+   - Fails closed when owner context is missing
+   - Dispatches `OwnerNotResolvedForRequestEvent`
+   - Throws `NoCurrentOwnerException`
+
+6. **Owner lifecycle events** — transition observability hooks
+   - `MakingOwnerCurrentEvent`
+   - `MadeOwnerCurrentEvent`
+   - `ForgettingCurrentOwnerEvent`
+   - `ForgotCurrentOwnerEvent`
+
+7. **Updated documentation** — 04-multi-tenancy, 10-traits-utilities, 11-isolation-primitives
+   - Usage examples for each primitive and middleware
    - Integration patterns for optional adoption
 
 ### Delivery sequence (completed)
@@ -188,7 +209,9 @@ Every owner-enabled package should have tests for:
 2. `OwnerFilesystem` (next, also isolated)
 3. `OwnerContextJob` trait (touches job lifecycle)
 4. `OwnerIdentificationMiddleware` base middleware (defines request-time hook)
-5. Documentation + comprehensive tests
+5. `NeedsOwner` middleware (fail-closed tenant-required routes)
+6. Owner lifecycle events
+7. Documentation + comprehensive tests
 
 **Delivery scope:** `commerce-support` only.
 
@@ -199,9 +222,22 @@ Every owner-enabled package should have tests for:
 - ✅ Primitive documentation is published in package docs
 - 📌 Consumer-package adoption/coverage is tracked as follow-up hardening work
 
+### Traceability updates (2026-04-28)
+
+- ✅ Commit `4b972f2e` hardens owner-context handling in non-request surfaces:
+   - `packages/commerce-support/src/Traits/OwnerContextJob.php`
+      - `ReflectionClass($this)` replaced with `ReflectionObject($this)` to remove PHPStan trait-context constructor-type failures.
+   - `packages/signals/src/Console/Commands/ProcessSignalAlertsCommand.php`
+   - `packages/signals/src/Console/Commands/AggregateDailyMetricsCommand.php`
+      - Raw owner-row parsing replaced with `OwnerTupleColumns::forModelClass(...)` + `OwnerTupleParser::fromRow(...)` + `toOwnerModel()`.
+      - Malformed owner tuples now fail fast instead of degrading to implicit global context.
+- ✅ Verification recorded for the hardening commit:
+   - `./vendor/bin/phpstan analyse --level=6 packages/commerce-support/src packages/cart/src packages/filament-cart/src packages/signals/src packages/filament-signals/src` → no errors.
+   - `./vendor/bin/pest --parallel tests/src/Signals` → 65 passed.
+
 ### What is deferred (non-v1)
 
 - **Provisioning pipeline** — only needed when enabling multitenancy in packages
-- **Package retrofits** — primitives are optional/advisory; packages adopt on their own timeline
+- **Broad package retrofits** — selective adoptions are complete; remaining packages continue migrating on a controlled rollout
 - **Config key standardization** — separate effort after primitives stabilize
 - **Conformance audit** — separate sweep after adoption patterns emerge
