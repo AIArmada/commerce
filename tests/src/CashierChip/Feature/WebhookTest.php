@@ -9,6 +9,8 @@ use AIArmada\CashierChip\Events\WebhookReceived;
 use AIArmada\CashierChip\Http\Controllers\WebhookController;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
@@ -278,7 +280,7 @@ it('requires owner resolution via brand_id mapping when owner scoping is enabled
     });
 
     // Simulate a webhook request arriving without ambient owner context.
-    OwnerContext::override(null);
+    OwnerContext::setForRequest(null);
 
     $payload = [
         'brand_id' => 'test_brand_id',
@@ -310,7 +312,7 @@ it('fails closed when owner scoping is enabled but brand_id has no mapping', fun
     config()->set('cashier-chip.features.owner.enabled', true);
     config()->set('chip.owner.webhook_brand_id_map', []);
 
-    OwnerContext::override(null);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
 
     $payload = [
         'brand_id' => 'missing-brand',

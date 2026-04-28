@@ -119,7 +119,7 @@ describe('CreateShipment Action', function (): void {
 
         try {
             // Force OwnerContext::resolve() to return null even if a resolver is bound.
-            OwnerContext::override(null);
+            OwnerContext::setForRequest(null);
 
             $action = app(CreateShipment::class);
 
