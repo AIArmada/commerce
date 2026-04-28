@@ -380,5 +380,4 @@ final class ClearAbandonedCartsCommand extends Command
         return DB::table($table)
             ->where('updated_at', '<', $cutoffDate);
     }
-
 }

@@ -43,8 +43,8 @@ final class CartDestroyed implements CartEventInterface
      * @param  string  $identifier  The cart identifier that was destroyed
      * @param  string  $instance  The cart instance name that was destroyed
      * @param  string|null  $cartId  The cart UUID (captured before destruction)
-    * @param  string|null  $owner_type  The owner morph class for the destroyed cart scope
-    * @param  string|int|null  $owner_id  The owner key for the destroyed cart scope
+     * @param  string|null  $owner_type  The owner morph class for the destroyed cart scope
+     * @param  string|int|null  $owner_id  The owner key for the destroyed cart scope
      */
     public function __construct(
         public readonly string $identifier,

@@ -191,7 +191,8 @@ describe('OwnerContextJob', function (): void {
 
         $contextInJob = 'uninitialized';
 
-        $job = new class($contextInJob) {
+        $job = new class($contextInJob)
+        {
             use OwnerContextJob;
             use SerializesModels;
 
@@ -213,7 +214,8 @@ describe('OwnerContextJob', function (): void {
     it('throws on contradictory explicit-global owner payload', function (): void {
         config(['commerce-support.owner.enabled' => true]);
 
-        $owner = new class extends Model {
+        $owner = new class extends Model
+        {
             public $timestamps = false;
 
             public $incrementing = false;
@@ -221,7 +223,8 @@ describe('OwnerContextJob', function (): void {
             protected $keyType = 'string';
         };
 
-        $job = new class($owner::class) {
+        $job = new class($owner::class)
+        {
             use OwnerContextJob;
             use SerializesModels;
 

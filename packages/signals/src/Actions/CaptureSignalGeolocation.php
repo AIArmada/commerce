@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Jobs\ReverseGeocodeSessionJob;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use AIArmada\Signals\Services\SignalLocationResolverPipeline;
 use AIArmada\Signals\Services\SignalsIngestionRequestValidator;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
