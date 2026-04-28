@@ -140,23 +140,23 @@ Every owner-enabled package should have tests for:
 
 ---
 
-## Implementation Plan: Isolation Primitives (Q3 2026)
+## Implementation Status: Isolation Primitives (Q3 2026)
 
-**Locked decision (grilled 2026-04-28):** Build isolation helpers in `commerce-support` without cross-package changes.
+**Status update (2026-04-28):** Isolation helpers were delivered in `commerce-support` without cross-package retrofits.
 
 ### Decision matrix
 
 | Decision | Status | Reasoning |
 |---|---|---|
-| Fail-closed owner context globally | ✅ Locked | Explicit `withOwner(null, ...)` for intentional global access |
-| Queue jobs carry owner reference | ✅ Locked | Auto-enter owner context via shared `OwnerContextJob` trait |
-| Strict cache key isolation | ✅ Locked | `OwnerCache` helper enforces `owner:{key}:{logicalKey}` namespace |
-| Filesystem path isolation | ✅ Locked | `OwnerFilesystem` helper enforces `owners/{ownerKey}/...` structure |
-| Tenant identification (A+B hybrid) | ✅ Locked | Service provider binds resolver; middleware identifies at request time |
+| Fail-closed owner context globally | ✅ Shipped | Explicit `withOwner(null, ...)` for intentional global access |
+| Queue jobs carry owner reference | ✅ Shipped | Auto-enter owner context via shared `OwnerContextJob` trait |
+| Strict cache key isolation | ✅ Shipped | `OwnerCache` helper enforces `owner:{key}:{logicalKey}` namespace |
+| Filesystem path isolation | ✅ Shipped | `OwnerFilesystem` helper enforces `owners/{ownerKey}/...` structure |
+| Tenant identification (A+B hybrid) | ✅ Shipped | Service provider binds resolver; middleware identifies at request time |
 | Provisioning pipeline | ⏸️ Deferred | Only needed when enabling multitenancy in a package; skip v1 |
 | Package retrofits | ⏸️ Deferred | Build primitives only; packages adopt on their own timeline |
 
-### Five primitives to build (v1)
+### Five primitives delivered (v1)
 
 1. **`OwnerCache`** — owner-scoped cache key builder
    - Enforces `owner:{ownerScopeKey}:{logicalKey}` pattern
@@ -182,7 +182,7 @@ Every owner-enabled package should have tests for:
    - Usage examples for each primitive
    - Integration patterns for optional adoption
 
-### Implementation sequence
+### Delivery sequence (completed)
 
 1. `OwnerCache` (simplest, no side effects)
 2. `OwnerFilesystem` (next, also isolated)
@@ -190,14 +190,14 @@ Every owner-enabled package should have tests for:
 4. `OwnerIdentificationMiddleware` base middleware (defines request-time hook)
 5. Documentation + comprehensive tests
 
-**Estimated effort:** 1–2 weeks, commerce-support only.
+**Delivery scope:** `commerce-support` only.
 
-### Validation (required before merge)
+### Validation status
 
-- All primitives pass unit tests in `tests/src/Support`
-- All primitives have complete PHPDoc + usage examples
-- PHPStan level 6 clean
-- Test coverage ≥80%
+- ✅ Unit tests for support primitives pass in `tests/src/Support`
+- ✅ PHPStan level 6 is clean for `packages/commerce-support/src`
+- ✅ Primitive documentation is published in package docs
+- 📌 Consumer-package adoption/coverage is tracked as follow-up hardening work
 
 ### What is deferred (non-v1)
 
