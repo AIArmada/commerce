@@ -321,11 +321,11 @@ title: <Package> Commerce Support Audit
 
 ---
 
-## Implementation Plan: Isolation Primitives (Q3 2026)
+## Implementation Status: Isolation Primitives (Q3 2026)
 
-**Locked decision (grilled 2026-04-28):** Build isolation helpers in `commerce-support` without cross-package changes.
+**Status update (2026-04-28):** Isolation helpers were delivered in `commerce-support` without cross-package retrofit changes.
 
-### Five primitives to build (v1)
+### Five primitives delivered (v1)
 
 1. **`OwnerCache`** — owner-scoped cache key builder
    - Enforces `owner:{ownerScopeKey}:{logicalKey}` pattern
@@ -351,12 +351,12 @@ title: <Package> Commerce Support Audit
    - Usage examples for each primitive
    - Integration patterns for optional adoption
 
-### What is deferred
+### What remains deferred
 
-- **Provisioning pipeline** — only needed when enabling multitenancy in packages; skip v1
-- **Package retrofits** — primitives are optional/advisory; packages adopt on their own timeline
+- **Provisioning pipeline** — only needed when enabling multitenancy in packages
+- **Package retrofits** — primitives remain optional/advisory; packages adopt on their own timeline
 
-### Implementation sequence
+### Delivery sequence (completed)
 
 1. `OwnerCache` (simplest, no side effects)
 2. `OwnerFilesystem` (next, also isolated)
@@ -364,11 +364,11 @@ title: <Package> Commerce Support Audit
 4. `OwnerIdentificationMiddleware` base middleware (defines request-time hook)
 5. Documentation + comprehensive tests
 
-**Estimated effort:** 1–2 weeks, commerce-support only.
+**Delivery scope:** `commerce-support` only.
 
-### Validation (required before merge)
+### Validation status
 
-- All primitives pass unit tests in `tests/src/Support`
-- All primitives have complete PHPDoc + usage examples
-- PHPStan level 6 clean
-- Test coverage ≥80%
+- ✅ Unit tests for support primitives pass in `tests/src/Support`
+- ✅ PHPStan level 6 is clean for `packages/commerce-support/src`
+- ✅ Documentation for primitives exists in `04-multi-tenancy.md`, `10-traits-utilities.md`, and `11-isolation-primitives.md`
+- 📌 Package consumer adoption/coverage targets are tracked separately per package rollout

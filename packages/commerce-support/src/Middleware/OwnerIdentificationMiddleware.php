@@ -6,6 +6,7 @@ namespace AIArmada\CommerceSupport\Middleware;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Closure;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use RuntimeException;
 
@@ -82,5 +83,5 @@ abstract class OwnerIdentificationMiddleware
      * @throws RuntimeException if owner mode is enabled but owner cannot be resolved
      *                          and the route requires explicit owner context
      */
-    abstract protected function resolveOwnerFromRequest(Request $request);
+    abstract protected function resolveOwnerFromRequest(Request $request): ?Model;
 }
