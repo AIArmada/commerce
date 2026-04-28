@@ -23,7 +23,6 @@ beforeEach(function (): void {
     config()->set('inventory.owner.enabled', false);
     config()->set('inventory.owner.include_global', true);
 
-    OwnerContext::clearOverride();
 });
 
 it('does not scope queries when owner scoping is disabled', function (): void {

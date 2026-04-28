@@ -80,8 +80,6 @@ abstract class TestCase extends Orchestra
     {
         parent::setUp();
 
-        OwnerContext::clearOverride();
-
         Factory::guessFactoryNamesUsing(function (string $modelName) {
             return Str::replace('Models', 'Database\\Factories', $modelName) . 'Factory';
         });

@@ -361,6 +361,9 @@ OwnerContext::withOwner(null, function () {
     return Product::globalOnly()->get();
 });
 
+`OwnerContext::setForRequest()` is reserved for middleware/framework integrations during active HTTP requests. It throws outside HTTP request lifecycle; use `OwnerContext::withOwner(...)` in jobs/commands and other non-HTTP surfaces.
+
+
 // Reconstruct from database values
 $owner = OwnerContext::fromTypeAndId(
     'App\\Models\\Store',

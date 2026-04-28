@@ -13,7 +13,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
-    OwnerContext::clearOverride();
     app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
     {
         public function resolve(): ?Model
