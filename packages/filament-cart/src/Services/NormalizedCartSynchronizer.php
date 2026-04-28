@@ -113,8 +113,7 @@ class NormalizedCartSynchronizer
         string $instance,
         ?string $ownerType = null,
         string | int | null $ownerId = null,
-    ): void
-    {
+    ): void {
         $hasExplicitOwnerTuple = func_num_args() >= 3;
 
         $owner = $hasExplicitOwnerTuple

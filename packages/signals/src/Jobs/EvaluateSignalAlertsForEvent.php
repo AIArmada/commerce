@@ -16,12 +16,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use RuntimeException;
+use Throwable;
 
 final class EvaluateSignalAlertsForEvent implements OwnerScopedJob, ShouldQueue
 {
-    use OwnerContextJob;
     use Dispatchable;
     use InteractsWithQueue;
+    use OwnerContextJob;
     use Queueable;
 
     public function __construct(
@@ -86,7 +87,7 @@ final class EvaluateSignalAlertsForEvent implements OwnerScopedJob, ShouldQueue
 
                     $dispatcher->dispatch($rule, $result['metric_value'], $result['context']);
                 });
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new RuntimeException(
                 sprintf(
                     'Signal alert evaluation failed for event context. [job=%s signal_event_id=%s owner_type=%s owner_id=%s owner_is_global=%s]',
