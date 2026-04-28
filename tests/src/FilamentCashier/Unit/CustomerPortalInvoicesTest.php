@@ -7,6 +7,7 @@ use AIArmada\FilamentCashier\CustomerPortal\Pages\ManagePaymentMethods;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ViewInvoices;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\PaymentMethodsPreviewWidget;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\RecentInvoicesWidget;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 it('formats and returns customer portal invoices and payment methods when CHIP is available', function (): void {
@@ -68,7 +69,7 @@ it('fails closed for non-owned payment method ids in customer portal mutations',
 
         public bool $deleteCalled = false;
 
-        public function chipPaymentMethods(): \Illuminate\Support\Collection
+        public function chipPaymentMethods(): Collection
         {
             return collect([
                 (object) ['id' => 'chip_pm_1', 'type' => 'card', 'last4' => '1111', 'is_default' => true],

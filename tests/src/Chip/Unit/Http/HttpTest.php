@@ -40,12 +40,12 @@ describe('WebhookController', function (): void {
     });
 
     it('can be instantiated', function (): void {
-        $controller = new WebhookController();
+        $controller = new WebhookController;
         expect($controller)->toBeInstanceOf(WebhookController::class);
     });
 
     it('handles purchase.paid webhook', function (): void {
-        $controller = new WebhookController();
+        $controller = new WebhookController;
 
         $payload = [
             'id' => 'purch_test123',
@@ -71,7 +71,7 @@ describe('WebhookController', function (): void {
     });
 
     it('handles payout webhook', function (): void {
-        $controller = new WebhookController();
+        $controller = new WebhookController;
 
         $payload = [
             'id' => 'payout_test123',
@@ -93,7 +93,7 @@ describe('WebhookController', function (): void {
     });
 
     it('handles billing template client webhook', function (): void {
-        $controller = new WebhookController();
+        $controller = new WebhookController;
 
         $payload = [
             'id' => 'btc_test123',
@@ -115,7 +115,7 @@ describe('WebhookController', function (): void {
     });
 
     it('handles unknown event type gracefully', function (): void {
-        $controller = new WebhookController();
+        $controller = new WebhookController;
 
         $payload = [
             'id' => 'unknown_123',
@@ -131,7 +131,7 @@ describe('WebhookController', function (): void {
     });
 
     it('handles missing event_type', function (): void {
-        $controller = new WebhookController();
+        $controller = new WebhookController;
 
         $request = Request::create('/webhook', 'POST', []);
         $response = $controller->handle($request);
@@ -146,7 +146,7 @@ describe('WebhookController', function (): void {
             'chip.webhooks.deduplication' => true,
         ]);
 
-        $controller = new WebhookController();
+        $controller = new WebhookController;
 
         $payload = [
             'id' => 'purch_duplicate_123',
