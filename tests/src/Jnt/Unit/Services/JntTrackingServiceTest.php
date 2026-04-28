@@ -304,6 +304,6 @@ describe('JntTrackingService', function (): void {
         $service = new JntTrackingService($expressService, $statusMapper);
 
         expect(fn (): Collection => $service->getOrdersNeedingTrackingUpdate(limit: 10))
-                ->toThrow(AuthorizationException::class);
+            ->toThrow(AuthorizationException::class);
     });
 });

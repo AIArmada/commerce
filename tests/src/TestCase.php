@@ -13,7 +13,6 @@ use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\SupportServiceProvider;
 use AIArmada\Customers\CustomersServiceProvider;
 use AIArmada\Docs\DocsServiceProvider;
