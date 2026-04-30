@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Orders\Events\CommissionAttributionRequired;
+use AIArmada\Orders\Events\InventoryDeductionRequired;
+use AIArmada\Orders\Events\InventoryReleaseRequired;
 use AIArmada\Orders\Events\OrderCanceled;
 use AIArmada\Orders\Events\OrderCreated;
 use AIArmada\Orders\Events\OrderDelivered;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Events\OrderShipped;
-use AIArmada\Orders\Events\InventoryDeductionRequired;
-use AIArmada\Orders\Events\InventoryReleaseRequired;
-use AIArmada\Orders\Events\CommissionAttributionRequired;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Completed;

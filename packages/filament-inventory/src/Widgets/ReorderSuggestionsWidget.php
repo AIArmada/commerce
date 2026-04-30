@@ -6,8 +6,8 @@ namespace AIArmada\FilamentInventory\Widgets;
 
 use AIArmada\FilamentInventory\Actions\ApproveReorderSuggestionAction;
 use AIArmada\FilamentInventory\Actions\RejectReorderSuggestionAction;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
