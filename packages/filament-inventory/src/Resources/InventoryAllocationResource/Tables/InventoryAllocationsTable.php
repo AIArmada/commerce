@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Tables;
 
 use AIArmada\FilamentInventory\Actions\ReleaseAllocationAction;
-use AIArmada\FilamentInventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Facades\InventoryAllocation as InventoryAllocationFacade;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use Filament\Actions\BulkAction;

@@ -12,7 +12,9 @@ use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Collection;
 use UnitEnum;
 
 final class MerchantDashboardPage extends Page
@@ -48,6 +50,54 @@ final class MerchantDashboardPage extends Page
             NetworkStatsWidget::class,
             TopOffersWidget::class,
         ];
+    }
+
+    /**
+     * @return array<int, Stat>
+     */
+    public function getStats(): array
+    {
+        return [
+            Stat::make('Sites', number_format($this->getSitesCount()))
+                ->icon('heroicon-o-globe-alt')
+                ->description('Total sites'),
+            Stat::make('Verified Sites', number_format($this->getVerifiedSitesCount()))
+                ->icon('heroicon-o-check-badge')
+                ->description('Ready for affiliate traffic'),
+            Stat::make('Active Offers', number_format($this->getActiveOffersCount()))
+                ->icon('heroicon-o-gift')
+                ->description('Currently running offers'),
+            Stat::make('Pending Applications', number_format($this->getPendingApplicationsCount()))
+                ->icon('heroicon-o-clock')
+                ->description('Awaiting review'),
+        ];
+    }
+
+    /**
+     * @return Collection<int, AffiliateOfferApplication>
+     */
+    public function getRecentApplications(): Collection
+    {
+        return AffiliateOfferApplication::query()
+            ->with(['offer', 'affiliate'])
+            ->where('status', AffiliateOfferApplication::STATUS_PENDING)
+            ->latest('created_at')
+            ->limit(5)
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, AffiliateOffer>
+     */
+    public function getTopOffers(): Collection
+    {
+        return AffiliateOffer::query()
+            ->with(['site'])
+            ->where('status', AffiliateOffer::STATUS_ACTIVE)
+            ->withCount('applications')
+            ->orderByDesc('applications_count')
+            ->limit(5)
+            ->get();
     }
 
     public function getSitesCount(): int

@@ -10,7 +10,6 @@ describe('JntExpress facade', function (): void {
         // Use reflection to test the protected method
         $reflection = new ReflectionClass(JntExpress::class);
         $method = $reflection->getMethod('getFacadeAccessor');
-        $method->setAccessible(true);
 
         $accessor = $method->invoke(null);
 

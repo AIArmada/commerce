@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\Widgets\OrderStatusDistributionWidget;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
@@ -42,52 +43,58 @@ it('builds a status distribution chart scoped to the current owner plus global',
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
     // Owner A: 2 processing, 1 pending
-    Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Processing::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    OwnerContext::withOwner($ownerA, function () use ($ownerA): void {
+        Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Processing::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
 
-    Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Processing::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+        Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Processing::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
 
-    Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => PendingPayment::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+        Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => PendingPayment::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     // Owner B: should be ignored
-    Order::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'status' => Processing::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    OwnerContext::withOwner($ownerB, function () use ($ownerB): void {
+        Order::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'status' => Processing::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     // Global: 1 processing
-    Order::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'status' => Processing::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    OwnerContext::withOwner(null, function (): void {
+        Order::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => Processing::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -102,7 +109,6 @@ it('builds a status distribution chart scoped to the current owner plus global',
     $widget = app(OrderStatusDistributionWidget::class);
 
     $method = new ReflectionMethod(OrderStatusDistributionWidget::class, 'getData');
-    $method->setAccessible(true);
 
     /** @var array{datasets: array<int, array{label: string, data: array<int, int>, backgroundColor: array<int, string>}>, labels: array<int, string>} $data */
     $data = $method->invoke($widget);

@@ -476,6 +476,12 @@ $product = OwnerWriteGuard::findOrFailForOwner(
 );
 ```
 
+Write-path guidance:
+
+- Prefer calling `OwnerWriteGuard::findOrFailForOwner(...)` directly at mutation boundaries.
+- Keep `includeGlobal: false` as the default for tenant-context writes.
+- Use `includeGlobal: true` only when business rules explicitly allow global-row writes and the call site is intentionally scoped.
+
 ## OwnerRouteBinding
 
 Secure route model binding:

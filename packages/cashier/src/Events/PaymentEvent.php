@@ -48,4 +48,12 @@ abstract class PaymentEvent
     {
         return $this->billable;
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    final public function metadata(): array
+    {
+        return $this->payment->metadata();
+    }
 }

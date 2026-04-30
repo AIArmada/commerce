@@ -12,4 +12,14 @@ return [
         'group' => 'Affiliate Network',
         'sort' => 50,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Marketplace
+    |--------------------------------------------------------------------------
+    */
+    'marketplace' => [
+        'show_commission_rates' => true,
+        'show_cookie_duration' => true,
+    ],
 ];

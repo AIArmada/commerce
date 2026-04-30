@@ -93,7 +93,6 @@ test('Affiliate facade resolves to AffiliateService', function (): void {
 
 test('Affiliate facade accessor returns affiliates', function (): void {
     $accessor = (new ReflectionClass(Affiliate::class))->getMethod('getFacadeAccessor');
-    $accessor->setAccessible(true);
 
     expect($accessor->invoke(null))->toBe('affiliates');
 });

@@ -6,11 +6,11 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * Document version for tracking changes over time.
@@ -21,8 +21,8 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed> $snapshot
  * @property string|null $change_summary
  * @property string|null $changed_by
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
  */
 final class DocVersion extends Model
@@ -36,8 +36,6 @@ final class DocVersion extends Model
 
     protected $fillable = [
         'doc_id',
-        'owner_type',
-        'owner_id',
         'version_number',
         'snapshot',
         'change_summary',

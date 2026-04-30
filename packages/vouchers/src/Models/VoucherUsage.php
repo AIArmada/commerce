@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * @property string $id
@@ -84,22 +85,50 @@ final class VoucherUsage extends Model
         return $this->getAttribute('channel') === self::CHANNEL_MANUAL;
     }
 
+    public function isOrderRedemption(): bool
+    {
+        $redeemedBy = $this->resolveRedeemedBySafely();
+
+        $redeemedByType = mb_strtolower((string) ($this->redeemed_by_type ?? ''));
+
+        if ($redeemedByType !== '' && Str::contains($redeemedByType, 'order')) {
+            return true;
+        }
+
+        if (! $redeemedBy) {
+            return false;
+        }
+
+        return Str::contains(mb_strtolower($redeemedBy::class), 'order');
+    }
+
     protected function userIdentifier(): Attribute
     {
         return Attribute::make(
             get: function (): string {
-                $redeemedBy = $this->redeemedBy;
+                $redeemedBy = $this->resolveRedeemedBySafely();
 
                 if (! $redeemedBy) {
                     return 'N/A';
                 }
 
-                // If it's a user model, return email
-                if ($this->redeemed_by_type === 'user' && method_exists($redeemedBy, 'getAttribute')) {
+                // Prefer email when available, regardless of morph alias/class naming.
+                if (method_exists($redeemedBy, 'getAttribute')) {
                     /** @var string|null $email */
                     $email = $redeemedBy->getAttribute('email');
 
-                    return $email ?? 'N/A';
+                    if ($email !== null && $email !== '') {
+                        return $email;
+                    }
+                }
+
+                if ($this->isOrderRedemption() && method_exists($redeemedBy, 'getAttribute')) {
+                    /** @var string|null $orderNumber */
+                    $orderNumber = $redeemedBy->getAttribute('order_number');
+
+                    if ($orderNumber !== null && $orderNumber !== '') {
+                        return $orderNumber;
+                    }
                 }
 
                 // For other types, try to get an identifier
@@ -113,6 +142,17 @@ final class VoucherUsage extends Model
                 return 'N/A';
             }
         );
+    }
+
+    private function resolveRedeemedBySafely(): ?Model
+    {
+        if (! $this->relationLoaded('redeemedBy')) {
+            return null;
+        }
+
+        $relation = $this->getRelation('redeemedBy');
+
+        return $relation instanceof Model ? $relation : null;
     }
 
     protected function casts(): array

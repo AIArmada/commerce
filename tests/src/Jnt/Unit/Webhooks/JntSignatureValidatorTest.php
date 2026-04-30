@@ -30,7 +30,7 @@ it('validates a correct signature', function (): void {
     // Create mock webhook config
     $config = new WebhookConfig([
         'name' => 'jnt.webhooks.status',
-        'signing_secret' => '',
+        'signing_secret' => $secret,
         'signature_header_name' => 'digest',
         'signature_validator' => JntSpatieSignatureValidator::class,
         'webhook_profile' => JntWebhookProfile::class,
@@ -59,7 +59,7 @@ it('rejects an incorrect signature', function (): void {
     // Create mock webhook config
     $config = new WebhookConfig([
         'name' => 'jnt.webhooks.status',
-        'signing_secret' => '',
+        'signing_secret' => (string) config('jnt.private_key'),
         'signature_header_name' => 'digest',
         'signature_validator' => JntSpatieSignatureValidator::class,
         'webhook_profile' => JntWebhookProfile::class,
@@ -87,7 +87,7 @@ it('rejects request without signature header', function (): void {
     // Create mock webhook config
     $config = new WebhookConfig([
         'name' => 'jnt.webhooks.status',
-        'signing_secret' => '',
+        'signing_secret' => (string) config('jnt.private_key'),
         'signature_header_name' => 'digest',
         'signature_validator' => JntSpatieSignatureValidator::class,
         'webhook_profile' => JntWebhookProfile::class,

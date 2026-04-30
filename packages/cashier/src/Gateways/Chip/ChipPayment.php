@@ -276,6 +276,20 @@ class ChipPayment implements PaymentContract
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function metadata(): array
+    {
+        $payload = $this->payment instanceof Payment
+            ? $this->payment->asChipPurchase()->toArray()
+            : $this->payment->toArray();
+
+        $metadata = $payload['metadata'] ?? [];
+
+        return is_array($metadata) ? $metadata : [];
+    }
+
+    /**
      * Get an optional gateway error code.
      */
     public function errorCode(): ?string

@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Contracts\PaymentContract;
+use AIArmada\Cashier\Events\PaymentSucceeded as CashierPaymentSucceeded;
+use AIArmada\CashierChip\Events\PaymentSucceeded as CashierChipPaymentSucceeded;
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\Inventory\Contracts\ProvidesInventoryCommitContext;
 use AIArmada\Inventory\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
@@ -23,291 +27,195 @@ beforeEach(function (): void {
     $this->listener = new CommitInventoryOnPayment($this->allocationService);
 });
 
+function makeTypedPayment(array $metadata = [], string $id = 'payment-123'): PaymentContract
+{
+    return new class($metadata, $id) implements PaymentContract
+    {
+        public function __construct(
+            private readonly array $metadata,
+            private readonly string $id,
+        ) {}
+
+        public function id(): string
+        {
+            return $this->id;
+        }
+
+        public function gateway(): string
+        {
+            return 'test';
+        }
+
+        public function rawAmount(): int
+        {
+            return 100;
+        }
+
+        public function amount(): string
+        {
+            return '1.00 TEST';
+        }
+
+        public function currency(): string
+        {
+            return 'TEST';
+        }
+
+        public function status(): string
+        {
+            return 'succeeded';
+        }
+
+        public function metadata(): array
+        {
+            return $this->metadata;
+        }
+
+        public function errorCode(): ?string
+        {
+            return null;
+        }
+
+        public function isPending(): bool
+        {
+            return false;
+        }
+
+        public function isSucceeded(): bool
+        {
+            return true;
+        }
+
+        public function isFailed(): bool
+        {
+            return false;
+        }
+
+        public function isCanceled(): bool
+        {
+            return false;
+        }
+
+        public function requiresAction(): bool
+        {
+            return false;
+        }
+
+        public function requiresRedirect(): bool
+        {
+            return false;
+        }
+
+        public function redirectUrl(): ?string
+        {
+            return null;
+        }
+
+        public function receiptUrl(): ?string
+        {
+            return null;
+        }
+
+        public function validate(): static
+        {
+            return $this;
+        }
+
+        public function asGatewayPayment(): mixed
+        {
+            return null;
+        }
+
+        public function toArray(): array
+        {
+            return [
+                'id' => $this->id,
+                'metadata' => $this->metadata,
+            ];
+        }
+
+        public function toJson($options = 0): string
+        {
+            return json_encode($this->toArray(), $options) ?: '{}';
+        }
+    };
+}
+
 describe('CommitInventoryOnPayment', function (): void {
-    describe('handle', function (): void {
-        it('commits allocations when cartId property exists', function (): void {
-            // Create allocation first
-            $this->allocationService->allocate($this->item, 10, 'commit-cart-123', 30);
+    it('commits allocations for events implementing ProvidesInventoryCommitContext', function (): void {
+        $this->allocationService->allocate($this->item, 10, 'commit-cart-123', 30);
 
-            expect(InventoryAllocation::where('cart_id', 'commit-cart-123')->count())->toBe(1);
-
-            $event = new class
+        $event = new class implements ProvidesInventoryCommitContext
+        {
+            public function inventoryCartId(): ?string
             {
-                public string $cartId = 'commit-cart-123';
-            };
+                return 'commit-cart-123';
+            }
 
-            $this->listener->handle($event);
-
-            // After commit, allocations should be removed (stock is deducted)
-            expect(InventoryAllocation::where('cart_id', 'commit-cart-123')->count())->toBe(0);
-        });
-
-        it('commits allocations when cart_id property exists', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'commit-cart-456', 30);
-
-            $event = new class
+            public function inventoryOrderReference(): ?string
             {
-                public string $cart_id = 'commit-cart-456';
-            };
+                return 'order-typed-123';
+            }
+        };
 
-            $this->listener->handle($event);
+        $this->listener->handle($event);
 
-            expect(InventoryAllocation::where('cart_id', 'commit-cart-456')->count())->toBe(0);
-        });
+        expect(InventoryAllocation::where('cart_id', 'commit-cart-123')->count())->toBe(0);
+    });
 
-        it('extracts cart id from cart object with getId method', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'commit-cart-789', 30);
+    it('commits allocations for cashier payment succeeded events using typed metadata', function (): void {
+        $this->allocationService->allocate($this->item, 5, 'cashier-cart-123', 30);
 
-            $cart = new class
-            {
-                public function getId(): string
-                {
-                    return 'commit-cart-789';
-                }
-            };
+        $event = new CashierPaymentSucceeded(
+            makeTypedPayment([
+                'cart_id' => 'cashier-cart-123',
+                'order_id' => 'cashier-order-123',
+            ], 'payment-fallback-1'),
+            'test',
+            $this->item,
+        );
 
-            $event = new class($cart)
-            {
-                public function __construct(public object $cart) {}
-            };
+        $this->listener->handle($event);
 
-            $this->listener->handle($event);
+        expect(InventoryAllocation::where('cart_id', 'cashier-cart-123')->count())->toBe(0);
+    });
 
-            expect(InventoryAllocation::where('cart_id', 'commit-cart-789')->count())->toBe(0);
-        });
+    it('falls back to the payment id when cashier metadata has no order_id', function (): void {
+        $this->allocationService->allocate($this->item, 5, 'cashier-cart-fallback', 30);
 
-        it('extracts order reference from orderId property', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'commit-cart-order', 30);
+        $event = new CashierPaymentSucceeded(
+            makeTypedPayment([
+                'cart_id' => 'cashier-cart-fallback',
+            ], 'payment-fallback-2'),
+            'test',
+            $this->item,
+        );
 
-            $event = new class
-            {
-                public string $cartId = 'commit-cart-order';
+        $this->listener->handle($event);
 
-                public string $orderId = 'order-999';
-            };
+        expect(InventoryAllocation::where('cart_id', 'cashier-cart-fallback')->count())->toBe(0);
+    });
 
-            // Should not throw and should commit
-            $this->listener->handle($event);
+    it('commits allocations for cashier chip payment succeeded events using typed purchase accessors', function (): void {
+        $this->allocationService->allocate($this->item, 5, 'chip-cart-123', 30);
 
-            expect(InventoryAllocation::where('cart_id', 'commit-cart-order')->count())->toBe(0);
-        });
+        $event = new CashierChipPaymentSucceeded($this->item, [
+            'metadata' => [
+                'cart_id' => 'chip-cart-123',
+            ],
+            'reference' => 'chip-order-123',
+        ]);
 
-        it('handles event with no cart identifier gracefully', function (): void {
-            $event = new class {};
+        $this->listener->handle($event);
 
-            // Should not throw
-            $this->listener->handle($event);
+        expect(InventoryAllocation::where('cart_id', 'chip-cart-123')->count())->toBe(0);
+    });
 
-            expect(true)->toBeTrue();
-        });
+    it('ignores events that do not provide inventory commit context', function (): void {
+        $event = new class {};
 
-        it('extracts cart id from cart with getIdentifier and instance methods', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'user_default', 30);
+        $this->listener->handle($event);
 
-            $cart = new class
-            {
-                public function getId(): ?string
-                {
-                    return null;
-                }
-
-                public function getIdentifier(): string
-                {
-                    return 'user';
-                }
-
-                public function instance(): string
-                {
-                    return 'default';
-                }
-            };
-
-            $event = new class($cart)
-            {
-                public function __construct(public object $cart) {}
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'user_default')->count())->toBe(0);
-        });
-
-        it('extracts cart id from payment object with cart_id property', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'payment-cart-id', 30);
-
-            $payment = new class
-            {
-                public string $cart_id = 'payment-cart-id';
-            };
-
-            $event = new class($payment)
-            {
-                public function __construct(public object $payment) {}
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'payment-cart-id')->count())->toBe(0);
-        });
-
-        it('extracts cart id from purchase object with cart_id property', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'purchase-cart-id', 30);
-
-            $purchase = new class
-            {
-                public string $cart_id = 'purchase-cart-id';
-            };
-
-            $event = new class($purchase)
-            {
-                public function __construct(public object $purchase) {}
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'purchase-cart-id')->count())->toBe(0);
-        });
-
-        it('extracts order reference from payment with order_id property', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'cart-with-payment', 30);
-
-            $payment = new class
-            {
-                public string $cart_id = 'cart-with-payment';
-
-                public string $order_id = 'order-from-payment';
-            };
-
-            $event = new class($payment)
-            {
-                public function __construct(public object $payment) {}
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'cart-with-payment')->count())->toBe(0);
-        });
-
-        it('extracts order reference from payment with reference property', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'cart-ref-test', 30);
-
-            $payment = new class
-            {
-                public string $cart_id = 'cart-ref-test';
-
-                public string $reference = 'pay-ref-123';
-            };
-
-            $event = new class($payment)
-            {
-                public function __construct(public object $payment) {}
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'cart-ref-test')->count())->toBe(0);
-        });
-
-        it('extracts order reference from payment with getKey method', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'cart-getkey', 30);
-
-            $payment = new class
-            {
-                public string $cart_id = 'cart-getkey';
-
-                public function getKey(): string
-                {
-                    return 'payment-key-123';
-                }
-            };
-
-            $event = new class($payment)
-            {
-                public function __construct(public object $payment) {}
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'cart-getkey')->count())->toBe(0);
-        });
-
-        it('extracts order reference from purchase with getKey method', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'cart-purchase-key', 30);
-
-            $purchase = new class
-            {
-                public string $cart_id = 'cart-purchase-key';
-
-                public function getKey(): string
-                {
-                    return 'purchase-key-456';
-                }
-            };
-
-            $event = new class($purchase)
-            {
-                public function __construct(public object $purchase) {}
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'cart-purchase-key')->count())->toBe(0);
-        });
-
-        it('handles cartIdentifier property', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'cart-identifier-prop', 30);
-
-            $event = new class
-            {
-                public string $cartIdentifier = 'cart-identifier-prop';
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'cart-identifier-prop')->count())->toBe(0);
-        });
-
-        it('handles cart_identifier property', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'cart_identifier_prop', 30);
-
-            $event = new class
-            {
-                public string $cart_identifier = 'cart_identifier_prop';
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'cart_identifier_prop')->count())->toBe(0);
-        });
-
-        it('handles order_reference property', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'cart-order-ref', 30);
-
-            $event = new class
-            {
-                public string $cartId = 'cart-order-ref';
-
-                public string $order_reference = 'order-ref-789';
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'cart-order-ref')->count())->toBe(0);
-        });
-
-        it('handles reference property for order', function (): void {
-            $this->allocationService->allocate($this->item, 5, 'cart-ref-only', 30);
-
-            $event = new class
-            {
-                public string $cartId = 'cart-ref-only';
-
-                public string $reference = 'ref-only-123';
-            };
-
-            $this->listener->handle($event);
-
-            expect(InventoryAllocation::where('cart_id', 'cart-ref-only')->count())->toBe(0);
-        });
+        expect(true)->toBeTrue();
     });
 });

@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as FoundationUser;
-use Illuminate\Support\Carbon;
 
 /**
  * Document approval request for workflow management.
@@ -24,11 +23,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $assigned_to
  * @property DocApprovalStatus $status
  * @property string|null $comments
- * @property Carbon|null $approved_at
- * @property Carbon|null $rejected_at
- * @property Carbon|null $expires_at
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property CarbonImmutable|null $approved_at
+ * @property CarbonImmutable|null $rejected_at
+ * @property CarbonImmutable|null $expires_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
  * @property-read Model $requestedBy
  * @property-read Model|null $assignedTo
@@ -44,8 +43,6 @@ final class DocApproval extends Model
 
     protected $fillable = [
         'doc_id',
-        'owner_type',
-        'owner_id',
         'requested_by',
         'assigned_to',
         'status',
@@ -58,6 +55,31 @@ final class DocApproval extends Model
     public function getTable(): string
     {
         return config('docs.database.tables.doc_approvals', 'docs_approvals');
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (DocApproval $approval): void {
+            if ($approval->owner_type !== null && $approval->owner_id !== null) {
+                return;
+            }
+
+            if ($approval->doc_id === null || $approval->doc_id === '') {
+                return;
+            }
+
+            $doc = Doc::query()
+                ->withoutOwnerScope()
+                ->whereKey($approval->doc_id)
+                ->first();
+
+            if ($doc === null) {
+                return;
+            }
+
+            $approval->owner_type = $doc->owner_type;
+            $approval->owner_id = $doc->owner_id;
+        });
     }
 
     /**

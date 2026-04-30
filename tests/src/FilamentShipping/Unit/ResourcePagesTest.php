@@ -54,7 +54,6 @@ it('defines header actions for list/view/edit resource pages', function (): void
 
     $getHeaderActions = static function (object $page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');
-        $method->setAccessible(true);
 
         /** @var array $actions */
         $actions = $method->invoke($page);

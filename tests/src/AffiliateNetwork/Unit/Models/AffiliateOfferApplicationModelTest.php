@@ -6,6 +6,8 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Carbon\CarbonImmutable;
 
 describe('AffiliateOfferApplication Model', function (): void {
@@ -134,6 +136,55 @@ describe('AffiliateOfferApplication Model', function (): void {
                 ]);
 
             expect($application->metadata)->toBe(['source' => 'dashboard']);
+        });
+    });
+
+    describe('owner scoping via affiliate', function (): void {
+        test('explicit global context only returns applications linked to global affiliates', function (): void {
+            config([
+                'affiliate-network.owner.enabled' => true,
+                'affiliates.owner.enabled' => true,
+            ]);
+
+            $owner = User::factory()->create();
+
+            $site = OwnerContext::withOwner($owner, fn () => AffiliateSite::factory()->verified()->forOwner($owner)->create());
+            $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->forSite($site)->create());
+            $affiliate = OwnerContext::withOwner($owner, fn () => Affiliate::create([
+                'code' => 'AFF' . uniqid(),
+                'name' => 'Owned Affiliate',
+                'status' => 'active',
+                'commission_type' => 'percentage',
+                'commission_rate' => 1000,
+                'currency' => 'USD',
+            ]));
+
+            $globalAffiliate = OwnerContext::withOwner(null, fn () => Affiliate::create([
+                'code' => 'AFF' . uniqid(),
+                'name' => 'Global Affiliate',
+                'status' => 'active',
+                'commission_type' => 'percentage',
+                'commission_rate' => 1000,
+                'currency' => 'USD',
+            ]));
+
+            OwnerContext::withOwner($owner, fn () => AffiliateOfferApplication::factory()
+                ->forOffer($offer)
+                ->forAffiliate($affiliate)
+                ->pending()
+                ->create());
+
+            $globalApplication = OwnerContext::withOwner(null, fn () => AffiliateOfferApplication::factory()
+                ->forOffer($offer)
+                ->forAffiliate($globalAffiliate)
+                ->pending()
+                ->create());
+
+            $globalApplicationIds = OwnerContext::withOwner(null, fn () => AffiliateOfferApplication::query()->pluck('id')->all());
+
+            expect($globalApplicationIds)
+                ->toHaveCount(1)
+                ->toContain($globalApplication->id);
         });
     });
 });

@@ -351,10 +351,9 @@ class TaxCalculatorTest extends TaxTestCase
 
         $result = $this->calculator->calculateTax(10000, 'standard', $zone->id);
 
-        // With compound tax support, both rates apply: 600 + 800 = 1400
-        // If you want only the higher priority to apply, make one compound or use different tax classes
+        // Two non-compound rates can both apply: 600 + 800 = 1400.
         $this->assertEquals(1400, $result->taxAmount);
-        $this->assertTrue($result->hasCompoundTaxes()); // Now tracking compound taxes
+        $this->assertFalse($result->hasCompoundTaxes());
     }
 
     public function test_calculate_tax_with_unknown_zone_error_behavior(): void

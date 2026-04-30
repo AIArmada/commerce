@@ -93,10 +93,16 @@ return [
     |
     */
     'cookies' => [
+        'enabled' => env('AFFILIATE_NETWORK_COOKIE_ENABLED', true),
         'name' => env('AFFILIATE_NETWORK_COOKIE_NAME', 'affiliate_network_link'),
-        'lifetime_minutes' => env('AFFILIATE_NETWORK_COOKIE_LIFETIME', 60 * 24 * 30),
+        'query_parameters' => ['anl'],
+        'ttl_minutes' => env('AFFILIATE_NETWORK_COOKIE_LIFETIME', 60 * 24 * 30),
+        'path' => env('AFFILIATE_NETWORK_COOKIE_PATH', '/'),
+        'domain' => env('AFFILIATE_NETWORK_COOKIE_DOMAIN'),
         'secure' => env('AFFILIATE_NETWORK_COOKIE_SECURE', true),
+        'http_only' => env('AFFILIATE_NETWORK_COOKIE_HTTP_ONLY', true),
         'same_site' => env('AFFILIATE_NETWORK_COOKIE_SAMESITE', 'lax'),
+        'respect_dnt' => env('AFFILIATE_NETWORK_COOKIE_RESPECT_DNT', false),
     ],
 
     /*

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Widgets;
 
 use AIArmada\Docs\Models\Doc;
+use AIArmada\FilamentDocs\Resources\DocResource;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
@@ -60,7 +61,7 @@ final class RecentDocumentsWidget extends BaseWidget
             ])
             ->recordActions([
                 Action::make('view')
-                    ->url(fn (Doc $record): string => route('filament.admin.resources.docs.view', $record))
+                    ->url(fn (Doc $record): string => DocResource::getUrl('view', ['record' => $record]))
                     ->icon('heroicon-o-eye'),
             ])
             ->paginated(false);

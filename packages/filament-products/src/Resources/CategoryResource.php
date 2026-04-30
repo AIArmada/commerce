@@ -30,7 +30,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use UnitEnum;
 
 final class CategoryResource extends Resource
 {
@@ -38,11 +37,17 @@ final class CategoryResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-folder';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
-
-    protected static ?int $navigationSort = 2;
-
     protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-products.navigation.group', 'Catalog');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-products.navigation.resources.categories', 2);
+    }
 
     /**
      * @return Builder<Category>

@@ -13,6 +13,17 @@ use Illuminate\Support\Facades\Schema;
 
 require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createIsolationCustomer(array $attributes, ?\Illuminate\Database\Eloquent\Model $owner = null): Customer
+{
+    /** @var Customer $customer */
+    $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));
+
+    return $customer;
+}
+
 beforeEach(function (): void {
     Schema::dropIfExists('test_owners');
 
@@ -27,7 +38,7 @@ it('does not match customers across tenant boundary', function (): void {
     $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
 
-    $customerA = Customer::query()->create([
+    $customerA = createIsolationCustomer([
         'first_name' => 'A',
         'last_name' => 'Customer',
         'email' => 'a-' . uniqid() . '@example.com',
@@ -35,9 +46,9 @@ it('does not match customers across tenant boundary', function (): void {
         'accepts_marketing' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ], $ownerA);
 
-    $customerB = Customer::query()->create([
+    $customerB = createIsolationCustomer([
         'first_name' => 'B',
         'last_name' => 'Customer',
         'email' => 'b-' . uniqid() . '@example.com',
@@ -45,9 +56,9 @@ it('does not match customers across tenant boundary', function (): void {
         'accepts_marketing' => true,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ], $ownerB);
 
-    $segmentA = Segment::query()->create([
+    $segmentA = OwnerContext::withOwner($ownerA, fn (): Segment => Segment::query()->create([
         'name' => 'Marketing Segment A',
         'slug' => 'marketing-segment-a-' . uniqid(),
         'is_active' => true,
@@ -57,7 +68,7 @@ it('does not match customers across tenant boundary', function (): void {
         'conditions' => [
             ['field' => 'accepts_marketing', 'value' => true],
         ],
-    ]);
+    ]));
 
     $matchedIds = $segmentA->getMatchingCustomers()->pluck('id')->all();
 
@@ -70,23 +81,23 @@ it('prevents cross-tenant segment membership changes', function (): void {
     $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
 
-    $customerB = Customer::query()->create([
+    $customerB = createIsolationCustomer([
         'first_name' => 'B',
         'last_name' => 'Customer',
         'email' => 'b2-' . uniqid() . '@example.com',
         'status' => CustomerStatus::Active,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ], $ownerB);
 
-    $segmentA = Segment::query()->create([
+    $segmentA = OwnerContext::withOwner($ownerA, fn (): Segment => Segment::query()->create([
         'name' => 'Segment A',
         'slug' => 'segment-a-' . uniqid(),
         'is_active' => true,
         'is_automatic' => false,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
     $service = new SegmentationService;
 
@@ -101,23 +112,23 @@ it('enforces owner scoping for addresses', function (): void {
     $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
 
-    $customerA = Customer::query()->create([
+    $customerA = createIsolationCustomer([
         'first_name' => 'A',
         'last_name' => 'Customer',
         'email' => 'addr-a-' . uniqid() . '@example.com',
         'status' => CustomerStatus::Active,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ], $ownerA);
 
-    $customerB = Customer::query()->create([
+    $customerB = createIsolationCustomer([
         'first_name' => 'B',
         'last_name' => 'Customer',
         'email' => 'addr-b-' . uniqid() . '@example.com',
         'status' => CustomerStatus::Active,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ], $ownerB);
 
     OwnerContext::withOwner($ownerA, function () use ($customerA): void {
         Address::query()->create([

@@ -38,7 +38,6 @@ it('reports gateway health and default gateway without network calls', function 
 
     $reflection = new ReflectionClass(GatewayManagement::class);
     $method = $reflection->getMethod('checkGatewayHealth');
-    $method->setAccessible(true);
 
     expect($method->invoke($page, 'unknown'))->toMatchArray([
         'status' => 'unknown',
@@ -49,6 +48,5 @@ it('reports gateway health and default gateway without network calls', function 
     ]);
 
     $headerActions = $reflection->getMethod('getHeaderActions');
-    $headerActions->setAccessible(true);
     expect($headerActions->invoke($page))->toBeArray();
 });

@@ -8,6 +8,10 @@ use AIArmada\Orders\Events\OrderDelivered;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Events\OrderShipped;
+use AIArmada\Orders\Events\InventoryDeductionRequired;
+use AIArmada\Orders\Events\InventoryReleaseRequired;
+use AIArmada\Orders\Events\CommissionAttributionRequired;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
 use AIArmada\Orders\States\Completed;
@@ -126,6 +130,56 @@ describe('Order Events', function (): void {
             expect($event->order)->toBe($order);
             expect($event->amount)->toBe(5000);
             expect($event->reason)->toBe('Customer request');
+        });
+    });
+
+    describe('Owner tuple contract on events', function (): void {
+        it('mirrors owner tuple from the order across all integration events', function (): void {
+            $order = Order::create([
+                'order_number' => 'ORD-EVENT-TUPLE-' . uniqid(),
+                'status' => Created::class,
+                'currency' => 'MYR',
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+            ]);
+
+            $events = [
+                new OrderCreated($order),
+                new OrderPaid($order, 'txn_tuple_1', 'chip'),
+                new OrderShipped($order, 'J&T', 'JT-TUPLE-123'),
+                new OrderDelivered($order),
+                new OrderCanceled($order, 'Tuple contract test'),
+                new OrderRefunded($order, 1000, 'Tuple contract test'),
+                new InventoryDeductionRequired($order),
+                new InventoryReleaseRequired($order),
+                new CommissionAttributionRequired($order),
+            ];
+
+            foreach ($events as $event) {
+                expect($event->owner_type)->toBe($order->owner_type)
+                    ->and($event->owner_id)->toBe($order->owner_id)
+                    ->and($event->owner_is_global)->toBe($order->owner_type === null && $order->owner_id === null);
+            }
+        });
+
+        it('exposes global tuple markers for explicit global orders', function (): void {
+            $order = OwnerContext::withOwner(null, function (): Order {
+                return Order::create([
+                    'order_number' => 'ORD-EVENT-GLOBAL-' . uniqid(),
+                    'status' => Created::class,
+                    'currency' => 'MYR',
+                    'subtotal' => 10000,
+                    'grand_total' => 10000,
+                    'owner_type' => null,
+                    'owner_id' => null,
+                ]);
+            });
+
+            $event = new OrderCreated($order);
+
+            expect($event->owner_type)->toBeNull()
+                ->and($event->owner_id)->toBeNull()
+                ->and($event->owner_is_global)->toBeTrue();
         });
     });
 });

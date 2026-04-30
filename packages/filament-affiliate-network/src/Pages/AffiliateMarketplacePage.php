@@ -138,7 +138,7 @@ final class AffiliateMarketplacePage extends Page
 
     public function applyForOffer(string $offerId, string $reason = ''): void
     {
-        $offer = AffiliateOffer::findOrFail($offerId);
+        $offer = app(OfferManagementService::class)->resolvePublicOfferOrFail($offerId);
         $affiliate = $this->getAffiliate();
 
         if ($affiliate === null) {
@@ -169,7 +169,7 @@ final class AffiliateMarketplacePage extends Page
 
     public function generateLink(string $offerId): void
     {
-        $offer = AffiliateOffer::findOrFail($offerId);
+        $offer = app(OfferManagementService::class)->resolvePublicOfferOrFail($offerId);
         $affiliate = $this->getAffiliate();
 
         if ($affiliate === null) {

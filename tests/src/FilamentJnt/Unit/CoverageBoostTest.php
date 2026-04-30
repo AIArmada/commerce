@@ -118,7 +118,6 @@ it('builds Filament JNT resources, schemas, tables, pages, widgets, and actions'
         expect($page->getSubheading())->toBeString();
 
         $method = new ReflectionMethod(ReadOnlyListRecords::class, 'getHeaderActions');
-        $method->setAccessible(true);
 
         expect($method->invoke($page))->toBe([]);
     }
@@ -128,7 +127,6 @@ it('builds Filament JNT resources, schemas, tables, pages, widgets, and actions'
         $page = app($pageClass);
 
         $method = new ReflectionMethod($pageClass, 'getHeaderActions');
-        $method->setAccessible(true);
 
         expect($method->invoke($page))->toBeArray();
     }

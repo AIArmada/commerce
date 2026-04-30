@@ -48,7 +48,6 @@ it('AffiliatePanelProvider omits the payouts page when commission tracking is di
 
     $provider = new AffiliatePanelProvider(app());
     $method = new ReflectionMethod(AffiliatePanelProvider::class, 'getPages');
-    $method->setAccessible(true);
 
     /** @var array<class-string> $pages */
     $pages = $method->invoke($provider);

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
@@ -96,6 +97,13 @@ class PriceTier extends Model
                 return;
             }
 
+            $hasOwnerType = $tier->owner_type !== null;
+            $hasOwnerId = $tier->owner_id !== null;
+
+            if ($hasOwnerType !== $hasOwnerId) {
+                throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
+            }
+
             $owner = PricingOwnerScope::resolveOwner();
 
             if ($owner === null) {
@@ -103,11 +111,19 @@ class PriceTier extends Model
                     throw new AuthorizationException('Cannot write owned price tiers without an owner context.');
                 }
             } else {
-                if ($tier->owner_type === null && $tier->owner_id === null) {
+                if (
+                    ! $tier->exists
+                    && $tier->owner_type === null
+                    && $tier->owner_id === null
+                    && (bool) config('pricing.features.owner.auto_assign_on_create', true)
+                ) {
                     $tier->assignOwner($owner);
                 }
 
-                if (! $tier->belongsToOwner($owner)) {
+                if (
+                    ($tier->owner_type !== null || $tier->owner_id !== null)
+                    && ! $tier->belongsToOwner($owner)
+                ) {
                     throw new AuthorizationException('Cannot write price tiers outside the current owner scope.');
                 }
             }

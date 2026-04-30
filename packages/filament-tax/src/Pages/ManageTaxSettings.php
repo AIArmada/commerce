@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Pages;
 
+use AIArmada\FilamentTax\Support\FilamentTaxAuthz;
 use AIArmada\Tax\Settings\TaxSettings;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -40,6 +41,11 @@ final class ManageTaxSettings extends Page
     public function getTitle(): string
     {
         return __('Tax Settings');
+    }
+
+    public static function canAccess(): bool
+    {
+        return FilamentTaxAuthz::check('tax.settings.manage');
     }
 
     public function mount(): void
@@ -126,6 +132,15 @@ final class ManageTaxSettings extends Page
 
     public function save(): void
     {
+        if (! FilamentTaxAuthz::check('tax.settings.manage')) {
+            Notification::make()
+                ->title(__('Unauthorized'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         /** @var array<string, mixed> $state */
         $state = $this->data ?? [];
 

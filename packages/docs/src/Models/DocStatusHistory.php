@@ -7,11 +7,11 @@ namespace AIArmada\Docs\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\States\DocStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -19,8 +19,8 @@ use Illuminate\Support\Carbon;
  * @property DocStatus $status
  * @property string|null $notes
  * @property string|null $changed_by
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
  */
 final class DocStatusHistory extends Model
@@ -34,8 +34,6 @@ final class DocStatusHistory extends Model
 
     protected $fillable = [
         'doc_id',
-        'owner_type',
-        'owner_id',
         'status',
         'notes',
         'changed_by',

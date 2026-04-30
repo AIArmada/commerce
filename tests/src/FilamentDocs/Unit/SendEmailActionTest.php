@@ -91,10 +91,8 @@ it('derives recipient name and email from customer_data', function (): void {
     ]);
 
     $emailMethod = new ReflectionMethod(SendEmailAction::class, 'getRecipientEmail');
-    $emailMethod->setAccessible(true);
 
     $nameMethod = new ReflectionMethod(SendEmailAction::class, 'getRecipientName');
-    $nameMethod->setAccessible(true);
 
     expect($emailMethod->invoke(null, $doc))->toBe('to@example.test');
     expect($nameMethod->invoke(null, $doc))->toBe('Jane Doe');
@@ -142,7 +140,6 @@ it('sends email successfully and pushes a success notification to the session', 
     ]);
 
     $method = new ReflectionMethod(SendEmailAction::class, 'sendEmail');
-    $method->setAccessible(true);
 
     $method->invoke(null, $doc, ['to' => 'to@example.test']);
 
@@ -164,7 +161,6 @@ it('handles email failures and pushes an error notification to the session', fun
     app()->bind(DocEmailService::class, fn (): never => throw new Exception('fail'));
 
     $method = new ReflectionMethod(SendEmailAction::class, 'sendEmail');
-    $method->setAccessible(true);
 
     $method->invoke(null, $doc, ['to' => 'to@example.test']);
 

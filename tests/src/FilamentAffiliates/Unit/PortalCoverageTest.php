@@ -442,7 +442,6 @@ it('PortalLinks generates links when affiliate exists', function (): void {
 
     $reflection = new ReflectionClass($page);
     $method = $reflection->getMethod('getHeaderActions');
-    $method->setAccessible(true);
 
     $actions = $method->invoke($page);
     expect($actions)->toBeArray()->and(count($actions))->toBe(1);
@@ -488,7 +487,6 @@ it('PortalRegistration blocks register when disabled', function (): void {
 
     $reflection = new ReflectionClass($registration);
     $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setAccessible(true);
     $enabled->setValue($registration, false);
 
     expect($registration->register())->toBeNull();
@@ -500,11 +498,9 @@ it('PortalRegistration subheading reflects approval mode', function (): void {
     $reflection = new ReflectionClass($registration);
 
     $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setAccessible(true);
     $enabled->setValue($registration, true);
 
     $mode = $reflection->getProperty('approvalMode');
-    $mode->setAccessible(true);
 
     $mode->setValue($registration, 'auto');
     expect($registration->getSubheading())->toContain('automatically');

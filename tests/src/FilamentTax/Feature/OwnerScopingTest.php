@@ -8,12 +8,15 @@ uses(TestCase::class);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Actions\DownloadTaxExemptionCertificateAction;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource;
 use AIArmada\FilamentTax\Resources\TaxZoneResource;
 use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxZone;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -162,4 +165,34 @@ it('prevents cross-tenant certificate downloads', function (): void {
 
     expect(fn (): StreamedResponse => $action->execute($exemptionB))
         ->toThrow(NotFoundHttpException::class);
+});
+
+it('uses owner write guard to block global tax classes on tenant write paths', function (): void {
+    config()->set('tax.features.owner.enabled', true);
+    config()->set('tax.features.owner.include_global', true);
+
+    $owner = User::query()->create([
+        'name' => 'Owner Guard Tenant',
+        'email' => 'filament-tax-owner-write-guard@example.com',
+        'password' => 'secret',
+    ]);
+
+    bindOwnerResolverForFilamentTax($owner);
+
+    $ownedClass = TaxClass::query()->create([
+        'name' => 'Owned Class',
+        'slug' => 'owned-write-guard-class',
+        'is_active' => true,
+    ]);
+
+    $globalClass = OwnerContext::withOwner(null, fn (): TaxClass => TaxClass::query()->create([
+        'name' => 'Global Class',
+        'slug' => 'global-write-guard-class',
+        'is_active' => true,
+    ]));
+
+    expect(OwnerWriteGuard::findOrFailForOwner(TaxClass::class, $ownedClass->id, includeGlobal: false))
+        ->toBeInstanceOf(TaxClass::class)
+        ->and(fn () => OwnerWriteGuard::findOrFailForOwner(TaxClass::class, $globalClass->id, includeGlobal: false))
+        ->toThrow(AuthorizationException::class);
 });

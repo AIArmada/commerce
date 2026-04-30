@@ -67,7 +67,6 @@ it('covers resource pages and read-only list base class', function (): void {
     };
 
     $m = (new ReflectionClass(ReadOnlyListRecords::class))->getMethod('getHeaderActions');
-    $m->setAccessible(true);
     expect($m->invoke($readOnly))->toBeArray()->toBeEmpty();
 
     expect((new ListPurchases)->getTitle())->toBeString();
@@ -92,7 +91,6 @@ it('covers resource pages and read-only list base class', function (): void {
     $viewPurchase = new ViewPurchase;
 
     $recordProp = (new ReflectionClass(ViewRecord::class))->getProperty('record');
-    $recordProp->setAccessible(true);
     $recordProp->setValue($viewPurchase, $purchaseRecord);
 
     expect($viewPurchase->getTitle())->toContain('REF-123');
@@ -165,7 +163,6 @@ it('covers resource pages and read-only list base class', function (): void {
     $createBank = new CreateBankAccount;
 
     $mutate = (new ReflectionClass($createBank))->getMethod('mutateFormDataBeforeCreate');
-    $mutate->setAccessible(true);
 
     $data = $mutate->invoke($createBank, [
         'bank_code' => 'MBBEMYKL',
@@ -178,7 +175,6 @@ it('covers resource pages and read-only list base class', function (): void {
     $createPayout = new CreateSendInstruction;
 
     $mutate = (new ReflectionClass($createPayout))->getMethod('mutateFormDataBeforeCreate');
-    $mutate->setAccessible(true);
 
     $data = $mutate->invoke($createPayout, [
         'amount' => 1.23,
@@ -210,7 +206,6 @@ it('covers resource pages and read-only list base class', function (): void {
     $recordProp->setValue($viewBank, $bankAccount);
 
     $m = (new ReflectionClass($viewBank))->getMethod('getHeaderActions');
-    $m->setAccessible(true);
 
     foreach ($m->invoke($viewBank) as $action) {
         $action->isVisible();
@@ -220,7 +215,6 @@ it('covers resource pages and read-only list base class', function (): void {
     $recordProp->setValue($viewSend, $sendInstruction);
 
     $m = (new ReflectionClass($viewSend))->getMethod('getHeaderActions');
-    $m->setAccessible(true);
 
     foreach ($m->invoke($viewSend) as $action) {
         $action->isVisible();
@@ -237,11 +231,9 @@ it('covers resource pages and read-only list base class', function (): void {
     // Cover list record pages' header actions.
     $listBank = new ListBankAccounts;
     $m = (new ReflectionClass($listBank))->getMethod('getHeaderActions');
-    $m->setAccessible(true);
     expect($m->invoke($listBank))->toBeArray();
 
     $listSend = new ListSendInstructions;
     $m = (new ReflectionClass($listSend))->getMethod('getHeaderActions');
-    $m->setAccessible(true);
     expect($m->invoke($listSend))->toBeArray();
 });

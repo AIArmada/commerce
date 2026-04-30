@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Throwable;
 
@@ -49,23 +52,31 @@ class PrintLabelAction extends Action
                             return null;
                         }
 
-                        $livewire->js("window.open('{$url}', '_blank')");
+                        $livewire->js('window.open(' . json_encode((string) $url) . ', \'_blank\')');
 
                         return null;
                     }
 
                     if ($label->hasContent()) {
-                        $cacheKey = "shipping_label:{$record->tracking_number}";
+                        $owner = OwnerContext::resolve();
+                        $labelToken = (string) Str::ulid();
+                        $cacheKey = "shipping_label:{$labelToken}";
+
                         Cache::put($cacheKey, [
                             'content' => $label->getDecodedContent(),
                             'format' => $label->format,
-                        ], now()->addMinutes(30));
+                            'tracking_number' => $record->tracking_number,
+                            'owner_type' => $owner?->getMorphClass(),
+                            'owner_id' => $owner?->getKey(),
+                            'user_id' => auth()->id(),
+                        ], CarbonImmutable::now()->addMinutes(30));
 
-                        $url = URL::signedRoute('shipping.labels.show', [
+                        $url = URL::temporarySignedRoute('shipping.labels.show', CarbonImmutable::now()->addMinutes(30), [
                             'trackingNumber' => $record->tracking_number,
-                        ], now()->addMinutes(30));
+                            'token' => $labelToken,
+                        ]);
 
-                        $livewire->js("window.open('{$url}', '_blank')");
+                        $livewire->js('window.open(' . json_encode((string) $url) . ', \'_blank\')');
 
                         return null;
                     }

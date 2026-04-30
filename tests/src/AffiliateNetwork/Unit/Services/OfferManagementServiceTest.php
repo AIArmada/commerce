@@ -208,6 +208,14 @@ describe('OfferManagementService', function (): void {
             expect($approved->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
             expect($approved->reviewed_by)->toBeNull();
         });
+
+        test('fails when application is no longer accessible', function (): void {
+            $application = AffiliateOfferApplication::factory()->pending()->create();
+
+            $application->delete();
+
+            $this->service->approveApplication($application, 'admin@example.com');
+        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
     });
 
     describe('rejectApplication', function (): void {
@@ -225,6 +233,14 @@ describe('OfferManagementService', function (): void {
             expect($rejected->reviewed_by)->toBe('admin@example.com');
             expect($rejected->reviewed_at)->not->toBeNull();
         });
+
+        test('fails when application is no longer accessible', function (): void {
+            $application = AffiliateOfferApplication::factory()->pending()->create();
+
+            $application->delete();
+
+            $this->service->rejectApplication($application, 'Does not meet requirements', 'admin@example.com');
+        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
     });
 
     describe('revokeApplication', function (): void {
@@ -240,6 +256,14 @@ describe('OfferManagementService', function (): void {
             expect($revoked->status)->toBe(AffiliateOfferApplication::STATUS_REVOKED);
             expect($revoked->rejection_reason)->toBe('Violated terms');
         });
+
+        test('fails when application is no longer accessible', function (): void {
+            $application = AffiliateOfferApplication::factory()->approved()->create();
+
+            $application->delete();
+
+            $this->service->revokeApplication($application, 'Violated terms', 'admin@example.com');
+        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
     });
 
     describe('isApprovedForOffer', function (): void {
@@ -308,5 +332,34 @@ describe('OfferManagementService', function (): void {
             expect($offers)->toHaveCount(1);
             expect($offers->first()->id)->toBe($activeOffer->id);
         });
+    });
+
+    describe('resolvePublicOfferOrFail', function (): void {
+        test('returns active public offer', function (): void {
+            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
+                'is_public' => true,
+            ]);
+
+            $resolved = $this->service->resolvePublicOfferOrFail($offer->id);
+
+            expect($resolved->id)->toBe($offer->id);
+        });
+
+        test('fails for non public offer', function (): void {
+            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
+                'is_public' => false,
+            ]);
+
+            $this->service->resolvePublicOfferOrFail($offer->id);
+        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+        test('fails for non active offer', function (): void {
+            $offer = AffiliateOffer::factory()->forSite($this->site)->create([
+                'status' => AffiliateOffer::STATUS_DRAFT,
+                'is_public' => true,
+            ]);
+
+            $this->service->resolvePublicOfferOrFail($offer->id);
+        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
     });
 });

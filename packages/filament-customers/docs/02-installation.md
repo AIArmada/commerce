@@ -60,7 +60,7 @@ Visit your Filament admin panel. You should see:
 - **Customers** resource in the CRM navigation group
 - **Segments** resource in the CRM navigation group
 - **Customer Stats** widget on the dashboard (if enabled)
-- **Top Customers** widget on the dashboard (if enabled)
+- **Recent Customers** widget on the dashboard (if enabled)
 
 ## Default Configuration
 
@@ -113,25 +113,24 @@ Policies are automatically registered:
 - `SegmentPolicy` - Segment authorization
 - `AddressPolicy` - Address authorization
 - `CustomerNotePolicy` - Note authorization
-- `WishlistPolicy` - Wishlist authorization
 
 ## Multi-Tenancy Setup
 
 If using multi-tenancy, ensure owner context is available:
 
 ```php
-// In your Filament panel provider or middleware
+// In HTTP middleware / request lifecycle integration
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
-// Set tenant context
-OwnerContext::setOwner($tenant);
+// Set tenant context for the current request
+OwnerContext::setForRequest($tenant);
 
 // Or in Filament middleware
 protected function provideTenantContext(): void
 {
     $tenant = Filament::getTenant();
-    OwnerContext::setOwner($tenant);
+    OwnerContext::setForRequest($tenant);
 }
 ```
 
@@ -195,6 +194,6 @@ public function viewAny(User $user): bool
 
 ## Next Steps
 
-- [Configuration](03-configuration.md) - Configure the plugin
 - [Resources](04-resources.md) - Learn about resources
-- [Customization](06-customization.md) - Customize the plugin
+- [Widgets](05-widgets.md) - Review dashboard widgets
+- [Troubleshooting](99-troubleshooting.md) - Debug common issues

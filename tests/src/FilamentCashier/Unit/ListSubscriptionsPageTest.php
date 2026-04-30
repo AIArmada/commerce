@@ -25,7 +25,6 @@ if (! function_exists('filamentCashier_setProtectedProperty')) {
         }
 
         $prop = $reflection->getProperty($property);
-        $prop->setAccessible(true);
         $prop->setValue($object, $value);
     }
 }

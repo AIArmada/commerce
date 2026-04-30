@@ -44,13 +44,13 @@ class Option extends Model
 
     protected $guarded = ['id'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'position' => 'integer',
-        'is_visible' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'position' => 'integer',
+            'is_visible' => 'boolean',
+        ];
+    }
 
     /**
      * @var array<string, mixed>
@@ -120,12 +120,12 @@ class Option extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeVisible($query)
+    public function scopeVisible(Builder $query): Builder
     {
         return $query->where('is_visible', true);
     }
 
-    public function scopeOrdered($query)
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('position');
     }

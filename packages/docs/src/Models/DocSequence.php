@@ -30,8 +30,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_active
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Collection<int, SequenceNumber> $numbers
  */
 final class DocSequence extends Model
@@ -53,8 +53,6 @@ final class DocSequence extends Model
         'increment',
         'padding',
         'is_active',
-        'owner_type',
-        'owner_id',
     ];
 
     public function getTable(): string
@@ -92,18 +90,17 @@ final class DocSequence extends Model
             ->first();
 
         if (! $sequenceNumber) {
-            $ownerAttributes = [];
-            if (config('docs.owner.enabled', false)) {
-                $ownerAttributes = [
-                    'owner_type' => $this->owner_type,
-                    'owner_id' => $this->owner_id,
-                ];
-            }
-
-            $sequenceNumber = $this->numbers()->create(array_merge([
+            $sequenceNumber = $this->numbers()->make([
                 'period_key' => $periodKey,
                 'last_number' => $this->start_number - $this->increment,
-            ], $ownerAttributes));
+            ]);
+
+            if (config('docs.owner.enabled', false)) {
+                $sequenceNumber->owner_type = $this->owner_type;
+                $sequenceNumber->owner_id = $this->owner_id;
+            }
+
+            $sequenceNumber->save();
         }
 
         // Increment and save

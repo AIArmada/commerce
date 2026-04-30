@@ -105,26 +105,26 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
         'deleted' => ProductDeleted::class,
     ];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'type' => ProductType::class,
-        'status' => ProductStatus::class,
-        'visibility' => ProductVisibility::class,
-        'price' => 'integer',
-        'compare_price' => 'integer',
-        'cost' => 'integer',
-        'weight' => 'decimal:2',
-        'length' => 'decimal:2',
-        'width' => 'decimal:2',
-        'height' => 'decimal:2',
-        'is_featured' => 'boolean',
-        'is_taxable' => 'boolean',
-        'requires_shipping' => 'boolean',
-        'metadata' => 'array',
-        'published_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'type' => ProductType::class,
+            'status' => ProductStatus::class,
+            'visibility' => ProductVisibility::class,
+            'price' => 'integer',
+            'compare_price' => 'integer',
+            'cost' => 'integer',
+            'weight' => 'decimal:2',
+            'length' => 'decimal:2',
+            'width' => 'decimal:2',
+            'height' => 'decimal:2',
+            'is_featured' => 'boolean',
+            'is_taxable' => 'boolean',
+            'requires_shipping' => 'boolean',
+            'metadata' => 'array',
+            'published_at' => 'datetime',
+        ];
+    }
 
     /**
      * @var array<string, mixed>
@@ -502,17 +502,17 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ProductStatus::Active);
     }
 
-    public function scopeFeatured($query)
+    public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
     }
 
-    public function scopeVisible($query)
+    public function scopeVisible(Builder $query): Builder
     {
         return $query->where('status', ProductStatus::Active)
             ->whereIn('visibility', [
@@ -521,7 +521,7 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             ]);
     }
 
-    public function scopeSearchable($query)
+    public function scopeSearchable(Builder $query): Builder
     {
         return $query->where('status', ProductStatus::Active)
             ->whereIn('visibility', [
@@ -530,19 +530,19 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             ]);
     }
 
-    public function scopeOfType($query, ProductType $type)
+    public function scopeOfType(Builder $query, ProductType $type): Builder
     {
         return $query->where('type', $type);
     }
 
-    public function scopeInCategory($query, Category $category)
+    public function scopeInCategory(Builder $query, Category $category): Builder
     {
         return $query->whereHas('categories', function ($q) use ($category): void {
             $q->where('category_id', $category->id);
         });
     }
 
-    public function scopePriceRange($query, int $min, int $max)
+    public function scopePriceRange(Builder $query, int $min, int $max): Builder
     {
         return $query->whereBetween('price', [$min, $max]);
     }

@@ -55,16 +55,10 @@ final class PromotionForm
                             ->numeric()
                             ->helperText('For percentage: enter number (e.g., 20 for 20%). For fixed: enter cents (e.g., 1000 for $10)'),
 
-                        TextInput::make('min_order_value')
+                        TextInput::make('min_purchase_amount')
                             ->label('Minimum Order Value')
                             ->numeric()
                             ->helperText('In cents (e.g., 5000 for $50)')
-                            ->nullable(),
-
-                        TextInput::make('max_discount')
-                            ->label('Maximum Discount')
-                            ->numeric()
-                            ->helperText('Cap for percentage discounts, in cents')
                             ->nullable(),
                     ])
                     ->columns(2),
@@ -80,7 +74,7 @@ final class PromotionForm
                                     ->helperText('Leave empty for unlimited')
                                     ->nullable(),
 
-                                TextInput::make('usage_per_customer')
+                                TextInput::make('per_customer_limit')
                                     ->label('Per Customer Limit')
                                     ->numeric()
                                     ->helperText('Leave empty for unlimited')

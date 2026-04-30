@@ -159,7 +159,6 @@ it('builds resources, schemas, tables, pages, and relation managers', function (
 
     $formatted = (function (): string {
         $method = new ReflectionMethod(BaseCashierChipResource::class, 'formatAmount');
-        $method->setAccessible(true);
 
         return $method->invoke(null, 12345, 'MYR');
     })();
@@ -170,14 +169,12 @@ it('builds resources, schemas, tables, pages, and relation managers', function (
     foreach ([ListCustomers::class, ListSubscriptions::class, ListInvoices::class] as $pageClass) {
         $page = app($pageClass);
         $method = new ReflectionMethod($pageClass, 'getHeaderActions');
-        $method->setAccessible(true);
         expect($method->invoke($page))->toBeArray();
     }
 
     foreach ([ViewCustomer::class, ViewSubscription::class, ViewInvoice::class] as $pageClass) {
         $page = app($pageClass);
         $method = new ReflectionMethod($pageClass, 'getHeaderActions');
-        $method->setAccessible(true);
         expect($method->invoke($page))->toBeArray();
     }
 

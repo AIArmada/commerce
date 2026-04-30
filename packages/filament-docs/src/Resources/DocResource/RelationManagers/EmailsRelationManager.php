@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
@@ -83,6 +84,8 @@ final class EmailsRelationManager extends RelationManager
                         if ($doc === null) {
                             throw new NotFoundHttpException('Document not found.');
                         }
+
+                        DocsOwnerScope::assertCanMutateDoc($doc);
 
                         app(DocEmailService::class)->send(
                             doc: $doc,

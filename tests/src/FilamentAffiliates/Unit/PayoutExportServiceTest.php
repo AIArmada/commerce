@@ -122,12 +122,10 @@ it('builds PDF HTML for a payout (without invoking external PDF generators)', fu
     $reflection = new ReflectionClass($service);
 
     $buildExportData = $reflection->getMethod('buildExportData');
-    $buildExportData->setAccessible(true);
     /** @var array<int, array<string>> $data */
     $data = $buildExportData->invoke($service, $payout);
 
     $buildPdfHtml = $reflection->getMethod('buildPdfHtml');
-    $buildPdfHtml->setAccessible(true);
     /** @var string $html */
     $html = $buildPdfHtml->invoke($service, $payout, $data);
 
@@ -142,7 +140,6 @@ it('formats payout status safely for both enum and string statuses', function ()
 
     $reflection = new ReflectionClass($service);
     $method = $reflection->getMethod('getStatusValue');
-    $method->setAccessible(true);
 
     /** @var string $stateStatus */
     $stateStatus = $method->invoke($service, $payout);
@@ -162,12 +159,10 @@ it('streams an HTML download via the internal fallback', function (): void {
     $reflection = new ReflectionClass($service);
 
     $buildExportData = $reflection->getMethod('buildExportData');
-    $buildExportData->setAccessible(true);
     /** @var array<int, array<string>> $data */
     $data = $buildExportData->invoke($service, $payout);
 
     $streamHtml = $reflection->getMethod('streamHtml');
-    $streamHtml->setAccessible(true);
 
     /** @var StreamedResponse $response */
     $response = $streamHtml->invoke($service, $payout, $data, $payout->reference . '.pdf');

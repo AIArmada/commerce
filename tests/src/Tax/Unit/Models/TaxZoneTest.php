@@ -6,6 +6,7 @@ namespace AIArmada\Tax\Tests\Unit\Models;
 
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Database\Eloquent\Model;
@@ -345,13 +346,13 @@ class TaxZoneTest extends TaxTestCase
 
         $this->bindTaxOwnerForScoping(null);
 
-        TaxZone::create([
+        $globalZone = OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
             'code' => 'GLOBAL',
             'owner_type' => null,
             'owner_id' => null,
             'is_active' => true,
-        ]);
+        ]));
 
         $this->bindTaxOwnerForScoping($owner);
 
@@ -374,13 +375,13 @@ class TaxZoneTest extends TaxTestCase
 
         $this->bindTaxOwnerForScoping(null);
 
-        TaxZone::create([
+        OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
             'code' => 'GLOBAL',
             'owner_type' => null,
             'owner_id' => null,
             'is_active' => true,
-        ]);
+        ]));
 
         // When owner is null and includeGlobal=false, returns records where both owner_type and owner_id are null
         $zones = TaxZone::forOwner(null, includeGlobal: false)->get();
@@ -413,13 +414,13 @@ class TaxZoneTest extends TaxTestCase
 
         $this->bindTaxOwnerForScoping(null);
 
-        TaxZone::create([
+        OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
             'code' => 'GLOBAL',
             'owner_type' => null,
             'owner_id' => null,
             'is_active' => true,
-        ]);
+        ]));
 
         $this->bindTaxOwnerForScoping($owner);
 
@@ -478,13 +479,13 @@ class TaxZoneTest extends TaxTestCase
 
         $this->bindTaxOwnerForScoping(null);
 
-        TaxZone::create([
+        OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
             'code' => 'GLOBAL',
             'owner_type' => null,
             'owner_id' => null,
             'is_active' => true,
-        ]);
+        ]));
 
         $this->bindTaxOwnerForScoping($owner);
 

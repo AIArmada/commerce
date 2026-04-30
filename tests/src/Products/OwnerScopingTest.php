@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -40,26 +42,32 @@ it('scopes Product::forOwner() to current owner plus global', function (): void 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $productA = Product::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A',
-        'price' => 1000,
-    ]);
+    $productA = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'A',
+            'price' => 1000,
+        ]);
+    });
 
-    $productB = Product::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'name' => 'B',
-        'price' => 1000,
-    ]);
+    $productB = OwnerContext::withOwner($ownerB, static function () use ($ownerB): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'name' => 'B',
+            'price' => 1000,
+        ]);
+    });
 
-    $productGlobal = Product::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'name' => 'G',
-        'price' => 1000,
-    ]);
+    $productGlobal = OwnerContext::withOwner(null, static function (): Product {
+        return Product::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'G',
+            'price' => 1000,
+        ]);
+    });
 
     expect(fn () => Product::query()->create([
         'owner_type' => $ownerA->getMorphClass(),
@@ -88,24 +96,28 @@ it('scopes Product::forOwner() to current owner plus global', function (): void 
         ->not->toContain($productB->id);
 });
 
-it('returns strict global-only when owner resolver returns null', function (): void {
+it('returns strict global-only when explicit global context is active', function (): void {
     config()->set('products.features.owner.auto_assign_on_create', false);
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
 
-    $productA = Product::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A',
-        'price' => 1000,
-    ]);
+    $productA = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'A',
+            'price' => 1000,
+        ]);
+    });
 
-    $productGlobal = Product::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'name' => 'G',
-        'price' => 1000,
-    ]);
+    $productGlobal = OwnerContext::withOwner(null, static function (): Product {
+        return Product::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'G',
+            'price' => 1000,
+        ]);
+    });
 
     expect(fn () => Product::query()->create([
         'owner_type' => $ownerA->getMorphClass(),
@@ -122,7 +134,12 @@ it('returns strict global-only when owner resolver returns null', function (): v
         }
     });
 
-    $ids = Product::query()->forOwner()->pluck('id')->all();
+    expect(fn () => Product::query()->forOwner()->pluck('id')->all())
+        ->toThrow(RuntimeException::class);
+
+    $ids = OwnerContext::withOwner(null, static function (): array {
+        return Product::query()->forOwner()->pluck('id')->all();
+    });
 
     expect($ids)
         ->toContain($productGlobal->id)
@@ -159,12 +176,14 @@ it('blocks cross-tenant updates to an already-loaded product', function (): void
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $product = Product::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'Owned by A',
-        'price' => 1000,
-    ]);
+    $product = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'Owned by A',
+            'price' => 1000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerB) implements OwnerResolverInterface
     {
@@ -179,7 +198,7 @@ it('blocks cross-tenant updates to an already-loaded product', function (): void
     });
 
     expect(fn () => $product->update(['name' => 'Hacked']))
-        ->toThrow(InvalidArgumentException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('blocks updating global products from an owner context', function (): void {
@@ -188,12 +207,14 @@ it('blocks updating global products from an owner context', function (): void {
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
 
-    $productGlobal = Product::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'name' => 'Global',
-        'price' => 1000,
-    ]);
+    $productGlobal = OwnerContext::withOwner(null, static function (): Product {
+        return Product::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'Global',
+            'price' => 1000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -208,7 +229,7 @@ it('blocks updating global products from an owner context', function (): void {
     });
 
     expect(fn () => $productGlobal->update(['name' => 'Tenant modified']))
-        ->toThrow(InvalidArgumentException::class);
+        ->toThrow(AuthorizationException::class);
 });
 
 it('scopes Category->products to the category owner plus global', function (): void {
@@ -217,32 +238,40 @@ it('scopes Category->products to the category owner plus global', function (): v
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $category = Category::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A Category',
-    ]);
+    $category = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Category {
+        return Category::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'A Category',
+        ]);
+    });
 
-    $productA = Product::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A',
-        'price' => 1000,
-    ]);
+    $productA = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'A',
+            'price' => 1000,
+        ]);
+    });
 
-    $productB = Product::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'name' => 'B',
-        'price' => 1000,
-    ]);
+    $productB = OwnerContext::withOwner($ownerB, static function () use ($ownerB): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'name' => 'B',
+            'price' => 1000,
+        ]);
+    });
 
-    $productGlobal = Product::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'name' => 'G',
-        'price' => 1000,
-    ]);
+    $productGlobal = OwnerContext::withOwner(null, static function (): Product {
+        return Product::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'G',
+            'price' => 1000,
+        ]);
+    });
 
     $category->products()->attach([$productA->id, $productB->id, $productGlobal->id]);
 
@@ -260,32 +289,40 @@ it('counts Category::withCount(products) using owner-correlated scoping', functi
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $category = Category::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A Category',
-    ]);
+    $category = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Category {
+        return Category::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'A Category',
+        ]);
+    });
 
-    $productA = Product::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A',
-        'price' => 1000,
-    ]);
+    $productA = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'A',
+            'price' => 1000,
+        ]);
+    });
 
-    $productB = Product::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'name' => 'B',
-        'price' => 1000,
-    ]);
+    $productB = OwnerContext::withOwner($ownerB, static function () use ($ownerB): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'name' => 'B',
+            'price' => 1000,
+        ]);
+    });
 
-    $productGlobal = Product::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'name' => 'G',
-        'price' => 1000,
-    ]);
+    $productGlobal = OwnerContext::withOwner(null, static function (): Product {
+        return Product::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'G',
+            'price' => 1000,
+        ]);
+    });
 
     $category->products()->attach([$productA->id, $productB->id, $productGlobal->id]);
 
@@ -315,33 +352,41 @@ it('scopes Collection->products to the collection owner plus global', function (
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $collection = Collection::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A Collection',
-        'type' => 'manual',
-    ]);
+    $collection = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Collection {
+        return Collection::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'A Collection',
+            'type' => 'manual',
+        ]);
+    });
 
-    $productA = Product::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'name' => 'A',
-        'price' => 1000,
-    ]);
+    $productA = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'A',
+            'price' => 1000,
+        ]);
+    });
 
-    $productB = Product::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'name' => 'B',
-        'price' => 1000,
-    ]);
+    $productB = OwnerContext::withOwner($ownerB, static function () use ($ownerB): Product {
+        return Product::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'name' => 'B',
+            'price' => 1000,
+        ]);
+    });
 
-    $productGlobal = Product::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'name' => 'G',
-        'price' => 1000,
-    ]);
+    $productGlobal = OwnerContext::withOwner(null, static function (): Product {
+        return Product::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'G',
+            'price' => 1000,
+        ]);
+    });
 
     $collection->products()->attach([$productA->id, $productB->id, $productGlobal->id]);
 

@@ -4,162 +4,112 @@ title: Configuration
 
 # Configuration
 
-## Full Configuration Reference
+## Published config shape
 
 ```php
-<?php
-
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Database
-    |--------------------------------------------------------------------------
-    */
-
     'database' => [
-        // Prefix for all product tables
-        'table_prefix' => 'products_',
-
-        // Override specific table names
+        'table_prefix' => 'product_',
+        'json_column_type' => env('PRODUCTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
         'tables' => [
-            'products' => 'products_products',
-            'variants' => 'products_variants',
-            'options' => 'products_options',
-            'option_values' => 'products_option_values',
-            'option_value_variant' => 'products_option_value_variant',
-            'categories' => 'products_categories',
-            'category_product' => 'products_category_product',
-            'collections' => 'products_collections',
-            'collection_product' => 'products_collection_product',
-            'attributes' => 'products_attributes',
-            'attribute_groups' => 'products_attribute_groups',
-            'attribute_sets' => 'products_attribute_sets',
-            'attribute_values' => 'products_attribute_values',
-            'attribute_attribute_group' => 'products_attribute_attribute_group',
+            'products' => 'products',
+            'variants' => 'product_variants',
+            'options' => 'product_options',
+            'option_values' => 'product_option_values',
+            'variant_options' => 'product_variant_options',
+            'categories' => 'product_categories',
+            'category_product' => 'category_product',
+            'collections' => 'product_collections',
+            'collection_product' => 'collection_product',
+            'attributes' => 'product_attributes',
+            'attribute_groups' => 'product_attribute_groups',
+            'attribute_values' => 'product_attribute_values',
+            'attribute_sets' => 'product_attribute_sets',
+            'attribute_attribute_group' => 'product_attribute_attribute_group',
+            'attribute_attribute_set' => 'product_attribute_attribute_set',
+            'attribute_group_attribute_set' => 'product_attribute_group_attribute_set',
         ],
-
-        // JSON column type (use 'text' for older MySQL)
-        'json_column_type' => 'json',
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Default Currency
-    |--------------------------------------------------------------------------
-    */
-
-    'default_currency' => 'MYR',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Variant Generation
-    |--------------------------------------------------------------------------
-    */
-
-    'variants' => [
-        // Auto-generate SKU for variants
-        'auto_generate_sku' => true,
-
-        // SKU separator between product SKU and option values
-        'sku_separator' => '-',
+    'defaults' => [
+        'currency' => 'MYR',
+        'store_money_in_cents' => true,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Media Configuration
-    |--------------------------------------------------------------------------
-    */
+    'features' => [
+        'owner' => [
+            'enabled' => true,
+            'include_global' => false,
+            'auto_assign_on_create' => true,
+        ],
+        'variants' => [
+            'sku_pattern' => '{parent_sku}-{option_codes}',
+        ],
+    ],
 
     'media' => [
-        // Available media collections
         'collections' => [
-            'gallery',      // Product image gallery
-            'hero',         // Hero/featured images
-            'icon',         // Icons/thumbnails
-            'banner',       // Banner images
-            'videos',       // Product videos
-            'documents',    // Downloadable documents
+            'gallery' => [...],
+            'hero' => [...],
+            'icon' => [...],
+            'banner' => [...],
+            'videos' => [...],
+            'documents' => [...],
+            'variant_images' => [...],
         ],
-
-        // Image conversions
         'conversions' => [
-            'thumb' => [
-                'width' => 150,
-                'height' => 150,
-            ],
-            'medium' => [
-                'width' => 400,
-                'height' => 400,
-            ],
-            'large' => [
-                'width' => 800,
-                'height' => 800,
-            ],
+            'thumbnail' => [...],
+            'card' => [...],
+            'detail' => [...],
+            'zoom' => [...],
+            'webp-card' => [...],
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Owner Mode (Multi-tenancy)
-    |--------------------------------------------------------------------------
-    */
-
-    'owner_mode' => 'enabled', // 'enabled' or 'disabled'
+    'seo' => [
+        'slug_max_length' => 100,
+    ],
 ];
 ```
 
-## Environment Variables
+## Key settings
+
+### Database
+
+- `database.table_prefix` is the fallback prefix used by model `getTable()` methods.
+- `database.tables.*` lets you override specific table names.
+- `database.json_column_type` is used for JSON-capable migrations and supports older database engines via `text`.
+
+### Defaults
+
+- `defaults.currency` is the fallback currency used by money helpers.
+- `defaults.store_money_in_cents` controls whether raw stored values are minor units.
+
+### Owner behavior
+
+- `features.owner.enabled` toggles owner enforcement for package models.
+- `features.owner.include_global` controls whether owner-scoped reads may include global rows.
+- `features.owner.auto_assign_on_create` controls whether owned rows inherit the current owner automatically.
+
+### Variant behavior
+
+- `features.variants.sku_pattern` is used by `Variant::generateSku()`.
+
+### Media
+
+The package reads collection limits and mime rules from `media.collections.*`, and image conversion sizes from `media.conversions.*`.
+
+### SEO
+
+- `seo.slug_max_length` is used by product and category slug generation.
+
+## Environment variables
+
+Only the JSON column type is environment-driven by default:
 
 ```env
-# Optional: Override default currency
-PRODUCTS_DEFAULT_CURRENCY=MYR
-
-# Optional: Disable owner scoping
-PRODUCTS_OWNER_MODE=enabled
+PRODUCTS_JSON_COLUMN_TYPE=json
+COMMERCE_JSON_COLUMN_TYPE=json
 ```
 
-## Table Name Customization
-
-Override any table name in the configuration:
-
-```php
-'tables' => [
-    'products' => 'my_custom_products_table',
-],
-```
-
-Models use `getTable()` method to resolve table names dynamically:
-
-```php
-// In Product model
-public function getTable(): string
-{
-    $tables = config('products.database.tables', []);
-    $prefix = config('products.database.table_prefix', 'products_');
-
-    return $tables['products'] ?? $prefix.'products';
-}
-```
-
-## Media Conversions
-
-Add custom conversions in your model or configuration:
-
-```php
-// Custom conversion in Product model
-public function registerMediaConversions(Media $media = null): void
-{
-    $conversions = config('products.media.conversions', []);
-
-    foreach ($conversions as $name => $dimensions) {
-        $this->addMediaConversion($name)
-            ->fit(Fit::Contain, $dimensions['width'], $dimensions['height'])
-            ->nonQueued();
-    }
-
-    // Add custom conversion
-    $this->addMediaConversion('webp')
-        ->format('webp')
-        ->nonQueued();
-}
-```
+If you want different owner or currency defaults, publish the config and change the values directly.

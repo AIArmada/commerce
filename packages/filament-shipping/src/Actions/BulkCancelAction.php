@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\BatchRateLimiter;
 use AIArmada\Shipping\Services\ShipmentService;
@@ -44,16 +43,11 @@ class BulkCancelAction extends BulkAction
 
                 $shipmentService = app(ShipmentService::class);
 
-                $cancellableStatuses = [
-                    ShipmentStatus::Draft,
-                    ShipmentStatus::Pending,
-                    ShipmentStatus::Shipped,
-                ];
-
-                // Filter to only cancellable shipments
+                // Filter to only cancellable shipments using the model's own isCancellable() helper
+                // (avoids comparing Spatie State objects against Enum cases which is always false)
                 $cancellableShipments = $records->filter(
                     fn ($record) => $record instanceof Shipment
-                    && in_array($record->status, $cancellableStatuses, true)
+                    && $record->isCancellable()
                     && $user->can('cancel', $record)
                 );
 

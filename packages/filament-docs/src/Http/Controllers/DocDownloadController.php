@@ -17,18 +17,34 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class DocDownloadController
 {
-    public function __invoke(string $doc): BinaryFileResponse | StreamedResponse
+    public function __invoke(Doc | string $doc): BinaryFileResponse | StreamedResponse
     {
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
+        $ownerEnabled = (bool) config('docs.owner.enabled', false);
 
-        try {
-            /** @var Doc $docModel */
-            $docModel = OwnerWriteGuard::findOrFailForOwner(Doc::class, $doc, OwnerContext::CURRENT, $includeGlobal);
-        } catch (AuthorizationException) {
-            throw new NotFoundHttpException('Document not found.');
+        if ($doc instanceof Doc) {
+            $docModel = $doc;
+        } else {
+            $includeGlobal = (bool) config('docs.owner.include_global', false);
+
+            if ($ownerEnabled) {
+                try {
+                    /** @var Doc $docModel */
+                    $docModel = OwnerWriteGuard::findOrFailForOwner(Doc::class, $doc, OwnerContext::CURRENT, $includeGlobal);
+                } catch (AuthorizationException) {
+                    throw new NotFoundHttpException('Document not found.');
+                }
+            } else {
+                $docModel = Doc::query()->find($doc);
+
+                if (! $docModel instanceof Doc) {
+                    throw new NotFoundHttpException('Document not found.');
+                }
+            }
         }
 
-        DocsOwnerScope::assertCanAccessDoc($docModel);
+        if ($ownerEnabled) {
+            DocsOwnerScope::assertCanAccessDoc($docModel);
+        }
 
         if ($docModel->pdf_path === null) {
             throw new NotFoundHttpException('PDF not found for this document.');

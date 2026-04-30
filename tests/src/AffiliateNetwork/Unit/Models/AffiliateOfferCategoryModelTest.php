@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 
 describe('AffiliateOfferCategory Model', function (): void {
@@ -106,8 +107,8 @@ describe('AffiliateOfferCategory Model', function (): void {
             $user1 = User::factory()->create();
             $user2 = User::factory()->create();
 
-            $cat1 = AffiliateOfferCategory::factory()->forOwner($user1)->create();
-            AffiliateOfferCategory::factory()->forOwner($user2)->create();
+            $cat1 = OwnerContext::withOwner($user1, fn () => AffiliateOfferCategory::factory()->forOwner($user1)->create());
+            OwnerContext::withOwner($user2, fn () => AffiliateOfferCategory::factory()->forOwner($user2)->create());
 
             $results = AffiliateOfferCategory::forOwner($user1)->get();
 

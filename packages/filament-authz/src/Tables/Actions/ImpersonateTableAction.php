@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Tables\Actions;
 
 use AIArmada\FilamentAuthz\Services\ImpersonateManager;
+use AIArmada\FilamentAuthz\Support\ImpersonationScopeGuard;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
@@ -112,6 +113,14 @@ class ImpersonateTableAction extends Action
             return false;
         }
 
+        if (! $record instanceof Authenticatable) {
+            return false;
+        }
+
+        if (! ImpersonationScopeGuard::canAccessTarget($record)) {
+            return false;
+        }
+
         $superAdminRole = config('filament-authz.super_admin_role');
 
         if ($superAdminRole && method_exists($currentUser, 'hasRole')) {
@@ -130,6 +139,10 @@ class ImpersonateTableAction extends Action
     protected function impersonate(Model $record, string $redirectTo = '/'): bool
     {
         if (! $record instanceof Authenticatable) {
+            return false;
+        }
+
+        if (! ImpersonationScopeGuard::canAccessTarget($record)) {
             return false;
         }
 

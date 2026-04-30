@@ -95,7 +95,6 @@ it('exports owner-scoped products to csv (no cross-tenant leakage)', function ()
     $page = app(ImportExportProducts::class);
 
     $method = new ReflectionMethod(ImportExportProducts::class, 'exportProducts');
-    $method->setAccessible(true);
 
     /** @var StreamedResponse $response */
     $response = $method->invoke($page, [

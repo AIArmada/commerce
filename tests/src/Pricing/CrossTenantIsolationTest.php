@@ -143,3 +143,80 @@ it('blocks writing and deleting owned rows when owner is unresolved', function (
     expect(fn () => $list->delete())
         ->toThrow(AuthorizationException::class);
 });
+
+it('auto-assigns the resolved owner to new pricing records when enabled', function (): void {
+    config()->set('pricing.features.owner.enabled', true);
+    config()->set('pricing.features.owner.auto_assign_on_create', true);
+
+    $owner = User::query()->create([
+        'name' => 'Owner Auto Assign',
+        'email' => 'pricing-owner-auto-assign@example.com',
+        'password' => 'secret',
+    ]);
+
+    bindPricingOwner($owner);
+
+    $priceList = PriceList::query()->create([
+        'name' => 'Auto Assigned List',
+        'slug' => 'auto-assigned-list',
+        'currency' => 'MYR',
+        'is_active' => true,
+    ]);
+
+    $price = Price::query()->create([
+        'price_list_id' => $priceList->id,
+        'priceable_type' => 'TestProduct',
+        'priceable_id' => 'auto-price-item',
+        'amount' => 2_500,
+        'currency' => 'MYR',
+    ]);
+
+    expect($priceList->owner_type)->toBe($owner->getMorphClass())
+        ->and((string) $priceList->owner_id)->toBe((string) $owner->getKey())
+        ->and($price->owner_type)->toBe($owner->getMorphClass())
+        ->and((string) $price->owner_id)->toBe((string) $owner->getKey());
+});
+
+it('does not auto assign the resolved owner when auto assignment is disabled', function (): void {
+    config()->set('pricing.features.owner.enabled', true);
+    config()->set('pricing.features.owner.auto_assign_on_create', false);
+
+    $owner = User::query()->create([
+        'name' => 'Owner No Auto Assign',
+        'email' => 'pricing-owner-no-auto-assign@example.com',
+        'password' => 'secret',
+    ]);
+
+    bindPricingOwner($owner);
+
+    $priceList = PriceList::query()->create([
+        'name' => 'Global From Owner Context',
+        'slug' => 'global-from-owner-context',
+        'currency' => 'MYR',
+        'is_active' => true,
+    ]);
+
+    expect($priceList->owner_type)->toBeNull()
+        ->and($priceList->owner_id)->toBeNull();
+});
+
+it('rejects malformed owner tuples on pricing writes', function (): void {
+    config()->set('pricing.features.owner.enabled', true);
+    config()->set('pricing.features.owner.auto_assign_on_create', false);
+
+    $owner = User::query()->create([
+        'name' => 'Owner Invalid Tuple',
+        'email' => 'pricing-owner-invalid-tuple@example.com',
+        'password' => 'secret',
+    ]);
+
+    bindPricingOwner(null);
+
+    expect(fn () => PriceList::query()->create([
+        'name' => 'Invalid List',
+        'slug' => 'invalid-list',
+        'currency' => 'MYR',
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => null,
+    ]))->toThrow(\RuntimeException::class);
+});

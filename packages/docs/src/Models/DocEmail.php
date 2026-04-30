@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * Tracks emails sent for documents.
@@ -25,15 +24,15 @@ use Illuminate\Support\Carbon;
  * @property string $subject
  * @property string $body
  * @property EmailStatus $status
- * @property Carbon|null $sent_at
- * @property Carbon|null $opened_at
- * @property Carbon|null $clicked_at
+ * @property CarbonImmutable|null $sent_at
+ * @property CarbonImmutable|null $opened_at
+ * @property CarbonImmutable|null $clicked_at
  * @property int $open_count
  * @property int $click_count
  * @property string|null $failure_reason
  * @property array<string, mixed>|null $metadata
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
  * @property-read DocEmailTemplate|null $template
  */
@@ -48,8 +47,6 @@ final class DocEmail extends Model
 
     protected $fillable = [
         'doc_id',
-        'owner_type',
-        'owner_id',
         'doc_email_template_id',
         'recipient_email',
         'recipient_name',

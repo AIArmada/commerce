@@ -47,32 +47,6 @@ dd($owner); // Should be set in multi-tenant mode
 ],
 ```
 
-### Wallet Actions Not Working
-
-**Problem**: Add/Deduct credit actions fail silently
-
-**Causes**:
-1. Wallet feature disabled
-2. Insufficient permissions
-3. Amount validation failure
-4. Owner scope mismatch
-
-**Solution**:
-
-```php
-// Check wallet config
-if (!config('customers.features.wallet.enabled')) {
-    // Enable in config/customers.php
-}
-
-// Verify policy authorization
-Gate::authorize('update', $customer);
-
-// Check amount limits
-$minTopup = config('customers.defaults.wallet.min_topup');
-$maxBalance = config('customers.defaults.wallet.max_balance');
-```
-
 ### Segment Rebuild Fails
 
 **Problem**: Segment rebuild action shows error or wrong count
@@ -121,7 +95,7 @@ Forms\Components\TextInput::make('first_name')
 
 ### Relation Manager Not Loading
 
-**Problem**: Addresses, wishlists, or notes tabs not showing
+**Problem**: Addresses or notes tabs not showing
 
 **Solution**:
 
@@ -131,7 +105,6 @@ public static function getRelations(): array
 {
     return [
         RelationManagers\AddressesRelationManager::class,
-        RelationManagers\WishlistsRelationManager::class,
         RelationManagers\NotesRelationManager::class,
     ];
 }
@@ -179,7 +152,7 @@ FilamentCustomersPlugin::make()
 // Or register manually
 $panel->widgets([
     \AIArmada\FilamentCustomers\Widgets\CustomerStatsWidget::class,
-    \AIArmada\FilamentCustomers\Widgets\TopCustomersWidget::class,
+    \AIArmada\FilamentCustomers\Widgets\RecentCustomersWidget::class,
 ]);
 
 // Check widget canView method
@@ -368,13 +341,13 @@ $isRegistered = in_array(
 
 **Fix**:
 ```php
-// Set owner context before accessing resources
-OwnerContext::setOwner($tenant);
+// Set owner context before accessing resources (HTTP request lifecycle only)
+OwnerContext::setForRequest($tenant);
 
 // Or in Filament middleware
 protected function provideTenantContext(): void
 {
-    OwnerContext::setOwner(Filament::getTenant());
+    OwnerContext::setForRequest(Filament::getTenant());
 }
 ```
 
@@ -391,20 +364,6 @@ $customer = Customer::query()
 
 // Then safe to create address
 $customer->addresses()->create([...]);
-```
-
-### "Maximum wallet balance exceeded"
-
-**Cause**: Adding credit would exceed configured limit
-
-**Fix**:
-```php
-// Check current balance and limit
-$maxBalance = config('customers.defaults.wallet.max_balance');
-$available = $maxBalance - $customer->wallet_balance;
-
-// Only add up to available amount
-$amount = min($requestedAmount, $available);
 ```
 
 ## Getting Help
@@ -435,4 +394,4 @@ When reporting issues, include:
 
 - [Resources](04-resources.md) - Review resource documentation
 - [Widgets](05-widgets.md) - Review widget documentation
-- [Customization](06-customization.md) - Customization options
+- [Installation](02-installation.md) - Verify setup and registration

@@ -9,6 +9,7 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 
 test('voucher service can find voucher', function (): void {
@@ -317,7 +318,6 @@ test('voucher service normalize code with uppercase', function (): void {
     // Access private method via reflection
     $reflection = new ReflectionClass($service);
     $method = $reflection->getMethod('normalizeCode');
-    $method->setAccessible(true);
 
     expect($method->invoke($service, ' lowercase '))->toBe('LOWERCASE');
 });
@@ -330,7 +330,36 @@ test('voucher service normalize code without uppercase', function (): void {
     // Access private method via reflection
     $reflection = new ReflectionClass($service);
     $method = $reflection->getMethod('normalizeCode');
-    $method->setAccessible(true);
 
     expect($method->invoke($service, ' lowercase '))->toBe('lowercase');
+});
+
+test('voucher service release clears all reservation cache keys for voucher', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'RESERVECLR',
+        'name' => 'Reservation Clear',
+        'type' => 'percentage',
+        'value' => 10,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+
+    $service->reserve('RESERVECLR', 'session-a');
+    $service->reserve('RESERVECLR', 'session-b');
+
+    $reservationA = Cache::get("voucher_reservation:{$voucher->id}:session-a");
+    $reservationB = Cache::get("voucher_reservation:{$voucher->id}:session-b");
+    $sessionsIndex = Cache::get("voucher_reservation_sessions:{$voucher->id}");
+
+    expect($reservationA)->toBeArray()
+        ->and($reservationB)->toBeArray()
+        ->and($sessionsIndex)->toContain('session-a', 'session-b');
+
+    $service->release('RESERVECLR');
+
+    expect(Cache::get("voucher_reservation:{$voucher->id}:session-a"))->toBeNull()
+        ->and(Cache::get("voucher_reservation:{$voucher->id}:session-b"))->toBeNull()
+        ->and(Cache::get("voucher_reservation_sessions:{$voucher->id}"))->toBeNull();
 });

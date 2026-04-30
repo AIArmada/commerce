@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Health\OrderProcessingCheck;
+use AIArmada\Orders\States\PendingPayment;
 use Spatie\Health\Checks\Result;
+use Spatie\Health\Enums\Status;
 
 describe('OrderProcessingCheck Health Check', function (): void {
     describe('Health Check Configuration', function (): void {
@@ -43,6 +47,32 @@ describe('OrderProcessingCheck Health Check', function (): void {
             $result = $check->run();
 
             expect($result)->toBeInstanceOf(Result::class);
+        });
+
+        it('uses explicit global owner context when owner resolver returns null', function (): void {
+            config()->set('orders.owner.enabled', true);
+            config()->set('orders.owner.include_global', false);
+            config()->set('orders.owner.auto_assign_on_create', false);
+
+            $order = OwnerContext::withOwner(null, fn (): Order => Order::query()->create([
+                'owner_type' => null,
+                'owner_id' => null,
+                'status' => PendingPayment::class,
+                'currency' => 'MYR',
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+            ]));
+
+            $order->forceFill([
+                'created_at' => now()->subHours(30),
+            ])->saveQuietly();
+
+            $check = new OrderProcessingCheck;
+
+            $result = OwnerContext::withOwner(null, fn (): Result => $check->run());
+
+            expect($result->status->equals(Status::warning()))->toBeTrue()
+                ->and($result->meta['reason'] ?? null)->not->toBe('owner_context_missing');
         });
     });
 });

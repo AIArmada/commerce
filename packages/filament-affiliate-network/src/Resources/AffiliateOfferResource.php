@@ -262,13 +262,25 @@ final class AffiliateOfferResource extends Resource
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status !== AffiliateOffer::STATUS_ACTIVE)
-                    ->action(fn (AffiliateOffer $record) => $record->update(['status' => AffiliateOffer::STATUS_ACTIVE])),
+                    ->action(function (AffiliateOffer $record): void {
+                        $scopedRecord = AffiliateOffer::query()
+                            ->whereKey($record->getKey())
+                            ->firstOrFail();
+
+                        $scopedRecord->update(['status' => AffiliateOffer::STATUS_ACTIVE]);
+                    }),
                 Actions\Action::make('pause')
                     ->icon('heroicon-o-pause')
                     ->color('warning')
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status === AffiliateOffer::STATUS_ACTIVE)
-                    ->action(fn (AffiliateOffer $record) => $record->update(['status' => AffiliateOffer::STATUS_PAUSED])),
+                    ->action(function (AffiliateOffer $record): void {
+                        $scopedRecord = AffiliateOffer::query()
+                            ->whereKey($record->getKey())
+                            ->firstOrFail();
+
+                        $scopedRecord->update(['status' => AffiliateOffer::STATUS_PAUSED]);
+                    }),
             ])
             ->bulkActions([
                 Actions\BulkActionGroup::make([

@@ -132,9 +132,9 @@ FilamentCustomersPlugin::make()
 #### Change Limit
 
 ```php
-use AIArmada\FilamentCustomers\Widgets\TopCustomersWidget;
+use AIArmada\FilamentCustomers\Widgets\RecentCustomersWidget;
 
-class CustomRecentCustomersWidget extends TopCustomersWidget
+class CustomRecentCustomersWidget extends RecentCustomersWidget
 {
     public function table(Table $table): Table
     {
@@ -151,7 +151,7 @@ class CustomRecentCustomersWidget extends TopCustomersWidget
 #### Change Sort Order
 
 ```php
-class CustomRecentCustomersWidget extends TopCustomersWidget
+class CustomRecentCustomersWidget extends RecentCustomersWidget
 {
     protected static ?int $sort = 10; // Move to bottom
 }
@@ -340,7 +340,7 @@ public function panel(Panel $panel): Panel
 {
     return $panel->widgets([
         CustomerStatsWidget::class,
-        TopCustomersWidget::class,
+        RecentCustomersWidget::class,
         CustomCustomerWidget::class,
     ]);
 }

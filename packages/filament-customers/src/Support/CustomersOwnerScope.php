@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use RuntimeException;
 
 final class CustomersOwnerScope
 {
@@ -17,7 +18,13 @@ final class CustomersOwnerScope
             return null;
         }
 
-        return OwnerContext::resolve();
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
+            throw new RuntimeException('Owner context is required for Filament Customers queries. Use OwnerContext::withOwner(null, ...) for explicit global access.');
+        }
+
+        return $owner;
     }
 
     /**

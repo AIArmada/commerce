@@ -40,7 +40,6 @@ it('builds inventory stats widget stats', function (): void {
     expect(InventoryStatsWidget::canView())->toBeTrue();
 
     $method = new ReflectionMethod($widget, 'getStats');
-    $method->setAccessible(true);
 
     /** @var array $stats */
     $stats = $method->invoke($widget);
@@ -85,7 +84,6 @@ it('builds movement trends chart data', function (): void {
     $widget = new MovementTrendsChart;
 
     $method = new ReflectionMethod($widget, 'getData');
-    $method->setAccessible(true);
 
     /** @var array $data */
     $data = $method->invoke($widget);
@@ -101,7 +99,6 @@ it('builds abc analysis chart description and data without crashing', function (
     $description = $widget->getDescription();
 
     $method = new ReflectionMethod($widget, 'getData');
-    $method->setAccessible(true);
 
     /** @var array $data */
     $data = $method->invoke($widget);
@@ -130,13 +127,11 @@ it('builds kpi and valuation widgets stats', function (): void {
     $valuation = new InventoryValuationWidget;
 
     $kpiMethod = new ReflectionMethod($kpi, 'getStats');
-    $kpiMethod->setAccessible(true);
 
     /** @var array $kpiStats */
     $kpiStats = $kpiMethod->invoke($kpi);
 
     $valuationMethod = new ReflectionMethod($valuation, 'getStats');
-    $valuationMethod->setAccessible(true);
 
     /** @var array $valuationStats */
     $valuationStats = $valuationMethod->invoke($valuation);

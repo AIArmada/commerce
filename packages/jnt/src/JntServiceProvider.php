@@ -139,7 +139,7 @@ class JntServiceProvider extends PackageServiceProvider
 
         $configs[] = [
             'name' => $configName,
-            'signing_secret' => '',
+            'signing_secret' => (string) config('jnt.private_key', ''),
             'signature_header_name' => 'digest',
             'signature_validator' => JntSpatieSignatureValidator::class,
             'webhook_profile' => JntWebhookProfile::class,

@@ -4,82 +4,46 @@ title: Installation
 
 # Installation
 
-## Composer Installation
+## Install the package
 
 ```bash
 composer require aiarmada/filament-products
 ```
 
-This will also install `aiarmada/products` as a dependency.
-
-## Register Plugin
-
-Add the plugin to your Filament panel provider:
+## Register the plugin
 
 ```php
-// app/Providers/Filament/AdminPanelProvider.php
-
 use AIArmada\FilamentProducts\FilamentProductsPlugin;
+use Filament\Panel;
 
 public function panel(Panel $panel): Panel
 {
     return $panel
-        // ...
         ->plugins([
             FilamentProductsPlugin::make(),
         ]);
 }
 ```
 
-## Publish Configuration (Optional)
+## Publish config if needed
 
 ```bash
 php artisan vendor:publish --tag=filament-products-config
 ```
 
-## Publish Views (Optional)
+## Make sure Products is installed
 
-```bash
-php artisan vendor:publish --tag=filament-products-views
-```
-
-## Publish Translations (Optional)
-
-```bash
-php artisan vendor:publish --tag=filament-products-translations
-```
-
-## Run Migrations
-
-If you haven't already run the products migrations:
+`filament-products` depends on the `products` package and its migrations. Run the products migrations if you have not already:
 
 ```bash
 php artisan migrate
 ```
 
-## Plugin Configuration
+## Configure owner resolution
 
-The plugin supports fluent configuration:
-
-```php
-FilamentProductsPlugin::make()
-    ->navigationGroup('Catalog')
-    ->navigationSort(10);
-```
-
-### Available Methods
-
-| Method | Description |
-|--------|-------------|
-| `navigationGroup(string $group)` | Set the navigation group |
-| `navigationSort(int $sort)` | Set the navigation sort order |
-
-## Multi-Tenancy Setup
-
-The plugin automatically respects owner scoping from `commerce-support`. Ensure your panel has the owner resolver configured:
+The Filament package follows the owner context from `commerce-support`, so your app must bind an `OwnerResolverInterface` implementation.
 
 ```php
-// AppServiceProvider.php
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 
 public function register(): void
@@ -88,4 +52,4 @@ public function register(): void
 }
 ```
 
-All resources will automatically scope queries and validate foreign IDs against the current owner.
+Once that is in place, the plugin resources and pages will scope queries and revalidate submitted foreign IDs against the current owner.

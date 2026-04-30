@@ -221,6 +221,16 @@ class StripePayment implements PaymentContract
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function metadata(): array
+    {
+        $metadata = Arr::get($this->payment->asStripePaymentIntent()->toArray(), 'metadata', []);
+
+        return is_array($metadata) ? $metadata : [];
+    }
+
+    /**
      * Get an optional gateway error code.
      */
     public function errorCode(): ?string

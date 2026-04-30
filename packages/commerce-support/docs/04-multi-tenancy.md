@@ -191,6 +191,13 @@ Normal security-sensitive code paths should fail closed. Batch commands may opt 
 
 Use `OwnerWriteGuard` when resolving submitted IDs before mutation.
 
+Write-path standard:
+
+- Call `OwnerWriteGuard::findOrFailForOwner(...)` directly inside action handlers, bulk handlers, relation managers, and form submit handlers.
+- Default write revalidation to `includeGlobal: false`.
+- Do not add package-local wrapper guards for normal write revalidation paths.
+- If global rows must be mutated, enter explicit global context (`OwnerContext::withOwner(null, ...)`) and keep it intentional and greppable.
+
 ```php
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 

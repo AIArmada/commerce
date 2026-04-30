@@ -51,7 +51,6 @@ describe('CartServiceProvider', function (): void {
 
         $reflection = new ReflectionClass($provider);
         $method = $reflection->getMethod('registerStorage');
-        $method->setAccessible(true);
         $method->invoke($provider);
 
         expect(true)->toBeTrue();
@@ -67,7 +66,6 @@ describe('CartServiceProvider', function (): void {
 
         $reflection = new ReflectionClass($provider);
         $method = $reflection->getMethod('registerCartManager');
-        $method->setAccessible(true);
         $method->invoke($provider);
 
         expect(true)->toBeTrue();
@@ -90,7 +88,6 @@ describe('CartServiceProvider', function (): void {
 
         $reflection = new ReflectionClass($provider);
         $method = $reflection->getMethod('registerMigrationService');
-        $method->setAccessible(true);
         $method->invoke($provider);
 
         expect(true)->toBeTrue();
@@ -250,7 +247,6 @@ it('integration: registers event listeners based on config', function (): void {
     Event::fake();
     $reflection = new ReflectionClass($provider);
     $method = $reflection->getMethod('registerEventListeners');
-    $method->setAccessible(true);
     $method->invoke($provider);
     Event::assertListening(Attempting::class, HandleUserLoginAttempt::class);
     Event::assertListening(Login::class, HandleUserLogin::class);

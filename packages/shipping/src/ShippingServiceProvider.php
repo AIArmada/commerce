@@ -17,6 +17,7 @@ use AIArmada\Shipping\Policies\ShippingZonePolicy;
 use AIArmada\Shipping\Services\FreeShippingEvaluator;
 use AIArmada\Shipping\Services\RateShoppingEngine;
 use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\Services\ShippingZoneResolver;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -39,6 +40,9 @@ final class ShippingServiceProvider extends PackageServiceProvider
         });
 
         $this->app->alias(ShippingManager::class, 'shipping');
+
+        // Scoped so per-request memoization cache never bleeds across Octane requests
+        $this->app->scoped(ShippingZoneResolver::class);
 
         $this->app->singleton(RateShoppingEngine::class, function ($app): RateShoppingEngine {
             /** @var array<string, mixed> $config */

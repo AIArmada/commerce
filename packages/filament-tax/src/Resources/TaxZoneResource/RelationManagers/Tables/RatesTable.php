@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\Tables;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Support\FilamentTaxAuthz;
+use AIArmada\Tax\Models\TaxRate;
 use Filament\Actions\BulkAction;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -13,6 +15,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 final class RatesTable
 {
@@ -59,7 +62,19 @@ final class RatesTable
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->action(fn ($records) => $records->each->delete())
+                        ->authorizeIndividualRecords('delete')
+                        ->action(function (Collection $records): void {
+                            foreach ($records as $record) {
+                                $verified = OwnerWriteGuard::findOrFailForOwner(
+                                    TaxRate::class,
+                                    $record->getKey(),
+                                    includeGlobal: false,
+                                    message: 'Tax rate is not accessible in the current owner scope.',
+                                );
+
+                                $verified->delete();
+                            }
+                        })
                         ->deselectRecordsAfterCompletion(),
                     'tax.rates.delete',
                 ),

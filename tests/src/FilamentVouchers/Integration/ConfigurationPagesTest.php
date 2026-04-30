@@ -19,7 +19,6 @@ it('builds configuration pages forms and actions', function (): void {
         expect($page->form(Schema::make($page)))->toBeInstanceOf(Schema::class);
 
         $actions = new ReflectionMethod($pageClass, 'getFormActions');
-        $actions->setAccessible(true);
 
         expect($actions->invoke($page))->toBeArray();
 
@@ -35,7 +34,6 @@ it('builds configuration pages forms and actions', function (): void {
     }
 
     $operators = new ReflectionMethod(TargetingConfigurationPage::class, 'getOperatorsForType');
-    $operators->setAccessible(true);
 
     expect($operators->invoke(null, 'cart_value'))->toHaveKey('between');
     expect($operators->invoke(null, 'user_segment'))->toHaveKey('any');

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Events\ParcelDelivered;
@@ -135,12 +136,10 @@ describe('JntOrderStatusChanged event', function (): void {
             'password' => 'secret',
         ]);
 
-        $order = JntOrder::query()->create([
+        $order = OwnerContext::withOwner($ownerA, fn () => JntOrder::query()->create([
             'order_id' => 'ORD-EVT-A',
             'customer_code' => 'CUST',
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
-        ]);
+        ]));
 
         $tamperedEvent = new JntOrderStatusChanged(
             orderKey: (string) $order->getKey(),
