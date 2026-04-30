@@ -123,5 +123,4 @@ final class ExportAffiliatePayoutCommand extends Command
             ->with('conversions')
             ->first();
     }
-
 }

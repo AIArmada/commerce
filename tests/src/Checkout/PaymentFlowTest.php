@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentResult;
-use AIArmada\Checkout\Enums\PaymentStatus;
-use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Http\Controllers\PaymentCallbackController;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
@@ -221,7 +220,7 @@ describe('ProcessPaymentStep', function (): void {
             'grand_total' => 1000,
             'currency' => 'MYR',
         ]);
-        $session->transitionStatus(\AIArmada\Checkout\States\Processing::class);
+        $session->transitionStatus(Processing::class);
 
         $step = app(ProcessPaymentStep::class);
         $result = $step->handle($session);

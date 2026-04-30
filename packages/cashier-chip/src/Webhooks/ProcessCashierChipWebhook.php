@@ -62,13 +62,13 @@ class ProcessCashierChipWebhook extends CommerceWebhookProcessor
         $purchase = $payload['purchase'] ?? [];
         $clientId = $purchase['client']['id'] ?? null;
 
-        if (!$clientId) {
+        if (! $clientId) {
             return;
         }
 
         $billable = $this->getBillableByChipId($clientId);
 
-        if (!$billable) {
+        if (! $billable) {
             return;
         }
 
@@ -90,13 +90,13 @@ class ProcessCashierChipWebhook extends CommerceWebhookProcessor
         $purchase = $payload['purchase'] ?? [];
         $clientId = $purchase['client']['id'] ?? null;
 
-        if (!$clientId) {
+        if (! $clientId) {
             return;
         }
 
         $billable = $this->getBillableByChipId($clientId);
 
-        if (!$billable) {
+        if (! $billable) {
             return;
         }
 
@@ -111,13 +111,14 @@ class ProcessCashierChipWebhook extends CommerceWebhookProcessor
      * Update payment method from webhook data.
      *
      * @param  array<string, mixed>  $purchase
+     *
      * @phpstan-param Model&BillableContract $billable
      */
     protected function updatePaymentMethodFromWebhook(Model $billable, array $purchase): void
     {
         $recurringToken = $purchase['recurring_token'] ?? null;
 
-        if (!$recurringToken) {
+        if (! $recurringToken) {
             return;
         }
 
@@ -139,19 +140,20 @@ class ProcessCashierChipWebhook extends CommerceWebhookProcessor
      * Update subscription status on payment success.
      *
      * @param  array<string, mixed>  $purchase
+     *
      * @phpstan-param Model&BillableContract $billable
      */
     protected function updateSubscriptionOnPaymentSuccess(Model $billable, array $purchase): void
     {
         $subscriptionType = $purchase['metadata']['subscription_type'] ?? null;
 
-        if (!$subscriptionType) {
+        if (! $subscriptionType) {
             return;
         }
 
         $subscription = Cashier::findSubscriptionForWebhook($billable, $subscriptionType);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return;
         }
 
@@ -165,19 +167,20 @@ class ProcessCashierChipWebhook extends CommerceWebhookProcessor
      * Update subscription status on payment failure.
      *
      * @param  array<string, mixed>  $purchase
+     *
      * @phpstan-param Model&BillableContract $billable
      */
     protected function updateSubscriptionOnPaymentFailure(Model $billable, array $purchase): void
     {
         $subscriptionType = $purchase['metadata']['subscription_type'] ?? null;
 
-        if (!$subscriptionType) {
+        if (! $subscriptionType) {
             return;
         }
 
         $subscription = Cashier::findSubscriptionForWebhook($billable, $subscriptionType);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return;
         }
 
@@ -210,7 +213,7 @@ class ProcessCashierChipWebhook extends CommerceWebhookProcessor
      */
     protected function getBillableByChipId(?string $chipId): ?Model
     {
-        if (!$chipId) {
+        if (! $chipId) {
             return null;
         }
 
