@@ -1,1 +1,0 @@
-@include("filament-authz::components.impersonation-banner")
