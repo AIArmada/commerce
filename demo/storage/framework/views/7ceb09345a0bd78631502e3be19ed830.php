@@ -1,0 +1,1 @@
+<?php echo $__env->make("filament-authz::components.impersonation-banner", array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /Users/saiffil/Herd/commerce/demo/storage/framework/views/887f24b2a7529ad039ddcfb0f4beea3e.blade.php ENDPATH**/ ?>

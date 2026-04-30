@@ -1,0 +1,1 @@
+<?php echo e($this->getId()); ?>.table.bulk-select-page.checkbox.<?php echo e(\Illuminate\Support\Str::random()); ?><?php /**PATH /Users/saiffil/Herd/commerce/demo/storage/framework/views/ea80dffac119befd6f645f91537ca2e2.blade.php ENDPATH**/ ?>

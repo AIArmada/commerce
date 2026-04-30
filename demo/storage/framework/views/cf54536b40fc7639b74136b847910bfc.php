@@ -1,0 +1,1 @@
+<?php echo e($attributes->get('wire:key')); ?>.panel<?php /**PATH /Users/saiffil/Herd/commerce/demo/storage/framework/views/54af8791c17331894ee3a123c6d45978.blade.php ENDPATH**/ ?>
