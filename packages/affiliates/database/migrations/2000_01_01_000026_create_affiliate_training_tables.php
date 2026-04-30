@@ -31,7 +31,6 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
-
         });
 
         Schema::create($progressTable, function (Blueprint $table): void {
