@@ -7,6 +7,7 @@ namespace AIArmada\Tax\Tests\Unit\Support;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Illuminate\Database\Eloquent\Model;
@@ -115,13 +116,11 @@ class TaxOwnerScopeTest extends TaxTestCase
             'password' => 'secret',
         ]);
 
-        $this->bindOwner(null);
-
-        TaxZone::create([
+        OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
             'code' => 'GLOBAL-Q',
             'is_active' => true,
-        ]);
+        ]));
 
         $this->bindOwner($owner);
 
@@ -149,13 +148,11 @@ class TaxOwnerScopeTest extends TaxTestCase
             'password' => 'secret',
         ]);
 
-        $this->bindOwner(null);
-
-        TaxZone::create([
+        OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
             'code' => 'GLOBAL-INC',
             'is_active' => true,
-        ]);
+        ]));
 
         $this->bindOwner($owner);
 
@@ -184,13 +181,11 @@ class TaxOwnerScopeTest extends TaxTestCase
             'password' => 'secret',
         ]);
 
-        $this->bindOwner(null);
-
-        TaxZone::create([
+        OwnerContext::withOwner(null, fn () => TaxZone::create([
             'name' => 'Global Zone',
             'code' => 'GLOBAL-NULL',
             'is_active' => true,
-        ]);
+        ]));
 
         $this->bindOwner($owner);
 

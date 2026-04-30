@@ -24,6 +24,7 @@ use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Livewire\Component as LivewireComponent;
 
@@ -202,29 +203,25 @@ describe('InventorySerialResource', function (): void {
         $ownerA = TestOwner::create(['name' => 'Owner A']);
         $ownerB = TestOwner::create(['name' => 'Owner B']);
 
-        config()->set('inventory.owner.enabled', false);
-
-        $locationA = InventoryLocation::factory()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
-        ]);
-
-        $locationB = InventoryLocation::factory()->create([
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => $ownerB->getKey(),
-        ]);
-
-        $batchB = InventoryBatch::factory()->create([
-            'location_id' => $locationB->id,
-        ]);
-
-        $serialA = InventorySerial::factory()->create([
-            'location_id' => $locationA->id,
-            'batch_id' => $batchB->id,
-        ]);
-
         config()->set('inventory.owner.enabled', true);
         config()->set('inventory.owner.include_global', false);
+
+        $locationA = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($ownerA, fn (): InventoryLocation => InventoryLocation::factory()->create());
+
+        $locationB = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($ownerB, fn (): InventoryLocation => InventoryLocation::factory()->create());
+
+        $batchB = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($ownerB, fn (): InventoryBatch => InventoryBatch::factory()->create([
+            'location_id' => $locationB->id,
+        ]));
+
+        $serialA = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($ownerA, fn (): InventorySerial => InventorySerial::factory()->create([
+            'location_id' => $locationA->id,
+            'batch_id' => null,
+        ]));
+
+        DB::table(config('inventory.database.tables.serials', 'inventory_serials'))
+            ->where('id', $serialA->id)
+            ->update(['batch_id' => $batchB->id]);
 
         app()->bind(
             OwnerResolverInterface::class,

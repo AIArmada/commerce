@@ -25,7 +25,6 @@ describe('GeneratePoliciesCommand', function (): void {
         $reflection = new ReflectionClass($command);
 
         $property = $reflection->getProperty('signature');
-        $property->setAccessible(true);
 
         expect($property->getValue($command))->toContain('authz:policies');
     });
@@ -47,7 +46,6 @@ describe('SeederCommand', function (): void {
         $reflection = new ReflectionClass($command);
 
         $property = $reflection->getProperty('signature');
-        $property->setAccessible(true);
 
         expect($property->getValue($command))->toContain('authz:seeder');
     });
@@ -69,7 +67,6 @@ describe('SuperAdminCommand', function (): void {
         $reflection = new ReflectionClass($command);
 
         $property = $reflection->getProperty('signature');
-        $property->setAccessible(true);
 
         expect($property->getValue($command))->toContain('authz:super-admin');
     });
@@ -91,7 +88,6 @@ describe('SyncAuthzCommand', function (): void {
         $reflection = new ReflectionClass($command);
 
         $property = $reflection->getProperty('signature');
-        $property->setAccessible(true);
 
         expect($property->getValue($command))->toContain('authz:sync');
     });
@@ -107,7 +103,6 @@ describe('DiscoverCommand', function (): void {
         $reflection = new ReflectionClass($command);
 
         $property = $reflection->getProperty('signature');
-        $property->setAccessible(true);
 
         expect($property->getValue($command))->toContain('authz:discover');
     });

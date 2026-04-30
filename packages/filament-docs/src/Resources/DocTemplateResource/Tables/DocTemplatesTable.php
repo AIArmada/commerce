@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Tables;
 
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
@@ -103,6 +103,7 @@ final class DocTemplatesTable
                         ->color('warning')
                         ->visible(fn (DocTemplate $record): bool => ! $record->is_default)
                         ->action(function (DocTemplate $record): void {
+                            DocsOwnerScope::assertCanMutateRecord($record, 'Template not found.');
                             $record->setAsDefault();
                             Notification::make()
                                 ->title('Template set as default')
@@ -110,8 +111,15 @@ final class DocTemplatesTable
                                 ->send();
                         }),
 
-                    DeleteAction::make()
-                        ->icon(Heroicon::OutlinedTrash),
+                    Action::make('delete')
+                        ->label('Delete')
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function (DocTemplate $record): void {
+                            DocsOwnerScope::assertCanMutateRecord($record, 'Template not found.');
+                            $record->delete();
+                        }),
                 ])
                     ->icon(Heroicon::OutlinedEllipsisVertical)
                     ->tooltip('More actions'),

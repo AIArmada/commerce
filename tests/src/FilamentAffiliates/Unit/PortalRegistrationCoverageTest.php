@@ -20,11 +20,9 @@ it('renders the correct subheading for each approval mode', function (): void {
     $reflection = new ReflectionClass($page);
 
     $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setAccessible(true);
     $enabled->setValue($page, true);
 
     $approvalMode = $reflection->getProperty('approvalMode');
-    $approvalMode->setAccessible(true);
 
     $approvalMode->setValue($page, 'auto');
     expect($page->getSubheading())->toBe('Your affiliate account will be automatically activated.');
@@ -45,7 +43,6 @@ it('returns a closed subheading when registration is disabled', function (): voi
     $reflection = new ReflectionClass($page);
 
     $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setAccessible(true);
     $enabled->setValue($page, false);
 
     expect($page->getSubheading())->toBe('Registration is currently closed.');
@@ -90,15 +87,12 @@ it('creates an affiliate through the registration service during registration ha
     $reflection = new ReflectionClass($page);
 
     $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setAccessible(true);
     $enabled->setValue($page, true);
 
     $approvalMode = $reflection->getProperty('approvalMode');
-    $approvalMode->setAccessible(true);
     $approvalMode->setValue($page, 'admin');
 
     $method = $reflection->getMethod('handleRegistration');
-    $method->setAccessible(true);
 
     $user = $method->invoke($page, [
         'name' => 'Portal Register User',
@@ -121,7 +115,6 @@ it('blocks register() and sends a danger notification when disabled', function (
 
     $reflection = new ReflectionClass($page);
     $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setAccessible(true);
     $enabled->setValue($page, false);
 
     session()->forget('filament.notifications');
@@ -144,17 +137,14 @@ it('afterRegister() sends a success notification with mode-specific message', fu
     $reflection = new ReflectionClass($page);
 
     $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setAccessible(true);
     $enabled->setValue($page, true);
 
     $approvalMode = $reflection->getProperty('approvalMode');
-    $approvalMode->setAccessible(true);
     $approvalMode->setValue($page, 'open');
 
     session()->forget('filament.notifications');
 
     $method = $reflection->getMethod('afterRegister');
-    $method->setAccessible(true);
     $method->invoke($page);
 
     $notifications = session('filament.notifications');
@@ -174,7 +164,6 @@ it('exposes a register action and custom affiliate form components', function ()
     $reflection = new ReflectionClass($page);
 
     $enabled = $reflection->getProperty('registrationEnabled');
-    $enabled->setAccessible(true);
     $enabled->setValue($page, true);
 
     expect($page->getHeading())->toBe('Register as an Affiliate')
@@ -184,10 +173,8 @@ it('exposes a register action and custom affiliate form components', function ()
     expect(method_exists($action, 'getName') ? $action->getName() : null)->toBe('register');
 
     $affiliateName = $reflection->getMethod('getAffiliateNameFormComponent');
-    $affiliateName->setAccessible(true);
 
     $websiteUrl = $reflection->getMethod('getWebsiteUrlFormComponent');
-    $websiteUrl->setAccessible(true);
 
     expect($affiliateName->invoke($page))->toBeInstanceOf(TextInput::class)
         ->and($websiteUrl->invoke($page))->toBeInstanceOf(TextInput::class);

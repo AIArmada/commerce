@@ -53,7 +53,7 @@ abstract class DocStatus extends State
      */
     public static function options(?Model $model = null): array
     {
-        $model ??= new Doc();
+        $model ??= new Doc;
 
         $options = [];
 
@@ -72,7 +72,7 @@ abstract class DocStatus extends State
             return $status->label();
         }
 
-        $model ??= new Doc();
+        $model ??= new Doc;
         $stateClass = self::resolveStateClassFor($status, $model);
 
         return (new $stateClass($model))->label();
@@ -84,7 +84,7 @@ abstract class DocStatus extends State
             return $status->color();
         }
 
-        $model ??= new Doc();
+        $model ??= new Doc;
         $stateClass = self::resolveStateClassFor($status, $model);
 
         return (new $stateClass($model))->color();
@@ -96,7 +96,7 @@ abstract class DocStatus extends State
             return $status;
         }
 
-        $model ??= new Doc();
+        $model ??= new Doc;
         $stateClass = self::resolveStateClassFor($status, $model);
 
         return new $stateClass($model);
@@ -115,7 +115,7 @@ abstract class DocStatus extends State
             return $status;
         }
 
-        $model ??= new Doc();
+        $model ??= new Doc;
 
         /** @var class-string<DocStatus> $stateClass */
         foreach (self::all()->all() as $stateClass) {

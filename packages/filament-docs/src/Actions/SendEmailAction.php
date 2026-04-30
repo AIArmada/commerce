@@ -14,6 +14,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 final class SendEmailAction
@@ -85,6 +86,8 @@ final class SendEmailAction
     private static function sendEmail(Doc $record, array $data): void
     {
         try {
+            DocsOwnerScope::assertCanMutateDoc($record);
+
             $emailService = app(DocEmailService::class);
 
             $template = null;
@@ -120,6 +123,13 @@ final class SendEmailAction
                 ->success()
                 ->send();
         } catch (Throwable $e) {
+            Log::warning('Filament docs send email action failed.', [
+                'doc_id' => $record->getKey(),
+                'recipient' => $data['to'] ?? null,
+                'template_id' => $data['template_id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
             Notification::make()
                 ->title(__('Email Failed'))
                 ->body(__('Failed to send the document. Please try again.'))

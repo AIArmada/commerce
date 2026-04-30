@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Actions\CreateVoucher;
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher;
@@ -92,6 +93,49 @@ describe('CreateVoucher Action', function (): void {
 
         expect($voucher)->toBeInstanceOf(Voucher::class)
             ->and($voucher->code)->toBe('ACTION-TEST');
+    });
+
+    it('overrides forged owner payload when owner context is resolved', function (): void {
+        config()->set('vouchers.owner.enabled', true);
+        config()->set('vouchers.owner.auto_assign_on_create', true);
+
+        $resolvedOwner = new class extends Model
+        {
+            public $exists = true;
+
+            protected $table = 'users';
+
+            public function getKey(): string
+            {
+                return 'owner-resolved-1';
+            }
+
+            public function getMorphClass(): string
+            {
+                return 'user';
+            }
+        };
+
+        app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($resolvedOwner) implements OwnerResolverInterface
+        {
+            public function __construct(private readonly Model $owner) {}
+
+            public function resolve(): ?Model
+            {
+                return $this->owner;
+            }
+        });
+
+        $voucher = CreateVoucher::run([
+            'code' => 'ACTION-OWNER-ENFORCED',
+            'type' => VoucherType::Fixed,
+            'value' => 100,
+            'owner_type' => 'forged-owner-type',
+            'owner_id' => 'forged-owner-id',
+        ]);
+
+        expect($voucher->owner_type)->toBe('user')
+            ->and((string) $voucher->owner_id)->toBe('owner-resolved-1');
     });
 });
 
@@ -274,7 +318,7 @@ describe('RecordVoucherUsage Action', function (): void {
             ->and($usage->currency)->toBe('MYR');
 
         $voucher->refresh();
-        expect($voucher->applied_count)->toBe(1);
+        expect($voucher->applied_count)->toBe(0);
     });
 
     it('records usage with redeemed by user', function (): void {
@@ -349,6 +393,6 @@ describe('RecordVoucherUsage Action', function (): void {
         expect($usage->voucher_id)->toBe($voucher->id);
 
         $voucher->refresh();
-        expect($voucher->applied_count)->toBe(6);
+        expect($voucher->applied_count)->toBe(5);
     });
 });

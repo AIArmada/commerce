@@ -21,7 +21,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('extractEventType');
-        $method->setAccessible(true);
 
         $payload = [
             'bizContent' => json_encode([
@@ -42,7 +41,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('extractEventType');
-        $method->setAccessible(true);
 
         expect($method->invoke($processor, ['scantype' => 'PICKUP']))->toBe('PICKUP');
         expect($method->invoke($processor, ['event' => 'tracking.update']))->toBe('tracking.update');
@@ -57,7 +55,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('mapToStatus');
-        $method->setAccessible(true);
 
         expect($method->invoke($processor, 'PICKUP', []))->toBe(TrackingStatus::PickedUp);
         expect($method->invoke($processor, 'COLLECTED', []))->toBe(TrackingStatus::PickedUp);
@@ -88,7 +85,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('dispatchStatusEvent');
-        $method->setAccessible(true);
 
         $method->invoke($processor, $shipment, TrackingStatus::PickedUp, ['test' => 'data']);
 
@@ -107,7 +103,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('dispatchStatusEvent');
-        $method->setAccessible(true);
 
         $method->invoke($processor, $shipment, TrackingStatus::InTransit, []);
 
@@ -126,7 +121,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('dispatchStatusEvent');
-        $method->setAccessible(true);
 
         $method->invoke($processor, $shipment, TrackingStatus::OutForDelivery, []);
 
@@ -145,7 +139,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('dispatchStatusEvent');
-        $method->setAccessible(true);
 
         $method->invoke($processor, $shipment, TrackingStatus::Delivered, []);
 
@@ -164,7 +157,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('dispatchStatusEvent');
-        $method->setAccessible(true);
 
         $method->invoke($processor, $shipment, TrackingStatus::Exception, []);
 
@@ -190,7 +182,6 @@ describe('ProcessJntWebhook', function (): void {
 
         $reflection = new ReflectionClass($processor);
         $method = $reflection->getMethod('processEvent');
-        $method->setAccessible(true);
 
         // Since there's no shipment with this billCode, it should dispatch TrackingUpdated
         $method->invoke($processor, 'TRANSIT', $webhookCall->payload);

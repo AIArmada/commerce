@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use Illuminate\Database\Eloquent\Model;
@@ -33,20 +34,24 @@ if (! function_exists('filamentCustomers_makeOwner')) {
     }
 }
 
-it('resolveOwner returns null when resolver is not bound', function (): void {
+beforeEach(function (): void {
+    config()->set('customers.features.owner.enabled', true);
+});
+
+it('resolveOwner fails closed when resolver is not bound and context is not explicit global', function (): void {
     if (app()->bound(OwnerResolverInterface::class)) {
         app()->forgetInstance(OwnerResolverInterface::class);
         app()->offsetUnset(OwnerResolverInterface::class);
     }
 
     expect(app()->bound(OwnerResolverInterface::class))->toBeFalse();
-    expect(CustomersOwnerScope::resolveOwner())->toBeNull();
+    expect(fn (): ?Model => CustomersOwnerScope::resolveOwner())->toThrow(\RuntimeException::class);
 });
 
-it('applyToOwnedQuery returns global-only rows when no owner is resolved and model has no scopeForOwner', function (): void {
+it('applyToOwnedQuery returns global-only rows in explicit global context when model has no scopeForOwner', function (): void {
     $ownerA = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
 
-    $global = Customer::query()->create([
+    $global = OwnerContext::withOwner(null, fn (): Customer => Customer::query()->create([
         'first_name' => 'Global',
         'last_name' => 'Customer',
         'email' => 'global@example.com',
@@ -55,9 +60,9 @@ it('applyToOwnedQuery returns global-only rows when no owner is resolved and mod
 
         'owner_type' => null,
         'owner_id' => null,
-    ]);
+    ]));
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'Owned',
         'last_name' => 'Customer',
         'email' => 'owned@example.com',
@@ -66,17 +71,17 @@ it('applyToOwnedQuery returns global-only rows when no owner is resolved and mod
 
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
     $tableName = (new Customer)->getTable();
 
     $noScopeModel = new class extends Model {};
     $noScopeModel->setTable($tableName);
 
-    $emails = CustomersOwnerScope::applyToOwnedQuery($noScopeModel->newQuery())
+    $emails = OwnerContext::withOwner(null, fn (): array => CustomersOwnerScope::applyToOwnedQuery($noScopeModel->newQuery())
         ->orderBy('email')
         ->pluck('email')
-        ->all();
+        ->all());
 
     expect($emails)->toEqual([$global->email]);
 });
@@ -112,7 +117,7 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
         'updated_at' => now(),
     ]);
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'A',
         'last_name' => 'Customer',
         'email' => 'a@example.com',
@@ -121,9 +126,9 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
 
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerB, fn (): Customer => Customer::query()->create([
         'first_name' => 'B',
         'last_name' => 'Customer',
         'email' => 'b@example.com',
@@ -132,7 +137,7 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
 
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ]));
 
     $noScopeModel = new class extends Model {};
     $noScopeModel->setTable($tableName);

@@ -211,7 +211,6 @@ describe('VoucherUsage Model', function (): void {
             $usage = new VoucherUsage;
             $reflection = new ReflectionClass(VoucherUsage::class);
             $method = $reflection->getMethod('userIdentifier');
-            $method->setAccessible(true);
 
             $result = $method->invoke($usage);
 
@@ -233,16 +232,63 @@ describe('VoucherUsage Model', function (): void {
 
             $reflection = new ReflectionClass($usage);
             $method = $reflection->getMethod('userIdentifier');
-            $method->setAccessible(true);
 
             $attribute = $method->invoke($usage);
 
             expect($attribute)->toBeInstanceOf(Attribute::class);
             // Verify it's a get-only accessor
             $getProperty = (new ReflectionClass($attribute))->getProperty('get');
-            $getProperty->setAccessible(true);
 
             expect($getProperty->getValue($attribute))->toBeInstanceOf(Closure::class);
+        });
+
+        it('returns email regardless of morph alias', function (): void {
+            $usage = new VoucherUsage;
+            $usage->redeemed_by_type = 'App\\Models\\Customer';
+
+            $redeemedBy = new class extends Model
+            {
+                protected $attributes = [
+                    'email' => 'customer@example.com',
+                ];
+            };
+
+            $usage->setRelation('redeemedBy', $redeemedBy);
+
+            expect($usage->user_identifier)->toBe('customer@example.com');
+        });
+
+        it('returns order number for order-like morphs without email', function (): void {
+            $usage = new VoucherUsage;
+            $usage->redeemed_by_type = 'sales_order';
+
+            $redeemedBy = new class extends Model
+            {
+                protected $attributes = [
+                    'order_number' => 'ORD-12345',
+                ];
+            };
+
+            $usage->setRelation('redeemedBy', $redeemedBy);
+
+            expect($usage->user_identifier)->toBe('ORD-12345');
+        });
+    });
+
+    describe('isOrderRedemption method', function (): void {
+        it('returns true for order-like morph alias', function (): void {
+            $usage = new VoucherUsage;
+            $usage->redeemed_by_type = 'order';
+            $usage->setRelation('redeemedBy', new class extends Model {});
+
+            expect($usage->isOrderRedemption())->toBeTrue();
+        });
+
+        it('returns false when no redeemedBy relation exists', function (): void {
+            $usage = new VoucherUsage;
+            $usage->redeemed_by_type = 'customer';
+
+            expect($usage->isOrderRedemption())->toBeFalse();
         });
     });
 

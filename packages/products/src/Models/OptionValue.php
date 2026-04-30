@@ -45,14 +45,14 @@ class OptionValue extends Model
 
     protected $guarded = ['id'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'position' => 'integer',
-        'swatch_color' => 'string',
-        'metadata' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'position' => 'integer',
+            'swatch_color' => 'string',
+            'metadata' => 'array',
+        ];
+    }
 
     /**
      * @var array<string, mixed>
@@ -162,7 +162,7 @@ class OptionValue extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeOrdered($query)
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('position');
     }

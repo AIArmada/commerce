@@ -121,7 +121,6 @@ describe('GatewayManager - Additional Coverage', function (): void {
             // Use reflection to test the protected buildGateway method
             $reflection = new ReflectionClass($manager);
             $method = $reflection->getMethod('buildGateway');
-            $method->setAccessible(true);
 
             expect(fn () => $method->invoke($manager, 'test', 'NonExistent\\Gateway\\Class', []))
                 ->toThrow(GatewayNotFoundException::class, 'Gateway class [NonExistent\\Gateway\\Class] not found');

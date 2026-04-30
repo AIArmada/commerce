@@ -14,7 +14,7 @@ Enable owner scoping in your configuration:
 // config/pricing.php
 'features' => [
     'owner' => [
-        'enabled' => env('PRICING_OWNER_ENABLED', true),
+        'enabled' => env('PRICING_OWNER_ENABLED', false),
         'include_global' => false,
     ],
 ],

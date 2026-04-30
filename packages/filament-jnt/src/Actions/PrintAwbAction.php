@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentJnt\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerSignedDownload;
 use AIArmada\Jnt\Data\PrintWaybillData;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
@@ -12,8 +13,6 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\URL;
 use Livewire\Component;
 use Throwable;
 
@@ -77,17 +76,22 @@ final class PrintAwbAction
                     }
 
                     if ($waybill->hasBase64Content()) {
-                        $cacheKey = "jnt_awb:{$record->order_id}";
-                        Cache::put($cacheKey, [
+                        $url = OwnerSignedDownload::issueUrl(
+                            cachePrefix: 'jnt_awb',
+                            routeName: 'jnt.awb.show',
+                            routeParameters: ['orderId' => $record->order_id],
+                            payload: [
                             'content' => base64_decode((string) $waybill->base64Content, true),
                             'format' => 'pdf',
-                        ], now()->addMinutes(30));
+                            'order_id' => $record->order_id,
+                            'tracking_number' => $record->tracking_number,
+                        ],
+                            ttl: 1800,
+                            owner: OwnerContext::resolve(),
+                            userId: Filament::auth()?->id(),
+                        );
 
-                        $url = URL::signedRoute('jnt.awb.show', [
-                            'orderId' => $record->order_id,
-                        ], now()->addMinutes(30));
-
-                        $livewire->js("window.open('{$url}', '_blank')");
+                        $livewire->js('window.open(' . json_encode((string) $url) . ', "_blank")');
 
                         Notification::make()
                             ->title('AWB Generated')
@@ -122,11 +126,14 @@ final class PrintAwbAction
             return true;
         }
 
+        if ($record->owner_type === null || $record->owner_id === null) {
+            return OwnerContext::isExplicitGlobal();
+        }
+
         $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
         return JntOrder::query()
-            ->forOwner($owner, $includeGlobal)
+            ->forOwner($owner, false)
             ->whereKey($record->getKey())
             ->exists();
     }

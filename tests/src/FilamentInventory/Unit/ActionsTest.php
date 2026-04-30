@@ -184,14 +184,10 @@ it('prevents forged cross-tenant location IDs in stock actions when owner scopin
     $item = InventoryItem::create(['name' => 'Widget']);
 
     $locationA = InventoryLocation::factory()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
     ]);
 
     setFilamentInventoryOwnerResolver($ownerB);
     $locationB = InventoryLocation::factory()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
     ]);
 
     setFilamentInventoryOwnerResolver($ownerA);
@@ -265,8 +261,6 @@ it('prevents releasing allocations outside the current owner context', function 
     setFilamentInventoryOwnerResolver($ownerB);
 
     $locationB = InventoryLocation::factory()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
     ]);
 
     $inventory = app(InventoryService::class);
@@ -315,8 +309,6 @@ it('prevents approving reorder suggestions outside the current owner context', f
     setFilamentInventoryOwnerResolver($ownerB);
 
     $locationB = InventoryLocation::factory()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
     ]);
 
     $suggestion = InventoryReorderSuggestion::factory()->create([

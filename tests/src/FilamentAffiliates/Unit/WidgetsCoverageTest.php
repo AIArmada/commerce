@@ -40,7 +40,6 @@ it('AffiliateStatsWidget builds stats', function (): void {
 
     $reflection = new ReflectionClass($widget);
     $method = $reflection->getMethod('getStats');
-    $method->setAccessible(true);
 
     $stats = $method->invoke($widget);
 
@@ -85,7 +84,6 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
 
     $reflection = new ReflectionClass($widget);
     $method = $reflection->getMethod('getStats');
-    $method->setAccessible(true);
 
     $stats = $method->invoke($widget);
 

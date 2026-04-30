@@ -37,8 +37,9 @@ Manages geographic tax zones that determine which tax rates apply based on custo
 - View zone details
 
 **Bulk Actions:**
-- Toggle active status
-- Delete zones
+- Delete selected zones
+
+Zone bulk mutations are revalidated server-side with `OwnerWriteGuard` using owner-only scope (`includeGlobal: false`).
 
 ### Form Fields
 
@@ -170,6 +171,11 @@ Manages product categorization for different tax treatments.
 | `exempt` | Not subject to tax |
 | `digital` | Digital goods/services |
 
+**Bulk Actions:**
+- Delete selected classes
+
+Class bulk mutations are revalidated server-side with `OwnerWriteGuard` using owner-only scope (`includeGlobal: false`).
+
 ---
 
 ## Tax Rate Resource
@@ -200,6 +206,13 @@ Manages tax percentages applied to products and shipping.
 - By tax class (dropdown)
 - Compound rates only
 - Shipping rates only
+
+**Bulk Actions:**
+- Activate selected rates
+- Deactivate selected rates
+- Delete selected rates
+
+Rate bulk mutations are revalidated server-side with `OwnerWriteGuard` using owner-only scope (`includeGlobal: false`).
 
 ### Form Fields
 
@@ -287,6 +300,8 @@ Manages customer tax exemptions with approval workflow.
 - Approve selected
 - Reject selected
 - Delete selected
+
+Exemption bulk mutations are revalidated server-side with `OwnerWriteGuard` using owner-only scope (`includeGlobal: false`).
 
 ### Form Fields
 

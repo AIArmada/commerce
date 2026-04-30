@@ -14,7 +14,6 @@ describe('LiveStatsWidget', function (): void {
         $widget = new LiveStatsWidget;
         $reflection = new ReflectionClass($widget);
         $property = $reflection->getProperty('pollingInterval');
-        $property->setAccessible(true);
 
         expect($property->getValue($widget))->toBe('10s');
     });
@@ -23,7 +22,6 @@ describe('LiveStatsWidget', function (): void {
         $widget = new LiveStatsWidget;
         $reflection = new ReflectionClass($widget);
         $property = $reflection->getProperty('columnSpan');
-        $property->setAccessible(true);
 
         expect($property->getValue($widget))->toBe('full');
     });

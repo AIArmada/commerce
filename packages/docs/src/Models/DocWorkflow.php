@@ -7,6 +7,8 @@ namespace AIArmada\Docs\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Enums\DocType;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,9 +23,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_active
  * @property array<string, mixed>|null $rules
  * @property int $priority
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, DocWorkflowStep> $steps
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
+ * @property-read Collection<int, DocWorkflowStep> $steps
  */
 final class DocWorkflow extends Model
 {
@@ -35,8 +37,6 @@ final class DocWorkflow extends Model
     protected static string $ownerScopeConfigKey = 'docs.owner';
 
     protected $fillable = [
-        'owner_type',
-        'owner_id',
         'name',
         'doc_type',
         'is_active',

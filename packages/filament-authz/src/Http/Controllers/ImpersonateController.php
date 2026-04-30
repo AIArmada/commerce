@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Http\Controllers;
 
 use AIArmada\FilamentAuthz\Actions\ImpersonateAction;
+use AIArmada\FilamentAuthz\Support\ImpersonationScopeGuard;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -33,9 +34,15 @@ class ImpersonateController
         $userModelClass = self::resolveUserModelClass($guard);
 
         /** @var Authenticatable|null $targetUser */
-        $targetUser = $userModelClass::query()->whereKey($userId)->first();
+        $targetUser = ImpersonationScopeGuard::applyScopeToUserQuery(
+            $userModelClass::query()->whereKey($userId)
+        )->first();
 
         if ($targetUser === null) {
+            abort(404, 'User not found');
+        }
+
+        if (! ImpersonationScopeGuard::canAccessTarget($targetUser)) {
             abort(404, 'User not found');
         }
 

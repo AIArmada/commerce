@@ -12,7 +12,7 @@ use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ViewPromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionForm;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionInfolist;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Tables\PromotionsTable;
-use AIArmada\FilamentPromotions\Support\OwnerScopedQueries;
+use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -24,8 +24,6 @@ use UnitEnum;
 final class PromotionResource extends Resource
 {
     protected static ?string $model = Promotion::class;
-
-    protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedSparkles;
 
@@ -91,7 +89,7 @@ final class PromotionResource extends Resource
         $query = parent::getEloquentQuery();
 
         /** @var Builder<Promotion> $scoped */
-        $scoped = OwnerScopedQueries::scopePromotion($query);
+        $scoped = PromotionsOwnerScope::applyToOwnedQuery($query);
 
         return $scoped;
     }

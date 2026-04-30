@@ -27,6 +27,7 @@ abstract class JntTestCase extends TestCase
                 $table->string('url', 512);
                 $table->json('headers')->nullable();
                 $table->json('payload')->nullable();
+                $table->json('attachments')->nullable();
                 $table->text('exception')->nullable();
 
                 $table->timestamps();

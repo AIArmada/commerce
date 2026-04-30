@@ -41,6 +41,10 @@ class WebhookController
     public function handle(Request $request, WebhookConfig $config): JsonResponse
     {
         try {
+            if ($config->signingSecret === '') {
+                $config->signingSecret = (string) config('jnt.private_key', '');
+            }
+
             $response = (new WebhookProcessor($request, $config))->process();
 
             if (config('jnt.webhooks.log_payloads', false)) {

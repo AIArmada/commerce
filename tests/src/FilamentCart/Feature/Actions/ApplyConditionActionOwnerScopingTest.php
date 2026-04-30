@@ -65,7 +65,6 @@ it('scopes ApplyConditionAction condition options and lookups by resolved owner'
     ]));
 
     $optionsMethod = new ReflectionMethod(ApplyConditionAction::class, 'getConditionOptions');
-    $optionsMethod->setAccessible(true);
 
     /** @var array<string, array<string, string>> $options */
     $options = $optionsMethod->invoke(null, false);
@@ -85,7 +84,6 @@ it('scopes ApplyConditionAction condition options and lookups by resolved owner'
     expect($hasConditionB)->toBeFalse();
 
     $queryMethod = new ReflectionMethod(ApplyConditionAction::class, 'getScopedConditionQuery');
-    $queryMethod->setAccessible(true);
 
     /** @var Builder<Condition> $query */
     $query = $queryMethod->invoke(null, false);
@@ -124,7 +122,6 @@ it('returns only item-level conditions for item actions', function (): void {
     $cartCondition->assignOwner($owner)->save();
 
     $optionsMethod = new ReflectionMethod(ApplyConditionAction::class, 'getConditionOptions');
-    $optionsMethod->setAccessible(true);
 
     /** @var array<string, array<string, string>> $options */
     $options = $optionsMethod->invoke(null, true);
@@ -135,7 +132,6 @@ it('returns only item-level conditions for item actions', function (): void {
     expect(array_key_exists($cartCondition->id, $flattened))->toBeFalse();
 
     $queryMethod = new ReflectionMethod(ApplyConditionAction::class, 'getScopedConditionQuery');
-    $queryMethod->setAccessible(true);
 
     /** @var Builder<Condition> $query */
     $query = $queryMethod->invoke(null, true);

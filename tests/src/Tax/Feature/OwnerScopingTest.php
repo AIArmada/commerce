@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Database\Eloquent\Model;
@@ -35,12 +36,10 @@ describe('Tax owner scoping', function (): void {
             'password' => 'secret',
         ]);
 
-        bindTaxOwnerForScoping(null);
-
-        $global = TaxZone::query()->create([
+        $global = OwnerContext::withOwner(null, fn () => TaxZone::query()->create([
             'name' => 'Global Zone',
             'code' => 'GLOBAL_ZONE',
-        ]);
+        ]));
 
         bindTaxOwnerForScoping($ownerA);
 
@@ -80,12 +79,10 @@ describe('Tax owner scoping', function (): void {
             'password' => 'secret',
         ]);
 
-        bindTaxOwnerForScoping(null);
-
-        $global = TaxClass::query()->create([
+        $global = OwnerContext::withOwner(null, fn () => TaxClass::query()->create([
             'name' => 'Global Class',
             'slug' => 'global-class',
-        ]);
+        ]));
 
         bindTaxOwnerForScoping($ownerA);
 

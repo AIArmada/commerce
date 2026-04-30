@@ -403,7 +403,6 @@ describe('ProcessScheduledPayoutsCommand class structure', function (): void {
     test('has correct signature', function (): void {
         $reflection = new ReflectionClass(ProcessScheduledPayoutsCommand::class);
         $property = $reflection->getProperty('signature');
-        $property->setAccessible(true);
 
         $command = app(ProcessScheduledPayoutsCommand::class);
         $signature = $property->getValue($command);

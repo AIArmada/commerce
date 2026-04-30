@@ -107,7 +107,7 @@ class ViewOrder extends ViewRecord
                             Select::make('carrier')
                                 ->label('Shipping Carrier')
                                 ->options($carriers)
-                                ->default(config('shipping.default', 'jnt'))
+                                ->default(config('shipping.drivers.default', 'jnt'))
                                 ->required()
                                 ->helperText('Shipment will be created automatically via carrier API'),
                             Select::make('service')
@@ -141,7 +141,7 @@ class ViewOrder extends ViewRecord
                             $fulfillmentHandler = app(FulfillmentHandler::class);
 
                             $result = $fulfillmentHandler->createShipment($record, [
-                                'carrier' => $data['carrier'] ?? config('shipping.default', 'jnt'),
+                                'carrier' => $data['carrier'] ?? config('shipping.drivers.default', 'jnt'),
                                 'service' => $data['service'] ?? 'standard',
                             ]);
 

@@ -99,7 +99,6 @@ it('builds resources, schemas, tables, relation managers, pages, widgets, and ac
         $page = app($pageClass);
 
         $method = new ReflectionMethod($pageClass, 'getHeaderActions');
-        $method->setAccessible(true);
 
         expect($method->invoke($page))->toBeArray();
     }
@@ -108,7 +107,6 @@ it('builds resources, schemas, tables, relation managers, pages, widgets, and ac
         $page = app($pageClass);
 
         $method = new ReflectionMethod($pageClass, 'getFormActions');
-        $method->setAccessible(true);
 
         expect($method->invoke($page))->toBeArray();
     }

@@ -155,7 +155,7 @@ final class DocEmailService
         $email = DocEmail::query()
             ->when(
                 config('docs.owner.enabled', false),
-                fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->withoutOwnerScope(),
+                fn (Builder $query): Builder => $query->withoutOwnerScope(),
             )
             ->find($data['email_id']);
         $email?->markAsOpened();
@@ -177,7 +177,7 @@ final class DocEmailService
         $email = DocEmail::query()
             ->when(
                 config('docs.owner.enabled', false),
-                fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->withoutOwnerScope(),
+                fn (Builder $query): Builder => $query->withoutOwnerScope(),
             )
             ->find($data['email_id']);
         $email?->markAsClicked();

@@ -78,7 +78,6 @@ it('returns stats based on current tax data', function (): void {
 
     $ref = new ReflectionClass($widget);
     $method = $ref->getMethod('getStats');
-    $method->setAccessible(true);
 
     $stats = $method->invoke($widget);
 

@@ -49,6 +49,7 @@ return [
     'owner' => [
         'enabled' => env('DOCS_OWNER_ENABLED', false),
         'include_global' => env('DOCS_OWNER_INCLUDE_GLOBAL', false),
+        'auto_assign_on_create' => env('DOCS_OWNER_AUTO_ASSIGN_ON_CREATE', true),
     ],
 
     /* Email */
@@ -64,6 +65,9 @@ return [
     ],
 
     /* Integrations */
+    'einvoice' => [
+        'sandbox' => env('DOCS_EINVOICE_SANDBOX', true),
+    ],
 
     /* HTTP */
 
@@ -122,6 +126,7 @@ return [
     /* Numbering */
     'numbering' => [
         'format' => [
+            'default' => env('DOCS_NUMBER_DEFAULT_FORMAT', '{PREFIX}-{YYMM}-{NUMBER}'),
             'year_format' => env('DOCS_NUMBER_YEAR_FORMAT', 'y'),
             'separator' => env('DOCS_NUMBER_SEPARATOR', '-'),
             'suffix_length' => (int) env('DOCS_NUMBER_SUFFIX_LENGTH', 6),

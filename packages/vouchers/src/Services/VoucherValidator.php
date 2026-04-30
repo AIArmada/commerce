@@ -180,6 +180,15 @@ class VoucherValidator
             return VoucherValidationResult::valid();
         }
 
+        // Fail closed: non-custom mode with an empty rules array means the targeting
+        // definition was provided but is invalid — do not grant eligibility.
+        if (isset($targetingData['__empty_rules'])) {
+            return VoucherValidationResult::invalid(
+                'You do not meet the eligibility requirements for this voucher.',
+                ['targeting_failed' => true]
+            );
+        }
+
         if (! $cart instanceof Cart) {
             return VoucherValidationResult::valid();
         }
@@ -233,7 +242,10 @@ class VoucherValidator
         }
 
         if (empty($rules) && $expression === null) {
-            return null;
+            // Any mode with no rules and no expression is a degenerate/misconfigured
+            // targeting definition. Fail closed (sentinel) for ALL modes — including Custom —
+            // rather than silently granting eligibility.
+            return ['mode' => $mode->value, 'rules' => [], '__empty_rules' => true];
         }
 
         $data = [

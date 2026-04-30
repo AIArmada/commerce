@@ -19,7 +19,6 @@ it('formats abandoned cart value from the snapshot subtotal column', function ()
 
     $widget = new AbandonedCartsWidget;
     $method = (new ReflectionClass($widget))->getMethod('getCartValue');
-    $method->setAccessible(true);
 
     expect($method->invoke($widget, $cart))->toBe((string) Money::USD(4321));
 });
@@ -27,7 +26,6 @@ it('formats abandoned cart value from the snapshot subtotal column', function ()
 it('uses the persisted subtotal column for stats overview aggregation', function (): void {
     $widget = new CartStatsOverviewWidget;
     $method = (new ReflectionClass($widget))->getMethod('getSubtotalExpression');
-    $method->setAccessible(true);
 
     expect($method->invoke($widget))->toBe('COALESCE(subtotal, 0)');
 });

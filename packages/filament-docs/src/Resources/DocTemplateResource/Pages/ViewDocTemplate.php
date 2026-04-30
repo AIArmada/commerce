@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages;
 
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -28,6 +29,7 @@ final class ViewDocTemplate extends ViewRecord
                 ->visible(fn (DocTemplate $record): bool => ! $record->is_default)
                 ->requiresConfirmation()
                 ->action(function (DocTemplate $record): void {
+                    DocsOwnerScope::assertCanMutateRecord($record, 'Template not found.');
                     $record->setAsDefault();
                     Notification::make()
                         ->title('Template set as default')
@@ -35,8 +37,15 @@ final class ViewDocTemplate extends ViewRecord
                         ->send();
                 }),
 
-            Actions\DeleteAction::make()
-                ->icon(Heroicon::OutlinedTrash),
+            Actions\Action::make('delete')
+                ->label('Delete')
+                ->icon(Heroicon::OutlinedTrash)
+                ->color('danger')
+                ->requiresConfirmation()
+                ->action(function (DocTemplate $record): void {
+                    DocsOwnerScope::assertCanMutateRecord($record, 'Template not found.');
+                    $record->delete();
+                }),
         ];
     }
 }

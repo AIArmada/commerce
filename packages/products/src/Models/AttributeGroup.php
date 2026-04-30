@@ -43,13 +43,13 @@ class AttributeGroup extends Model
 
     protected $guarded = ['id'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'position' => 'integer',
-        'is_visible' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'position' => 'integer',
+            'is_visible' => 'boolean',
+        ];
+    }
 
     /**
      * @var array<string, mixed>
@@ -127,7 +127,7 @@ class AttributeGroup extends Model
      * @param  Builder<AttributeGroup>  $query
      * @return Builder<AttributeGroup>
      */
-    public function scopeVisible($query)
+    public function scopeVisible(Builder $query): Builder
     {
         return $query->where('is_visible', true);
     }
@@ -138,7 +138,7 @@ class AttributeGroup extends Model
      * @param  Builder<AttributeGroup>  $query
      * @return Builder<AttributeGroup>
      */
-    public function scopeOrdered($query)
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('position');
     }

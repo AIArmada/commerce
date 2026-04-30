@@ -43,7 +43,7 @@ final class FilamentOrdersServiceProvider extends PackageServiceProvider
         Route::middleware(['web', FilamentAuthenticate::class])
             ->group(function (): void {
                 Route::get('/orders/{order}/invoice/download', function (string $order) {
-                    if ((bool) config('orders.owner.enabled', true) && OwnerContext::resolve() === null) {
+                    if ((bool) config('orders.owner.enabled', true) && OwnerContext::resolve() === null && ! OwnerContext::isExplicitGlobal()) {
                         abort(404);
                     }
 

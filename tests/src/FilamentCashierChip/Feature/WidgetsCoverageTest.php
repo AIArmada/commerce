@@ -120,7 +120,6 @@ it('covers all dashboard widgets code paths', function (): void {
     foreach ($statsWidgets as $widgetClass) {
         $widget = app($widgetClass);
         $method = new ReflectionMethod($widgetClass, 'getStats');
-        $method->setAccessible(true);
 
         $stats = $method->invoke($widget);
 
@@ -131,7 +130,6 @@ it('covers all dashboard widgets code paths', function (): void {
 
     $mrrWidget = app(MRRWidget::class);
     $normalizeMethod = new ReflectionMethod(MRRWidget::class, 'normalizeToMonthly');
-    $normalizeMethod->setAccessible(true);
     expect($normalizeMethod->invoke($mrrWidget, 10_00, 'month', 1))->toBeInt();
     expect($normalizeMethod->invoke($mrrWidget, 10_00, 'week', 1))->toBeInt();
     expect($normalizeMethod->invoke($mrrWidget, 10_00, 'year', 1))->toBeInt();
@@ -139,14 +137,12 @@ it('covers all dashboard widgets code paths', function (): void {
 
     $activeWidget = app(ActiveSubscribersWidget::class);
     $trendMethod = new ReflectionMethod(ActiveSubscribersWidget::class, 'calculateTrend');
-    $trendMethod->setAccessible(true);
     expect($trendMethod->invoke($activeWidget, 10, 5))->toBeArray();
     expect($trendMethod->invoke($activeWidget, 5, 10))->toBeArray();
     expect($trendMethod->invoke($activeWidget, 10, 10))->toBeArray();
 
     $churnWidget = app(ChurnRateWidget::class);
     $colorMethod = new ReflectionMethod(ChurnRateWidget::class, 'getChurnColor');
-    $colorMethod->setAccessible(true);
     expect($colorMethod->invoke($churnWidget, 1.0))->toBe('success');
     expect($colorMethod->invoke($churnWidget, 3.0))->toBe('warning');
     expect($colorMethod->invoke($churnWidget, 6.0))->toBe('danger');
@@ -159,11 +155,8 @@ it('covers all dashboard widgets code paths', function (): void {
     foreach ($chartWidgets as $widgetClass) {
         $widget = app($widgetClass);
         $dataMethod = new ReflectionMethod($widgetClass, 'getData');
-        $dataMethod->setAccessible(true);
         $optionsMethod = new ReflectionMethod($widgetClass, 'getOptions');
-        $optionsMethod->setAccessible(true);
         $typeMethod = new ReflectionMethod($widgetClass, 'getType');
-        $typeMethod->setAccessible(true);
 
         $data = $dataMethod->invoke($widget);
         $options = $optionsMethod->invoke($widget);
@@ -175,7 +168,6 @@ it('covers all dashboard widgets code paths', function (): void {
     }
 
     $chartMethod = new ReflectionMethod(RevenueChartWidget::class, 'normalizeToMonthly');
-    $chartMethod->setAccessible(true);
     $revenueWidget = app(RevenueChartWidget::class);
     expect($chartMethod->invoke($revenueWidget, 10_00, 'day', 1))->toBeInt();
     expect($chartMethod->invoke($revenueWidget, 10_00, 'week', 1))->toBeInt();
@@ -185,14 +177,12 @@ it('covers all dashboard widgets code paths', function (): void {
 
     $conversionWidget = app(TrialConversionsWidget::class);
     $trendDescriptionMethod = new ReflectionMethod(TrialConversionsWidget::class, 'getTrendDescription');
-    $trendDescriptionMethod->setAccessible(true);
     expect($trendDescriptionMethod->invoke($conversionWidget, 10.0, 10.0))->toBeString();
     expect($trendDescriptionMethod->invoke($conversionWidget, 12.0, 10.0))->toBeString();
     expect($trendDescriptionMethod->invoke($conversionWidget, 8.0, 10.0))->toBeString();
 
     $attentionWidget = app(AttentionRequiredWidget::class);
     $descriptionMethod = new ReflectionMethod(AttentionRequiredWidget::class, 'buildDescription');
-    $descriptionMethod->setAccessible(true);
     expect($descriptionMethod->invoke($attentionWidget, 0, 0, 0, 0, 0))->toBe('All subscriptions healthy');
     expect($descriptionMethod->invoke($attentionWidget, 1, 2, 3, 4, 5))->toBeString();
 });

@@ -6,13 +6,13 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -25,8 +25,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $settings
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Collection<int, Doc> $docs
  */
 final class DocTemplate extends Model
@@ -45,8 +45,6 @@ final class DocTemplate extends Model
         'view_name',
         'doc_type',
         'is_default',
-        'owner_type',
-        'owner_id',
         'settings',
     ];
 

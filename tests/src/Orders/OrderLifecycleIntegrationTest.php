@@ -14,6 +14,11 @@ use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
 
+beforeEach(function (): void {
+    config()->set('orders.owner.enabled', false);
+    config()->set('orders.owner.auto_assign_on_create', false);
+});
+
 describe('Order Lifecycle Integration', function (): void {
     it('can handle complete order lifecycle from creation to completion', function (): void {
         $service = new OrderService;

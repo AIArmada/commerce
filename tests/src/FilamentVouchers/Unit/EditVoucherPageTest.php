@@ -12,7 +12,6 @@ it('hydrates and persists condition target state on voucher edit', function (): 
     $page = app(EditVoucher::class);
 
     $hydrate = new ReflectionMethod(EditVoucher::class, 'hydrateConditionTargetState');
-    $hydrate->setAccessible(true);
 
     $data = $hydrate->invoke($page, []);
 
@@ -23,7 +22,6 @@ it('hydrates and persists condition target state on voucher edit', function (): 
     ]);
 
     $persist = new ReflectionMethod(EditVoucher::class, 'persistConditionTargetDefinition');
-    $persist->setAccessible(true);
 
     expect(fn () => $persist->invoke($page, ['condition_target_dsl' => '']))
         ->toThrow(ValidationException::class);

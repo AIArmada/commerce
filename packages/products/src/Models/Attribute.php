@@ -58,21 +58,21 @@ class Attribute extends Model
 
     protected $guarded = ['id'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'type' => AttributeType::class,
-        'validation' => 'array',
-        'options' => 'array',
-        'is_required' => 'boolean',
-        'is_filterable' => 'boolean',
-        'is_searchable' => 'boolean',
-        'is_comparable' => 'boolean',
-        'is_visible_on_front' => 'boolean',
-        'is_visible_on_admin' => 'boolean',
-        'position' => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'type' => AttributeType::class,
+            'validation' => 'array',
+            'options' => 'array',
+            'is_required' => 'boolean',
+            'is_filterable' => 'boolean',
+            'is_searchable' => 'boolean',
+            'is_comparable' => 'boolean',
+            'is_visible_on_front' => 'boolean',
+            'is_visible_on_admin' => 'boolean',
+            'position' => 'integer',
+        ];
+    }
 
     /**
      * @var array<string, mixed>
@@ -237,7 +237,7 @@ class Attribute extends Model
      * @param  Builder<Attribute>  $query
      * @return Builder<Attribute>
      */
-    public function scopeFilterable($query)
+    public function scopeFilterable(Builder $query): Builder
     {
         return $query->where('is_filterable', true);
     }
@@ -248,7 +248,7 @@ class Attribute extends Model
      * @param  Builder<Attribute>  $query
      * @return Builder<Attribute>
      */
-    public function scopeSearchable($query)
+    public function scopeSearchable(Builder $query): Builder
     {
         return $query->where('is_searchable', true);
     }
@@ -259,7 +259,7 @@ class Attribute extends Model
      * @param  Builder<Attribute>  $query
      * @return Builder<Attribute>
      */
-    public function scopeComparable($query)
+    public function scopeComparable(Builder $query): Builder
     {
         return $query->where('is_comparable', true);
     }
@@ -270,7 +270,7 @@ class Attribute extends Model
      * @param  Builder<Attribute>  $query
      * @return Builder<Attribute>
      */
-    public function scopeVisibleOnFront($query)
+    public function scopeVisibleOnFront(Builder $query): Builder
     {
         return $query->where('is_visible_on_front', true);
     }
@@ -281,7 +281,7 @@ class Attribute extends Model
      * @param  Builder<Attribute>  $query
      * @return Builder<Attribute>
      */
-    public function scopeOrdered($query)
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('position');
     }

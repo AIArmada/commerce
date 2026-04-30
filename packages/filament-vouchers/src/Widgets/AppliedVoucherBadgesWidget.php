@@ -188,7 +188,7 @@ final class AppliedVoucherBadgesWidget extends Widget
 
         // Check usage limit
         if (property_exists($voucher, 'usage_limit') && $voucher->usage_limit) {
-            $remaining = property_exists($voucher, 'getRemainingUses')
+            $remaining = method_exists($voucher, 'getRemainingUses')
                 ? $voucher->getRemainingUses()
                 : null;
 

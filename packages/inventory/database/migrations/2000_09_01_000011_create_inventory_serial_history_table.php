@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create(config('inventory.table_names.serial_history', 'inventory_serial_history'), function (Blueprint $table): void {
+        Schema::create(config('inventory.database.tables.serial_history', 'inventory_serial_history'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             $table->foreignUuid('serial_id');
@@ -60,6 +60,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(config('inventory.table_names.serial_history', 'inventory_serial_history'));
+        Schema::dropIfExists(config('inventory.database.tables.serial_history', 'inventory_serial_history'));
     }
 };

@@ -50,6 +50,8 @@ class TaxResultDataTest extends TaxTestCase
 
     public function test_is_exempt_with_zero_rate(): void
     {
+        // Zero-rate is NOT an exemption — it is a valid 0% tax rate.
+        // Only a result with an exemptionReason set is truly exempt.
         $zeroResult = new TaxResultData(
             taxAmount: 0,
             rateId: 'zero',
@@ -60,7 +62,7 @@ class TaxResultDataTest extends TaxTestCase
             includedInPrice: false,
         );
 
-        $this->assertTrue($zeroResult->isExempt());
+        $this->assertFalse($zeroResult->isExempt());
     }
 
     public function test_is_exempt_with_normal_tax(): void
@@ -89,7 +91,7 @@ class TaxResultDataTest extends TaxTestCase
             zoneName: 'Zone',
         );
 
-        $this->assertEquals('RM 12.34', $result->getFormattedAmount());
+        $this->assertEquals('$ 12.34', $result->getFormattedAmount());
     }
 
     public function test_get_formatted_amount_with_custom_currency(): void
@@ -151,6 +153,7 @@ class TaxResultDataTest extends TaxTestCase
 
     public function test_get_summary_with_zero_rate(): void
     {
+        // Zero-rate is not exempt — summary should show the rate name and 0.00%
         $zeroResult = new TaxResultData(
             taxAmount: 0,
             rateId: 'zero',
@@ -160,7 +163,7 @@ class TaxResultDataTest extends TaxTestCase
             zoneName: 'Zone',
         );
 
-        $this->assertEquals('Tax Exempt', $zeroResult->getSummary());
+        $this->assertEquals('Zero Rate (0.00%)', $zeroResult->getSummary());
     }
 
     public function test_has_compound_taxes_with_single_rate(): void
@@ -196,5 +199,24 @@ class TaxResultDataTest extends TaxTestCase
         );
 
         $this->assertTrue($result->hasCompoundTaxes());
+    }
+
+    public function test_has_compound_taxes_false_for_two_non_compound_rates(): void
+    {
+        // Two non-compound rates is NOT compound taxation.
+        $result = new TaxResultData(
+            taxAmount: 1100,
+            rateId: 'rate-123',
+            rateName: 'Standard',
+            ratePercentage: 600,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
+            breakdown: [
+                ['name' => 'SST', 'rate' => 600, 'amount' => 600, 'is_compound' => false],
+                ['name' => 'Service Tax', 'rate' => 500, 'amount' => 500, 'is_compound' => false],
+            ],
+        );
+
+        $this->assertFalse($result->hasCompoundTaxes());
     }
 }

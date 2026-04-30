@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryMovementResource\Tables;
 
-use AIArmada\FilamentInventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Enums\MovementType;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;

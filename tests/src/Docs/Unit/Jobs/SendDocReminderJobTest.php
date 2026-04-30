@@ -9,6 +9,7 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Sent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 uses(RefreshDatabase::class);
@@ -84,4 +85,26 @@ test('tags return correct array', function (): void {
 
     $job2 = new SendDocReminderJob;
     expect($job2->tags())->toContain('docs', 'reminder', 'batch');
+});
+
+test('owner fan-out fails fast on malformed owner tuple rows', function (): void {
+    config()->set('docs.owner.enabled', true);
+
+    $doc = Doc::factory()->create([
+        'status' => Sent::class,
+        'customer_data' => ['email' => 'tuple-malformed@example.com'],
+    ]);
+
+    DB::table($doc->getTable())
+        ->where('id', $doc->getKey())
+        ->update([
+            'owner_type' => 'App\\Models\\User',
+            'owner_id' => null,
+        ]);
+
+    $service = new DocEmailService;
+    $job = new SendDocReminderJob;
+
+    expect(fn (): mixed => $job->handle($service))
+        ->toThrow(\InvalidArgumentException::class, 'Owner type and owner id must both be present or both be null.');
 });

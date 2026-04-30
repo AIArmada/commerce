@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\ValuationService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 final class CreateValuationSnapshotCommand extends Command
@@ -83,6 +84,8 @@ final class CreateValuationSnapshotCommand extends Command
                 ->distinct()
                 ->get();
 
+            $ownerTupleColumns = OwnerTupleColumns::forModelClass(InventoryLocation::class);
+
             if ($owners->isEmpty()) {
                 return $this->createSnapshot($valuationService, $method, $locationId, $date);
             }
@@ -90,7 +93,8 @@ final class CreateValuationSnapshotCommand extends Command
             $failed = false;
 
             foreach ($owners as $row) {
-                $owner = $this->resolveOwnerFromRow($row);
+                $ownerTuple = OwnerTupleParser::fromRow($row, $ownerTupleColumns);
+                $owner = $ownerTuple->toOwnerModel();
                 $result = OwnerContext::withOwner($owner, fn (): int => $this->createSnapshot($valuationService, $method, $locationId, $date));
 
                 if ($result !== self::SUCCESS) {
@@ -142,16 +146,5 @@ final class CreateValuationSnapshotCommand extends Command
 
             return self::FAILURE;
         }
-    }
-
-    private function resolveOwnerFromRow(object $row): ?Model
-    {
-        $ownerType = $row->owner_type ?? null;
-        $ownerId = $row->owner_id ?? null;
-
-        return OwnerContext::fromTypeAndId(
-            is_string($ownerType) ? $ownerType : null,
-            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
-        );
     }
 }

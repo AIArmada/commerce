@@ -13,10 +13,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create(config('inventory.table_names.locations', 'inventory_locations'), function (Blueprint $table): void {
+        Schema::create(config('inventory.database.tables.locations', 'inventory_locations'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->string('owner_scope')->default('global');
             $table->string('name');
-            $table->string('code')->unique();
+            $table->string('code');
             $table->string('line1')->nullable();
             $table->string('line2')->nullable();
             $table->string('city')->nullable();
@@ -52,6 +53,7 @@ return new class extends Migration
             $table->index(['temperature_zone', 'is_active'], 'inventory_locations_temp_active_idx');
             $table->index(['is_active', 'priority'], 'inventory_locations_active_priority_idx');
             $table->index(['owner_type', 'owner_id'], 'inventory_locations_owner_idx');
+            $table->unique(['owner_scope', 'code'], 'inventory_locations_owner_scope_code_unique');
         });
     }
 
@@ -60,6 +62,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(config('inventory.table_names.locations', 'inventory_locations'));
+        Schema::dropIfExists(config('inventory.database.tables.locations', 'inventory_locations'));
     }
 };

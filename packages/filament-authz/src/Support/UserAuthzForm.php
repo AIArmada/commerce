@@ -8,6 +8,7 @@ use AIArmada\FilamentAuthz\Models\AuthzScope;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -137,11 +138,16 @@ final class UserAuthzForm
             $columns[] = $teamsKey;
         }
 
-        /** @var Collection<int, Model> $roles */
-        $roles = $roleClass::query()
+        $rolesQuery = $roleClass::query()
             ->where('guard_name', $guard)
-            ->orderBy('name')
-            ->get($columns);
+            ->orderBy('name');
+
+        if (static::shouldRestrictToCurrentTeam((bool) $registrar->teams)) {
+            $rolesQuery = static::applyCurrentTeamScopeToRoleQuery($rolesQuery, $teamsKey);
+        }
+
+        /** @var Collection<int, Model> $roles */
+        $roles = $rolesQuery->get($columns);
 
         $roles = static::filterRolesByScopeMode($roles, $teamsKey, $registrar->teams);
 
@@ -201,18 +207,33 @@ final class UserAuthzForm
         }
 
         $teamsKey = $registrar->teamsKey;
+        $restrictToCurrentTeam = static::shouldRestrictToCurrentTeam((bool) $registrar->teams);
 
         /** @var class-string<Model> $roleClass */
         $roleClass = $registrar->getRoleClass();
 
+        $selectedRolesQuery = $roleClass::query()->whereIn('id', $selectedRoleIds);
+
+        if ($restrictToCurrentTeam) {
+            $selectedRolesQuery = static::applyCurrentTeamScopeToRoleQuery($selectedRolesQuery, $teamsKey);
+        }
+
         /** @var Collection<int, Model> $selectedRoles */
-        $selectedRoles = $roleClass::query()
-            ->whereIn('id', $selectedRoleIds)
+        $selectedRoles = $selectedRolesQuery
             ->get(['id', $teamsKey]);
 
+        if ($restrictToCurrentTeam && count($selectedRoleIds) !== $selectedRoles->count()) {
+            throw new AuthorizationException('One or more selected roles are outside the current tenant scope.');
+        }
+
+        $existingRolesQuery = $roleClass::query()->whereIn('id', static::getAssignedRoleIds($record));
+
+        if ($restrictToCurrentTeam) {
+            $existingRolesQuery = static::applyCurrentTeamScopeToRoleQuery($existingRolesQuery, $teamsKey);
+        }
+
         /** @var Collection<int, Model> $existingRoles */
-        $existingRoles = $roleClass::query()
-            ->whereIn('id', static::getAssignedRoleIds($record))
+        $existingRoles = $existingRolesQuery
             ->get(['id', $teamsKey]);
 
         $selectedByScope = static::groupRoleIdsByScope($selectedRoles, $teamsKey);
@@ -341,6 +362,24 @@ final class UserAuthzForm
         }
 
         return $mode;
+    }
+
+    protected static function shouldRestrictToCurrentTeam(bool $teamsEnabled): bool
+    {
+        return $teamsEnabled
+            && config('filament-authz.scoped_to_tenant', true)
+            && ! config('filament-authz.central_app', false);
+    }
+
+    protected static function applyCurrentTeamScopeToRoleQuery(Builder $query, string $teamsKey): Builder
+    {
+        $teamId = getPermissionsTeamId();
+
+        if ($teamId === null) {
+            return $query->whereNull($teamsKey);
+        }
+
+        return $query->where($teamsKey, $teamId);
     }
 
     /**

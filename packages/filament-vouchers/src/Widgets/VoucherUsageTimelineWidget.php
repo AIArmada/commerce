@@ -139,7 +139,7 @@ final class VoucherUsageTimelineWidget extends Widget
 
         // Determine event type based on channel and redemption
         $isManual = $usage->channel === VoucherUsage::CHANNEL_MANUAL;
-        $hasOrder = $usage->redeemedBy && in_array($usage->redeemed_by_type, ['order', 'App\Models\Order'], true);
+        $hasOrder = $usage->isOrderRedemption();
 
         // Build title
         $title = $hasOrder
@@ -221,7 +221,7 @@ final class VoucherUsageTimelineWidget extends Widget
      */
     protected function getEventIcon(VoucherUsage $usage): string
     {
-        if ($usage->redeemedBy && in_array($usage->redeemed_by_type, ['order', 'App\Models\Order'], true)) {
+        if ($usage->isOrderRedemption()) {
             return 'heroicon-o-shopping-bag';
         }
 
@@ -237,7 +237,7 @@ final class VoucherUsageTimelineWidget extends Widget
      */
     protected function getEventColor(VoucherUsage $usage): string
     {
-        if ($usage->redeemedBy && in_array($usage->redeemed_by_type, ['order', 'App\Models\Order'], true)) {
+        if ($usage->isOrderRedemption()) {
             return 'success';
         }
 

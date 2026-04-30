@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Pending;
@@ -31,7 +32,7 @@ it('scopes ShipmentResource to current owner plus global', function (): void {
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $shipmentA = Shipment::query()->create([
+    $shipmentA = OwnerContext::withOwner($ownerA, fn () => Shipment::query()->create([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
         'reference' => 'REF-A',
@@ -39,9 +40,9 @@ it('scopes ShipmentResource to current owner plus global', function (): void {
         'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-    ]);
+    ]));
 
-    $shipmentB = Shipment::query()->create([
+    $shipmentB = OwnerContext::withOwner($ownerB, fn () => Shipment::query()->create([
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
         'reference' => 'REF-B',
@@ -49,9 +50,9 @@ it('scopes ShipmentResource to current owner plus global', function (): void {
         'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-    ]);
+    ]));
 
-    $shipmentGlobal = Shipment::query()->create([
+    $shipmentGlobal = OwnerContext::withOwner(null, fn () => Shipment::query()->create([
         'owner_type' => null,
         'owner_id' => null,
         'reference' => 'REF-G',
@@ -59,7 +60,7 @@ it('scopes ShipmentResource to current owner plus global', function (): void {
         'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-    ]);
+    ]));
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -87,7 +88,7 @@ it('returns empty when owner scoping is enabled but owner context is missing', f
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
 
-    $shipmentA = Shipment::query()->create([
+    $shipmentA = OwnerContext::withOwner($ownerA, fn () => Shipment::query()->create([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
         'reference' => 'REF-A',
@@ -95,9 +96,9 @@ it('returns empty when owner scoping is enabled but owner context is missing', f
         'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-    ]);
+    ]));
 
-    $shipmentGlobal = Shipment::query()->create([
+    $shipmentGlobal = OwnerContext::withOwner(null, fn () => Shipment::query()->create([
         'owner_type' => null,
         'owner_id' => null,
         'reference' => 'REF-G',
@@ -105,7 +106,7 @@ it('returns empty when owner scoping is enabled but owner context is missing', f
         'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-    ]);
+    ]));
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {

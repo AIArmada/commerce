@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Actions;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers;
@@ -42,7 +43,7 @@ class ShipmentResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<Shipment> $query */
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->withoutGlobalScope(OwnerScope::class);
 
         if (! (bool) config('shipping.features.owner.enabled', false)) {
             return $query;
@@ -54,7 +55,7 @@ class ShipmentResource extends Resource
         }
 
         /** @var Builder<Shipment> $scoped */
-        $scoped = $query->forOwner($owner, includeGlobal: true);
+        $scoped = $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
 
         return $scoped;
     }

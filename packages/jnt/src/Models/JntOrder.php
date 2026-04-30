@@ -158,7 +158,7 @@ final class JntOrder extends Model
 
         if ($owner === null) {
             if (! (bool) config('jnt.owner.include_global', false)) {
-                return $query->whereRaw('0 = 1');
+                return $query->withoutOwnerScope()->whereRaw('0 = 1');
             }
 
             /** @var Builder<static> $globalOnly */

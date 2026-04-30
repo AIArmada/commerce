@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Canceled;
@@ -16,7 +17,13 @@ use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
+
+beforeEach(function (): void {
+    config()->set('orders.owner.enabled', false);
+    config()->set('orders.owner.auto_assign_on_create', false);
+});
 
 describe('OrderService', function (): void {
     describe('Order Creation', function (): void {
@@ -114,7 +121,9 @@ describe('OrderService', function (): void {
                 'country' => 'MY',
             ];
 
-            $order = $service->createOrder($orderData, $items, $billingAddress, $shippingAddress);
+            $order = OwnerContext::withOwner(null, function () use ($service, $orderData, $items, $billingAddress, $shippingAddress): Order {
+                return $service->createOrder($orderData, $items, $billingAddress, $shippingAddress);
+            });
 
             expect($order)->toBeInstanceOf(Order::class)
                 ->and($order->order_number)->toBe($orderData['order_number'])
@@ -272,7 +281,9 @@ describe('OrderService', function (): void {
                 'country' => 'MY',
             ];
 
-            $order = $service->createFromCart($cart, $customer, $billingAddress);
+            $order = OwnerContext::withOwner(null, function () use ($service, $cart, $customer, $billingAddress): Order {
+                return $service->createFromCart($cart, $customer, $billingAddress);
+            });
 
             expect($order)->toBeInstanceOf(Order::class);
             expect($order->subtotal)->toBe(20000);
@@ -282,6 +293,120 @@ describe('OrderService', function (): void {
             expect($order->grand_total)->toBe(19200);
             expect($order->items)->toHaveCount(1);
             expect($order->billingAddress)->not->toBeNull();
+        });
+
+        it('fails fast for createOrder when owner mode is enabled and no owner context exists', function (): void {
+            config()->set('orders.owner.enabled', true);
+
+            app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+            {
+                public function resolve(): ?Model
+                {
+                    return null;
+                }
+            });
+
+            $service = new OrderService;
+
+            $orderData = [
+                'order_number' => 'ORD-SVC-NOCTX-' . Str::upper(Str::random(8)),
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+                'currency' => 'MYR',
+            ];
+
+            $items = [
+                [
+                    'name' => 'No Context Product',
+                    'quantity' => 1,
+                    'unit_price' => 10000,
+                    'tax_amount' => 0,
+                ],
+            ];
+
+            expect(fn () => $service->createOrder($orderData, $items))
+                ->toThrow(\RuntimeException::class, 'Owner context is required');
+        });
+
+        it('fails fast for confirmPayment when owner mode is enabled and no owner context exists', function (): void {
+            config()->set('orders.owner.enabled', false);
+
+            Schema::dropIfExists('test_owners');
+            Schema::create('test_owners', function (Blueprint $table): void {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->timestamps();
+            });
+
+            $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+
+            $order = Order::create([
+                'order_number' => 'ORD-SVC-MUT-NOCTX-' . uniqid(),
+                'status' => PendingPayment::class,
+                'currency' => 'MYR',
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => (string) $ownerA->getKey(),
+            ]);
+
+            config()->set('orders.owner.enabled', true);
+
+            app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+            {
+                public function resolve(): ?Model
+                {
+                    return null;
+                }
+            });
+
+            $service = new OrderService;
+
+            expect(fn () => $service->confirmPayment($order, 'txn_mut_ctx_1', 'stripe', 10000))
+                ->toThrow(\RuntimeException::class, 'matching owner context is required');
+        });
+
+        it('fails fast for cancel when owner mode is enabled and owner context mismatches', function (): void {
+            config()->set('orders.owner.enabled', false);
+
+            Schema::dropIfExists('test_owners');
+            Schema::create('test_owners', function (Blueprint $table): void {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->timestamps();
+            });
+
+            $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+            $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
+
+            $order = Order::create([
+                'order_number' => 'ORD-SVC-MUT-XOWNER-' . uniqid(),
+                'status' => PendingPayment::class,
+                'currency' => 'MYR',
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => (string) $ownerA->getKey(),
+            ]);
+
+            config()->set('orders.owner.enabled', true);
+
+            app()->instance(OwnerResolverInterface::class, new class($ownerB) implements OwnerResolverInterface
+            {
+                public function __construct(
+                    private readonly ?Model $owner,
+                ) {}
+
+                public function resolve(): ?Model
+                {
+                    return $this->owner;
+                }
+            });
+
+            $service = new OrderService;
+
+            expect(fn () => $service->cancel($order, 'Cross owner test'))
+                ->toThrow(\RuntimeException::class, 'Cross-owner mutation blocked');
         });
     });
 

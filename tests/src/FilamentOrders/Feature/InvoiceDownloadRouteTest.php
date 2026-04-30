@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentOrders\FilamentOrdersServiceProvider;
 use AIArmada\Orders\Actions\GenerateInvoice;
@@ -69,14 +70,16 @@ it('returns 404 for cross-tenant invoice downloads', function (): void {
 
     Filament::shouldReceive('auth')->andReturn($guard);
 
-    $orderB = Order::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -112,14 +115,16 @@ it('returns 403 when the user cannot view the order', function (): void {
 
     Filament::shouldReceive('auth')->andReturn($guard);
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -152,14 +157,16 @@ it('downloads an invoice for an in-scope order', function (): void {
 
     Filament::shouldReceive('auth')->andReturn($guard);
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -196,14 +203,16 @@ it('returns 404 when owner context is missing', function (): void {
 
     Filament::shouldReceive('auth')->andReturn($guard);
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -230,4 +239,52 @@ it('returns 404 when owner context is missing', function (): void {
 
     $this->get(route('filament-orders.invoice.download', ['order' => $orderA->getKey()]))
         ->assertNotFound();
+});
+
+it('downloads invoice for global order with explicit global owner context', function (): void {
+    $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+
+    $user = User::query()->create([
+        'name' => 'Global Context User',
+        'email' => 'test-global@example.com',
+        'password' => bcrypt('password'),
+    ]);
+
+    $guard = Mockery::mock(Guard::class);
+    $guard->shouldReceive('user')->andReturn($user);
+    $guard->shouldReceive('id')->andReturn($user->getKey());
+
+    Filament::shouldReceive('auth')->andReturn($guard);
+
+    $globalOrder = OwnerContext::withOwner(null, function (): Order {
+        return Order::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly ?Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    Permission::create(['name' => 'view_order', 'guard_name' => 'web']);
+    $user->givePermissionTo('view_order');
+
+    $this->withoutMiddleware();
+
+    OwnerContext::withOwner(null, function () use ($globalOrder): void {
+        $this->get(route('filament-orders.invoice.download', ['order' => $globalOrder->getKey()]))
+            ->assertOk()
+            ->assertSee('invoice:' . $globalOrder->getKey());
+    });
 });

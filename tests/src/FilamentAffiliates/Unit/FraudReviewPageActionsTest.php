@@ -193,3 +193,74 @@ it('executes bulk approve and bulk reject actions', function (): void {
     expect($bulkRejectSignal->status)->toBe(FraudSignalStatus::Confirmed)
         ->and($conversion->status->equals(RejectedConversion::class))->toBeTrue();
 });
+
+it('executes hardened advanced bulk fraud review action', function (): void {
+    $user = User::create([
+        'name' => 'Fraud Advanced Bulk Reviewer',
+        'email' => 'fraud-reviewer-advanced-bulk-actions@example.com',
+        'password' => 'secret',
+    ]);
+
+    Permission::create(['name' => 'affiliates.fraud.update', 'guard_name' => 'web']);
+
+    $user->givePermissionTo('affiliates.fraud.update');
+
+    $this->actingAs($user);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-' . Str::uuid(),
+        'name' => 'Fraud Advanced Bulk Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+
+    $signalA = AffiliateFraudSignal::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'rule_code' => 'velocity',
+        'risk_points' => 70,
+        'severity' => FraudSeverity::High,
+        'description' => 'Velocity threshold exceeded',
+        'status' => FraudSignalStatus::Detected,
+        'detected_at' => now(),
+    ]);
+
+    $signalB = AffiliateFraudSignal::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'rule_code' => 'pattern',
+        'risk_points' => 55,
+        'severity' => FraudSeverity::Medium,
+        'description' => 'Pattern anomaly detected',
+        'status' => FraudSignalStatus::Detected,
+        'detected_at' => now(),
+    ]);
+
+    $page = new FraudReviewPage;
+    $table = $page->table(Table::make($page));
+
+    $advancedBulkReview = $table->getBulkAction('bulk_fraud_review');
+    expect($advancedBulkReview)->not->toBeNull();
+
+    $advancedBulkReview?->call([
+        'records' => new Collection([$signalA, $signalB]),
+        'data' => [
+            'status' => FraudSignalStatus::Reviewed->value,
+            'review_notes' => 'Analyst reviewed and accepted.',
+        ],
+    ]);
+
+    $signalA->refresh();
+    $signalB->refresh();
+
+    expect($signalA->status)->toBe(FraudSignalStatus::Reviewed)
+        ->and($signalB->status)->toBe(FraudSignalStatus::Reviewed)
+        ->and($signalA->reviewed_by)->toBe((string) $user->getAuthIdentifier())
+        ->and($signalB->reviewed_by)->toBe((string) $user->getAuthIdentifier())
+        ->and($signalA->reviewed_at)->not->toBeNull()
+        ->and($signalB->reviewed_at)->not->toBeNull()
+        ->and($signalA->evidence)->toBeArray()
+        ->and($signalB->evidence)->toBeArray()
+        ->and($signalA->evidence['review_notes'])->toBe('Analyst reviewed and accepted.')
+        ->and($signalB->evidence['review_notes'])->toBe('Analyst reviewed and accepted.');
+});

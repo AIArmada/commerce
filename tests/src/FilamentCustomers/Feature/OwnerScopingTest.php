@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\CustomerResource;
@@ -52,7 +53,7 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
         }
     });
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'Alice',
         'last_name' => 'A',
         'email' => 'alice-a@example.com',
@@ -61,9 +62,9 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
 
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerB, fn (): Customer => Customer::query()->create([
         'first_name' => 'Bob',
         'last_name' => 'B',
         'email' => 'bob-b@example.com',
@@ -72,7 +73,7 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
 
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ]));
 
     $emails = CustomerResource::getEloquentQuery()->pluck('email')->all();
     expect($emails)->toEqual(['alice-a@example.com']);
@@ -92,7 +93,7 @@ it('scopes SegmentResource query to the resolved owner', function (): void {
         }
     });
 
-    Segment::query()->create([
+    OwnerContext::withOwner($ownerA, fn (): Segment => Segment::query()->create([
         'name' => 'VIP',
         'slug' => 'vip-a',
         'type' => 'custom',
@@ -101,9 +102,9 @@ it('scopes SegmentResource query to the resolved owner', function (): void {
         'priority' => 0,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    Segment::query()->create([
+    OwnerContext::withOwner($ownerB, fn (): Segment => Segment::query()->create([
         'name' => 'Newsletter',
         'slug' => 'newsletter-b',
         'type' => 'custom',
@@ -112,7 +113,7 @@ it('scopes SegmentResource query to the resolved owner', function (): void {
         'priority' => 0,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ]));
 
     $names = SegmentResource::getEloquentQuery()->pluck('name')->all();
     expect($names)->toEqual(['Newsletter']);

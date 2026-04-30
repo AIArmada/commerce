@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
@@ -53,8 +54,6 @@ function makeOwnerScopedSerialServiceFixture(): array
 
     $locationA = InventoryLocation::factory()->create([
         'code' => 'LOC-A',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
         'is_active' => true,
     ]);
 
@@ -62,19 +61,15 @@ function makeOwnerScopedSerialServiceFixture(): array
 
     $locationB = InventoryLocation::factory()->create([
         'code' => 'LOC-B',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
         'is_active' => true,
     ]);
 
     $setOwnerContext(null);
 
-    $locationGlobal = InventoryLocation::factory()->create([
+    $locationGlobal = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
         'code' => 'LOC-G',
-        'owner_type' => null,
-        'owner_id' => null,
         'is_active' => true,
-    ]);
+    ]));
 
     $setOwnerContext($ownerA);
 
@@ -127,14 +122,16 @@ it('scopes SerialService::findBySerialNumber to current owner (and global when e
 
     $setOwnerContext($ownerA);
 
-    InventorySerial::factory()->create([
-        'inventoryable_type' => $sku->getMorphClass(),
-        'inventoryable_id' => $sku->getKey(),
-        'serial_number' => 'SN-G',
-        'location_id' => $locationGlobal->id,
-        'status' => SerialStatus::normalize(Available::class),
-        'condition' => SerialCondition::New->value,
-    ]);
+    OwnerContext::withOwner(null, function () use ($sku, $locationGlobal): void {
+        InventorySerial::factory()->create([
+            'inventoryable_type' => $sku->getMorphClass(),
+            'inventoryable_id' => $sku->getKey(),
+            'serial_number' => 'SN-G',
+            'location_id' => $locationGlobal->id,
+            'status' => SerialStatus::normalize(Available::class),
+            'condition' => SerialCondition::New->value,
+        ]);
+    });
 
     expect($service->findBySerialNumber('SN-A'))
         ->not->toBeNull();
@@ -152,14 +149,16 @@ it('can exclude global serials when include_global is false', function (): void 
     $locationGlobal = $fixture['locationGlobal'];
     $service = $fixture['service'];
 
-    InventorySerial::factory()->create([
-        'inventoryable_type' => $sku->getMorphClass(),
-        'inventoryable_id' => $sku->getKey(),
-        'serial_number' => 'SN-G2',
-        'location_id' => $locationGlobal->id,
-        'status' => SerialStatus::normalize(Available::class),
-        'condition' => SerialCondition::New->value,
-    ]);
+    OwnerContext::withOwner(null, function () use ($sku, $locationGlobal): void {
+        InventorySerial::factory()->create([
+            'inventoryable_type' => $sku->getMorphClass(),
+            'inventoryable_id' => $sku->getKey(),
+            'serial_number' => 'SN-G2',
+            'location_id' => $locationGlobal->id,
+            'status' => SerialStatus::normalize(Available::class),
+            'condition' => SerialCondition::New->value,
+        ]);
+    });
 
     config()->set('inventory.owner.include_global', false);
 

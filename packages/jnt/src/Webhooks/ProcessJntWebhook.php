@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Webhooks;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Events\ParcelDelivered;
@@ -135,18 +136,24 @@ class ProcessJntWebhook extends CommerceWebhookProcessor
             return;
         }
 
-        // Update shipment status
+        // Update shipment status — must run inside the shipment's owner context
+        // so the write guard allows the save and downstream code has correct tenancy.
         $newStatus = $this->mapToStatus($eventType, $biz);
 
-        if ($newStatus) {
-            $shipment->update(['status' => $newStatus->value]);
+        $owner = OwnerContext::fromTypeAndId(
+            $shipment->owner_type,
+            $shipment->owner_id,
+        );
 
-            // Dispatch specific events based on status
-            $this->dispatchStatusEvent($shipment, $newStatus, $biz);
-        }
+        OwnerContext::withOwner($owner, function () use ($shipment, $newStatus, $billcode, $eventType, $biz): void {
+            if ($newStatus) {
+                $shipment->update(['status' => $newStatus->value]);
 
-        // Always dispatch generic tracking event
-        TrackingUpdated::dispatch($billcode, $eventType, $biz);
+                $this->dispatchStatusEvent($shipment, $newStatus, $biz);
+            }
+
+            TrackingUpdated::dispatch($billcode, $eventType, $biz);
+        });
     }
 
     /**

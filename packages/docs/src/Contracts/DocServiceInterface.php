@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Contracts;
 
 use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocVersion;
+use AIArmada\Docs\States\DocStatus;
 use Illuminate\Database\Eloquent\Model;
 
 /**

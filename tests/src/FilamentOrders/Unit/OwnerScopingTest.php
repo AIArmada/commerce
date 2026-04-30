@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
@@ -42,32 +43,38 @@ it('scopes OrderResource to current owner plus global', function (): void {
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
-    $orderB = Order::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
-    $orderGlobal = Order::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderGlobal = OwnerContext::withOwner(null, function (): Order {
+        return Order::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {

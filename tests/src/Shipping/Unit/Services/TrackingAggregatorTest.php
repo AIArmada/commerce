@@ -127,7 +127,6 @@ it('handles errors in batch sync', function (): void {
 it('maps tracking status to shipment status correctly', function (): void {
     // Test the mapping method via reflection
     $method = new ReflectionMethod(TrackingAggregator::class, 'mapTrackingToShipmentStatus');
-    $method->setAccessible(true);
 
     $aggregator = new TrackingAggregator($this->shippingManager);
 

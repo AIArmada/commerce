@@ -11,6 +11,7 @@ use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
 class InventoryLocationTest extends InventoryTestCase
@@ -262,6 +263,87 @@ class InventoryLocationTest extends InventoryTestCase
         expect($default2->id)->toBe($default->id);
     }
 
+    public function test_get_or_create_default_requires_explicit_global_context_when_owner_mode_is_enabled(): void
+    {
+        config([
+            'inventory.owner.enabled' => true,
+            'inventory.owner.include_global' => false,
+        ]);
+
+        app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+        {
+            public function resolve(): ?Model
+            {
+                return null;
+            }
+        });
+
+        expect(fn () => InventoryLocation::getOrCreateDefault())
+            ->toThrow(RuntimeException::class, 'InventoryLocation::getOrCreateDefault() requires an owner context or explicit global context.');
+
+        $default = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::getOrCreateDefault());
+
+        expect($default->isDefault())->toBeTrue();
+    }
+
+    public function test_owner_columns_are_not_mass_assignable(): void
+    {
+        config([
+            'inventory.owner.enabled' => true,
+            'inventory.owner.include_global' => false,
+        ]);
+
+        $owner = InventoryItem::create(['name' => 'Owner']);
+        $otherOwner = InventoryItem::create(['name' => 'Other Owner']);
+
+        app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
+        {
+            public function __construct(private readonly ?Model $owner) {}
+
+            public function resolve(): ?Model
+            {
+                return $this->owner;
+            }
+        });
+
+        $location = InventoryLocation::create([
+            'code' => 'SAFE-OWNER',
+            'name' => 'Safe Owner Location',
+            'owner_type' => $otherOwner->getMorphClass(),
+            'owner_id' => $otherOwner->getKey(),
+        ]);
+
+        expect($location->owner_type)->toBe($owner->getMorphClass())
+            ->and((string) $location->owner_id)->toBe((string) $owner->getKey());
+    }
+
+    public function test_forged_owner_columns_are_rejected_when_set_outside_mass_assignment(): void
+    {
+        config([
+            'inventory.owner.enabled' => true,
+            'inventory.owner.include_global' => false,
+        ]);
+
+        $owner = InventoryItem::create(['name' => 'Owner']);
+        $otherOwner = InventoryItem::create(['name' => 'Other Owner']);
+
+        app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
+        {
+            public function __construct(private readonly ?Model $owner) {}
+
+            public function resolve(): ?Model
+            {
+                return $this->owner;
+            }
+        });
+
+        expect(fn () => InventoryLocation::factory()->create([
+            'code' => 'FORGED-OWNER',
+            'owner_type' => $otherOwner->getMorphClass(),
+            'owner_id' => $otherOwner->getKey(),
+        ]))->toThrow(AuthorizationException::class, 'Cross-owner save blocked for AIArmada\Inventory\Models\InventoryLocation.');
+    }
+
     public function test_has_available_capacity(): void
     {
         $withCapacity = InventoryLocation::factory()->create([
@@ -500,10 +582,7 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         // Create global location (no owner)
-        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
-            'owner_type' => null,
-            'owner_id' => null,
-        ]));
+        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create());
 
         // When owner is null and includeGlobal is true (default), return ownerless
         $result = InventoryLocation::forOwner(null, true)->get();
@@ -531,10 +610,7 @@ class InventoryLocationTest extends InventoryTestCase
         });
 
         // Create owned location
-        $ownedLocation = InventoryLocation::factory()->create([
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => $owner->getKey(),
-        ]);
+        $ownedLocation = InventoryLocation::factory()->create();
 
         // Create global location
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
@@ -544,10 +620,7 @@ class InventoryLocationTest extends InventoryTestCase
                 return null;
             }
         });
-        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
-            'owner_type' => null,
-            'owner_id' => null,
-        ]));
+        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create());
 
         // Create location owned by different owner
         $otherOwner = InventoryItem::create(['name' => 'Other Owner']);
@@ -560,10 +633,7 @@ class InventoryLocationTest extends InventoryTestCase
                 return $this->owner;
             }
         });
-        $otherLocation = InventoryLocation::factory()->create([
-            'owner_type' => $otherOwner->getMorphClass(),
-            'owner_id' => $otherOwner->getKey(),
-        ]);
+        $otherLocation = InventoryLocation::factory()->create();
 
         // With includeGlobal true, should get owner's + global
         $result = InventoryLocation::withoutGlobalScopes()->forOwner($owner, true)->get();
@@ -590,10 +660,7 @@ class InventoryLocationTest extends InventoryTestCase
         });
 
         // Create owned location
-        $ownedLocation = InventoryLocation::factory()->create([
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => $owner->getKey(),
-        ]);
+        $ownedLocation = InventoryLocation::factory()->create();
 
         // Create global location
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
@@ -603,10 +670,7 @@ class InventoryLocationTest extends InventoryTestCase
                 return null;
             }
         });
-        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
-            'owner_type' => null,
-            'owner_id' => null,
-        ]));
+        $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create());
 
         // With includeGlobal false, should only get owner's
         $result = InventoryLocation::withoutGlobalScopes()->forOwner($owner, false)->get();

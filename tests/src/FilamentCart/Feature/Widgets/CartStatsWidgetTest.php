@@ -24,7 +24,6 @@ describe('CartStatsWidget', function (): void {
         $widget = new CartStatsWidget;
         $reflection = new ReflectionClass($widget);
         $method = $reflection->getMethod('getColumns');
-        $method->setAccessible(true);
 
         expect($method->invoke($widget))->toBe(4);
     });
@@ -74,7 +73,6 @@ describe('CartStatsWidget', function (): void {
 
         $reflection = new ReflectionClass($widget);
         $method = $reflection->getMethod('getStats');
-        $method->setAccessible(true);
 
         /** @var array<int, Stat> $stats */
         $stats = $method->invoke($widget);
@@ -123,7 +121,6 @@ describe('CartStatsWidget', function (): void {
         $widget = new CartStatsWidget;
         $reflection = new ReflectionClass($widget);
         $method = $reflection->getMethod('getStats');
-        $method->setAccessible(true);
 
         /** @var array<int, Stat> $stats */
         $stats = $method->invoke($widget);

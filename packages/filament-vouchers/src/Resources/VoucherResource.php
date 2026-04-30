@@ -27,8 +27,6 @@ final class VoucherResource extends Resource
 {
     protected static ?string $model = Voucher::class;
 
-    protected static ?string $tenantOwnershipRelationshipName = 'owner';
-
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTicket;
 
     protected static ?string $recordTitleAttribute = 'code';

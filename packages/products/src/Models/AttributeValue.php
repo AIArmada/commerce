@@ -130,7 +130,7 @@ class AttributeValue extends Model
      * @param  Builder<AttributeValue>  $query
      * @return Builder<AttributeValue>
      */
-    public function scopeForLocale($query, ?string $locale = null)
+    public function scopeForLocale(Builder $query, ?string $locale = null): Builder
     {
         return $query->where('locale', $locale);
     }
@@ -141,7 +141,7 @@ class AttributeValue extends Model
      * @param  Builder<AttributeValue>  $query
      * @return Builder<AttributeValue>
      */
-    public function scopeForAttribute($query, string $code)
+    public function scopeForAttribute(Builder $query, string $code): Builder
     {
         return $query->whereHas('attribute', fn ($q) => $q->where('code', $code));
     }

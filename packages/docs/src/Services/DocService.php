@@ -16,10 +16,8 @@ use AIArmada\Docs\Numbering\NumberStrategyRegistry;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
-use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
-use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Spatie\LaravelPdf\Facades\Pdf;
 
@@ -77,7 +76,7 @@ final class DocService implements DocServiceInterface
             $template = $this->getTemplateQuery()->find($data->docTemplateId);
 
             if (! $template) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'doc_template_id' => __('Invalid template selection.'),
                 ]);
             }
@@ -95,7 +94,8 @@ final class DocService implements DocServiceInterface
         // Calculate totals (use provided values if available, otherwise calculate)
         $calculatedSubtotal = $this->calculateSubtotal($data->items);
         $subtotal = $data->subtotal ?? $calculatedSubtotal;
-        $taxAmount = $data->taxAmount ?? ($subtotal * ($data->taxRate ?? 0));
+        $effectiveTaxRate = $data->taxRate ?? (float) config('docs.defaults.tax_rate', 0);
+        $taxAmount = $data->taxAmount ?? ($subtotal * $effectiveTaxRate);
         $discountAmount = $data->discountAmount ?? 0;
         $total = $data->total ?? ($subtotal + $taxAmount - $discountAmount);
 
@@ -148,14 +148,15 @@ final class DocService implements DocServiceInterface
             'metadata' => $metadata,
         ];
 
-        // Add owner columns if enabled
-        if ($owner !== null) {
-            $docData['owner_type'] = $owner->getMorphClass();
-            $docData['owner_id'] = $owner->getKey();
+        // Create doc
+        $doc = new Doc($docData);
+
+        if ($owner !== null && (bool) config('docs.owner.auto_assign_on_create', true)) {
+            $doc->owner_type = $owner->getMorphClass();
+            $doc->owner_id = (string) $owner->getKey();
         }
 
-        // Create doc
-        $doc = Doc::create($docData);
+        $doc->save();
 
         // Load relationships
         $doc->loadMissing(['template', 'docable']);
@@ -186,18 +187,20 @@ final class DocService implements DocServiceInterface
                 'issue_date' => $data['issue_date'] ?? CarbonImmutable::now(),
             ]);
 
-            if ($owner) {
-                $docData['owner_type'] = $owner->getMorphClass();
-                $docData['owner_id'] = $owner->getKey();
-            }
-
             // Calculate totals if items provided
             if (isset($data['items'])) {
                 $totals = $this->calculateTotals($data['items'], $data['discount_amount'] ?? 0);
                 $docData = array_merge($docData, $totals);
             }
 
-            $doc = Doc::create($docData);
+            $doc = new Doc($docData);
+
+            if ($owner !== null) {
+                $doc->owner_type = $owner->getMorphClass();
+                $doc->owner_id = (string) $owner->getKey();
+            }
+
+            $doc->save();
 
             // Create initial version
             $this->createVersion($doc, 'Initial creation');
@@ -279,18 +282,17 @@ final class DocService implements DocServiceInterface
     public function recordPayment(Doc $doc, array $paymentData): DocPayment
     {
         return DB::transaction(function () use ($doc, $paymentData): DocPayment {
-            $ownerAttributes = [];
-            if (config('docs.owner.enabled', false)) {
-                $ownerAttributes = [
-                    'owner_type' => $doc->owner_type,
-                    'owner_id' => $doc->owner_id,
-                ];
-            }
-
-            $payment = $doc->payments()->create(array_merge($paymentData, [
+            $payment = $doc->payments()->make(array_merge($paymentData, [
                 'paid_at' => $paymentData['paid_at'] ?? CarbonImmutable::now(),
                 'currency' => $paymentData['currency'] ?? $doc->currency,
-            ], $ownerAttributes));
+            ]));
+
+            if (config('docs.owner.enabled', false)) {
+                $payment->owner_type = $doc->owner_type;
+                $payment->owner_id = $doc->owner_id;
+            }
+
+            $payment->save();
 
             // Update document status based on payments
             $totalPaid = $doc->payments()->sum('amount');
@@ -300,10 +302,17 @@ final class DocService implements DocServiceInterface
                 $doc->markAsPaid("Payment recorded: {$payment->amount}");
             } elseif ($totalPaid > 0) {
                 $doc->update(['status' => PartiallyPaid::class]);
-                $doc->statusHistories()->create(array_merge([
+                $statusHistory = $doc->statusHistories()->make([
                     'status' => PartiallyPaid::class,
                     'notes' => "Partial payment recorded: {$payment->amount}",
-                ], $ownerAttributes));
+                ]);
+
+                if (config('docs.owner.enabled', false)) {
+                    $statusHistory->owner_type = $doc->owner_type;
+                    $statusHistory->owner_id = $doc->owner_id;
+                }
+
+                $statusHistory->save();
             }
 
             return $payment;
@@ -342,20 +351,21 @@ final class DocService implements DocServiceInterface
     {
         $nextVersion = $doc->versions()->max('version_number') + 1;
 
-        $ownerAttributes = [];
-        if (config('docs.owner.enabled', false)) {
-            $ownerAttributes = [
-                'owner_type' => $doc->owner_type,
-                'owner_id' => $doc->owner_id,
-            ];
-        }
-
-        return $doc->versions()->create(array_merge([
+        $version = $doc->versions()->make([
             'version_number' => $nextVersion,
             'snapshot' => $doc->toArray(),
             'change_summary' => $summary,
             'changed_by' => auth()->id(),
-        ], $ownerAttributes));
+        ]);
+
+        if (config('docs.owner.enabled', false)) {
+            $version->owner_type = $doc->owner_type;
+            $version->owner_id = $doc->owner_id;
+        }
+
+        $version->save();
+
+        return $version;
     }
 
     /**
@@ -467,19 +477,18 @@ final class DocService implements DocServiceInterface
 
         $doc->update(['status' => $statusClass]);
 
-        $ownerAttributes = [];
-        if (config('docs.owner.enabled', false)) {
-            $ownerAttributes = [
-                'owner_type' => $doc->owner_type,
-                'owner_id' => $doc->owner_id,
-            ];
-        }
-
         // Record status change
-        $doc->statusHistories()->create(array_merge([
+        $statusHistory = $doc->statusHistories()->make([
             'status' => $statusClass,
             'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor($statusClass, $doc),
-        ], $ownerAttributes));
+        ]);
+
+        if (config('docs.owner.enabled', false)) {
+            $statusHistory->owner_type = $doc->owner_type;
+            $statusHistory->owner_id = $doc->owner_id;
+        }
+
+        $statusHistory->save();
     }
 
     /**

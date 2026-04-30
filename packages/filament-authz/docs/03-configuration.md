@@ -289,9 +289,17 @@ Enable multi-tenant support for roles and permissions.
 
 ```php
 'scoped_to_tenant' => true,
+'central_app' => false,
 ```
 
-When enabled, roles are filtered by the current tenant/scope context. Use Filament tenancy with `SyncAuthzTenant` or Authz Scopes with `Authz::withScope()`.
+When `scoped_to_tenant` is `true` and `central_app` is `false` (the default), the user role assignment form automatically:
+
+- **Filters role options** to only roles belonging to the current team/tenant.
+- **Validates on save** that all submitted role IDs belong to the current tenant scope, throwing an `AuthorizationException` if any cross-tenant role ID is submitted.
+
+Set `central_app => true` to disable this restriction and allow global role management across all tenants (e.g., in a super-admin panel).
+
+Use Filament tenancy with `SyncAuthzTenant` or Authz Scopes with `Authz::withScope()` to set the active team context.
 
 ## Environment Variables
 

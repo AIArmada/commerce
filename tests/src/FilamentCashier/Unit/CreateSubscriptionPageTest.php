@@ -27,7 +27,6 @@ if (! function_exists('filamentCashier_invokeProtectedMethod')) {
     function filamentCashier_invokeProtectedMethod(object $object, string $method, array $arguments = []): mixed
     {
         $reflection = new ReflectionMethod($object, $method);
-        $reflection->setAccessible(true);
 
         return $reflection->invokeArgs($object, $arguments);
     }
@@ -143,7 +142,6 @@ it('builds customer options, plans, payment methods, and can create a subscripti
     expect($createdWithoutPaymentMethod)->toBeInstanceOf(ChipBillableUser::class);
 
     $dataProperty = new ReflectionProperty($page, 'data');
-    $dataProperty->setAccessible(true);
     $dataProperty->setValue($page, ['gateway' => 'chip']);
 
     $notification = filamentCashier_invokeProtectedMethod($page, 'getCreatedNotification');

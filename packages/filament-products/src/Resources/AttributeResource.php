@@ -23,7 +23,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
-use UnitEnum;
 
 final class AttributeResource extends Resource
 {
@@ -31,17 +30,25 @@ final class AttributeResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-products.navigation.group', 'Catalog');
+    }
 
-    protected static ?int $navigationSort = 40;
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-products.navigation.resources.attributes', 40);
+    }
 
     /**
      * @return Builder<Attribute>
      */
     public static function getEloquentQuery(): Builder
     {
-        return Attribute::query()
-            ->forOwner();
+        /** @var Builder<Attribute> $query */
+        $query = Attribute::query()->forOwner();
+
+        return $query;
     }
 
     public static function getNavigationLabel(): string

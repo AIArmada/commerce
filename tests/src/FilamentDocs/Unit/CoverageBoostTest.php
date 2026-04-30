@@ -148,7 +148,6 @@ it('builds FilamentDocs resources, schemas, tables, relation managers, pages, an
         $page = app($pageClass);
 
         $method = new ReflectionMethod($pageClass, 'getHeaderActions');
-        $method->setAccessible(true);
 
         expect($method->invoke($page))->toBeArray();
     }

@@ -91,6 +91,14 @@ final class ProductPolicy
     }
 
     /**
+     * Determine whether the user can update any products.
+     */
+    public function updateAny(mixed $user): bool
+    {
+        return $this->viewAny($user);
+    }
+
+    /**
      * Determine whether the user can delete the product.
      */
     public function delete(mixed $user, Product $product): bool

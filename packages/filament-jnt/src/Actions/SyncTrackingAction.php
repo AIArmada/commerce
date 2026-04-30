@@ -77,11 +77,14 @@ final class SyncTrackingAction
             return true;
         }
 
+        if ($record->owner_type === null || $record->owner_id === null) {
+            return OwnerContext::isExplicitGlobal();
+        }
+
         $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
         return JntOrder::query()
-            ->forOwner($owner, $includeGlobal)
+            ->forOwner($owner, false)
             ->whereKey($record->getKey())
             ->exists();
     }

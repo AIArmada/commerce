@@ -32,7 +32,7 @@ it('scopes Filament JNT resources to the resolved owner (including global)', fun
         'password' => 'secret',
     ]);
 
-    OwnerContext::withOwner(null, function () use ($ownerA, $ownerB, &$globalOrder, &$globalLog, &$globalEvent, &$ownerAOrder, &$ownerBOrder, &$ownerALog, &$ownerBLog, &$ownerAEvent, &$ownerBEvent): void {
+    OwnerContext::withOwner(null, function () use (&$globalOrder, &$globalLog, &$globalEvent): void {
         $globalOrder = JntOrder::query()->create([
             'order_id' => 'ORD-GLOBAL',
             'customer_code' => 'CUST',
@@ -49,18 +49,13 @@ it('scopes Filament JNT resources to the resolved owner (including global)', fun
             'tracking_number' => 'TRK-G',
             'scan_type_name' => 'Global',
         ]);
+    });
 
+    OwnerContext::withOwner($ownerA, function () use ($ownerA, &$ownerAOrder, &$ownerALog, &$ownerAEvent): void {
         $ownerAOrder = JntOrder::query()->create([
             'order_id' => 'ORD-A',
             'customer_code' => 'CUST',
         ]);
-        $ownerAOrder->assignOwner($ownerA)->save();
-
-        $ownerBOrder = JntOrder::query()->create([
-            'order_id' => 'ORD-B',
-            'customer_code' => 'CUST',
-        ]);
-        $ownerBOrder->assignOwner($ownerB)->save();
 
         $ownerALog = JntWebhookLog::query()->create([
             'order_id' => $ownerAOrder->id,
@@ -68,16 +63,23 @@ it('scopes Filament JNT resources to the resolved owner (including global)', fun
             'processing_status' => JntWebhookLog::STATUS_PENDING,
         ]);
 
-        $ownerBLog = JntWebhookLog::query()->create([
-            'order_id' => $ownerBOrder->id,
-            'tracking_number' => 'TRK-B',
-            'processing_status' => JntWebhookLog::STATUS_PENDING,
-        ]);
-
         $ownerAEvent = JntTrackingEvent::query()->create([
             'order_id' => $ownerAOrder->id,
             'tracking_number' => 'TRK-A',
             'scan_type_name' => 'Owner A',
+        ]);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($ownerB, &$ownerBOrder, &$ownerBLog, &$ownerBEvent): void {
+        $ownerBOrder = JntOrder::query()->create([
+            'order_id' => 'ORD-B',
+            'customer_code' => 'CUST',
+        ]);
+
+        $ownerBLog = JntWebhookLog::query()->create([
+            'order_id' => $ownerBOrder->id,
+            'tracking_number' => 'TRK-B',
+            'processing_status' => JntWebhookLog::STATUS_PENDING,
         ]);
 
         $ownerBEvent = JntTrackingEvent::query()->create([
@@ -112,7 +114,7 @@ it('can exclude global records from Filament JNT resources', function (): void {
         'password' => 'secret',
     ]);
 
-    OwnerContext::withOwner(null, function () use ($ownerA, &$globalOrder, &$globalLog, &$globalEvent, &$ownerAOrder, &$ownerALog, &$ownerAEvent): void {
+    OwnerContext::withOwner(null, function () use (&$globalOrder, &$globalLog, &$globalEvent): void {
         $globalOrder = JntOrder::query()->create([
             'order_id' => 'ORD-GLOBAL',
             'customer_code' => 'CUST',
@@ -129,12 +131,13 @@ it('can exclude global records from Filament JNT resources', function (): void {
             'tracking_number' => 'TRK-G',
             'scan_type_name' => 'Global',
         ]);
+    });
 
+    OwnerContext::withOwner($ownerA, function () use ($ownerA, &$ownerAOrder, &$ownerALog, &$ownerAEvent): void {
         $ownerAOrder = JntOrder::query()->create([
             'order_id' => 'ORD-A',
             'customer_code' => 'CUST',
         ]);
-        $ownerAOrder->assignOwner($ownerA)->save();
 
         $ownerALog = JntWebhookLog::query()->create([
             'order_id' => $ownerAOrder->id,

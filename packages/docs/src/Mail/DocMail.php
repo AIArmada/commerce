@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Mail;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Services\DocEmailService;
@@ -15,6 +16,7 @@ use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -74,7 +76,9 @@ final class DocMail extends Mailable
 
         try {
             $docService = app(DocService::class);
-            $pdfPath = $docService->generatePdf($this->doc, save: true);
+            $owner = OwnerContext::fromTypeAndId($this->doc->owner_type, $this->doc->owner_id);
+
+            $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf($this->doc, save: true));
 
             $docType = ucfirst(str_replace('_', '-', $this->doc->doc_type));
 
@@ -83,7 +87,13 @@ final class DocMail extends Mailable
                     ->as("{$docType}-{$this->doc->doc_number}.pdf")
                     ->withMime('application/pdf'),
             ];
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::warning('Failed to attach document PDF in queued mailable.', [
+                'doc_id' => $this->doc->getKey(),
+                'doc_number' => $this->doc->doc_number,
+                'error' => $exception->getMessage(),
+            ]);
+
             return [];
         }
     }

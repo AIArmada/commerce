@@ -9,7 +9,6 @@ return [
     |--------------------------------------------------------------------------
     */
     'database' => [
-        'table_prefix' => '',
         'tables' => [
             'promotions' => 'promotions',
             'promotionables' => 'promotionables',
@@ -24,17 +23,10 @@ return [
     */
     'features' => [
         'owner' => [
-            'enabled' => false,
-            'include_global' => true,
+            'enabled' => true,
+            'include_global' => false,
+            'auto_assign_on_create' => true,
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Targeting
-    |--------------------------------------------------------------------------
-    */
-    'targeting' => [
-        'cache_ttl' => 3600,
-    ],
 ];

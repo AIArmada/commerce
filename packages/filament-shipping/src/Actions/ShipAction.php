@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\ShipmentService;
 use Filament\Actions\Action;
@@ -26,7 +25,7 @@ class ShipAction extends Action
             ->requiresConfirmation()
             ->modalHeading('Ship Package')
             ->modalDescription('This will create the shipment with the carrier and generate tracking.')
-            ->visible(fn (Shipment $record): bool => $record->status === ShipmentStatus::Pending)
+            ->visible(fn (Shipment $record): bool => $record->isPending())
             ->authorize(fn (Shipment $record): bool => auth()->user()?->can('ship', $record) ?? false)
             ->action(function (Shipment $record): void {
                 try {

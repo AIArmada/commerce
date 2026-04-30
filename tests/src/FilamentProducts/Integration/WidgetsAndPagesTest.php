@@ -85,7 +85,6 @@ it('covers resource page header actions methods', function (): void {
 
     $getActions = function (object $page): array {
         $method = new ReflectionMethod($page::class, 'getHeaderActions');
-        $method->setAccessible(true);
 
         return $method->invoke($page);
     };
@@ -165,7 +164,6 @@ it('covers widget query logic with owner scoping', function (): void {
 
     $statsWidget = app(ProductStatsWidget::class);
     $statsMethod = new ReflectionMethod(ProductStatsWidget::class, 'getStats');
-    $statsMethod->setAccessible(true);
     $stats = $statsMethod->invoke($statsWidget);
 
     expect($stats)->toHaveCount(4);
@@ -173,7 +171,6 @@ it('covers widget query logic with owner scoping', function (): void {
 
     $chartWidget = app(CategoryDistributionChart::class);
     $dataMethod = new ReflectionMethod(CategoryDistributionChart::class, 'getData');
-    $dataMethod->setAccessible(true);
     $data = $dataMethod->invoke($chartWidget);
 
     expect($data['labels'])->toBe(['CatA']);

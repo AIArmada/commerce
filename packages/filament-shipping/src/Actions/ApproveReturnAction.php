@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
+use AIArmada\Shipping\Actions\ApproveReturnAuthorization;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -33,14 +34,7 @@ class ApproveReturnAction extends Action
             ->visible(fn (ReturnAuthorization $record): bool => $record->isPending())
             ->authorize(fn (ReturnAuthorization $record): bool => auth()->user()?->can('approve', $record) ?? false)
             ->action(function (ReturnAuthorization $record, array $data): void {
-                $record->update([
-                    'status' => 'approved',
-                    'approved_at' => now(),
-                    'approved_by' => auth()->id(),
-                    'metadata' => array_merge($record->metadata ?? [], [
-                        'approval_notes' => $data['notes'] ?? null,
-                    ]),
-                ]);
+                ApproveReturnAuthorization::run($record, $data['notes'] ?? null, auth()->id() !== null ? (string) auth()->id() : null);
 
                 Notification::make()
                     ->title('Return Approved')

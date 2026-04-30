@@ -57,15 +57,15 @@ class Category extends Model implements HasMedia
 
     protected $guarded = ['id'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'position' => 'integer',
-        'is_visible' => 'boolean',
-        'is_featured' => 'boolean',
-        'metadata' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'position' => 'integer',
+            'is_visible' => 'boolean',
+            'is_featured' => 'boolean',
+            'metadata' => 'array',
+        ];
+    }
 
     /**
      * @var array<string, mixed>
@@ -423,22 +423,22 @@ class Category extends Model implements HasMedia
     // SCOPES
     // =========================================================================
 
-    public function scopeRoots($query)
+    public function scopeRoots(Builder $query): Builder
     {
         return $query->whereNull('parent_id');
     }
 
-    public function scopeVisible($query)
+    public function scopeVisible(Builder $query): Builder
     {
         return $query->where('is_visible', true);
     }
 
-    public function scopeFeatured($query)
+    public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
     }
 
-    public function scopeOrdered($query)
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('position');
     }

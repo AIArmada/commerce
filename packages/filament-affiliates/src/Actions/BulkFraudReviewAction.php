@@ -6,9 +6,12 @@ namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\BulkAction;
 use Filament\Forms;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 
 final class BulkFraudReviewAction extends BulkAction
 {
@@ -38,12 +41,42 @@ final class BulkFraudReviewAction extends BulkAction
         ]);
 
         $this->action(function (Collection $records, array $data): void {
-            $records->each(function (AffiliateFraudSignal $signal) use ($data): void {
-                $signal->update([
-                    'status' => $data['status'],
-                    'review_notes' => $data['review_notes'] ?? null,
-                    'reviewed_at' => now(),
-                ]);
+            $status = FraudSignalStatus::tryFrom((string) ($data['status'] ?? ''));
+
+            if (! $status instanceof FraudSignalStatus) {
+                throw new InvalidArgumentException('Invalid fraud signal status selected.');
+            }
+
+            $reviewedBy = auth()->user()?->getAuthIdentifier();
+            $reviewedBy = $reviewedBy === null ? null : (string) $reviewedBy;
+
+            $reviewNotes = $data['review_notes'] ?? null;
+            $reviewNotes = is_string($reviewNotes) && $reviewNotes !== '' ? $reviewNotes : null;
+
+            $records->each(function (AffiliateFraudSignal $record) use ($status, $reviewedBy, $reviewNotes): void {
+                Gate::authorize('update', $record);
+
+                /** @var AffiliateFraudSignal $signal */
+                $signal = OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
+                    ->whereKey($record->getKey())
+                    ->firstOrFail();
+
+                match ($status) {
+                    FraudSignalStatus::Reviewed => $signal->markAsReviewed($reviewedBy),
+                    FraudSignalStatus::Dismissed => $signal->dismiss($reviewedBy),
+                    FraudSignalStatus::Confirmed => $signal->confirm($reviewedBy),
+                    FraudSignalStatus::Detected => throw new InvalidArgumentException(
+                        'Detected is not a valid manual review outcome.'
+                    ),
+                };
+
+                if ($reviewNotes !== null) {
+                    $signal->update([
+                        'evidence' => array_merge($signal->evidence ?? [], [
+                            'review_notes' => $reviewNotes,
+                        ]),
+                    ]);
+                }
             });
 
             $this->success();

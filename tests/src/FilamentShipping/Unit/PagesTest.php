@@ -22,7 +22,6 @@ uses(TestCase::class);
 describe('ShippingDashboard', function (): void {
     it('has correct navigation icon', function (): void {
         $reflection = new ReflectionProperty(ShippingDashboard::class, 'navigationIcon');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe(Heroicon::OutlinedChartBar);
     });
@@ -37,14 +36,12 @@ describe('ShippingDashboard', function (): void {
 
     it('has navigation sort order of 0', function (): void {
         $reflection = new ReflectionProperty(ShippingDashboard::class, 'navigationSort');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe(0);
     });
 
     it('has correct slug', function (): void {
         $reflection = new ReflectionProperty(ShippingDashboard::class, 'slug');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe('shipping-dashboard');
     });
@@ -56,9 +53,7 @@ describe('ShippingDashboard', function (): void {
         expect($page->getHeaderWidgetsColumns())->toBe(5);
 
         $getHeaderWidgets = new ReflectionMethod($page, 'getHeaderWidgets');
-        $getHeaderWidgets->setAccessible(true);
         $getFooterWidgets = new ReflectionMethod($page, 'getFooterWidgets');
-        $getFooterWidgets->setAccessible(true);
 
         /** @var array $headerWidgets */
         $headerWidgets = $getHeaderWidgets->invoke($page);
@@ -73,7 +68,6 @@ describe('ShippingDashboard', function (): void {
 describe('ManifestPage', function (): void {
     it('has correct navigation icon', function (): void {
         $reflection = new ReflectionProperty(ManifestPage::class, 'navigationIcon');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe(Heroicon::OutlinedDocumentText);
     });
@@ -88,14 +82,12 @@ describe('ManifestPage', function (): void {
 
     it('has navigation sort order of 5', function (): void {
         $reflection = new ReflectionProperty(ManifestPage::class, 'navigationSort');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe(5);
     });
 
     it('has correct slug', function (): void {
         $reflection = new ReflectionProperty(ManifestPage::class, 'slug');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe('shipping-manifests');
     });
@@ -151,7 +143,6 @@ describe('ManifestPage', function (): void {
         $page->selectedCarrier = 'jnt';
 
         $method = new ReflectionMethod($page, 'getTableQuery');
-        $method->setAccessible(true);
 
         /** @var Builder $query */
         $query = $method->invoke($page);
@@ -163,7 +154,6 @@ describe('ManifestPage', function (): void {
         $page = new ManifestPage;
 
         $method = new ReflectionMethod($page, 'getHeaderActions');
-        $method->setAccessible(true);
 
         /** @var array $actions */
         $actions = $method->invoke($page);

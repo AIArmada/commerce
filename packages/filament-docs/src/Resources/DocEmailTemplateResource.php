@@ -11,8 +11,8 @@ use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -30,6 +30,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
@@ -175,6 +176,8 @@ final class DocEmailTemplateResource extends Resource
                 Action::make('duplicate')
                     ->icon('heroicon-o-document-duplicate')
                     ->action(function (DocEmailTemplate $record): void {
+                        DocsOwnerScope::assertCanMutateRecord($record, 'Email template not found.');
+
                         $new = $record->replicate();
                         $new->name = $record->name . ' (Copy)';
                         $new->slug = $record->slug . '-copy-' . CarbonImmutable::now()->timestamp;
@@ -183,7 +186,18 @@ final class DocEmailTemplateResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    BulkAction::make('delete_selected')
+                        ->label('Delete Selected')
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int|string, DocEmailTemplate> $records */
+                            $records->each(function (DocEmailTemplate $record): void {
+                                DocsOwnerScope::assertCanMutateRecord($record, 'Email template not found.');
+                                $record->delete();
+                            });
+                        }),
                 ]),
             ]);
     }
@@ -236,15 +250,23 @@ final class DocEmailTemplateResource extends Resource
         $includeGlobal = (bool) config('docs.owner.include_global', false);
 
         if ($owner instanceof Model) {
-            $rule
-                ->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', (string) $owner->getKey());
-
-            if (! $includeGlobal) {
-                return $rule;
+            if ($includeGlobal) {
+                return $rule->where(function (\Illuminate\Database\Query\Builder $query) use ($owner): void {
+                    $query
+                        ->where(function (\Illuminate\Database\Query\Builder $ownerQuery) use ($owner): void {
+                            $ownerQuery
+                                ->where('owner_type', $owner->getMorphClass())
+                                ->where('owner_id', (string) $owner->getKey());
+                        })
+                        ->orWhere(function (\Illuminate\Database\Query\Builder $globalQuery): void {
+                            $globalQuery->whereNull('owner_type')->whereNull('owner_id');
+                        });
+                });
             }
 
-            return $rule;
+            return $rule
+                ->where('owner_type', $owner->getMorphClass())
+                ->where('owner_id', (string) $owner->getKey());
         }
 
         return $rule

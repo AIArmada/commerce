@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\Widgets\OrderStatsWidget;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
@@ -45,56 +46,72 @@ it('calculates stats using an owner-scoped query', function (): void {
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
     // Today (owner A): 1 paid order
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-        'paid_at' => now(),
-    ]);
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+        $order = Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+            'paid_at' => now(),
+        ]);
 
-    $orderA->forceFill(['created_at' => now()->copy()->subHour(), 'updated_at' => now()->copy()->subHour()])->save();
+        $order->forceFill(['created_at' => now()->copy()->subHour(), 'updated_at' => now()->copy()->subHour()])->save();
+
+        return $order;
+    });
 
     // Today (owner B): should be ignored
-    $orderB = Order::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 99999,
-        'grand_total' => 99999,
-        'paid_at' => now(),
-    ]);
+    $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
+        $order = Order::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 99999,
+            'grand_total' => 99999,
+            'paid_at' => now(),
+        ]);
 
-    $orderB->forceFill(['created_at' => now()->copy()->subHour(), 'updated_at' => now()->copy()->subHour()])->save();
+        $order->forceFill(['created_at' => now()->copy()->subHour(), 'updated_at' => now()->copy()->subHour()])->save();
+
+        return $order;
+    });
 
     // Today (global): 1 paid order
-    $orderGlobal = Order::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 2500,
-        'grand_total' => 2500,
-        'paid_at' => now(),
-    ]);
+    $orderGlobal = OwnerContext::withOwner(null, function (): Order {
+        $order = Order::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 2500,
+            'grand_total' => 2500,
+            'paid_at' => now(),
+        ]);
 
-    $orderGlobal->forceFill(['created_at' => now()->copy()->subHours(2), 'updated_at' => now()->copy()->subHours(2)])->save();
+        $order->forceFill(['created_at' => now()->copy()->subHours(2), 'updated_at' => now()->copy()->subHours(2)])->save();
+
+        return $order;
+    });
 
     // Yesterday (owner A): 1 paid order
-    $orderYesterday = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 5000,
-        'grand_total' => 5000,
-        'paid_at' => now()->copy()->subDay(),
-    ]);
+    $orderYesterday = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+        $order = Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 5000,
+            'grand_total' => 5000,
+            'paid_at' => now()->copy()->subDay(),
+        ]);
 
-    $orderYesterday->forceFill(['created_at' => now()->copy()->subDay()->subHour(), 'updated_at' => now()->copy()->subDay()->subHour()])->save();
+        $order->forceFill(['created_at' => now()->copy()->subDay()->subHour(), 'updated_at' => now()->copy()->subDay()->subHour()])->save();
+
+        return $order;
+    });
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -120,7 +137,6 @@ it('calculates stats using an owner-scoped query', function (): void {
     $widget = app(OrderStatsWidget::class);
 
     $method = new ReflectionMethod(OrderStatsWidget::class, 'getStats');
-    $method->setAccessible(true);
 
     /** @var array<int, Stat> $stats */
     $stats = $method->invoke($widget);

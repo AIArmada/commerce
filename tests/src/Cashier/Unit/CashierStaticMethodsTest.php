@@ -161,7 +161,6 @@ describe('Cashier Static Methods Full Coverage', function (): void {
             // Re-set to null through reflection
             $reflection = new ReflectionClass(Cashier::class);
             $property = $reflection->getProperty('formatCurrencyUsing');
-            $property->setAccessible(true);
             $property->setValue(null, null);
         });
 
@@ -253,7 +252,6 @@ describe('Cashier Static Methods Full Coverage', function (): void {
             // Reset formatter
             $reflection = new ReflectionClass(Cashier::class);
             $property = $reflection->getProperty('formatCurrencyUsing');
-            $property->setAccessible(true);
             $property->setValue(null, null);
         });
     });

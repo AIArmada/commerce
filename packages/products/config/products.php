@@ -43,7 +43,6 @@ return [
 
         'variants' => [
             'sku_pattern' => '{parent_sku}-{option_codes}',
-            'max_combinations' => 1000,
         ],
     ],
 

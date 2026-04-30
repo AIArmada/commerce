@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -49,25 +50,31 @@ test('doc template set as default respects owner', function (): void {
         'owner_type' => null,
     ]);
 
-    // Owned default (simulate owner)
-    $ownerType = 'App\\Models\\User';
-    $ownerId = (string) Str::uuid();
-
-    $ownedDefault = DocTemplate::factory()->create([
-        'doc_type' => 'invoice',
-        'is_default' => true,
-        'owner_type' => $ownerType,
-        'owner_id' => $ownerId,
+    $owner = User::query()->create([
+        'name' => 'Template Owner',
+        'email' => 'template-owner@example.test',
+        'password' => bcrypt('password'),
     ]);
 
-    $ownedNew = DocTemplate::factory()->create([
-        'doc_type' => 'invoice',
-        'is_default' => false,
-        'owner_type' => $ownerType,
-        'owner_id' => $ownerId,
-    ]);
+    $ownedDefault = null;
+    $ownedNew = null;
 
-    $ownedNew->setAsDefault();
+    OwnerContext::withOwner($owner, function () use (&$ownedDefault, &$ownedNew): void {
+        $ownedDefault = DocTemplate::factory()->create([
+            'doc_type' => 'invoice',
+            'is_default' => true,
+        ]);
+
+        $ownedNew = DocTemplate::factory()->create([
+            'doc_type' => 'invoice',
+            'is_default' => false,
+        ]);
+
+        $ownedNew->setAsDefault();
+    });
+
+    expect($ownedDefault)->toBeInstanceOf(DocTemplate::class);
+    expect($ownedNew)->toBeInstanceOf(DocTemplate::class);
 
     expect($ownedNew->fresh()->is_default)->toBeTrue();
     expect($ownedDefault->fresh()->is_default)->toBeFalse();

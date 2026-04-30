@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
+use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
@@ -87,10 +88,14 @@ final class BulkGenerateVouchersAction extends Action
             $count = (int) $data['count'];
             $created = 0;
 
+            // Enforce owner on every generated voucher so none are accidentally created
+            // as global records when owner mode is enabled.
+            $ownerDefaults = OwnerScopedQueries::enforceOwnerOnCreate([]);
+
             for ($i = 0; $i < $count; $i++) {
                 $code = mb_strtoupper($data['prefix']) . '-' . mb_strtoupper(Str::random(6));
 
-                $service->create([
+                $service->create(array_merge($ownerDefaults, [
                     'code' => $code,
                     'name' => $data['name'] . ' #' . ($i + 1),
                     'type' => VoucherType::from($data['type']),
@@ -98,7 +103,7 @@ final class BulkGenerateVouchersAction extends Action
                     'currency' => $data['currency'],
                     'status' => Active::class,
                     'usage_limit' => $data['usage_limit'] ? (int) $data['usage_limit'] : null,
-                ]);
+                ]));
 
                 $created++;
             }

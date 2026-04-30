@@ -141,7 +141,6 @@ it('computes payment method breakdown without including test mode purchases', fu
 
     $ref = new ReflectionClass($widget);
     $method = $ref->getMethod('getPaymentMethodBreakdown');
-    $method->setAccessible(true);
 
     /** @var array<string, array{count: int, amount: int}> $breakdown */
     $breakdown = $method->invoke($widget);
@@ -174,7 +173,6 @@ it('generates revenue data for the last 30 days', function (): void {
 
     $ref = new ReflectionClass($widget);
     $method = $ref->getMethod('getRevenueData');
-    $method->setAccessible(true);
 
     /** @var array{labels: array<string>, amounts: array<int>} $data */
     $data = $method->invoke($widget);
@@ -351,7 +349,6 @@ it('widget metrics reject cross-tenant data', function (): void {
     $widgetA = app(PaymentMethodsWidget::class);
     $refA = new ReflectionClass($widgetA);
     $methodA = $refA->getMethod('getPaymentMethodBreakdown');
-    $methodA->setAccessible(true);
 
     /** @var array<string, array{count: int, amount: int}> $breakdownA */
     $breakdownA = $methodA->invoke($widgetA);
@@ -376,7 +373,6 @@ it('widget metrics reject cross-tenant data', function (): void {
     $widgetB = app(PaymentMethodsWidget::class);
     $refB = new ReflectionClass($widgetB);
     $methodB = $refB->getMethod('getPaymentMethodBreakdown');
-    $methodB->setAccessible(true);
 
     /** @var array<string, array{count: int, amount: int}> $breakdownB */
     $breakdownB = $methodB->invoke($widgetB);

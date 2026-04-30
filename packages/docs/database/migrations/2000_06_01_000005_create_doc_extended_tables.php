@@ -43,7 +43,7 @@ return new class extends Migration
             Schema::create($emailTemplatesTable, function (Blueprint $table) use ($emailTemplatesTable): void {
                 $table->uuid('id')->primary();
                 $table->string('name');
-                $table->string('slug')->unique($emailTemplatesTable . '_slug_unique');
+                $table->string('slug');
                 $table->string('doc_type');
                 $table->string('trigger'); // created, sent, paid, overdue, reminder
                 $table->string('subject');
@@ -53,6 +53,7 @@ return new class extends Migration
                 $table->timestamps();
 
                 $table->index(['doc_type', 'trigger'], $emailTemplatesTable . '_type_trigger_index');
+                $table->unique(['owner_type', 'owner_id', 'slug'], $emailTemplatesTable . '_owner_slug_unique');
             });
         }
 

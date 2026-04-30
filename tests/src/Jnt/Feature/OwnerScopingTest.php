@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     config()->set('jnt.owner.enabled', true);
@@ -22,26 +24,29 @@ it('returns strict global-only when owner resolver returns null', function (): v
         'password' => 'secret',
     ]);
 
-    $orderOwned = JntOrder::query()->create([
+    $orderOwned = OwnerContext::withOwner($ownerA, fn () => JntOrder::query()->create([
         'order_id' => 'ORD-A',
         'customer_code' => 'CUST',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    $orderGlobal = JntOrder::query()->create([
+    $orderGlobal = OwnerContext::withOwner(null, fn () => JntOrder::query()->create([
         'order_id' => 'ORD-GLOBAL',
         'customer_code' => 'CUST',
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
+    ]));
 
-    $orderCorrupt = JntOrder::query()->create([
+    // Corrupt record (owner_type set but owner_id null) cannot be created via Eloquent
+    // as the guard rejects mismatched nulls; insert raw to test scope exclusion logic.
+    $corruptId = (string) str()->uuid();
+    DB::table((new JntOrder)->getTable())->insert([
+        'id' => $corruptId,
         'order_id' => 'ORD-CORRUPT',
         'customer_code' => 'CUST',
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => null,
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
+    $orderCorrupt = JntOrder::query()->withoutOwnerScope()->find($corruptId);
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
@@ -68,19 +73,15 @@ it('returns no rows when owner resolver returns null and global records are disa
         'password' => 'secret',
     ]);
 
-    JntOrder::query()->create([
+    OwnerContext::withOwner($ownerA, fn () => JntOrder::query()->create([
         'order_id' => 'ORD-A2',
         'customer_code' => 'CUST',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    JntOrder::query()->create([
+    OwnerContext::withOwner(null, fn () => JntOrder::query()->create([
         'order_id' => 'ORD-GLOBAL2',
         'customer_code' => 'CUST',
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
+    ]));
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {

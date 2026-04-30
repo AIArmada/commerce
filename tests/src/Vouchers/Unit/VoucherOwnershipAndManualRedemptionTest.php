@@ -125,6 +125,19 @@ it('scopes vouchers to the resolved owner', function (): void {
         'status' => Active::class,
     ]);
 
+    // Temporarily bind otherOwner as the resolved owner to create their voucher;
+    // the HasOwner saving guard checks against the resolved context owner.
+    $this->app->singleton(OwnerResolverInterface::class, function () use ($otherOwner): OwnerResolverInterface {
+        return new class($otherOwner) implements OwnerResolverInterface
+        {
+            public function __construct(private TestOwner $owner) {}
+
+            public function resolve(): ?EloquentModel
+            {
+                return $this->owner;
+            }
+        };
+    });
     VoucherModel::create([
         'code' => 'OTHER',
         'name' => 'Other Owner Voucher',
@@ -135,6 +148,19 @@ it('scopes vouchers to the resolved owner', function (): void {
         'owner_type' => $otherOwner->getMorphClass(),
         'owner_id' => $otherOwner->getKey(),
     ]);
+
+    // Restore original owner resolver
+    $this->app->singleton(OwnerResolverInterface::class, function () use ($owner): OwnerResolverInterface {
+        return new class($owner) implements OwnerResolverInterface
+        {
+            public function __construct(private TestOwner $owner) {}
+
+            public function resolve(): ?EloquentModel
+            {
+                return $this->owner;
+            }
+        };
+    });
 
     VoucherModel::create([
         'code' => 'GLOBAL',
@@ -154,4 +180,50 @@ it('scopes vouchers to the resolved owner', function (): void {
     expect($owned)->not->toBeNull()
         ->and($owned->owner_id)->toBe($owner->getKey())
         ->and($owned->owner_type)->toBe($owner->getMorphClass());
+});
+
+it('overrides provided owner columns when resolver owner is available', function (): void {
+    config(['vouchers.owner.enabled' => true]);
+
+    $owner = TestOwner::create(['name' => 'Scoped Owner']);
+    $otherOwner = TestOwner::create(['name' => 'Forged Owner']);
+
+    $this->app->forgetInstance(OwnerResolverInterface::class);
+    $this->app->singleton(OwnerResolverInterface::class, function () use ($owner): OwnerResolverInterface {
+        return new class($owner) implements OwnerResolverInterface
+        {
+            public function __construct(private TestOwner $owner) {}
+
+            public function resolve(): ?EloquentModel
+            {
+                return $this->owner;
+            }
+        };
+    });
+
+    $this->app->forgetInstance(VoucherService::class);
+    $this->app->forgetInstance(VoucherValidator::class);
+    $this->app->forgetInstance('voucher');
+
+    $service = app(VoucherService::class);
+
+    $created = $service->create([
+        'code' => 'FORGED-OWNER-CODE',
+        'name' => 'Forged Owner Attempt',
+        'type' => VoucherType::Fixed,
+        'value' => 1000,
+        'currency' => 'USD',
+        'status' => Active::class,
+        'owner_type' => $otherOwner->getMorphClass(),
+        'owner_id' => $otherOwner->getKey(),
+    ]);
+
+    expect($created->ownerId)->toBe((string) $owner->getKey())
+        ->and($created->ownerType)->toBe($owner->getMorphClass());
+
+    $voucher = VoucherModel::query()->where('code', 'FORGED-OWNER-CODE')->first();
+
+    expect($voucher)->not->toBeNull()
+        ->and((string) $voucher->owner_id)->toBe((string) $owner->getKey())
+        ->and($voucher->owner_type)->toBe($owner->getMorphClass());
 });

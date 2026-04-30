@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
@@ -24,7 +25,6 @@ final class FilamentJntTestOwnerResolver implements OwnerResolverInterface
 function filamentJnt_invokeProtected(object $instance, string $methodName, array $arguments = []): mixed
 {
     $method = new ReflectionMethod($instance, $methodName);
-    $method->setAccessible(true);
 
     return $method->invokeArgs($instance, $arguments);
 }
@@ -49,14 +49,15 @@ it('builds stats and respects owner scoping', function (): void {
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FilamentJntTestOwnerResolver($ownerA));
 
-    $globalDelivered = JntOrder::query()->create([
+    $globalDelivered = OwnerContext::withOwner(null, fn () => JntOrder::query()->create([
         'order_id' => 'GLOBAL-1',
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-G1',
         'delivered_at' => now(),
         'has_problem' => false,
-    ]);
+    ]));
 
+    // ownerA records: resolver is already ownerA, so auto-assign fires automatically.
     $ownerAInTransit = JntOrder::query()->create([
         'order_id' => 'A-1',
         'customer_code' => 'CUST',
@@ -65,7 +66,6 @@ it('builds stats and respects owner scoping', function (): void {
         'has_problem' => false,
         'last_status_code' => '20',
     ]);
-    $ownerAInTransit->assignOwner($ownerA)->save();
 
     $ownerAProblem = JntOrder::query()->create([
         'order_id' => 'A-2',
@@ -74,7 +74,6 @@ it('builds stats and respects owner scoping', function (): void {
         'delivered_at' => null,
         'has_problem' => true,
     ]);
-    $ownerAProblem->assignOwner($ownerA)->save();
 
     $ownerAPending = JntOrder::query()->create([
         'order_id' => 'A-3',
@@ -83,7 +82,6 @@ it('builds stats and respects owner scoping', function (): void {
         'delivered_at' => null,
         'has_problem' => false,
     ]);
-    $ownerAPending->assignOwner($ownerA)->save();
 
     $ownerAReturn = JntOrder::query()->create([
         'order_id' => 'A-4',
@@ -93,17 +91,15 @@ it('builds stats and respects owner scoping', function (): void {
         'has_problem' => false,
         'last_status_code' => '172',
     ]);
-    $ownerAReturn->assignOwner($ownerA)->save();
 
-    $ownerBInTransit = JntOrder::query()->create([
+    $ownerBInTransit = OwnerContext::withOwner($ownerB, fn () => JntOrder::query()->create([
         'order_id' => 'B-1',
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-B1',
         'delivered_at' => null,
         'has_problem' => false,
         'last_status_code' => '20',
-    ]);
-    $ownerBInTransit->assignOwner($ownerB)->save();
+    ]));
 
     $widget = app(JntStatsWidget::class);
     $stats = filamentJnt_invokeProtected($widget, 'getStats');

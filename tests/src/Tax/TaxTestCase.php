@@ -32,6 +32,8 @@ abstract class TaxTestCase extends BaseTestCase
         $app['config']->set('tax.features.zone_resolution.unknown_zone_behavior', 'zero');
         $app['config']->set('tax.features.exemptions.enabled', true);
         $app['config']->set('tax.features.owner.enabled', false);
+        // Keep owner auto-assignment aligned with package defaults for owner-scope tests
+        $app['config']->set('tax.features.owner.auto_assign_on_create', true);
 
         // Configure tax table names
         $app['config']->set('tax.database.tables.tax_zones', 'tax_zones');

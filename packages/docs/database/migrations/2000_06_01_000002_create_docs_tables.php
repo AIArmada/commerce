@@ -21,8 +21,7 @@ return new class extends Migration
         Schema::create($templatesTable, function (Blueprint $table) use ($templatesTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'json');
             $table->uuid('id')->primary();
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('slug');
             $table->text('description')->nullable();
@@ -40,8 +39,7 @@ return new class extends Migration
         Schema::create($docsTable, function (Blueprint $table) use ($docsTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'json');
             $table->uuid('id')->primary();
-            $table->string('owner_type')->nullable()->index();
-            $table->uuid('owner_id')->nullable()->index();
+            $table->nullableUuidMorphs('owner');
             $table->string('doc_number')->unique($docsTable . '_doc_number_unique');
             $table->string('doc_type')->default('invoice');
             $table->foreignUuid('doc_template_id')->nullable();

@@ -70,7 +70,6 @@ it('exposes a save header action', function (): void {
     $page = app(ManagePricingSettings::class);
 
     $method = new ReflectionMethod(ManagePricingSettings::class, 'getHeaderActions');
-    $method->setAccessible(true);
 
     /** @var array<int, object> $actions */
     $actions = $method->invoke($page);

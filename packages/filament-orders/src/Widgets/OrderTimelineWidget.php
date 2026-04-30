@@ -19,6 +19,13 @@ final class OrderTimelineWidget extends Widget implements HasForms
 {
     use InteractsWithForms;
 
+    public static function canView(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null && Gate::forUser($user)->allows('viewAny', Order::class);
+    }
+
     public ?Order $record = null;
 
     public ?array $noteData = [];

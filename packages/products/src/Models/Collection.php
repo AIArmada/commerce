@@ -55,19 +55,19 @@ class Collection extends Model implements HasMedia
 
     protected $guarded = ['id'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'type' => 'string', // manual or automatic
-        'conditions' => 'array',
-        'is_visible' => 'boolean',
-        'is_featured' => 'boolean',
-        'position' => 'integer',
-        'published_at' => 'datetime',
-        'unpublished_at' => 'datetime',
-        'metadata' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'type' => 'string', // manual or automatic
+            'conditions' => 'array',
+            'is_visible' => 'boolean',
+            'is_featured' => 'boolean',
+            'position' => 'integer',
+            'published_at' => 'datetime',
+            'unpublished_at' => 'datetime',
+            'metadata' => 'array',
+        ];
+    }
 
     /**
      * @var array<string, mixed>
@@ -267,17 +267,17 @@ class Collection extends Model implements HasMedia
     // SCOPES
     // =========================================================================
 
-    public function scopeVisible($query)
+    public function scopeVisible(Builder $query): Builder
     {
         return $query->where('is_visible', true);
     }
 
-    public function scopeFeatured($query)
+    public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
     }
 
-    public function scopePublished($query)
+    public function scopePublished(Builder $query): Builder
     {
         $now = now();
 
@@ -293,17 +293,17 @@ class Collection extends Model implements HasMedia
             });
     }
 
-    public function scopeManual($query)
+    public function scopeManual(Builder $query): Builder
     {
         return $query->where('type', 'manual');
     }
 
-    public function scopeAutomatic($query)
+    public function scopeAutomatic(Builder $query): Builder
     {
         return $query->where('type', 'automatic');
     }
 
-    public function scopeOrdered($query)
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('position');
     }

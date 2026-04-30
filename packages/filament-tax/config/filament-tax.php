@@ -17,4 +17,15 @@ return [
         'widgets' => true,
         'settings_page' => true,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Certificates
+    |--------------------------------------------------------------------------
+    */
+
+    'certificates' => [
+        'disk' => env('TAX_CERTIFICATES_DISK', 'local'),
+        'directory' => 'tax-exemptions',
+    ],
 ];

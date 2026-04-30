@@ -20,7 +20,6 @@ it('records a payment and updates document status', function (): void {
     ]);
 
     $method = new ReflectionMethod(RecordPaymentAction::class, 'recordPayment');
-    $method->setAccessible(true);
 
     $method->invoke(null, $doc, [
         'amount' => 25,

@@ -44,6 +44,13 @@ interface PaymentContract extends Arrayable, Jsonable
     public function status(): string;
 
     /**
+     * Get structured metadata associated with the payment.
+     *
+     * @return array<string, mixed>
+     */
+    public function metadata(): array;
+
+    /**
      * Get an optional gateway error code.
      */
     public function errorCode(): ?string;

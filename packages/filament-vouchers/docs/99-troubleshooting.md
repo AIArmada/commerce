@@ -72,7 +72,7 @@ app()->bind(OwnerResolverInterface::class, YourOwnerResolver::class);
 
 ### Cross-tenant data visible
 
-Resources use `OwnerScopedQueries::forModel()` for scoping. Ensure:
+Resources use `OwnerScopedQueries::scopeVoucherLike()` (or `voucherIds()` for related resources) for scoping. Ensure:
 
 1. Owner columns (`owner_type`, `owner_id`) are populated
 2. The resolver returns the correct owner

@@ -21,11 +21,11 @@ describe('AffiliateIntegrationRegistrar', function (): void {
             expect($result)->toBeNull();
         });
 
-        it('is enabled by default', function (): void {
-            // Default config value
-            $enabled = config('vouchers.affiliates.enabled', true);
+        it('is disabled by default', function (): void {
+            // Affiliates integration is opt-in; default must be false.
+            $enabled = config('vouchers.affiliates.enabled', false);
 
-            expect($enabled)->toBeTrue();
+            expect($enabled)->toBeFalse();
         });
 
         it('auto_create_voucher is disabled by default', function (): void {
@@ -194,7 +194,6 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('generateAffiliateVoucherCode');
-        $method->setAccessible(true);
 
         $code = $method->invoke($registrar, $affiliate);
 
@@ -215,7 +214,6 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('generateAffiliateVoucherCode');
-        $method->setAccessible(true);
 
         $code = $method->invoke($registrar, $affiliate);
 
@@ -236,7 +234,6 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('generateAffiliateVoucherCode');
-        $method->setAccessible(true);
 
         $code = $method->invoke($registrar, $affiliate);
 
@@ -258,7 +255,6 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('generateAffiliateVoucherCode');
-        $method->setAccessible(true);
 
         $code = $method->invoke($registrar, $affiliate);
 
@@ -287,7 +283,6 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('affiliateHasVoucher');
-        $method->setAccessible(true);
 
         $hasVoucher = $method->invoke($registrar, $affiliate);
 
@@ -306,7 +301,6 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('affiliateHasVoucher');
-        $method->setAccessible(true);
 
         $hasVoucher = $method->invoke($registrar, $affiliate);
 
@@ -323,7 +317,6 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('registerAffiliateCreatedListener');
-        $method->setAccessible(true);
 
         $result = $method->invoke($registrar);
 
@@ -340,7 +333,6 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('registerAffiliateActivatedListener');
-        $method->setAccessible(true);
 
         $result = $method->invoke($registrar);
 

@@ -83,7 +83,6 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     expect($tableWidget->table(Table::make($livewire)))->toBeInstanceOf(Table::class);
 
     $queryMethod = new ReflectionMethod(AppliedVouchersWidget::class, 'getAppliedVouchersQuery');
-    $queryMethod->setAccessible(true);
     $collection = $queryMethod->invoke($tableWidget);
 
     expect($collection)->toBeIterable();
@@ -96,7 +95,6 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
 
     // Cover status detection branches.
     $statusMethod = new ReflectionMethod(AppliedVoucherBadgesWidget::class, 'determineVoucherStatus');
-    $statusMethod->setAccessible(true);
 
     $expired = new stdClass;
     $expired->end_date = now()->subDay();
@@ -113,7 +111,7 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
         }
     };
 
-    expect($statusMethod->invoke($badges, $limitReached))->toBe('active');
+    expect($statusMethod->invoke($badges, $limitReached))->toBe('limit_reached');
 
     $action = $badges->removeVoucherAction('APPLIED');
     $badges->record = null;
@@ -183,10 +181,8 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     expect($eligible)->not->toBeEmpty();
 
     $calc = new ReflectionMethod(VoucherSuggestionsWidget::class, 'calculatePotentialSavings');
-    $calc->setAccessible(true);
 
     $recommend = new ReflectionMethod(VoucherSuggestionsWidget::class, 'generateRecommendation');
-    $recommend->setAccessible(true);
 
     $freeShipping = Voucher::make([
         'type' => VoucherType::FreeShipping,

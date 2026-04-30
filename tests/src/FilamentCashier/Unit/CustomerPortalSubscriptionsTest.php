@@ -123,7 +123,6 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
     $page->resumeSubscription('chip', $graceId);
 
     $actionsMethod = new ReflectionMethod(ManageSubscriptions::class, 'getHeaderActions');
-    $actionsMethod->setAccessible(true);
     expect($actionsMethod->invoke($page))->toBeArray();
 });
 

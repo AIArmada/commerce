@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Address;
@@ -25,6 +26,28 @@ function bindAddressPolicyOwnerResolver(?Model $owner): void
             return $this->owner;
         }
     });
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createAddressPolicyCustomer(array $attributes, ?Model $owner = null): Customer
+{
+    /** @var Customer $customer */
+    $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));
+
+    return $customer;
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createAddressPolicyAddress(array $attributes, ?Model $owner = null): Address
+{
+    /** @var Address $address */
+    $address = OwnerContext::withOwner($owner, fn (): Address => Address::query()->create($attributes));
+
+    return $address;
 }
 
 beforeEach(function (): void {
@@ -61,16 +84,16 @@ describe('AddressPolicy', function (): void {
 
     describe('view', function (): void {
         it('allows viewing global address without owner resolver', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createAddressPolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-addr-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $address = Address::query()->create([
+            $address = createAddressPolicyAddress([
                 'customer_id' => $customer->id,
                 'type' => AddressType::Shipping,
                 'line1' => '123 Test St',
@@ -79,7 +102,7 @@ describe('AddressPolicy', function (): void {
                 'country' => 'MY',
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->view($this->user, $address))->toBeTrue();
         });
@@ -87,16 +110,16 @@ describe('AddressPolicy', function (): void {
         it('denies viewing owner-scoped address without owner resolver', function (): void {
             $owner = CustomersTestOwner::query()->create(['name' => 'Owner A']);
 
-            $customer = Customer::query()->create([
+            $customer = createAddressPolicyCustomer([
                 'first_name' => 'Owned',
                 'last_name' => 'Customer',
                 'email' => 'owned-addr-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => $owner->getMorphClass(),
                 'owner_id' => $owner->getKey(),
-            ]);
+            ], $owner);
 
-            $address = Address::query()->create([
+            $address = createAddressPolicyAddress([
                 'customer_id' => $customer->id,
                 'type' => AddressType::Shipping,
                 'line1' => '123 Test St',
@@ -105,7 +128,7 @@ describe('AddressPolicy', function (): void {
                 'country' => 'MY',
                 'owner_type' => $owner->getMorphClass(),
                 'owner_id' => $owner->getKey(),
-            ]);
+            ], $owner);
 
             expect($this->policy->view($this->user, $address))->toBeFalse();
         });
@@ -114,25 +137,25 @@ describe('AddressPolicy', function (): void {
             $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
             $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
 
-            $customerA = Customer::query()->create([
+            $customerA = createAddressPolicyCustomer([
                 'first_name' => 'A',
                 'last_name' => 'Customer',
                 'email' => 'a-addr-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => $ownerA->getMorphClass(),
                 'owner_id' => $ownerA->getKey(),
-            ]);
+            ], $ownerA);
 
-            $customerB = Customer::query()->create([
+            $customerB = createAddressPolicyCustomer([
                 'first_name' => 'B',
                 'last_name' => 'Customer',
                 'email' => 'b-addr-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => $ownerB->getMorphClass(),
                 'owner_id' => $ownerB->getKey(),
-            ]);
+            ], $ownerB);
 
-            $addressA = Address::query()->create([
+            $addressA = createAddressPolicyAddress([
                 'customer_id' => $customerA->id,
                 'type' => AddressType::Shipping,
                 'line1' => '123 A St',
@@ -141,9 +164,9 @@ describe('AddressPolicy', function (): void {
                 'country' => 'MY',
                 'owner_type' => $ownerA->getMorphClass(),
                 'owner_id' => $ownerA->getKey(),
-            ]);
+            ], $ownerA);
 
-            $addressB = Address::query()->create([
+            $addressB = createAddressPolicyAddress([
                 'customer_id' => $customerB->id,
                 'type' => AddressType::Shipping,
                 'line1' => '456 B St',
@@ -152,7 +175,7 @@ describe('AddressPolicy', function (): void {
                 'country' => 'MY',
                 'owner_type' => $ownerB->getMorphClass(),
                 'owner_id' => $ownerB->getKey(),
-            ]);
+            ], $ownerB);
 
             bindAddressPolicyOwnerResolver($ownerA);
 
@@ -173,16 +196,16 @@ describe('AddressPolicy', function (): void {
 
     describe('update', function (): void {
         it('allows updating global address without owner resolver', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createAddressPolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-update-addr-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $address = Address::query()->create([
+            $address = createAddressPolicyAddress([
                 'customer_id' => $customer->id,
                 'type' => AddressType::Billing,
                 'line1' => '789 Update St',
@@ -191,22 +214,22 @@ describe('AddressPolicy', function (): void {
                 'country' => 'MY',
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->update($this->user, $address))->toBeTrue();
         });
 
         it('denies updating address when unauthenticated', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createAddressPolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-update-unauth-addr-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $address = Address::query()->create([
+            $address = createAddressPolicyAddress([
                 'customer_id' => $customer->id,
                 'type' => AddressType::Billing,
                 'line1' => '789 Update St',
@@ -215,7 +238,7 @@ describe('AddressPolicy', function (): void {
                 'country' => 'MY',
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->update(null, $address))->toBeFalse();
         });
@@ -223,16 +246,16 @@ describe('AddressPolicy', function (): void {
 
     describe('delete', function (): void {
         it('allows deleting global address without owner resolver', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createAddressPolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-delete-addr-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $address = Address::query()->create([
+            $address = createAddressPolicyAddress([
                 'customer_id' => $customer->id,
                 'type' => AddressType::Both,
                 'line1' => '999 Delete St',
@@ -241,22 +264,22 @@ describe('AddressPolicy', function (): void {
                 'country' => 'MY',
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->delete($this->user, $address))->toBeTrue();
         });
 
         it('denies deleting address when unauthenticated', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createAddressPolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-delete-unauth-addr-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $address = Address::query()->create([
+            $address = createAddressPolicyAddress([
                 'customer_id' => $customer->id,
                 'type' => AddressType::Both,
                 'line1' => '999 Delete St',
@@ -265,7 +288,7 @@ describe('AddressPolicy', function (): void {
                 'country' => 'MY',
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->delete(null, $address))->toBeFalse();
         });

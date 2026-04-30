@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;
@@ -24,6 +25,28 @@ function bindNotePolicyOwnerResolver(?Model $owner): void
             return $this->owner;
         }
     });
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createNotePolicyCustomer(array $attributes, ?Model $owner = null): Customer
+{
+    /** @var Customer $customer */
+    $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));
+
+    return $customer;
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createPolicyNote(array $attributes, ?Model $owner = null): CustomerNote
+{
+    /** @var CustomerNote $note */
+    $note = OwnerContext::withOwner($owner, fn (): CustomerNote => CustomerNote::query()->create($attributes));
+
+    return $note;
 }
 
 beforeEach(function (): void {
@@ -60,22 +83,22 @@ describe('CustomerNotePolicy', function (): void {
 
     describe('view', function (): void {
         it('allows viewing global note without owner resolver', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createNotePolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-note-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $note = CustomerNote::query()->create([
+            $note = createPolicyNote([
                 'customer_id' => $customer->id,
                 'content' => 'Test note content',
                 'is_internal' => true,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->view($this->user, $note))->toBeTrue();
         });
@@ -83,22 +106,22 @@ describe('CustomerNotePolicy', function (): void {
         it('denies viewing owner-scoped note without owner resolver', function (): void {
             $owner = CustomersTestOwner::query()->create(['name' => 'Owner A']);
 
-            $customer = Customer::query()->create([
+            $customer = createNotePolicyCustomer([
                 'first_name' => 'Owned',
                 'last_name' => 'Customer',
                 'email' => 'owned-note-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => $owner->getMorphClass(),
                 'owner_id' => $owner->getKey(),
-            ]);
+            ], $owner);
 
-            $note = CustomerNote::query()->create([
+            $note = createPolicyNote([
                 'customer_id' => $customer->id,
                 'content' => 'Owned note content',
                 'is_internal' => true,
                 'owner_type' => $owner->getMorphClass(),
                 'owner_id' => $owner->getKey(),
-            ]);
+            ], $owner);
 
             expect($this->policy->view($this->user, $note))->toBeFalse();
         });
@@ -107,39 +130,39 @@ describe('CustomerNotePolicy', function (): void {
             $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
             $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
 
-            $customerA = Customer::query()->create([
+            $customerA = createNotePolicyCustomer([
                 'first_name' => 'A',
                 'last_name' => 'Customer',
                 'email' => 'a-note-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => $ownerA->getMorphClass(),
                 'owner_id' => $ownerA->getKey(),
-            ]);
+            ], $ownerA);
 
-            $customerB = Customer::query()->create([
+            $customerB = createNotePolicyCustomer([
                 'first_name' => 'B',
                 'last_name' => 'Customer',
                 'email' => 'b-note-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => $ownerB->getMorphClass(),
                 'owner_id' => $ownerB->getKey(),
-            ]);
+            ], $ownerB);
 
-            $noteA = CustomerNote::query()->create([
+            $noteA = createPolicyNote([
                 'customer_id' => $customerA->id,
                 'content' => 'Note for A',
                 'is_internal' => true,
                 'owner_type' => $ownerA->getMorphClass(),
                 'owner_id' => $ownerA->getKey(),
-            ]);
+            ], $ownerA);
 
-            $noteB = CustomerNote::query()->create([
+            $noteB = createPolicyNote([
                 'customer_id' => $customerB->id,
                 'content' => 'Note for B',
                 'is_internal' => true,
                 'owner_type' => $ownerB->getMorphClass(),
                 'owner_id' => $ownerB->getKey(),
-            ]);
+            ], $ownerB);
 
             bindNotePolicyOwnerResolver($ownerA);
 
@@ -160,43 +183,43 @@ describe('CustomerNotePolicy', function (): void {
 
     describe('update', function (): void {
         it('allows updating global note without owner resolver', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createNotePolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-update-note-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $note = CustomerNote::query()->create([
+            $note = createPolicyNote([
                 'customer_id' => $customer->id,
                 'content' => 'Update note content',
                 'is_internal' => false,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->update($this->user, $note))->toBeTrue();
         });
 
         it('denies updating note when unauthenticated', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createNotePolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-update-unauth-note-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $note = CustomerNote::query()->create([
+            $note = createPolicyNote([
                 'customer_id' => $customer->id,
                 'content' => 'Update note content',
                 'is_internal' => false,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->update(null, $note))->toBeFalse();
         });
@@ -204,43 +227,43 @@ describe('CustomerNotePolicy', function (): void {
 
     describe('delete', function (): void {
         it('allows deleting global note without owner resolver', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createNotePolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-delete-note-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $note = CustomerNote::query()->create([
+            $note = createPolicyNote([
                 'customer_id' => $customer->id,
                 'content' => 'Delete note content',
                 'is_internal' => true,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->delete($this->user, $note))->toBeTrue();
         });
 
         it('denies deleting note when unauthenticated', function (): void {
-            $customer = Customer::query()->create([
+            $customer = createNotePolicyCustomer([
                 'first_name' => 'Global',
                 'last_name' => 'Customer',
                 'email' => 'global-delete-unauth-note-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
-            $note = CustomerNote::query()->create([
+            $note = createPolicyNote([
                 'customer_id' => $customer->id,
                 'content' => 'Delete note content',
                 'is_internal' => true,
                 'owner_type' => null,
                 'owner_id' => null,
-            ]);
+            ], null);
 
             expect($this->policy->delete(null, $note))->toBeFalse();
         });

@@ -19,6 +19,7 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
@@ -80,9 +81,9 @@ class FulfillmentQueue extends Page implements HasTable
 
         $cacheKey = sprintf('filament-shipping.fulfillment-queue.badge.%s.%s', $ownerKey, $includeGlobal ? 'with-global' : 'owner-only');
 
-        $count = Cache::remember($cacheKey, now()->addSeconds(15), function () use ($includeGlobal): int {
+        $count = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(15), function () use ($owner, $includeGlobal): int {
             return Order::query()
-                ->forOwner(includeGlobal: $includeGlobal)
+                ->forOwner($owner, includeGlobal: $includeGlobal)
                 ->whereState('status', Processing::class)
                 ->count();
         });
@@ -107,13 +108,13 @@ class FulfillmentQueue extends Page implements HasTable
 
         $cacheKey = sprintf('filament-shipping.fulfillment-queue.badge-color.%s.%s', $ownerKey, $includeGlobal ? 'with-global' : 'owner-only');
 
-        $urgentCount = Cache::remember($cacheKey, now()->addSeconds(15), function () use ($includeGlobal): int {
+        $urgentCount = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(15), function () use ($owner, $includeGlobal): int {
             $urgentThreshold = (int) config('filament-shipping.fulfillment.urgent_threshold_hours', 48);
 
             return Order::query()
-                ->forOwner(includeGlobal: $includeGlobal)
+                ->forOwner($owner, includeGlobal: $includeGlobal)
                 ->whereState('status', Processing::class)
-                ->where('created_at', '<=', now()->subHours($urgentThreshold))
+                ->where('created_at', '<=', CarbonImmutable::now()->subHours($urgentThreshold))
                 ->count();
         });
 
@@ -122,10 +123,13 @@ class FulfillmentQueue extends Page implements HasTable
 
     public function table(Table $table): Table
     {
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('orders.owner.include_global', false);
+
         return $table
             ->query(
                 Order::query()
-                    ->forOwner(includeGlobal: (bool) config('orders.owner.include_global', false))
+                    ->forOwner($owner, includeGlobal: $includeGlobal)
                     ->whereState('status', Processing::class)
                     ->with(['customer'])
             )
@@ -182,12 +186,12 @@ class FulfillmentQueue extends Page implements HasTable
                     ->formatStateUsing(function ($record) {
                         $urgentThreshold = (int) config('filament-shipping.fulfillment.urgent_threshold_hours', 48);
 
-                        return $record->created_at->diffInHours(now()) > $urgentThreshold ? 'High' : 'Normal';
+                        return $record->created_at->diffInHours(CarbonImmutable::now()) > $urgentThreshold ? 'High' : 'Normal';
                     })
                     ->color(function ($record) {
                         $urgentThreshold = (int) config('filament-shipping.fulfillment.urgent_threshold_hours', 48);
 
-                        return $record->created_at->diffInHours(now()) > $urgentThreshold ? 'danger' : 'success';
+                        return $record->created_at->diffInHours(CarbonImmutable::now()) > $urgentThreshold ? 'danger' : 'success';
                     }),
             ])
             ->defaultSort('created_at', 'asc')
@@ -197,7 +201,7 @@ class FulfillmentQueue extends Page implements HasTable
                     ->query(function (Builder $query): Builder {
                         $oldThreshold = (int) config('filament-shipping.fulfillment.old_threshold_hours', 24);
 
-                        return $query->where('created_at', '<=', now()->subHours($oldThreshold));
+                        return $query->where('created_at', '<=', CarbonImmutable::now()->subHours($oldThreshold));
                     })
                     ->toggle(),
 
@@ -206,7 +210,7 @@ class FulfillmentQueue extends Page implements HasTable
                     ->query(function (Builder $query): Builder {
                         $urgentThreshold = (int) config('filament-shipping.fulfillment.urgent_threshold_hours', 48);
 
-                        return $query->where('created_at', '<=', now()->subHours($urgentThreshold));
+                        return $query->where('created_at', '<=', CarbonImmutable::now()->subHours($urgentThreshold));
                     })
                     ->toggle(),
 

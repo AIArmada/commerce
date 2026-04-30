@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -47,7 +49,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
 
     protected function getPendingCount(): int
     {
-        $query = Shipment::query();
+        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -55,7 +57,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query
@@ -65,7 +67,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
 
     protected function getInTransitCount(): int
     {
-        $query = Shipment::query();
+        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -73,7 +75,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query
@@ -87,7 +89,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
 
     protected function getDeliveredTodayCount(): int
     {
-        $query = Shipment::query();
+        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -95,18 +97,18 @@ class ShippingDashboardWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query
             ->where('status', ShipmentStatus::Delivered)
-            ->whereDate('delivered_at', today())
+            ->whereDate('delivered_at', CarbonImmutable::today())
             ->count();
     }
 
     protected function getExceptionsCount(): int
     {
-        $query = Shipment::query();
+        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -114,7 +116,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query
@@ -127,7 +129,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
 
     protected function getPendingReturnsCount(): int
     {
-        $query = ReturnAuthorization::query();
+        $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -135,7 +137,7 @@ class ShippingDashboardWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query

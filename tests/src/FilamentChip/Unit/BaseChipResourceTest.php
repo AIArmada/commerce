@@ -72,6 +72,5 @@ it('uses config for navigation metadata', function (): void {
     expect($resource::getNavigationBadge())->toBe('1');
 
     $polling = (new ReflectionClass(BaseChipResource::class))->getMethod('pollingInterval');
-    $polling->setAccessible(true);
     expect($polling->invoke(null))->toBe('10s');
 });

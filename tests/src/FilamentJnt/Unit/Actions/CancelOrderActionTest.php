@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\CancelOrderAction;
 use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Models\JntOrder;
@@ -193,4 +194,51 @@ it('handles service exceptions and shows a failure notification', function (): v
 
     $notifications = session()->get('filament.notifications', []);
     expect(collect($notifications)->last()['title'])->toBe('Cancellation Failed');
+});
+
+it('blocks cancelling global rows without explicit global context', function (): void {
+    config()->set('jnt.owner.enabled', true);
+    config()->set('jnt.owner.include_global', true);
+
+    /** @var User $user */
+    $user = User::query()->create([
+        'name' => 'User',
+        'email' => 'user-global-cancel@example.test',
+        'password' => bcrypt('password'),
+    ]);
+
+    $this->actingAs($user);
+
+    $called = false;
+
+    app()->bind(JntExpressService::class, function () use (&$called) {
+        return new class($called)
+        {
+            public function __construct(private bool &$called) {}
+
+            public function cancelOrder(string $orderId, string $reason, ?string $trackingNumber = null): void
+            {
+                $this->called = true;
+            }
+        };
+    });
+
+    $order = OwnerContext::withOwner(null, fn () => JntOrder::query()->create([
+        'order_id' => 'ORD-15',
+        'customer_code' => 'CUST',
+        'status' => 'in_transit',
+    ]));
+
+    $action = CancelOrderAction::make()->record($order);
+    $handler = $action->getActionFunction();
+
+    $handler($order, [
+        'reason' => CancellationReason::SYSTEM_ERROR->value,
+        'custom_reason' => null,
+    ]);
+
+    expect($called)->toBeFalse();
+
+    $notifications = session()->get('filament.notifications', []);
+    expect(collect($notifications)->last()['title'])->toBe('Not Authorized');
 });

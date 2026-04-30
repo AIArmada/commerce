@@ -6,7 +6,7 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Collection;
@@ -83,8 +83,8 @@ final class RedemptionTrendChart extends ChartWidget
      */
     private function getRedemptionData(int $days): Collection
     {
-        $startDate = Carbon::now()->subDays($days)->startOfDay();
-        $endDate = Carbon::now()->endOfDay();
+        $startDate = CarbonImmutable::now()->subDays($days)->startOfDay();
+        $endDate = CarbonImmutable::now()->endOfDay();
 
         $usageQuery = VoucherUsage::query();
 

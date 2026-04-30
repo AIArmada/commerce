@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Models;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Enums\ScanTypeCode;
@@ -76,26 +75,26 @@ final class JntTrackingEvent extends Model
     protected static function booted(): void
     {
         static::creating(function (JntTrackingEvent $event): void {
-            if ($event->owner_type !== null || $event->owner_id !== null) {
-                return;
-            }
-
             if ($event->order_id === null) {
                 return;
             }
 
-            $owner = OwnerContext::resolve();
-
-            $query = JntOrder::query();
-
-            if ($owner === null) {
-                $query->withoutOwnerScope();
-            }
-
-            $order = $query->find($event->order_id);
+            // Always fetch parent order without scope to detect cross-owner writes.
+            $order = JntOrder::query()->withoutOwnerScope()->find($event->order_id);
 
             if ($order === null) {
                 throw new InvalidArgumentException('Invalid order_id for JntTrackingEvent.');
+            }
+
+            if ($event->owner_type !== null || $event->owner_id !== null) {
+                if ($order->owner_type !== $event->owner_type
+                    || (string) $order->owner_id !== (string) $event->owner_id) {
+                    throw new InvalidArgumentException(
+                        'JntTrackingEvent order_id belongs to a different owner than the current context.',
+                    );
+                }
+
+                return;
             }
 
             $event->owner_type = $order->owner_type;

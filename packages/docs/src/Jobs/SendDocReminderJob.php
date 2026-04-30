@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Jobs;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
-use AIArmada\Docs\States\Draft;
-use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Services\DocEmailService;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -238,9 +240,13 @@ final class SendDocReminderJob implements ShouldQueue
 
     private function dispatchPerOwner(): void
     {
+        $ownerTupleColumns = OwnerTupleColumns::forModelClass(Doc::class);
+
+        // Intentional global enumeration for per-owner fan-out dispatch.
+        // Each dispatched job re-enters a strict owner context via OwnerContext::withOwner().
         $owners = Doc::query()
             ->withoutOwnerScope()
-            ->select(['owner_type', 'owner_id'])
+            ->select([$ownerTupleColumns->ownerTypeColumn, $ownerTupleColumns->ownerIdColumn])
             ->distinct()
             ->get();
 
@@ -251,8 +257,9 @@ final class SendDocReminderJob implements ShouldQueue
         $dispatched = [];
 
         foreach ($owners as $row) {
-            $ownerType = $this->normalizeOwnerValue($row->owner_type ?? null);
-            $ownerId = $this->normalizeOwnerValue($row->owner_id ?? null);
+            $ownerTuple = OwnerTupleParser::fromRow($row, $ownerTupleColumns);
+            $ownerType = $ownerTuple->owner_type;
+            $ownerId = $ownerTuple->owner_id;
             $key = ($ownerType ?? 'global') . '|' . ($ownerId ?? 'global');
 
             if (isset($dispatched[$key])) {
@@ -269,17 +276,6 @@ final class SendDocReminderJob implements ShouldQueue
                 ownerId: $ownerId,
             );
         }
-    }
-
-    private function normalizeOwnerValue(mixed $value): string | int | null
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        return is_numeric($value) && (string) (int) $value === (string) $value
-            ? (int) $value
-            : (string) $value;
     }
 
     protected function shouldSendReminder(Doc $doc): bool

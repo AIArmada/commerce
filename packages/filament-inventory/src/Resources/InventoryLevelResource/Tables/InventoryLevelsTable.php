@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryLevelResource\Tables;
 
-use AIArmada\FilamentInventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Models\InventoryLevel;
 use Filament\Actions\BulkActionGroup;

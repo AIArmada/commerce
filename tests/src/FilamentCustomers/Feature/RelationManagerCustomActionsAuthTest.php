@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerNote;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 it('custom relation manager actions require authentication (abort 403)', function (): void {
+    config()->set('customers.features.owner.enabled', true);
+
     $user = User::query()->create([
         'name' => 'RM Admin',
         'email' => 'rm-admin-' . uniqid() . '@example.com',
@@ -23,15 +26,15 @@ it('custom relation manager actions require authentication (abort 403)', functio
 
     test()->actingAs($user);
 
-    $customer = Customer::query()->create([
+    $customer = OwnerContext::withOwner(null, fn (): Customer => Customer::query()->create([
         'first_name' => 'RM',
         'last_name' => 'Customer',
         'email' => 'rm-customer-' . uniqid() . '@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
-    ]);
+    ]));
 
-    $address = Address::query()->create([
+    $address = OwnerContext::withOwner(null, fn (): Address => Address::query()->create([
         'customer_id' => $customer->getKey(),
         'type' => 'both',
         'line1' => 'Line 1',
@@ -40,14 +43,14 @@ it('custom relation manager actions require authentication (abort 403)', functio
         'country' => 'MY',
         'is_default_billing' => false,
         'is_default_shipping' => false,
-    ]);
+    ]));
 
-    $note = CustomerNote::query()->create([
+    $note = OwnerContext::withOwner(null, fn (): CustomerNote => CustomerNote::query()->create([
         'customer_id' => $customer->getKey(),
         'content' => 'Pinned note',
         'is_internal' => true,
         'is_pinned' => false,
-    ]);
+    ]));
 
     $addressesRm = new AddressesRelationManager;
     $addressesRm->ownerRecord = $customer;

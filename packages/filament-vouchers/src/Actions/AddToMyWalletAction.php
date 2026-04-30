@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
+use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
@@ -11,6 +12,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -49,9 +51,28 @@ final class AddToMyWalletAction
                     return;
                 }
 
+                if (OwnerScopedQueries::isEnabled()) {
+                    $isVisible = OwnerScopedQueries::vouchers()
+                        ->whereKey($record->getKey())
+                        ->exists();
+
+                    if (! $isVisible) {
+                        Notification::make()
+                            ->warning()
+                            ->title('Not Authorized')
+                            ->body('You cannot save this voucher to your wallet.')
+                            ->icon(Heroicon::OutlinedExclamationCircle)
+                            ->send();
+
+                        return;
+                    }
+                }
+
                 try {
+                    $voucherCode = (string) $record->code;
+
                     // Check if voucher is already in the user's wallet
-                    if (method_exists($user, 'hasVoucherInWallet') && $user->hasVoucherInWallet($record->id)) {
+                    if (method_exists($user, 'hasVoucherInWallet') && $user->hasVoucherInWallet($voucherCode)) {
                         Notification::make()
                             ->info()
                             ->title('Already in Wallet')
@@ -66,10 +87,14 @@ final class AddToMyWalletAction
                     $metadata = ! empty($data['notes']) ? ['notes' => $data['notes']] : null;
 
                     if (method_exists($user, 'addVoucherToWallet')) {
-                        $user->addVoucherToWallet($record->id, metadata: $metadata);
+                        $walletEntry = $user->addVoucherToWallet($voucherCode);
+
+                        if ($metadata !== null && $walletEntry instanceof Model) {
+                            $walletEntry->forceFill(['metadata' => $metadata])->save();
+                        }
                     } else {
                         // Fallback to service if trait not used
-                        app(VoucherService::class)->addToWallet($record->id, $user, metadata: $metadata);
+                        app(VoucherService::class)->addToWallet($voucherCode, $user, $metadata);
                     }
 
                     Notification::make()

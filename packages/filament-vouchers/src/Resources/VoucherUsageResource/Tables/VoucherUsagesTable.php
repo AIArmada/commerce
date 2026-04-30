@@ -21,9 +21,9 @@ final class VoucherUsagesTable
             ->defaultSort('used_at', 'desc')
             ->modifyQueryUsing(fn ($query) => $query->with(['voucher', 'redeemedBy']))
             ->columns([
-                TextColumn::make('redeemedBy.user.email')
+                TextColumn::make('user_identifier')
                     ->label('User')
-                    ->searchable()
+                    ->state(static fn (VoucherUsage $record): string => $record->user_identifier)
                     ->wrap()
                     ->placeholder('N/A'),
 
@@ -61,10 +61,10 @@ final class VoucherUsagesTable
                     ->label('Order Number')
                     ->toggleable()
                     ->formatStateUsing(
-                        fn ($state, VoucherUsage $record) => $record->redeemed_by_type === 'order' ? $state : null
+                        fn ($state, VoucherUsage $record) => $record->isOrderRedemption() ? $state : null
                     )
                     ->url(function (VoucherUsage $record): ?string {
-                        if ($record->redeemed_by_type !== 'order' || ! $record->redeemedBy) {
+                        if (! $record->isOrderRedemption() || ! $record->redeemedBy) {
                             return null;
                         }
 

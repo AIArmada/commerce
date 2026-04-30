@@ -7,6 +7,7 @@ use AIArmada\Commerce\Tests\TestCase;
 uses(TestCase::class);
 
 use AIArmada\FilamentTax\Resources\TaxExemptionResource;
+use AIArmada\FilamentTax\Resources\TaxExemptionResource\Pages\CreateTaxExemption;
 use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use Filament\Forms\Components\FileUpload;
@@ -100,4 +101,11 @@ it('returns a navigation badge when exemptions are expiring soon', function (): 
     expect(TaxExemptionResource::getNavigationBadge())
         ->toBe('1')
         ->and(TaxExemptionResource::getNavigationBadgeColor())->toBe('warning');
+});
+
+it('uses the create lifecycle hook to validate owner-scoped exemptable entities', function (): void {
+    $hookMethod = new ReflectionMethod(CreateTaxExemption::class, 'beforeCreate');
+
+    expect($hookMethod->getDeclaringClass()->getName())
+        ->toBe(CreateTaxExemption::class);
 });

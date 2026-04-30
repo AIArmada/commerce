@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\BatchRateLimiter;
 use AIArmada\Shipping\Services\ShipmentService;
@@ -47,7 +46,7 @@ class BulkShipAction extends BulkAction
                 // Filter to only pending shipments
                 $pendingShipments = $records->filter(
                     fn ($record) => $record instanceof Shipment
-                        && $record->status === ShipmentStatus::Pending
+                        && $record->isPending()
                         && $user->can('ship', $record)
                 );
 

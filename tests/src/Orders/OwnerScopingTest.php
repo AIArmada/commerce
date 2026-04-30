@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -41,32 +43,38 @@ it('scopes Order::forOwner() to current owner plus global and excludes corrupt p
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
-    $orderB = Order::query()->create([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
-    $orderGlobal = Order::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderGlobal = OwnerContext::withOwner(null, function (): Order {
+        return Order::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     $ordersTable = (string) config('orders.database.tables.orders', 'orders');
 
@@ -123,23 +131,27 @@ it('returns strict global-only when owner resolver returns null', function (): v
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
 
-    $orderA = Order::query()->create([
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+        return Order::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
-    $orderGlobal = Order::query()->create([
-        'owner_type' => null,
-        'owner_id' => null,
-        'status' => Created::class,
-        'currency' => 'MYR',
-        'subtotal' => 10000,
-        'grand_total' => 10000,
-    ]);
+    $orderGlobal = OwnerContext::withOwner(null, function (): Order {
+        return Order::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => Created::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+    });
 
     $ordersTable = (string) config('orders.database.tables.orders', 'orders');
 
@@ -178,7 +190,9 @@ it('returns strict global-only when owner resolver returns null', function (): v
         }
     });
 
-    $ids = Order::query()->forOwner()->pluck('id')->all();
+    $ids = OwnerContext::withOwner(null, function (): array {
+        return Order::query()->forOwner()->pluck('id')->all();
+    });
 
     expect($ids)
         ->toContain($orderGlobal->id)
@@ -211,7 +225,7 @@ it('rejects explicit owner that does not match current owner context', function 
         'currency' => 'MYR',
         'subtotal' => 10000,
         'grand_total' => 10000,
-    ]))->toThrow(InvalidArgumentException::class);
+    ]))->toThrow(AuthorizationException::class);
 });
 
 it('auto-assigns owner on create when enabled', function (): void {

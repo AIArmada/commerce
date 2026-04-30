@@ -172,7 +172,7 @@ class Voucher extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = false): Builder
     {
         if (! config('vouchers.owner.enabled', false)) {
             return $query;

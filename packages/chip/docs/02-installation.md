@@ -140,6 +140,28 @@ This verifies:
 - Webhook configuration
 - Database tables
 
+## Multi-Tenant Setup
+
+import Aside from "@components/Aside.astro"
+
+<Aside variant="warning">
+  Owner scoping is **disabled by default** (`CHIP_OWNER_ENABLED=false`). In a multi-tenant deployment every tenant will see all CHIP purchases and payments unless you enable it. Set `CHIP_OWNER_ENABLED=true` and bind `OwnerResolverInterface` before going live.
+</Aside>
+
+```env
+CHIP_OWNER_ENABLED=true
+```
+
+Bind the resolver in `AppServiceProvider::register()`:
+
+```php
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+
+$this->app->bind(OwnerResolverInterface::class, CurrentTenantResolver::class);
+```
+
+See [Multitenancy](./05-multitenancy.md) for full details.
+
 ## Next Steps
 
 - [Configuration](03-configuration.md) - Customize package behavior

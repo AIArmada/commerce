@@ -51,7 +51,6 @@ describe('PricingSettings', function (): void {
             // Create a mock instance using reflection to bypass constructor
             $instance = $reflection->newInstanceWithoutConstructor();
             $defaultCurrencyProp = $reflection->getProperty('defaultCurrency');
-            $defaultCurrencyProp->setAccessible(true);
 
             // Test MYR
             $defaultCurrencyProp->setValue($instance, 'MYR');
@@ -88,11 +87,9 @@ describe('PricingSettings', function (): void {
             $instance = $reflection->newInstanceWithoutConstructor();
 
             $defaultCurrencyProp = $reflection->getProperty('defaultCurrency');
-            $defaultCurrencyProp->setAccessible(true);
             $defaultCurrencyProp->setValue($instance, 'MYR');
 
             $decimalPlacesProp = $reflection->getProperty('decimalPlaces');
-            $decimalPlacesProp->setAccessible(true);
             $decimalPlacesProp->setValue($instance, 2);
 
             // Test formatting
@@ -109,11 +106,9 @@ describe('PricingSettings', function (): void {
             $instance = $reflection->newInstanceWithoutConstructor();
 
             $defaultCurrencyProp = $reflection->getProperty('defaultCurrency');
-            $defaultCurrencyProp->setAccessible(true);
             $defaultCurrencyProp->setValue($instance, 'MYR');
 
             $decimalPlacesProp = $reflection->getProperty('decimalPlaces');
-            $decimalPlacesProp->setAccessible(true);
             $decimalPlacesProp->setValue($instance, 2);
 
             expect($method->invoke($instance, 100000000))->toBe('RM1,000,000.00');
@@ -126,11 +121,9 @@ describe('PricingSettings', function (): void {
             $instance = $reflection->newInstanceWithoutConstructor();
 
             $defaultCurrencyProp = $reflection->getProperty('defaultCurrency');
-            $defaultCurrencyProp->setAccessible(true);
             $defaultCurrencyProp->setValue($instance, 'JPY');
 
             $decimalPlacesProp = $reflection->getProperty('decimalPlaces');
-            $decimalPlacesProp->setAccessible(true);
             $decimalPlacesProp->setValue($instance, 0);
 
             expect($method->invoke($instance, 100))->toBe('¥100');

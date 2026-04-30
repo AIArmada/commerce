@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Tables;
 
-use AIArmada\FilamentInventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
 use Filament\Actions\BulkActionGroup;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Tables;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Actions\DownloadTaxExemptionCertificateAction;
 use AIArmada\FilamentTax\Support\FilamentTaxAuthz;
 use AIArmada\Tax\Enums\ExemptionStatus;
@@ -195,7 +196,18 @@ final class TaxExemptionsTable
                         ->icon(Heroicon::OutlinedCheckBadge)
                         ->color('success')
                         ->requiresConfirmation()
-                        ->action(fn ($records) => $records->each->approve())
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                $verified = OwnerWriteGuard::findOrFailForOwner(
+                                    TaxExemption::class,
+                                    $record->getKey(),
+                                    includeGlobal: false,
+                                    message: 'Tax exemption is not accessible in the current owner scope.',
+                                );
+
+                                $verified->approve();
+                            }
+                        })
                         ->deselectRecordsAfterCompletion(),
                     'tax.exemptions.approve',
                 ),
@@ -205,7 +217,18 @@ final class TaxExemptionsTable
                         ->icon(Heroicon::OutlinedXCircle)
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->action(fn ($records) => $records->each->reject('Bulk rejected'))
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                $verified = OwnerWriteGuard::findOrFailForOwner(
+                                    TaxExemption::class,
+                                    $record->getKey(),
+                                    includeGlobal: false,
+                                    message: 'Tax exemption is not accessible in the current owner scope.',
+                                );
+
+                                $verified->reject('Bulk rejected');
+                            }
+                        })
                         ->deselectRecordsAfterCompletion(),
                     'tax.exemptions.reject',
                 ),
@@ -215,7 +238,18 @@ final class TaxExemptionsTable
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->action(fn ($records) => $records->each->delete())
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                $verified = OwnerWriteGuard::findOrFailForOwner(
+                                    TaxExemption::class,
+                                    $record->getKey(),
+                                    includeGlobal: false,
+                                    message: 'Tax exemption is not accessible in the current owner scope.',
+                                );
+
+                                $verified->delete();
+                            }
+                        })
                         ->deselectRecordsAfterCompletion(),
                     'tax.exemptions.delete',
                 ),

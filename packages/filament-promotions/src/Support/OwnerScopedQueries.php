@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Support;
 
+use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -21,18 +22,6 @@ final class OwnerScopedQueries
      */
     public static function scopePromotion(Builder $query): Builder
     {
-        $ownerEnabled = config('promotions.features.owner.enabled', false);
-
-        if (! $ownerEnabled) {
-            return $query;
-        }
-
-        $includeGlobal = config('promotions.features.owner.include_global', true);
-
-        if ($includeGlobal) {
-            return $query;
-        }
-
-        return $query->whereNotNull('owner_id');
+        return PromotionsOwnerScope::applyToOwnedQuery($query);
     }
 }

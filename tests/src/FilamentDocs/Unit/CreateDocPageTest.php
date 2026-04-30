@@ -22,7 +22,6 @@ it('delegates document creation to DocService and defaults generate_pdf from con
     $page = new CreateDoc;
 
     $method = new ReflectionMethod(CreateDoc::class, 'handleRecordCreation');
-    $method->setAccessible(true);
 
     $doc = $method->invoke($page, [
         'doc_type' => 'invoice',
@@ -49,7 +48,6 @@ it('uses config value for auto_generate_pdf when not explicitly set', function (
     $page = new CreateDoc;
 
     $method = new ReflectionMethod(CreateDoc::class, 'handleRecordCreation');
-    $method->setAccessible(true);
 
     $doc = $method->invoke($page, [
         'doc_type' => 'receipt',

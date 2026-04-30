@@ -7,7 +7,7 @@ use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Models\Shipment;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 describe('ReturnAuthorization Model', function (): void {
     it('can create a return authorization with required fields', function (): void {
@@ -283,7 +283,7 @@ describe('ReturnAuthorization Model', function (): void {
 
         $rma->refresh();
 
-        expect($rma->returnShipment())->toBeInstanceOf(HasOne::class);
+        expect($rma->returnShipment())->toBeInstanceOf(MorphOne::class);
         expect($rma->returnShipment)->toBeInstanceOf(Shipment::class);
         expect($rma->returnShipment->id)->toBe($returnShipment->id);
     });

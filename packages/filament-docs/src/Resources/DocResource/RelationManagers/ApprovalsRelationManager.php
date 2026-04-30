@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
-use AIArmada\Docs\Models\Doc;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\DocApproval;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -19,8 +20,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Auth\User as FoundationUser;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Validation\ValidationException;
 
 final class ApprovalsRelationManager extends RelationManager
@@ -40,12 +42,7 @@ final class ApprovalsRelationManager extends RelationManager
                 Select::make('assigned_to')
                     ->label('Assign To')
                     ->options(function (): array {
-                        $userModelClass = self::resolveUserModelClass();
-
-                        return $userModelClass::query()
-                            ->orderBy('name')
-                            ->pluck('name', 'id')
-                            ->toArray();
+                        return self::resolveAssignableUserOptions();
                     })
                     ->searchable()
                     ->nullable()
@@ -119,11 +116,6 @@ final class ApprovalsRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Request Approval')
                     ->mutateFormDataUsing(function (array $data): array {
-                        $doc = $this->getOwnerDoc();
-
-                        $data['owner_type'] = $doc->owner_type;
-                        $data['owner_id'] = $doc->owner_id;
-
                         $data['requested_by'] = auth()->id() !== null ? (string) auth()->id() : null;
                         $data['status'] = 'pending';
 
@@ -131,6 +123,16 @@ final class ApprovalsRelationManager extends RelationManager
                             throw ValidationException::withMessages([
                                 'requested_by' => __('You must be logged in to request approval.'),
                             ]);
+                        }
+
+                        if (! empty($data['assigned_to'])) {
+                            $assignableUserIds = array_keys(self::resolveAssignableUserOptions());
+
+                            if (! in_array((string) $data['assigned_to'], array_map('strval', $assignableUserIds), true)) {
+                                throw ValidationException::withMessages([
+                                    'assigned_to' => __('Invalid assignee selection.'),
+                                ]);
+                            }
                         }
 
                         return $data;
@@ -150,6 +152,12 @@ final class ApprovalsRelationManager extends RelationManager
                     ->action(function (DocApproval $record, array $data): void {
                         self::assertUserCanActOnApproval($record);
 
+                        $doc = $record->doc;
+
+                        if ($doc !== null) {
+                            DocsOwnerScope::assertCanMutateDoc($doc);
+                        }
+
                         $record->approve($data['comments'] ?? null);
                     })
                     ->visible(fn (DocApproval $record): bool => $record->isPending() && self::userCanActOnApproval($record)),
@@ -168,31 +176,84 @@ final class ApprovalsRelationManager extends RelationManager
                     ->action(function (DocApproval $record, array $data): void {
                         self::assertUserCanActOnApproval($record);
 
+                        $doc = $record->doc;
+
+                        if ($doc !== null) {
+                            DocsOwnerScope::assertCanMutateDoc($doc);
+                        }
+
                         $record->reject($data['comments']);
                     })
                     ->visible(fn (DocApproval $record): bool => $record->isPending() && self::userCanActOnApproval($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    BulkAction::make('delete_selected')
+                        ->label('Delete Selected')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int|string, DocApproval> $records */
+                            $records->each(function (DocApproval $record): void {
+                                $doc = $record->doc;
+
+                                if ($doc !== null) {
+                                    DocsOwnerScope::assertCanMutateDoc($doc);
+                                }
+
+                                $record->delete();
+                            });
+                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
     }
 
     /**
-     * @return class-string<Model>
+     * @return array<string, string>
      */
-    private static function resolveUserModelClass(): string
+    private static function resolveAssignableUserOptions(): array
     {
-        $configured = config('auth.providers.users.model');
+        $owner = OwnerContext::resolve();
 
-        if (is_string($configured) && class_exists($configured)) {
-            /** @var class-string<Model> $configured */
-            return $configured;
+        if ($owner !== null && method_exists($owner, 'users')) {
+            $usersRelation = $owner->users();
+
+            if ($usersRelation instanceof Relation) {
+                /** @var Collection<int|string, Model> $users */
+                $users = $usersRelation->get(['id', 'name']);
+
+                $options = [];
+
+                foreach ($users as $user) {
+                    $id = $user->getAttribute('id');
+                    $name = $user->getAttribute('name');
+
+                    if ($id === null || ! is_string($name)) {
+                        continue;
+                    }
+
+                    $options[(string) $id] = $name;
+                }
+
+                if ($options !== []) {
+                    return $options;
+                }
+            }
         }
 
-        return FoundationUser::class;
+        $currentUser = auth()->user();
+
+        if ($currentUser instanceof Model) {
+            $name = $currentUser->getAttribute('name');
+
+            if (is_string($name)) {
+                return [(string) $currentUser->getKey() => $name];
+            }
+        }
+
+        return [];
     }
 
     private static function userCanActOnApproval(DocApproval $approval): bool
@@ -213,18 +274,5 @@ final class ApprovalsRelationManager extends RelationManager
     private static function assertUserCanActOnApproval(DocApproval $approval): void
     {
         abort_unless(self::userCanActOnApproval($approval), 403);
-    }
-
-    private function getOwnerDoc(): Doc
-    {
-        $ownerRecord = $this->getOwnerRecord();
-
-        if (! $ownerRecord instanceof Doc) {
-            throw ValidationException::withMessages([
-                'doc' => __('Invalid document context.'),
-            ]);
-        }
-
-        return $ownerRecord;
     }
 }

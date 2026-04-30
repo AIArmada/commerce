@@ -103,7 +103,6 @@ it('exercises variant relation manager actions and bulk actions', function (): v
 
     $recordMutator = (function () use ($edit) {
         $property = new ReflectionProperty($edit::class, 'mutateRecordDataUsing');
-        $property->setAccessible(true);
 
         return $property->getValue($edit);
     })();

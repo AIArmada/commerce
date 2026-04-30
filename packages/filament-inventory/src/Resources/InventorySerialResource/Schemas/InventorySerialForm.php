@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas;
 
-use AIArmada\FilamentInventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Enums\SerialStatus;
 use Filament\Forms\Components\DatePicker;

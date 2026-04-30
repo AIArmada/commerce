@@ -6,7 +6,9 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Models\AuthzScope;
 use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
+use AIArmada\FilamentAuthz\Resources\UserResource;
 use AIArmada\FilamentAuthz\Support\UserAuthzForm;
+use Illuminate\Auth\Access\AuthorizationException;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function (): void {
@@ -15,7 +17,9 @@ beforeEach(function (): void {
 });
 
 it('filters user role options to global roles and preserves scoped assignments', function (): void {
+    config()->set('filament-authz.scoped_to_tenant', false);
     config()->set('filament-authz.user_resource.form.role_scope_mode', 'global_only');
+    $teamsKey = app(PermissionRegistrar::class)->teamsKey;
 
     $user = User::query()->create([
         'name' => 'Alice',
@@ -38,6 +42,7 @@ it('filters user role options to global roles and preserves scoped assignments',
     $scopedRole = Role::create([
         'name' => 'member_admin',
         'guard_name' => 'web',
+        $teamsKey => $scope->getKey(),
     ]);
     $user->syncRoles([$scopedRole->getKey()]);
 
@@ -90,7 +95,9 @@ it('preserves scoped assignments in global-only mode when teams are enabled with
 });
 
 it('filters user role options to scoped roles and preserves global assignments', function (): void {
+    config()->set('filament-authz.scoped_to_tenant', false);
     config()->set('filament-authz.user_resource.form.role_scope_mode', 'scoped_only');
+    $teamsKey = app(PermissionRegistrar::class)->teamsKey;
 
     $user = User::query()->create([
         'name' => 'Bob',
@@ -113,6 +120,7 @@ it('filters user role options to scoped roles and preserves global assignments',
     $scopedRole = Role::create([
         'name' => 'member_editor',
         'guard_name' => 'web',
+        $teamsKey => $scope->getKey(),
     ]);
 
     setPermissionsTeamId(null);
@@ -242,13 +250,168 @@ it('limits the central role resource query to global roles and configured scopes
         ->and(RoleResource::resolveRecordRouteBinding((string) $excludedRole->getKey()))->toBeNull();
 });
 
+it('scopes user role options to the active tenant when tenant scoping is enabled', function (): void {
+    $scopeA = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => '66666666-6666-4666-8666-666666666666',
+        'label' => 'Scope A',
+    ]);
+
+    $scopeB = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => '77777777-7777-4777-8777-777777777777',
+        'label' => 'Scope B',
+    ]);
+
+    setPermissionsTeamId($scopeA->getKey());
+    $scopeARole = Role::create([
+        'name' => 'scope_a_manager',
+        'guard_name' => 'web',
+    ]);
+
+    setPermissionsTeamId($scopeB->getKey());
+    $scopeBRole = Role::create([
+        'name' => 'scope_b_manager',
+        'guard_name' => 'web',
+    ]);
+
+    setPermissionsTeamId($scopeA->getKey());
+
+    $options = invokeProtectedStatic(UserAuthzForm::class, 'getRoleOptions');
+
+    expect($options)->toHaveKey((string) $scopeARole->getKey())
+        ->and($options)->not->toHaveKey((string) $scopeBRole->getKey());
+});
+
+it('rejects syncing roles from another tenant scope', function (): void {
+    $user = User::query()->create([
+        'name' => 'Scope Guard User',
+        'email' => 'scope-guard@example.com',
+        'password' => 'secret',
+    ]);
+
+    $scopeA = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => '88888888-8888-4888-8888-888888888888',
+        'label' => 'Scope A',
+    ]);
+
+    $scopeB = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => '99999999-9999-4999-8999-999999999999',
+        'label' => 'Scope B',
+    ]);
+
+    setPermissionsTeamId($scopeA->getKey());
+    Role::create([
+        'name' => 'scope_a_editor',
+        'guard_name' => 'web',
+    ]);
+
+    setPermissionsTeamId($scopeB->getKey());
+    $scopeBRole = Role::create([
+        'name' => 'scope_b_editor',
+        'guard_name' => 'web',
+    ]);
+
+    setPermissionsTeamId($scopeA->getKey());
+
+    expect(fn () => invokeProtectedStatic(UserAuthzForm::class, 'syncRolesAcrossScopes', [$user, [(string) $scopeBRole->getKey()]]))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('does not remove roles from another tenant scope while syncing current scope', function (): void {
+    $user = User::query()->create([
+        'name' => 'Scoped Isolation User',
+        'email' => 'scoped-isolation@example.com',
+        'password' => 'secret',
+    ]);
+
+    $scopeA = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        'label' => 'Scope A',
+    ]);
+
+    $scopeB = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        'label' => 'Scope B',
+    ]);
+
+    setPermissionsTeamId($scopeB->getKey());
+    $scopeBRole = Role::create([
+        'name' => 'scope_b_only',
+        'guard_name' => 'web',
+    ]);
+    $user->syncRoles([(string) $scopeBRole->getKey()]);
+
+    setPermissionsTeamId($scopeA->getKey());
+
+    invokeProtectedStatic(UserAuthzForm::class, 'syncRolesAcrossScopes', [$user, []]);
+
+    expect(roleNamesFor($user, (string) $scopeA->getKey()))->toBe([])
+        ->and(roleNamesFor($user, (string) $scopeB->getKey()))->toBe(['scope_b_only']);
+});
+
+it('scopes user resource query and route binding to the active tenant', function (): void {
+    $scopeA = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        'label' => 'Scope A',
+    ]);
+
+    $scopeB = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+        'label' => 'Scope B',
+    ]);
+
+    $scopeAUser = User::query()->create([
+        'name' => 'Scope A User',
+        'email' => 'scope-a-user@example.com',
+        'password' => 'secret',
+    ]);
+
+    $scopeBUser = User::query()->create([
+        'name' => 'Scope B User',
+        'email' => 'scope-b-user@example.com',
+        'password' => 'secret',
+    ]);
+
+    setPermissionsTeamId($scopeA->getKey());
+    $scopeARole = Role::create([
+        'name' => 'scope_a_user_role',
+        'guard_name' => 'web',
+    ]);
+    $scopeAUser->syncRoles([(string) $scopeARole->getKey()]);
+
+    setPermissionsTeamId($scopeB->getKey());
+    $scopeBRole = Role::create([
+        'name' => 'scope_b_user_role',
+        'guard_name' => 'web',
+    ]);
+    $scopeBUser->syncRoles([(string) $scopeBRole->getKey()]);
+
+    setPermissionsTeamId($scopeA->getKey());
+
+    $visibleEmails = UserResource::getEloquentQuery()
+        ->orderBy('email')
+        ->pluck('email')
+        ->all();
+
+    expect($visibleEmails)->toContain('scope-a-user@example.com')
+        ->and($visibleEmails)->not->toContain('scope-b-user@example.com')
+        ->and(UserResource::resolveRecordRouteBinding((string) $scopeAUser->getKey()))->not->toBeNull()
+        ->and(UserResource::resolveRecordRouteBinding((string) $scopeBUser->getKey()))->toBeNull();
+});
+
 /**
  * @param  list<mixed>  $arguments
  */
 function invokeProtectedStatic(string $className, string $methodName, array $arguments = []): mixed
 {
     $method = new ReflectionMethod($className, $methodName);
-    $method->setAccessible(true);
 
     return $method->invokeArgs(null, $arguments);
 }

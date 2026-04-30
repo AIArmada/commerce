@@ -53,15 +53,14 @@ final class PromotionInfolist
                                         return '$' . number_format($record->discount_value / 100, 2);
                                     }),
 
-                                TextEntry::make('min_order_value')
+                                TextEntry::make('min_purchase_amount')
                                     ->label('Min Order')
                                     ->money('USD', divideBy: 100)
                                     ->placeholder('None'),
 
-                                TextEntry::make('max_discount')
-                                    ->label('Max Discount')
-                                    ->money('USD', divideBy: 100)
-                                    ->placeholder('Unlimited'),
+                                TextEntry::make('min_quantity')
+                                    ->label('Min Quantity')
+                                    ->placeholder('None'),
                             ]),
                     ]),
 
@@ -77,7 +76,7 @@ final class PromotionInfolist
                                     ->label('Usage Limit')
                                     ->placeholder('Unlimited'),
 
-                                TextEntry::make('usage_per_customer')
+                                TextEntry::make('per_customer_limit')
                                     ->label('Per Customer')
                                     ->placeholder('Unlimited'),
 

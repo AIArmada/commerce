@@ -9,8 +9,8 @@ use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Models\DocSequence;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -27,6 +27,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use UnitEnum;
 
 final class DocSequenceResource extends Resource
@@ -175,7 +176,18 @@ final class DocSequenceResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    BulkAction::make('delete_selected')
+                        ->label('Delete Selected')
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int|string, DocSequence> $records */
+                            $records->each(function (DocSequence $record): void {
+                                DocsOwnerScope::assertCanMutateRecord($record, 'Sequence not found.');
+                                $record->delete();
+                            });
+                        }),
                 ]),
             ]);
     }

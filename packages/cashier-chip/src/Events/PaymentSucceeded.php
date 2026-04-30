@@ -33,4 +33,23 @@ class PaymentSucceeded
         $this->billable = $billable;
         $this->purchase = $purchase;
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function metadata(): array
+    {
+        $metadata = $this->purchase['metadata'] ?? [];
+
+        return is_array($metadata) ? $metadata : [];
+    }
+
+    public function reference(): ?string
+    {
+        $reference = $this->purchase['reference']
+            ?? $this->purchase['reference_generated']
+            ?? null;
+
+        return is_string($reference) && $reference !== '' ? $reference : null;
+    }
 }

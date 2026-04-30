@@ -31,7 +31,6 @@ it('defines header actions for list/view/edit promotion pages', function (): voi
 
     $getHeaderActions = static function (object $page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');
-        $method->setAccessible(true);
 
         /** @var array $actions */
         $actions = $method->invoke($page);

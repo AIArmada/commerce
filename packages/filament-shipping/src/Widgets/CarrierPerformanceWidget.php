@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
 class CarrierPerformanceWidget extends ChartWidget
@@ -31,9 +32,9 @@ class CarrierPerformanceWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $startDate = Carbon::now()->subDays(30);
+        $startDate = CarbonImmutable::now()->subDays(30);
 
-        $query = Shipment::query();
+        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -44,7 +45,7 @@ class CarrierPerformanceWidget extends ChartWidget
                 ];
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         $delivered = ShipmentStatus::Delivered->value;

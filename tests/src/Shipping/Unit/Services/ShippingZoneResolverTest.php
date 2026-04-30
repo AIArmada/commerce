@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Models\ShippingRate;
 use AIArmada\Shipping\Models\ShippingZone;
@@ -461,38 +462,44 @@ describe('ShippingZoneResolver', function (): void {
         $ownerA = $ownerA::query()->create(['name' => 'Owner A']);
         $ownerB = $ownerA::query()->create(['name' => 'Owner B']);
 
-        ShippingZone::create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
-            'name' => 'Owner A Zone',
-            'code' => 'owner-a-us',
-            'type' => 'country',
-            'countries' => ['US'],
-            'priority' => 10,
-            'active' => true,
-        ]);
+        OwnerContext::withOwner($ownerA, function () use ($ownerA): void {
+            ShippingZone::create([
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => $ownerA->getKey(),
+                'name' => 'Owner A Zone',
+                'code' => 'owner-a-us',
+                'type' => 'country',
+                'countries' => ['US'],
+                'priority' => 10,
+                'active' => true,
+            ]);
+        });
 
-        ShippingZone::create([
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => $ownerB->getKey(),
-            'name' => 'Owner B Zone',
-            'code' => 'owner-b-us',
-            'type' => 'country',
-            'countries' => ['US'],
-            'priority' => 10,
-            'active' => true,
-        ]);
+        OwnerContext::withOwner($ownerB, function () use ($ownerB): void {
+            ShippingZone::create([
+                'owner_type' => $ownerB->getMorphClass(),
+                'owner_id' => $ownerB->getKey(),
+                'name' => 'Owner B Zone',
+                'code' => 'owner-b-us',
+                'type' => 'country',
+                'countries' => ['US'],
+                'priority' => 10,
+                'active' => true,
+            ]);
+        });
 
-        ShippingZone::create([
-            'owner_type' => null,
-            'owner_id' => null,
-            'name' => 'Global US Zone 2',
-            'code' => 'global-us-2',
-            'type' => 'country',
-            'countries' => ['US'],
-            'priority' => 1,
-            'active' => true,
-        ]);
+        OwnerContext::withOwner(null, function (): void {
+            ShippingZone::create([
+                'owner_type' => null,
+                'owner_id' => null,
+                'name' => 'Global US Zone 2',
+                'code' => 'global-us-2',
+                'type' => 'country',
+                'countries' => ['US'],
+                'priority' => 1,
+                'active' => true,
+            ]);
+        });
 
         app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
         {

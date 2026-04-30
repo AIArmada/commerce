@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Pages;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\FilamentDocs\Resources\DocResource;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -70,10 +69,13 @@ final class PendingApprovalsPage extends Page implements HasTable
         }
 
         $query = DocApproval::query()
+            ->tap(function (Builder $query): void {
+                DocsOwnerScope::apply($query);
+            })
             ->where('assigned_to', $userId)
-                ->where('status', DocApprovalStatus::Pending)
+            ->where('status', DocApprovalStatus::Pending)
             ->whereHas('doc', function (Builder $docQuery): void {
-                self::applyDocOwnerScope($docQuery);
+                DocsOwnerScope::applyToDocs($docQuery);
             });
 
         return $query->count();
@@ -129,7 +131,7 @@ final class PendingApprovalsPage extends Page implements HasTable
                     ->label(__('Document Type'))
                     ->options(fn (): array => Doc::query()
                         ->tap(function (Builder $query): void {
-                            self::applyDocOwnerScope($query);
+                            DocsOwnerScope::applyToDocs($query);
                         })
                         ->distinct()
                         ->pluck('doc_type', 'doc_type')
@@ -210,12 +212,15 @@ final class PendingApprovalsPage extends Page implements HasTable
         }
 
         $query = DocApproval::query()
+            ->tap(function (Builder $query): void {
+                DocsOwnerScope::apply($query);
+            })
             ->with(['doc', 'requestedBy'])
             ->where('assigned_to', $userId)
-                ->where('status', DocApprovalStatus::Pending);
+            ->where('status', DocApprovalStatus::Pending);
 
         return $query->whereHas('doc', function (Builder $docQuery): void {
-            self::applyDocOwnerScope($docQuery);
+            DocsOwnerScope::applyToDocs($docQuery);
         });
     }
 
@@ -232,34 +237,23 @@ final class PendingApprovalsPage extends Page implements HasTable
         ];
     }
 
-    private static function applyDocOwnerScope(Builder $query): void
-    {
-        if (! config('docs.owner.enabled', false)) {
-            return;
-        }
-
-        /** @var Model|null $owner */
-        $owner = OwnerContext::resolve();
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
-
-        OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
-    }
-
     private static function assertCanActOnApproval(DocApproval $approval): void
     {
         $userId = Auth::id();
 
         abort_unless($userId !== null, 403);
         abort_unless((string) $approval->assigned_to === (string) $userId, 403);
-            abort_unless($approval->status === DocApprovalStatus::Pending, 403);
+        abort_unless($approval->status === DocApprovalStatus::Pending, 403);
 
-        $exists = Doc::query()
+        $doc = Doc::query()
             ->whereKey($approval->doc_id)
             ->tap(function (Builder $query): void {
-                self::applyDocOwnerScope($query);
+                DocsOwnerScope::applyToDocs($query);
             })
-            ->exists();
+            ->first();
 
-        abort_unless($exists, 404);
+        abort_if(! $doc instanceof Doc, 404);
+
+        DocsOwnerScope::assertCanMutateDoc($doc);
     }
 }

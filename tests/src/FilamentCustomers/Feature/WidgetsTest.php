@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Widgets\CustomerStatsWidget;
 use AIArmada\FilamentCustomers\Widgets\RecentCustomersWidget;
@@ -56,7 +57,7 @@ it('CustomerStatsWidget is owner-scoped for counts and aggregates', function ():
         }
     });
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'A1',
         'last_name' => 'User',
         'email' => 'a1@example.com',
@@ -65,9 +66,9 @@ it('CustomerStatsWidget is owner-scoped for counts and aggregates', function ():
         'created_at' => Carbon::now()->subDays(2),
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerB, fn (): Customer => Customer::query()->create([
         'first_name' => 'B1',
         'last_name' => 'User',
         'email' => 'b1@example.com',
@@ -76,13 +77,12 @@ it('CustomerStatsWidget is owner-scoped for counts and aggregates', function ():
         'created_at' => Carbon::now()->subDays(2),
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ]));
 
     $widget = new CustomerStatsWidget;
 
     $stats = (function () use ($widget): array {
         $method = new ReflectionMethod($widget, 'getStats');
-        $method->setAccessible(true);
 
         /** @var array<int, Stat> $result */
         $result = $method->invoke($widget);
@@ -109,7 +109,7 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
         }
     });
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerA, fn (): Customer => Customer::query()->create([
         'first_name' => 'A',
         'last_name' => 'High',
         'email' => 'a-high@example.com',
@@ -117,9 +117,9 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
         'accepts_marketing' => true,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
-    ]);
+    ]));
 
-    Customer::query()->create([
+    OwnerContext::withOwner($ownerB, fn (): Customer => Customer::query()->create([
         'first_name' => 'B',
         'last_name' => 'High',
         'email' => 'b-high@example.com',
@@ -127,7 +127,7 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
         'accepts_marketing' => true,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ]));
 
     $widget = new RecentCustomersWidget;
     $tableLivewire = Mockery::mock(HasTable::class);
@@ -136,7 +136,6 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
 
     $query = (function () use ($table) {
         $method = new ReflectionMethod($table, 'getQuery');
-        $method->setAccessible(true);
 
         return $method->invoke($table);
     })();

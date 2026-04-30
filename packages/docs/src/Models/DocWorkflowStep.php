@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,8 +22,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<string, mixed>|null $conditions
  * @property bool $is_required
  * @property int|null $timeout_hours
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  * @property-read DocWorkflow $workflow
  */
 final class DocWorkflowStep extends Model
@@ -44,8 +45,6 @@ final class DocWorkflowStep extends Model
 
     protected $fillable = [
         'workflow_id',
-        'owner_type',
-        'owner_id',
         'name',
         'order',
         'action_type',

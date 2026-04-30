@@ -4,74 +4,78 @@ title: Overview
 
 # Products Package
 
-A comprehensive Product Information Management (PIM) system for Laravel commerce applications. This package provides the foundation for managing products, variants, categories, collections, and a flexible EAV (Entity-Attribute-Value) attribute system.
+`aiarmada/products` provides the catalog foundation for Commerce applications: products, variants, categories, collections, and extensible custom attributes.
 
-## Features
+## Highlights
 
-- **Product Management**: Full lifecycle management with types (Simple, Configurable, Virtual, Downloadable, Bundle, Grouped)
-- **Variant System**: Generate product variants from option combinations (size, color, etc.)
-- **Category Hierarchy**: Nested categories with parent-child relationships
-- **Collections**: Manual and rule-based product groupings
-- **EAV Attributes**: Extensible product attributes without schema changes
-- **Multi-tenancy**: Full owner scoping via `commerce-support`
-- **Media Management**: Spatie MediaLibrary integration for images, videos, documents
-- **SEO**: Automatic slug generation and meta fields
+- Owner-aware models powered by `commerce-support`
+- Product, category, collection, option, variant, and attribute models
+- Media support via Spatie MediaLibrary
+- Slug generation for products, categories, and collections
+- Money helpers that respect the package currency settings
+- Automatic and manual collection workflows
+- Config-driven table names with no hardcoded `protected $table`
 
-## Package Architecture
+## Core enums
 
-```
-packages/products/
-├── config/products.php          # Configuration
-├── database/
-│   ├── factories/               # Model factories
-│   └── migrations/              # 14 migration files
-├── resources/lang/              # Translations
-└── src/
-    ├── Contracts/               # Interfaces (Buyable, Inventoryable, Priceable)
-    ├── Enums/                   # ProductType, ProductStatus, ProductVisibility, AttributeType
-    ├── Events/                  # Domain events
-    ├── Models/                  # 10 Eloquent models
-    ├── Policies/                # Authorization policies
-    ├── Services/                # VariantGeneratorService
-    ├── Traits/                  # HasAttributes trait
-    └── ProductsServiceProvider.php
-```
+### Product types
 
-## Core Concepts
+| Case | Value |
+| --- | --- |
+| `Simple` | `simple` |
+| `Configurable` | `configurable` |
+| `Bundle` | `bundle` |
+| `Digital` | `digital` |
+| `Subscription` | `subscription` |
 
-### Product Types
+### Product statuses
 
-| Type | Description |
-|------|-------------|
-| `Simple` | Single product without variants |
-| `Configurable` | Product with variants (size, color combinations) |
-| `Virtual` | Non-physical product (services, memberships) |
-| `Downloadable` | Digital products with file delivery |
-| `Bundle` | Collection of products sold together |
-| `Grouped` | Products displayed together, purchased separately |
+| Case | Value |
+| --- | --- |
+| `Draft` | `draft` |
+| `Active` | `active` |
+| `Disabled` | `disabled` |
+| `Archived` | `archived` |
 
-### Product Status
+### Product visibility
 
-| Status | Description |
-|--------|-------------|
-| `Draft` | Not ready for display |
-| `Active` | Available for purchase |
-| `Archived` | Hidden from catalog, retained for history |
+| Case | Value |
+| --- | --- |
+| `Catalog` | `catalog` |
+| `Search` | `search` |
+| `CatalogSearch` | `catalog_search` |
+| `Individual` | `individual` |
+| `Hidden` | `hidden` |
 
-### Product Visibility
+### Attribute types
 
-| Visibility | Description |
-|------------|-------------|
-| `Visible` | Shows in catalog and search |
-| `Catalog` | Shows in catalog only |
-| `Search` | Shows in search only |
-| `Hidden` | Not visible anywhere |
+| Case | Value |
+| --- | --- |
+| `Text` | `text` |
+| `Textarea` | `textarea` |
+| `Number` | `number` |
+| `Boolean` | `boolean` |
+| `Select` | `select` |
+| `Multiselect` | `multiselect` |
+| `Date` | `date` |
+| `Color` | `color` |
+| `Media` | `media` |
+
+## Owner semantics
+
+When `products.features.owner.enabled` is on, tenant-owned reads and writes follow the hardened `commerce-support` rules:
+
+- normal reads rely on the owner scope or `forOwner()`
+- global-only reads use `globalOnly()`
+- missing owner context fails fast for owner-scoped reads
+- owned writes require the current owner context to match
+- global record writes require explicit global context via `OwnerContext::withOwner(null, ...)`
+- `include_global` defaults to `false`
 
 ## Requirements
 
 - PHP 8.4+
 - Laravel 11+
-- `aiarmada/commerce-support` package
-- Spatie MediaLibrary v11
-- Spatie Sluggable v3
-- Spatie Tags v4
+- `aiarmada/commerce-support`
+- Spatie MediaLibrary
+- Spatie Sluggable
