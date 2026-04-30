@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource;
@@ -206,15 +207,15 @@ describe('InventorySerialResource', function (): void {
         config()->set('inventory.owner.enabled', true);
         config()->set('inventory.owner.include_global', false);
 
-        $locationA = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($ownerA, fn (): InventoryLocation => InventoryLocation::factory()->create());
+        $locationA = OwnerContext::withOwner($ownerA, fn (): InventoryLocation => InventoryLocation::factory()->create());
 
-        $locationB = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($ownerB, fn (): InventoryLocation => InventoryLocation::factory()->create());
+        $locationB = OwnerContext::withOwner($ownerB, fn (): InventoryLocation => InventoryLocation::factory()->create());
 
-        $batchB = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($ownerB, fn (): InventoryBatch => InventoryBatch::factory()->create([
+        $batchB = OwnerContext::withOwner($ownerB, fn (): InventoryBatch => InventoryBatch::factory()->create([
             'location_id' => $locationB->id,
         ]));
 
-        $serialA = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($ownerA, fn (): InventorySerial => InventorySerial::factory()->create([
+        $serialA = OwnerContext::withOwner($ownerA, fn (): InventorySerial => InventorySerial::factory()->create([
             'location_id' => $locationA->id,
             'batch_id' => null,
         ]));

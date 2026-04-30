@@ -8,8 +8,8 @@ use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages\ListI
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages\ViewInventoryAllocation;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Schemas\InventoryAllocationInfolist;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Tables\InventoryAllocationsTable;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

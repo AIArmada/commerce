@@ -340,7 +340,7 @@ it('does not throw when updating a tax rate unrelated field without changing zon
 
     // Updating a non-zone_id field must NOT re-validate zone accessibility
     expect(fn () => $rate->update(['name' => 'Rate Updated']))
-        ->not->toThrow(\Exception::class);
+        ->not->toThrow(Exception::class);
 
     expect($rate->fresh()->name)->toBe('Rate Updated');
 });
@@ -373,7 +373,7 @@ it('does not throw when updating a tax exemption unrelated field without changin
 
     // Updating a non-zone field must NOT re-validate zone accessibility
     expect(fn () => $exemption->update(['reason' => 'Updated reason']))
-        ->not->toThrow(\Exception::class);
+        ->not->toThrow(Exception::class);
 
     expect($exemption->fresh()->reason)->toBe('Updated reason');
 });

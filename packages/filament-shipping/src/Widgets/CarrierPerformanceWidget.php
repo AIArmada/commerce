@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
-use Filament\Widgets\ChartWidget;
 use Carbon\CarbonImmutable;
+use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Str;
 
 class CarrierPerformanceWidget extends ChartWidget

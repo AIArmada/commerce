@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
-use Illuminate\Validation\Rule;
 use AIArmada\Shipping\Models\ShippingZone;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -24,6 +23,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rule;
 use UnitEnum;
 
 class ShippingZoneResource extends Resource
