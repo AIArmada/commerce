@@ -17,7 +17,6 @@ it('ListCustomers defines a Create header action', function (): void {
 
     $actions = (function () use ($page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');
-        $method->setAccessible(true);
 
         /** @var array<int, object> $result */
         $result = $method->invoke($page);
@@ -34,7 +33,6 @@ it('EditCustomer defines View and Delete header actions', function (): void {
 
     $actions = (function () use ($page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');
-        $method->setAccessible(true);
 
         /** @var array<int, object> $result */
         $result = $method->invoke($page);
@@ -52,7 +50,6 @@ it('ListSegments defines a Create header action', function (): void {
 
     $actions = (function () use ($page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');
-        $method->setAccessible(true);
 
         /** @var array<int, object> $result */
         $result = $method->invoke($page);
@@ -69,7 +66,6 @@ it('EditSegment defines View and Delete header actions', function (): void {
 
     $actions = (function () use ($page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');
-        $method->setAccessible(true);
 
         /** @var array<int, object> $result */
         $result = $method->invoke($page);
@@ -87,7 +83,6 @@ it('ViewSegment defines an Edit header action', function (): void {
 
     $actions = (function () use ($page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');
-        $method->setAccessible(true);
 
         /** @var array<int, object> $result */
         $result = $method->invoke($page);

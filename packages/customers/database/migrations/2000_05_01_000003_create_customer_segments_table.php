@@ -19,7 +19,7 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
 
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->text('description')->nullable();
 
             // Type
@@ -40,6 +40,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes
+            $table->unique(['owner_type', 'owner_id', 'slug'], 'customers_segments_owner_slug_unique');
             $table->index(['is_active', 'priority']);
             $table->index('type');
         });

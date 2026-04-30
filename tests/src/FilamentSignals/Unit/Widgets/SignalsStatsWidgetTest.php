@@ -24,7 +24,6 @@ uses(FilamentSignalsTestCase::class);
 function filamentSignals_invokeProtected(object $instance, string $methodName, array $arguments = []): mixed
 {
     $method = new ReflectionMethod($instance, $methodName);
-    $method->setAccessible(true);
 
     return $method->invokeArgs($instance, $arguments);
 }

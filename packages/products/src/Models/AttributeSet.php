@@ -44,13 +44,13 @@ class AttributeSet extends Model
 
     protected $guarded = ['id'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'is_default' => 'boolean',
-        'position' => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_default' => 'boolean',
+            'position' => 'integer',
+        ];
+    }
 
     public function getTable(): string
     {
@@ -137,7 +137,7 @@ class AttributeSet extends Model
      * @param  Builder<AttributeSet>  $query
      * @return Builder<AttributeSet>
      */
-    public function scopeDefault($query)
+    public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
     }
@@ -148,7 +148,7 @@ class AttributeSet extends Model
      * @param  Builder<AttributeSet>  $query
      * @return Builder<AttributeSet>
      */
-    public function scopeOrdered($query)
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('position');
     }

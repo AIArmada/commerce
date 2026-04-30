@@ -11,12 +11,12 @@ final class FilamentTaxAuthz
     /**
      * Apply authorization to a Filament action.
      *
-     * - If filament-authz is installed, use its `requiresPermission()` macro.
-     * - Otherwise, fail closed for unauthenticated users.
+     * - Prefer action macro integration if available.
+     * - Always enforce server-side permission checks via Laravel's authorization layer.
      */
     public static function requirePermission(Action $action, string $permission): Action
     {
-        $action->authorize(fn (): bool => auth()->check());
+        $action->authorize(fn (): bool => self::check($permission));
 
         if (! Action::hasMacro('requiresPermission')) {
             return $action;
@@ -24,5 +24,16 @@ final class FilamentTaxAuthz
 
         /** @phpstan-ignore-next-line method.notFound */
         return $action->requiresPermission($permission);
+    }
+
+    /**
+     * Check whether the current user has the given permission.
+     *
+     * Uses Laravel's authorization layer (`can`) so optional integrations
+     * (e.g. filament-authz + spatie/permission) can participate naturally.
+     */
+    public static function check(string $permission): bool
+    {
+        return auth()->check() && (auth()->user()?->can($permission) ?? false);
     }
 }

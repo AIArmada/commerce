@@ -4,275 +4,88 @@ title: Troubleshooting
 
 # Troubleshooting
 
-## Common Issues
+## Owner-scoped queries fail with missing owner context
 
-### Prices Stored Incorrectly
+If `products.features.owner.enabled` is `true`, owner-aware reads require either:
 
-**Symptom**: Prices appear 100x too high or too low.
+- a resolved current owner, or
+- explicit global context via `OwnerContext::withOwner(null, ...)`
 
-**Cause**: Price values should be stored in cents (integer). If you see `2999` displayed as `RM 2999.00` instead of `RM 29.99`, the display logic is not dividing by 100.
+Verify your `OwnerResolverInterface` binding first.
 
-**Solution**: Ensure you're using the built-in money helpers:
+## Global record writes are rejected
 
-```php
-// Correct - uses Money library
-$product->getFormattedPrice();  // "RM 29.99"
-
-// Incorrect - raw value
-$product->price;  // 2999 (cents)
-```
-
-When creating products, always provide prices in cents:
+This is expected. Persisted global rows are read-only unless the call site enters explicit global context.
 
 ```php
-Product::create([
-    'price' => 2999,  // RM 29.99 in cents
-]);
-```
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
----
-
-### Variants Not Generating
-
-**Symptom**: `VariantGeneratorService::generate()` returns empty collection.
-
-**Cause**: Options must be attached to the product AND have option values.
-
-**Solution**:
-
-```php
-// 1. Create option with values FIRST
-$option = Option::create(['name' => 'Size']);
-OptionValue::create(['option_id' => $option->id, 'value' => 'S']);
-OptionValue::create(['option_id' => $option->id, 'value' => 'M']);
-
-// 2. Attach option to product
-$product->options()->attach($option->id);
-
-// 3. Now generate variants
-$generator = app(VariantGeneratorService::class);
-$variants = $generator->generate($product);
-```
-
----
-
-### Owner Scoping Not Working
-
-**Symptom**: Products from other tenants visible, or no products visible at all.
-
-**Cause**: Missing or misconfigured `OwnerResolverInterface` binding.
-
-**Solution**:
-
-1. Verify the resolver is bound:
-
-```php
-// AppServiceProvider.php
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-
-public function register(): void
-{
-    $this->app->bind(OwnerResolverInterface::class, function () {
-        return new class implements OwnerResolverInterface {
-            public function resolve(): ?object
-            {
-                return auth()->user()?->currentTeam;
-            }
-        };
-    });
-}
-```
-
-2. Verify owner mode is enabled:
-
-```php
-// config/products.php
-'owner_mode' => 'enabled',
-```
-
-3. Verify products have owner set:
-
-```php
-// Owner is set automatically when creating products
-// But verify with:
-Product::withoutOwnerScope()->whereNull('owner_id')->get();
-```
-
----
-
-### Category Hierarchy Circular Reference
-
-**Symptom**: Application hangs or max recursion error when loading categories.
-
-**Cause**: A category is set as its own parent (directly or indirectly).
-
-**Solution**:
-
-```php
-// Find circular references
-Category::whereColumn('id', 'parent_id')->get();
-
-// Or validate before saving
-public function setParentIdAttribute($value): void
-{
-    if ($value === $this->id) {
-        throw new \InvalidArgumentException('Category cannot be its own parent');
-    }
-    $this->attributes['parent_id'] = $value;
-}
-```
-
----
-
-### Media Conversions Not Generated
-
-**Symptom**: Uploaded images work but conversions (thumb, medium, large) return 404.
-
-**Cause**: Queue not processing or conversions marked as queued.
-
-**Solution**:
-
-1. Check if conversions are queued:
-
-```php
-// In Product model, conversions use ->nonQueued()
-$this->addMediaConversion('thumb')
-    ->fit(Fit::Contain, 150, 150)
-    ->nonQueued();  // Runs synchronously
-```
-
-2. If using queued conversions, ensure queue worker is running:
-
-```bash
-php artisan queue:work
-```
-
-3. Regenerate conversions:
-
-```php
-$product->getMedia('gallery')->each(function ($media) {
-    // Force regenerate
-    dispatch(new \Spatie\MediaLibrary\Conversions\Jobs\PerformConversionsJob($media));
+OwnerContext::withOwner(null, function () use ($category): void {
+    $category->update(['name' => 'Updated Global Category']);
 });
 ```
 
----
+## Prices look 100x off
 
-### Automatic Collection Not Returning Products
+The package defaults to minor units.
 
-**Symptom**: `$collection->applyConditions()` returns empty results.
+- `2999` means RM 29.99 when `defaults.store_money_in_cents` is `true`
+- use `getFormattedPrice()` and related helpers for display
 
-**Cause**: Condition field names or operators don't match actual database columns.
+## Variant SKU output is unexpected
 
-**Solution**:
-
-1. Verify condition structure:
+`Variant::generateSku()` uses `products.features.variants.sku_pattern`. The default pattern is:
 
 ```php
-// Correct format
-$collection->conditions = [
-    [
-        'field' => 'is_featured',    // Must match DB column
-        'operator' => '=',            // =, !=, >, <, >=, <=, like
-        'value' => true,
-    ],
-];
-$collection->save();
+'{parent_sku}-{option_codes}'
 ```
 
-2. Check supported operators in `Collection::applyConditions()`:
+If the parent product has no SKU, the variant falls back to a `PROD-...` prefix derived from the product UUID.
+
+## Automatic collections are empty
+
+Use `Collection::getMatchingProducts()` for automatic collections. Common causes of empty results are:
+
+- conditions referencing the wrong field names
+- owner scoping excluding records from another tenant
+- product status or visibility filters excluding candidates
+
+## Custom attribute values are not saving
+
+Save the owning model first, then call `setCustomAttribute()` or `setCustomAttributes()`.
+
+## JSON migrations fail on older database engines
+
+Publish the config and switch:
 
 ```php
-// Currently supports: =, !=, >, <, >=, <=, like
-// Other operators are ignored
-```
-
----
-
-### Attribute Values Not Saving
-
-**Symptom**: `setAttributeValue()` doesn't persist the value.
-
-**Cause**: Product must be saved before setting attribute values (needs ID).
-
-**Solution**:
-
-```php
-// Wrong - product not saved yet
-$product = new Product([...]);
-$product->setAttributeValue('material', 'Cotton');  // Fails - no ID
-
-// Correct - product saved first
-$product = Product::create([...]);
-$product->setAttributeValue('material', 'Cotton');  // Works
-```
-
----
-
-### Migration Fails on JSON Column
-
-**Symptom**: Migration error on older MySQL versions.
-
-**Cause**: MySQL < 5.7 doesn't support native JSON columns.
-
-**Solution**:
-
-```php
-// config/products.php
 'database' => [
-    'json_column_type' => 'text',  // Use TEXT instead of JSON
+    'json_column_type' => 'text',
 ],
 ```
 
----
+## Quick inspection snippets
 
-## Debug Commands
-
-### Check Product Counts by Owner
+### Count records by owner tuple
 
 ```php
 use AIArmada\Products\Models\Product;
 
-Product::withoutOwnerScope()
-    ->selectRaw('owner_type, owner_id, count(*) as count')
+Product::query()
+    ->withoutOwnerScope()
+    ->selectRaw('owner_type, owner_id, count(*) as total')
     ->groupBy('owner_type', 'owner_id')
     ->get();
 ```
 
-### Verify Variant Option Combinations
+### Inspect automatic collection matches
 
 ```php
-use AIArmada\Products\Models\Product;
-
-$product = Product::with(['variants.optionValues.option'])->find($id);
-
-foreach ($product->variants as $variant) {
-    $options = $variant->optionValues->pluck('value', 'option.name');
-    dump($variant->sku, $options->toArray());
-}
+$collection->getMatchingProducts()->pluck('id');
 ```
 
-### Find Orphaned Variants
+### Inspect custom attributes
 
 ```php
-use AIArmada\Products\Models\Variant;
-
-Variant::withoutOwnerScope()
-    ->whereDoesntHave('product')
-    ->get();
-```
-
-### Validate Attribute Structure
-
-```php
-use AIArmada\Products\Models\AttributeSet;
-
-$set = AttributeSet::with(['groups.groupAttributes'])->find($id);
-
-foreach ($set->groups as $group) {
-    dump("Group: {$group->name}");
-    foreach ($group->groupAttributes as $attr) {
-        dump("  - {$attr->code}: {$attr->type->value}");
-    }
-}
+$product->getCustomAttributesArray();
 ```

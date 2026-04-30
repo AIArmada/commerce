@@ -16,7 +16,6 @@ function filamentCashierChip_invokeTrait(string $method, mixed ...$arguments): m
     };
 
     $reflection = new ReflectionMethod($class::class, $method);
-    $reflection->setAccessible(true);
 
     return $reflection->invoke(null, ...$arguments);
 }

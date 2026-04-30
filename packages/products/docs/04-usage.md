@@ -4,293 +4,138 @@ title: Usage
 
 # Usage
 
-## Creating Products
-
-### Simple Product
+## Create a product in owner context
 
 ```php
-use AIArmada\Products\Models\Product;
-use AIArmada\Products\Enums\ProductType;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
+use AIArmada\Products\Models\Product;
 
-$product = Product::create([
-    'name' => 'Basic T-Shirt',
-    'sku' => 'TSHIRT-001',
-    'type' => ProductType::Simple,
-    'status' => ProductStatus::Active,
-    'price' => 2999,          // Price in cents (RM 29.99)
-    'compare_price' => 3999,  // Original price in cents
-    'cost' => 1500,           // Cost in cents
-    'short_description' => 'Comfortable cotton t-shirt',
-    'description' => 'Full product description...',
-    'is_featured' => true,
-]);
+$product = OwnerContext::withOwner($team, function () {
+    return Product::query()->create([
+        'name' => 'Basic T-Shirt',
+        'slug' => 'basic-t-shirt',
+        'sku' => 'TSHIRT-001',
+        'type' => ProductType::Simple,
+        'status' => ProductStatus::Active,
+        'price' => 2999,
+    ]);
+});
 ```
 
-### Configurable Product with Variants
+## Create an intentional global record
 
 ```php
-use AIArmada\Products\Models\Product;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Products\Models\Category;
+
+$category = OwnerContext::withOwner(null, function () {
+    return Category::query()->create([
+        'name' => 'Global Category',
+        'slug' => 'global-category',
+    ]);
+});
+```
+
+## Create variants and generate SKUs
+
+```php
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
-use AIArmada\Products\Services\VariantGeneratorService;
+use AIArmada\Products\Models\Variant;
 
-// Create the product
-$product = Product::create([
-    'name' => 'Premium T-Shirt',
-    'sku' => 'TSHIRT-PRO',
-    'type' => ProductType::Configurable,
-    'status' => ProductStatus::Active,
-    'price' => 4999,
-]);
-
-// Create options
-$sizeOption = Option::create([
+$size = Option::query()->create([
+    'product_id' => $product->id,
     'name' => 'Size',
     'position' => 1,
 ]);
 
-$colorOption = Option::create([
-    'name' => 'Color',
-    'position' => 2,
+$small = OptionValue::query()->create([
+    'option_id' => $size->id,
+    'name' => 'Small',
+    'value' => 'S',
+    'position' => 1,
 ]);
 
-// Create option values
-$small = OptionValue::create(['option_id' => $sizeOption->id, 'value' => 'S']);
-$medium = OptionValue::create(['option_id' => $sizeOption->id, 'value' => 'M']);
-$large = OptionValue::create(['option_id' => $sizeOption->id, 'value' => 'L']);
-
-$red = OptionValue::create(['option_id' => $colorOption->id, 'value' => 'Red']);
-$blue = OptionValue::create(['option_id' => $colorOption->id, 'value' => 'Blue']);
-
-// Attach options to product
-$product->options()->attach([$sizeOption->id, $colorOption->id]);
-
-// Generate all variant combinations
-$generator = app(VariantGeneratorService::class);
-$variants = $generator->generate($product);
-// Creates: S-Red, S-Blue, M-Red, M-Blue, L-Red, L-Blue (6 variants)
-```
-
-## Working with Variants
-
-### Update Variant Pricing
-
-```php
-$variant = $product->variants()->where('sku', 'TSHIRT-PRO-L-RED')->first();
-
-$variant->update([
-    'price' => 5499,     // Override base price
-    'cost' => 2000,
-    'weight' => 250,     // grams
-]);
-```
-
-### Get Effective Price
-
-```php
-// Returns variant price if set, otherwise product price
-$effectivePrice = $variant->getEffectivePrice();
-```
-
-## Categories
-
-### Create Category Hierarchy
-
-```php
-use AIArmada\Products\Models\Category;
-
-$clothing = Category::create([
-    'name' => 'Clothing',
-    'description' => 'All clothing items',
+$variant = Variant::query()->create([
+    'product_id' => $product->id,
+    'price' => 3299,
 ]);
 
-$shirts = Category::create([
-    'name' => 'Shirts',
-    'parent_id' => $clothing->id,
-]);
-
-$tshirts = Category::create([
-    'name' => 'T-Shirts',
-    'parent_id' => $shirts->id,
-]);
+$variant->optionValues()->sync([$small->id]);
+$variant->sku = $variant->generateSku();
+$variant->save();
 ```
 
-### Assign Products to Categories
-
-```php
-$product->categories()->sync([$tshirts->id, $shirts->id]);
-
-// Or attach
-$product->categories()->attach($tshirts->id);
-```
-
-### Query Products by Category
-
-```php
-// Products in specific category
-$products = Product::whereHas('categories', function ($query) use ($categoryId) {
-    $query->where('id', $categoryId);
-})->get();
-
-// Via category
-$products = $category->products;
-```
-
-## Collections
-
-### Manual Collection
+## Work with categories and collections
 
 ```php
 use AIArmada\Products\Models\Collection;
 
-$collection = Collection::create([
-    'name' => 'Summer Sale',
-    'type' => 'manual',
-    'is_active' => true,
-]);
+$product->categories()->sync([$category->id]);
 
-$collection->products()->attach([$product1->id, $product2->id]);
-```
-
-### Automatic Collection (Rule-based)
-
-```php
-$collection = Collection::create([
+$collection = Collection::query()->create([
     'name' => 'Featured Products',
+    'slug' => 'featured-products',
     'type' => 'automatic',
     'conditions' => [
-        ['field' => 'is_featured', 'operator' => '=', 'value' => true],
+        ['field' => 'is_featured', 'value' => true],
     ],
-    'is_active' => true,
 ]);
 
-// Apply conditions to get products
-$products = $collection->applyConditions()->get();
+$matches = $collection->getMatchingProducts();
+$collection->rebuildProductList();
 ```
 
-## Custom Attributes (EAV)
-
-### Create Attribute Structure
+## Use custom attributes
 
 ```php
-use AIArmada\Products\Models\Attribute;
-use AIArmada\Products\Models\AttributeGroup;
-use AIArmada\Products\Models\AttributeSet;
-use AIArmada\Products\Enums\AttributeType;
+$product->setCustomAttribute('material', 'Cotton');
+$product->setCustomAttribute('care_instructions', 'Cold wash only');
 
-// Create attribute group
-$specsGroup = AttributeGroup::create([
-    'name' => 'Specifications',
-    'position' => 1,
-]);
-
-// Create attributes
-$material = Attribute::create([
-    'code' => 'material',
-    'name' => 'Material',
-    'type' => AttributeType::Text,
-    'is_required' => false,
-    'is_filterable' => true,
-]);
-
-$weight = Attribute::create([
-    'code' => 'fabric_weight',
-    'name' => 'Fabric Weight (gsm)',
-    'type' => AttributeType::Number,
-    'validation_rules' => ['min' => 50, 'max' => 500],
-]);
-
-// Assign to group
-$specsGroup->groupAttributes()->attach([$material->id, $weight->id]);
-
-// Create attribute set
-$apparelSet = AttributeSet::create([
-    'name' => 'Apparel',
-]);
-$apparelSet->groups()->attach($specsGroup->id);
+$material = $product->getCustomAttribute('material');
+$attributes = $product->getCustomAttributesArray();
 ```
 
-### Use Attributes on Products
+## Media helpers
 
 ```php
-// Using HasAttributes trait
-$product->setAttributeValue('material', 'Cotton');
-$product->setAttributeValue('fabric_weight', 180);
+$product->addMedia($imagePath)->toMediaCollection('gallery');
+$product->addMedia($heroPath)->toMediaCollection('hero');
 
-// Get value
-$material = $product->getAttributeValue('material'); // 'Cotton'
-
-// Get all attributes
-$attributes = $product->getAttributes();
-```
-
-## Media Management
-
-### Add Images
-
-```php
-// Add to gallery collection
-$product->addMedia($pathToImage)->toMediaCollection('gallery');
-
-// Add hero image
-$product->addMedia($heroImage)->toMediaCollection('hero');
-
-// Get gallery images
 $gallery = $product->getMedia('gallery');
-
-// Get first hero with conversion
-$heroUrl = $product->getFirstMediaUrl('hero', 'large');
+$heroUrl = $product->getFirstMediaUrl('hero', 'detail');
 ```
 
-### Available Collections
-
-- `gallery` - Product image gallery
-- `hero` - Featured/hero images
-- `icon` - Icons and thumbnails
-- `banner` - Banner images
-- `videos` - Product videos
-- `documents` - Downloadable files
-
-## Money Helpers
+## Money and status helpers
 
 ```php
-// Get formatted price
-$product->getFormattedPrice();         // "RM 29.99"
-$product->getFormattedComparePrice();  // "RM 39.99"
-$product->getFormattedCost();          // "RM 15.00"
+$product->getFormattedPrice();
+$product->getFormattedComparePrice();
+$product->getFormattedCost();
 
-// Check if on sale
-$product->isOnSale();  // true if compare_price > price
-
-// Get discount percentage
-$product->getDiscountPercentage();  // 25 (for 25% off)
+$product->isActive();
+$product->isDraft();
+$product->isVisible();
+$product->isPurchasable();
+$product->isOnSale();
+$product->getDiscountPercentage();
 ```
 
-## Status Helpers
+## Query with owner semantics
 
 ```php
-$product->isDraft();     // true if status === Draft
-$product->isActive();    // true if status === Active
-$product->isArchived();  // true if status === Archived
-$product->isVisible();   // true if visibility !== Hidden
-$product->isFeatured();  // true if is_featured === true
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Products\Models\Product;
+
+$ownerProducts = Product::query()->forOwner($team)->get();
+$ownerAndGlobal = Product::query()->forOwner($team, includeGlobal: true)->get();
+$globalOnly = Product::query()->globalOnly()->get();
+
+$explicitGlobalRead = OwnerContext::withOwner(null, function () {
+    return Product::query()->forOwner()->get();
+});
 ```
 
-## Owner Scoping
-
-All queries are automatically scoped to the current owner:
-
-```php
-// Automatically scoped
-$products = Product::all();
-
-// Include global products
-$products = Product::forOwner()->get();
-
-// Only global products
-$products = Product::globalOnly()->get();
-
-// Bypass scoping (use carefully!)
-$products = Product::withoutOwnerScope()->get();
-```
+Avoid using `withoutOwnerScope()` unless you are intentionally performing a documented system-level operation.

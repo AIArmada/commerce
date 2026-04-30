@@ -14,6 +14,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 describe('Orders ↔ Docs Integration', function (): void {
     it('creates a paid invoice document when an order is paid', function (): void {
         config()->set('orders.integrations.docs.enabled', true);
+        config()->set('orders.owner.enabled', false);
 
         app()->register(OrdersServiceProvider::class);
 
@@ -77,6 +78,7 @@ describe('Orders ↔ Docs Integration', function (): void {
 
     it('does not create a document when docs integration is disabled', function (): void {
         config()->set('orders.integrations.docs.enabled', false);
+        config()->set('orders.owner.enabled', false);
 
         app()->register(OrdersServiceProvider::class);
 

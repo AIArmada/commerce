@@ -13,10 +13,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class DownloadTaxExemptionCertificateAction
 {
-    private const string DISK = 'local';
-
-    private const string ALLOWED_PREFIX = 'tax-exemptions/';
-
     public function execute(TaxExemption $exemption): StreamedResponse
     {
         if (! TaxOwnerScope::applyToOwnedQuery(TaxExemption::query())->whereKey($exemption->getKey())->exists()) {
@@ -31,14 +27,16 @@ final class DownloadTaxExemptionCertificateAction
 
         $path = Str::ltrim($path, '/');
 
+        $allowedPrefix = mb_rtrim((string) config('filament-tax.certificates.directory', 'tax-exemptions'), '/') . '/';
+
         if (
-            (! Str::startsWith($path, self::ALLOWED_PREFIX))
+            (! Str::startsWith($path, $allowedPrefix))
             || Str::contains($path, ['..', "\0"])
         ) {
             throw new NotFoundHttpException('Invalid certificate path.');
         }
 
-        $disk = Storage::disk(self::DISK);
+        $disk = Storage::disk((string) config('filament-tax.certificates.disk', 'local'));
 
         if (! $disk->exists($path)) {
             throw new NotFoundHttpException('Certificate document not found.');

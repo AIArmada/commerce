@@ -2,16 +2,29 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 describe('Collection Model', function (): void {
     beforeEach(function (): void {
+        Schema::dropIfExists('test_owners');
+
+        Schema::create('test_owners', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        config()->set('products.features.owner.enabled', false);
+
         app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
         {
             public function resolve(): ?Model
@@ -108,47 +121,55 @@ describe('Collection Model', function (): void {
         });
 
         it('does not leak products across owners for automatic collections', function (): void {
+            config()->set('products.features.owner.enabled', true);
             config()->set('products.features.owner.include_global', true);
             config()->set('products.features.owner.auto_assign_on_create', false);
 
-            $ownerType = 'tenant';
-            $ownerAId = (string) Str::uuid();
-            $ownerBId = (string) Str::uuid();
+            $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+            $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-            $collection = Collection::create([
-                'name' => 'Owner A Featured',
-                'type' => 'automatic',
-                'owner_type' => $ownerType,
-                'owner_id' => $ownerAId,
-                'conditions' => [
-                    ['field' => 'is_featured', 'operator' => '=', 'value' => true],
-                ],
-            ]);
+            $collection = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Collection {
+                return Collection::create([
+                    'owner_type' => $ownerA->getMorphClass(),
+                    'owner_id' => $ownerA->getKey(),
+                    'name' => 'Owner A Featured',
+                    'type' => 'automatic',
+                    'conditions' => [
+                        ['field' => 'is_featured', 'operator' => '=', 'value' => true],
+                    ],
+                ]);
+            });
 
-            $ownerAProduct = Product::create([
-                'owner_type' => $ownerType,
-                'owner_id' => $ownerAId,
-                'name' => 'Owner A Featured Product',
-                'price' => 3000,
-                'status' => ProductStatus::Active,
-                'is_featured' => true,
-            ]);
+            $ownerAProduct = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Product {
+                return Product::create([
+                    'owner_type' => $ownerA->getMorphClass(),
+                    'owner_id' => $ownerA->getKey(),
+                    'name' => 'Owner A Featured Product',
+                    'price' => 3000,
+                    'status' => ProductStatus::Active,
+                    'is_featured' => true,
+                ]);
+            });
 
-            $ownerBProduct = Product::create([
-                'owner_type' => $ownerType,
-                'owner_id' => $ownerBId,
-                'name' => 'Owner B Featured Product',
-                'price' => 3000,
-                'status' => ProductStatus::Active,
-                'is_featured' => true,
-            ]);
+            $ownerBProduct = OwnerContext::withOwner($ownerB, static function () use ($ownerB): Product {
+                return Product::create([
+                    'owner_type' => $ownerB->getMorphClass(),
+                    'owner_id' => $ownerB->getKey(),
+                    'name' => 'Owner B Featured Product',
+                    'price' => 3000,
+                    'status' => ProductStatus::Active,
+                    'is_featured' => true,
+                ]);
+            });
 
-            $globalProduct = Product::create([
-                'name' => 'Global Featured Product',
-                'price' => 3000,
-                'status' => ProductStatus::Active,
-                'is_featured' => true,
-            ]);
+            $globalProduct = OwnerContext::withOwner(null, static function (): Product {
+                return Product::create([
+                    'name' => 'Global Featured Product',
+                    'price' => 3000,
+                    'status' => ProductStatus::Active,
+                    'is_featured' => true,
+                ]);
+            });
 
             $matchingProducts = $collection->getMatchingProducts();
 
@@ -158,41 +179,49 @@ describe('Collection Model', function (): void {
         });
 
         it('filters manual collection products to same owner and global', function (): void {
+            config()->set('products.features.owner.enabled', true);
             config()->set('products.features.owner.include_global', true);
             config()->set('products.features.owner.auto_assign_on_create', false);
 
-            $ownerType = 'tenant';
-            $ownerAId = (string) Str::uuid();
-            $ownerBId = (string) Str::uuid();
+            $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+            $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
 
-            $collection = Collection::create([
-                'name' => 'Owner A Manual',
-                'type' => 'manual',
-                'owner_type' => $ownerType,
-                'owner_id' => $ownerAId,
-            ]);
+            $collection = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Collection {
+                return Collection::create([
+                    'owner_type' => $ownerA->getMorphClass(),
+                    'owner_id' => $ownerA->getKey(),
+                    'name' => 'Owner A Manual',
+                    'type' => 'manual',
+                ]);
+            });
 
-            $ownerAProduct = Product::create([
-                'owner_type' => $ownerType,
-                'owner_id' => $ownerAId,
-                'name' => 'Owner A Product',
-                'price' => 1000,
-                'status' => ProductStatus::Active,
-            ]);
+            $ownerAProduct = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Product {
+                return Product::create([
+                    'owner_type' => $ownerA->getMorphClass(),
+                    'owner_id' => $ownerA->getKey(),
+                    'name' => 'Owner A Product',
+                    'price' => 1000,
+                    'status' => ProductStatus::Active,
+                ]);
+            });
 
-            $ownerBProduct = Product::create([
-                'owner_type' => $ownerType,
-                'owner_id' => $ownerBId,
-                'name' => 'Owner B Product',
-                'price' => 1000,
-                'status' => ProductStatus::Active,
-            ]);
+            $ownerBProduct = OwnerContext::withOwner($ownerB, static function () use ($ownerB): Product {
+                return Product::create([
+                    'owner_type' => $ownerB->getMorphClass(),
+                    'owner_id' => $ownerB->getKey(),
+                    'name' => 'Owner B Product',
+                    'price' => 1000,
+                    'status' => ProductStatus::Active,
+                ]);
+            });
 
-            $globalProduct = Product::create([
-                'name' => 'Global Product',
-                'price' => 1000,
-                'status' => ProductStatus::Active,
-            ]);
+            $globalProduct = OwnerContext::withOwner(null, static function (): Product {
+                return Product::create([
+                    'name' => 'Global Product',
+                    'price' => 1000,
+                    'status' => ProductStatus::Active,
+                ]);
+            });
 
             $collection->products()->attach([$ownerAProduct->id, $ownerBProduct->id, $globalProduct->id]);
 

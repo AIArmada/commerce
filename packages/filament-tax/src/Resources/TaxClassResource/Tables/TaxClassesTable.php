@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxClassResource\Tables;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Support\FilamentTaxAuthz;
+use AIArmada\Tax\Models\TaxClass;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Support\Icons\Heroicon;
@@ -63,7 +65,18 @@ final class TaxClassesTable
                         ->icon(Heroicon::OutlinedTrash)
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->action(fn ($records) => $records->each->delete())
+                        ->action(function ($records): void {
+                            foreach ($records as $record) {
+                                $verified = OwnerWriteGuard::findOrFailForOwner(
+                                    TaxClass::class,
+                                    $record->getKey(),
+                                    includeGlobal: false,
+                                    message: 'Tax class is not accessible in the current owner scope.',
+                                );
+
+                                $verified->delete();
+                            }
+                        })
                         ->deselectRecordsAfterCompletion(),
                     'tax.classes.delete',
                 ),

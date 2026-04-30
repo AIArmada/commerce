@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Database\Eloquent\Builder;
 
 final class CategoryDistributionChart extends ChartWidget
 {
@@ -24,73 +22,12 @@ final class CategoryDistributionChart extends ChartWidget
         $categoriesTable = (new Category)->getTable();
         $productsTable = (new Product)->getTable();
 
-        $query = Category::query();
+        $productsSubquery = Product::query()
+            ->forOwner()
+            ->select('id');
 
-        $productsSubquery = Product::query()->select('id');
-
-        if ((bool) config('products.features.owner.enabled', true)) {
-            $query->withoutOwnerScope();
-            $productsSubquery->withoutOwnerScope();
-
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('products.features.owner.include_global', false);
-
-            $query->where(function (Builder $where) use ($categoriesTable, $owner, $includeGlobal): void {
-                if ($owner === null) {
-                    $where->whereNull($categoriesTable . '.owner_type')
-                        ->whereNull($categoriesTable . '.owner_id');
-
-                    return;
-                }
-
-                if (! $includeGlobal) {
-                    $where->where($categoriesTable . '.owner_type', $owner->getMorphClass())
-                        ->where($categoriesTable . '.owner_id', $owner->getKey());
-
-                    return;
-                }
-
-                $where
-                    ->where(function (Builder $ownedOrGlobal) use ($categoriesTable, $owner): void {
-                        $ownedOrGlobal
-                            ->where($categoriesTable . '.owner_type', $owner->getMorphClass())
-                            ->where($categoriesTable . '.owner_id', $owner->getKey())
-                            ->orWhere(function (Builder $globalOnly) use ($categoriesTable): void {
-                                $globalOnly->whereNull($categoriesTable . '.owner_type')
-                                    ->whereNull($categoriesTable . '.owner_id');
-                            });
-                    });
-            });
-
-            $productsSubquery->where(function (Builder $where) use ($productsTable, $owner, $includeGlobal): void {
-                if ($owner === null) {
-                    $where->whereNull($productsTable . '.owner_type')
-                        ->whereNull($productsTable . '.owner_id');
-
-                    return;
-                }
-
-                if (! $includeGlobal) {
-                    $where->where($productsTable . '.owner_type', $owner->getMorphClass())
-                        ->where($productsTable . '.owner_id', $owner->getKey());
-
-                    return;
-                }
-
-                $where
-                    ->where(function (Builder $ownedOrGlobal) use ($productsTable, $owner): void {
-                        $ownedOrGlobal
-                            ->where($productsTable . '.owner_type', $owner->getMorphClass())
-                            ->where($productsTable . '.owner_id', $owner->getKey())
-                            ->orWhere(function (Builder $globalOnly) use ($productsTable): void {
-                                $globalOnly->whereNull($productsTable . '.owner_type')
-                                    ->whereNull($productsTable . '.owner_id');
-                            });
-                    });
-            });
-        }
-
-        $categories = $query
+        $categories = Category::query()
+            ->forOwner()
             ->select([
                 $categoriesTable . '.id',
                 $categoriesTable . '.name',

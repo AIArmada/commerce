@@ -10,7 +10,6 @@ describe('Checkout Facade', function (): void {
     it('has correct facade accessor', function (): void {
         $reflection = new ReflectionClass(Checkout::class);
         $method = $reflection->getMethod('getFacadeAccessor');
-        $method->setAccessible(true);
 
         expect($method->invoke(null))->toBe(CheckoutServiceInterface::class);
     });

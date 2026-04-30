@@ -6,11 +6,12 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -20,6 +21,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
 final class PaymentsRelationManager extends RelationManager
@@ -101,13 +103,48 @@ final class PaymentsRelationManager extends RelationManager
             ->recordActions([
                 EditAction::make()
                     ->mutateFormDataUsing(function (array $data, DocPayment $record): array {
+                        $doc = $record->doc;
+
+                        if ($doc !== null) {
+                            DocsOwnerScope::assertCanMutateDoc($doc);
+                        }
+
                         return $this->mutatePaymentData($data, $record);
                     }),
-                DeleteAction::make(),
+                Action::make('delete')
+                    ->label('Delete')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(function (DocPayment $record): void {
+                        $doc = $record->doc;
+
+                        if ($doc !== null) {
+                            DocsOwnerScope::assertCanMutateDoc($doc);
+                        }
+
+                        $record->delete();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    BulkAction::make('delete_selected')
+                        ->label('Delete Selected')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int|string, DocPayment> $records */
+                            $records->each(function (DocPayment $record): void {
+                                $doc = $record->doc;
+
+                                if ($doc !== null) {
+                                    DocsOwnerScope::assertCanMutateDoc($doc);
+                                }
+
+                                $record->delete();
+                            });
+                        }),
                 ]),
             ])
             ->defaultSort('paid_at', 'desc');
@@ -128,9 +165,6 @@ final class PaymentsRelationManager extends RelationManager
         }
 
         $data['currency'] = $doc->currency;
-        $data['owner_type'] = $doc->owner_type;
-        $data['owner_id'] = $doc->owner_id;
-
         if ($existing !== null && (string) $existing->doc_id !== (string) $doc->getKey()) {
             throw ValidationException::withMessages([
                 'doc_id' => __('Invalid payment record.'),

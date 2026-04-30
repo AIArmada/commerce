@@ -17,7 +17,6 @@ if (! function_exists('filamentCashier_invokeProtectedMethod')) {
     function filamentCashier_invokeProtectedMethod(object $object, string $method, array $arguments = []): mixed
     {
         $reflection = new ReflectionMethod($object, $method);
-        $reflection->setAccessible(true);
 
         return $reflection->invokeArgs($object, $arguments);
     }

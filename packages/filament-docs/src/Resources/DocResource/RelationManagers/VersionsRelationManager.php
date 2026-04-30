@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\Docs\Models\DocVersion;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\View\View;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class VersionsRelationManager extends RelationManager
 {
@@ -42,7 +46,15 @@ final class VersionsRelationManager extends RelationManager
             ->recordActions([
                 Action::make('view')
                     ->icon('heroicon-o-eye')
-                    ->modalContent(function ($record) {
+                    ->modalContent(function (DocVersion $record): View {
+                        $doc = $record->doc;
+
+                        if ($doc === null) {
+                            throw new NotFoundHttpException('Document not found.');
+                        }
+
+                        DocsOwnerScope::assertCanAccessDoc($doc);
+
                         return view('filament-docs::partials.version-snapshot', [
                             'snapshot' => $record->snapshot,
                         ]);
@@ -53,7 +65,14 @@ final class VersionsRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->modalHeading('Restore Version')
                     ->modalDescription('Are you sure you want to restore this version? Current data will be overwritten.')
-                    ->action(function ($record): void {
+                    ->action(function (DocVersion $record): void {
+                        $doc = $record->doc;
+
+                        if ($doc === null) {
+                            throw new NotFoundHttpException('Document not found.');
+                        }
+
+                        DocsOwnerScope::assertCanMutateDoc($doc);
                         $record->restore();
                         $this->dispatch('refresh');
                     }),

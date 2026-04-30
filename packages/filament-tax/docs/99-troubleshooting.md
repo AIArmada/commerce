@@ -293,6 +293,23 @@ Common issues and solutions for the Filament Tax plugin.
    $user->hasPermission('tax.zones.create');
    ```
 
+### Bulk Actions Fail with Owner Scope Error
+
+**Symptom:** Bulk approve/reject/delete/activate actions fail with messages like:
+
+- `Tax rate is not accessible in the current owner scope.`
+- `Tax exemption is not accessible in the current owner scope.`
+
+**Why this happens:**
+
+Bulk write handlers revalidate each selected record with `OwnerWriteGuard::findOrFailForOwner(..., includeGlobal: false)`. Cross-tenant and global rows are blocked in tenant-context write paths.
+
+**Solutions:**
+
+1. Ensure selected rows belong to the active owner context.
+2. Avoid selecting global rows for tenant-context bulk mutations.
+3. Verify owner resolver + owner middleware are set up correctly so the active owner is resolved consistently.
+
 ## Performance Issues
 
 ### Slow Page Load

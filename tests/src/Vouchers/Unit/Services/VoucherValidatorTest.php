@@ -31,7 +31,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('normalizeCode');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator, ' testcode ');
 
@@ -46,7 +45,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('normalizeCode');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator, ' TestCode ');
 
@@ -61,7 +59,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('normalizeCode');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator, '   CODE123   ');
 
@@ -77,7 +74,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('resolveOwner');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator);
 
@@ -97,7 +93,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('resolveOwner');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator);
 
@@ -121,7 +116,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator, $cart);
 
@@ -137,7 +131,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator, $cart);
 
@@ -153,7 +146,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator, $cart);
 
@@ -169,7 +161,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator, $cart);
 
@@ -185,7 +176,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator, $cart);
 
@@ -233,7 +223,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUser');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator);
 
@@ -253,7 +242,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUser');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator);
 
@@ -270,7 +258,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUser');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator);
 
@@ -287,7 +274,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUserIdentifier');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator);
 
@@ -303,7 +289,6 @@ describe('VoucherValidator', function (): void {
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUserIdentifier');
-            $method->setAccessible(true);
 
             $result = $method->invoke($validator);
 

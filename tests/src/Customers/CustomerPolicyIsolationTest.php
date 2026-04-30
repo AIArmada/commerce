@@ -12,6 +12,17 @@ use Illuminate\Support\Facades\Schema;
 
 require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function createCustomerPolicyIsolationCustomer(array $attributes, ?\Illuminate\Database\Eloquent\Model $owner = null): Customer
+{
+    /** @var Customer $customer */
+    $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));
+
+    return $customer;
+}
+
 beforeEach(function (): void {
     Schema::dropIfExists('test_owners');
 
@@ -32,7 +43,7 @@ it('does not allow viewing a customer outside owner scope even if user_id matche
         'password' => 'password',
     ]);
 
-    $customerOutsideOwner = Customer::query()->create([
+    $customerOutsideOwner = createCustomerPolicyIsolationCustomer([
         'user_id' => $user->getKey(),
         'first_name' => 'Out',
         'last_name' => 'Scope',
@@ -40,7 +51,7 @@ it('does not allow viewing a customer outside owner scope even if user_id matche
         'status' => CustomerStatus::Active,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
-    ]);
+    ], $ownerB);
 
     $policy = new CustomerPolicy;
 

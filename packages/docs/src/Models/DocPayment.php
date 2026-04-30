@@ -6,11 +6,11 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * Tracks payments made against documents.
@@ -22,11 +22,11 @@ use Illuminate\Support\Carbon;
  * @property string $payment_method
  * @property string|null $reference
  * @property string|null $transaction_id
- * @property Carbon $paid_at
+ * @property CarbonImmutable $paid_at
  * @property string|null $notes
  * @property array<string, mixed>|null $metadata
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
  */
 final class DocPayment extends Model
@@ -40,8 +40,6 @@ final class DocPayment extends Model
 
     protected $fillable = [
         'doc_id',
-        'owner_type',
-        'owner_id',
         'amount',
         'currency',
         'payment_method',
@@ -55,6 +53,31 @@ final class DocPayment extends Model
     public function getTable(): string
     {
         return config('docs.database.tables.doc_payments', 'docs_payments');
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (DocPayment $payment): void {
+            if ($payment->owner_type !== null && $payment->owner_id !== null) {
+                return;
+            }
+
+            if ($payment->doc_id === null || $payment->doc_id === '') {
+                return;
+            }
+
+            $doc = Doc::query()
+                ->withoutOwnerScope()
+                ->whereKey($payment->doc_id)
+                ->first();
+
+            if ($doc === null) {
+                return;
+            }
+
+            $payment->owner_type = $doc->owner_type;
+            $payment->owner_id = $doc->owner_id;
+        });
     }
 
     /**

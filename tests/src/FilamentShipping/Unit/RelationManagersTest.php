@@ -73,14 +73,12 @@ describe('RatesRelationManager', function (): void {
 
     it('has correct relationship name', function (): void {
         $reflection = new ReflectionProperty(RatesRelationManager::class, 'relationship');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe('rates');
     });
 
     it('has correct record title attribute', function (): void {
         $reflection = new ReflectionProperty(RatesRelationManager::class, 'recordTitleAttribute');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe('name');
     });
@@ -113,14 +111,12 @@ describe('ReturnAuthorizationItemsRelationManager', function (): void {
 
     it('has correct relationship name', function (): void {
         $reflection = new ReflectionProperty(ItemsRelationManager::class, 'relationship');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe('items');
     });
 
     it('has correct record title attribute', function (): void {
         $reflection = new ReflectionProperty(ItemsRelationManager::class, 'recordTitleAttribute');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe('name');
     });

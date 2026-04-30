@@ -64,18 +64,18 @@ class Variant extends Model implements HasMedia, Priceable, PricingPriceable
 
     protected $guarded = ['id'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'price' => 'integer',
-        'compare_price' => 'integer',
-        'cost' => 'integer',
-        'weight' => 'decimal:2',
-        'is_default' => 'boolean',
-        'is_enabled' => 'boolean',
-        'metadata' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'price' => 'integer',
+            'compare_price' => 'integer',
+            'cost' => 'integer',
+            'weight' => 'decimal:2',
+            'is_default' => 'boolean',
+            'is_enabled' => 'boolean',
+            'metadata' => 'array',
+        ];
+    }
 
     /**
      * @var array<string, mixed>
@@ -369,12 +369,12 @@ class Variant extends Model implements HasMedia, Priceable, PricingPriceable
     // SCOPES
     // =========================================================================
 
-    public function scopeEnabled($query)
+    public function scopeEnabled(Builder $query): Builder
     {
         return $query->where('is_enabled', true);
     }
 
-    public function scopeDefault($query)
+    public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
     }

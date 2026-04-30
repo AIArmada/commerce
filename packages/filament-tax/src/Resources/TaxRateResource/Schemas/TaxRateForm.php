@@ -118,9 +118,15 @@ final class TaxRateForm
                                 Placeholder::make('rate_info')
                                     ->label('Effective Rate')
                                     ->content(function ($record, GetFormState $get) {
-                                        $rate = $get('rate') ?? $record?->rate ?? 0;
+                                        $rateFromFormState = $get('rate');
 
-                                        return number_format(((float) $rate) / 100, 2) . '%';
+                                        if ($rateFromFormState !== null) {
+                                            return number_format((float) $rateFromFormState, 2) . '%';
+                                        }
+
+                                        $storedRate = (int) ($record?->rate ?? 0);
+
+                                        return number_format($storedRate / 100, 2) . '%';
                                     }),
 
                                 Placeholder::make('created_info')

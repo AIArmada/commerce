@@ -180,6 +180,10 @@ final class FilamentCartBridge
             return null;
         }
 
+        if (! $this->isCartVisibleToCurrentOwner($cart)) {
+            return null;
+        }
+
         try {
             /** @var Cart $cart */
             return app(CartInstanceManager::class)->resolve(
@@ -231,6 +235,10 @@ final class FilamentCartBridge
      */
     public function applyVoucher(Model $cart, string $code): bool
     {
+        if (! $this->isCartVisibleToCurrentOwner($cart)) {
+            throw new VoucherException('You are not authorized to modify this cart');
+        }
+
         $instance = $this->getCartInstance($cart);
 
         if (! $instance) {
@@ -250,6 +258,10 @@ final class FilamentCartBridge
      */
     public function removeVoucher(Model $cart, string $code): bool
     {
+        if (! $this->isCartVisibleToCurrentOwner($cart)) {
+            throw new VoucherException('You are not authorized to modify this cart');
+        }
+
         $instance = $this->getCartInstance($cart);
 
         if (! $instance) {
@@ -267,6 +279,10 @@ final class FilamentCartBridge
      */
     public function hasVoucher(Model $cart, string $code): bool
     {
+        if (! $this->isCartVisibleToCurrentOwner($cart)) {
+            return false;
+        }
+
         return $this->getAppliedVouchers($cart)
             ->contains(fn (object $voucher): bool => ($voucher->code ?? '') === $code);
     }
@@ -363,5 +379,20 @@ final class FilamentCartBridge
                 'total_potential_discount' => 0,
             ];
         }
+    }
+
+    private function isCartVisibleToCurrentOwner(Model $cart): bool
+    {
+        if (! OwnerScopedQueries::isEnabled()) {
+            return true;
+        }
+
+        $cartClass = $cart::class;
+
+        /** @var Builder<Model> $query */
+        $query = $cartClass::query();
+        $query = OwnerScopedQueries::scopeVoucherLike($query);
+
+        return $query->whereKey($cart->getKey())->exists();
     }
 }

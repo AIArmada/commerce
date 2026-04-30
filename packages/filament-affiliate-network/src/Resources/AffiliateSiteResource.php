@@ -161,7 +161,11 @@ final class AffiliateSiteResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateSite $record): bool => $record->isPending())
                     ->action(function (AffiliateSite $record): void {
-                        $record->update([
+                        $scopedRecord = AffiliateSite::query()
+                            ->whereKey($record->getKey())
+                            ->firstOrFail();
+
+                        $scopedRecord->update([
                             'status' => AffiliateSite::STATUS_VERIFIED,
                             'verified_at' => now(),
                         ]);

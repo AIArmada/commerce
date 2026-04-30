@@ -14,8 +14,6 @@ return [
             'price_lists' => 'price_lists',
             'price_tiers' => 'price_tiers',
         ],
-
-        'json_column_type' => env('PRICING_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
     ],
 
     /*
@@ -36,6 +34,7 @@ return [
         'owner' => [
             'enabled' => env('PRICING_OWNER_ENABLED', false),
             'include_global' => false,
+            'auto_assign_on_create' => true,
         ],
     ],
 ];

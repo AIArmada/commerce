@@ -8,6 +8,8 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCreative;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Carbon\CarbonImmutable;
 
 describe('AffiliateOffer Model', function (): void {
@@ -178,6 +180,45 @@ describe('AffiliateOffer Model', function (): void {
 
             expect($offer->starts_at)->toBeInstanceOf(CarbonImmutable::class);
             expect($offer->ends_at)->toBeInstanceOf(CarbonImmutable::class);
+        });
+    });
+
+    describe('owner scoping via site', function (): void {
+        test('explicit global context only returns offers linked to global sites', function (): void {
+            config(['affiliate-network.owner.enabled' => true]);
+
+            $owner = User::factory()->create();
+
+            $ownedSite = OwnerContext::withOwner($owner, fn () => AffiliateSite::factory()->verified()->forOwner($owner)->create());
+            $globalSite = OwnerContext::withOwner(null, fn () => AffiliateSite::factory()->verified()->create());
+
+            OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->forSite($ownedSite)->create());
+            $globalOffer = OwnerContext::withOwner(null, fn () => AffiliateOffer::factory()->forSite($globalSite)->create());
+
+            $globalOfferIds = OwnerContext::withOwner(null, fn () => AffiliateOffer::query()->pluck('id')->all());
+
+            expect($globalOfferIds)
+                ->toHaveCount(1)
+                ->toContain($globalOffer->id);
+        });
+
+        test('isolates records to current owner context', function (): void {
+            config(['affiliate-network.owner.enabled' => true]);
+
+            $ownerA = User::factory()->create();
+            $ownerB = User::factory()->create();
+
+            $siteA = OwnerContext::withOwner($ownerA, fn () => AffiliateSite::factory()->verified()->forOwner($ownerA)->create());
+            $siteB = OwnerContext::withOwner($ownerB, fn () => AffiliateSite::factory()->verified()->forOwner($ownerB)->create());
+
+            $offerA = OwnerContext::withOwner($ownerA, fn () => AffiliateOffer::factory()->forSite($siteA)->create());
+            OwnerContext::withOwner($ownerB, fn () => AffiliateOffer::factory()->forSite($siteB)->create());
+
+            $ownerAOfferIds = OwnerContext::withOwner($ownerA, fn () => AffiliateOffer::query()->pluck('id')->all());
+
+            expect($ownerAOfferIds)
+                ->toHaveCount(1)
+                ->toContain($offerA->id);
         });
     });
 });

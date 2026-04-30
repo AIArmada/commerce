@@ -84,7 +84,19 @@ class SegmentResource extends Resource
                                     ->label('Slug')
                                     ->required()
                                     ->maxLength(100)
-                                    ->unique(ignoreRecord: true),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
+                                        $owner = CustomersOwnerScope::resolveOwner();
+
+                                        if ($owner !== null) {
+                                            return $rule
+                                                ->where('owner_type', $owner->getMorphClass())
+                                                ->where('owner_id', $owner->getKey());
+                                        }
+
+                                        return $rule
+                                            ->whereNull('owner_type')
+                                            ->whereNull('owner_id');
+                                    }),
 
                                 Forms\Components\Select::make('type')
                                     ->label('Type')

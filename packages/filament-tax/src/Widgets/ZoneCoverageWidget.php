@@ -35,6 +35,7 @@ final class ZoneCoverageWidget extends Widget
             ])
             ->active()
             ->orderBy('priority', 'desc')
+            ->limit(50)
             ->get();
 
         return [

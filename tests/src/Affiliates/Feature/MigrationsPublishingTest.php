@@ -13,7 +13,6 @@ describe('Affiliates migrations', function (): void {
 
         $reflection = new ReflectionClass($provider);
         $packageProperty = $reflection->getProperty('package');
-        $packageProperty->setAccessible(true);
 
         /** @var object $package */
         $package = $packageProperty->getValue($provider);

@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
@@ -48,7 +49,7 @@ it('keeps global rows global on update when owner mode enabled', function (): vo
         'password' => 'secret',
     ]);
 
-    $voucher = Voucher::query()->create([
+    $voucher = OwnerContext::withOwner(null, static fn (): Voucher => Voucher::query()->create([
         'code' => 'GLOBAL-UPDATE-1',
         'name' => 'Global Voucher',
         'type' => VoucherType::Fixed,
@@ -57,7 +58,7 @@ it('keeps global rows global on update when owner mode enabled', function (): vo
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
-    ]);
+    ]));
 
     $data = OwnerScopedQueries::enforceOwnerOnUpdate($voucher, [
         'owner_type' => $ownerA->getMorphClass(),
@@ -83,6 +84,8 @@ it('prevents changing ownership on update when owner mode enabled', function ():
         'password' => 'secret',
     ]);
 
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
+
     $voucher = Voucher::query()->create([
         'code' => 'OWNED-UPDATE-1',
         'name' => 'Owned Voucher',
@@ -92,8 +95,9 @@ it('prevents changing ownership on update when owner mode enabled', function ():
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => (string) $ownerA->getKey(),
     ]);
-    $voucher->assignOwner($ownerA)->save();
 
     $data = OwnerScopedQueries::enforceOwnerOnUpdate($voucher, [
         'owner_type' => $ownerB->getMorphClass(),

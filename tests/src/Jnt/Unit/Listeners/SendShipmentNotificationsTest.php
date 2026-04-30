@@ -80,7 +80,6 @@ describe('SendShipmentNotifications listener', function (): void {
 
         $reflection = new ReflectionClass($listener);
         $method = $reflection->getMethod('resolveNotifiable');
-        $method->setAccessible(true);
 
         $order = new JntOrder;
         $order->forceFill([
@@ -105,7 +104,6 @@ describe('SendShipmentNotifications listener', function (): void {
 
         $reflection = new ReflectionClass($listener);
         $method = $reflection->getMethod('createNotification');
-        $method->setAccessible(true);
 
         $order = JntOrder::query()->create([
             'order_id' => 'ORDER123',
@@ -127,7 +125,6 @@ describe('SendShipmentNotifications listener', function (): void {
 
         $reflection = new ReflectionClass($listener);
         $method = $reflection->getMethod('getEstimatedDelivery');
-        $method->setAccessible(true);
 
         config(['jnt.shipping.default_estimated_days' => 5]);
 

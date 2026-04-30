@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
@@ -205,4 +207,37 @@ test('it can check payable status', function (): void {
         ->and(DocStatus::fromString(Sent::class)->isPayable())->toBeTrue()
         ->and(DocStatus::fromString(Paid::class)->isPayable())->toBeFalse()
         ->and(DocStatus::fromString(Draft::class)->isPayable())->toBeFalse();
+});
+
+test('it honors owner auto-assign on create config', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.auto_assign_on_create', false);
+
+    $owner = User::query()->create([
+        'name' => 'Owner Auto Assign Off',
+        'email' => 'owner-auto-assign-off@example.test',
+        'password' => bcrypt('password'),
+    ]);
+
+    $service = app(DocService::class);
+
+    $doc = OwnerContext::withOwner($owner, function () use ($service): Doc {
+        return $service->create(DocData::from([
+            'doc_type' => 'invoice',
+            'items' => [
+                [
+                    'name' => 'Owner Config Item',
+                    'quantity' => 1,
+                    'price' => 100.00,
+                ],
+            ],
+            'customer_data' => [
+                'name' => 'Config Customer',
+                'email' => 'config-customer@example.test',
+            ],
+        ]));
+    });
+
+    expect($doc->owner_type)->toBeNull()
+        ->and($doc->owner_id)->toBeNull();
 });

@@ -813,7 +813,6 @@ describe('Build Rule Callables', function (): void {
         // Use reflection to call protected method
         $reflection = new ReflectionClass($condition);
         $method = $reflection->getMethod('buildRuleCallables');
-        $method->setAccessible(true);
 
         $result = $method->invoke($condition);
 
@@ -841,7 +840,6 @@ describe('Build Rule Callables', function (): void {
 
         $reflection = new ReflectionClass($condition);
         $method = $reflection->getMethod('buildRuleCallables');
-        $method->setAccessible(true);
 
         expect(fn () => $method->invoke($condition))
             ->toThrow(InvalidArgumentException::class, 'Unsupported rule factory key [unsupported_key]');
@@ -873,7 +871,6 @@ describe('Build Rule Callables', function (): void {
 
         $reflection = new ReflectionClass($condition);
         $method = $reflection->getMethod('buildRuleCallables');
-        $method->setAccessible(true);
 
         $result = $method->invoke($condition);
 

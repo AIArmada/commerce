@@ -4,64 +4,28 @@ title: Overview
 
 # Filament Products
 
-A Filament v5 admin panel plugin for managing products, categories, collections, and attributes. This package provides a complete CRUD interface for the `aiarmada/products` package.
+`aiarmada/filament-products` adds Filament v5 resources, pages, and widgets for the `aiarmada/products` package.
 
-## Features
+## What it includes
 
-- **Product Management**: Full CRUD with rich form builder (pricing, inventory, SEO, media)
-- **Variant Management**: Relation manager for configurable product variants
-- **Category Management**: Hierarchical tree with drag-and-drop ordering
-- **Collection Management**: Manual and automatic (rule-based) collections
-- **Attribute System**: Full EAV management (Attributes, Groups, Sets)
-- **Bulk Operations**: Import/Export via CSV, bulk editing
-- **Dashboard Widgets**: Product stats, low stock alerts, category distribution
-- **Multi-tenancy**: Full owner scoping integration
+- `ProductResource`
+- `CategoryResource`
+- `CollectionResource` when the collections feature is enabled
+- `AttributeResource` when the attributes feature is enabled
+- `AttributeGroupResource`
+- `AttributeSetResource`
+- `BulkEditProducts` page when enabled
+- `ImportExportProducts` page when enabled
+- dashboard widgets for product stats, category distribution, product type distribution, and top-selling products
 
-## Package Structure
+## Owner-aware by default
 
-```
-packages/filament-products/
-├── config/filament-products.php  # Plugin configuration
-├── resources/
-│   ├── lang/en/                  # Translations
-│   └── views/                    # Blade views
-└── src/
-    ├── FilamentProductsPlugin.php
-    ├── FilamentProductsServiceProvider.php
-    ├── Pages/                    # Custom pages
-    │   ├── BulkEditProducts.php
-    │   └── ImportExportProducts.php
-    ├── Resources/                # Filament resources
-    │   ├── ProductResource/
-    │   ├── CategoryResource/
-    │   ├── CollectionResource/
-    │   ├── AttributeResource/
-    │   ├── AttributeGroupResource/
-    │   └── AttributeSetResource/
-    ├── Support/                  # Utilities
-    │   └── OwnerScope.php
-    └── Widgets/                  # Dashboard widgets
-        ├── ProductStatsWidget.php
-        ├── ProductTypeDistributionWidget.php
-        ├── CategoryDistributionWidget.php
-        └── RecentProductsWidget.php
-```
-
-## Resources Overview
-
-| Resource | Model | Features |
-|----------|-------|----------|
-| ProductResource | Product | Full CRUD, variants, media, SEO, bulk actions |
-| CategoryResource | Category | Tree view, parent-child, products relation |
-| CollectionResource | Collection | Manual/automatic, condition builder |
-| AttributeResource | Attribute | Types, validation, options |
-| AttributeGroupResource | AttributeGroup | Group attributes together |
-| AttributeSetResource | AttributeSet | Assign groups to sets |
+This package does not treat Filament option scoping as authorization. Resource queries, page actions, and submitted IDs are revalidated against the current owner context from `commerce-support`.
 
 ## Requirements
 
 - PHP 8.4+
 - Laravel 11+
 - Filament v5
-- `aiarmada/products` package
-- `aiarmada/commerce-support` package
+- `aiarmada/products`
+- `aiarmada/commerce-support`

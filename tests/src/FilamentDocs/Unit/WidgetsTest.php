@@ -23,7 +23,6 @@ uses(TestCase::class);
 function filamentDocs_invokeMethod(object $instance, string $methodName, array $arguments = []): mixed
 {
     $method = new ReflectionMethod($instance, $methodName);
-    $method->setAccessible(true);
 
     return $method->invokeArgs($instance, $arguments);
 }
@@ -98,10 +97,7 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
     ]);
 
     $createDocForOwner = static function (Model $owner, array $overrides = []): Doc {
-        return Doc::factory()->create(array_merge([
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => (string) $owner->getKey(),
-        ], $overrides));
+        return OwnerContext::withOwner($owner, static fn (): Doc => Doc::factory()->create($overrides));
     };
 
     // Owner A data

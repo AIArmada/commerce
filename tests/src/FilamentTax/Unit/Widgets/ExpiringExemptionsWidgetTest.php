@@ -48,7 +48,6 @@ it('queries only exemptions expiring within 30 days', function (): void {
 
     $ref = new ReflectionClass($widget);
     $method = $ref->getMethod('getTableQuery');
-    $method->setAccessible(true);
 
     $query = $method->invoke($widget);
 

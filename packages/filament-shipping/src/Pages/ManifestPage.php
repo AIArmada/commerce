@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Forms;
@@ -23,7 +25,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use UnitEnum;
 
 class ManifestPage extends Page implements HasTable
@@ -60,7 +61,7 @@ class ManifestPage extends Page implements HasTable
 
     public function mount(): void
     {
-        $this->manifestDate = Carbon::today()->toDateString();
+        $this->manifestDate = CarbonImmutable::today()->toDateString();
     }
 
     public function form(Schema $schema): Schema
@@ -140,7 +141,7 @@ class ManifestPage extends Page implements HasTable
                         $record->update([
                             'metadata' => array_merge($record->metadata ?? [], [
                                 'picked_up' => true,
-                                'picked_up_at' => now()->toDateTimeString(),
+                                'picked_up_at' => CarbonImmutable::now()->toDateTimeString(),
                             ]),
                         ]);
 
@@ -177,7 +178,7 @@ class ManifestPage extends Page implements HasTable
                             $record->update([
                                 'metadata' => array_merge($record->metadata ?? [], [
                                     'picked_up' => true,
-                                    'picked_up_at' => now()->toDateTimeString(),
+                                    'picked_up_at' => CarbonImmutable::now()->toDateTimeString(),
                                 ]),
                             ]);
                         }
@@ -221,14 +222,11 @@ class ManifestPage extends Page implements HasTable
                         return;
                     }
 
-                    $query = $this->getTableQuery()
-                        ->where(function (Builder $builder): void {
-                            $builder
-                                ->whereNull('metadata->picked_up')
-                                ->orWhere('metadata->picked_up', false);
-                        });
+                    $shipments = $this->getTableQuery()
+                        ->get()
+                        ->filter(fn (Shipment $shipment) => ! ($shipment->metadata['picked_up'] ?? false));
 
-                    $query->each(function (Shipment $shipment) use ($user): void {
+                    $shipments->each(function (Shipment $shipment) use ($user): void {
                         if (! $user->can('update', $shipment)) {
                             return;
                         }
@@ -236,7 +234,7 @@ class ManifestPage extends Page implements HasTable
                         $shipment->update([
                             'metadata' => array_merge($shipment->metadata ?? [], [
                                 'picked_up' => true,
-                                'picked_up_at' => now()->toDateTimeString(),
+                                'picked_up_at' => CarbonImmutable::now()->toDateTimeString(),
                             ]),
                         ]);
                     });
@@ -254,7 +252,7 @@ class ManifestPage extends Page implements HasTable
      */
     protected function getTableQuery(): Builder
     {
-        $query = Shipment::query();
+        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -262,7 +260,7 @@ class ManifestPage extends Page implements HasTable
                 return $query->whereRaw('0 = 1');
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         $query->where('status', ShipmentStatus::Shipped);

@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,8 +24,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $is_active
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  */
 final class DocEmailTemplate extends Model
 {
@@ -43,8 +44,6 @@ final class DocEmailTemplate extends Model
         'subject',
         'body',
         'is_active',
-        'owner_type',
-        'owner_id',
     ];
 
     public function getTable(): string

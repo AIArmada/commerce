@@ -8,7 +8,7 @@ uses(TestCase::class);
 
 use AIArmada\FilamentPricing\Widgets\PricingStatsWidget;
 use AIArmada\Pricing\Models\PriceList;
-use AIArmada\Pricing\Models\Promotion;
+use AIArmada\Promotions\Models\Promotion;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 beforeEach(function (): void {
@@ -52,7 +52,6 @@ it('builds pricing stats with correct counts', function (): void {
 
     $reflection = new ReflectionClass($widget);
     $method = $reflection->getMethod('getStats');
-    $method->setAccessible(true);
 
     /** @var array<int, Stat> $stats */
     $stats = $method->invoke($widget);

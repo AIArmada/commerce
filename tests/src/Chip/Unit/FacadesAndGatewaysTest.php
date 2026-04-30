@@ -35,7 +35,6 @@ describe('Chip Facade', function (): void {
     it('returns facade accessor', function (): void {
         $class = new ReflectionClass(Chip::class);
         $method = $class->getMethod('getFacadeAccessor');
-        $method->setAccessible(true);
 
         $accessor = $method->invoke(null);
 

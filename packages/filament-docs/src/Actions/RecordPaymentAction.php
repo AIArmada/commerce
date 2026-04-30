@@ -12,6 +12,7 @@ use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -103,6 +104,8 @@ final class RecordPaymentAction
      */
     private static function recordPayment(Doc $record, array $data): void
     {
+        DocsOwnerScope::assertCanMutateDoc($record);
+
         $amount = (float) $data['amount'];
         $remaining = (float) $record->total - self::getTotalPaid($record);
 
@@ -118,10 +121,8 @@ final class RecordPaymentAction
             ]);
         }
 
-        DocPayment::create([
+        $payment = new DocPayment([
             'doc_id' => $record->id,
-            'owner_type' => $record->owner_type,
-            'owner_id' => $record->owner_id,
             'amount' => $amount,
             'currency' => $record->currency,
             'payment_method' => $data['payment_method'],
@@ -129,6 +130,10 @@ final class RecordPaymentAction
             'paid_at' => $data['paid_at'],
             'notes' => $data['notes'] ?? null,
         ]);
+
+        $payment->owner_type = $record->owner_type;
+        $payment->owner_id = $record->owner_id;
+        $payment->save();
 
         $newPaidAmount = self::getTotalPaid($record);
 

@@ -6,281 +6,114 @@ title: Models Reference
 
 ## Product
 
-The core product entity implementing `Buyable`, `HasMedia`, `Inventoryable`, and `Priceable` interfaces.
+The main catalog model. `Product` is owner-aware, media-aware, slugged, and implements the package buyable, inventory, and pricing contracts.
 
-### Properties
+### Common relationships
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `name` | `string` | Product name |
-| `slug` | `string` | SEO-friendly URL slug (auto-generated) |
-| `sku` | `string\|null` | Stock Keeping Unit |
-| `type` | `ProductType` | Simple, Configurable, Virtual, etc. |
-| `status` | `ProductStatus` | Draft, Active, Archived |
-| `visibility` | `ProductVisibility` | Visible, Catalog, Search, Hidden |
-| `price` | `int` | Price in cents |
-| `compare_price` | `int\|null` | Original/compare price in cents |
-| `cost` | `int\|null` | Cost in cents |
-| `short_description` | `string\|null` | Brief description |
-| `description` | `string\|null` | Full description |
-| `weight` | `int\|null` | Weight in grams |
-| `length`, `width`, `height` | `int\|null` | Dimensions |
-| `is_featured` | `bool` | Featured product flag |
-| `is_taxable` | `bool` | Subject to tax |
-| `meta_title` | `string\|null` | SEO title |
-| `meta_description` | `string\|null` | SEO description |
-| `available_at` | `datetime\|null` | Availability date |
-| `metadata` | `array` | JSON metadata |
+- `variants()`
+- `options()`
+- `categories()`
+- `collections()`
+- `attributeSet()`
+- `attributeValues()`
+- `prices()` when the pricing package is installed
 
-### Relationships
+### Notable methods
 
-```php
-// Collections
-$product->variants;       // HasMany<Variant>
-$product->options;        // BelongsToMany<Option>
-$product->categories;     // BelongsToMany<Category>
-$product->collections;    // BelongsToMany<Collection>
-$product->attributeSet;   // BelongsTo<AttributeSet>
-$product->attributeValues; // HasMany<AttributeValue>
-```
-
-### Key Methods
-
-```php
-// Money formatting
-$product->getFormattedPrice(): string
-$product->getFormattedComparePrice(): ?string
-$product->getFormattedCost(): ?string
-
-// Status checks
-$product->isDraft(): bool
-$product->isActive(): bool
-$product->isArchived(): bool
-$product->isVisible(): bool
-$product->isFeatured(): bool
-$product->isOnSale(): bool
-
-// Pricing
-$product->getDiscountPercentage(): ?int
-
-// Buyable interface
-$product->getBuyableIdentifier(): string
-$product->getBuyableDescription(): string
-$product->getBuyablePrice(): int
-$product->getBuyableWeight(): ?int
-
-// Inventoryable interface
-$product->getInventoryIdentifier(): string
-$product->isInventoryEnabled(): bool
-
-// Priceable interface
-$product->getPriceableIdentifier(): string
-$product->getBasePriceInCents(): int
-```
-
----
+- `getFormattedPrice()`
+- `getFormattedComparePrice()`
+- `getFormattedCost()`
+- `getPriceAsMoney()`
+- `isActive()`
+- `isDraft()`
+- `isVisible()`
+- `isPurchasable()`
+- `isOnSale()`
+- `getDiscountPercentage()`
+- `activate()`
+- `archive()`
 
 ## Variant
 
-Product variants for configurable products.
+Variants belong to a product and optional option values.
 
-### Properties
+### Common relationships
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `product_id` | `string` | Parent product UUID |
-| `sku` | `string\|null` | Variant SKU |
-| `price` | `int\|null` | Override price (cents) |
-| `cost` | `int\|null` | Override cost (cents) |
-| `weight` | `int\|null` | Override weight (grams) |
-| `length`, `width`, `height` | `int\|null` | Override dimensions |
-| `is_enabled` | `bool` | Variant enabled flag |
-| `is_default` | `bool` | Default variant flag |
+- `product()`
+- `optionValues()`
 
-### Relationships
+### Notable methods
 
-```php
-$variant->product;       // BelongsTo<Product>
-$variant->optionValues;  // BelongsToMany<OptionValue>
-```
-
-### Key Methods
-
-```php
-$variant->getEffectivePrice(): int  // Returns variant price or parent product price
-```
-
----
+- `generateSku()`
+- `getFormattedPrice()`
+- `getFormattedComparePrice()`
+- `isEnabled()`
+- `isPurchasable()`
+- `isOnSale()`
+- `getDiscountPercentage()`
 
 ## Category
 
-Hierarchical product categories with nested parent-child relationships.
+Categories support parent/child hierarchies, owner-aware relations, media collections, and slug generation.
 
-### Properties
+### Common relationships
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `parent_id` | `string\|null` | Parent category UUID |
-| `name` | `string` | Category name |
-| `slug` | `string` | SEO-friendly slug |
-| `description` | `string\|null` | Category description |
-| `is_active` | `bool` | Active flag |
-| `position` | `int` | Sort order |
-| `metadata` | `array` | JSON metadata |
-
-### Relationships
-
-```php
-$category->parent;    // BelongsTo<Category>
-$category->children;  // HasMany<Category>
-$category->products;  // BelongsToMany<Product>
-```
-
----
+- `parent()`
+- `children()`
+- `products()`
 
 ## Collection
 
-Product collections (manual or rule-based automatic).
+Collections can be manual or automatic.
 
-### Properties
+### Common relationships
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `name` | `string` | Collection name |
-| `slug` | `string` | SEO-friendly slug |
-| `description` | `string\|null` | Collection description |
-| `type` | `string` | 'manual' or 'automatic' |
-| `conditions` | `array` | Rules for automatic collections |
-| `is_active` | `bool` | Active flag |
-| `metadata` | `array` | JSON metadata |
+- `products()`
 
-### Relationships
+### Notable methods
 
-```php
-$collection->products;  // BelongsToMany<Product>
-```
+- `isManual()`
+- `isAutomatic()`
+- `getMatchingProducts()`
+- `rebuildProductList()`
+- `isPublished()`
+- `isScheduled()`
 
-### Key Methods
+## Option and OptionValue
 
-```php
-// For automatic collections, apply conditions and return query builder
-$collection->applyConditions(): Builder
-```
+Options describe configurable dimensions such as size or color, and option values provide the actual selectable values.
 
----
+### Common relationships
 
-## Option / OptionValue
+- `Option::product()`
+- `Option::values()`
+- `OptionValue::option()`
+- `OptionValue::variants()`
 
-Options define variant dimensions (Size, Color). OptionValues are the actual choices (S, M, L).
+## Attribute models
 
-### Option Properties
+The attribute system is split across:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `name` | `string` | Option name (e.g., "Size") |
-| `position` | `int` | Sort order |
+- `Attribute`
+- `AttributeGroup`
+- `AttributeSet`
+- `AttributeValue`
 
-### OptionValue Properties
+These models are owner-aware and use config-driven table resolution like the rest of the package.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `option_id` | `string` | Parent option UUID |
-| `value` | `string` | Value label (e.g., "Large") |
-| `position` | `int` | Sort order |
-| `metadata` | `array` | Extra data (color hex, etc.) |
+## `HasAttributes` trait
 
-### Relationships
+Models using `AIArmada\Products\Traits\HasAttributes` get these helpers:
 
-```php
-// Option
-$option->values;    // HasMany<OptionValue>
-$option->products;  // BelongsToMany<Product>
-
-// OptionValue
-$optionValue->option;    // BelongsTo<Option>
-$optionValue->variants;  // BelongsToMany<Variant>
-```
-
----
-
-## Attribute / AttributeGroup / AttributeSet / AttributeValue
-
-EAV (Entity-Attribute-Value) system for extensible product attributes.
-
-### Attribute Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `code` | `string` | Unique attribute code |
-| `name` | `string` | Display name |
-| `type` | `AttributeType` | Text, Textarea, Number, Boolean, Select, MultiSelect, Date, DateTime |
-| `options` | `array` | Options for Select/MultiSelect |
-| `validation_rules` | `array` | Validation constraints |
-| `is_required` | `bool` | Required flag |
-| `is_filterable` | `bool` | Can be used as filter |
-| `is_visible` | `bool` | Visible on frontend |
-| `position` | `int` | Sort order |
-
-### AttributeGroup Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `name` | `string` | Group name |
-| `position` | `int` | Sort order |
-
-### AttributeSet Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `name` | `string` | Set name |
-
-### AttributeValue Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | UUID primary key |
-| `attribute_id` | `string` | Attribute UUID |
-| `product_id` | `string` | Product UUID |
-| `value` | `mixed` | The actual value (JSON) |
-
-### Relationships
-
-```php
-// Attribute
-$attribute->groups;  // BelongsToMany<AttributeGroup>
-$attribute->values;  // HasMany<AttributeValue>
-
-// AttributeGroup
-$group->groupAttributes;  // BelongsToMany<Attribute>
-$group->sets;             // BelongsToMany<AttributeSet>
-
-// AttributeSet
-$set->groups;             // BelongsToMany<AttributeGroup>
-$set->products;           // HasMany<Product>
-
-// AttributeValue
-$attributeValue->attribute;  // BelongsTo<Attribute>
-$attributeValue->product;    // BelongsTo<Product>
-```
-
-### Key Methods (HasAttributes trait)
-
-```php
-// Set attribute value
-$product->setAttributeValue(string $code, mixed $value): void
-
-// Get attribute value
-$product->getAttributeValue(string $code): mixed
-
-// Get all attribute values as array
-$product->getAttributes(): array
-```
+- `getCustomAttribute()`
+- `setCustomAttribute()`
+- `setCustomAttributes()`
+- `getCustomAttributesArray()`
+- `hasCustomAttribute()`
+- `removeCustomAttribute()`
+- `clearCustomAttributes()`
+- `getFilterableCustomAttributes()`
+- `getVisibleCustomAttributes()`
+- `getComparableCustomAttributes()`
+- `whereCustomAttribute()`
+- `whereCustomAttributes()`

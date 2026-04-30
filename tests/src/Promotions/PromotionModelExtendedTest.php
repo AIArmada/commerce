@@ -342,7 +342,16 @@ describe('Promotion Model - Extended Tests', function (): void {
         });
 
         it('casts conditions to array', function (): void {
-            $conditions = ['min_quantity' => 5, 'categories' => ['electronics']];
+            $conditions = [
+                'mode' => 'all',
+                'rules' => [
+                    [
+                        'type' => 'cart_value',
+                        'operator' => '>=',
+                        'value' => 5000,
+                    ],
+                ],
+            ];
 
             $promotion = Promotion::create([
                 'name' => 'Conditions Test',
@@ -353,7 +362,19 @@ describe('Promotion Model - Extended Tests', function (): void {
             ]);
 
             expect($promotion->conditions)->toBeArray()
-                ->and($promotion->conditions['min_quantity'])->toBe(5);
+                ->and($promotion->conditions['mode'])->toBe('all');
+        });
+
+        it('rejects invalid targeting conditions payload', function (): void {
+            expect(fn () =>
+                Promotion::create([
+                    'name' => 'Invalid Conditions Test',
+                    'type' => PromotionType::Percentage,
+                    'discount_value' => 10,
+                    'is_active' => true,
+                    'conditions' => ['min_quantity' => 5],
+                ])
+            )->toThrow(InvalidArgumentException::class, 'Invalid promotion conditions');
         });
 
         it('casts dates correctly', function (): void {

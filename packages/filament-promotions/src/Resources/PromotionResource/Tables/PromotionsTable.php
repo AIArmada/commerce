@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Tables;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentPromotions\Enums\PromotionType;
 use AIArmada\FilamentPromotions\Models\Promotion;
+use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,6 +18,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 final class PromotionsTable
 {
@@ -111,11 +114,41 @@ final class PromotionsTable
             ->actions([
                 ViewAction::make(),
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->before(function (Promotion $record): void {
+                        if (! PromotionsOwnerScope::isEnabled()) {
+                            return;
+                        }
+
+                        OwnerWriteGuard::findOrFailForOwner(
+                            Promotion::class,
+                            (string) $record->getKey(),
+                            PromotionsOwnerScope::resolveOwner(),
+                            includeGlobal: false,
+                            message: 'Promotion is not accessible in the current owner scope.',
+                        );
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->before(function (Collection $records): void {
+                            if (! PromotionsOwnerScope::isEnabled()) {
+                                return;
+                            }
+
+                            $owner = PromotionsOwnerScope::resolveOwner();
+
+                            foreach ($records as $record) {
+                                OwnerWriteGuard::findOrFailForOwner(
+                                    Promotion::class,
+                                    (string) $record->getKey(),
+                                    $owner,
+                                    includeGlobal: false,
+                                    message: 'Promotion is not accessible in the current owner scope.',
+                                );
+                            }
+                        }),
                 ]),
             ]);
     }

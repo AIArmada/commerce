@@ -8,7 +8,17 @@ return [
     | Navigation
     |--------------------------------------------------------------------------
     */
-    'navigation_group' => 'E-Commerce',
+    'navigation' => [
+        'group' => 'Catalog',
+        'resources' => [
+            'products' => 1,
+            'categories' => 2,
+            'collections' => 3,
+            'attributes' => 40,
+            'attribute_groups' => 41,
+            'attribute_sets' => 42,
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------

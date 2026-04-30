@@ -11,7 +11,6 @@ describe('ImpersonateController', function (): void {
         config()->set('auth.providers.custom_users.model', User::class);
 
         $method = new ReflectionMethod(ImpersonateController::class, 'resolveUserModelClass');
-        $method->setAccessible(true);
 
         /** @var class-string $resolved */
         $resolved = $method->invoke(null, 'custom');
@@ -21,7 +20,6 @@ describe('ImpersonateController', function (): void {
 
     it('falls back to root path for invalid redirect targets', function (): void {
         $method = new ReflectionMethod(ImpersonateController::class, 'sanitizeRedirectPath');
-        $method->setAccessible(true);
 
         expect($method->invoke(null, 'https://evil.example/owned'))->toBe('/')
             ->and($method->invoke(null, '//evil.example/owned'))->toBe('/')

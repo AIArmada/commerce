@@ -52,6 +52,26 @@ final class DocsOwnerScope
 
     public static function assertCanAccessDoc(Doc $doc): void
     {
+        self::assertCanAccessRecord($doc, 'Document not found.');
+    }
+
+    public static function assertCanAccessRecord(Model $record, string $message = 'Record not found.'): void
+    {
+        self::assertRecordPermission($record, $message, false);
+    }
+
+    public static function assertCanMutateDoc(Doc $doc): void
+    {
+        self::assertCanMutateRecord($doc, 'Document not found.');
+    }
+
+    public static function assertCanMutateRecord(Model $record, string $message = 'Record not found.'): void
+    {
+        self::assertRecordPermission($record, $message, true);
+    }
+
+    private static function assertRecordPermission(Model $record, string $message, bool $forMutation): void
+    {
         if (! (bool) config('docs.owner.enabled', false)) {
             return;
         }
@@ -59,13 +79,24 @@ final class DocsOwnerScope
         $owner = self::resolveOwner();
         $includeGlobal = (bool) config('docs.owner.include_global', false);
 
-        $isAllowed = match (true) {
-            $owner !== null => $doc->belongsToOwner($owner) || ($includeGlobal && $doc->isGlobal()),
-            default => $includeGlobal && $doc->isGlobal(),
-        };
+        if (! method_exists($record, 'belongsToOwner') || ! method_exists($record, 'isGlobal')) {
+            throw new NotFoundHttpException($message);
+        }
+
+        if ($forMutation) {
+            $isAllowed = match (true) {
+                $owner !== null => $record->belongsToOwner($owner),
+                default => OwnerContext::isExplicitGlobal() && $record->isGlobal(),
+            };
+        } else {
+            $isAllowed = match (true) {
+                $owner !== null => $record->belongsToOwner($owner) || ($includeGlobal && $record->isGlobal()),
+                default => $includeGlobal && $record->isGlobal(),
+            };
+        }
 
         if (! $isAllowed) {
-            throw new NotFoundHttpException('Document not found.');
+            throw new NotFoundHttpException($message);
         }
     }
 

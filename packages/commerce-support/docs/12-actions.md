@@ -51,6 +51,8 @@ $product = ResolveOwnedModelOrFailAction::run(
 
 **Integration:** Already used by `OwnerWriteGuard::findOrFailForOwner()`.
 
+**Recommendation:** For package/app write handlers, prefer `OwnerWriteGuard::findOrFailForOwner()` directly. Use `ResolveOwnedModelOrFailAction` when you need custom orchestration or dependency-injected composition.
+
 ---
 
 ## ResolveOwnerJobContextAction

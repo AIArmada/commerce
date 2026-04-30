@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Exceptions\InsufficientStockException;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 function setInventoryOwnerResolver(?Model $owner): void
 {
@@ -40,23 +43,17 @@ it('scopes availability to current owner and global locations when enabled', fun
 
     $locationA = InventoryLocation::factory()->create([
         'code' => 'OWN-A',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
     ]);
 
     setInventoryOwnerResolver($ownerB);
     $locationB = InventoryLocation::factory()->create([
         'code' => 'OWN-B',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
     ]);
 
     setInventoryOwnerResolver(null);
-    $globalLocation = InventoryLocation::factory()->create([
+    $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
         'code' => 'GLOBAL',
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
+    ]));
 
     setInventoryOwnerResolver($ownerA);
 
@@ -78,13 +75,15 @@ it('scopes availability to current owner and global locations when enabled', fun
         ]);
 
     setInventoryOwnerResolver(null);
-    InventoryLevel::factory()
-        ->forInventoryable($inventoryable->getMorphClass(), $inventoryable->getKey())
-        ->forLocation($globalLocation)
-        ->create([
-            'quantity_on_hand' => 11,
-            'quantity_reserved' => 0,
-        ]);
+    OwnerContext::withOwner(null, function () use ($inventoryable, $globalLocation): void {
+        InventoryLevel::factory()
+            ->forInventoryable($inventoryable->getMorphClass(), $inventoryable->getKey())
+            ->forLocation($globalLocation)
+            ->create([
+                'quantity_on_hand' => 11,
+                'quantity_reserved' => 0,
+            ]);
+    });
 
     setInventoryOwnerResolver($ownerA);
 
@@ -112,16 +111,12 @@ it('excludes global inventory when include_global is false', function (): void {
 
     $locationA = InventoryLocation::factory()->create([
         'code' => 'OWN-A-ONLY',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
     ]);
 
     setInventoryOwnerResolver(null);
-    $globalLocation = InventoryLocation::factory()->create([
+    $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
         'code' => 'GLOBAL-ONLY',
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
+    ]));
 
     setInventoryOwnerResolver($ownerA);
 
@@ -134,13 +129,15 @@ it('excludes global inventory when include_global is false', function (): void {
         ]);
 
     setInventoryOwnerResolver(null);
-    InventoryLevel::factory()
-        ->forInventoryable($inventoryable->getMorphClass(), $inventoryable->getKey())
-        ->forLocation($globalLocation)
-        ->create([
-            'quantity_on_hand' => 11,
-            'quantity_reserved' => 0,
-        ]);
+    OwnerContext::withOwner(null, function () use ($inventoryable, $globalLocation): void {
+        InventoryLevel::factory()
+            ->forInventoryable($inventoryable->getMorphClass(), $inventoryable->getKey())
+            ->forLocation($globalLocation)
+            ->create([
+                'quantity_on_hand' => 11,
+                'quantity_reserved' => 0,
+            ]);
+    });
 
     setInventoryOwnerResolver($ownerA);
 
@@ -169,8 +166,6 @@ it('blocks mutations against locations outside current owner scope', function ()
     setInventoryOwnerResolver($ownerB);
     $locationB = InventoryLocation::factory()->create([
         'code' => 'OWN-B-MUT',
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
     ]);
 
     setInventoryOwnerResolver($ownerA);
@@ -206,40 +201,67 @@ it('treats a null resolved owner as global-only (never owner_type-only corrupt r
     $ownerA = InventoryItem::create(['name' => 'Owner A']);
     $inventoryable = InventoryItem::create(['name' => 'SKU']);
 
-    $globalLocation = InventoryLocation::factory()->create([
+    $globalLocation = OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
         'code' => 'GLOBAL-NULL-OWNER',
-        'owner_type' => null,
-        'owner_id' => null,
-    ]);
-
-    $corruptLocation = InventoryLocation::withoutEvents(fn (): InventoryLocation => InventoryLocation::factory()->create([
-        'code' => 'CORRUPT-NULL-OWNER',
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => null,
     ]));
 
-    InventoryLevel::factory()
-        ->forInventoryable($inventoryable->getMorphClass(), $inventoryable->getKey())
-        ->forLocation($globalLocation)
-        ->create([
-            'quantity_on_hand' => 11,
-            'quantity_reserved' => 0,
+    $corruptLocationId = (string) Str::uuid();
+
+    DB::table(config('inventory.database.tables.locations', 'inventory_locations'))
+        ->insert([
+            'id' => $corruptLocationId,
+            'owner_scope' => 'global',
+            'name' => 'Corrupt Null Owner',
+            'code' => 'CORRUPT-NULL-OWNER',
+            'is_active' => true,
+            'priority' => 0,
+            'depth' => 0,
+            'is_hazmat_certified' => false,
+            'current_utilization' => 0,
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-    InventoryLevel::withoutEvents(function () use ($inventoryable, $corruptLocation): void {
+    /** @var InventoryLocation $corruptLocation */
+    $corruptLocation = InventoryLocation::withoutGlobalScopes()->findOrFail($corruptLocationId);
+
+    OwnerContext::withOwner(null, function () use ($inventoryable, $globalLocation): void {
         InventoryLevel::factory()
             ->forInventoryable($inventoryable->getMorphClass(), $inventoryable->getKey())
-            ->forLocation($corruptLocation)
+            ->forLocation($globalLocation)
             ->create([
-                'quantity_on_hand' => 7,
+                'quantity_on_hand' => 11,
                 'quantity_reserved' => 0,
             ]);
     });
 
+    DB::table(config('inventory.database.tables.levels', 'inventory_levels'))
+        ->insert([
+            'id' => (string) Str::uuid(),
+            'inventoryable_type' => $inventoryable->getMorphClass(),
+            'inventoryable_id' => $inventoryable->getKey(),
+            'location_id' => $corruptLocation->id,
+            'quantity_on_hand' => 7,
+            'quantity_reserved' => 0,
+            'unit_of_measure' => 'each',
+            'unit_conversion_factor' => 1,
+            'owner_type' => null,
+            'owner_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
     $service = app(InventoryService::class);
 
-    expect($service->getTotalAvailable($inventoryable))->toBe(11);
-    expect($service->getAvailability($inventoryable))->toMatchArray([
-        $globalLocation->id => 11,
-    ]);
+    expect(fn () => $service->getTotalAvailable($inventoryable))
+        ->toThrow(RuntimeException::class, 'AIArmada\Inventory\Models\InventoryLocation requires an owner context or explicit global context.');
+
+    OwnerContext::withOwner(null, function () use ($service, $inventoryable, $globalLocation): void {
+        expect($service->getTotalAvailable($inventoryable))->toBe(11);
+        expect($service->getAvailability($inventoryable))->toMatchArray([
+            $globalLocation->id => 11,
+        ]);
+    });
 });

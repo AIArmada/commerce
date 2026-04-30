@@ -30,6 +30,8 @@ class FilamentAuthzPlugin implements Plugin
 {
     use EvaluatesClosures;
 
+    public const PLUGIN_ID = 'aiarmada-filament-authz';
+
     protected ?Panel $panel = null;
 
     protected bool | Closure $registerRoleResource = true;
@@ -121,7 +123,7 @@ class FilamentAuthzPlugin implements Plugin
 
     public function getId(): string
     {
-        return 'aiarmada-filament-authz';
+        return self::PLUGIN_ID;
     }
 
     public function register(Panel $panel): void

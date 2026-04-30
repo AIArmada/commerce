@@ -126,7 +126,6 @@ it('toggles clear header action visibility based on result state', function (): 
     $page->result = null;
 
     $method = new ReflectionMethod($page, 'getHeaderActions');
-    $method->setAccessible(true);
 
     $actions = $method->invoke($page);
     $clearAction = collect($actions)->first(fn ($action) => method_exists($action, 'getName') && ($action->getName() === 'clear'));

@@ -50,7 +50,7 @@ final class JntWebhookLogResource extends BaseJntResource
         /** @var Builder<Model> $query */
         $query = parent::getEloquentQuery();
 
-        // JntWebhookLog doesn't have owner columns; scope through the parent order.
+        // Scope through the parent order to apply owner filtering.
         if (! config('jnt.owner.enabled', false)) {
             return $query;
         }

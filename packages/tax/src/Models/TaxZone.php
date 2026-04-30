@@ -67,18 +67,6 @@ class TaxZone extends Model
     ];
 
     /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'countries' => 'array',
-        'states' => 'array',
-        'postcodes' => 'array',
-        'priority' => 'integer',
-        'is_default' => 'boolean',
-        'is_active' => 'boolean',
-    ];
-
-    /**
      * @var array<string, mixed>
      */
     protected $attributes = [
@@ -87,6 +75,18 @@ class TaxZone extends Model
         'is_default' => false,
         'is_active' => true,
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'countries' => 'array',
+            'states' => 'array',
+            'postcodes' => 'array',
+            'priority' => 'integer',
+            'is_default' => 'boolean',
+            'is_active' => 'boolean',
+        ];
+    }
 
     // =========================================================================
     // STATIC HELPERS
@@ -271,7 +271,13 @@ class TaxZone extends Model
             }
 
             if ($zone->owner_type === null && $zone->owner_id === null) {
-                $zone->assignOwner($owner);
+                if ($zone->exists) {
+                    throw new AuthorizationException('Cannot mutate global tax zones without explicit global context.');
+                }
+
+                if ((bool) config('tax.features.owner.auto_assign_on_create', true)) {
+                    $zone->assignOwner($owner);
+                }
             }
 
             if (! $zone->belongsToOwner($owner)) {

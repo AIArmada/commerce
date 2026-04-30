@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAuthz\Resources;
 
 use AIArmada\FilamentAuthz\Facades\Authz;
 use AIArmada\FilamentAuthz\Resources\UserResource\Pages;
+use AIArmada\FilamentAuthz\Support\ImpersonationScopeGuard;
 use AIArmada\FilamentAuthz\Support\UserAuthzForm;
 use AIArmada\FilamentAuthz\Tables\Actions\ImpersonateTableAction;
 use Filament\Actions;
@@ -17,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -40,6 +42,11 @@ class UserResource extends Resource
         $provider = config("auth.guards.{$guard}.provider");
 
         return (string) config("auth.providers.{$provider}.model", 'App\\Models\\User');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return ImpersonationScopeGuard::applyScopeToUserQuery(parent::getEloquentQuery());
     }
 
     public static function canViewAny(): bool

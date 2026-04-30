@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
+use Illuminate\Validation\Rule;
 use AIArmada\Shipping\Models\ShippingZone;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -40,7 +42,7 @@ class ShippingZoneResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<ShippingZone> $query */
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()->withoutGlobalScope(OwnerScope::class)->withCount('rates');
 
         if (! (bool) config('shipping.features.owner.enabled', false)) {
             return $query;
@@ -52,7 +54,7 @@ class ShippingZoneResource extends Resource
         }
 
         /** @var Builder<ShippingZone> $scoped */
-        $scoped = $query->forOwner($owner, includeGlobal: true);
+        $scoped = $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
 
         return $scoped;
     }
@@ -69,7 +71,18 @@ class ShippingZoneResource extends Resource
 
                         Forms\Components\TextInput::make('code')
                             ->required()
-                            ->unique(ignoreRecord: true)
+                            ->rules(function ($record) {
+                                $owner = OwnerContext::resolve();
+                                $rule = Rule::unique(ShippingZone::class, 'code')
+                                    ->where('owner_type', $owner?->getMorphClass())
+                                    ->where('owner_id', $owner?->getKey());
+
+                                if ($record !== null) {
+                                    $rule = $rule->ignore($record->id);
+                                }
+
+                                return [$rule];
+                            })
                             ->maxLength(50),
 
                         Forms\Components\Select::make('type')

@@ -11,7 +11,6 @@ use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
-use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
@@ -35,9 +34,9 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property DocStatus $status
- * @property \Carbon\CarbonInterface $issue_date
- * @property \Carbon\CarbonInterface|null $due_date
- * @property \Carbon\CarbonInterface|null $paid_at
+ * @property CarbonImmutable $issue_date
+ * @property CarbonImmutable|null $due_date
+ * @property CarbonImmutable|null $paid_at
  * @property string $subtotal
  * @property string $tax_amount
  * @property string $discount_amount
@@ -50,8 +49,8 @@ use Spatie\ModelStates\HasStates;
  * @property array<int, array<string, mixed>>|null $items
  * @property array<string, mixed>|null $metadata
  * @property string|null $pdf_path
- * @property \Carbon\CarbonInterface $created_at
- * @property \Carbon\CarbonInterface $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read DocTemplate|null $template
  * @property-read Collection<int, DocStatusHistory> $statusHistories
  * @property-read Collection<int, DocPayment> $payments
@@ -77,8 +76,6 @@ final class Doc extends Model
         'doc_template_id',
         'docable_type',
         'docable_id',
-        'owner_type',
-        'owner_id',
         'status',
         'issue_date',
         'due_date',

@@ -126,7 +126,6 @@ function filamentCashier_setProperty(object $object, string $property, mixed $va
     }
 
     $prop = $reflection->getProperty($property);
-    $prop->setAccessible(true);
     $prop->setValue($object, $value);
 }
 
@@ -143,7 +142,6 @@ function filamentCashier_callMethod(object $object, string $method, array $argum
     }
 
     $methodReflection = $reflection->getMethod($method);
-    $methodReflection->setAccessible(true);
 
     return $methodReflection->invokeArgs($object, $arguments);
 }
@@ -480,7 +478,6 @@ it('covers the filament-cashier public surface', function (): void {
     expect($gatewayManagement->setDefaultAction())->toBeInstanceOf(Action::class);
 
     $checkGatewayHealth = new ReflectionMethod(GatewayManagement::class, 'checkGatewayHealth');
-    $checkGatewayHealth->setAccessible(true);
     expect($checkGatewayHealth->invoke($gatewayManagement, 'unknown'))->toBeArray();
 
     $paymentMethodPolicy = new PaymentMethodPolicy;
@@ -568,11 +565,9 @@ it('covers the filament-cashier public surface', function (): void {
     expect($viewSubscription->infolist(Schema::make($schemaLivewire)))->toBeInstanceOf(Schema::class);
 
     $headerActionsMethod = new ReflectionMethod(ViewSubscription::class, 'getHeaderActions');
-    $headerActionsMethod->setAccessible(true);
     expect($headerActionsMethod->invoke($viewSubscription))->toBeArray();
 
     $gatewayDetailsMethod = new ReflectionMethod(ViewSubscription::class, 'getGatewayDetailsSchema');
-    $gatewayDetailsMethod->setAccessible(true);
     expect($gatewayDetailsMethod->invoke($viewSubscription))->toBeArray();
 
     $widgets = [
@@ -588,11 +583,8 @@ it('covers the filament-cashier public surface', function (): void {
 
         if (is_subclass_of($widgetClass, ChartWidget::class)) {
             $dataMethod = new ReflectionMethod($widgetClass, 'getData');
-            $dataMethod->setAccessible(true);
             $typeMethod = new ReflectionMethod($widgetClass, 'getType');
-            $typeMethod->setAccessible(true);
             $optionsMethod = new ReflectionMethod($widgetClass, 'getOptions');
-            $optionsMethod->setAccessible(true);
 
             expect($dataMethod->invoke($widget))->toBeArray();
             expect($typeMethod->invoke($widget))->toBeString();
@@ -601,7 +593,6 @@ it('covers the filament-cashier public surface', function (): void {
 
         if (is_subclass_of($widgetClass, StatsOverviewWidget::class)) {
             $statsMethod = new ReflectionMethod($widgetClass, 'getStats');
-            $statsMethod->setAccessible(true);
             $stats = $statsMethod->invoke($widget);
 
             expect($stats)->toBeArray()->and($stats)->not()->toBeEmpty();
@@ -639,7 +630,6 @@ it('covers the filament-cashier public surface', function (): void {
 
     $billingOverview = app(BillingOverview::class);
     $widgetsMethod = new ReflectionMethod(BillingOverview::class, 'getHeaderWidgets');
-    $widgetsMethod->setAccessible(true);
     expect($widgetsMethod->invoke($billingOverview))->toBeArray();
 
     $authUser = new class extends AuthenticatableUser

@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource;
@@ -35,7 +36,7 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
-    $globalVoucher = FilamentVoucher::query()->create([
+    $globalVoucher = OwnerContext::withOwner(null, static fn (): FilamentVoucher => FilamentVoucher::query()->create([
         'code' => 'GLOBAL-1',
         'name' => 'Global Voucher',
         'type' => VoucherType::Fixed,
@@ -44,7 +45,7 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
-    ]);
+    ]));
 
     $ownerAVoucher = FilamentVoucher::query()->create([
         'code' => 'A-1',
@@ -55,10 +56,11 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => (string) $ownerA->getKey(),
     ]);
-    $ownerAVoucher->assignOwner($ownerA)->save();
 
-    $ownerBVoucher = FilamentVoucher::query()->create([
+    $ownerBVoucher = OwnerContext::withOwner($ownerB, static fn () => FilamentVoucher::query()->create([
         'code' => 'B-1',
         'name' => 'Owner B Voucher',
         'type' => VoucherType::Fixed,
@@ -67,8 +69,9 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
-    ]);
-    $ownerBVoucher->assignOwner($ownerB)->save();
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => (string) $ownerB->getKey(),
+    ]));
 
     $globalUsage = VoucherUsage::query()->create([
         'voucher_id' => $globalVoucher->id,
@@ -137,7 +140,7 @@ it('can exclude global records from Filament Vouchers resources', function (): v
 
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
-    $globalVoucher = FilamentVoucher::query()->create([
+    $globalVoucher = OwnerContext::withOwner(null, static fn (): FilamentVoucher => FilamentVoucher::query()->create([
         'code' => 'GLOBAL-2',
         'name' => 'Global Voucher',
         'type' => VoucherType::Fixed,
@@ -146,7 +149,7 @@ it('can exclude global records from Filament Vouchers resources', function (): v
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
-    ]);
+    ]));
 
     $ownerAVoucher = FilamentVoucher::query()->create([
         'code' => 'A-2',
@@ -157,8 +160,9 @@ it('can exclude global records from Filament Vouchers resources', function (): v
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => (string) $ownerA->getKey(),
     ]);
-    $ownerAVoucher->assignOwner($ownerA)->save();
 
     $globalUsage = VoucherUsage::query()->create([
         'voucher_id' => $globalVoucher->id,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
@@ -121,4 +122,48 @@ it('handles sync failures and shows a failure notification', function (): void {
 
     $notifications = session()->get('filament.notifications', []);
     expect(collect($notifications)->last()['title'])->toBe('Sync Failed');
+});
+
+it('blocks syncing global rows without explicit global context', function (): void {
+    config()->set('jnt.owner.enabled', true);
+    config()->set('jnt.owner.include_global', true);
+
+    /** @var User $user */
+    $user = User::query()->create([
+        'name' => 'User',
+        'email' => 'user-global-sync@example.test',
+        'password' => bcrypt('password'),
+    ]);
+
+    $this->actingAs($user);
+
+    $called = false;
+
+    app()->bind(JntTrackingService::class, function () use (&$called) {
+        return new class($called)
+        {
+            public function __construct(private bool &$called) {}
+
+            public function syncOrderTracking(JntOrder $order): void
+            {
+                $this->called = true;
+            }
+        };
+    });
+
+    $order = OwnerContext::withOwner(null, fn () => JntOrder::query()->create([
+        'order_id' => 'ORD-14',
+        'customer_code' => 'CUST',
+        'tracking_number' => 'TRK-14',
+    ]));
+
+    $action = SyncTrackingAction::make()->record($order);
+    $handler = $action->getActionFunction();
+
+    $handler($order);
+
+    expect($called)->toBeFalse();
+
+    $notifications = session()->get('filament.notifications', []);
+    expect(collect($notifications)->last()['title'])->toBe('Not Authorized');
 });

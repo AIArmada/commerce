@@ -431,7 +431,7 @@ class RoleResource extends Resource
             }
 
             /** @var FilamentAuthzPlugin|null */
-            return $panel->getPlugin('filament-authz');
+            return $panel->getPlugin(FilamentAuthzPlugin::PLUGIN_ID);
         } catch (Throwable) {
             return null;
         }

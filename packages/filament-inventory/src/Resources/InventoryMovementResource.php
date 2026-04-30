@@ -8,7 +8,7 @@ use AIArmada\FilamentInventory\Resources\InventoryMovementResource\Pages\ListInv
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource\Pages\ViewInventoryMovement;
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource\Schemas\InventoryMovementInfolist;
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource\Tables\InventoryMovementsTable;
-use AIArmada\FilamentInventory\Support\InventoryOwnerScope;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Models\InventoryMovement;
 use BackedEnum;
 use Filament\Resources\Resource;

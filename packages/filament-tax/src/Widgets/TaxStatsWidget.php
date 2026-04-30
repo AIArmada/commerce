@@ -8,9 +8,10 @@ use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
 
 final class TaxStatsWidget extends BaseWidget
 {
@@ -47,35 +48,46 @@ final class TaxStatsWidget extends BaseWidget
 
     /**
      * Fetch all stats in a single optimized query.
+     * All queries are scoped by owner via TaxOwnerScope to prevent cross-tenant data leakage.
      *
      * @return array{zones: int, rates: int, classes: int, exemptions: int}
      */
     private function getAggregatedStats(): array
     {
-        $zoneTable = (new TaxZone)->getTable();
-        $rateTable = (new TaxRate)->getTable();
-        $classTable = (new TaxClass)->getTable();
-        $exemptionTable = (new TaxExemption)->getTable();
-
         $now = now();
 
-        $result = DB::selectOne("
-            SELECT
-                (SELECT COUNT(*) FROM {$zoneTable} WHERE is_active = 1) as zones,
-                (SELECT COUNT(*) FROM {$rateTable} WHERE is_active = 1) as rates,
-                (SELECT COUNT(*) FROM {$classTable} WHERE is_active = 1) as classes,
-                (SELECT COUNT(*) FROM {$exemptionTable}
-                    WHERE status = 'approved'
-                    AND (expires_at IS NULL OR expires_at >= ?)
-                    AND (starts_at IS NULL OR starts_at <= ?)
-                ) as exemptions
-        ", [$now, $now]);
+        // All queries scoped by owner to ensure multitenancy safety
+        $zoneCount = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
+            ->where('is_active', 1)
+            ->count();
+
+        $rateCount = TaxOwnerScope::applyToOwnedQuery(TaxRate::query())
+            ->where('is_active', 1)
+            ->count();
+
+        $classCount = TaxOwnerScope::applyToOwnedQuery(TaxClass::query())
+            ->where('is_active', 1)
+            ->count();
+
+        $exemptionCount = TaxOwnerScope::applyToOwnedQuery(TaxExemption::query())
+            ->where('status', 'approved')
+            ->where(function (Builder $builder) use ($now): void {
+                $builder
+                    ->whereNull('expires_at')
+                    ->orWhere('expires_at', '>=', $now);
+            })
+            ->where(function (Builder $builder) use ($now): void {
+                $builder
+                    ->whereNull('starts_at')
+                    ->orWhere('starts_at', '<=', $now);
+            })
+            ->count();
 
         return [
-            'zones' => (int) ($result->zones ?? 0),
-            'rates' => (int) ($result->rates ?? 0),
-            'classes' => (int) ($result->classes ?? 0),
-            'exemptions' => (int) ($result->exemptions ?? 0),
+            'zones' => $zoneCount,
+            'rates' => $rateCount,
+            'classes' => $classCount,
+            'exemptions' => $exemptionCount,
         ];
     }
 }

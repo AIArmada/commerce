@@ -37,7 +37,6 @@ it('formats active zones with their rates for display', function (): void {
 
     $ref = new ReflectionClass($widget);
     $method = $ref->getMethod('getViewData');
-    $method->setAccessible(true);
 
     $data = $method->invoke($widget);
 

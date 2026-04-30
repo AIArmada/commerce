@@ -8,11 +8,11 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Enums\DocEInvoiceSubmissionStatus;
 use AIArmada\Docs\Enums\DocEInvoiceValidationStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * E-Invoice submission tracking for Malaysian MyInvois integration.
@@ -28,10 +28,10 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $warnings
  * @property string|null $ubl_xml
  * @property string|null $qr_code_url
- * @property Carbon|null $submitted_at
- * @property Carbon|null $validated_at
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property CarbonImmutable|null $submitted_at
+ * @property CarbonImmutable|null $validated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
  */
 final class DocEInvoiceSubmission extends Model
@@ -45,8 +45,6 @@ final class DocEInvoiceSubmission extends Model
 
     protected $fillable = [
         'doc_id',
-        'owner_type',
-        'owner_id',
         'submission_uid',
         'document_uuid',
         'long_id',

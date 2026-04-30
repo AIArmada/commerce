@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentShipping\Widgets\CarrierPerformanceWidget;
 use AIArmada\FilamentShipping\Widgets\PendingActionsWidget;
 use AIArmada\FilamentShipping\Widgets\PendingShipmentsWidget;
@@ -37,7 +38,6 @@ describe('ShippingDashboardWidget', function (): void {
         $widget = new ShippingDashboardWidget;
 
         $reflection = new ReflectionProperty($widget, 'pollingInterval');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue($widget))->toBe('30s');
     });
@@ -54,7 +54,6 @@ describe('PendingShipmentsWidget', function (): void {
         $widget = new PendingShipmentsWidget;
 
         $reflection = new ReflectionProperty($widget, 'columnSpan');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue($widget))->toBe('full');
     });
@@ -80,7 +79,6 @@ describe('CarrierPerformanceWidget', function (): void {
         $widget = new CarrierPerformanceWidget;
 
         $reflection = new ReflectionProperty($widget, 'pollingInterval');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue($widget))->toBe('60s');
     });
@@ -89,7 +87,6 @@ describe('CarrierPerformanceWidget', function (): void {
         $widget = new CarrierPerformanceWidget;
 
         $reflection = new ReflectionProperty($widget, 'columnSpan');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue($widget))->toBe('full');
     });
@@ -104,27 +101,29 @@ describe('CarrierPerformanceWidget', function (): void {
 
         $owner = WidgetTestOwner::query()->create(['name' => 'Owner A']);
 
-        Shipment::query()->create([
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => $owner->getKey(),
-            'reference' => 'C-REF-1',
-            'carrier_code' => 'jnt',
-            'status' => Delivered::class,
-            'created_at' => Carbon::now()->subDays(2),
-            'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-            'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-        ]);
+        OwnerContext::withOwner($owner, function () use ($owner): void {
+            Shipment::query()->create([
+                'owner_type' => $owner->getMorphClass(),
+                'owner_id' => $owner->getKey(),
+                'reference' => 'C-REF-1',
+                'carrier_code' => 'jnt',
+                'status' => Delivered::class,
+                'created_at' => Carbon::now()->subDays(2),
+                'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+                'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+            ]);
 
-        Shipment::query()->create([
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => $owner->getKey(),
-            'reference' => 'C-REF-2',
-            'carrier_code' => 'jnt',
-            'status' => ExceptionStatus::class,
-            'created_at' => Carbon::now()->subDays(1),
-            'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-            'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-        ]);
+            Shipment::query()->create([
+                'owner_type' => $owner->getMorphClass(),
+                'owner_id' => $owner->getKey(),
+                'reference' => 'C-REF-2',
+                'carrier_code' => 'jnt',
+                'status' => ExceptionStatus::class,
+                'created_at' => Carbon::now()->subDays(1),
+                'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+                'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+            ]);
+        });
 
         app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
         {
@@ -141,9 +140,7 @@ describe('CarrierPerformanceWidget', function (): void {
         $widget = new CarrierPerformanceWidget;
 
         $getData = new ReflectionMethod($widget, 'getData');
-        $getData->setAccessible(true);
         $getOptions = new ReflectionMethod($widget, 'getOptions');
-        $getOptions->setAccessible(true);
 
         /** @var array $data */
         $data = $getData->invoke($widget);
@@ -167,7 +164,6 @@ describe('PendingActionsWidget', function (): void {
         $widget = new PendingActionsWidget;
 
         $reflection = new ReflectionProperty($widget, 'pollingInterval');
-        $reflection->setAccessible(true);
 
         expect($reflection->getValue($widget))->toBe('30s');
     });
@@ -185,35 +181,41 @@ describe('PendingActionsWidget', function (): void {
         $ownerA = WidgetTestOwner::query()->create(['name' => 'Owner A']);
         $ownerB = WidgetTestOwner::query()->create(['name' => 'Owner B']);
 
-        Shipment::query()->create([
-            'owner_type' => $ownerA->getMorphClass(),
-            'owner_id' => $ownerA->getKey(),
-            'reference' => 'W-REF-A',
-            'carrier_code' => 'test',
-            'status' => Pending::class,
-            'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-            'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-        ]);
+        OwnerContext::withOwner($ownerA, function () use ($ownerA): void {
+            Shipment::query()->create([
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => $ownerA->getKey(),
+                'reference' => 'W-REF-A',
+                'carrier_code' => 'test',
+                'status' => Pending::class,
+                'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+                'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+            ]);
+        });
 
-        Shipment::query()->create([
-            'owner_type' => $ownerB->getMorphClass(),
-            'owner_id' => $ownerB->getKey(),
-            'reference' => 'W-REF-B',
-            'carrier_code' => 'test',
-            'status' => Pending::class,
-            'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-            'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-        ]);
+        OwnerContext::withOwner($ownerB, function () use ($ownerB): void {
+            Shipment::query()->create([
+                'owner_type' => $ownerB->getMorphClass(),
+                'owner_id' => $ownerB->getKey(),
+                'reference' => 'W-REF-B',
+                'carrier_code' => 'test',
+                'status' => Pending::class,
+                'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+                'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+            ]);
+        });
 
-        Shipment::query()->create([
-            'owner_type' => null,
-            'owner_id' => null,
-            'reference' => 'W-REF-G',
-            'carrier_code' => 'test',
-            'status' => Pending::class,
-            'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-            'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
-        ]);
+        OwnerContext::withOwner(null, function (): void {
+            Shipment::query()->create([
+                'owner_type' => null,
+                'owner_id' => null,
+                'reference' => 'W-REF-G',
+                'carrier_code' => 'test',
+                'status' => Pending::class,
+                'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+                'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+            ]);
+        });
 
         app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
         {
@@ -230,7 +232,6 @@ describe('PendingActionsWidget', function (): void {
         $widget = new PendingActionsWidget;
 
         $method = new ReflectionMethod($widget, 'getPendingShipmentsCount');
-        $method->setAccessible(true);
 
         expect($method->invoke($widget))->toBe(2);
     });
@@ -249,7 +250,6 @@ describe('PendingActionsWidget', function (): void {
         $widget = new PendingActionsWidget;
 
         $method = new ReflectionMethod($widget, 'getStats');
-        $method->setAccessible(true);
 
         /** @var array $stats */
         $stats = $method->invoke($widget);
@@ -263,7 +263,6 @@ describe('ShippingDashboardWidget', function (): void {
         $widget = new ShippingDashboardWidget;
 
         $method = new ReflectionMethod($widget, 'getStats');
-        $method->setAccessible(true);
 
         /** @var array $stats */
         $stats = $method->invoke($widget);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Carbon\CarbonImmutable;
 
@@ -127,8 +128,8 @@ describe('AffiliateSite Model', function (): void {
             $user1 = User::factory()->create();
             $user2 = User::factory()->create();
 
-            $site1 = AffiliateSite::factory()->forOwner($user1)->create();
-            AffiliateSite::factory()->forOwner($user2)->create();
+            $site1 = OwnerContext::withOwner($user1, fn () => AffiliateSite::factory()->forOwner($user1)->create());
+            OwnerContext::withOwner($user2, fn () => AffiliateSite::factory()->forOwner($user2)->create());
 
             $results = AffiliateSite::forOwner($user1)->get();
 

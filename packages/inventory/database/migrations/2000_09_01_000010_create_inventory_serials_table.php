@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create(config('inventory.table_names.serials', 'inventory_serials'), function (Blueprint $table): void {
+        Schema::create(config('inventory.database.tables.serials', 'inventory_serials'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             // The inventoryable item this serial belongs to
@@ -80,6 +80,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(config('inventory.table_names.serials', 'inventory_serials'));
+        Schema::dropIfExists(config('inventory.database.tables.serials', 'inventory_serials'));
     }
 };

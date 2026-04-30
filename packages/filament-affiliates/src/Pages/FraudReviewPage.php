@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\FilamentAffiliates\Actions\BulkFraudReviewAction;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -215,6 +216,9 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
                             }
                         });
                     }),
+
+                BulkFraudReviewAction::make('bulk_fraud_review')
+                    ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.fraud.update') ?? false),
             ]);
     }
 

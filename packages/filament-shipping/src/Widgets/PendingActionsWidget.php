@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Enums\ShipmentStatus;
@@ -58,7 +59,7 @@ class PendingActionsWidget extends StatsOverviewWidget
 
     protected function getPendingShipmentsCount(): int
     {
-        $query = Shipment::query();
+        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -66,7 +67,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query
@@ -76,7 +77,7 @@ class PendingActionsWidget extends StatsOverviewWidget
 
     protected function getExceptionShipmentsCount(): int
     {
-        $query = Shipment::query();
+        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -84,7 +85,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query
@@ -94,7 +95,7 @@ class PendingActionsWidget extends StatsOverviewWidget
 
     protected function getPendingReturnsCount(): int
     {
-        $query = ReturnAuthorization::query();
+        $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -102,7 +103,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query
@@ -112,7 +113,7 @@ class PendingActionsWidget extends StatsOverviewWidget
 
     protected function getApprovedReturnsCount(): int
     {
-        $query = ReturnAuthorization::query();
+        $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
 
         if ((bool) config('shipping.features.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
@@ -120,7 +121,7 @@ class PendingActionsWidget extends StatsOverviewWidget
                 return 0;
             }
 
-            $query->forOwner($owner, includeGlobal: true);
+            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
         }
 
         return $query
