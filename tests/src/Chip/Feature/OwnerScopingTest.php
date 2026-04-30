@@ -410,12 +410,12 @@ it('rejects cross-tenant writes on direct record mutation', function (): void {
 
     // OwnerB's query should be empty (can't find OwnerA's purchase)
     expect(Purchase::query()->forOwner()->count())->toBe(0);
-    
+
     // Attempting to query without owner scope and update would be bad; verify we can't with scope
     // The key test: if we try to update from a cross-tenant context, the record is invisible
     $ownerAPurchase = Purchase::query()->withoutOwnerScope()->first();
     expect($ownerAPurchase)->not->toBeNull();
-    
+
     // But from OwnerB context, it should not be updatable (would require explicit withoutOwnerScope)
     $visible = Purchase::query()->forOwner()->first();
     expect($visible)->toBeNull();
@@ -500,7 +500,7 @@ it('protects global rows from cross-tenant writes', function (): void {
 
     // OwnerB can also see the global row (both tenants share global records)
     expect(Purchase::query()->forOwner()->count())->toBe(1);
-    
+
     // The global row is the same for both
     $globalRowA = Purchase::query()->forOwner()->first();
     $globalRowB = Purchase::query()->forOwner()->first();

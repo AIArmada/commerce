@@ -35,7 +35,6 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable()->index();
             $table->timestamps();
 
-
             $table->index(['affiliate_id', 'status'], 'affiliate_conversions_affiliate_status_idx');
             $table->index(['status', 'occurred_at'], 'affiliate_conversions_status_date_idx');
         });
