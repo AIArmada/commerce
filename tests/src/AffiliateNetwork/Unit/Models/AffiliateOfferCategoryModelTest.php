@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 describe('AffiliateOfferCategory Model', function (): void {
     describe('basic operations', function (): void {

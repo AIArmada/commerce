@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Tables;
 
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;

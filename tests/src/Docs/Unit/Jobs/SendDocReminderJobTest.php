@@ -106,5 +106,5 @@ test('owner fan-out fails fast on malformed owner tuple rows', function (): void
     $job = new SendDocReminderJob;
 
     expect(fn (): mixed => $job->handle($service))
-        ->toThrow(\InvalidArgumentException::class, 'Owner type and owner id must both be present or both be null.');
+        ->toThrow(InvalidArgumentException::class, 'Owner type and owner id must both be present or both be null.');
 });

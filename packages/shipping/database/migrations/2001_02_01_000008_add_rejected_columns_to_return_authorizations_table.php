@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tableName = config('shipping.database.tables.return_authorizations', 'return_authorizations');
 
-        Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+        Schema::table($tableName, function (Blueprint $table): void {
             $table->foreignUuid('rejected_by')->nullable()->after('approved_by');
             $table->timestamp('rejected_at')->nullable()->after('approved_at');
         });

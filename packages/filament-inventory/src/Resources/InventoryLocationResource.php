@@ -11,8 +11,8 @@ use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Pages\ViewInv
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Schemas\InventoryLocationForm;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Schemas\InventoryLocationInfolist;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource\Tables\InventoryLocationsTable;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

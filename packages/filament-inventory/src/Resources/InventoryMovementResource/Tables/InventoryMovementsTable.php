@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryMovementResource\Tables;
 
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Enums\MovementType;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;

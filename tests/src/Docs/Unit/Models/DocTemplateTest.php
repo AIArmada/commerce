@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Models\DocTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

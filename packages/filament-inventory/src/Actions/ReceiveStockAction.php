@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;

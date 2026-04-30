@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Policies\CustomerPolicy;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -15,7 +16,7 @@ require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 /**
  * @param  array<string, mixed>  $attributes
  */
-function createCustomerPolicyIsolationCustomer(array $attributes, ?\Illuminate\Database\Eloquent\Model $owner = null): Customer
+function createCustomerPolicyIsolationCustomer(array $attributes, ?Model $owner = null): Customer
 {
     /** @var Customer $customer */
     $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));

@@ -17,8 +17,8 @@ use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     config()->set('orders.owner.enabled', false);
@@ -325,7 +325,7 @@ describe('OrderService', function (): void {
             ];
 
             expect(fn () => $service->createOrder($orderData, $items))
-                ->toThrow(\RuntimeException::class, 'Owner context is required');
+                ->toThrow(RuntimeException::class, 'Owner context is required');
         });
 
         it('fails fast for confirmPayment when owner mode is enabled and no owner context exists', function (): void {
@@ -363,7 +363,7 @@ describe('OrderService', function (): void {
             $service = new OrderService;
 
             expect(fn () => $service->confirmPayment($order, 'txn_mut_ctx_1', 'stripe', 10000))
-                ->toThrow(\RuntimeException::class, 'matching owner context is required');
+                ->toThrow(RuntimeException::class, 'matching owner context is required');
         });
 
         it('fails fast for cancel when owner mode is enabled and owner context mismatches', function (): void {
@@ -406,7 +406,7 @@ describe('OrderService', function (): void {
             $service = new OrderService;
 
             expect(fn () => $service->cancel($order, 'Cross owner test'))
-                ->toThrow(\RuntimeException::class, 'Cross-owner mutation blocked');
+                ->toThrow(RuntimeException::class, 'Cross-owner mutation blocked');
         });
     });
 
