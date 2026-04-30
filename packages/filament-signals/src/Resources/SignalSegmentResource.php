@@ -49,6 +49,16 @@ final class SignalSegmentResource extends Resource
         return SignalSegment::query()->forOwner();
     }
 
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-signals.navigation_group', 'Insights');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-signals.resources.navigation_sort.segments', 31);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
