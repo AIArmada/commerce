@@ -252,7 +252,7 @@ test('generates a unique fallback order id when none is provided', function (): 
             'msg' => 'Success',
             'data' => [
                 'txlogisticId' => $payload['txlogisticId'] ?? 'UNKNOWN',
-                'billCode' => 'JT' . str_pad((string) count($capturedOrderIds), 9, '0', STR_PAD_LEFT),
+                'billCode' => 'JT' . mb_str_pad((string) count($capturedOrderIds), 9, '0', STR_PAD_LEFT),
             ],
         ], 200);
     });

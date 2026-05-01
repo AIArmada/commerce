@@ -12,8 +12,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Number;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
 
 final class PerformanceOverviewWidget extends StatsOverviewWidget
 {
