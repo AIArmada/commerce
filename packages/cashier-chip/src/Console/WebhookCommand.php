@@ -38,6 +38,9 @@ class WebhookCommand extends Command
 
         $this->newLine();
 
+        $this->line('Supported events: purchase.paid, purchase.payment_failure');
+        $this->line('purchase.payment_failure');
+
         $this->components->bulletList([
             'Configure this URL in your CHIP dashboard under Webhooks',
             'Enable the following events: purchase.paid, purchase.payment_failure',

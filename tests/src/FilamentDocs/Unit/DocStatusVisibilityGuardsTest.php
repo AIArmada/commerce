@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\Draft;
@@ -10,6 +11,8 @@ use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\ViewDoc;
 use AIArmada\FilamentDocs\Resources\DocResource\Tables\DocsTable;
+
+uses(TestCase::class);
 
 it('uses state-aware visibility for mark as sent actions', function (): void {
     $draftDoc = Doc::factory()->create(['status' => Draft::class]);

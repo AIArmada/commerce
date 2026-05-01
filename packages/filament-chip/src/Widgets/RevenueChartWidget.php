@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Carbon;
 
 final class RevenueChartWidget extends ChartWidget
 {
@@ -68,11 +68,11 @@ final class RevenueChartWidget extends ChartWidget
         $labels = [];
         $amountsByDay = [];
 
-        $startDate = Carbon::now()->subDays(29)->startOfDay();
-        $endDate = Carbon::now()->endOfDay();
+        $startDate = CarbonImmutable::now()->subDays(29)->startOfDay();
+        $endDate = CarbonImmutable::now()->endOfDay();
 
         for ($i = 29; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i);
+            $date = CarbonImmutable::now()->subDays($i);
             $label = $date->format('M d');
             $labels[] = $label;
             $amountsByDay[$label] = 0;
@@ -95,7 +95,7 @@ final class RevenueChartWidget extends ChartWidget
                 continue;
             }
 
-            $label = Carbon::createFromTimestamp($createdOn)->format('M d');
+            $label = CarbonImmutable::createFromTimestamp($createdOn)->format('M d');
 
             if (! array_key_exists($label, $amountsByDay)) {
                 continue;

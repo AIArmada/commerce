@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Services\ChipCollectService;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 use Throwable;
 
@@ -69,12 +69,12 @@ final class AccountTurnoverWidget extends ChartWidget
             $service = app(ChipCollectService::class);
 
             for ($i = 29; $i >= 0; $i--) {
-                $date = Carbon::now()->subDays($i);
+                $date = CarbonImmutable::now()->subDays($i);
                 $labels[] = $date->format('M d');
 
                 $response = $service->getAccountTurnover([
-                    'date_from' => $date->startOfDay()->timestamp,
-                    'date_to' => $date->endOfDay()->timestamp,
+                    'date_from' => $date->startOfDay()->getTimestamp(),
+                    'date_to' => $date->endOfDay()->getTimestamp(),
                 ]);
 
                 $dayRevenue = (float) ($response['total_income'] ?? $response['revenue'] ?? 0);
@@ -85,7 +85,7 @@ final class AccountTurnoverWidget extends ChartWidget
             }
         } catch (Throwable) {
             for ($i = 29; $i >= 0; $i--) {
-                $date = Carbon::now()->subDays($i);
+                $date = CarbonImmutable::now()->subDays($i);
                 $labels[] = $date->format('M d');
                 $revenue[] = 0;
                 $fees[] = 0;

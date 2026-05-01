@@ -105,16 +105,11 @@ class ImpersonateTableAction extends Action
             return false;
         }
 
-        if (method_exists($currentUser, 'canImpersonate')) {
-            if ($currentUser->canImpersonate()) {
-                return true;
-            }
-        }
-
         if (method_exists($record, 'canBeImpersonated') && ! $record->canBeImpersonated()) {
             return false;
         }
 
+        // Scope check must run regardless of canImpersonate() — they are orthogonal.
         if (! $record instanceof Authenticatable) {
             return false;
         }
@@ -123,10 +118,23 @@ class ImpersonateTableAction extends Action
             return false;
         }
 
+        return $this->isActorAuthorizedToImpersonate($currentUser);
+    }
+
+    /**
+     * Verify the acting user has permission to perform impersonation.
+     * Called both from canImpersonate() (visibility) and impersonate() (execution).
+     */
+    private function isActorAuthorizedToImpersonate(\Illuminate\Contracts\Auth\Authenticatable $actor): bool
+    {
+        if (method_exists($actor, 'canImpersonate') && $actor->canImpersonate()) {
+            return true;
+        }
+
         $superAdminRole = config('filament-authz.super_admin_role');
 
-        if ($superAdminRole && method_exists($currentUser, 'hasRole')) {
-            return $currentUser->hasRole($superAdminRole);
+        if ($superAdminRole && method_exists($actor, 'hasRole')) {
+            return (bool) $actor->hasRole($superAdminRole);
         }
 
         return false;
@@ -144,6 +152,10 @@ class ImpersonateTableAction extends Action
             return false;
         }
 
+        if (method_exists($record, 'canBeImpersonated') && ! $record->canBeImpersonated()) {
+            return false;
+        }
+
         if (! ImpersonationScopeGuard::canAccessTarget($record)) {
             return false;
         }
@@ -153,6 +165,15 @@ class ImpersonateTableAction extends Action
         $manager = app(ImpersonateManager::class);
 
         if ($currentUser === null) {
+            return false;
+        }
+
+        // Re-validate actor authorization in the execution path (defense-in-depth).
+        if (! $this->isActorAuthorizedToImpersonate($currentUser)) {
+            return false;
+        }
+
+        if ($manager->isImpersonating()) {
             return false;
         }
 

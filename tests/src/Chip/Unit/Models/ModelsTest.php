@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\CompanyStatement;
-use AIArmada\Chip\Models\DailyMetric;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Models\SendInstruction;
@@ -335,14 +334,6 @@ describe('Webhook model', function (): void {
         expect($casts['headers'])->toBe('array');
         expect($casts['verified'])->toBe('boolean');
         expect($casts['processed'])->toBe('boolean');
-    });
-});
-
-describe('DailyMetric model', function (): void {
-    it('returns correct table name', function (): void {
-        config(['chip.database.table_prefix' => 'chip_']);
-        $metric = new DailyMetric;
-        expect($metric->getTable())->toBe('chip_daily_metrics');
     });
 });
 

@@ -68,7 +68,7 @@ test('click tracking allows safe relative paths', function (): void {
 
     $response = app(DocTrackingController::class)->click(tokenFromTrackedUrl($trackedUrl));
 
-    expect($response->getTargetUrl())->toBe('/portal/invoices/abc');
+    expect($response->getTargetUrl())->toBe('http://localhost/portal/invoices/abc');
 });
 
 function tokenFromTrackedUrl(string $trackedUrl): string

@@ -53,9 +53,9 @@ These packages represent **solid, professional work** with clear architectural v
 
 2. **Analytics/Metrics Over-Engineering**
    
-   The `LocalAnalyticsService` and `DailyPurchaseMetric` tables suggest building an analytics engine:
+   The `LocalAnalyticsService` and local metrics tables suggest building an analytics engine:
    - Why aggregate data locally when CHIP's API has turnover reports?
-   - The `chip:aggregate-metrics` command will become a performance nightmare at scale
+   - Large local analytics jobs can become a performance nightmare at scale
    - No consideration for timezone handling in daily aggregation
    - **This should be a separate package, not core payment logic**
 

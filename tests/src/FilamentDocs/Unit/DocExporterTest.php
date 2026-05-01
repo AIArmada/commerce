@@ -48,6 +48,7 @@ it('exports formatted column values for a doc record', function (): void {
 
     $exporter = new DocExporter($export, $columnMap, []);
 
+    $doc->loadSum('payments as paid_amount', 'amount');
     $values = $exporter($doc);
 
     expect($values)->toHaveCount(count($columnMap));

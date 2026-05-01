@@ -101,6 +101,10 @@ class WebhookController
             $response = $this->webhookService->failureResponse('Invalid signature');
 
             return response()->json($response, 401);
+        } catch (NotFoundHttpException) {
+            return response()->json([
+                'message' => 'Not Found',
+            ], 404);
         } catch (Throwable $e) {
             // Unexpected error
             Log::error('J&T webhook processing error', [

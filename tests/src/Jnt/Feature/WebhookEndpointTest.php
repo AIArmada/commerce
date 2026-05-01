@@ -6,7 +6,6 @@ use AIArmada\Jnt\Services\WebhookService;
 use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Route;
 use Spatie\WebhookClient\Models\WebhookCall;
 
 describe('Webhook Endpoint', function (): void {
@@ -389,9 +388,29 @@ describe('Webhook Endpoint', function (): void {
         expect($requestId1)->not->toBe($requestId2);
     });
 
-    it('does not register the webhook route when webhooks are disabled', function (): void {
+    it('returns not found when webhooks are disabled', function (): void {
+        Queue::fake();
+
         config(['jnt.webhooks.enabled' => false]);
 
-        expect(Route::has('jnt.webhooks.status'))->toBeFalse();
+        $bizContent = json_encode([
+            'billCode' => 'JNTMY12345678',
+            'details' => [],
+        ]);
+
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
+
+        $response = $this->postJson('/webhooks/jnt/status', [
+            'bizContent' => $bizContent,
+        ], [
+            'digest' => $signature,
+        ]);
+
+        $response->assertNotFound()
+            ->assertJson([
+                'message' => 'Not Found',
+            ]);
+
+        Queue::assertNothingPushed();
     });
 });

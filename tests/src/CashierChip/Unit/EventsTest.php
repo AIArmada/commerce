@@ -8,8 +8,6 @@ use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
-use AIArmada\CashierChip\Events\WebhookHandled;
-use AIArmada\CashierChip\Events\WebhookReceived;
 use AIArmada\CashierChip\Payment;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
@@ -17,22 +15,6 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 
 uses(CashierChipTestCase::class);
-
-it('can create webhook received event', function (): void {
-    $payload = ['event_type' => 'purchase.payment.success'];
-
-    $event = new WebhookReceived($payload);
-
-    expect($event->payload)->toBe($payload);
-});
-
-it('can create webhook handled event', function (): void {
-    $payload = ['event_type' => 'purchase.payment.success'];
-
-    $event = new WebhookHandled($payload);
-
-    expect($event->payload)->toBe($payload);
-});
 
 it('can create payment succeeded event', function (): void {
     $billable = new User(['id' => 1, 'name' => 'Test']);

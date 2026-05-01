@@ -198,6 +198,9 @@ class CheckoutSession extends Model
 
         $updates['updated_at'] = CarbonImmutable::now();
 
+        // Direct DB::table() update scoped to this model's own PK to bypass Spatie's HasStates
+        // Eloquent listener (which would cause an infinite loop). The PK constraint guarantees
+        // this touches exactly one row for the already-resolved model instance.
         $this->getConnection()
             ->table($this->getTable())
             ->where($this->getKeyName(), $this->getKey())

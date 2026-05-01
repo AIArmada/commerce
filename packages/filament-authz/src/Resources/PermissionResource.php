@@ -38,9 +38,10 @@ class PermissionResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        // Permissions are global in Spatie's teams implementation
-        // Only roles are scoped by team_id
-        return parent::getEloquentQuery();
+        // Spatie permissions are intentionally global — they are not scoped to teams.
+        // Only roles carry a team_id; permissions are shared across all tenants.
+        // This is an explicit, greppable opt-out of owner scoping per monorepo contract.
+        return parent::getEloquentQuery()->withoutGlobalScopes();
     }
 
     public static function getModel(): string

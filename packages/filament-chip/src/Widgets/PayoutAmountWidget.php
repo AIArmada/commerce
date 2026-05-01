@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\SendInstruction;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Carbon;
 
 final class PayoutAmountWidget extends ChartWidget
 {
@@ -51,8 +51,8 @@ final class PayoutAmountWidget extends ChartWidget
      */
     private function getPayoutData(): array
     {
-        $start = Carbon::now()->subDays(29)->startOfDay();
-        $end = Carbon::now()->endOfDay();
+        $start = CarbonImmutable::now()->subDays(29)->startOfDay();
+        $end = CarbonImmutable::now()->endOfDay();
 
         $daily = tap(SendInstruction::query(), function ($query): void {
             if (method_exists($query->getModel(), 'scopeForOwner')) {
@@ -70,7 +70,7 @@ final class PayoutAmountWidget extends ChartWidget
         $amounts = [];
 
         for ($i = 29; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i);
+            $date = CarbonImmutable::now()->subDays($i);
             $labels[] = $date->format('M d');
 
             $key = $date->toDateString();

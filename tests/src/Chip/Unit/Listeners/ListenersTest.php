@@ -129,9 +129,9 @@ describe('GenerateDocOnPayment listener', function (): void {
         $event = PurchasePaid::fromPayload($payload);
         $listener = new GenerateDocOnPayment;
 
-        expect(OwnerContext::resolve())->toBeNull();
+        $ownerBefore = OwnerContext::resolve();
         $listener->handle($event);
-        expect(OwnerContext::resolve())->toBeNull();
+        expect(OwnerContext::resolve())->toBe($ownerBefore);
     });
 });
 
@@ -212,8 +212,8 @@ describe('GenerateDocOnRefund listener', function (): void {
         $event = PaymentRefunded::fromPayload($payload);
         $listener = new GenerateDocOnRefund;
 
-        expect(OwnerContext::resolve())->toBeNull();
+        $ownerBefore = OwnerContext::resolve();
         $listener->handle($event);
-        expect(OwnerContext::resolve())->toBeNull();
+        expect(OwnerContext::resolve())->toBe($ownerBefore);
     });
 });
