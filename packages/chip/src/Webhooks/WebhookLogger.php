@@ -28,12 +28,12 @@ class WebhookLogger
         return Webhook::query()
             ->forOwner()
             ->create([
-            'event' => $event,
-            'payload' => $payload,
-            'status' => 'pending',
-            'idempotency_key' => $idempotencyKey,
-            'ip_address' => $request->ip(),
-        ]);
+                'event' => $event,
+                'payload' => $payload,
+                'status' => 'pending',
+                'idempotency_key' => $idempotencyKey,
+                'ip_address' => $request->ip(),
+            ]);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Http\Controllers\ImpersonateController;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\ImpersonateManager;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -60,7 +61,7 @@ describe('ImpersonateController', function (): void {
     });
 
     it('uses the impersonation manager session contract for route-based impersonation', function (): void {
-        $superAdminRole = \AIArmada\FilamentAuthz\Models\Role::findOrCreate((string) config('filament-authz.super_admin_role'), 'web');
+        $superAdminRole = Role::findOrCreate((string) config('filament-authz.super_admin_role'), 'web');
 
         $impersonator = User::query()->create([
             'name' => 'Impersonator',
@@ -153,7 +154,7 @@ describe('ImpersonateController', function (): void {
     });
 
     it('restores the impersonator when leaving through the route', function (): void {
-        $superAdminRole = \AIArmada\FilamentAuthz\Models\Role::findOrCreate((string) config('filament-authz.super_admin_role'), 'web');
+        $superAdminRole = Role::findOrCreate((string) config('filament-authz.super_admin_role'), 'web');
 
         $impersonator = User::query()->create([
             'name' => 'Leave Impersonator',

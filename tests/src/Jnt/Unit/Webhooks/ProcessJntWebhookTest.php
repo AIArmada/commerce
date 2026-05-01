@@ -13,9 +13,9 @@ use AIArmada\Jnt\Events\TrackingUpdated;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Spatie\WebhookClient\Models\WebhookCall;
 
 describe('ProcessJntWebhook', function (): void {

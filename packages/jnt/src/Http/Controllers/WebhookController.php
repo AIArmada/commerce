@@ -6,7 +6,6 @@ namespace AIArmada\Jnt\Http\Controllers;
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use AIArmada\Jnt\Services\WebhookService;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 use Spatie\WebhookClient\Exceptions\InvalidWebhookSignature;
 use Spatie\WebhookClient\WebhookConfig;
 use Spatie\WebhookClient\WebhookProcessor;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
 /**

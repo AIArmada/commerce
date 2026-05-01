@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Docs\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Services\DocEmailService;
@@ -179,8 +180,8 @@ it('passes subject message and cc overrides through the send email action', func
     expect($email->metadata)->toMatchArray(['cc' => 'copy@example.test']);
 
     Mail::assertSent(
-        \AIArmada\Docs\Mail\DocMail::class,
-        fn (\AIArmada\Docs\Mail\DocMail $mail): bool => count($mail->envelope()->cc ?? []) === 1
+        DocMail::class,
+        fn (DocMail $mail): bool => count($mail->envelope()->cc ?? []) === 1
             && $mail->envelope()->cc[0]->address === 'copy@example.test'
             && $mail->envelope()->subject === 'Custom Subject'
     );

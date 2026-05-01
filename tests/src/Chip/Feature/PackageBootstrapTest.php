@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\ChipServiceProvider;
+use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
