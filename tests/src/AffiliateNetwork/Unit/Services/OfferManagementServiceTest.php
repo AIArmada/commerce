@@ -7,6 +7,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 function createTestAffiliate(array $attributes = []): Affiliate
 {
@@ -215,7 +216,7 @@ describe('OfferManagementService', function (): void {
             $application->delete();
 
             $this->service->approveApplication($application, 'admin@example.com');
-        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        })->throws(ModelNotFoundException::class);
     });
 
     describe('rejectApplication', function (): void {
@@ -240,7 +241,7 @@ describe('OfferManagementService', function (): void {
             $application->delete();
 
             $this->service->rejectApplication($application, 'Does not meet requirements', 'admin@example.com');
-        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        })->throws(ModelNotFoundException::class);
     });
 
     describe('revokeApplication', function (): void {
@@ -263,7 +264,7 @@ describe('OfferManagementService', function (): void {
             $application->delete();
 
             $this->service->revokeApplication($application, 'Violated terms', 'admin@example.com');
-        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        })->throws(ModelNotFoundException::class);
     });
 
     describe('isApprovedForOffer', function (): void {
@@ -351,7 +352,7 @@ describe('OfferManagementService', function (): void {
             ]);
 
             $this->service->resolvePublicOfferOrFail($offer->id);
-        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        })->throws(ModelNotFoundException::class);
 
         test('fails for non active offer', function (): void {
             $offer = AffiliateOffer::factory()->forSite($this->site)->create([
@@ -360,6 +361,6 @@ describe('OfferManagementService', function (): void {
             ]);
 
             $this->service->resolvePublicOfferOrFail($offer->id);
-        })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        })->throws(ModelNotFoundException::class);
     });
 });
