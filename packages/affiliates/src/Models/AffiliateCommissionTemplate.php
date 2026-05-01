@@ -235,38 +235,6 @@ class AffiliateCommissionTemplate extends Model
                     'commission_rate' => $baseRule['rate'],
                 ]);
             }
-
-            // Create commission rules for the affiliate
-            foreach ($rules as $rule) {
-                AffiliateCommissionRule::updateOrCreate(
-                    [
-                        'affiliate_id' => $affiliate->id,
-                        'rule_type' => $rule['type'],
-                    ],
-                    [
-                        'commission_type' => $rule['commission_type'],
-                        'rate_basis_points' => $rule['rate'],
-                        'conditions' => $rule['conditions'] ?? [],
-                        'is_active' => true,
-                    ]
-                );
-            }
-
-            // Create volume tiers
-            $volumeTiers = $this->getVolumeTiers();
-            foreach ($volumeTiers as $tier) {
-                AffiliateVolumeTier::updateOrCreate(
-                    [
-                        'affiliate_id' => $affiliate->id,
-                        'min_volume_minor' => $tier['min_volume'],
-                    ],
-                    [
-                        'max_volume_minor' => $tier['max_volume'],
-                        'bonus_rate_basis_points' => $tier['bonus_rate'],
-                        'is_active' => true,
-                    ]
-                );
-            }
         });
     }
 

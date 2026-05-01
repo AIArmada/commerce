@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
 use Filament\Auth\Pages\Register as FilamentRegister;
@@ -124,12 +125,21 @@ class PortalRegistration extends FilamentRegister
     protected function createAffiliateForUser(Model $user, array $data): Affiliate
     {
         $registrationService = app(AffiliateRegistrationService::class);
+        $owner = $user;
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $resolvedOwner = OwnerContext::resolve();
+
+            if ($resolvedOwner instanceof Model) {
+                $owner = $resolvedOwner;
+            }
+        }
 
         return $registrationService->register([
             'name' => $data['affiliate_name'],
             'contact_email' => $data['email'],
             'website_url' => $data['website_url'] ?? null,
-        ], $user);
+        ], $owner);
     }
 
     public function getRegisterFormAction(): Action

@@ -80,16 +80,6 @@ final class ChipServiceProvider extends PackageServiceProvider
             $configs = [];
         }
 
-        $configs = array_values(array_filter($configs, static function (mixed $existingConfig): bool {
-            if (! is_array($existingConfig)) {
-                return false;
-            }
-
-            $processWebhookJob = $existingConfig['process_webhook_job'] ?? null;
-
-            return is_string($processWebhookJob) && $processWebhookJob !== '';
-        }));
-
         foreach ($configs as $existingConfig) {
             if (is_array($existingConfig) && ($existingConfig['name'] ?? null) === $configName) {
                 return;

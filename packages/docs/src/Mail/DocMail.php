@@ -48,6 +48,7 @@ final class DocMail extends Mailable
                     $this->docEmail->recipient_name
                 ),
             ],
+            cc: $this->resolveCcAddresses(),
             subject: $this->docEmail->subject,
         );
     }
@@ -79,11 +80,12 @@ final class DocMail extends Mailable
             $owner = OwnerContext::fromTypeAndId($this->doc->owner_type, $this->doc->owner_id);
 
             $pdfPath = OwnerContext::withOwner($owner, fn (): string => $docService->generatePdf($this->doc, save: true));
+            $disk = $docService->resolveStorageDiskForDocType($this->doc->doc_type);
 
             $docType = ucfirst(str_replace('_', '-', $this->doc->doc_type));
 
             return [
-                Attachment::fromPath($pdfPath)
+                Attachment::fromStorageDisk($disk, $pdfPath)
                     ->as("{$docType}-{$this->doc->doc_number}.pdf")
                     ->withMime('application/pdf'),
             ];
@@ -111,5 +113,25 @@ final class DocMail extends Mailable
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * @return array<int, Address>
+     */
+    private function resolveCcAddresses(): array
+    {
+        $metadata = $this->docEmail->metadata;
+
+        if (! is_array($metadata)) {
+            return [];
+        }
+
+        $cc = $metadata['cc'] ?? null;
+
+        if (! is_string($cc) || $cc === '') {
+            return [];
+        }
+
+        return [new Address($cc)];
     }
 }

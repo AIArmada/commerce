@@ -107,8 +107,19 @@ final class SendInstructionTable
                     ->modalDescription('Are you sure you want to cancel this payout? This action cannot be undone.')
                     ->visible(fn (SendInstruction $record): bool => in_array($record->state, ['received', 'queued'], true))
                     ->action(function (SendInstruction $record): void {
+                        $scopedRecord = self::resolveScopedSendInstruction($record);
+
+                        if ($scopedRecord === null) {
+                            Notification::make()
+                                ->title('Payout is outside your owner scope')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         try {
-                            app(ChipSendService::class)->cancelSendInstruction((string) $record->id);
+                            app(ChipSendService::class)->cancelSendInstruction((string) $scopedRecord->id);
 
                             Notification::make()
                                 ->title('Payout cancelled')
@@ -128,8 +139,19 @@ final class SendInstructionTable
                     ->icon(Heroicon::ArrowPath)
                     ->color('gray')
                     ->action(function (SendInstruction $record): void {
+                        $scopedRecord = self::resolveScopedSendInstruction($record);
+
+                        if ($scopedRecord === null) {
+                            Notification::make()
+                                ->title('Payout is outside your owner scope')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         try {
-                            app(ChipSendService::class)->resendSendInstructionWebhook((string) $record->id);
+                            app(ChipSendService::class)->resendSendInstructionWebhook((string) $scopedRecord->id);
 
                             Notification::make()
                                 ->title('Webhook resent')
@@ -148,5 +170,13 @@ final class SendInstructionTable
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
             ->poll(config('filament-chip.polling_interval', '45s'));
+    }
+
+    private static function resolveScopedSendInstruction(SendInstruction $record): ?SendInstruction
+    {
+        return SendInstruction::query()
+            ->forOwner()
+            ->whereKey($record->getKey())
+            ->first();
     }
 }

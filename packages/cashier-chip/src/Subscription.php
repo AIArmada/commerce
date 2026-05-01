@@ -779,7 +779,8 @@ class Subscription extends Model
 
         // Calculate the period start based on billing interval
         $interval = $this->billing_interval ?? 'month';
-        $start = $this->next_billing_at->copy()->sub($interval, 1);
+        $intervalCount = $this->billing_interval_count > 0 ? $this->billing_interval_count : 1;
+        $start = $this->next_billing_at->copy()->sub($interval, $intervalCount);
 
         return $timezone ? $start->setTimezone($timezone) : $start;
     }
@@ -1168,7 +1169,10 @@ class Subscription extends Model
             }
 
             // Validate that billable customer (user_id) belongs to the subscription owner
-            if ($subscription->user_id !== null) {
+            if (
+                (bool) config('cashier-chip.features.owner.validate_billable_owner', true)
+                && $subscription->user_id !== null
+            ) {
                 /** @var class-string<Model> $customerModel */
                 $customerModel = Cashier::$customerModel;
 

@@ -51,7 +51,7 @@ final class ClientInfolist
                                 ->placeholder('—'),
                             TextEntry::make('updated_on')
                                 ->label('Updated')
-                                ->dateTime(config('filament-chip.tables.created_on_format', 'Y-m-d H:i:s'))
+                                ->dateTime(config('filament-chip.tables.updated_on_format', 'Y-m-d H:i:s'))
                                 ->icon(Heroicon::OutlinedClock)
                                 ->placeholder('—'),
                         ]),

@@ -222,3 +222,51 @@ it('formats non-USD currencies with correct symbols', function (): void {
     expect($gbp->formattedAmount())->toBe('£12.34');
     expect($unknown->formattedAmount())->toBe('JPY 12.34');
 });
+
+it('keeps paidAt null when Stripe paid transition timestamp is missing', function (): void {
+    $stripeInvoice = new class
+    {
+        public string $id = 'inv_missing_paid_at';
+
+        public ?string $number = 'INV-MISSING';
+
+        public string $currency = 'usd';
+
+        public bool $paid = true;
+
+        public function rawTotal(): int
+        {
+            return 1999;
+        }
+
+        public function date(): CarbonImmutable
+        {
+            return CarbonImmutable::parse('2026-01-01 00:00:00');
+        }
+
+        public function dueDate(): ?CarbonImmutable
+        {
+            return null;
+        }
+
+        public function invoicePdf(): ?string
+        {
+            return null;
+        }
+
+        public function asStripeInvoice(): object
+        {
+            return (object) [
+                'status' => 'paid',
+                'status_transitions' => (object) [
+                    'paid_at' => null,
+                ],
+            ];
+        }
+    };
+
+    $invoice = UnifiedInvoice::fromStripe($stripeInvoice, 'user_123');
+
+    expect($invoice->status)->toBe(InvoiceStatus::Paid)
+        ->and($invoice->paidAt)->toBeNull();
+});

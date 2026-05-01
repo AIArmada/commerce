@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions\Action;
 use Illuminate\Support\Collection;
 
@@ -35,6 +37,14 @@ it('reports gateway health and default gateway without network calls', function 
     $setDefaultFn = $setDefaultAction->getActionFunction();
     expect($setDefaultFn)->not->toBeNull();
     $setDefaultFn(['gateway' => 'chip']);
+    $setDefaultFn(['gateway' => 'not-a-real-gateway']);
+
+    $owner = OwnerContext::resolve();
+    $cacheKey = 'filament-cashier.default_gateway.default';
+
+    expect($owner)->not->toBeNull();
+    expect(OwnerCache::get($owner, $cacheKey))->toBe('chip');
+    expect(cache()->get('filament-cashier.default_gateway'))->toBeNull();
 
     $reflection = new ReflectionClass(GatewayManagement::class);
     $method = $reflection->getMethod('checkGatewayHealth');

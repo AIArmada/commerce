@@ -7,6 +7,8 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\Tables;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Pending;
 use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
 use AIArmada\FilamentDocs\Exports\DocExporter;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
@@ -157,7 +159,7 @@ final class DocsTable
                     Action::make('mark_sent')
                         ->label('Mark as Sent')
                         ->icon(Heroicon::OutlinedPaperAirplane)
-                        ->visible(fn (Doc $record): bool => in_array($record->status, [DocStatus::DRAFT, DocStatus::PENDING]))
+                        ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
                         ->action(function (Doc $record): void {
                             DocsOwnerScope::assertCanMutateDoc($record);
                             $record->markAsSent();
@@ -229,5 +231,10 @@ final class DocsTable
             ])
             ->defaultSort('created_at', 'desc')
             ->striped();
+    }
+
+    private static function canMarkAsSent(Doc $record): bool
+    {
+        return $record->status->equals(Draft::class) || $record->status->equals(Pending::class);
     }
 }

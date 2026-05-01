@@ -27,6 +27,12 @@ class MarkAbandonedCartsCommand extends Command
 
     public function handle(): int
     {
+        if (! config('filament-cart.features.abandonment_tracking', true)) {
+            $this->warn('Abandonment tracking is disabled via filament-cart.features.abandonment_tracking.');
+
+            return self::SUCCESS;
+        }
+
         $minutesOption = $this->option('minutes');
         $minutes = is_numeric($minutesOption)
             ? (int) $minutesOption

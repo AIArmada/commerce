@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Pages;
 
+use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\FilamentChip\Resources\BankAccountResource;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 use Throwable;
 
@@ -47,9 +49,19 @@ final class ViewBankAccount extends ViewRecord
                 ->action(function (): void {
                     $record = $this->getRecord();
                     $service = app(ChipSendService::class);
+                    $scopedRecord = $this->resolveScopedBankAccount($record);
+
+                    if ($scopedRecord === null) {
+                        Notification::make()
+                            ->title('Bank account is outside your owner scope')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
 
                     try {
-                        $service->updateBankAccount((string) $record->getKey(), [
+                        $service->updateBankAccount((string) $scopedRecord->getKey(), [
                             'status' => 'verifying',
                         ]);
                         Notification::make()
@@ -77,9 +89,19 @@ final class ViewBankAccount extends ViewRecord
                 ->action(function (): void {
                     $record = $this->getRecord();
                     $service = app(ChipSendService::class);
+                    $scopedRecord = $this->resolveScopedBankAccount($record);
+
+                    if ($scopedRecord === null) {
+                        Notification::make()
+                            ->title('Bank account is outside your owner scope')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
 
                     try {
-                        $service->deleteBankAccount((string) $record->getKey());
+                        $service->deleteBankAccount((string) $scopedRecord->getKey());
                         Notification::make()
                             ->title('Bank account disabled')
                             ->success()
@@ -95,5 +117,13 @@ final class ViewBankAccount extends ViewRecord
                 })
                 ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('status'), ['active', 'approved'], true)),
         ];
+    }
+
+    private function resolveScopedBankAccount(Model $record): ?BankAccount
+    {
+        return BankAccount::query()
+            ->forOwner()
+            ->whereKey($record->getKey())
+            ->first();
     }
 }

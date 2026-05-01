@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
+use RuntimeException;
 
 uses(FilamentJntTestCase::class);
 
@@ -137,4 +138,15 @@ it('builds stats without owner scoping when owner mode is disabled', function ()
 
     expect($stats)->toHaveCount(6);
     expect($stats[0]->getValue())->toBe(2);
+});
+
+it('requires an owner context before building stats when owner mode is enabled', function (): void {
+    config()->set('jnt.owner.enabled', true);
+    config()->set('jnt.owner.include_global', true);
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FilamentJntTestOwnerResolver(null));
+
+    $widget = app(JntStatsWidget::class);
+
+    expect(fn () => filamentJnt_invokeProtected($widget, 'getStats'))->toThrow(RuntimeException::class);
 });

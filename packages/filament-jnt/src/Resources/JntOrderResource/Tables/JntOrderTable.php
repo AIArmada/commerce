@@ -178,10 +178,13 @@ final class JntOrderTable
 
     private static function getNormalizedStatus(JntOrder $order): TrackingStatus
     {
-        if ($order->last_status_code === null) {
+        if ($order->last_status_code === null && $order->last_status === null) {
             return TrackingStatus::Pending;
         }
 
-        return app(JntStatusMapper::class)->fromCode($order->last_status_code);
+        return app(JntStatusMapper::class)->resolve(
+            scanTypeCode: $order->last_status_code,
+            statusDescription: $order->last_status,
+        );
     }
 }

@@ -40,7 +40,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['date', 'payment_method']);
+            $table->unique(['owner_type', 'owner_id', 'date', 'payment_method'], 'chip_daily_metrics_owner_date_payment_method_unique');
             $table->index('date');
         });
     }

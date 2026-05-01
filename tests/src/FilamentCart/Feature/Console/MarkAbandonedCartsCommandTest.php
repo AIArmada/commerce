@@ -21,6 +21,14 @@ beforeEach(function (): void {
     });
 });
 
+it('exits successfully when abandonment tracking feature is disabled', function (): void {
+    config()->set('filament-cart.features.abandonment_tracking', false);
+
+    $this->artisan('cart:mark-abandoned --dry-run')
+        ->expectsOutputToContain('Abandonment tracking is disabled via filament-cart.features.abandonment_tracking.')
+        ->assertSuccessful();
+});
+
 it('skips malformed owner tuples during all-owner abandoned-cart marking', function (): void {
     $table = config('filament-cart.database.tables.snapshots', 'cart_snapshots');
     $now = now();

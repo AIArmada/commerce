@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Support;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Cashier;
 
@@ -21,7 +22,7 @@ final class GatewayDetector
     {
         return collect([
             'stripe' => class_exists(Cashier::class),
-            'chip' => class_exists(\AIArmada\CashierChip\Cashier::class),
+            'chip' => $this->isChipAvailable(),
         ])->filter()->keys();
     }
 
@@ -105,5 +106,18 @@ final class GatewayDetector
                 $gateway => $this->getLabel($gateway),
             ])
             ->toArray();
+    }
+
+    private function isChipAvailable(): bool
+    {
+        if (! class_exists(\AIArmada\CashierChip\Cashier::class)) {
+            return false;
+        }
+
+        $subscriptionModel = \AIArmada\CashierChip\Cashier::$subscriptionModel ?? null;
+
+        return is_string($subscriptionModel)
+            && class_exists($subscriptionModel)
+            && is_a($subscriptionModel, Model::class, true);
     }
 }

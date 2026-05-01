@@ -214,19 +214,15 @@ DocTemplate::create([
 
 **Symptom:** `DocEmailService::send()` doesn't deliver emails.
 
-**Current Limitation:** The `queueEmail()` method is a stub. Implement actual mailing:
+**Checks:**
 
 ```php
-// In your service provider or via event
-Doc::observe(new class {
-    public function updated(Doc $doc): void
-    {
-        if ($doc->wasChanged('status') && $doc->status === DocStatus::SENT) {
-            // Dispatch your mailable
-        }
-    }
-});
+config('docs.email.queue_enabled');
+config('docs.email.attach_pdf');
+config('docs.email.queue');
 ```
+
+The package queues mail when `docs.email.queue_enabled` is true and sends immediately otherwise.
 
 ### Tracking Tokens Invalid
 
@@ -307,5 +303,4 @@ use AIArmada\Docs\DataObjects\DocData; // Correct
 ## Getting Help
 
 1. Check the [GitHub Issues](https://github.com/aiarmada/commerce/issues)
-2. Review the vision docs in `docs/vision/` for upcoming features
 3. Ensure you're using compatible versions (PHP 8.4+, Laravel 12+)

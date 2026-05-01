@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Models\AuthzScope;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Resources\PermissionResource;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
 use AIArmada\FilamentAuthz\Resources\UserResource;
 use AIArmada\FilamentAuthz\Support\UserAuthzForm;
@@ -404,6 +406,95 @@ it('scopes user resource query and route binding to the active tenant', function
         ->and($visibleEmails)->not->toContain('scope-b-user@example.com')
         ->and(UserResource::resolveRecordRouteBinding((string) $scopeAUser->getKey()))->not->toBeNull()
         ->and(UserResource::resolveRecordRouteBinding((string) $scopeBUser->getKey()))->toBeNull();
+});
+
+it('scopes permission assignment summary counts to the active tenant', function (): void {
+    $scopeA = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => 'efefefef-efef-4fef-8fef-efefefefefef',
+        'label' => 'Scope A',
+    ]);
+
+    $scopeB = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => 'f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0',
+        'label' => 'Scope B',
+    ]);
+
+    $permission = Permission::findOrCreate('orders.manage', 'web');
+
+    setPermissionsTeamId($scopeA->getKey());
+    $scopeARole = Role::create([
+        'name' => 'scope_a_permission_manager',
+        'guard_name' => 'web',
+    ]);
+    $scopeARole->syncPermissions([$permission]);
+
+    $scopeAUser = User::query()->create([
+        'name' => 'Scope A Permission User',
+        'email' => 'scope-a-permission-user@example.com',
+        'password' => 'secret',
+    ]);
+    $scopeAUser->givePermissionTo($permission);
+
+    setPermissionsTeamId($scopeB->getKey());
+    $scopeBRole = Role::create([
+        'name' => 'scope_b_permission_manager',
+        'guard_name' => 'web',
+    ]);
+    $scopeBRole->syncPermissions([$permission]);
+
+    $scopeBUser = User::query()->create([
+        'name' => 'Scope B Permission User',
+        'email' => 'scope-b-permission-user@example.com',
+        'password' => 'secret',
+    ]);
+    $scopeBUser->givePermissionTo($permission);
+
+    setPermissionsTeamId($scopeA->getKey());
+
+    $summary = invokeProtectedStatic(PermissionResource::class, 'getAssignmentSummaryText', [$permission->fresh()]);
+
+    expect($summary)->toBe('Assigned to 1 role(s), and 1 user(s) directly.');
+});
+
+it('does not leak cross-tenant direct users in permission overview', function (): void {
+    $scopeA = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => 'abab1111-abab-4111-8bab-abab1111abab',
+        'label' => 'Scope A',
+    ]);
+
+    $scopeB = AuthzScope::query()->create([
+        'scopeable_type' => 'member-role-scope',
+        'scopeable_id' => 'cdcd2222-cdcd-4222-8dcd-cdcd2222cdcd',
+        'label' => 'Scope B',
+    ]);
+
+    $permission = Permission::findOrCreate('users.audit', 'web');
+
+    setPermissionsTeamId($scopeA->getKey());
+    $scopeAUser = User::query()->create([
+        'name' => 'Scoped A Viewer',
+        'email' => 'scoped-a-viewer@example.com',
+        'password' => 'secret',
+    ]);
+    $scopeAUser->givePermissionTo($permission);
+
+    setPermissionsTeamId($scopeB->getKey());
+    $scopeBUser = User::query()->create([
+        'name' => 'Scoped B Viewer',
+        'email' => 'scoped-b-viewer@example.com',
+        'password' => 'secret',
+    ]);
+    $scopeBUser->givePermissionTo($permission);
+
+    setPermissionsTeamId($scopeA->getKey());
+
+    $renderedUsers = invokeProtectedStatic(PermissionResource::class, 'renderDirectUsers', [$permission->fresh()]);
+
+    expect((string) $renderedUsers)->toContain('scoped-a-viewer@example.com')
+        ->and((string) $renderedUsers)->not->toContain('scoped-b-viewer@example.com');
 });
 
 /**

@@ -12,11 +12,6 @@ use Illuminate\Support\Facades\Schema;
 final class CashierOwnerScope
 {
     /**
-     * @var array<string, bool>
-     */
-    private static array $hasColumnCache = [];
-
-    /**
      * Apply owner scoping to a query.
      *
      * Strategy:
@@ -83,13 +78,8 @@ final class CashierOwnerScope
     {
         $table = $model->getTable();
         $connection = $model->getConnectionName() ?? config('database.default');
-        $cacheKey = $connection . ':' . $table . ':' . $column;
 
-        if (array_key_exists($cacheKey, self::$hasColumnCache)) {
-            return self::$hasColumnCache[$cacheKey];
-        }
-
-        return self::$hasColumnCache[$cacheKey] = Schema::connection($connection)->hasColumn($table, $column);
+        return Schema::connection($connection)->hasColumn($table, $column);
     }
 
     private static function applyViaBillableIdSubquery(Builder $query, string $foreignKey, Model $owner, bool $includeGlobal): Builder

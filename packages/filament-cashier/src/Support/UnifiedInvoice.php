@@ -44,7 +44,7 @@ final readonly class UnifiedInvoice
             status: self::normalizeStripeStatus($invoice),
             date: $invoiceDate instanceof CarbonImmutable ? $invoiceDate : CarbonImmutable::parse($invoiceDate),
             dueDate: $dueDate instanceof CarbonImmutable ? $dueDate : ($dueDate ? CarbonImmutable::parse($dueDate) : null),
-            paidAt: $invoice->paid ? CarbonImmutable::createFromTimestamp($invoice->asStripeInvoice()->status_transitions?->paid_at ?? time()) : null,
+            paidAt: self::resolveStripePaidAt($invoice),
             pdfUrl: $invoice->invoicePdf(),
             original: $invoice,
         );
@@ -141,5 +141,20 @@ final readonly class UnifiedInvoice
             'failed', 'error' => InvoiceStatus::Void,
             default => InvoiceStatus::Open,
         };
+    }
+
+    private static function resolveStripePaidAt(object $invoice): ?CarbonImmutable
+    {
+        if (! ($invoice->paid ?? false)) {
+            return null;
+        }
+
+        $paidAt = $invoice->asStripeInvoice()->status_transitions?->paid_at ?? null;
+
+        if (! is_numeric($paidAt)) {
+            return null;
+        }
+
+        return CarbonImmutable::createFromTimestamp((int) $paidAt);
     }
 }

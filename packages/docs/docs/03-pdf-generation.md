@@ -30,7 +30,7 @@ return response($pdfContent)
 ## Download PDF
 
 ```php
-// Generates PDF if not exists, or returns existing path
+// Generates the PDF if it does not exist, then returns the relative path
 $pdfPath = $docService->downloadPdf($document);
 ```
 
@@ -48,6 +48,8 @@ Configure in `config/docs.php`:
         'bottom' => 10,
         'left' => 10,
     ],
+    'full_bleed' => false,
+    'print_background' => true,
 ],
 ```
 
@@ -56,7 +58,7 @@ Configure in `config/docs.php`:
 Override PDF settings when creating documents:
 
 ```php
-$document = $docService->createDoc(DocData::from([
+$document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
     'pdf_options' => [
         'format' => 'letter',
@@ -74,15 +76,24 @@ $document = $docService->createDoc(DocData::from([
 
 ## Storage Configuration
 
-Configure storage per document type:
+Configure global defaults in `config/docs.php`:
 
 ```php
 'storage' => [
     'disk' => 'local',     // Default disk
     'path' => 'docs',      // Default path
-    'paths' => [
-        'invoice' => 'docs/invoices',
-        'receipt' => 'docs/receipts',
+],
+```
+
+You can override storage per document type under `docs.types.{type}.storage`:
+
+```php
+'types' => [
+    'invoice' => [
+        'storage' => [
+            'disk' => 's3',
+            'path' => 'documents/invoices',
+        ],
     ],
 ],
 ```

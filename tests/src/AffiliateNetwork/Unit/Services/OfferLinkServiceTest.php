@@ -164,7 +164,7 @@ describe('OfferLinkService', function (): void {
 
     describe('generateTrackingUrl', function (): void {
         test('generates signed tracking URL', function (): void {
-            config(['affiliate-network.links.signing_key' => 'test-signing-key-for-tests']);
+            config(['affiliate-network.links.parameter' => 'anl']);
             URL::defaults(['signature' => 'test']);
 
             $link = AffiliateOfferLink::factory()
@@ -176,6 +176,8 @@ describe('OfferLinkService', function (): void {
 
             expect($url)->toContain('signature=');
             expect($url)->toContain('expires=');
+            expect($url)->toContain('anl=trackcode');
+            expect($url)->not->toContain('sig=');
         });
     });
 

@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Http\Controllers;
 
 use AIArmada\FilamentAuthz\Actions\ImpersonateAction;
+use AIArmada\FilamentAuthz\Services\ImpersonateManager;
 use AIArmada\FilamentAuthz\Support\ImpersonationScopeGuard;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use RuntimeException;
 
 class ImpersonateController
@@ -51,26 +50,32 @@ class ImpersonateController
             abort(403, 'Cannot impersonate yourself');
         }
 
-        if (method_exists($currentUser, 'canImpersonate') && ! $currentUser->canImpersonate()) {
-            abort(403, 'You cannot impersonate users');
-        }
-
         if (method_exists($targetUser, 'canBeImpersonated') && ! $targetUser->canBeImpersonated()) {
             abort(403, 'This user cannot be impersonated');
         }
 
-        $superAdminRole = config('filament-authz.super_admin_role');
-        if ($superAdminRole && method_exists($currentUser, 'hasRole') && ! $currentUser->hasRole($superAdminRole)) {
-            abort(403, 'Only super admins can impersonate');
+        $isAuthorizedImpersonator = false;
+
+        if (method_exists($currentUser, 'canImpersonate')) {
+            $isAuthorizedImpersonator = (bool) $currentUser->canImpersonate();
+        } else {
+            $superAdminRole = (string) config('filament-authz.super_admin_role', '');
+
+            if ($superAdminRole !== '' && method_exists($currentUser, 'hasRole')) {
+                $isAuthorizedImpersonator = (bool) $currentUser->hasRole($superAdminRole);
+            }
         }
 
-        // Store impersonation session data
-        Session::put(ImpersonateAction::SESSION_KEY, $currentUser->getAuthIdentifier());
-        Session::put(ImpersonateAction::SESSION_GUARD_KEY, $guard);
-        Session::put(ImpersonateAction::SESSION_BACK_TO_KEY, request()->header('referer') ?? Filament::getUrl());
+        if (! $isAuthorizedImpersonator) {
+            abort(403, 'Not authorized to impersonate users');
+        }
 
-        // Log in as the target user (this will regenerate the session)
-        Auth::guard($guard)->login($targetUser);
+        $backTo = self::sanitizeBackToUrl(request()->header('referer') ?? Filament::getUrl());
+        $impersonateManager = app(ImpersonateManager::class);
+
+        if (! $impersonateManager->take($currentUser, $targetUser, $guard, $backTo)) {
+            abort(500, 'Unable to start impersonation');
+        }
 
         $redirectTo = self::sanitizeRedirectPath($request->input('redirect_to', '/'));
 
@@ -134,5 +139,33 @@ class ImpersonateController
         }
 
         return array_values(array_unique($paths));
+    }
+
+    /**
+     * Sanitize the back-to URL to prevent open redirect via a controlled Referer header.
+     *
+     * Accepts relative paths and absolute same-host URLs only.
+     */
+    private static function sanitizeBackToUrl(string $url): string
+    {
+        if ($url === '') {
+            return '/';
+        }
+
+        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+            return $url;
+        }
+
+        $parsed = parse_url($url);
+
+        if (! is_array($parsed) || ! isset($parsed['host'])) {
+            return '/';
+        }
+
+        if (mb_strtolower($parsed['host']) !== mb_strtolower(request()->getHost())) {
+            return '/';
+        }
+
+        return $url;
     }
 }

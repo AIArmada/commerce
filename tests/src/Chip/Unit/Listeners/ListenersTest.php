@@ -8,6 +8,7 @@ use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Listeners\GenerateDocOnPayment;
 use AIArmada\Chip\Listeners\GenerateDocOnRefund;
 use AIArmada\Chip\Listeners\StoreWebhookData;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 describe('StoreWebhookData listener', function (): void {
@@ -111,6 +112,27 @@ describe('GenerateDocOnPayment listener', function (): void {
         $listener->handle($event);
         expect(true)->toBeTrue();
     });
+
+    it('fails closed when owner mode is enabled and payload has no owner tuple', function (): void {
+        config(['chip.owner.enabled' => true]);
+
+        $payload = [
+            'id' => 'purch_test123',
+            'status' => 'paid',
+            'type' => 'purchase',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'purchase' => ['total' => 10000, 'currency' => 'MYR', 'products' => []],
+            'is_test' => true,
+        ];
+
+        $event = PurchasePaid::fromPayload($payload);
+        $listener = new GenerateDocOnPayment;
+
+        expect(OwnerContext::resolve())->toBeNull();
+        $listener->handle($event);
+        expect(OwnerContext::resolve())->toBeNull();
+    });
 });
 
 describe('GenerateDocOnRefund listener', function (): void {
@@ -172,5 +194,26 @@ describe('GenerateDocOnRefund listener', function (): void {
         // Should return early (getPurchaseId() returns null)
         $listener->handle($event);
         expect(true)->toBeTrue();
+    });
+
+    it('fails closed when owner mode is enabled and payload has no owner tuple', function (): void {
+        config(['chip.owner.enabled' => true]);
+
+        $payload = [
+            'id' => 'purch_refund123',
+            'status' => 'refunded',
+            'type' => 'purchase',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'purchase' => ['total' => 10000, 'currency' => 'MYR', 'products' => []],
+            'is_test' => true,
+        ];
+
+        $event = PaymentRefunded::fromPayload($payload);
+        $listener = new GenerateDocOnRefund;
+
+        expect(OwnerContext::resolve())->toBeNull();
+        $listener->handle($event);
+        expect(OwnerContext::resolve())->toBeNull();
     });
 });

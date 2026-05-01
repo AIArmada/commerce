@@ -37,7 +37,7 @@ final class AbandonedCartsWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('email')
                     ->label('Customer')
                     ->getStateUsing(fn (Cart $record): string => $this->getCustomerEmail($record))
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->where('metadata', 'like', "%{$search}%")),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyMetadataSearch($query, $search)),
 
                 Tables\Columns\TextColumn::make('items_count')
                     ->label('Items')
@@ -83,6 +83,26 @@ final class AbandonedCartsWidget extends BaseWidget
         $metadata = $record->metadata ?? [];
 
         return $metadata['customer_email'] ?? $metadata['email'] ?? 'Unknown';
+    }
+
+    /**
+     * Apply a driver-aware metadata search clause.
+     *
+     * PostgreSQL JSON/JSONB columns cannot be searched with LIKE directly,
+     * so cast metadata to text first.
+     *
+     * @param  Builder<Cart>  $query
+     */
+    private function applyMetadataSearch(Builder $query, string $search): Builder
+    {
+        $needle = "%{$search}%";
+        $driver = $query->getModel()->getConnection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            return $query->whereRaw('CAST(metadata AS TEXT) ILIKE ?', [$needle]);
+        }
+
+        return $query->where('metadata', 'like', $needle);
     }
 
     private function getItemsCount(Cart $record): int

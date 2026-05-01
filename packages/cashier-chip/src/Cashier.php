@@ -26,7 +26,7 @@ final class Cashier
     public const VERSION = '1.0.0';
 
     /**
-     * Indicates if Cashier routes will be registered.
+     * Indicates if Cashier should register routes.
      */
     public static bool $registersRoutes = true;
 
@@ -97,8 +97,8 @@ final class Cashier
     /**
      * Resolve a billable from a CHIP client id in system contexts (webhooks/events).
      *
-     * This explicitly bypasses owner scoping when the current owner is not resolvable,
-     * since webhook/event payloads are not tenant-aware.
+        * In owner mode this fails closed when owner context is missing and, when enabled,
+        * validates the resolved billable against the active owner boundary.
      *
      * @return (Model&BillableContract)|null
      */
@@ -110,14 +110,49 @@ final class Cashier
 
         $model = static::$customerModel;
 
-        $query = $model::query();
+        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+            /** @var (Model&BillableContract)|null $billable */
+            $billable = $model::query()->where('chip_id', $chipId)->first();
 
-        if ((bool) config('cashier-chip.features.owner.enabled', true) && OwnerContext::resolve() === null) {
+            return $billable;
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
             return null;
         }
 
+        $shouldValidateBillableOwner = (bool) config('cashier-chip.features.owner.validate_billable_owner', true);
+
+        if (! $shouldValidateBillableOwner) {
+            /** @var (Model&BillableContract)|null $billable */
+            $billable = $model::query()->where('chip_id', $chipId)->first();
+
+            return $billable;
+        }
+
+        if (method_exists($model, 'scopeForOwner')) {
+            /** @var (Model&BillableContract)|null $billable */
+            $billable = $model::forOwner($owner, false)
+                ->where('chip_id', $chipId)
+                ->first();
+
+            return $billable;
+        }
+
+        if (is_a($owner, $model)) {
+            /** @var (Model&BillableContract)|null $billable */
+            $billable = $model::query()
+                ->whereKey($owner->getKey())
+                ->where('chip_id', $chipId)
+                ->first();
+
+            return $billable;
+        }
+
         /** @var (Model&BillableContract)|null $billable */
-        $billable = $query->where('chip_id', $chipId)->first();
+        $billable = null;
 
         return $billable;
     }

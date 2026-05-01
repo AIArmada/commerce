@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Cashier\Subscription;
 
@@ -211,7 +212,16 @@ final class ManageSubscriptions extends Page
             Action::make('new_subscription')
                 ->label(__('filament-cashier::portal.subscriptions.new'))
                 ->icon('heroicon-o-plus')
-                ->url(fn () => route('filament.billing.pages.new-subscription'))
+                ->url(function (): ?string {
+                    $panelId = (string) config('filament-cashier.billing_portal.panel_id', 'billing');
+                    $routeName = "filament.{$panelId}.resources.unified-subscriptions.create";
+
+                    if (! Route::has($routeName)) {
+                        return null;
+                    }
+
+                    return route($routeName);
+                })
                 ->visible(fn () => config('filament-cashier.billing_portal.features.subscriptions', true)),
         ];
     }

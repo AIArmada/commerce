@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Data;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -35,19 +36,25 @@ final class EnrichedWebhookPayload extends Data
     public static function fromPayload(string $event, array $payload): self
     {
         $purchaseId = $payload['id'] ?? $payload['data']['id'] ?? null;
+        $purchaseId = is_string($purchaseId) || is_int($purchaseId) ? (string) $purchaseId : null;
         $clientId = $payload['client_id'] ?? $payload['client']['id'] ?? $payload['data']['client_id'] ?? null;
+        $clientId = is_string($clientId) || is_int($clientId) ? (string) $clientId : null;
 
         $localPurchase = null;
-        $owner = null;
+        $owner = self::resolveOwnerFromPayload($payload);
 
         if ($purchaseId) {
-            $localPurchase = Purchase::where('chip_id', $purchaseId)->first();
-            $owner = $localPurchase?->owner;
+            $query = Purchase::query();
+
+            if ($owner !== null && method_exists($query->getModel(), 'scopeForOwner')) {
+                $query->forOwner($owner);
+            }
+
+            $localPurchase = $query->whereKey($purchaseId)->first();
+            $owner ??= $localPurchase?->owner;
         }
 
-        $eventTimestamp = isset($payload['created'])
-            ? CarbonImmutable::parse($payload['created'])
-            : (isset($payload['created_on']) ? CarbonImmutable::parse($payload['created_on']) : null);
+        $eventTimestamp = self::resolveEventTimestamp($payload);
 
         return new self(
             event: $event,
@@ -77,5 +84,38 @@ final class EnrichedWebhookPayload extends Data
     public function get(string $key, mixed $default = null): mixed
     {
         return data_get($this->rawPayload, $key, $default);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private static function resolveOwnerFromPayload(array $payload): ?Model
+    {
+        $ownerType = $payload['__owner_type'] ?? null;
+        $ownerId = $payload['__owner_id'] ?? null;
+
+        if (! is_string($ownerType) || (! is_string($ownerId) && ! is_int($ownerId))) {
+            return null;
+        }
+
+        return OwnerContext::fromTypeAndId($ownerType, $ownerId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private static function resolveEventTimestamp(array $payload): ?CarbonInterface
+    {
+        $candidate = $payload['created'] ?? $payload['created_on'] ?? null;
+
+        if (is_int($candidate) || is_float($candidate) || (is_string($candidate) && is_numeric($candidate))) {
+            return CarbonImmutable::createFromTimestampUTC((int) $candidate);
+        }
+
+        if (is_string($candidate) && $candidate !== '') {
+            return CarbonImmutable::parse($candidate);
+        }
+
+        return null;
     }
 }

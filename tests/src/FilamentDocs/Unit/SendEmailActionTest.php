@@ -14,6 +14,7 @@ use Filament\Schemas\Components\Component;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Component as LivewireComponent;
 
 uses(TestCase::class);
@@ -148,6 +149,41 @@ it('sends email successfully and pushes a success notification to the session', 
     $notifications = session()->get('filament.notifications', []);
     expect($notifications)->not()->toBeEmpty();
     expect(collect($notifications)->last()['title'])->toBe('Email Sent');
+});
+
+it('passes subject message and cc overrides through the send email action', function (): void {
+    Mail::fake();
+    config()->set('docs.email.queue_enabled', false);
+
+    $doc = Doc::factory()->create([
+        'customer_data' => [
+            'email' => 'to@example.test',
+            'name' => 'Jane Doe',
+        ],
+    ]);
+
+    $method = new ReflectionMethod(SendEmailAction::class, 'sendEmail');
+
+    $method->invoke(null, $doc, [
+        'to' => 'to@example.test',
+        'cc' => 'copy@example.test',
+        'subject' => 'Custom Subject',
+        'message' => 'Custom body',
+    ]);
+
+    $email = $doc->emails()->latest('created_at')->first();
+
+    expect($email)->not()->toBeNull();
+    expect($email->subject)->toBe('Custom Subject');
+    expect($email->body)->toBe('Custom body');
+    expect($email->metadata)->toMatchArray(['cc' => 'copy@example.test']);
+
+    Mail::assertSent(
+        \AIArmada\Docs\Mail\DocMail::class,
+        fn (\AIArmada\Docs\Mail\DocMail $mail): bool => count($mail->envelope()->cc ?? []) === 1
+            && $mail->envelope()->cc[0]->address === 'copy@example.test'
+            && $mail->envelope()->subject === 'Custom Subject'
+    );
 });
 
 it('handles email failures and pushes an error notification to the session', function (): void {

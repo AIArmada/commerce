@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\DB;
 class AffiliateProgramTier extends Model
 {
     use HasUuids;
+    use ScopesByProgramOwner;
 
     protected $fillable = [
         'program_id',

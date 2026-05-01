@@ -7,6 +7,7 @@ namespace AIArmada\FilamentDocs\Pages;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
+use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
@@ -24,6 +25,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use UnitEnum;
 
 final class PendingApprovalsPage extends Page implements HasTable
 {
@@ -38,9 +40,9 @@ final class PendingApprovalsPage extends Page implements HasTable
         return __('Pending Approvals');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-docs.navigation.group', __('Documents'));
+        return app(FilamentDocsPlugin::class)->getNavigationGroup();
     }
 
     public static function getNavigationSort(): ?int
