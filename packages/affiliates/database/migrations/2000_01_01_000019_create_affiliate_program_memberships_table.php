@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable();
             $table->foreignUuid('approved_by')->nullable();
 
-            $jsonType = config('affiliates.database.json_column_type', 'json');
+            $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'json'));
             $table->addColumn($jsonType, 'custom_terms')->nullable();
 
             $table->timestamps();
