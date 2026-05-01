@@ -218,5 +218,5 @@ it('rejects malformed owner tuples on pricing writes', function (): void {
         'currency' => 'MYR',
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => null,
-    ]))->toThrow(\RuntimeException::class);
+    ]))->toThrow(RuntimeException::class);
 });

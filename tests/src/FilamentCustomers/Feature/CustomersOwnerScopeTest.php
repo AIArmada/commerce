@@ -45,7 +45,7 @@ it('resolveOwner fails closed when resolver is not bound and context is not expl
     }
 
     expect(app()->bound(OwnerResolverInterface::class))->toBeFalse();
-    expect(fn (): ?Model => CustomersOwnerScope::resolveOwner())->toThrow(\RuntimeException::class);
+    expect(fn (): ?Model => CustomersOwnerScope::resolveOwner())->toThrow(RuntimeException::class);
 });
 
 it('applyToOwnedQuery returns global-only rows in explicit global context when model has no scopeForOwner', function (): void {

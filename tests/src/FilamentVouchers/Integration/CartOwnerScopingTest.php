@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentVouchers\Support\Integrations\FilamentCartBridge;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use Illuminate\Database\Eloquent\Model;
@@ -135,7 +136,7 @@ it('blocks bridge cart operations across tenants even when a cart model is passe
         }
     };
 
-    app()->instance(\AIArmada\FilamentCart\Services\CartInstanceManager::class, $manager);
+    app()->instance(CartInstanceManager::class, $manager);
 
     expect($bridge->getCartInstance($cartOwnedByB))->toBeNull();
     expect($bridge->getAppliedVouchers($cartOwnedByB))->toBeEmpty();

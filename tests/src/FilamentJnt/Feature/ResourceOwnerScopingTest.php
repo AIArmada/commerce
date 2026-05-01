@@ -52,7 +52,7 @@ it('scopes Filament JNT resources to the resolved owner (including global)', fun
         ]);
     });
 
-    OwnerContext::withOwner($ownerA, function () use ($ownerA, &$ownerAOrder, &$ownerALog, &$ownerAEvent): void {
+    OwnerContext::withOwner($ownerA, function () use (&$ownerAOrder, &$ownerALog, &$ownerAEvent): void {
         $ownerAOrder = JntOrder::query()->create([
             'order_id' => 'ORD-A',
             'customer_code' => 'CUST',
@@ -71,7 +71,7 @@ it('scopes Filament JNT resources to the resolved owner (including global)', fun
         ]);
     });
 
-    OwnerContext::withOwner($ownerB, function () use ($ownerB, &$ownerBOrder, &$ownerBLog, &$ownerBEvent): void {
+    OwnerContext::withOwner($ownerB, function () use (&$ownerBOrder, &$ownerBLog, &$ownerBEvent): void {
         $ownerBOrder = JntOrder::query()->create([
             'order_id' => 'ORD-B',
             'customer_code' => 'CUST',
@@ -134,7 +134,7 @@ it('can exclude global records from Filament JNT resources', function (): void {
         ]);
     });
 
-    OwnerContext::withOwner($ownerA, function () use ($ownerA, &$ownerAOrder, &$ownerALog, &$ownerAEvent): void {
+    OwnerContext::withOwner($ownerA, function () use (&$ownerAOrder, &$ownerALog, &$ownerAEvent): void {
         $ownerAOrder = JntOrder::query()->create([
             'order_id' => 'ORD-A',
             'customer_code' => 'CUST',

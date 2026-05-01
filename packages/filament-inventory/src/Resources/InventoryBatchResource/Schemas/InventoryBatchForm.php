@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Resources\InventoryBatchResource\Schemas;
 
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Enums\BatchStatus;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
