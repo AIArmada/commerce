@@ -30,7 +30,7 @@ return new class extends Migration
             $table->decimal('conversion_rate', 8, 4)->default(0);
             $table->decimal('epc_cents', 10, 4)->default(0);
 
-            $jsonType = config('affiliates.database.json_column_type', 'json');
+            $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'json'));
             $table->addColumn($jsonType, 'breakdown')->nullable();
 
             $table->timestamps();

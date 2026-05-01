@@ -92,7 +92,8 @@ final class ViewInvoices extends Page
             }
         }
 
-        return $invoices
+        /** @var \Illuminate\Support\Collection<int, array{id: string, gateway: string, number: string, amount: string, date: string, status: string, download_url: string|null}> $result */
+        $result = $invoices
             ->sortByDesc('sort_timestamp')
             ->values()
             ->map(function (array $invoice): array {
@@ -100,6 +101,8 @@ final class ViewInvoices extends Page
 
                 return $invoice;
             });
+
+        return $result;
     }
 
     private function formatAmount(int $amountInCents, string $currency): string

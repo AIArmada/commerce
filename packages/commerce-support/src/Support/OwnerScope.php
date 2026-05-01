@@ -25,6 +25,7 @@ final class OwnerScope implements Scope
             sprintf('%s requires an owner context or explicit global context.', $model::class),
         );
 
+        /** @var \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model> $builder */
         OwnerQuery::applyToEloquentBuilder(
             $builder,
             $owner,

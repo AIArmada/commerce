@@ -33,7 +33,7 @@ return new class extends Migration
             $table->unsignedInteger('lead_time_days')->nullable();
             $table->foreignUuid('preferred_supplier_id')->nullable();
             $table->nullableUuidMorphs('owner');
-            $jsonType = config('inventory.database.json_column_type', config('inventory.json_column_type', 'json'));
+            $jsonType = config('inventory.database.json_column_type', commerce_json_column_type('inventory', 'json'));
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
 

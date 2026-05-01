@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('bonus_type'); // percentage, flat, multiplier
             $table->integer('bonus_value');
 
-            $jsonType = config('affiliates.database.json_column_type', 'json');
+            $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'json'));
             $table->addColumn($jsonType, 'conditions')->nullable();
 
             $table->timestamp('starts_at');
