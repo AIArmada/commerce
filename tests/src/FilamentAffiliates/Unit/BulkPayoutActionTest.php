@@ -19,8 +19,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Actions\BulkPayoutAction;
 use AIArmada\FilamentAuthz\Models\Permission;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -271,7 +271,7 @@ it('marks a pending payout as failed when the processor throws', function (): vo
         ->and($event->notes)->toBe('Processor exploded');
 });
 
-it('rejects cross-tenant payout selection without mutating the target payout', function (): void {
+it('rejects cross-tenant payout selection without mutating any selected payouts', function (): void {
     config()->set('affiliates.owner.enabled', true);
     config()->set('affiliates.owner.include_global', false);
 
@@ -353,14 +353,15 @@ it('rejects cross-tenant payout selection without mutating the target payout', f
 
     OwnerContext::withOwner($ownerA, function () use ($action, $payoutA, $payoutB): void {
         expect(fn () => $action->call(['records' => new Collection([$payoutA, $payoutB])]))
-            ->toThrow(ModelNotFoundException::class);
+            ->toThrow(AuthorizationException::class);
     });
 
     $payoutA->refresh();
     $payoutB->refresh();
 
-    expect($payoutA->status)->toBeInstanceOf(CompletedPayout::class)
+    expect($payoutA->status)->toBeInstanceOf(PendingPayout::class)
         ->and($payoutB->status)->toBeInstanceOf(PendingPayout::class)
+        ->and($payoutA->events()->count())->toBe(0)
         ->and($payoutB->events()->count())->toBe(0);
 });
 

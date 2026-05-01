@@ -7,6 +7,8 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\URL;
 
 describe('OfferLinkService', function (): void {
@@ -225,6 +227,46 @@ describe('OfferLinkService', function (): void {
             expect($resolved->relationLoaded('offer'))->toBeTrue();
             expect($resolved->relationLoaded('affiliate'))->toBeTrue();
             expect($resolved->relationLoaded('site'))->toBeTrue();
+        });
+
+        test('resolves tenant-owned link and relations under owner mode', function (): void {
+            config([
+                'affiliate-network.owner.enabled' => true,
+                'affiliates.owner.enabled' => true,
+            ]);
+
+            $owner = User::factory()->create();
+
+            $site = OwnerContext::withOwner($owner, fn () => AffiliateSite::factory()->verified()->forOwner($owner)->create([
+                'domain' => 'owned-link.example',
+            ]));
+
+            $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->active()->forSite($site)->create([
+                'landing_url' => 'https://owned-link.example/offers/tenant',
+            ]));
+
+            $affiliate = OwnerContext::withOwner($owner, fn () => Affiliate::create([
+                'code' => 'AFF' . uniqid(),
+                'name' => 'Owned Link Affiliate',
+                'status' => 'active',
+                'commission_type' => 'percentage',
+                'commission_rate' => 1000,
+                'currency' => 'USD',
+            ]));
+
+            OwnerContext::withOwner($owner, fn () => AffiliateOfferLink::factory()
+                ->forOffer($offer)
+                ->forAffiliate($affiliate)
+                ->forSite($site)
+                ->active()
+                ->create(['code' => 'owned-link-code']));
+
+            $resolved = $this->service->resolveLink('owned-link-code');
+
+            expect($resolved)->not->toBeNull()
+                ->and($resolved->offer->id)->toBe($offer->id)
+                ->and($resolved->affiliate->id)->toBe($affiliate->id)
+                ->and($resolved->site?->id)->toBe($site->id);
         });
     });
 

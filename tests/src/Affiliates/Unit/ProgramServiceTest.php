@@ -11,6 +11,9 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
     $this->service = app(ProgramService::class);
@@ -101,6 +104,47 @@ describe('ProgramService', function (): void {
 
             expect($membership->applied_at)->not->toBeNull();
         });
+
+        test('rejects cross-tenant program joins when owner scoping is enabled', function (): void {
+            config()->set('affiliates.owner.enabled', true);
+            config()->set('affiliates.owner.include_global', false);
+
+            $ownerA = User::query()->create([
+                'name' => 'Program Owner A',
+                'email' => 'program-owner-a@example.com',
+                'password' => 'secret',
+            ]);
+
+            $ownerB = User::query()->create([
+                'name' => 'Program Owner B',
+                'email' => 'program-owner-b@example.com',
+                'password' => 'secret',
+            ]);
+
+            $affiliate = OwnerContext::withOwner($ownerA, fn (): Affiliate => Affiliate::create([
+                'code' => 'JOIN-' . uniqid(),
+                'name' => 'Scoped Affiliate',
+                'contact_email' => 'join@example.com',
+                'status' => Active::class,
+                'commission_type' => CommissionType::Percentage,
+                'commission_rate' => 1000,
+                'currency' => 'USD',
+            ]));
+
+            $foreignProgram = OwnerContext::withOwner($ownerB, fn (): AffiliateProgram => AffiliateProgram::create([
+                'name' => 'Foreign Program',
+                'slug' => 'foreign-program-' . uniqid(),
+                'status' => ProgramStatus::Active,
+                'is_public' => true,
+                'requires_approval' => false,
+                'commission_type' => CommissionType::Percentage,
+            ]));
+
+            expect(fn () => OwnerContext::withOwner(
+                $ownerA,
+                fn (): AffiliateProgramMembership => $this->service->joinProgram($affiliate, $foreignProgram),
+            ))->toThrow(AuthorizationException::class);
+        });
     });
 
     describe('leaveProgram', function (): void {
@@ -169,6 +213,67 @@ describe('ProgramService', function (): void {
             $result = $this->service->upgradeTier($this->affiliate, $this->program, $tier2);
 
             expect($result->tier_id)->toBe($tier2->id);
+        });
+
+        test('rejects cross-tenant tier upgrades when owner scoping is enabled', function (): void {
+            config()->set('affiliates.owner.enabled', true);
+            config()->set('affiliates.owner.include_global', false);
+
+            $ownerA = User::query()->create([
+                'name' => 'Tier Owner A',
+                'email' => 'tier-owner-a@example.com',
+                'password' => 'secret',
+            ]);
+
+            $ownerB = User::query()->create([
+                'name' => 'Tier Owner B',
+                'email' => 'tier-owner-b@example.com',
+                'password' => 'secret',
+            ]);
+
+            [$affiliate, $program] = OwnerContext::withOwner($ownerA, function (): array {
+                $affiliate = Affiliate::create([
+                    'code' => 'UPGRADE-' . uniqid(),
+                    'name' => 'Scoped Tier Affiliate',
+                    'contact_email' => 'upgrade@example.com',
+                    'status' => Active::class,
+                    'commission_type' => CommissionType::Percentage,
+                    'commission_rate' => 1000,
+                    'currency' => 'USD',
+                ]);
+
+                $program = AffiliateProgram::create([
+                    'name' => 'Scoped Program',
+                    'slug' => 'scoped-program-' . uniqid(),
+                    'status' => ProgramStatus::Active,
+                    'is_public' => true,
+                    'requires_approval' => false,
+                    'commission_type' => CommissionType::Percentage,
+                ]);
+
+                return [$affiliate, $program];
+            });
+
+            $foreignTier = OwnerContext::withOwner($ownerB, fn (): AffiliateProgramTier => AffiliateProgramTier::create([
+                'program_id' => AffiliateProgram::create([
+                    'name' => 'Foreign Tier Program',
+                    'slug' => 'foreign-tier-program-' . uniqid(),
+                    'status' => ProgramStatus::Active,
+                    'is_public' => true,
+                    'requires_approval' => false,
+                    'commission_type' => CommissionType::Percentage,
+                ])->getKey(),
+                'name' => 'Foreign Tier',
+                'level' => 2,
+                'commission_rate_basis_points' => 1500,
+            ]));
+
+            OwnerContext::withOwner($ownerA, fn (): AffiliateProgramMembership => $this->service->joinProgram($affiliate, $program));
+
+            expect(fn () => OwnerContext::withOwner(
+                $ownerA,
+                fn (): AffiliateProgramMembership => $this->service->upgradeTier($affiliate, $program, $foreignTier),
+            ))->toThrow(RuntimeException::class, 'Selected tier does not belong to the specified program.');
         });
     });
 

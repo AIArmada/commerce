@@ -9,6 +9,8 @@ use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\ListAffi
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Pages\ViewAffiliatePayout;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\RelationManagers\ConversionsRelationManager;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -18,6 +20,26 @@ use UnitEnum;
 final class AffiliatePayoutResource extends Resource
 {
     protected static ?string $model = AffiliatePayout::class;
+
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<AffiliatePayout> $query */
+        $query = parent::getEloquentQuery();
+
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            /** @var Builder<Model> $unscopedQuery */
+            $unscopedQuery = $query;
+
+            return $unscopedQuery;
+        }
+
+        $scopedQuery = $query->forOwner();
+
+        /** @var Builder<Model> $modelQuery */
+        $modelQuery = $scopedQuery;
+
+        return $modelQuery;
+    }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBanknotes;
 

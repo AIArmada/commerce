@@ -14,6 +14,8 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateFor
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Tables\AffiliatesTable;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -33,6 +35,26 @@ final class AffiliateResource extends Resource
     protected static ?string $modelLabel = 'Affiliate';
 
     protected static ?string $pluralModelLabel = 'Affiliates';
+
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<Affiliate> $query */
+        $query = parent::getEloquentQuery();
+
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            /** @var Builder<Model> $unscopedQuery */
+            $unscopedQuery = $query;
+
+            return $unscopedQuery;
+        }
+
+        $scopedQuery = $query->forOwner();
+
+        /** @var Builder<Model> $modelQuery */
+        $modelQuery = $scopedQuery;
+
+        return $modelQuery;
+    }
 
     public static function form(Schema $schema): Schema
     {

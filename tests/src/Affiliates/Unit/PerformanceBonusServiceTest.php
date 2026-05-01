@@ -406,6 +406,66 @@ describe('PerformanceBonusService', function (): void {
             expect($result)->toHaveCount(1);
             expect($result->first()['total_revenue'])->toBe(8000); // Only in-range conversion
         });
+
+        test('falls back to legacy total_minor when neutral value_minor is unset', function (): void {
+            AffiliateConversion::create([
+                'affiliate_id' => $this->affiliate->id,
+                'affiliate_code' => $this->affiliate->code,
+                'order_reference' => 'ORD-LEGACY-TOTAL',
+                'subtotal_minor' => 7000,
+                'total_minor' => 7000,
+                'commission_minor' => 700,
+                'status' => ApprovedConversion::class,
+                'occurred_at' => now(),
+            ]);
+
+            $result = $this->service->getLeaderboard();
+            $entry = $result->first();
+
+            expect($entry['total_revenue'])->toBe(7000)
+                ->and($entry['avg_order_value'])->toBe(7000.0);
+        });
+
+        test('honors configured growth min_growth_percent threshold', function (): void {
+            config()->set('affiliates.bonuses.growth', [
+                'enabled' => true,
+                'bonus_amount' => 7500,
+                'min_growth_percent' => 200,
+                'min_previous_revenue' => 1000,
+            ]);
+
+            AffiliateConversion::create([
+                'affiliate_id' => $this->affiliate->id,
+                'affiliate_code' => $this->affiliate->code,
+                'order_reference' => 'ORD-GROWTH-PREV',
+                'subtotal_minor' => 10000,
+                'total_minor' => 10000,
+                'value_minor' => 10000,
+                'commission_minor' => 1000,
+                'status' => ApprovedConversion::class,
+                'occurred_at' => now()->subMonth()->startOfMonth()->addDay(),
+            ]);
+
+            AffiliateConversion::create([
+                'affiliate_id' => $this->affiliate->id,
+                'affiliate_code' => $this->affiliate->code,
+                'order_reference' => 'ORD-GROWTH-CURR',
+                'subtotal_minor' => 15000,
+                'total_minor' => 15000,
+                'value_minor' => 15000,
+                'commission_minor' => 1500,
+                'status' => ApprovedConversion::class,
+                'occurred_at' => now()->startOfMonth()->addDay(),
+            ]);
+
+            $reflection = new ReflectionMethod(PerformanceBonusService::class, 'calculateGrowthBonuses');
+            $reflection->setAccessible(true);
+
+            $bonuses = $reflection->invoke($this->service, now()->startOfMonth(), now()->endOfMonth());
+
+            expect($bonuses)->toBeArray()
+                ->toHaveCount(0);
+        });
     });
 });
 

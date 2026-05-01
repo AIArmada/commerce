@@ -33,11 +33,17 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shield-exclamation';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
-
     protected static ?string $navigationLabel = 'Fraud Review';
 
-    protected static ?int $navigationSort = 15;
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation_group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.pages.navigation_sort.fraud_review', 15);
+    }
 
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.fraud-review';

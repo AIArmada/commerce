@@ -119,6 +119,18 @@ it('AffiliateProgramResource has empty relations', function (): void {
     expect(AffiliateProgramResource::getRelations())->toBeArray()->toBeEmpty();
 });
 
+it('AffiliateProgramResource has navigation group from config', function (): void {
+    config(['filament-affiliates.navigation_group' => 'Partners']);
+
+    expect(AffiliateProgramResource::getNavigationGroup())->toBe('Partners');
+});
+
+it('AffiliateProgramResource has navigation sort from config', function (): void {
+    config(['filament-affiliates.resources.navigation_sort.affiliate_programs' => 73]);
+
+    expect(AffiliateProgramResource::getNavigationSort())->toBe(73);
+});
+
 // AffiliateFraudSignalResource Tests
 it('AffiliateFraudSignalResource has correct model', function (): void {
     expect(AffiliateFraudSignalResource::getModel())->toBe(AffiliateFraudSignal::class);
@@ -139,6 +151,18 @@ it('AffiliateFraudSignalResource has empty relations', function (): void {
 
 it('AffiliateFraudSignalResource has navigation badge color', function (): void {
     expect(AffiliateFraudSignalResource::getNavigationBadgeColor())->toBe('danger');
+});
+
+it('AffiliateFraudSignalResource has navigation group from config', function (): void {
+    config(['filament-affiliates.navigation_group' => 'Partners']);
+
+    expect(AffiliateFraudSignalResource::getNavigationGroup())->toBe('Partners');
+});
+
+it('AffiliateFraudSignalResource has navigation sort from config', function (): void {
+    config(['filament-affiliates.resources.navigation_sort.affiliate_fraud_signals' => 74]);
+
+    expect(AffiliateFraudSignalResource::getNavigationSort())->toBe(74);
 });
 
 it('AffiliateFraudSignalResource returns null badge when no detected signals', function (): void {

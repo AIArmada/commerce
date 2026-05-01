@@ -7,10 +7,12 @@ namespace AIArmada\FilamentAffiliateNetwork\Pages;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -18,6 +20,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use UnitEnum;
 
@@ -39,6 +42,10 @@ final class AffiliateMarketplacePage extends Page
 
     public ?string $sortBy = 'featured';
 
+    private ?Affiliate $resolvedAffiliate = null;
+
+    private bool $affiliateResolved = false;
+
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-affiliate-network.navigation.group', 'Affiliate Network');
@@ -59,10 +66,14 @@ final class AffiliateMarketplacePage extends Page
      */
     public function getCategories(): Collection
     {
-        return AffiliateOfferCategory::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
+        // Public marketplace: intentionally shows categories from all tenants — explicit global context.
+        return OwnerContext::withOwner(null, function (): Collection {
+            return AffiliateOfferCategory::query()
+                ->withoutOwnerScope()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
+        });
     }
 
     /**
@@ -70,24 +81,39 @@ final class AffiliateMarketplacePage extends Page
      */
     public function getOffers(): Collection
     {
-        return AffiliateOffer::query()
-            ->where('status', AffiliateOffer::STATUS_ACTIVE)
-            ->where('is_public', true)
-            ->when($this->search, fn (Builder $query) => $query->where(function (Builder $q): void {
-                $q->where('name', 'like', "%{$this->search}%")
-                    ->orWhere('description', 'like', "%{$this->search}%");
-            }))
-            ->when($this->categoryFilter, fn (Builder $query) => $query->where('category_id', $this->categoryFilter))
-            ->when($this->sortBy === 'featured', fn (Builder $query) => $query->orderByDesc('is_featured')->orderByDesc('created_at'))
-            ->when($this->sortBy === 'newest', fn (Builder $query) => $query->orderByDesc('created_at'))
-            ->when($this->sortBy === 'commission', fn (Builder $query) => $query->orderByDesc('commission_rate'))
-            ->with(['site', 'category'])
-            ->limit(50)
-            ->get();
+        // Public marketplace: intentionally shows offers from all tenants — explicit global context.
+        return OwnerContext::withOwner(null, function (): Collection {
+            $search = $this->search;
+
+            return AffiliateOffer::withoutGlobalScope('owner_via_site')
+                ->where('status', AffiliateOffer::STATUS_ACTIVE)
+                ->where('is_public', true)
+                ->when(mb_strlen((string) $search) >= 3, fn (Builder $query) => $query->where(function (Builder $q) use ($search): void {
+                    $escaped = str_replace(['%', '_'], ['\%', '\_'], (string) $search);
+                    $q->where('name', 'like', "%{$escaped}%")
+                        ->orWhere('description', 'like', "%{$escaped}%");
+                }))
+                ->when($this->categoryFilter, fn (Builder $query) => $query->where('category_id', $this->categoryFilter))
+                ->when($this->sortBy === 'featured', fn (Builder $query) => $query->orderByDesc('is_featured')->orderByDesc('created_at'))
+                ->when($this->sortBy === 'newest', fn (Builder $query) => $query->orderByDesc('created_at'))
+                ->when($this->sortBy === 'commission', fn (Builder $query) => $query->orderByDesc('commission_rate'))
+                ->with([
+                    'site' => fn ($query) => $query->withoutOwnerScope(),
+                    'category' => fn ($query) => $query->withoutOwnerScope(),
+                ])
+                ->limit(50)
+                ->get();
+        });
     }
 
     public function getAffiliate(): ?Affiliate
     {
+        if ($this->affiliateResolved) {
+            return $this->resolvedAffiliate;
+        }
+
+        $this->affiliateResolved = true;
+
         /** @var Authenticatable|null $user */
         $user = auth()->user();
 
@@ -104,10 +130,14 @@ final class AffiliateMarketplacePage extends Page
             return null;
         }
 
-        return Affiliate::query()
+        // Public marketplace: find the user's affiliate regardless of owner — explicit global scope bypass.
+        $this->resolvedAffiliate = OwnerContext::withOwner(null, fn (): ?Affiliate => Affiliate::query()
+            ->withoutOwnerScope()
             ->where('contact_email', $email)
-            ->where('status', Active::class)
-            ->first();
+            ->whereState('status', Active::class)
+            ->first());
+
+        return $this->resolvedAffiliate;
     }
 
     public function hasApplied(AffiliateOffer $offer): bool
@@ -118,10 +148,10 @@ final class AffiliateMarketplacePage extends Page
             return false;
         }
 
-        return AffiliateOfferApplication::query()
+        return $this->withAffiliateOwnerContext($affiliate, fn (): bool => AffiliateOfferApplication::query()
             ->where('offer_id', $offer->id)
             ->where('affiliate_id', $affiliate->id)
-            ->exists();
+            ->exists());
     }
 
     public function getApplicationStatus(AffiliateOffer $offer): ?string
@@ -132,10 +162,10 @@ final class AffiliateMarketplacePage extends Page
             return null;
         }
 
-        return AffiliateOfferApplication::query()
+        return $this->withAffiliateOwnerContext($affiliate, fn (): ?string => AffiliateOfferApplication::query()
             ->where('offer_id', $offer->id)
             ->where('affiliate_id', $affiliate->id)
-            ->value('status');
+            ->value('status'));
     }
 
     public function applyForOffer(string $offerId, string $reason = ''): void
@@ -168,7 +198,8 @@ final class AffiliateMarketplacePage extends Page
             return;
         }
 
-        app(OfferManagementService::class)->applyForOffer($offer, $affiliate, $reason);
+        $this->withAffiliateOwnerContext($affiliate, fn (): AffiliateOfferApplication => app(OfferManagementService::class)
+            ->applyForOffer($offer, $affiliate, $reason));
 
         Notification::make()
             ->title('Application submitted successfully')
@@ -190,8 +221,21 @@ final class AffiliateMarketplacePage extends Page
             return;
         }
 
+        $isApprovedForOffer = $this->withAffiliateOwnerContext($affiliate, fn (): bool => app(OfferManagementService::class)
+            ->isApprovedForOffer($offer, $affiliate));
+
+        if ($offer->requires_approval && ! $isApprovedForOffer) {
+            Notification::make()
+                ->title('Approval required')
+                ->body('You must be approved for this offer before generating links.')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         $linkService = app(OfferLinkService::class);
-        $link = $linkService->createLink($offer, $affiliate);
+        $link = $this->withAffiliateOwnerContext($affiliate, fn (): AffiliateOfferLink => $linkService->createLink($offer, $affiliate));
         $trackingUrl = $linkService->generateTrackingUrl($link);
 
         Notification::make()
@@ -200,5 +244,24 @@ final class AffiliateMarketplacePage extends Page
             ->success()
             ->persistent()
             ->send();
+    }
+
+    /**
+     * @template TResult
+     *
+     * @param  callable(): TResult  $callback
+     * @return TResult
+     */
+    private function withAffiliateOwnerContext(Affiliate $affiliate, callable $callback): mixed
+    {
+        /** @var string|null $ownerType */
+        $ownerType = $affiliate->owner_type;
+        /** @var string|null $ownerId */
+        $ownerId = $affiliate->owner_id;
+
+        /** @var Model|null $owner */
+        $owner = OwnerContext::fromTypeAndId($ownerType, $ownerId);
+
+        return OwnerContext::withOwner($owner, $callback);
     }
 }
