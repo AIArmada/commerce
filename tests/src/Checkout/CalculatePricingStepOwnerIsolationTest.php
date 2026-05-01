@@ -56,7 +56,7 @@ it('rejects cross-tenant associated models when resolving checkout pricing', fun
         ]);
     });
 
-    $result = app(CalculatePricingStep::class)->handle($session);
+    $result = OwnerContext::withOwner($ownerA, static fn () => app(CalculatePricingStep::class)->handle($session));
 
     $session->refresh();
 

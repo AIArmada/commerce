@@ -330,9 +330,12 @@ describe('ProcessJntWebhook', function (): void {
             'owner_id' => $shipment->owner_id,
         ];
 
-        JntTrackingEvent::query()->create($attributes);
+        OwnerContext::withOwner($owner, function () use ($attributes): void {
+            JntTrackingEvent::query()->create($attributes);
+        });
 
-        expect(fn () => JntTrackingEvent::query()->create($attributes))
-            ->toThrow(QueryException::class);
+        expect(fn () => OwnerContext::withOwner($owner, function () use ($attributes): void {
+            JntTrackingEvent::query()->create($attributes);
+        }))->toThrow(QueryException::class);
     });
 });

@@ -109,6 +109,8 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
+        // Intentional cross-tenant lookup: payment gateways redirect back without owner context.
+        // Access is guarded below by hash_equals() on the per-session callback_token stored in payment_data.
         $session = CheckoutSession::withoutOwnerScope()->find($sessionId);
 
         if ($session === null) {

@@ -276,10 +276,26 @@ final class UserAuthzForm
         $table = (string) config('permission.table_names.model_has_roles', 'model_has_roles');
         $modelMorphKey = (string) config('permission.column_names.model_morph_key', 'model_id');
         $rolePivotKey = (string) $registrar->pivotRole;
+        $teamsKey = (string) $registrar->teamsKey;
 
-        return DB::table($table)
+        $query = DB::table($table)
             ->where($modelMorphKey, $record->getKey())
-            ->where('model_type', $record->getMorphClass())
+            ->where('model_type', $record->getMorphClass());
+
+        // Scope to current team when restriction is active; reading cross-tenant
+        // pivot rows violates the owner-scoping contract even when the downstream
+        // intersection with scoped options would hide them from the UI.
+        if (static::shouldRestrictToCurrentTeam((bool) $registrar->teams)) {
+            $teamId = getPermissionsTeamId();
+
+            if ($teamId === null) {
+                $query->whereNull($teamsKey);
+            } else {
+                $query->where($teamsKey, $teamId);
+            }
+        }
+
+        return $query
             ->pluck($rolePivotKey)
             ->map(static fn (mixed $roleId): string => (string) $roleId)
             ->unique()

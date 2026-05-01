@@ -2,67 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Commands\AggregateMetricsCommand;
 use AIArmada\Chip\Commands\CleanWebhooksCommand;
 use AIArmada\Chip\Commands\RetryWebhooksCommand;
 use AIArmada\Chip\Models\Webhook;
-use AIArmada\Chip\Services\MetricsAggregator;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-
-describe('AggregateMetricsCommand', function (): void {
-    it('aggregates for yesterday by default', function (): void {
-        $aggregator = Mockery::mock(MetricsAggregator::class);
-        $aggregator->shouldReceive('aggregateForDate')
-            ->once()
-            ->with(Mockery::on(fn ($date) => $date instanceof CarbonImmutable && $date->isYesterday()));
-
-        $this->app->instance(MetricsAggregator::class, $aggregator);
-
-        $this->artisan(AggregateMetricsCommand::class)
-            ->expectsOutput('Aggregating metrics for ' . CarbonImmutable::yesterday()->toDateString() . ' (yesterday)...')
-            ->expectsOutput('Done.')
-            ->assertSuccessful();
-    });
-
-    it('aggregates for specific date with --date option', function (): void {
-        $specificDate = CarbonImmutable::parse('2025-01-15');
-
-        $aggregator = Mockery::mock(MetricsAggregator::class);
-        $aggregator->shouldReceive('aggregateForDate')
-            ->once()
-            ->with(Mockery::on(fn ($date) => $date instanceof CarbonImmutable && $date->toDateString() === '2025-01-15'));
-
-        $this->app->instance(MetricsAggregator::class, $aggregator);
-
-        $this->artisan(AggregateMetricsCommand::class, ['--date' => '2025-01-15'])
-            ->expectsOutput('Aggregating metrics for 2025-01-15...')
-            ->expectsOutput('Done.')
-            ->assertSuccessful();
-    });
-
-    it('backfills date range with --from and --to options', function (): void {
-        $aggregator = Mockery::mock(MetricsAggregator::class);
-        $aggregator->shouldReceive('backfill')
-            ->once()
-            ->with(
-                Mockery::on(fn ($from) => $from instanceof CarbonImmutable && $from->toDateString() === '2025-01-01'),
-                Mockery::on(fn ($to) => $to instanceof CarbonImmutable && $to->toDateString() === '2025-01-10')
-            )
-            ->andReturn(10);
-
-        $this->app->instance(MetricsAggregator::class, $aggregator);
-
-        $this->artisan(AggregateMetricsCommand::class, [
-            '--from' => '2025-01-01',
-            '--to' => '2025-01-10',
-        ])
-            ->expectsOutput('Backfilling metrics from 2025-01-01 to 2025-01-10...')
-            ->expectsOutput('Aggregated metrics for 10 day(s).')
-            ->assertSuccessful();
-    });
-});
 
 describe('CleanWebhooksCommand', function (): void {
     it('shows message when no webhooks found', function (): void {

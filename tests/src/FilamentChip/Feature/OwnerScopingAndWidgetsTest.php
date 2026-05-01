@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\PurchaseResource;
 use AIArmada\FilamentChip\Widgets\PaymentMethodsWidget;
 use AIArmada\FilamentChip\Widgets\RevenueChartWidget;
@@ -137,13 +138,18 @@ it('computes payment method breakdown without including test mode purchases', fu
         ]);
     });
 
-    $widget = app(PaymentMethodsWidget::class);
-
-    $ref = new ReflectionClass($widget);
-    $method = $ref->getMethod('getPaymentMethodBreakdown');
-
     /** @var array<string, array{count: int, amount: int}> $breakdown */
-    $breakdown = $method->invoke($widget);
+    $breakdown = OwnerContext::withOwner(null, function (): array {
+        $widget = app(PaymentMethodsWidget::class);
+
+        $ref = new ReflectionClass($widget);
+        $method = $ref->getMethod('getPaymentMethodBreakdown');
+
+        /** @var array<string, array{count: int, amount: int}> $result */
+        $result = $method->invoke($widget);
+
+        return $result;
+    });
 
     expect($breakdown)->toHaveKey('FPX');
     expect($breakdown['FPX']['count'])->toBe(1);
@@ -169,13 +175,18 @@ it('generates revenue data for the last 30 days', function (): void {
         ]);
     });
 
-    $widget = app(RevenueChartWidget::class);
-
-    $ref = new ReflectionClass($widget);
-    $method = $ref->getMethod('getRevenueData');
-
     /** @var array{labels: array<string>, amounts: array<int>} $data */
-    $data = $method->invoke($widget);
+    $data = OwnerContext::withOwner(null, function (): array {
+        $widget = app(RevenueChartWidget::class);
+
+        $ref = new ReflectionClass($widget);
+        $method = $ref->getMethod('getRevenueData');
+
+        /** @var array{labels: array<string>, amounts: array<int>} $result */
+        $result = $method->invoke($widget);
+
+        return $result;
+    });
 
     expect($data['labels'])->toHaveCount(30);
     expect($data['amounts'])->toHaveCount(30);

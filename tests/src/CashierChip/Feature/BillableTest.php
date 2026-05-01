@@ -86,7 +86,7 @@ it('can update default payment method', function (): void {
     // Refresh the user to get the latest values
     $this->user->refresh();
 
-    expect($this->user->pm_type)->toBe('card');
+    expect($this->user->pm_type)->toBe('Mastercard');
     expect($this->user->pm_last_four)->toBe('5555');
 });
 

@@ -26,6 +26,7 @@ use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
 use AIArmada\FilamentCart\FilamentCartServiceProvider;
 use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
 use AIArmada\FilamentChip\FilamentChipServiceProvider;
+use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
 use AIArmada\FilamentShipping\FilamentShippingServiceProvider;
 use AIArmada\FilamentVouchers\FilamentVouchersServiceProvider;
 use AIArmada\Jnt\JntServiceProvider;
@@ -142,6 +143,7 @@ abstract class TestCase extends Orchestra
             ChipServiceProvider::class,
             JntServiceProvider::class,
             DocsServiceProvider::class,
+            FilamentDocsServiceProvider::class,
             CustomersServiceProvider::class,
             VoucherServiceProvider::class,
             FilamentCartServiceProvider::class,

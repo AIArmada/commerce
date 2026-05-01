@@ -146,9 +146,9 @@ it('uses safely encoded javascript for bulk AWB url opening', function (): void 
 
     $livewire->shouldReceive('js')->once()->with($expectedJs);
 
-    $bulkAction = BulkPrintAwbAction::make()->records(collect([$order]));
+    $bulkAction = BulkPrintAwbAction::make();
     $bulkHandler = $bulkAction->getActionFunction();
-    $bulkHandler(collect([$order]), $livewire);
+    $bulkHandler(new \Illuminate\Database\Eloquent\Collection([$order]), $livewire);
 
     $notifications = session()->get('filament.notifications', []);
     expect(collect($notifications)->pluck('title'))->toContain('AWB Ready');
@@ -232,9 +232,9 @@ it('skips invalid base64 labels in bulk print action and reports warning', funct
     $livewire = Mockery::mock(Component::class);
     $livewire->shouldNotReceive('js');
 
-    $bulkAction = BulkPrintAwbAction::make()->records(collect([$order]));
+    $bulkAction = BulkPrintAwbAction::make();
     $bulkHandler = $bulkAction->getActionFunction();
-    $bulkHandler(collect([$order]), $livewire);
+    $bulkHandler(new \Illuminate\Database\Eloquent\Collection([$order]), $livewire);
 
     $notifications = session()->get('filament.notifications', []);
     expect(collect($notifications)->pluck('title'))->toContain('Some AWBs Failed');

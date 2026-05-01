@@ -65,8 +65,8 @@ describe('JntTrackingService', function (): void {
     it('gets normalized status from tracking detail', function (): void {
         $expressService = Mockery::mock(JntExpressService::class);
         $statusMapper = Mockery::mock(JntStatusMapper::class);
-        $statusMapper->shouldReceive('fromCode')
-            ->with('100')
+        $statusMapper->shouldReceive('resolve')
+            ->with('100', 'Delivered')
             ->andReturn(TrackingStatus::Delivered);
 
         $service = new JntTrackingService($expressService, $statusMapper);
@@ -104,8 +104,6 @@ describe('JntTrackingService', function (): void {
     it('gets current status from the latest tracking detail by scan time', function (): void {
         $expressService = Mockery::mock(JntExpressService::class);
         $statusMapper = Mockery::mock(JntStatusMapper::class);
-        $statusMapper->shouldReceive('fromCode')
-            ->never();
         $statusMapper->shouldReceive('resolve')
             ->with('100', 'Delivered')
             ->andReturn(TrackingStatus::Delivered);
@@ -184,8 +182,8 @@ describe('JntTrackingService', function (): void {
             ->andReturn($trackingData);
 
         $statusMapper = Mockery::mock(JntStatusMapper::class);
-        $statusMapper->shouldReceive('fromCode')
-            ->with('10')
+        $statusMapper->shouldReceive('resolve')
+            ->with('10', 'Parcel picked up')
             ->andReturn(TrackingStatus::PickedUp);
 
         $service = new JntTrackingService($expressService, $statusMapper);
@@ -219,8 +217,8 @@ describe('JntTrackingService', function (): void {
 
         $expressService = Mockery::mock(JntExpressService::class);
         $statusMapper = Mockery::mock(JntStatusMapper::class);
-        $statusMapper->shouldReceive('fromCode')
-            ->with('30')
+        $statusMapper->shouldReceive('resolve')
+            ->with('30', 'Arrived at hub')
             ->andReturn(TrackingStatus::AtHub);
 
         $service = new JntTrackingService($expressService, $statusMapper);
@@ -256,7 +254,8 @@ describe('JntTrackingService', function (): void {
 
         $expressService = Mockery::mock(JntExpressService::class);
         $statusMapper = Mockery::mock(JntStatusMapper::class);
-        $statusMapper->shouldReceive('fromCode')
+        $statusMapper->shouldReceive('resolve')
+            ->with('30', 'Arrived')
             ->andReturn(TrackingStatus::AtHub);
 
         $service = new JntTrackingService($expressService, $statusMapper);
@@ -285,7 +284,8 @@ describe('JntTrackingService', function (): void {
 
         $expressService = Mockery::mock(JntExpressService::class);
         $statusMapper = Mockery::mock(JntStatusMapper::class);
-        $statusMapper->shouldReceive('fromCode')
+        $statusMapper->shouldReceive('resolve')
+            ->with('30', 'Arrived')
             ->andReturn(TrackingStatus::AtHub);
 
         $service = new JntTrackingService($expressService, $statusMapper);

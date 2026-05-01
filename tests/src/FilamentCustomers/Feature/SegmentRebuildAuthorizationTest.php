@@ -5,9 +5,31 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource;
+use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Component;
+
+class TestHasTableComponent extends Component implements HasTable
+{
+    use InteractsWithTable;
+
+    public function getTable(): Table
+    {
+        return Table::make($this);
+    }
+
+    public function makeFilamentTranslatableContentDriver(): ?\Filament\Support\Contracts\TranslatableContentDriver
+    {
+        return null;
+    }
+
+    public function render()
+    {
+        return view('livewire.placeholder');
+    }
+}
 
 it('rebuild action honors Gate interceptors', function (): void {
     config()->set('customers.features.owner.enabled', false);
@@ -32,7 +54,7 @@ it('rebuild action honors Gate interceptors', function (): void {
         ? true
         : null);
 
-    $livewire = Mockery::mock(HasTable::class);
+    $livewire = new TestHasTableComponent();
     $table = SegmentResource::table(Table::make($livewire));
 
     $rebuildAction = $table->getAction('rebuild');

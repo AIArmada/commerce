@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Pages\AgingReportPage;
 use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
@@ -16,6 +17,8 @@ use AIArmada\FilamentDocs\Widgets\RevenueChartWidget;
 use AIArmada\FilamentDocs\Widgets\StatusBreakdownWidget;
 use Filament\Panel;
 use Mockery\MockInterface;
+
+uses(TestCase::class);
 
 beforeEach(function (): void {
     app()->forgetInstance(FilamentDocsPlugin::class);
