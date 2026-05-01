@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\AffiliateNetwork\Services;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Throwable;
@@ -45,7 +46,7 @@ final class SiteVerificationService
             $site->update([
                 'status' => AffiliateSite::STATUS_VERIFIED,
                 'verification_method' => $method,
-                'verified_at' => now(),
+                'verified_at' => CarbonImmutable::now(),
             ]);
         }
 
@@ -83,7 +84,17 @@ final class SiteVerificationService
             return false;
         }
 
-        return str_contains($html, $site->verification_token);
+        // Require the token to appear within a <meta name="affiliate-network-verify" ...> tag,
+        // not just anywhere in the page, to prevent coincidental or injected matches.
+        $token = preg_quote($site->verification_token ?? '', '/');
+
+        return preg_match(
+            '/<meta[^>]+name=["\']affiliate-network-verify["\'][^>]+content=["\']' . $token . '["\'][^>]*>/i',
+            $html,
+        ) === 1 || preg_match(
+            '/<meta[^>]+content=["\']' . $token . '["\'][^>]+name=["\']affiliate-network-verify["\'][^>]*>/i',
+            $html,
+        ) === 1;
     }
 
     /**
@@ -155,7 +166,123 @@ final class SiteVerificationService
             return filter_var($normalizedDomain, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
         }
 
-        return preg_match('/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i', $normalizedDomain) === 1;
+        if (preg_match('/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i', $normalizedDomain) !== 1) {
+            return false;
+        }
+
+        if (config('affiliate-network.http.skip_dns_check', false)) {
+            return true;
+        }
+
+        // Resolve all DNS records (both A and AAAA) and block private/reserved address ranges (SSRF protection).
+        // NOTE: there is an inherent TOCTOU gap between this check and the actual HTTP request (the HTTP client
+        // performs its own DNS lookup). This is a known limitation; rate limiting verification requests reduces
+        // exploitability of a DNS-rebinding attack.
+        $resolvedIps = $this->resolveAllAddresses($normalizedDomain);
+
+        // If DNS failed to resolve to any address, deny — do not allow the HTTP client to resolve independently
+        // (which could reach IPv6-only internal services our gethostbyname check would silently miss).
+        if (empty($resolvedIps)) {
+            return false;
+        }
+
+        foreach ($resolvedIps as $ip) {
+            if (! $this->isPublicIp($ip)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Resolve a hostname to all its A and AAAA addresses.
+     *
+     * @return list<string>
+     */
+    private function resolveAllAddresses(string $hostname): array
+    {
+        $addresses = [];
+
+        // IPv4 (A records)
+        $aRecords = @dns_get_record($hostname, DNS_A);
+        if (is_array($aRecords)) {
+            foreach ($aRecords as $record) {
+                if (isset($record['ip']) && is_string($record['ip'])) {
+                    $addresses[] = $record['ip'];
+                }
+            }
+        }
+
+        // IPv6 (AAAA records)
+        $aaaaRecords = @dns_get_record($hostname, DNS_AAAA);
+        if (is_array($aaaaRecords)) {
+            foreach ($aaaaRecords as $record) {
+                if (isset($record['ipv6']) && is_string($record['ipv6'])) {
+                    $addresses[] = $record['ipv6'];
+                }
+            }
+        }
+
+        return $addresses;
+    }
+
+    private function isPublicIp(string $ip): bool
+    {
+        // IPv6 checks
+        if (str_contains($ip, ':')) {
+            if ($ip === '::1') {
+                return false; // loopback
+            }
+
+            $packed = inet_pton($ip);
+
+            if ($packed === false) {
+                return false;
+            }
+
+            // fc00::/7 — unique local (private)
+            $firstByte = ord($packed[0]);
+            if (($firstByte & 0xFE) === 0xFC) {
+                return false;
+            }
+
+            // fe80::/10 — link-local
+            if (($firstByte === 0xFE) && ((ord($packed[1]) & 0xC0) === 0x80)) {
+                return false;
+            }
+
+            // ::ffff:0:0/96 — IPv4-mapped; delegate to IPv4 check
+            if (str_starts_with($packed, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xFF")) {
+                $ipv4 = long2ip(unpack('N', mb_substr($packed, 12, 4))[1]);
+
+                return $this->isPublicIp($ipv4);
+            }
+
+            return true;
+        }
+
+        // IPv4 checks
+        $longIp = ip2long($ip);
+
+        if ($longIp === false) {
+            return false;
+        }
+
+        foreach ([
+            ['10.0.0.0', '10.255.255.255'],
+            ['172.16.0.0', '172.31.255.255'],
+            ['192.168.0.0', '192.168.255.255'],
+            ['127.0.0.0', '127.255.255.255'],
+            ['169.254.0.0', '169.254.255.255'],
+            ['100.64.0.0', '100.127.255.255'],
+        ] as [$start, $end]) {
+            if ($longIp >= ip2long($start) && $longIp <= ip2long($end)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

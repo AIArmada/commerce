@@ -61,9 +61,13 @@ describe('SiteVerificationService', function (): void {
             'verification_token' => 'affiliatenetwork-verify-' . Str::random(16),
         ]);
 
+        Http::preventStrayRequests();
         Http::fake([
             'https://verified.example/*' => Http::response("<html><head><meta name=\"affiliate-network-verify\" content=\"{$site->verification_token}\"></head></html>", 200),
+            'http://verified.example/*' => Http::response('', 404),
         ]);
+
+        config(['affiliate-network.http.skip_dns_check' => true]);
 
         $service = app(SiteVerificationService::class);
 

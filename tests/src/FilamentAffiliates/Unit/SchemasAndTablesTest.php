@@ -142,3 +142,16 @@ it('AffiliatePayoutsTable configures table', function (): void {
 
     expect(true)->toBeTrue();
 });
+
+it('AffiliatePayoutsTable uses canonical payout status values', function (): void {
+    $repositoryRoot = dirname(__DIR__, 4);
+    $source = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliatePayoutResource/Tables/AffiliatePayoutsTable.php');
+
+    expect($source)
+        ->toContain('PayoutStatus::options()')
+        ->toContain('CompletedPayout::value()')
+        ->toContain('ProcessingPayout::value()')
+        ->toContain('FailedPayout::value()')
+        ->not->toContain("updateStatus(\$payout, 'paid')")
+        ->not->toContain("updateStatus(\$payout, 'queued')");
+});

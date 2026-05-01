@@ -21,10 +21,9 @@ it('FraudReviewPage has correct navigation icon', function (): void {
 });
 
 it('FraudReviewPage has correct navigation group', function (): void {
-    $reflection = new ReflectionClass(FraudReviewPage::class);
-    $property = $reflection->getProperty('navigationGroup');
+    config(['filament-affiliates.navigation_group' => 'Partners']);
 
-    expect($property->getValue())->toBe('Affiliates');
+    expect(FraudReviewPage::getNavigationGroup())->toBe('Partners');
 });
 
 it('FraudReviewPage has correct navigation label', function (): void {
@@ -49,10 +48,9 @@ it('PayoutBatchPage has correct navigation icon', function (): void {
 });
 
 it('PayoutBatchPage has correct navigation group', function (): void {
-    $reflection = new ReflectionClass(PayoutBatchPage::class);
-    $property = $reflection->getProperty('navigationGroup');
+    config(['filament-affiliates.navigation_group' => 'Partners']);
 
-    expect($property->getValue())->toBe('Affiliates');
+    expect(PayoutBatchPage::getNavigationGroup())->toBe('Partners');
 });
 
 it('PayoutBatchPage has correct navigation label', function (): void {
@@ -77,10 +75,9 @@ it('ReportsPage has correct navigation icon', function (): void {
 });
 
 it('ReportsPage has correct navigation group', function (): void {
-    $reflection = new ReflectionClass(ReportsPage::class);
-    $property = $reflection->getProperty('navigationGroup');
+    config(['filament-affiliates.navigation_group' => 'Partners']);
 
-    expect($property->getValue())->toBe('Affiliates');
+    expect(ReportsPage::getNavigationGroup())->toBe('Partners');
 });
 
 it('ReportsPage has correct navigation label', function (): void {
@@ -94,4 +91,22 @@ it('ReportsPage has default period of month', function (): void {
     $page = new ReportsPage;
 
     expect($page->period)->toBe('month');
+});
+
+it('FraudReviewPage has navigation sort from config', function (): void {
+    config(['filament-affiliates.pages.navigation_sort.fraud_review' => 25]);
+
+    expect(FraudReviewPage::getNavigationSort())->toBe(25);
+});
+
+it('PayoutBatchPage has navigation sort from config', function (): void {
+    config(['filament-affiliates.pages.navigation_sort.payout_batch' => 22]);
+
+    expect(PayoutBatchPage::getNavigationSort())->toBe(22);
+});
+
+it('ReportsPage has navigation sort from config', function (): void {
+    config(['filament-affiliates.pages.navigation_sort.reports' => 20]);
+
+    expect(ReportsPage::getNavigationSort())->toBe(20);
 });

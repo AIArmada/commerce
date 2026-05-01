@@ -6,6 +6,11 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Tables;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PayoutStatus;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
@@ -30,13 +35,8 @@ final class AffiliatePayoutsTable
                     ->searchable(),
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'paid' => 'success',
-                        'queued' => 'info',
-                        'pending' => 'warning',
-                        'failed' => 'danger',
-                        default => 'gray',
-                    })
+                    ->color(fn (PayoutStatus | string $state): string => PayoutStatus::colorFor($state))
+                    ->formatStateUsing(fn (PayoutStatus | string $state): string => PayoutStatus::labelFor($state))
                     ->sortable(),
                 TextColumn::make('total_minor')
                     ->label('Total')
@@ -58,13 +58,7 @@ final class AffiliatePayoutsTable
                     ->sortable(),
             ])
             ->filters([
-                SelectFilter::make('status')->options([
-                    'draft' => 'Draft',
-                    'pending' => 'Pending',
-                    'queued' => 'Queued',
-                    'paid' => 'Paid',
-                    'failed' => 'Failed',
-                ]),
+                SelectFilter::make('status')->options(PayoutStatus::options()),
             ])
             ->actions([
                 Action::make('view')
@@ -72,12 +66,12 @@ final class AffiliatePayoutsTable
                     ->icon(Heroicon::OutlinedEye)
                     ->url(fn (AffiliatePayout $record): string => AffiliatePayoutResource::getUrl('view', ['record' => $record])),
                 Action::make('mark_paid')
-                    ->label('Mark Paid')
+                    ->label('Mark Completed')
                     ->icon(Heroicon::OutlinedCheck)
                     ->color('success')
                     ->requiresConfirmation()
                     ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
-                    ->visible(fn (AffiliatePayout $record): bool => $record->status !== 'paid')
+                    ->visible(fn (AffiliatePayout $record): bool => ! $record->status->equals(CompletedPayout::class))
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
@@ -85,15 +79,15 @@ final class AffiliatePayoutsTable
                             ->whereKey($record->getKey())
                             ->firstOrFail();
 
-                        app(AffiliatePayoutService::class)->updateStatus($payout, 'paid');
+                        app(AffiliatePayoutService::class)->updateStatus($payout, CompletedPayout::value());
                     }),
                 Action::make('queue')
-                    ->label('Queue')
+                    ->label('Mark Processing')
                     ->icon(Heroicon::OutlinedClock)
                     ->color('warning')
                     ->requiresConfirmation()
                     ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
-                    ->visible(fn (AffiliatePayout $record): bool => $record->status !== 'queued')
+                    ->visible(fn (AffiliatePayout $record): bool => $record->status->equals(PendingPayout::class))
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
@@ -101,7 +95,7 @@ final class AffiliatePayoutsTable
                             ->whereKey($record->getKey())
                             ->firstOrFail();
 
-                        app(AffiliatePayoutService::class)->updateStatus($payout, 'queued');
+                        app(AffiliatePayoutService::class)->updateStatus($payout, ProcessingPayout::value());
                     }),
                 Action::make('fail')
                     ->label('Mark Failed')
@@ -109,7 +103,7 @@ final class AffiliatePayoutsTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
-                    ->visible(fn (AffiliatePayout $record): bool => $record->status !== 'failed')
+                    ->visible(fn (AffiliatePayout $record): bool => ! $record->status->equals(FailedPayout::class))
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
@@ -117,7 +111,7 @@ final class AffiliatePayoutsTable
                             ->whereKey($record->getKey())
                             ->firstOrFail();
 
-                        app(AffiliatePayoutService::class)->updateStatus($payout, 'failed');
+                        app(AffiliatePayoutService::class)->updateStatus($payout, FailedPayout::value());
                     }),
                 Action::make('export')
                     ->label('Export CSV')

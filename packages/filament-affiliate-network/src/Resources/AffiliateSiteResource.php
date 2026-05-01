@@ -9,6 +9,7 @@ use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\Crea
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\EditAffiliateSite;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages\ListAffiliateSites;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
@@ -21,6 +22,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class AffiliateSiteResource extends Resource
@@ -35,7 +37,7 @@ final class AffiliateSiteResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Sites';
 
-    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+    protected static ?string $tenantOwnershipRelationshipName = null;
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -122,12 +124,13 @@ final class AffiliateSiteResource extends Resource
                     ->sortable()
                     ->copyable(),
 
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'warning' => AffiliateSite::STATUS_PENDING,
-                        'success' => AffiliateSite::STATUS_VERIFIED,
-                        'danger' => fn (string $state): bool => in_array($state, [AffiliateSite::STATUS_SUSPENDED, AffiliateSite::STATUS_REJECTED]),
-                    ]),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        AffiliateSite::STATUS_VERIFIED => 'success',
+                        AffiliateSite::STATUS_PENDING => 'warning',
+                        default => 'danger',
+                    }),
 
                 Tables\Columns\TextColumn::make('offers_count')
                     ->label('Offers')
@@ -161,13 +164,15 @@ final class AffiliateSiteResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateSite $record): bool => $record->isPending())
                     ->action(function (AffiliateSite $record): void {
+                        // Admin resource bypasses owner scope (network-wide admin view).
                         $scopedRecord = AffiliateSite::query()
+                            ->withoutOwnerScope()
                             ->whereKey($record->getKey())
                             ->firstOrFail();
 
                         $scopedRecord->update([
                             'status' => AffiliateSite::STATUS_VERIFIED,
-                            'verified_at' => now(),
+                            'verified_at' => CarbonImmutable::now(),
                         ]);
                     }),
             ])
@@ -181,6 +186,18 @@ final class AffiliateSiteResource extends Resource
     public static function getRelations(): array
     {
         return [];
+    }
+
+    /**
+     * @return Builder<AffiliateSite>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        // Admin resource: bypass owner scope to show all sites network-wide.
+        /** @var Builder<AffiliateSite> $query */
+        $query = parent::getEloquentQuery();
+
+        return $query->withoutOwnerScope();
     }
 
     public static function getPages(): array

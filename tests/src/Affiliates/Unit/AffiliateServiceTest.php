@@ -7,14 +7,18 @@ use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\StaticOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -314,6 +318,53 @@ test('rate limiting blocks excessive attributions from the same IP', function ()
 
     expect($first)->not()->toBeNull();
     expect($second)->toBeNull();
+});
+
+test('tracking link creation rejects cross-tenant program references', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', false);
+
+    $ownerA = User::query()->create([
+        'name' => 'Link Owner A',
+        'email' => 'link-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Link Owner B',
+        'email' => 'link-owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = OwnerContext::withOwner($ownerA, fn (): Affiliate => Affiliate::create([
+        'code' => 'LINK-' . uniqid(),
+        'name' => 'Scoped Link Affiliate',
+        'description' => 'Scoped link affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]));
+
+    $foreignProgram = OwnerContext::withOwner($ownerB, fn (): AffiliateProgram => AffiliateProgram::create([
+        'name' => 'Foreign Link Program',
+        'slug' => 'foreign-link-program-' . uniqid(),
+        'status' => 'active',
+        'is_public' => true,
+        'requires_approval' => false,
+        'default_commission_rate_basis_points' => 1000,
+        'commission_type' => 'percentage',
+        'cookie_lifetime_days' => 30,
+    ]));
+
+    $service = app(AffiliateService::class);
+
+    expect(fn () => OwnerContext::withOwner(
+        $ownerA,
+        fn () => $service->createTrackingLink($affiliate, 'https://example.com/products', [
+            'program_id' => $foreignProgram->getKey(),
+        ]),
+    ))->toThrow(AuthorizationException::class);
 });
 
 test('webhook dispatcher is invoked for attribution and conversion', function (): void {

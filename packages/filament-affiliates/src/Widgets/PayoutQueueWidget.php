@@ -7,10 +7,12 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -75,7 +77,23 @@ final class PayoutQueueWidget extends BaseWidget
                             ->whereKey($record->getKey())
                             ->firstOrFail();
 
-                        $payout->update(['status' => ProcessingPayout::class]);
+                        $result = app(ProcessAffiliatePayout::class)->handle($payout);
+
+                        if ($result->success) {
+                            Notification::make()
+                                ->success()
+                                ->title('Payout processed')
+                                ->body('External reference: ' . ($result->externalReference ?? '—'))
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->danger()
+                            ->title('Payout failed')
+                            ->body($result->failureReason ?? 'Unknown error')
+                            ->send();
                     }),
 
                 Action::make('view')

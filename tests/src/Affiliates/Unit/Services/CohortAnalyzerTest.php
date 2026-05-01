@@ -376,6 +376,39 @@ test('analyzeBySource groups by metadata source', function (): void {
         ->and($results['direct']['total_affiliates'])->toBe(1);
 });
 
+test('analyzeBySource falls back to legacy total_minor when neutral value is unset', function (): void {
+    $legacyAffiliate = Affiliate::create([
+        'code' => 'SRC_LEGACY',
+        'name' => 'Legacy Source Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+        'created_at' => '2024-01-10',
+        'metadata' => ['source' => 'legacy_feed'],
+    ]);
+
+    AffiliateConversion::create([
+        'affiliate_id' => $legacyAffiliate->id,
+        'affiliate_code' => $legacyAffiliate->code,
+        'order_reference' => 'SRC-LEGACY-001',
+        'occurred_at' => '2024-01-15',
+        'total_minor' => 6000,
+        'commission_minor' => 600,
+        'commission_currency' => 'USD',
+        'status' => 'approved',
+
+    ]);
+
+    $results = $this->analyzer->analyzeBySource(
+        Carbon::parse('2024-01-01'),
+        Carbon::parse('2024-01-31')
+    );
+
+    expect($results['legacy_feed']['total_revenue'])->toBe(6000)
+        ->and($results['legacy_feed']['avg_ltv'])->toBe(6000.0);
+});
+
 test('analyzeMonthly prefers neutral revenue value over legacy total', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'MONTH-NEUTRAL',

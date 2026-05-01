@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\CreateAffiliateOfferCategory;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\EditAffiliateOfferCategory;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\ListAffiliateOfferCategories;
@@ -21,6 +23,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use UnitEnum;
 
@@ -36,7 +39,7 @@ final class AffiliateOfferCategoryResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Categories';
 
-    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+    protected static ?string $tenantOwnershipRelationshipName = null;
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
@@ -56,9 +59,10 @@ final class AffiliateOfferCategoryResource extends Resource
                     ->schema([
                         Select::make('parent_id')
                             ->label('Parent Category')
-                            ->options(fn (?AffiliateOfferCategory $record) => AffiliateOfferCategory::query()
-                                ->when($record, fn ($query) => $query->where('id', '!=', $record->id))
-                                ->pluck('name', 'id'))
+                            ->options(fn (?AffiliateOfferCategory $record) => OwnerContext::withOwner(null, fn () => AffiliateOfferCategory::query()
+                                ->withoutOwnerScope()
+                                ->when($record, fn (Builder $query): Builder => $query->where('id', '!=', $record->id))
+                                ->pluck('name', 'id')))
                             ->searchable()
                             ->nullable(),
 
@@ -133,7 +137,7 @@ final class AffiliateOfferCategoryResource extends Resource
 
                 Tables\Filters\SelectFilter::make('parent_id')
                     ->label('Parent')
-                    ->relationship('parent', 'name'),
+                    ->relationship('parent', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope(OwnerScope::class)),
             ])
             ->actions([
                 Actions\EditAction::make(),
@@ -150,6 +154,18 @@ final class AffiliateOfferCategoryResource extends Resource
     public static function getRelations(): array
     {
         return [];
+    }
+
+    /**
+     * @return Builder<AffiliateOfferCategory>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        // Admin resource: bypass owner scope to show all categories network-wide.
+        /** @var Builder<AffiliateOfferCategory> $query */
+        $query = parent::getEloquentQuery();
+
+        return $query->withoutOwnerScope();
     }
 
     public static function getPages(): array

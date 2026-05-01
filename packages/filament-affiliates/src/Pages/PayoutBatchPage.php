@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages;
 
-use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
-use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -27,7 +24,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Number;
 use UnitEnum;
@@ -39,11 +35,17 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
-
     protected static ?string $navigationLabel = 'Payout Batch';
 
-    protected static ?int $navigationSort = 12;
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation_group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.pages.navigation_sort.payout_batch', 12);
+    }
 
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.payout-batch';
@@ -110,7 +112,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                             ->whereKey($record->getKey())
                             ->firstOrFail();
 
-                        $result = $this->processPayout($payout);
+                        $result = app(ProcessAffiliatePayout::class)->handle($payout);
 
                         if ($result->success) {
                             Notification::make()
@@ -186,7 +188,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                                 ->whereKey($record->getKey())
                                 ->firstOrFail();
 
-                            $result = $this->processPayout($payout);
+                            $result = app(ProcessAffiliatePayout::class)->handle($payout);
 
                             if ($result->success) {
                                 $success++;
@@ -219,64 +221,4 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
         ];
     }
 
-    private function processPayout(AffiliatePayout $payout): PayoutResult
-    {
-        $factory = app(PayoutProcessorFactory::class);
-
-        if (! $payout->status->equals(PendingPayout::class)) {
-            return PayoutResult::failure('Payout is not pending.');
-        }
-
-        return DB::transaction(function () use ($payout, $factory): PayoutResult {
-            $payout->update(['status' => ProcessingPayout::class]);
-
-            $payoutMethod = $payout->affiliate
-                ?->payoutMethods()
-                ->where('is_default', true)
-                ->first();
-
-            if (! $payoutMethod) {
-                $payout->update(['status' => FailedPayout::class]);
-                $payout->events()->create([
-                    'from_status' => ProcessingPayout::value(),
-                    'to_status' => FailedPayout::value(),
-                    'notes' => 'No default payout method configured',
-                ]);
-
-                return PayoutResult::failure('No default payout method configured');
-            }
-
-            $processor = $factory->make($payoutMethod->type->value);
-            $result = $processor->process($payout);
-
-            if ($result->success) {
-                $payout->update([
-                    'status' => CompletedPayout::class,
-                    'paid_at' => now(),
-                    'metadata' => array_merge(
-                        $payout->metadata ?? [],
-                        $result->metadata,
-                        ['external_reference' => $result->externalReference],
-                    ),
-                ]);
-
-                $payout->events()->create([
-                    'from_status' => ProcessingPayout::value(),
-                    'to_status' => CompletedPayout::value(),
-                    'notes' => 'Payout processed successfully',
-                ]);
-
-                return $result;
-            }
-
-            $payout->update(['status' => FailedPayout::class]);
-            $payout->events()->create([
-                'from_status' => ProcessingPayout::value(),
-                'to_status' => FailedPayout::value(),
-                'notes' => $result->failureReason ?? 'Payout processing failed',
-            ]);
-
-            return $result;
-        });
-    }
 }

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Support\OwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -113,5 +115,47 @@ class AffiliateLink extends Model
     public function getDisplayUrl(): string
     {
         return $this->short_url ?? $this->tracking_url;
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $link): void {
+            self::guardProgramReference($link);
+        });
+
+        static::updating(function (self $link): void {
+            self::guardProgramReference($link);
+        });
+    }
+
+    private static function guardProgramReference(self $link): void
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return;
+        }
+
+        if ($link->program_id === null) {
+            return;
+        }
+
+        if (! self::programExistsInCurrentOrGlobalScope($link->program_id)) {
+            throw new AuthorizationException('Cross-tenant program reference is not allowed.');
+        }
+    }
+
+    private static function programExistsInCurrentOrGlobalScope(string $programId): bool
+    {
+        if (AffiliateProgram::query()->whereKey($programId)->exists()) {
+            return true;
+        }
+
+        $config = AffiliateProgram::ownerScopeConfig();
+
+        return AffiliateProgram::query()
+            ->withoutGlobalScope(OwnerScope::class)
+            ->whereKey($programId)
+            ->whereNull($config->ownerTypeColumn)
+            ->whereNull($config->ownerIdColumn)
+            ->exists();
     }
 }

@@ -23,3 +23,12 @@ test('affiliate links are signed and verified', function (): void {
 
     expect($generator->verify($tampered))->toBeFalse();
 });
+
+test('affiliate links reject non-http schemes', function (): void {
+    $generator = new AffiliateLinkGenerator;
+
+    expect(fn () => $generator->generate(
+        affiliateCode: 'LINK123',
+        url: 'javascript:alert(1)',
+    ))->toThrow(InvalidArgumentException::class, 'Link URL scheme must be http or https.');
+});

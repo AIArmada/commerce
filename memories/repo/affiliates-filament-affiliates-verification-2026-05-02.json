@@ -1,0 +1,11 @@
+{
+  "subject": "Affiliates + FilamentAffiliates package verification",
+  "fact": "As of 2026-05-02, full package test sweeps pass with `./php-local vendor/bin/pest tests/src/Affiliates --compact` (1165 passed, 5 skipped) and `./php-local vendor/bin/pest tests/src/FilamentAffiliates` (202 passed), and PHPStan level 6 passes for both packages with `./vendor/bin/phpstan analyse packages/affiliates/src packages/filament-affiliates/src --level=6`.",
+  "citations": [
+    "QC subagent verification on 2026-05-02 in /Users/saiffil/Herd/commerce: affiliates sweep exit 0 with summary 'Tests: 5 skipped, 1165 passed (2545 assertions)'",
+    "run_in_terminal output file call_1zE73bVFk59x0fP0QqL7tWHK__vscode-1777640408726: FilamentAffiliates sweep 'Tests: 202 passed (514 assertions)'",
+    "workspace task qc-affiliates-filament-affiliates-phpstan-level6 context: ./vendor/bin/phpstan analyse packages/affiliates/src packages/filament-affiliates/src --level=6 exit 0"
+  ],
+  "reason": "Provides a verified, package-scoped confidence and static-analysis command set for future Affiliates/FilamentAffiliates work without repo-wide checks.",
+  "category": "verification"
+}

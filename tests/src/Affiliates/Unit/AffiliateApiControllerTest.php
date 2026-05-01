@@ -199,6 +199,17 @@ describe('AffiliateApiController', function (): void {
             expect($data)->toHaveKey('link');
         });
 
+        test('rejects non-http tracking link schemes', function (): void {
+            $request = Request::create('/api/affiliates/links', 'POST', [
+                'url' => 'javascript:alert(1)',
+            ]);
+
+            $response = $this->controller->links($this->affiliate->code, $request);
+
+            expect($response->getStatusCode())->toBe(422);
+            expect(json_decode($response->getContent(), true)['message'])->toBe('Link URL scheme must be http or https.');
+        });
+
         test('requires owner context when owner scoping is enabled', function (): void {
             config()->set('affiliates.owner.enabled', true);
             config()->set('affiliates.owner.include_global', false);

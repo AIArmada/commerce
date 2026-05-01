@@ -13,6 +13,7 @@ use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
 use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
 use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -47,6 +48,8 @@ it('AffiliateStatsWidget builds stats', function (): void {
 });
 
 it('PerformanceOverviewWidget builds stats and computes changes', function (): void {
+    Carbon::setTestNow('2024-03-15 12:00:00');
+
     $affiliate = Affiliate::create([
         'code' => 'PERF-' . Str::uuid(),
         'name' => 'Perf Affiliate',
@@ -61,7 +64,8 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
         'order_reference' => 'ORDER-MONTH',
-        'total_minor' => 10000,
+        'total_minor' => 1000,
+        'value_minor' => 9000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
         'status' => ApprovedConversion::class,
@@ -73,11 +77,12 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
         'order_reference' => 'ORDER-LAST',
-        'total_minor' => 5000,
+        'total_minor' => 2000,
+        'value_minor' => 4000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => ApprovedConversion::class,
-        'occurred_at' => now()->subMonth()->startOfMonth()->addDay(),
+        'occurred_at' => now()->subMonth()->startOfMonth()->addDays(9),
     ]);
 
     $widget = new PerformanceOverviewWidget;
@@ -87,7 +92,8 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
 
     $stats = $method->invoke($widget);
 
-    expect($stats)->toBeArray()->and(count($stats))->toBe(4);
+    expect($stats)->toBeArray()->and(count($stats))->toBe(4)
+        ->and($stats[1]->getDescription())->toBe('+125.0% from last month');
 });
 
 it('RealTimeActivityWidget configures its table', function (): void {

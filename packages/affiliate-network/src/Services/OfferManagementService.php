@@ -10,6 +10,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
@@ -72,7 +73,8 @@ final class OfferManagementService
      */
     public function applyForOffer(AffiliateOffer $offer, Affiliate $affiliate, ?string $reason = null): AffiliateOfferApplication
     {
-        $offer = AffiliateOffer::query()
+        // Re-fetch bypasses per-site owner scope: the caller already validated the offer is active/public.
+        $offer = AffiliateOffer::withoutGlobalScope('owner_via_site')
             ->whereKey($offer->getKey())
             ->firstOrFail();
 
@@ -96,7 +98,7 @@ final class OfferManagementService
         if ($existing !== null) {
             if ($existing->status === AffiliateOfferApplication::STATUS_REJECTED) {
                 $cooldownDays = config('affiliate-network.applications.cooldown_days', 7);
-                $canReapply = $existing->updated_at->addDays($cooldownDays)->isPast();
+                $canReapply = CarbonImmutable::parse($existing->updated_at)->addDays($cooldownDays)->isPast();
 
                 if (! $canReapply) {
                     throw new RuntimeException("Cannot reapply for this offer yet. Please wait {$cooldownDays} days after rejection.");
@@ -127,7 +129,7 @@ final class OfferManagementService
             'affiliate_id' => $affiliate->id,
             'status' => $status,
             'reason' => $reason,
-            'reviewed_at' => $status === AffiliateOfferApplication::STATUS_APPROVED ? now() : null,
+            'reviewed_at' => $status === AffiliateOfferApplication::STATUS_APPROVED ? CarbonImmutable::now() : null,
         ]);
     }
 
@@ -136,14 +138,15 @@ final class OfferManagementService
      */
     public function approveApplication(AffiliateOfferApplication $application, ?string $reviewedBy = null): AffiliateOfferApplication
     {
-        $application = AffiliateOfferApplication::query()
+        // Admin operation: bypass owner_via_affiliate scope for cross-tenant network management.
+        $application = AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')
             ->whereKey($application->getKey())
             ->firstOrFail();
 
         $application->update([
             'status' => AffiliateOfferApplication::STATUS_APPROVED,
             'reviewed_by' => $reviewedBy,
-            'reviewed_at' => now(),
+            'reviewed_at' => CarbonImmutable::now(),
         ]);
 
         return $application->fresh();
@@ -154,7 +157,8 @@ final class OfferManagementService
      */
     public function rejectApplication(AffiliateOfferApplication $application, string $reason, ?string $reviewedBy = null): AffiliateOfferApplication
     {
-        $application = AffiliateOfferApplication::query()
+        // Admin operation: bypass owner_via_affiliate scope for cross-tenant network management.
+        $application = AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')
             ->whereKey($application->getKey())
             ->firstOrFail();
 
@@ -162,7 +166,7 @@ final class OfferManagementService
             'status' => AffiliateOfferApplication::STATUS_REJECTED,
             'rejection_reason' => $reason,
             'reviewed_by' => $reviewedBy,
-            'reviewed_at' => now(),
+            'reviewed_at' => CarbonImmutable::now(),
         ]);
 
         return $application->fresh();
@@ -173,7 +177,8 @@ final class OfferManagementService
      */
     public function revokeApplication(AffiliateOfferApplication $application, string $reason, ?string $reviewedBy = null): AffiliateOfferApplication
     {
-        $application = AffiliateOfferApplication::query()
+        // Admin operation: bypass owner_via_affiliate scope for cross-tenant network management.
+        $application = AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')
             ->whereKey($application->getKey())
             ->firstOrFail();
 
@@ -181,7 +186,7 @@ final class OfferManagementService
             'status' => AffiliateOfferApplication::STATUS_REVOKED,
             'rejection_reason' => $reason,
             'reviewed_by' => $reviewedBy,
-            'reviewed_at' => now(),
+            'reviewed_at' => CarbonImmutable::now(),
         ]);
 
         return $application->fresh();
@@ -220,11 +225,13 @@ final class OfferManagementService
     /**
      * Resolve a marketplace offer by ID with explicit public/active guards.
      *
+     * This is a public marketplace endpoint — bypasses per-site owner scope intentionally.
+     *
      * @throws ModelNotFoundException
      */
     public function resolvePublicOfferOrFail(string $offerId): AffiliateOffer
     {
-        return AffiliateOffer::query()
+        return AffiliateOffer::withoutGlobalScope('owner_via_site')
             ->whereKey($offerId)
             ->where('status', AffiliateOffer::STATUS_ACTIVE)
             ->where('is_public', true)

@@ -7,6 +7,8 @@ namespace AIArmada\AffiliateNetwork\Services;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\URL;
 
 final class OfferLinkService
@@ -48,7 +50,7 @@ final class OfferLinkService
 
         return URL::temporarySignedRoute(
             'affiliate-network.redirect',
-            now()->addMinutes($ttl),
+            CarbonImmutable::now()->addMinutes($ttl),
             [
                 'code' => $link->code,
                 $param => $link->code,
@@ -81,7 +83,9 @@ final class OfferLinkService
         if ($link->custom_parameters) {
             $customParams = [];
             parse_str($link->custom_parameters, $customParams);
-            $params = array_merge($params, $customParams);
+            // Core tracking params take priority — merge custom params first so they cannot
+            // override the `anl` code or other attribution parameters.
+            $params = array_merge($customParams, $params);
         }
 
         return $url . $separator . http_build_query($params);
@@ -89,14 +93,21 @@ final class OfferLinkService
 
     /**
      * Resolve a link by its code.
+     *
+     * This is a public redirect surface — links are globally accessible by code
+     * without an owner context. Explicit global scope bypass is required.
      */
     public function resolveLink(string $code): ?AffiliateOfferLink
     {
-        return AffiliateOfferLink::query()
+        return OwnerContext::withOwner(null, fn (): ?AffiliateOfferLink => AffiliateOfferLink::withoutGlobalScope('owner_via_affiliate')
             ->where('code', $code)
             ->where('is_active', true)
-            ->with(['offer', 'affiliate', 'site'])
-            ->first();
+            ->with([
+                'offer' => fn ($query) => $query->withoutGlobalScope('owner_via_site'),
+                'affiliate' => fn ($query) => $query->withoutOwnerScope(),
+                'site' => fn ($query) => $query->withoutOwnerScope(),
+            ])
+            ->first());
     }
 
     /**

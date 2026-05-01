@@ -1,0 +1,11 @@
+{
+  "subject": "Affiliates + FilamentAffiliates package verification",
+  "fact": "After the 2026-05-01 audit fixes, package-scoped verification passed with ./php-local vendor/bin/phpstan analyse packages/affiliates/src packages/filament-affiliates/src --level=6 and full sweeps ./php-local vendor/bin/pest --parallel tests/src/Affiliates && ./php-local vendor/bin/pest --parallel tests/src/FilamentAffiliates.",
+  "citations": [
+    "Verified in /Users/saiffil/Herd/commerce on 2026-05-01 after extracting shared payout processing for Filament payout entry points and rejecting non-http(s) affiliate link schemes.",
+    "VS Code task shell: qc-affiliates-filament-affiliates-phpstan-level6 reported [OK] No errors.",
+    "Unsandboxed terminal run of ./php-local vendor/bin/pest --parallel tests/src/Affiliates && ./php-local vendor/bin/pest --parallel tests/src/FilamentAffiliates passed with 1162 passed, 5 skipped for Affiliates and 195 passed for FilamentAffiliates."
+  ],
+  "reason": "Provides a verified package-scoped test and static-analysis command set for future affiliates work without repo-wide verification.",
+  "category": "verification"
+}

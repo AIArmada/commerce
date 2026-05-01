@@ -8,6 +8,8 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -26,11 +28,37 @@ final class AffiliateProgramResource extends Resource
 
     protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<AffiliateProgram> $query */
+        $query = parent::getEloquentQuery();
+
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            /** @var Builder<Model> $unscopedQuery */
+            $unscopedQuery = $query;
+
+            return $unscopedQuery;
+        }
+
+        $scopedQuery = $query->forOwner();
+
+        /** @var Builder<Model> $modelQuery */
+        $modelQuery = $scopedQuery;
+
+        return $modelQuery;
+    }
+
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation_group');
+    }
 
-    protected static ?int $navigationSort = 2;
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.resources.navigation_sort.affiliate_programs', 63);
+    }
 
     public static function form(Schema $schema): Schema
     {

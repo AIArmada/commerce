@@ -12,6 +12,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Collection;
 use RuntimeException;
@@ -41,6 +42,8 @@ final class ProgramService
      */
     public function joinProgram(Affiliate $affiliate, AffiliateProgram $program): AffiliateProgramMembership
     {
+        $program = $this->resolveAccessibleProgram($program);
+
         // Check if already a member
         $existing = AffiliateProgramMembership::query()
             ->where('affiliate_id', $affiliate->id)
@@ -51,7 +54,7 @@ final class ProgramService
             return $existing;
         }
 
-        $defaultTier = $program->getDefaultTier();
+        $defaultTier = $this->resolveDefaultTier($program);
 
         $status = $program->requires_approval
             ? MembershipStatus::Pending
@@ -111,6 +114,9 @@ final class ProgramService
         AffiliateProgram $program,
         AffiliateProgramTier $tier
     ): AffiliateProgramMembership {
+        $program = $this->resolveAccessibleProgram($program);
+        $tier = $this->resolveAccessibleTier($program, $tier);
+
         $membership = AffiliateProgramMembership::query()
             ->where('affiliate_id', $affiliate->id)
             ->where('program_id', $program->id)
@@ -146,7 +152,7 @@ final class ProgramService
             ->with(['affiliate', 'tier'])
             ->get();
 
-        $tiers = $program->tiers()->orderBy('level', 'asc')->get();
+        $tiers = $this->resolveProgramTiers($program);
 
         foreach ($memberships as $membership) {
             $bestTier = $this->findBestTier($membership->affiliate, $program, $tiers);
@@ -207,5 +213,55 @@ final class ProgramService
         return $tiers
             ->filter(fn (AffiliateProgramTier $tier) => $tier->meetsUpgradeRequirements($affiliate, $program))
             ->first();
+    }
+
+    private function resolveAccessibleProgram(AffiliateProgram $program): AffiliateProgram
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return $program;
+        }
+
+        /** @var AffiliateProgram $validatedProgram */
+        $validatedProgram = OwnerWriteGuard::findOrFailForOwner(
+            AffiliateProgram::class,
+            $program->getKey(),
+            includeGlobal: true,
+            message: 'Selected program is not accessible in the current owner scope.',
+        );
+
+        return $validatedProgram;
+    }
+
+    private function resolveAccessibleTier(AffiliateProgram $program, AffiliateProgramTier $tier): AffiliateProgramTier
+    {
+        $validatedTier = $program->tiers()
+            ->withoutGlobalScope('program_owner')
+            ->whereKey($tier->getKey())
+            ->first();
+
+        if (! $validatedTier instanceof AffiliateProgramTier) {
+            throw new RuntimeException('Selected tier does not belong to the specified program.');
+        }
+
+        return $validatedTier;
+    }
+
+    private function resolveDefaultTier(AffiliateProgram $program): ?AffiliateProgramTier
+    {
+        return $this->resolveProgramTiers($program)->first();
+    }
+
+    /**
+     * @return Collection<int, AffiliateProgramTier>
+     */
+    private function resolveProgramTiers(AffiliateProgram $program): Collection
+    {
+        /** @var Collection<int, AffiliateProgramTier> $tiers */
+        $tiers = $program->tiers()
+            ->withoutGlobalScope('program_owner')
+            ->orderBy('level')
+            ->get();
+
+        return $tiers;
     }
 }

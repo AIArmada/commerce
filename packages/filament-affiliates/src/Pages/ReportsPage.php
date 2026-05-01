@@ -29,11 +29,17 @@ final class ReportsPage extends Page implements HasForms
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
-
     protected static ?string $navigationLabel = 'Reports';
 
-    protected static ?int $navigationSort = 10;
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation_group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.pages.navigation_sort.reports', 10);
+    }
 
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.reports';

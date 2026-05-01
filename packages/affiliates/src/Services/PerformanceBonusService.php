@@ -152,6 +152,7 @@ final class PerformanceBonusService
 
         $conversionsTable = (new AffiliateConversion)->getTable();
         $affiliatesTable = (new Affiliate)->getTable();
+        $revenueExpression = "COALESCE(NULLIF({$conversionsTable}.value_minor, 0), {$conversionsTable}.total_minor, 0)";
 
         $query = DB::table($conversionsTable)
             ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
@@ -159,10 +160,10 @@ final class PerformanceBonusService
                 "{$affiliatesTable}.id as affiliate_id",
                 "{$affiliatesTable}.name as affiliate_name",
                 "{$affiliatesTable}.code as affiliate_code",
-                DB::raw("SUM(COALESCE({$conversionsTable}.value_minor, {$conversionsTable}.total_minor, 0)) as total_revenue"),
+                DB::raw("SUM({$revenueExpression}) as total_revenue"),
                 DB::raw("COUNT({$conversionsTable}.id) as total_conversions"),
                 DB::raw("SUM({$conversionsTable}.commission_minor) as total_commissions"),
-                DB::raw("AVG(COALESCE({$conversionsTable}.value_minor, {$conversionsTable}.total_minor, 0)) as avg_order_value"),
+                DB::raw("AVG({$revenueExpression}) as avg_order_value"),
             ])
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
             ->where("{$conversionsTable}.status", ApprovedConversion::value())
@@ -388,6 +389,8 @@ final class PerformanceBonusService
             'min_previous_revenue' => 50000, // At least $500 previous month
         ]);
 
+        $minimumGrowthPercentage = (float) ($config['min_growth_percentage'] ?? $config['min_growth_percent'] ?? 50);
+
         if (! ($config['enabled'] ?? true)) {
             return [];
         }
@@ -418,7 +421,7 @@ final class PerformanceBonusService
 
             $growthPercentage = (($currentRevenue - $previousRevenue) / $previousRevenue) * 100;
 
-            if ($growthPercentage >= ($config['min_growth_percentage'] ?? 50)) {
+            if ($growthPercentage >= $minimumGrowthPercentage) {
                 $bonuses[] = [
                     'affiliate_id' => $affiliate->id,
                     'affiliate_name' => $affiliate->name,

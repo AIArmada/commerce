@@ -7,6 +7,8 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\EditAffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\ListAffiliateOffers;
@@ -25,6 +27,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use UnitEnum;
 
@@ -58,17 +61,17 @@ final class AffiliateOfferResource extends Resource
                     ->schema([
                         Select::make('site_id')
                             ->label('Site')
-                            ->options(fn () => AffiliateSite::query()
+                            ->options(fn () => OwnerContext::withOwner(null, fn () => AffiliateSite::query()->withoutOwnerScope()
                                 ->where('status', AffiliateSite::STATUS_VERIFIED)
-                                ->pluck('name', 'id'))
+                                ->pluck('name', 'id')))
                             ->required()
                             ->searchable(),
 
                         Select::make('category_id')
                             ->label('Category')
-                            ->options(fn () => AffiliateOfferCategory::query()
+                            ->options(fn () => OwnerContext::withOwner(null, fn () => AffiliateOfferCategory::query()->withoutOwnerScope()
                                 ->where('is_active', true)
-                                ->pluck('name', 'id'))
+                                ->pluck('name', 'id')))
                             ->searchable()
                             ->nullable(),
 
@@ -194,14 +197,15 @@ final class AffiliateOfferResource extends Resource
                     ->sortable()
                     ->toggleable(),
 
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'gray' => AffiliateOffer::STATUS_DRAFT,
-                        'warning' => AffiliateOffer::STATUS_PENDING,
-                        'success' => AffiliateOffer::STATUS_ACTIVE,
-                        'info' => AffiliateOffer::STATUS_PAUSED,
-                        'danger' => fn (string $state): bool => in_array($state, [AffiliateOffer::STATUS_EXPIRED, AffiliateOffer::STATUS_REJECTED]),
-                    ]),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        AffiliateOffer::STATUS_ACTIVE => 'success',
+                        AffiliateOffer::STATUS_PENDING => 'warning',
+                        AffiliateOffer::STATUS_PAUSED => 'info',
+                        AffiliateOffer::STATUS_DRAFT => 'gray',
+                        default => 'danger',
+                    }),
 
                 Tables\Columns\TextColumn::make('commission_rate')
                     ->label('Commission')
@@ -247,7 +251,7 @@ final class AffiliateOfferResource extends Resource
 
                 Tables\Filters\SelectFilter::make('site_id')
                     ->label('Site')
-                    ->relationship('site', 'name'),
+                    ->relationship('site', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope(OwnerScope::class)),
 
                 Tables\Filters\TernaryFilter::make('is_featured')
                     ->label('Featured'),
@@ -263,9 +267,10 @@ final class AffiliateOfferResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status !== AffiliateOffer::STATUS_ACTIVE)
                     ->action(function (AffiliateOffer $record): void {
-                        $scopedRecord = AffiliateOffer::query()
+                        // Admin resource bypasses owner_via_site scope (network-wide admin view).
+                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope('owner_via_site')
                             ->whereKey($record->getKey())
-                            ->firstOrFail();
+                            ->firstOrFail());
 
                         $scopedRecord->update(['status' => AffiliateOffer::STATUS_ACTIVE]);
                     }),
@@ -275,9 +280,10 @@ final class AffiliateOfferResource extends Resource
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status === AffiliateOffer::STATUS_ACTIVE)
                     ->action(function (AffiliateOffer $record): void {
-                        $scopedRecord = AffiliateOffer::query()
+                        // Admin resource bypasses owner_via_site scope (network-wide admin view).
+                        $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope('owner_via_site')
                             ->whereKey($record->getKey())
-                            ->firstOrFail();
+                            ->firstOrFail());
 
                         $scopedRecord->update(['status' => AffiliateOffer::STATUS_PAUSED]);
                     }),
@@ -292,6 +298,22 @@ final class AffiliateOfferResource extends Resource
     public static function getRelations(): array
     {
         return [];
+    }
+
+    /**
+     * @return Builder<AffiliateOffer>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        // Admin resource: bypass per-site owner scope to show all offers network-wide.
+        /** @var Builder<AffiliateOffer> $query */
+        $query = parent::getEloquentQuery()
+            ->with([
+                'site' => fn ($builder) => $builder->withoutOwnerScope(),
+                'category' => fn ($builder) => $builder->withoutOwnerScope(),
+            ]);
+
+        return $query->withoutGlobalScope('owner_via_site');
     }
 
     public static function getPages(): array

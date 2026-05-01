@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$tablePrefix = env('AFFILIATE_NETWORK_TABLE_PREFIX', 'affiliate_network_');
+$tablePrefix = 'affiliate_network_';
 $tables = [
     'sites' => $tablePrefix . 'sites',
     'offers' => $tablePrefix . 'offers',
@@ -36,18 +36,6 @@ return [
     'owner' => [
         'enabled' => env('AFFILIATE_NETWORK_OWNER_ENABLED', false),
         'include_global' => env('AFFILIATE_NETWORK_OWNER_INCLUDE_GLOBAL', false),
-        'auto_assign_on_create' => env('AFFILIATE_NETWORK_OWNER_AUTO_ASSIGN', true),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sites
-    |--------------------------------------------------------------------------
-    */
-    'sites' => [
-        'require_verification' => env('AFFILIATE_NETWORK_SITES_REQUIRE_VERIFICATION', true),
-        'verification_methods' => ['dns', 'meta_tag', 'file'],
-        'max_sites_per_merchant' => env('AFFILIATE_NETWORK_MAX_SITES', 10),
     ],
 
     /*
@@ -57,8 +45,6 @@ return [
     */
     'offers' => [
         'require_approval' => env('AFFILIATE_NETWORK_OFFERS_REQUIRE_APPROVAL', true),
-        'default_status' => 'pending',
-        'allow_public_listing' => env('AFFILIATE_NETWORK_OFFERS_PUBLIC', true),
     ],
 
     /*
@@ -68,7 +54,6 @@ return [
     */
     'applications' => [
         'auto_approve' => env('AFFILIATE_NETWORK_APPLICATIONS_AUTO_APPROVE', false),
-        'require_reason' => env('AFFILIATE_NETWORK_APPLICATIONS_REQUIRE_REASON', false),
         'cooldown_days' => env('AFFILIATE_NETWORK_APPLICATIONS_COOLDOWN_DAYS', 7),
     ],
 
@@ -117,6 +102,7 @@ return [
         'enabled' => env('AFFILIATE_NETWORK_CHECKOUT_ENABLED', false),
         'middleware_group' => env('AFFILIATE_NETWORK_MIDDLEWARE_GROUP', 'web'),
         'listen_for_orders' => env('AFFILIATE_NETWORK_LISTEN_ORDERS', true),
+        'attribution_window_hours' => env('AFFILIATE_NETWORK_ATTRIBUTION_WINDOW_HOURS', 720),
     ],
 
     /*
@@ -129,16 +115,7 @@ return [
         'timeout_seconds' => 5,
         'retries' => 1,
         'retry_sleep_ms' => 150,
+        'skip_dns_check' => false,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Marketplace
-    |--------------------------------------------------------------------------
-    */
-    'marketplace' => [
-        'featured_offers_limit' => env('AFFILIATE_NETWORK_FEATURED_LIMIT', 10),
-        'category_depth' => env('AFFILIATE_NETWORK_CATEGORY_DEPTH', 3),
-        'search_enabled' => env('AFFILIATE_NETWORK_SEARCH_ENABLED', true),
-    ],
 ];

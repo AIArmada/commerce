@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Widgets;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -19,14 +20,17 @@ final class TopOffersWidget extends BaseWidget
     {
         return $table
             ->query(
-                AffiliateOffer::query()
-                    ->with(['site'])
+                // Admin leaderboard: intentionally cross-tenant network-wide — explicit global context.
+                OwnerContext::withOwner(null, fn () => AffiliateOffer::withoutGlobalScope('owner_via_site')
+                    ->with([
+                        'site' => fn ($query) => $query->withoutOwnerScope(),
+                    ])
                     ->where('status', AffiliateOffer::STATUS_ACTIVE)
                     ->withSum('links', 'clicks')
                     ->withSum('links', 'conversions')
                     ->withSum('links', 'revenue')
                     ->orderByDesc('links_sum_clicks')
-                    ->limit(10)
+                    ->limit(10))
             )
             ->columns([
                 Tables\Columns\TextColumn::make('name')

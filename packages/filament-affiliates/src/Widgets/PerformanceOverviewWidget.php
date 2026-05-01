@@ -13,6 +13,7 @@ use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Number;
+use Illuminate\Support\Facades\DB;
 
 final class PerformanceOverviewWidget extends StatsOverviewWidget
 {
@@ -27,9 +28,11 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
             ? OwnerContext::resolve()
             : null;
 
-        $now = now();
-        $startOfMonth = $now->copy()->startOfMonth();
-        $lastMonth = $now->copy()->subMonth();
+        $now = now()->toImmutable();
+        $startOfMonth = $now->startOfMonth();
+        $lastMonthStart = $now->subMonth()->startOfMonth();
+        $lastMonthEnd = $lastMonthStart->endOfMonth();
+        $revenueExpression = DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)');
 
         // This month stats
         $thisMonthConversions = AffiliateConversion::query()
@@ -46,7 +49,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
                 fn ($query) => $query->forOwner($owner),
             )
             ->where('occurred_at', '>=', $startOfMonth)
-            ->sum('total_minor');
+            ->sum($revenueExpression);
 
         $thisMonthCommission = AffiliateConversion::query()
             ->when(
@@ -62,7 +65,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
                 (bool) config('affiliates.owner.enabled', false),
                 fn ($query) => $query->forOwner($owner),
             )
-            ->whereBetween('occurred_at', [$lastMonth->startOfMonth(), $lastMonth->endOfMonth()])
+            ->whereBetween('occurred_at', [$lastMonthStart, $lastMonthEnd])
             ->count();
 
         $lastMonthRevenue = AffiliateConversion::query()
@@ -70,8 +73,8 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
                 (bool) config('affiliates.owner.enabled', false),
                 fn ($query) => $query->forOwner($owner),
             )
-            ->whereBetween('occurred_at', [$lastMonth->startOfMonth(), $lastMonth->endOfMonth()])
-            ->sum('total_minor');
+            ->whereBetween('occurred_at', [$lastMonthStart, $lastMonthEnd])
+            ->sum($revenueExpression);
 
         // Active affiliates
         $activeAffiliates = Affiliate::query()

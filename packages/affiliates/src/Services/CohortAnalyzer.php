@@ -291,6 +291,7 @@ final class CohortAnalyzer
         $sourceExpression = $driver === 'sqlite'
             ? "COALESCE(json_extract(a.metadata, '$.source'), 'direct')"
             : "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(a.metadata, '$.source')), 'direct')";
+        $revenueExpression = 'COALESCE(NULLIF(c.value_minor, 0), c.total_minor, 0)';
 
         $query = DB::table("{$affiliatesTable} as a")
             ->leftJoin("{$conversionsTable} as c", 'c.affiliate_id', '=', 'a.id')
@@ -298,7 +299,7 @@ final class CohortAnalyzer
             ->selectRaw('COUNT(DISTINCT a.id) as total_affiliates')
             ->selectRaw('COUNT(c.id) as total_conversions')
             ->selectRaw('COUNT(DISTINCT c.affiliate_id) as with_conversions')
-            ->selectRaw('COALESCE(SUM(COALESCE(c.value_minor, c.total_minor, 0)), 0) as total_revenue')
+            ->selectRaw("COALESCE(SUM({$revenueExpression}), 0) as total_revenue")
             ->whereBetween('a.created_at', [$from, $to])
             ->groupBy('source');
 
