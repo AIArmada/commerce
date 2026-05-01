@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
+use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -245,7 +246,7 @@ describe('AffiliateMarketplacePage', function (): void {
 
         $owner = User::factory()->create();
 
-        $category = OwnerContext::withOwner($owner, fn () => \AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory::factory()->forOwner($owner)->create([
+        $category = OwnerContext::withOwner($owner, fn () => AffiliateOfferCategory::factory()->forOwner($owner)->create([
             'name' => 'Tenant Category',
             'is_active' => true,
         ]));

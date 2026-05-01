@@ -220,5 +220,4 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                 ->get(),
         ];
     }
-
 }

@@ -97,8 +97,8 @@ final class Cashier
     /**
      * Resolve a billable from a CHIP client id in system contexts (webhooks/events).
      *
-        * In owner mode this fails closed when owner context is missing and, when enabled,
-        * validates the resolved billable against the active owner boundary.
+     * In owner mode this fails closed when owner context is missing and, when enabled,
+     * validates the resolved billable against the active owner boundary.
      *
      * @return (Model&BillableContract)|null
      */

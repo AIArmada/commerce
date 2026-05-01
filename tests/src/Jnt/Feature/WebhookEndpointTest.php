@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Services\WebhookService;
 use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Route;
 use Spatie\WebhookClient\Models\WebhookCall;
 
 describe('Webhook Endpoint', function (): void {

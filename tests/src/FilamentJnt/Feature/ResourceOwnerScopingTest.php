@@ -13,6 +13,7 @@ use AIArmada\FilamentJnt\Resources\JntWebhookLogResource;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Models\JntWebhookLog;
+use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
 uses(FilamentJntTestCase::class);
@@ -243,7 +244,7 @@ it('requires an owner context before resolving Filament JNT resource queries', f
 
     app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
     {
-        public function resolve(): ?\Illuminate\Database\Eloquent\Model
+        public function resolve(): ?Model
         {
             return null;
         }

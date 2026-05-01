@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Webhooks\ChipWebhookProfile;
 use AIArmada\Chip\Webhooks\WebhookLogger;
 use AIArmada\Chip\Webhooks\WebhookValidator;
-use AIArmada\Chip\Models\Webhook;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;

@@ -13,8 +13,8 @@ use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 /**
  * Generates invoice/receipt document when a purchase is paid.

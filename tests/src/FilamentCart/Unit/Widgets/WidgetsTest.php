@@ -8,11 +8,11 @@ use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use AIArmada\FilamentCart\Widgets\LiveStatsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;
+use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\Widget;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Filament\Widgets\StatsOverviewWidget;
-use Filament\Widgets\Widget;
 
 describe('Widgets Instantiation', function (): void {
     it('can instantiate AbandonedCartsWidget', function (): void {

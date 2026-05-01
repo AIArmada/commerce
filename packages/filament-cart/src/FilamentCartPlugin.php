@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart;
 
-use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Pages\CartDashboard;
 use AIArmada\FilamentCart\Pages\LiveDashboardPage;
 use AIArmada\FilamentCart\Resources\CartConditionResource;
 use AIArmada\FilamentCart\Resources\CartItemResource;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Resources\ConditionResource;
+use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use AIArmada\FilamentCart\Widgets\LiveStatsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;

@@ -191,10 +191,10 @@ class SegmentResource extends Resource
                                     ->multiple()
                                     ->preload()
                                     ->searchable()
-                                        ->helperText('For manual segments only')
-                                        ->saveRelationshipsUsing(function (Segment $record, ?array $state): void {
-                                            static::syncManualCustomers($record, $state);
-                                        }),
+                                    ->helperText('For manual segments only')
+                                    ->saveRelationshipsUsing(function (Segment $record, ?array $state): void {
+                                        static::syncManualCustomers($record, $state);
+                                    }),
                             ])
                             ->visible(fn (Get $get) => ! $get('is_automatic')),
                     ])
