@@ -8,6 +8,7 @@ use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\SegmentationService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -16,7 +17,7 @@ require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
 /**
  * @param  array<string, mixed>  $attributes
  */
-function createIsolationCustomer(array $attributes, ?\Illuminate\Database\Eloquent\Model $owner = null): Customer
+function createIsolationCustomer(array $attributes, ?Model $owner = null): Customer
 {
     /** @var Customer $customer */
     $customer = OwnerContext::withOwner($owner, fn (): Customer => Customer::query()->create($attributes));

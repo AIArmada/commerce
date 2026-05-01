@@ -11,9 +11,9 @@ use AIArmada\FilamentInventory\Resources\InventorySerialResource\Pages\ViewInven
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas\InventorySerialForm;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Schemas\InventorySerialInfolist;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource\Tables\InventorySerialsTable;
-use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

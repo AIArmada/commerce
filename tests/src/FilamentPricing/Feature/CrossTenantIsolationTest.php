@@ -93,7 +93,7 @@ it('scopes filament-pricing dashboard stats to the current owner (optionally inc
         ]);
     });
 
-    $ownerAPromotion = OwnerContext::withOwner($ownerA, static function () use ($ownerA): Promotion {
+    $ownerAPromotion = OwnerContext::withOwner($ownerA, static function (): Promotion {
         $promotion = Promotion::query()->create([
             'name' => 'Owner A Promo',
             'code' => 'A-XT',
@@ -118,7 +118,7 @@ it('scopes filament-pricing dashboard stats to the current owner (optionally inc
         ]);
     });
 
-    $ownerBPromotion = OwnerContext::withOwner($ownerB, static function () use ($ownerB): Promotion {
+    $ownerBPromotion = OwnerContext::withOwner($ownerB, static function (): Promotion {
         $promotion = Promotion::query()->create([
             'name' => 'Owner B Promo',
             'code' => 'B-XT',

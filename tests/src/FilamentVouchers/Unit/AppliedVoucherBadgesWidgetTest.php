@@ -18,7 +18,7 @@ it('marks vouchers with no remaining uses as limit reached', function (): void {
         }
     };
 
-    $method = new \ReflectionMethod(AppliedVoucherBadgesWidget::class, 'determineVoucherStatus');
+    $method = new ReflectionMethod(AppliedVoucherBadgesWidget::class, 'determineVoucherStatus');
 
     $status = $method->invoke($widget, $voucher);
 
@@ -33,7 +33,7 @@ it('keeps fallback active status when remaining uses method is unavailable', fun
         public int $usage_limit = 100;
     };
 
-    $method = new \ReflectionMethod(AppliedVoucherBadgesWidget::class, 'determineVoucherStatus');
+    $method = new ReflectionMethod(AppliedVoucherBadgesWidget::class, 'determineVoucherStatus');
 
     $status = $method->invoke($widget, $voucher);
 
@@ -60,7 +60,7 @@ it('still prioritizes expiry status checks', function (): void {
         }
     };
 
-    $method = new \ReflectionMethod(AppliedVoucherBadgesWidget::class, 'determineVoucherStatus');
+    $method = new ReflectionMethod(AppliedVoucherBadgesWidget::class, 'determineVoucherStatus');
 
     $status = $method->invoke($widget, $voucher);
 

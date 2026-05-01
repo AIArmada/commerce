@@ -6,11 +6,11 @@ namespace AIArmada\Shipping\Models;
 
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\Shipping\Data\PackageData;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\CarbonImmutable;
 
 /**
  * @property string $id

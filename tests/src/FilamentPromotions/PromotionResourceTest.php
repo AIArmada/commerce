@@ -93,9 +93,9 @@ describe('PromotionResource', function (): void {
         it('scopes queries via getEloquentQuery rather than Filament tenancy', function (): void {
             $query = PromotionResource::getEloquentQuery();
 
-            expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+            expect($query)->toBeInstanceOf(Builder::class);
 
-            $reflection = new \ReflectionClass(PromotionResource::class);
+            $reflection = new ReflectionClass(PromotionResource::class);
             $property = $reflection->getProperty('tenantOwnershipRelationshipName');
 
             expect($property->getValue())->toBeNull();

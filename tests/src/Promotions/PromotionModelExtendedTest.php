@@ -366,8 +366,8 @@ describe('Promotion Model - Extended Tests', function (): void {
         });
 
         it('rejects invalid targeting conditions payload', function (): void {
-            expect(fn () =>
-                Promotion::create([
+            expect(
+                fn () => Promotion::create([
                     'name' => 'Invalid Conditions Test',
                     'type' => PromotionType::Percentage,
                     'discount_value' => 10,
