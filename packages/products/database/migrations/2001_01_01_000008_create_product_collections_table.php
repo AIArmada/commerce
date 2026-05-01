@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(config('products.database.tables.collections', 'product_collections'), function (Blueprint $table): void {
-            $jsonColumnType = config('products.database.json_column_type', 'json');
+            $jsonColumnType = config('products.database.json_column_type', commerce_json_column_type('products', 'json'));
 
             $table->uuid('id')->primary();
 

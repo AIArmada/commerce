@@ -371,6 +371,7 @@ class PermissionResource extends Resource
     protected static function scopedRolesQuery(Model $record): BelongsToMany
     {
         /** @var BelongsToMany $query */
+        // @phpstan-ignore-next-line method.notFound
         $query = $record->roles();
 
         if (! static::shouldRestrictToCurrentTeam()) {
@@ -396,6 +397,7 @@ class PermissionResource extends Resource
     protected static function scopedDirectUsersQuery(Model $record): BelongsToMany
     {
         /** @var BelongsToMany $query */
+        // @phpstan-ignore-next-line method.notFound
         $query = $record->users();
 
         if (! static::shouldRestrictToCurrentTeam()) {
