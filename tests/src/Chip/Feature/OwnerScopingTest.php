@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use RuntimeException;
 
 beforeEach(function (): void {
     Schema::dropIfExists('tenants');
