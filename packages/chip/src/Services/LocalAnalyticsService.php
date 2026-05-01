@@ -210,5 +210,4 @@ class LocalAnalyticsService
             default => $carbon->format('Y-m-d'),
         };
     }
-
 }

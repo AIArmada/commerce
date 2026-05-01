@@ -47,7 +47,7 @@ final class AuthzScope extends Model
             $teamsKey = app(PermissionRegistrar::class)->teamsKey;
             $roleClass = config('permission.models.role', Role::class);
 
-            /** @var class-string<\Illuminate\Database\Eloquent\Model> $roleClass */
+            /** @var class-string<Model> $roleClass */
             $roleClass::query()
                 ->where($teamsKey, $authzScope->getKey())
                 ->update([$teamsKey => null]);

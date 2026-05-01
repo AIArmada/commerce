@@ -126,7 +126,7 @@ class ImpersonateAction extends Action
      * Verify the acting user has permission to perform impersonation.
      * Called both from canImpersonate() (visibility) and impersonate() (execution).
      */
-    private function isActorAuthorizedToImpersonate(\Illuminate\Contracts\Auth\Authenticatable $actor): bool
+    private function isActorAuthorizedToImpersonate(Authenticatable $actor): bool
     {
         if (method_exists($actor, 'canImpersonate') && $actor->canImpersonate()) {
             return true;

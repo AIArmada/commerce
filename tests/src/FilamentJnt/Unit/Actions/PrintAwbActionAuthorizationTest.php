@@ -10,6 +10,7 @@ use AIArmada\FilamentJnt\Actions\PrintAwbAction;
 use AIArmada\FilamentJnt\Actions\PrintAwbTableAction;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
+use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Mockery;
 
@@ -148,7 +149,7 @@ it('uses safely encoded javascript for bulk AWB url opening', function (): void 
 
     $bulkAction = BulkPrintAwbAction::make();
     $bulkHandler = $bulkAction->getActionFunction();
-    $bulkHandler(new \Illuminate\Database\Eloquent\Collection([$order]), $livewire);
+    $bulkHandler(new Collection([$order]), $livewire);
 
     $notifications = session()->get('filament.notifications', []);
     expect(collect($notifications)->pluck('title'))->toContain('AWB Ready');
@@ -234,7 +235,7 @@ it('skips invalid base64 labels in bulk print action and reports warning', funct
 
     $bulkAction = BulkPrintAwbAction::make();
     $bulkHandler = $bulkAction->getActionFunction();
-    $bulkHandler(new \Illuminate\Database\Eloquent\Collection([$order]), $livewire);
+    $bulkHandler(new Collection([$order]), $livewire);
 
     $notifications = session()->get('filament.notifications', []);
     expect(collect($notifications)->pluck('title'))->toContain('Some AWBs Failed');

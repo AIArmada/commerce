@@ -92,7 +92,7 @@ final class ViewInvoices extends Page
             }
         }
 
-        /** @var \Illuminate\Support\Collection<int, array{id: string, gateway: string, number: string, amount: string, date: string, status: string, download_url: string|null}> $result */
+        /** @var Collection<int, array{id: string, gateway: string, number: string, amount: string, date: string, status: string, download_url: string|null}> $result */
         $result = $invoices
             ->sortByDesc('sort_timestamp')
             ->values()
