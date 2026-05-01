@@ -34,7 +34,6 @@ describe('RetryWebhooksCommand', function (): void {
     });
 });
 
-
 describe('CleanWebhooksCommand execution', function (): void {
     it('shows message when no webhooks to clean', function (): void {
         $this->artisan('chip:clean-webhooks', ['--dry-run' => true])

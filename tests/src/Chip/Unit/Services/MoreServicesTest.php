@@ -10,4 +10,3 @@ describe('LocalAnalyticsService', function (): void {
         expect($service)->toBeInstanceOf(LocalAnalyticsService::class);
     });
 });
-

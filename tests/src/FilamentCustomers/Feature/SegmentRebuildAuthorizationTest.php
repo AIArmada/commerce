@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource;
+use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -20,7 +21,7 @@ class TestHasTableComponent extends Component implements HasTable
         return Table::make($this);
     }
 
-    public function makeFilamentTranslatableContentDriver(): ?\Filament\Support\Contracts\TranslatableContentDriver
+    public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
     {
         return null;
     }
@@ -54,7 +55,7 @@ it('rebuild action honors Gate interceptors', function (): void {
         ? true
         : null);
 
-    $livewire = new TestHasTableComponent();
+    $livewire = new TestHasTableComponent;
     $table = SegmentResource::table(Table::make($livewire));
 
     $rebuildAction = $table->getAction('rebuild');

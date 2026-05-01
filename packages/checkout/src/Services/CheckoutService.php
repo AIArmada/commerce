@@ -597,6 +597,7 @@ final class CheckoutService implements CheckoutServiceInterface
      * resolves the session owner and wraps the callback accordingly.
      *
      * @template TReturn
+     *
      * @param  callable(): TReturn  $callback
      * @return TReturn
      */
