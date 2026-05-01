@@ -61,6 +61,11 @@ abstract class ChipModel extends Model implements Auditable
 
         if ($owner === OwnerContext::CURRENT) {
             $owner = $this->resolveOwner();
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                sprintf('%s requires an owner context or explicit global context.', static::class),
+            );
         }
 
         $includeGlobal ??= (bool) config('chip.owner.include_global', false);

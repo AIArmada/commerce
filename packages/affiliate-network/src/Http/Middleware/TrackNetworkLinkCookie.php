@@ -62,7 +62,9 @@ final class TrackNetworkLinkCookie
      */
     private function resolveLinkCode(Request $request): ?string
     {
-        $keys = (array) config('affiliate-network.cookies.query_parameters', ['anl']);
+        $configuredKeys = (array) config('affiliate-network.cookies.query_parameters', ['anl']);
+        $primaryKey = (string) config('affiliate-network.links.parameter', 'anl');
+        $keys = array_values(array_unique([...$configuredKeys, $primaryKey]));
 
         foreach ($keys as $key) {
             $value = $request->query($key);

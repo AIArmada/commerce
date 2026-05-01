@@ -7,6 +7,7 @@ namespace AIArmada\FilamentDocs\Resources;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -78,6 +79,7 @@ final class DocEmailTemplateResource extends Resource
                                 Select::make('trigger')
                                     ->options([
                                         'send' => 'When document is sent',
+                                        'due_soon' => 'Upcoming due date reminder',
                                         'reminder' => 'Payment reminder',
                                         'overdue' => 'When overdue',
                                         'paid' => 'When paid',
@@ -162,6 +164,7 @@ final class DocEmailTemplateResource extends Resource
                 SelectFilter::make('trigger')
                     ->options([
                         'send' => 'When document is sent',
+                        'due_soon' => 'Upcoming due date reminder',
                         'reminder' => 'Payment reminder',
                         'overdue' => 'When overdue',
                         'paid' => 'When paid',
@@ -218,7 +221,7 @@ final class DocEmailTemplateResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-docs.navigation.group');
+        return app(FilamentDocsPlugin::class)->getNavigationGroup();
     }
 
     public static function getNavigationSort(): ?int

@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages\ListInvoices;
+use AIArmada\FilamentCashier\Support\InvoiceStatus;
+use AIArmada\FilamentCashier\Support\UnifiedInvoice;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -172,4 +174,25 @@ it('returns no invoices when the configured billable model does not exist', func
 
     $page = app(ListInvoices::class);
     expect($page->getTableRecords())->toHaveCount(0);
+});
+
+it('returns a stable key for unified invoice DTO records', function (): void {
+    $page = app(ListInvoices::class);
+
+    $invoice = new UnifiedInvoice(
+        id: 'inv_123',
+        gateway: 'stripe',
+        userId: 'user_1',
+        number: 'INV-123',
+        amount: 1200,
+        currency: 'USD',
+        status: InvoiceStatus::Paid,
+        date: Carbon::parse('2026-01-01 00:00:00')->toImmutable(),
+        dueDate: null,
+        paidAt: Carbon::parse('2026-01-01 00:00:00')->toImmutable(),
+        pdfUrl: null,
+        original: (object) ['id' => 'inv_123'],
+    );
+
+    expect($page->getTableRecordKey($invoice))->toBe('stripe-inv_123');
 });

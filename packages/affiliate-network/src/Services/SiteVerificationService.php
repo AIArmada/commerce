@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\AffiliateNetwork\Services;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -76,21 +77,13 @@ final class SiteVerificationService
      */
     private function verifyMetaTag(AffiliateSite $site): bool
     {
-        try {
-            $html = @file_get_contents("https://{$site->domain}/");
+        $html = $this->fetchRemoteContent($site, '/');
 
-            if ($html === false) {
-                $html = @file_get_contents("http://{$site->domain}/");
-            }
-
-            if ($html === false) {
-                return false;
-            }
-
-            return str_contains($html, $site->verification_token);
-        } catch (Throwable) {
+        if ($html === null) {
             return false;
         }
+
+        return str_contains($html, $site->verification_token);
     }
 
     /**
@@ -98,21 +91,71 @@ final class SiteVerificationService
      */
     private function verifyFile(AffiliateSite $site): bool
     {
-        try {
-            $content = @file_get_contents("https://{$site->domain}/.well-known/affiliate-network-verify.txt");
+        $content = $this->fetchRemoteContent($site, '/.well-known/affiliate-network-verify.txt');
 
-            if ($content === false) {
-                $content = @file_get_contents("http://{$site->domain}/.well-known/affiliate-network-verify.txt");
-            }
-
-            if ($content === false) {
-                return false;
-            }
-
-            return mb_trim($content) === $site->verification_token;
-        } catch (Throwable) {
+        if ($content === null) {
             return false;
         }
+
+        return mb_trim($content) === $site->verification_token;
+    }
+
+    private function fetchRemoteContent(AffiliateSite $site, string $path): ?string
+    {
+        if (! $this->isFetchableDomain($site->domain)) {
+            return null;
+        }
+
+        $connectTimeout = (int) config('affiliate-network.http.connect_timeout_seconds', 3);
+        $timeout = (int) config('affiliate-network.http.timeout_seconds', 5);
+        $retries = (int) config('affiliate-network.http.retries', 1);
+        $retrySleepMs = (int) config('affiliate-network.http.retry_sleep_ms', 150);
+
+        foreach (['https', 'http'] as $scheme) {
+            $url = sprintf('%s://%s%s', $scheme, $site->domain, $path);
+
+            try {
+                $response = Http::connectTimeout($connectTimeout)
+                    ->timeout($timeout)
+                    ->retry($retries, $retrySleepMs, throw: false)
+                    ->get($url);
+
+                if ($response->successful()) {
+                    return $response->body();
+                }
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    private function isFetchableDomain(string $domain): bool
+    {
+        $normalizedDomain = Str::lower(mb_trim($domain));
+
+        if ($normalizedDomain === '') {
+            return false;
+        }
+
+        if (str_contains($normalizedDomain, '/') || str_contains($normalizedDomain, ':')) {
+            return false;
+        }
+
+        if (in_array($normalizedDomain, ['localhost', 'localhost.localdomain'], true)) {
+            return false;
+        }
+
+        if (str_ends_with($normalizedDomain, '.local') || str_ends_with($normalizedDomain, '.internal')) {
+            return false;
+        }
+
+        if (filter_var($normalizedDomain, FILTER_VALIDATE_IP) !== false) {
+            return filter_var($normalizedDomain, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        }
+
+        return preg_match('/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i', $normalizedDomain) === 1;
     }
 
     /**

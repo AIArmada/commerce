@@ -13,6 +13,7 @@ use AIArmada\FilamentJnt\Resources\JntWebhookLogResource;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Models\JntWebhookLog;
+use RuntimeException;
 
 uses(FilamentJntTestCase::class);
 
@@ -165,4 +166,90 @@ it('can exclude global records from Filament JNT resources', function (): void {
     $trackingEvents = JntTrackingEventResource::getEloquentQuery()->pluck('id')->all();
     expect($trackingEvents)->toContain($ownerAEvent->id)
         ->not->toContain($globalEvent->id);
+});
+
+it('includes owner-scoped orphan webhook logs and tracking events', function (): void {
+    config()->set('jnt.owner.enabled', true);
+    config()->set('jnt.owner.include_global', true);
+
+    $ownerA = User::query()->create([
+        'name' => 'Owner A',
+        'email' => 'owner-a-orphan@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Owner B',
+        'email' => 'owner-b-orphan@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerContext::withOwner(null, function () use (&$globalLog, &$globalEvent): void {
+        $globalLog = JntWebhookLog::query()->create([
+            'order_id' => null,
+            'tracking_number' => 'TRK-G-ORPHAN',
+            'processing_status' => JntWebhookLog::STATUS_PENDING,
+        ]);
+
+        $globalEvent = JntTrackingEvent::query()->create([
+            'order_id' => null,
+            'tracking_number' => 'TRK-G-ORPHAN',
+            'scan_type_name' => 'Global Orphan',
+        ]);
+    });
+
+    OwnerContext::withOwner($ownerA, function () use (&$ownerALog, &$ownerAEvent): void {
+        $ownerALog = JntWebhookLog::query()->create([
+            'order_id' => null,
+            'tracking_number' => 'TRK-A-ORPHAN',
+            'processing_status' => JntWebhookLog::STATUS_PENDING,
+        ]);
+
+        $ownerAEvent = JntTrackingEvent::query()->create([
+            'order_id' => null,
+            'tracking_number' => 'TRK-A-ORPHAN',
+            'scan_type_name' => 'Owner A Orphan',
+        ]);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use (&$ownerBLog, &$ownerBEvent): void {
+        $ownerBLog = JntWebhookLog::query()->create([
+            'order_id' => null,
+            'tracking_number' => 'TRK-B-ORPHAN',
+            'processing_status' => JntWebhookLog::STATUS_PENDING,
+        ]);
+
+        $ownerBEvent = JntTrackingEvent::query()->create([
+            'order_id' => null,
+            'tracking_number' => 'TRK-B-ORPHAN',
+            'scan_type_name' => 'Owner B Orphan',
+        ]);
+    });
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
+
+    $webhookLogs = JntWebhookLogResource::getEloquentQuery()->pluck('id')->all();
+    expect($webhookLogs)->toContain($globalLog->id, $ownerALog->id)
+        ->not->toContain($ownerBLog->id);
+
+    $trackingEvents = JntTrackingEventResource::getEloquentQuery()->pluck('id')->all();
+    expect($trackingEvents)->toContain($globalEvent->id, $ownerAEvent->id)
+        ->not->toContain($ownerBEvent->id);
+});
+
+it('requires an owner context before resolving Filament JNT resource queries', function (): void {
+    config()->set('jnt.owner.enabled', true);
+    config()->set('jnt.owner.include_global', true);
+
+    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?\Illuminate\Database\Eloquent\Model
+        {
+            return null;
+        }
+    });
+
+    expect(fn () => JntOrderResource::getEloquentQuery()->count())->toThrow(RuntimeException::class);
+    expect(fn () => JntTrackingEventResource::getEloquentQuery()->count())->toThrow(RuntimeException::class);
+    expect(fn () => JntWebhookLogResource::getEloquentQuery()->count())->toThrow(RuntimeException::class);
 });

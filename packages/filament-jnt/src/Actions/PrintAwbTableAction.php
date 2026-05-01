@@ -66,7 +66,7 @@ final class PrintAwbTableAction extends Action
                         $url = $waybill->urlContent;
 
                         if (is_string($url) && filter_var($url, FILTER_VALIDATE_URL)) {
-                            $livewire->js("window.open('{$url}', '_blank')");
+                            $livewire->js('window.open(' . json_encode($url) . ', "_blank")');
 
                             Notification::make()
                                 ->title('AWB Ready')
@@ -79,12 +79,24 @@ final class PrintAwbTableAction extends Action
                     }
 
                     if ($waybill->hasBase64Content()) {
+                        $pdfContent = $waybill->getPdfContent();
+
+                        if ($pdfContent === null) {
+                            Notification::make()
+                                ->title('AWB Not Available')
+                                ->body('Unable to decode waybill content from J&T Express.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
                         $url = OwnerSignedDownload::issueUrl(
                             cachePrefix: 'jnt_awb',
                             routeName: 'jnt.awb.show',
                             routeParameters: ['orderId' => $record->order_id],
                             payload: [
-                            'content' => base64_decode((string) $waybill->base64Content, true),
+                            'content' => $pdfContent,
                             'format' => 'pdf',
                             'order_id' => $record->order_id,
                             'tracking_number' => $record->tracking_number,

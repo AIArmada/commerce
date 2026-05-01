@@ -101,22 +101,33 @@ describe('JntTrackingService', function (): void {
         expect($status)->toBe(TrackingStatus::Pending);
     });
 
-    it('gets current status from first detail', function (): void {
+    it('gets current status from the latest tracking detail by scan time', function (): void {
         $expressService = Mockery::mock(JntExpressService::class);
         $statusMapper = Mockery::mock(JntStatusMapper::class);
         $statusMapper->shouldReceive('fromCode')
-            ->with('100')
+            ->never();
+        $statusMapper->shouldReceive('resolve')
+            ->with('100', 'Delivered')
             ->andReturn(TrackingStatus::Delivered);
 
         $service = new JntTrackingService($expressService, $statusMapper);
 
-        $detail = createTrackingDetail([
+        $olderDetail = createTrackingDetail([
+            'scanTime' => '2024-01-15 09:00:00',
+            'scanTypeCode' => '10',
+            'description' => 'Collected',
+            'scanTypeName' => 'Pickup',
+            'scanType' => 'PICKUP',
+        ]);
+
+        $newerDetail = createTrackingDetail([
             'scanTypeCode' => '100',
             'description' => 'Delivered',
+            'scanTime' => '2024-01-15 10:00:00',
         ]);
 
         /** @var DataCollection<int, TrackingDetailData> $details */
-        $details = TrackingDetailData::collect([$detail], DataCollection::class);
+        $details = TrackingDetailData::collect([$olderDetail, $newerDetail], DataCollection::class);
 
         $trackingData = new TrackingData(
             trackingNumber: 'JNT123456',
@@ -127,6 +138,25 @@ describe('JntTrackingService', function (): void {
         $status = $service->getCurrentStatus($trackingData);
 
         expect($status)->toBe(TrackingStatus::Delivered);
+    });
+
+    it('falls back to description when a delivery code is unmapped', function (): void {
+        $expressService = Mockery::mock(JntExpressService::class);
+        $statusMapper = Mockery::mock(JntStatusMapper::class);
+        $statusMapper->shouldReceive('resolve')
+            ->with('602', 'Parcel signed by recipient')
+            ->andReturn(TrackingStatus::Delivered);
+
+        $service = new JntTrackingService($expressService, $statusMapper);
+
+        $detail = createTrackingDetail([
+            'scanTypeCode' => '602',
+            'description' => 'Parcel signed by recipient',
+            'scanTypeName' => 'Delivered',
+            'scanType' => 'POD',
+        ]);
+
+        expect($service->getNormalizedStatus($detail))->toBe(TrackingStatus::Delivered);
     });
 
     it('tracks parcel via express service', function (): void {

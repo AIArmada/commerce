@@ -6,12 +6,15 @@ namespace AIArmada\Chip\Listeners;
 
 use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 /**
  * Generates credit note document when a payment is refunded.
@@ -36,19 +39,54 @@ final class GenerateDocOnRefund implements ShouldQueue
             return;
         }
 
-        // Find the persisted Purchase model
-        $purchase = Purchase::find($purchaseId);
+        $runner = function () use ($purchaseId, $event, $docType): void {
+            // Find the persisted Purchase model
+            $purchase = Purchase::find($purchaseId);
 
-        if ($purchase === null) {
+            if ($purchase === null) {
+                return;
+            }
+
+            // Skip if credit note already exists for this purchase
+            if ($this->creditNoteExistsForPurchase($purchase)) {
+                return;
+            }
+
+            $this->generateCreditNote($purchase, $event, (string) $docType);
+        };
+
+        if (! (bool) config('chip.owner.enabled', false)) {
+            $runner();
+
             return;
         }
 
-        // Skip if credit note already exists for this purchase
-        if ($this->creditNoteExistsForPurchase($purchase)) {
+        $owner = $this->resolveOwnerFromPayload($event->payload);
+
+        if ($owner === null) {
             return;
         }
 
-        $this->generateCreditNote($purchase, $event, (string) $docType);
+        OwnerContext::withOwner($owner, $runner);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function resolveOwnerFromPayload(array $payload): ?Model
+    {
+        $ownerType = Arr::get($payload, '__owner_type');
+        $ownerId = Arr::get($payload, '__owner_id');
+
+        if (! is_string($ownerType)) {
+            return null;
+        }
+
+        if (! is_string($ownerId) && ! is_int($ownerId)) {
+            return null;
+        }
+
+        return OwnerContext::fromTypeAndId($ownerType, $ownerId);
     }
 
     private function generateCreditNote(Purchase $purchase, PaymentRefunded $event, string $docType): void

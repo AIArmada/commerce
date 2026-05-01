@@ -115,6 +115,11 @@ final class SendEmailAction
                 recipientEmail: $data['to'],
                 recipientName: self::getRecipientName($record),
                 template: $template,
+                subjectOverride: $data['subject'] ?? null,
+                bodyOverride: $data['message'] ?? null,
+                metadata: array_filter([
+                    'cc' => $data['cc'] ?? null,
+                ], static fn (mixed $value): bool => $value !== null && $value !== ''),
             );
 
             Notification::make()

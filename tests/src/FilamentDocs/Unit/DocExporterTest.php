@@ -82,6 +82,28 @@ it('preloads paid_amount via modifyQuery to avoid N+1', function (): void {
     expect((float) $docWithAggregate->paid_amount)->toBe(23.45);
 });
 
+it('exports zero paid amount when no payments exist', function (): void {
+    $doc = Doc::factory()->create([
+        'currency' => 'MYR',
+    ]);
+
+    $docWithAggregate = DocExporter::modifyQuery(Doc::query())
+        ->whereKey($doc->id)
+        ->firstOrFail();
+
+    $export = new Export;
+
+    $columnMap = [
+        'paid_amount' => '',
+    ];
+
+    $exporter = new DocExporter($export, $columnMap, []);
+
+    $values = $exporter($docWithAggregate);
+
+    expect((float) $values[0])->toBe(0.0);
+});
+
 it('builds completed notification body for successful and failed rows', function (): void {
     $export = new Export;
     $export->successful_rows = 2;

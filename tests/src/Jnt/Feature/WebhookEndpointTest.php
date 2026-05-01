@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Jnt\Services\WebhookService;
 use AIArmada\Jnt\Webhooks\ProcessJntWebhook;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Spatie\WebhookClient\Models\WebhookCall;
@@ -386,5 +387,11 @@ describe('Webhook Endpoint', function (): void {
         $requestId2 = $response2->json('requestId');
 
         expect($requestId1)->not->toBe($requestId2);
+    });
+
+    it('does not register the webhook route when webhooks are disabled', function (): void {
+        config(['jnt.webhooks.enabled' => false]);
+
+        expect(Route::has('jnt.webhooks.status'))->toBeFalse();
     });
 });

@@ -12,6 +12,6 @@ Route::middleware(['web', 'auth'])
         Route::post('impersonate/{userId}', ImpersonateController::class)
             ->name('filament-authz.impersonate');
 
-        Route::get('impersonate/leave', LeaveImpersonationController::class)
+        Route::post('impersonate/leave', LeaveImpersonationController::class)
             ->name('filament-authz.impersonate.leave');
     });

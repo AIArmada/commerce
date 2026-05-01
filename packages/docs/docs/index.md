@@ -4,20 +4,18 @@ title: AIArmada Docs
 
 # AIArmada Docs
 
-A comprehensive document management package for Laravel with PDF generation, status workflows, email integration, and multi-tenancy support.
+A document management package for Laravel with PDF generation, email delivery, numbering, and optional owner scoping.
 
 ## Overview
 
-AIArmada Docs provides everything you need to manage business documents like invoices, quotations, receipts, and custom document types. It includes:
+AIArmada Docs includes:
 
-- **Document Models** - Rich document model with line items, customer info, amounts
-- **PDF Generation** - Via Spatie Laravel PDF with customizable templates
-- **Status Workflows** - Draft → Pending → Sent → Paid with history tracking
-- **Email Integration** - Email templates with variable substitution
-- **Automatic Numbering** - Sequences with prefix, format, reset frequency
-- **Approval Workflows** - Multi-step approval support
-- **E-Invoice Submissions** - Track e-invoicing submissions
-- **Multi-tenancy** - Full owner scoping via HasOwner trait
+- **Document creation** via `DocService`
+- **PDF generation** via Spatie Laravel PDF / Browsershot
+- **Email sending and tracking** via `DocEmailService`
+- **Automatic numbering** via `SequenceManager`
+- **Template management** via `DocTemplate`
+- **Optional owner scoping** via `HasOwner`
 
 ## Table of Contents
 
@@ -34,38 +32,24 @@ AIArmada Docs provides everything you need to manage business documents like inv
 
 ```bash
 composer require aiarmada/docs
-
-php artisan vendor:publish --tag=docs-migrations
 php artisan migrate
 ```
 
 ```php
-use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Enums\DocStatus;
-use AIArmada\Docs\Enums\DocType;
+use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Services\DocService;
 
-$doc = Doc::create([
-    'type' => DocType::Invoice,
-    'status' => DocStatus::Draft,
-    'customer_name' => 'Acme Corp',
-    'customer_email' => 'billing@acme.com',
+$doc = app(DocService::class)->create(DocData::from([
+    'doc_type' => 'invoice',
     'items' => [
         ['name' => 'Consulting', 'quantity' => 10, 'price' => 150],
     ],
-    'subtotal' => 1500,
-    'tax_rate' => 10,
-    'tax_amount' => 150,
-    'total' => 1650,
-    'currency' => 'USD',
-    'issue_date' => now(),
-    'due_date' => now()->addDays(30),
-]);
-
-// Generate PDF
-$doc->generatePdf();
-
-// Send via email
-$doc->sendEmail('billing@acme.com', 'Your Invoice #' . $doc->number);
+    'customer_data' => [
+        'name' => 'Acme Corp',
+        'email' => 'billing@acme.com',
+    ],
+    'generate_pdf' => true,
+]));
 ```
 
 ## Requirements
@@ -75,7 +59,7 @@ $doc->sendEmail('billing@acme.com', 'Your Invoice #' . $doc->number);
 | PHP | 8.4+ |
 | Laravel | 12.0+ |
 | aiarmada/commerce-support | Required |
-| spatie/laravel-pdf | Required |
+| spatie/laravel-pdf | Required transitively |
 
 ## Related Packages
 

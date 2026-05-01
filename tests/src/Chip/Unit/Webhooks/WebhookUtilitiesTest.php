@@ -5,7 +5,12 @@ declare(strict_types=1);
 use AIArmada\Chip\Webhooks\ChipWebhookProfile;
 use AIArmada\Chip\Webhooks\WebhookLogger;
 use AIArmada\Chip\Webhooks\WebhookValidator;
+use AIArmada\Chip\Models\Webhook;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 describe('ChipWebhookProfile', function (): void {
     it('can be instantiated', function (): void {
@@ -275,5 +280,69 @@ describe('WebhookLogger', function (): void {
         // Just verify it doesn't throw (actual log output not tested)
         $logger->logInvalidSignature($request);
         expect(true)->toBeTrue();
+    });
+
+    it('checks duplicates within the current owner scope only', function (): void {
+        Schema::dropIfExists('tenants');
+
+        Schema::create('tenants', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        $ownerA = new class extends Model
+        {
+            protected $table = 'tenants';
+
+            public $incrementing = false;
+
+            protected $keyType = 'string';
+
+            protected $guarded = [];
+        };
+
+        $ownerB = new class extends Model
+        {
+            protected $table = 'tenants';
+
+            public $incrementing = false;
+
+            protected $keyType = 'string';
+
+            protected $guarded = [];
+        };
+
+        $ownerA->id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+        $ownerA->name = 'Owner A';
+        $ownerA->save();
+
+        $ownerB->id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+        $ownerB->name = 'Owner B';
+        $ownerB->save();
+
+        config()->set('chip.owner.enabled', true);
+        config()->set('chip.owner.auto_assign_on_create', true);
+
+        $logger = new WebhookLogger;
+        $idempotencyKey = 'scoped-duplicate-key';
+
+        OwnerContext::withOwner($ownerA, function () use ($idempotencyKey): void {
+            Webhook::create([
+                'id' => '11111111-1111-1111-1111-111111111111',
+                'title' => 'Owner A webhook',
+                'event' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['id' => 'purchase-a'],
+                'status' => 'processed',
+                'idempotency_key' => $idempotencyKey,
+                'created_on' => time(),
+                'updated_on' => time(),
+                'callback' => 'http://example.com/webhook',
+            ]);
+        });
+
+        expect(OwnerContext::withOwner($ownerA, fn () => $logger->isDuplicate($idempotencyKey)))->toBeTrue();
+        expect(OwnerContext::withOwner($ownerB, fn () => $logger->isDuplicate($idempotencyKey)))->toBeFalse();
     });
 });

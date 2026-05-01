@@ -6,8 +6,8 @@ namespace AIArmada\FilamentCustomers\Resources;
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
+use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
-use AIArmada\Customers\Policies\SegmentPolicy;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use BackedEnum;
@@ -27,7 +27,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use UnitEnum;
 
@@ -189,7 +191,10 @@ class SegmentResource extends Resource
                                     ->multiple()
                                     ->preload()
                                     ->searchable()
-                                    ->helperText('For manual segments only'),
+                                        ->helperText('For manual segments only')
+                                        ->saveRelationshipsUsing(function (Segment $record, ?array $state): void {
+                                            static::syncManualCustomers($record, $state);
+                                        }),
                             ])
                             ->visible(fn (Get $get) => ! $get('is_automatic')),
                     ])
@@ -268,8 +273,7 @@ class SegmentResource extends Resource
                         $user = Auth::user();
                         abort_unless($user !== null, 403);
 
-                        $policy = new SegmentPolicy;
-                        abort_unless($policy->rebuild($user, $record), 403);
+                        Gate::forUser($user)->authorize('rebuild', $record);
 
                         $count = $record->rebuildCustomerList();
 
@@ -295,5 +299,56 @@ class SegmentResource extends Resource
             'view' => Pages\ViewSegment::route('/{record}'),
             'edit' => Pages\EditSegment::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * @param  array<int, mixed>|null  $state
+     */
+    public static function syncManualCustomers(Segment $record, ?array $state): void
+    {
+        $owner = static::ensureRecordOwnerScope($record);
+
+        $ids = array_values(array_filter($state ?? []));
+
+        if ($ids === []) {
+            $record->customers()->sync([]);
+
+            return;
+        }
+
+        $allowedIds = Customer::query()
+            ->forOwner($owner, includeGlobal: false)
+            ->whereKey($ids)
+            ->pluck('id')
+            ->all();
+
+        abort_unless(count($allowedIds) === count($ids), 403);
+
+        $record->customers()->sync($allowedIds);
+    }
+
+    protected static function ensureRecordOwnerScope(Segment $record): ?Model
+    {
+        $owner = CustomersOwnerScope::resolveOwner();
+
+        if ($owner === null) {
+            abort_unless($record->owner_type === null && $record->owner_id === null, 403);
+
+            return null;
+        }
+
+        if (method_exists($record, 'belongsToOwner')) {
+            abort_unless($record->belongsToOwner($owner), 403);
+
+            return $owner;
+        }
+
+        abort_unless(
+            $record->owner_type === $owner->getMorphClass()
+                && (string) $record->owner_id === (string) $owner->getKey(),
+            403
+        );
+
+        return $owner;
     }
 }

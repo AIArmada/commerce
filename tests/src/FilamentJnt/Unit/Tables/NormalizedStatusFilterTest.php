@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\FilamentJnt\Resources\JntOrderResource\Tables\JntOrderTable;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Tables\JntTrackingEventTable;
+use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 
@@ -57,4 +58,31 @@ it('ignores invalid normalized_status values for the tracking events table filte
     $query = JntTrackingEventTable::applyNormalizedStatusFilter(JntTrackingEvent::query(), 'not-a-real-status');
 
     expect($query->count())->toBe(2);
+});
+
+it('treats delivery-like tracking events as delivered even when the raw code is unmapped', function (): void {
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-FILTER-4',
+        'customer_code' => 'CUST',
+        'tracking_number' => 'TRK-FILTER-4',
+        'last_status_code' => '602',
+        'last_status' => 'Parcel signed by recipient',
+        'delivered_at' => now(),
+    ]);
+
+    $deliveredEvent = JntTrackingEvent::query()->create([
+        'order_id' => $order->id,
+        'tracking_number' => 'TRK-FILTER-4',
+        'scan_type_code' => '602',
+        'scan_type_name' => 'Delivered',
+        'scan_type' => 'POD',
+        'description' => 'Parcel signed by recipient',
+        'scan_time' => now(),
+    ]);
+
+    $query = JntTrackingEventTable::applyNormalizedStatusFilter(JntTrackingEvent::query(), TrackingStatus::Delivered->value);
+
+    expect($query->pluck('id')->all())->toContain($deliveredEvent->id)
+        ->and($deliveredEvent->getNormalizedStatus())->toBe(TrackingStatus::Delivered)
+        ->and((new ReflectionClass(JntOrderTable::class))->getMethod('getNormalizedStatus')->invoke(null, $order))->toBe(TrackingStatus::Delivered);
 });

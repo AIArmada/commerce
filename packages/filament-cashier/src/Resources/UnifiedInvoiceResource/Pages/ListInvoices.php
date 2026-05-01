@@ -95,6 +95,10 @@ final class ListInvoices extends ListRecords
             return (string) $record->getKey();
         }
 
+        if ($record instanceof UnifiedInvoice) {
+            return $record->gateway . '-' . $record->id;
+        }
+
         return (string) ($record['id'] ?? '');
     }
 

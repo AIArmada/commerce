@@ -16,11 +16,19 @@ use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Actions\BulkPayoutAction;
+use AIArmada\FilamentAuthz\Models\Permission;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
+    Permission::firstOrCreate([
+        'name' => 'affiliates.payout.update',
+        'guard_name' => 'web',
+    ]);
+
     AffiliatePayoutEvent::query()->delete();
     AffiliatePayoutMethod::query()->delete();
     AffiliatePayout::query()->delete();
@@ -43,6 +51,9 @@ it('processes a pending payout successfully', function (): void {
         'email' => 'payout-user@example.com',
         'password' => 'secret',
     ]);
+
+    $this->actingAs($user);
+    $user->givePermissionTo('affiliates.payout.update');
 
     $affiliate = Affiliate::create([
         'code' => 'PAYOUT-' . Str::uuid(),
@@ -103,6 +114,9 @@ it('marks a pending payout as failed when no default payout method exists', func
         'password' => 'secret',
     ]);
 
+    $this->actingAs($user);
+    $user->givePermissionTo('affiliates.payout.update');
+
     $affiliate = Affiliate::create([
         'code' => 'NOMETHOD-' . Str::uuid(),
         'name' => 'No Method Affiliate',
@@ -145,6 +159,9 @@ it('marks a pending payout as failed when the processor fails', function (): voi
         'email' => 'fail-user@example.com',
         'password' => 'secret',
     ]);
+
+    $this->actingAs($user);
+    $user->givePermissionTo('affiliates.payout.update');
 
     $affiliate = Affiliate::create([
         'code' => 'FAIL-' . Str::uuid(),
@@ -202,6 +219,9 @@ it('marks a pending payout as failed when the processor throws', function (): vo
         'password' => 'secret',
     ]);
 
+    $this->actingAs($user);
+    $user->givePermissionTo('affiliates.payout.update');
+
     $affiliate = Affiliate::create([
         'code' => 'THROW-' . Str::uuid(),
         'name' => 'Throw Affiliate',
@@ -249,6 +269,99 @@ it('marks a pending payout as failed when the processor throws', function (): vo
     expect($event)->not->toBeNull()
         ->and($event->to_status)->toBe(FailedPayout::value())
         ->and($event->notes)->toBe('Processor exploded');
+});
+
+it('rejects cross-tenant payout selection without mutating the target payout', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', false);
+
+    $ownerA = User::create([
+        'name' => 'Owner A',
+        'email' => 'owner-a-payout@example.com',
+        'password' => 'secret',
+    ]);
+    $ownerA->givePermissionTo('affiliates.payout.update');
+
+    $ownerB = User::create([
+        'name' => 'Owner B',
+        'email' => 'owner-b-payout@example.com',
+        'password' => 'secret',
+    ]);
+
+    $this->actingAs($ownerA);
+
+    $payoutA = OwnerContext::withOwner($ownerA, function (): AffiliatePayout {
+        $affiliate = Affiliate::create([
+            'code' => 'A-' . Str::uuid(),
+            'name' => 'Affiliate A',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+
+        AffiliatePayoutMethod::create([
+            'affiliate_id' => $affiliate->getKey(),
+            'type' => PayoutMethodType::BankTransfer,
+            'details' => ['bank_name' => 'Test Bank', 'account_number' => '123456789'],
+            'is_verified' => true,
+            'is_default' => true,
+            'verified_at' => now(),
+        ]);
+
+        $payout = AffiliatePayout::create([
+            'reference' => 'PAY-A-' . Str::uuid(),
+            'status' => PendingPayout::class,
+            'total_minor' => 1500,
+            'currency' => 'USD',
+            'payee_type' => $affiliate->getMorphClass(),
+            'payee_id' => $affiliate->getKey(),
+        ]);
+
+        return $payout;
+    });
+
+    $payoutB = OwnerContext::withOwner($ownerB, function (): AffiliatePayout {
+        $affiliate = Affiliate::create([
+            'code' => 'B-' . Str::uuid(),
+            'name' => 'Affiliate B',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 500,
+            'currency' => 'USD',
+        ]);
+
+        $payout = AffiliatePayout::create([
+            'reference' => 'PAY-B-' . Str::uuid(),
+            'status' => PendingPayout::class,
+            'total_minor' => 1500,
+            'currency' => 'USD',
+            'payee_type' => $affiliate->getMorphClass(),
+            'payee_id' => $affiliate->getKey(),
+        ]);
+
+        return $payout;
+    });
+
+    $factory = new PayoutProcessorFactory;
+    $factory->register('bank_transfer', TestSuccessPayoutProcessor::class);
+    app()->instance(PayoutProcessorFactory::class, $factory);
+
+    $action = BulkPayoutAction::make('bulk_process_payouts');
+    $action->deselectRecordsAfterCompletion(false);
+    $action->successNotification(null);
+
+    OwnerContext::withOwner($ownerA, function () use ($action, $payoutA, $payoutB): void {
+        expect(fn () => $action->call(['records' => new Collection([$payoutA, $payoutB])]))
+            ->toThrow(ModelNotFoundException::class);
+    });
+
+    $payoutA->refresh();
+    $payoutB->refresh();
+
+    expect($payoutA->status)->toBeInstanceOf(CompletedPayout::class)
+        ->and($payoutB->status)->toBeInstanceOf(PendingPayout::class)
+        ->and($payoutB->events()->count())->toBe(0);
 });
 
 class TestSuccessPayoutProcessor implements PayoutProcessorInterface

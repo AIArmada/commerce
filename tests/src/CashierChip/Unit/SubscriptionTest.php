@@ -243,4 +243,18 @@ class SubscriptionTest extends CashierChipTestCase
         // Use query()->active()
         $this->assertEquals(1, Subscription::query()->active()->count());
     }
+
+    public function test_current_period_start_respects_interval_count(): void
+    {
+        $subscription = new Subscription([
+            'billing_interval' => 'month',
+            'billing_interval_count' => 3,
+            'next_billing_at' => Carbon::parse('2026-06-01 00:00:00'),
+        ]);
+
+        $periodStart = $subscription->currentPeriodStart();
+
+        $this->assertNotNull($periodStart);
+        $this->assertSame('2026-03-01 00:00:00', $periodStart?->format('Y-m-d H:i:s'));
+    }
 }

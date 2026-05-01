@@ -5,9 +5,11 @@ declare(strict_types=1);
 use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 
 beforeEach(function (): void {
     Schema::dropIfExists('tenants');
@@ -213,6 +215,81 @@ it('treats forOwner(null) as global-only (never current owner)', function (): vo
 
     expect(Purchase::query()->forOwner(null)->pluck('id')->all())
         ->toBe(['33333333-3333-3333-3333-333333333333']);
+});
+
+it('fails closed when current owner is missing for owner-protected scopes', function (): void {
+    app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    Purchase::withoutEvents(function (): void {
+        Purchase::create([
+            'id' => '11111111-1111-1111-1111-111111111111',
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => 'paid',
+            'purchase' => ['amount' => 1000],
+        ]);
+    });
+
+    BankAccount::withoutEvents(function (): void {
+        BankAccount::create([
+            'id' => 1,
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => 'active',
+            'name' => 'Global Account',
+            'account_number' => '123',
+            'bank_code' => 'MBBEMYKL',
+        ]);
+    });
+
+    expect(fn (): int => Purchase::query()->forOwner()->count())
+        ->toThrow(RuntimeException::class);
+
+    expect(fn (): int => BankAccount::query()->forOwner()->count())
+        ->toThrow(RuntimeException::class);
+});
+
+it('allows current-owner scopes when global context is explicit', function (): void {
+    app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    Purchase::withoutEvents(function (): void {
+        Purchase::create([
+            'id' => '11111111-1111-1111-1111-111111111111',
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => 'paid',
+            'purchase' => ['amount' => 1000],
+        ]);
+    });
+
+    BankAccount::withoutEvents(function (): void {
+        BankAccount::create([
+            'id' => 1,
+            'owner_type' => null,
+            'owner_id' => null,
+            'status' => 'active',
+            'name' => 'Global Account',
+            'account_number' => '123',
+            'bank_code' => 'MBBEMYKL',
+        ]);
+    });
+
+    OwnerContext::withOwner(null, function (): void {
+        expect(Purchase::query()->forOwner()->count())->toBe(1);
+        expect(BankAccount::query()->forOwner()->count())->toBe(1);
+    });
 });
 
 it('scopes integer-ID models too (option lists must be owner-safe)', function (): void {

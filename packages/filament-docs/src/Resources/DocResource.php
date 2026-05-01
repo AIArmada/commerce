@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\CreateDoc;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\EditDoc;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\ListDocs;
@@ -99,7 +100,7 @@ final class DocResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-docs.navigation.group');
+        return app(FilamentDocsPlugin::class)->getNavigationGroup();
     }
 
     public static function getNavigationSort(): ?int

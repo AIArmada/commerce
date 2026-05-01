@@ -4,137 +4,70 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
-use AIArmada\CashierChip\Events\WebhookHandled;
-use AIArmada\CashierChip\Events\WebhookReceived;
-use AIArmada\CashierChip\Http\Controllers\WebhookController;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
-use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Route;
 
 uses(CashierChipTestCase::class);
 
 beforeEach(function (): void {
-    Event::fake([
-        WebhookReceived::class,
-        WebhookHandled::class,
-        PaymentSucceeded::class,
-        PaymentFailed::class,
-    ]);
-
     $this->user = $this->createUser([
         'chip_id' => 'test-client-id',
     ]);
-
-    // Manually register the webhook route for testing
-    Route::post('/chip/webhook', [WebhookController::class, 'handle'])
-        ->name('cashier-chip.webhook');
 });
 
-it('handles webhook received event', function (): void {
-    $payload = [
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            'client' => ['id' => 'test-client-id'],
-        ],
+it('dispatches PaymentSucceeded on purchase.paid', function (): void {
+    Event::fake([PaymentSucceeded::class]);
+
+    $purchaseData = [
+        'id' => 'test-purchase-id',
+        'client_id' => 'test-client-id',
+        'status' => 'paid',
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
-
-    Event::assertDispatched(WebhookReceived::class, function ($event) use ($payload) {
-        return $event->payload['event_type'] === $payload['event_type'];
-    });
-});
-
-it('handles payment success webhook', function (): void {
-    $payload = [
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            'client' => ['id' => 'test-client-id'],
-            'total' => 100.00,
-            'currency' => 'MYR',
-        ],
-    ];
-
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
+    PurchasePaid::dispatch(PurchaseData::from($purchaseData), $purchaseData);
 
     Event::assertDispatched(PaymentSucceeded::class, function ($event) {
         return $event->billable->id === $this->user->id;
     });
-
-    Event::assertDispatched(WebhookHandled::class);
 });
 
-it('handles payment failed webhook', function (): void {
-    $payload = [
-        'event_type' => 'purchase.payment_failure',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'error',
-            'client' => ['id' => 'test-client-id'],
-        ],
+it('dispatches PaymentFailed on purchase.payment_failure', function (): void {
+    Event::fake([PaymentFailed::class]);
+
+    $purchaseData = [
+        'id' => 'test-purchase-id',
+        'client_id' => 'test-client-id',
+        'status' => 'failed',
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
+    PurchasePaymentFailure::dispatch(PurchaseData::from($purchaseData), $purchaseData);
 
     Event::assertDispatched(PaymentFailed::class, function ($event) {
         return $event->billable->id === $this->user->id;
     });
 });
 
-it('handles purchase completed webhook', function (): void {
-    $payload = [
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            'client' => ['id' => 'test-client-id'],
-        ],
-    ];
-
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
-
-    Event::assertDispatched(PaymentSucceeded::class);
-});
-
 it('stores recurring token from webhook when no default payment method', function (): void {
-    Event::fake([WebhookReceived::class, WebhookHandled::class, PaymentSucceeded::class]);
-
-    // User starts without a default payment method
     expect($this->user->default_pm_id)->toBeNull();
 
-    $payload = [
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            'client' => ['id' => 'test-client-id'],
-            'recurring_token' => 'new-recurring-token',
-            'card' => [
-                'brand' => 'Visa',
-                'last_4' => '4242',
-            ],
-        ],
+    $purchaseData = [
+        'id' => 'test-purchase-id',
+        'client_id' => 'test-client-id',
+        'status' => 'paid',
+        'recurring_token' => 'new-recurring-token',
+        'card' => ['brand' => 'Visa', 'last_4' => '4242'],
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
+    PurchasePaid::dispatch(PurchaseData::from($purchaseData), $purchaseData);
 
     $this->user->refresh();
 
@@ -143,10 +76,7 @@ it('stores recurring token from webhook when no default payment method', functio
     expect($this->user->pm_last_four)->toBe('4242');
 });
 
-it('updates subscription on payment success', function (): void {
-    Event::fake([WebhookReceived::class, WebhookHandled::class, PaymentSucceeded::class]);
-
-    // Create a subscription
+it('updates subscription to active on payment success', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
@@ -156,21 +86,15 @@ it('updates subscription on payment success', function (): void {
         'billing_interval_count' => 1,
     ]);
 
-    $payload = [
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            'client' => ['id' => 'test-client-id'],
-            'metadata' => [
-                'subscription_type' => 'standard',
-            ],
-        ],
+    $purchaseData = [
+        'id' => 'test-purchase-id',
+        'client_id' => 'test-client-id',
+        'status' => 'paid',
+        'metadata' => ['subscription_type' => 'standard'],
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
+    PurchasePaid::dispatch(PurchaseData::from($purchaseData), $purchaseData);
 
     $subscription = $this->user->subscription('standard');
 
@@ -179,9 +103,6 @@ it('updates subscription on payment success', function (): void {
 });
 
 it('updates subscription to past due on payment failure', function (): void {
-    Event::fake([WebhookReceived::class, WebhookHandled::class, PaymentFailed::class]);
-
-    // Create a subscription
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
@@ -189,141 +110,84 @@ it('updates subscription to past due on payment failure', function (): void {
         'chip_price' => 'price_monthly',
     ]);
 
-    $payload = [
-        'event_type' => 'purchase.payment_failure',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'error',
-            'client' => ['id' => 'test-client-id'],
-            'metadata' => [
-                'subscription_type' => 'standard',
-            ],
-        ],
+    $purchaseData = [
+        'id' => 'test-purchase-id',
+        'client_id' => 'test-client-id',
+        'status' => 'failed',
+        'metadata' => ['subscription_type' => 'standard'],
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
+    PurchasePaymentFailure::dispatch(PurchaseData::from($purchaseData), $purchaseData);
 
     $subscription = $this->user->subscription('standard');
 
     expect($subscription->chip_status)->toBe(Subscription::STATUS_PAST_DUE);
 });
 
-it('handles unknown webhook events gracefully', function (): void {
-    $payload = [
-        'event_type' => 'unknown.event',
-        'data' => ['some' => 'data'],
-    ];
-
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
-    $response->assertJson(['status' => 'accepted']);
-});
-
 it('handles missing client id gracefully', function (): void {
-    $payload = [
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            // No client id
-        ],
+    Event::fake([PaymentSucceeded::class]);
+
+    $purchaseData = [
+        'id' => 'test-purchase-id',
+        'status' => 'paid',
+        // No client_id — listener bails early
     ];
 
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
+    PurchasePaid::dispatch(PurchaseData::from($purchaseData), $purchaseData);
 
     Event::assertNotDispatched(PaymentSucceeded::class);
 });
 
 it('handles non-existent billable gracefully', function (): void {
-    $payload = [
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            'client' => ['id' => 'non-existent-client-id'],
-        ],
+    Event::fake([PaymentSucceeded::class]);
+
+    $purchaseData = [
+        'id' => 'test-purchase-id',
+        'client_id' => 'non-existent-chip-id',
+        'status' => 'paid',
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
     ];
 
-    $response = $this->postJson('/chip/webhook', $payload);
-
-    $response->assertStatus(200);
+    PurchasePaid::dispatch(PurchaseData::from($purchaseData), $purchaseData);
 
     Event::assertNotDispatched(PaymentSucceeded::class);
 });
 
-it('requires owner resolution via brand_id mapping when owner scoping is enabled', function (): void {
+it('resolves billable by owner context when chip_id is duplicated across tenants', function (): void {
     config()->set('cashier-chip.features.owner.enabled', true);
     config()->set('cashier-chip.features.owner.include_global', false);
     config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
+    config()->set('cashier-chip.features.owner.validate_billable_owner', true);
 
-    config()->set('chip.owner.webhook_brand_id_map', [
-        'test_brand_id' => [
-            'owner_type' => $this->user->getMorphClass(),
-            'owner_id' => (string) $this->user->getKey(),
-        ],
+    $ownerB = User::query()->create([
+        'name' => 'Owner B Duplicate',
+        'email' => 'cashier-chip-owner-b-dup@example.com',
+        'chip_id' => 'duplicated-client-id',
     ]);
 
-    OwnerContext::withOwner($this->user, function (): void {
-        $this->user->subscriptions()->create([
-            'type' => 'standard',
-            'chip_id' => 'test-sub-id',
-            'chip_status' => Subscription::STATUS_PAST_DUE,
-            'chip_price' => 'price_monthly',
-            'billing_interval' => 'month',
-            'billing_interval_count' => 1,
-        ]);
+    $ownerA = User::query()->create([
+        'name' => 'Owner A Duplicate',
+        'email' => 'cashier-chip-owner-a-dup@example.com',
+        'chip_id' => 'duplicated-client-id',
+    ]);
+
+    $purchaseData = [
+        'id' => 'test-purchase-id-owner-a',
+        'client_id' => 'duplicated-client-id',
+        'status' => 'paid',
+        'recurring_token' => 'tok_owner_a_only',
+        'card' => ['brand' => 'Visa', 'last_4' => '4242'],
+        'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+    ];
+
+    $purchase = PurchaseData::from($purchaseData);
+
+    // Dispatch within ownerA context — only ownerA's billable should be updated
+    OwnerContext::withOwner($ownerA, function () use ($purchase, $purchaseData): void {
+        PurchasePaid::dispatch($purchase, $purchaseData);
     });
 
-    // Simulate a webhook request arriving without ambient owner context.
-    OwnerContext::setForRequest(null);
-
-    $payload = [
-        'brand_id' => 'test_brand_id',
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            'client' => ['id' => 'test-client-id'],
-            'metadata' => [
-                'subscription_type' => 'standard',
-            ],
-        ],
-    ];
-
-    $this->postJson('/chip/webhook', $payload)
-        ->assertStatus(200);
-
-    $subscription = Subscription::query()
-        ->withoutOwnerScope()
-        ->where('user_id', $this->user->getKey())
-        ->where('type', 'standard')
-        ->first();
-
-    expect($subscription)->not->toBeNull();
-    expect($subscription?->chip_status)->toBe(Subscription::STATUS_ACTIVE);
-});
-
-it('fails closed when owner scoping is enabled but brand_id has no mapping', function (): void {
-    config()->set('cashier-chip.features.owner.enabled', true);
-    config()->set('chip.owner.webhook_brand_id_map', []);
-
-    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
-
-    $payload = [
-        'brand_id' => 'missing-brand',
-        'event_type' => 'purchase.paid',
-        'purchase' => [
-            'id' => 'test-purchase-id',
-            'status' => 'paid',
-            'client' => ['id' => 'test-client-id'],
-        ],
-    ];
-
-    $this->postJson('/chip/webhook', $payload)
-        ->assertStatus(500);
+    expect($ownerA->fresh()?->default_pm_id)->toBe('tok_owner_a_only');
+    expect($ownerB->fresh()?->default_pm_id)->toBeNull();
 });

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -71,7 +72,7 @@ final class FraudAlertWidget extends BaseWidget
             ->actions([
                 Action::make('review')
                     ->icon('heroicon-o-eye')
-                    ->url(fn ($record) => route('filament.admin.resources.affiliate-fraud-signals.view', $record))
+                    ->url(fn (AffiliateFraudSignal $record): string => AffiliateFraudSignalResource::getUrl('view', ['record' => $record]))
                     ->openUrlInNewTab(),
 
                 Action::make('dismiss')

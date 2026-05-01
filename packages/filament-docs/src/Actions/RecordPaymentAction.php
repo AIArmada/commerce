@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Actions;
 
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Models\DocPayment;
-use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
@@ -121,8 +120,7 @@ final class RecordPaymentAction
             ]);
         }
 
-        $payment = new DocPayment([
-            'doc_id' => $record->id,
+        app(DocService::class)->recordPayment($record, [
             'amount' => $amount,
             'currency' => $record->currency,
             'payment_method' => $data['payment_method'],
@@ -131,24 +129,9 @@ final class RecordPaymentAction
             'notes' => $data['notes'] ?? null,
         ]);
 
-        $payment->owner_type = $record->owner_type;
-        $payment->owner_id = $record->owner_id;
-        $payment->save();
-
-        $newPaidAmount = self::getTotalPaid($record);
-
-        if ($newPaidAmount >= (float) $record->total) {
-            $record->status = new Paid($record);
-            $record->paid_at = $data['paid_at'];
-        } else {
-            $record->status = new PartiallyPaid($record);
-        }
-
-        $record->save();
-
         Notification::make()
             ->title('Payment Recorded')
-            ->body("{$record->currency} " . number_format((float) $data['amount'], 2) . ' payment recorded successfully.')
+            ->body("{$record->currency} " . number_format($amount, 2) . ' payment recorded successfully.')
             ->success()
             ->send();
     }

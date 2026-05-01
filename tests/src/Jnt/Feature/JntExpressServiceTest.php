@@ -240,6 +240,79 @@ test('creates order with data objects', function (): void {
     // });
 });
 
+test('generates a unique fallback order id when none is provided', function (): void {
+    $capturedOrderIds = [];
+
+    Http::fake(function ($request) use (&$capturedOrderIds) {
+        $payload = json_decode((string) ($request->data()['bizContent'] ?? '{}'), true);
+        $capturedOrderIds[] = $payload['txlogisticId'] ?? null;
+
+        return Http::response([
+            'code' => '1',
+            'msg' => 'Success',
+            'data' => [
+                'txlogisticId' => $payload['txlogisticId'] ?? 'UNKNOWN',
+                'billCode' => 'JT' . str_pad((string) count($capturedOrderIds), 9, '0', STR_PAD_LEFT),
+            ],
+        ], 200);
+    });
+
+    $sender = new AddressData(
+        name: 'John Doe',
+        phone: '60123456789',
+        address: '123 Test Street',
+        postCode: '47300',
+        countryCode: 'MYS',
+        state: 'Selangor',
+        city: 'Petaling Jaya',
+        area: 'SS2'
+    );
+
+    $receiver = new AddressData(
+        name: 'Jane Doe',
+        phone: '60987654321',
+        address: '456 Test Avenue',
+        postCode: '50000',
+        countryCode: 'MYS',
+        state: 'Kuala Lumpur',
+        city: 'KL',
+        area: 'Bukit Bintang'
+    );
+
+    $item = new ItemData(
+        name: 'Fallback ID Product',
+        quantity: '1',
+        weight: '1.5',
+        price: '100.00'
+    );
+
+    $packageInfo = new PackageInfoData(
+        quantity: '1',
+        weight: '1.5',
+        value: '100.00',
+        goodsType: 'General'
+    );
+
+    $this->service->createOrder(
+        sender: $sender,
+        receiver: $receiver,
+        items: [$item],
+        packageInfo: $packageInfo,
+    );
+
+    $this->service->createOrder(
+        sender: $sender,
+        receiver: $receiver,
+        items: [$item],
+        packageInfo: $packageInfo,
+    );
+
+    expect($capturedOrderIds)->toHaveCount(2)
+        ->and($capturedOrderIds[0])->not()->toBe($capturedOrderIds[1])
+        ->and($capturedOrderIds[0])->toStartWith('TXN-')
+        ->and($capturedOrderIds[1])->toStartWith('TXN-');
+});
+
 test('uses builder pattern', function (): void {
     Http::fake([
         '*/api/order/addOrder' => Http::response([
