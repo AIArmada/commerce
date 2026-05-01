@@ -35,6 +35,10 @@ final class ProcessCheckoutWebhook extends CommerceWebhookProcessor
         }
 
         DB::transaction(function () use ($payload, $sessionId): void {
+            // Intentional cross-tenant lookup: webhook payloads arrive without owner context.
+            // Integrity is enforced by signature verification in CheckoutSpatieSignatureValidator
+            // before this processor is reached. All subsequent mutations run inside
+            // withSessionOwnerContext(), which restores the correct owner scope from the session.
             $session = CheckoutSession::withoutOwnerScope()
                 ->whereKey($sessionId)
                 ->lockForUpdate()

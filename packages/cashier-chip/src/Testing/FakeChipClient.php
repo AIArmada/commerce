@@ -441,11 +441,21 @@ class FakeChipClient
             'created_on' => now()->getTimestamp(),
         ], $data ?? []);
 
+        $effectiveTokenId = isset($token['id']) && is_string($token['id']) && $token['id'] !== ''
+            ? $token['id']
+            : $tokenId;
+
+        $token['id'] = $effectiveTokenId;
+
+        if (! isset($token['recurring_token']) || ! is_string($token['recurring_token']) || $token['recurring_token'] === '') {
+            $token['recurring_token'] = $effectiveTokenId;
+        }
+
         if (! isset($this->recurringTokens[$clientId])) {
             $this->recurringTokens[$clientId] = [];
         }
 
-        $this->recurringTokens[$clientId][$tokenId] = $token;
+        $this->recurringTokens[$clientId][$effectiveTokenId] = $token;
 
         return $token;
     }

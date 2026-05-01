@@ -303,6 +303,5 @@ class PaymentTest extends TestCase
 | Command | Description |
 |---------|-------------|
 | `chip:health-check` | Check CHIP API connectivity and credentials |
-| `chip:aggregate-metrics` | Aggregate purchase data into daily metrics |
 | `chip:retry-webhooks` | Retry failed webhooks |
 | `chip:clean-webhooks` | Clean old webhook records |

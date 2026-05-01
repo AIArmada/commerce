@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\Mail\DocMail;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
@@ -31,7 +32,8 @@ test('it builds PDF attachments from the configured storage disk', function (): 
         'status' => 'sent',
     ]);
 
-    $docService = Mockery::mock(DocService::class);
+    $docService = Mockery::mock(DocServiceInterface::class);
+    app()->instance(DocService::class, $docService);
     $docService->shouldReceive('generatePdf')
         ->once()
         ->withArgs(fn (Doc $mailDoc, bool $save): bool => $mailDoc->is($doc) && $save === true)
@@ -40,8 +42,6 @@ test('it builds PDF attachments from the configured storage disk', function (): 
         ->once()
         ->with('invoice')
         ->andReturn('local');
-
-    app()->instance(DocService::class, $docService);
 
     $mail = new DocMail($docEmail, $doc, attachPdf: true);
 

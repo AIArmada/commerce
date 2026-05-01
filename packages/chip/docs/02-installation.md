@@ -42,7 +42,6 @@ The package creates the following tables (with configurable prefix):
 - `chip_send_limits` - Payout limits
 - `chip_send_webhooks` - Send webhook records
 - `chip_company_statements` - Settlement statements
-- `chip_daily_metrics` - Pre-aggregated analytics
 
 ## Environment Variables
 

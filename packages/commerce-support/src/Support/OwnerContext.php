@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Events\ForgettingCurrentOwnerEvent;
 use AIArmada\CommerceSupport\Events\ForgotCurrentOwnerEvent;
 use AIArmada\CommerceSupport\Events\MadeOwnerCurrentEvent;
 use AIArmada\CommerceSupport\Events\MakingOwnerCurrentEvent;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -108,7 +109,7 @@ final class OwnerContext
             return;
         }
 
-        throw new RuntimeException($message ?? 'Owner context is required for this owner-protected operation. Use OwnerContext::withOwner(null, ...) for explicit global access.');
+        throw new NoCurrentOwnerException($message ?? 'Owner context is required for this owner-protected operation. Use OwnerContext::withOwner(null, ...) for explicit global access.');
     }
 
     public static function withOwner(?Model $owner, callable $callback): mixed

@@ -101,6 +101,7 @@ abstract class CashierChipTestCase extends Orchestra
         $app['config']->set('chip.collect.brand_id', 'test_brand_id');
         $app['config']->set('chip.collect.environment', 'sandbox');
         $app['config']->set('chip.is_sandbox', true);
+        $app['config']->set('chip.integrations.docs.paid_doc_type', null);
 
         // Configure Cashier CHIP settings
         $app['config']->set('cashier-chip.currency', 'MYR');

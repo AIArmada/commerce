@@ -6,6 +6,7 @@ use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Actions\PurchaseExporter;
 use AIArmada\FilamentChip\Actions\SendInstructionExporter;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\CreateBankAccount;
@@ -64,6 +65,16 @@ it('covers exporters notification bodies and column definitions', function (): v
 });
 
 it('covers resource pages and read-only list base class', function (): void {
+    config()->set('chip.owner.enabled', false);
+
+    app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
     $readOnly = new class extends ReadOnlyListRecords
     {
         protected static string $resource = PaymentResource::class;
@@ -124,21 +135,27 @@ it('covers resource pages and read-only list base class', function (): void {
         $table->timestamps();
     });
 
-    $bankAccount = BankAccount::query()->create([
-        'id' => 10,
-        'status' => 'approved',
-        'name' => 'Acct',
-        'account_number' => '123',
-        'bank_code' => 'MBBEMYKL',
-    ]);
+    /** @var BankAccount $bankAccount */
+    $bankAccount = OwnerContext::withOwner(null, function (): BankAccount {
+        return BankAccount::query()->create([
+            'id' => 10,
+            'status' => 'approved',
+            'name' => 'Acct',
+            'account_number' => '123',
+            'bank_code' => 'MBBEMYKL',
+        ]);
+    });
 
-    $sendInstruction = SendInstruction::query()->create([
-        'id' => 20,
-        'bank_account_id' => 10,
-        'amount' => '1.00',
-        'reference' => 'SI',
-        'state' => 'completed',
-    ]);
+    /** @var SendInstruction $sendInstruction */
+    $sendInstruction = OwnerContext::withOwner(null, function (): SendInstruction {
+        return SendInstruction::query()->create([
+            'id' => 20,
+            'bank_account_id' => 10,
+            'amount' => '1.00',
+            'reference' => 'SI',
+            'state' => 'completed',
+        ]);
+    });
 
     app()->instance(ChipSendService::class, new class($bankAccount, $sendInstruction)
     {
@@ -189,13 +206,15 @@ it('covers resource pages and read-only list base class', function (): void {
 
     expect($data)->toHaveKey('id')->toHaveKey('state');
 
-    BankAccount::query()->create([
-        'id' => 11,
-        'status' => 'pending',
-        'name' => 'Pending Acct',
-        'account_number' => '124',
-        'bank_code' => 'MBBEMYKL',
-    ]);
+    OwnerContext::withOwner(null, function (): void {
+        BankAccount::query()->create([
+            'id' => 11,
+            'status' => 'pending',
+            'name' => 'Pending Acct',
+            'account_number' => '124',
+            'bank_code' => 'MBBEMYKL',
+        ]);
+    });
 
     expect(fn () => $mutate->invoke($createPayout, [
         'amount' => 1.23,
@@ -303,49 +322,57 @@ it('enforces owner scoping in mutation action record resolution', function (): v
         }
     });
 
-    $bankAccountForA = BankAccount::query()->create([
-        'id' => 101,
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => (string) $ownerA->getKey(),
-        'status' => 'active',
-        'name' => 'A Account',
-        'account_number' => '111',
-        'bank_code' => 'MBBEMYKL',
-    ]);
+    $bankAccountForA = OwnerContext::withOwner($ownerA, function () use ($ownerA): BankAccount {
+        return BankAccount::query()->create([
+            'id' => 101,
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
+            'status' => 'active',
+            'name' => 'A Account',
+            'account_number' => '111',
+            'bank_code' => 'MBBEMYKL',
+        ]);
+    });
 
-    $bankAccountForB = BankAccount::query()->create([
-        'id' => 102,
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-        'status' => 'active',
-        'name' => 'B Account',
-        'account_number' => '222',
-        'bank_code' => 'MBBEMYKL',
-    ]);
+    $bankAccountForB = OwnerContext::withOwner($ownerB, function () use ($ownerB): BankAccount {
+        return BankAccount::query()->create([
+            'id' => 102,
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => (string) $ownerB->getKey(),
+            'status' => 'active',
+            'name' => 'B Account',
+            'account_number' => '222',
+            'bank_code' => 'MBBEMYKL',
+        ]);
+    });
 
-    $instructionForA = SendInstruction::query()->create([
-        'id' => 201,
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => (string) $ownerA->getKey(),
-        'bank_account_id' => 101,
-        'amount' => '10.00',
-        'email' => 'a@example.com',
-        'description' => 'A payout',
-        'reference' => 'A-REF',
-        'state' => 'completed',
-    ]);
+    $instructionForA = OwnerContext::withOwner($ownerA, function () use ($ownerA): SendInstruction {
+        return SendInstruction::query()->create([
+            'id' => 201,
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
+            'bank_account_id' => 101,
+            'amount' => '10.00',
+            'email' => 'a@example.com',
+            'description' => 'A payout',
+            'reference' => 'A-REF',
+            'state' => 'completed',
+        ]);
+    });
 
-    $instructionForB = SendInstruction::query()->create([
-        'id' => 202,
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-        'bank_account_id' => 102,
-        'amount' => '20.00',
-        'email' => 'b@example.com',
-        'description' => 'B payout',
-        'reference' => 'B-REF',
-        'state' => 'completed',
-    ]);
+    $instructionForB = OwnerContext::withOwner($ownerB, function () use ($ownerB): SendInstruction {
+        return SendInstruction::query()->create([
+            'id' => 202,
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => (string) $ownerB->getKey(),
+            'bank_account_id' => 102,
+            'amount' => '20.00',
+            'email' => 'b@example.com',
+            'description' => 'B payout',
+            'reference' => 'B-REF',
+            'state' => 'completed',
+        ]);
+    });
 
     $resolveBankTable = (new ReflectionClass(BankAccountTable::class))->getMethod('resolveScopedBankAccount');
     $resolveSendTable = (new ReflectionClass(SendInstructionTable::class))->getMethod('resolveScopedSendInstruction');

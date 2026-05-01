@@ -6,7 +6,6 @@ namespace AIArmada\Chip;
 
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Clients\ChipSendClient;
-use AIArmada\Chip\Commands\AggregateMetricsCommand;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
 use AIArmada\Chip\Commands\CleanWebhooksCommand;
 use AIArmada\Chip\Commands\RetryWebhooksCommand;
@@ -43,7 +42,6 @@ final class ChipServiceProvider extends PackageServiceProvider
                 ChipHealthCheckCommand::class,
                 RetryWebhooksCommand::class,
                 CleanWebhooksCommand::class,
-                AggregateMetricsCommand::class,
             ]);
     }
 

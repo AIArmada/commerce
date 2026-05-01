@@ -111,7 +111,7 @@ final class CalculatePricingStep extends AbstractCheckoutStep
             $quantity = (int) ($item['quantity'] ?? 1);
             $unitPrice = (int) ($item['price'] ?? 0);
 
-            $originalUnitPrice = $unitPrice;
+            $originalUnitPrice = null;
             $discountAmount = 0;
             $discountSource = null;
             $priceListName = null;

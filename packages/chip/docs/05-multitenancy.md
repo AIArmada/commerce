@@ -101,7 +101,7 @@ Commands iterate all owners and process each in scope:
 ```php
 use AIArmada\CommerceSupport\Support\OwnerContext;
 
-class AggregateMetricsCommand extends Command
+class RetryWebhooksCommand extends Command
 {
     public function handle(): void
     {
@@ -115,7 +115,7 @@ class AggregateMetricsCommand extends Command
             $owner = $row->owner_type::find($row->owner_id);
 
             OwnerContext::withOwner($owner, function () use ($owner): void {
-                // Aggregate metrics for this owner only
+                // Process owner-scoped command work for this owner only
             });
         }
     }

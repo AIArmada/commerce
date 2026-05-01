@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Commands\AggregateMetricsCommand;
 use AIArmada\Chip\Commands\CleanWebhooksCommand;
 use AIArmada\Chip\Commands\RetryWebhooksCommand;
 
@@ -11,33 +10,6 @@ use AIArmada\Chip\Commands\RetryWebhooksCommand;
  * Full integration tests for command execution require database and service bindings.
  */
 describe('Command classes structure', function (): void {
-    describe('AggregateMetricsCommand', function (): void {
-        it('has correct name', function (): void {
-            $command = new AggregateMetricsCommand;
-            expect($command->getName())->toBe('chip:aggregate-metrics');
-        });
-
-        it('has description', function (): void {
-            $command = new AggregateMetricsCommand;
-            expect($command->getDescription())->not()->toBeEmpty();
-        });
-
-        it('has date option', function (): void {
-            $command = new AggregateMetricsCommand;
-            expect($command->getDefinition()->hasOption('date'))->toBeTrue();
-        });
-
-        it('has from option', function (): void {
-            $command = new AggregateMetricsCommand;
-            expect($command->getDefinition()->hasOption('from'))->toBeTrue();
-        });
-
-        it('has to option', function (): void {
-            $command = new AggregateMetricsCommand;
-            expect($command->getDefinition()->hasOption('to'))->toBeTrue();
-        });
-    });
-
     describe('CleanWebhooksCommand', function (): void {
         it('has correct name', function (): void {
             $command = new CleanWebhooksCommand;

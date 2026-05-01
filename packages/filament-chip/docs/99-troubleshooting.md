@@ -233,13 +233,9 @@ dd($resources);
 **Solutions:**
 
 ```php
-// 1. Use cached metrics
-// The package caches aggregate data via chip:aggregate-metrics
-
-// 2. Schedule aggregation
-Schedule::command('chip:aggregate-metrics')->hourly();
-
-// 3. Reduce widget count on dashboard
+// 1. Add query indexes for filtered columns
+// 2. Reduce widget count on dashboard
+// 3. Increase polling interval for heavy pages
 ```
 
 ## Getting Help

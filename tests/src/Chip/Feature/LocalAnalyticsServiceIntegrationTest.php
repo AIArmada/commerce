@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Chip\Data\DashboardMetrics;
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
-use AIArmada\Chip\Models\DailyMetric;
 use AIArmada\Chip\Services\LocalAnalyticsService;
 use Carbon\CarbonImmutable;
 
@@ -53,74 +52,5 @@ describe('LocalAnalyticsService', function (): void {
             expect($reflection->getReturnType()->getName())->toBe('array');
         });
 
-        it('getAggregatedMetrics returns array', function (): void {
-            $reflection = new ReflectionMethod($this->service, 'getAggregatedMetrics');
-            expect($reflection->getReturnType()->getName())->toBe('array');
-        });
-    });
-
-    describe('getAggregatedMetrics with DailyMetric data', function (): void {
-        it('returns aggregated daily metrics', function (): void {
-            DailyMetric::create([
-                'date' => now()->subDays(5)->toDateString(),
-                'payment_method' => null,
-                'total_attempts' => 100,
-                'successful_count' => 95,
-                'failed_count' => 5,
-                'revenue_minor' => 500000,
-                'success_rate' => 95.0,
-            ]);
-
-            $result = $this->service->getAggregatedMetrics($this->startDate, $this->endDate);
-
-            expect($result)->toBeArray();
-            expect(count($result))->toBeGreaterThanOrEqual(1);
-        });
-
-        it('filters by payment method', function (): void {
-            DailyMetric::create([
-                'date' => now()->subDays(3)->toDateString(),
-                'payment_method' => 'fpx',
-                'total_attempts' => 50,
-                'successful_count' => 48,
-                'failed_count' => 2,
-                'revenue_minor' => 250000,
-                'success_rate' => 96.0,
-            ]);
-
-            DailyMetric::create([
-                'date' => now()->subDays(3)->toDateString(),
-                'payment_method' => 'card',
-                'total_attempts' => 30,
-                'successful_count' => 28,
-                'failed_count' => 2,
-                'revenue_minor' => 150000,
-                'success_rate' => 93.33,
-            ]);
-
-            $result = $this->service->getAggregatedMetrics($this->startDate, $this->endDate, 'fpx');
-
-            expect($result)->toBeArray();
-            expect(count($result))->toBe(1);
-            // Check for either camelCase or snake_case property
-            $firstResult = $result[0];
-            if (is_object($firstResult)) {
-                $paymentMethod = $firstResult->paymentMethod ?? $firstResult->payment_method ?? null;
-                expect($paymentMethod)->toBe('fpx');
-            } elseif (is_array($firstResult)) {
-                $paymentMethod = $firstResult['paymentMethod'] ?? $firstResult['payment_method'] ?? null;
-                expect($paymentMethod)->toBe('fpx');
-            }
-        });
-
-        it('returns empty array when no metrics', function (): void {
-            $result = $this->service->getAggregatedMetrics(
-                CarbonImmutable::now()->subDays(100),
-                CarbonImmutable::now()->subDays(90)
-            );
-
-            expect($result)->toBeArray();
-            expect($result)->toBeEmpty();
-        });
     });
 });

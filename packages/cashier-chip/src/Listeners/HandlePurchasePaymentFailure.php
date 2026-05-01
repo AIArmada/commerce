@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 /**
  * Listens to chip package PurchasePaymentFailure events and handles cashier-chip billing logic.
@@ -73,14 +74,22 @@ class HandlePurchasePaymentFailure
      */
     protected function getSubscriptionTypeFromPurchase(array $payload): ?string
     {
-        $purchase = $payload['purchase'] ?? $payload;
-        $metadata = $purchase['metadata'] ?? [];
+        $metadata = Arr::get($payload, 'metadata');
 
-        if (isset($metadata['subscription_type'])) {
-            return $metadata['subscription_type'];
+        if (! is_array($metadata)) {
+            $metadata = Arr::get($payload, 'purchase.metadata', []);
         }
 
-        $reference = $purchase['reference'] ?? '';
+        $subscriptionType = $metadata['subscription_type'] ?? null;
+
+        if (is_string($subscriptionType) && $subscriptionType !== '') {
+            return $subscriptionType;
+        }
+
+        $reference = Arr::get($payload, 'reference')
+            ?? Arr::get($payload, 'purchase.reference')
+            ?? '';
+
         if (preg_match('/Subscription (\w+)/', $reference, $matches)) {
             return $matches[1];
         }

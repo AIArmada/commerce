@@ -109,9 +109,14 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
         $paymentMethod = $this->findPaymentMethod($paymentMethodId);
 
         if ($paymentMethod) {
+            $paymentMethodData = $paymentMethod->toArray();
+            $brand = $paymentMethod->brand()
+                ?? ($paymentMethodData['card']['brand'] ?? null)
+                ?? ($paymentMethodData['transaction_data']['extra']['card_brand'] ?? null);
+
             $this->forceFill([
                 'default_pm_id' => $paymentMethodId,
-                'pm_type' => $paymentMethod->type(),
+                'pm_type' => is_string($brand) && $brand !== '' ? $brand : $paymentMethod->type(),
                 'pm_last_four' => $paymentMethod->lastFour(),
             ])->save();
         }
@@ -129,7 +134,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
         if ($defaultMethod) {
             $this->forceFill([
                 'default_pm_id' => $defaultMethod->id(),
-                'pm_type' => $defaultMethod->type(),
+                'pm_type' => $defaultMethod->brand() ?? $defaultMethod->type(),
                 'pm_last_four' => $defaultMethod->lastFour(),
             ])->save();
         } else {
