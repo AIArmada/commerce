@@ -33,11 +33,17 @@ final class AffiliateFraudSignalResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shield-exclamation';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
-
     protected static ?string $navigationLabel = 'Fraud Signals';
 
-    protected static ?int $navigationSort = 5;
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-affiliates.navigation_group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-affiliates.resources.navigation_sort.affiliate_fraud_signals', 64);
+    }
 
     public static function form(Schema $schema): Schema
     {

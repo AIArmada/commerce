@@ -20,8 +20,6 @@ class CartDashboard extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Commerce';
-
     protected static ?int $navigationSort = 1;
 
     protected string $view = 'filament-cart::pages.cart-dashboard';
@@ -33,6 +31,11 @@ class CartDashboard extends Page
     public static function getNavigationLabel(): string
     {
         return 'Cart Analytics';
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-cart.navigation_group', 'E-Commerce');
     }
 
     public static function getNavigationBadge(): ?string

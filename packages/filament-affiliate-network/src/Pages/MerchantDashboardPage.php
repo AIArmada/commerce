@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Pages;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliateNetwork\Widgets\NetworkStatsWidget;
 use AIArmada\FilamentAffiliateNetwork\Widgets\TopOffersWidget;
 use BackedEnum;
@@ -78,12 +79,18 @@ final class MerchantDashboardPage extends Page
      */
     public function getRecentApplications(): Collection
     {
-        return AffiliateOfferApplication::query()
-            ->with(['offer', 'affiliate'])
-            ->where('status', AffiliateOfferApplication::STATUS_PENDING)
-            ->latest('created_at')
-            ->limit(5)
-            ->get();
+        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
+        return OwnerContext::withOwner(null, function (): Collection {
+            return AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')
+                ->with([
+                    'offer' => fn ($query) => $query->withoutGlobalScope('owner_via_site'),
+                    'affiliate' => fn ($query) => $query->withoutOwnerScope(),
+                ])
+                ->where('status', AffiliateOfferApplication::STATUS_PENDING)
+                ->latest('created_at')
+                ->limit(5)
+                ->get();
+        });
     }
 
     /**
@@ -91,38 +98,47 @@ final class MerchantDashboardPage extends Page
      */
     public function getTopOffers(): Collection
     {
-        return AffiliateOffer::query()
-            ->with(['site'])
-            ->where('status', AffiliateOffer::STATUS_ACTIVE)
-            ->withCount('applications')
-            ->orderByDesc('applications_count')
-            ->limit(5)
-            ->get();
+        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
+        return OwnerContext::withOwner(null, function (): Collection {
+            return AffiliateOffer::withoutGlobalScope('owner_via_site')
+                ->with([
+                    'site' => fn ($query) => $query->withoutOwnerScope(),
+                ])
+                ->where('status', AffiliateOffer::STATUS_ACTIVE)
+                ->withCount('applications')
+                ->orderByDesc('applications_count')
+                ->limit(5)
+                ->get();
+        });
     }
 
     public function getSitesCount(): int
     {
-        return AffiliateSite::query()->count();
+        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
+        return OwnerContext::withOwner(null, fn (): int => AffiliateSite::query()->withoutOwnerScope()->count());
     }
 
     public function getVerifiedSitesCount(): int
     {
-        return AffiliateSite::query()
+        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
+        return OwnerContext::withOwner(null, fn (): int => AffiliateSite::query()->withoutOwnerScope()
             ->where('status', AffiliateSite::STATUS_VERIFIED)
-            ->count();
+            ->count());
     }
 
     public function getActiveOffersCount(): int
     {
-        return AffiliateOffer::query()
+        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
+        return OwnerContext::withOwner(null, fn (): int => AffiliateOffer::withoutGlobalScope('owner_via_site')
             ->where('status', AffiliateOffer::STATUS_ACTIVE)
-            ->count();
+            ->count());
     }
 
     public function getPendingApplicationsCount(): int
     {
-        return AffiliateOfferApplication::query()
+        // Admin view: intentionally cross-tenant network-wide data — explicit global context.
+        return OwnerContext::withOwner(null, fn (): int => AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')
             ->where('status', AffiliateOfferApplication::STATUS_PENDING)
-            ->count();
+            ->count());
     }
 }

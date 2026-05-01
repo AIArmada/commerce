@@ -14,6 +14,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
@@ -23,6 +24,7 @@ use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Connection;
@@ -121,6 +123,20 @@ final class AffiliateService
             throw new AffiliateNotFoundException("Affiliate {$affiliate->code} is not active.");
         }
 
+        $programId = Arr::get($attributes, 'program_id');
+
+        if (is_string($programId) || is_int($programId)) {
+            /** @var AffiliateProgram $program */
+            $program = OwnerWriteGuard::findOrFailForOwner(
+                AffiliateProgram::class,
+                $programId,
+                includeGlobal: true,
+                message: 'Selected program is not accessible in the current owner scope.',
+            );
+
+            $programId = (string) $program->getKey();
+        }
+
         $params = Arr::get($attributes, 'params', []);
 
         if (! is_array($params)) {
@@ -142,7 +158,7 @@ final class AffiliateService
 
         return AffiliateLink::query()->create([
             'affiliate_id' => $affiliate->getKey(),
-            'program_id' => Arr::get($attributes, 'program_id'),
+            'program_id' => $programId,
             'destination_url' => $destinationUrl,
             'tracking_url' => $trackingUrl,
             'short_url' => Arr::get($attributes, 'short_url'),

@@ -7,6 +7,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateSupportMessage;
+use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -120,6 +122,64 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
         'details' => ['email' => 'b@example.com'],
         'is_verified' => false,
         'is_default' => true,
+    ]))->toThrow(AuthorizationException::class);
+});
+
+it('rejects cross-tenant ticket_id writes when owner mode is enabled', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', false);
+    config()->set('affiliates.owner.auto_assign_on_create', false);
+
+    $ownerA = AffiliateOwnerForeignKeyGuardTestOwner::create(['name' => 'Owner A']);
+    $ownerB = AffiliateOwnerForeignKeyGuardTestOwner::create(['name' => 'Owner B']);
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    $affiliateA = Affiliate::create([
+        'code' => 'AFF-SUPPORT-A',
+        'name' => 'Affiliate A',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+    ]);
+
+    $ticketA = AffiliateSupportTicket::create([
+        'affiliate_id' => $affiliateA->getKey(),
+        'subject' => 'Owner A ticket',
+        'category' => 'general',
+        'priority' => 'normal',
+        'status' => 'open',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    expect(fn () => AffiliateSupportMessage::create([
+        'ticket_id' => $ticketA->getKey(),
+        'message' => 'Cross-tenant write should be blocked',
+        'is_staff_reply' => true,
     ]))->toThrow(AuthorizationException::class);
 });
 

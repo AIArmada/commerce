@@ -93,6 +93,12 @@ final class AffiliateLinkGenerator
 
     private function assertHostAllowed(string $url): void
     {
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+
+        if (! is_string($scheme) || ! in_array(mb_strtolower($scheme), ['http', 'https'], true)) {
+            throw new InvalidArgumentException('Link URL scheme must be http or https.');
+        }
+
         $allowed = config('affiliates.links.allowed_hosts', []);
 
         if ($allowed === [] || ! is_array($allowed)) {

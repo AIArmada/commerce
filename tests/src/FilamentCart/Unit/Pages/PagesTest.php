@@ -16,4 +16,10 @@ describe('Pages Instantiation', function (): void {
         $page = new LiveDashboardPage;
         expect($page)->toBeInstanceOf(Page::class);
     });
+
+    it('uses configured navigation group for cart dashboard', function (): void {
+        config(['filament-cart.navigation_group' => 'Operations']);
+
+        expect(CartDashboard::getNavigationGroup())->toBe('Operations');
+    });
 });

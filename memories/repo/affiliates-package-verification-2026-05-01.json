@@ -1,0 +1,11 @@
+{
+  "subject": "Affiliates and FilamentAffiliates package verification",
+  "fact": "Affiliates passes with ./vendor/bin/pest --parallel tests/src/Affiliates, FilamentAffiliates passes with ./vendor/bin/pest --parallel tests/src/FilamentAffiliates, and both packages pass PHPStan level 6 with ./vendor/bin/phpstan analyse packages/affiliates/src packages/filament-affiliates/src --level=6.",
+  "citations": [
+    "Run in /Users/saiffil/Herd/commerce on 2026-05-01: ./vendor/bin/phpstan analyse packages/affiliates/src packages/filament-affiliates/src --level=6 -> exit 0",
+    "Run in /Users/saiffil/Herd/commerce on 2026-05-01: ./vendor/bin/pest --parallel tests/src/Affiliates -> 1159 passed, 5 skipped",
+    "Run in /Users/saiffil/Herd/commerce on 2026-05-01: ./vendor/bin/pest --parallel tests/src/FilamentAffiliates -> 194 passed"
+  ],
+  "reason": "Provides a verified package-scoped static-analysis and regression command set for future affiliates work without repo-wide checks.",
+  "category": "verification"
+}

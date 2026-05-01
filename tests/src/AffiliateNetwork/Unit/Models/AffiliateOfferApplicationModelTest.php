@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
-use RuntimeException;
 
 describe('AffiliateOfferApplication Model', function (): void {
     beforeEach(function (): void {
@@ -165,7 +164,7 @@ describe('AffiliateOfferApplication Model', function (): void {
                 ->forAffiliate($affiliate)
                 ->pending()
                 ->create());
-        })->throws(RuntimeException::class, 'inaccessible or missing affiliate');
+        })->throws(RuntimeException::class, 'Explicit global owner context is required for records linked to owned affiliates.');
 
         test('explicit global context only returns applications linked to global affiliates', function (): void {
             config([

@@ -283,7 +283,8 @@ describe('AffiliateCommissionTemplate Model', function (): void {
 
         $affiliate->refresh();
 
-        expect($affiliate->commission_type)->toBe(CommissionType::Percentage->value)
+        expect($affiliate->commission_type)->toBeInstanceOf(CommissionType::class)
+            ->and($affiliate->commission_type)->toBe(CommissionType::Percentage)
             ->and($affiliate->commission_rate)->toBe(1500);
     });
 

@@ -6,10 +6,13 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Support\OwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
+use RuntimeException;
 
 /**
  * @property string $id
@@ -124,8 +127,66 @@ class AffiliateProgramMembership extends Pivot
 
     public function upgradeTier(AffiliateProgramTier $tier): void
     {
+        if ($tier->program_id !== $this->program_id) {
+            throw new RuntimeException('Selected tier does not belong to this membership program.');
+        }
+
         $this->update([
             'tier_id' => $tier->id,
         ]);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $membership): void {
+            self::guardProgramReferences($membership);
+        });
+
+        static::updating(function (self $membership): void {
+            self::guardProgramReferences($membership);
+        });
+    }
+
+    private static function guardProgramReferences(self $membership): void
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return;
+        }
+
+        if ($membership->program_id !== null && ! self::programExistsInCurrentOrGlobalScope($membership->program_id)) {
+            throw new AuthorizationException('Cross-tenant program reference is not allowed.');
+        }
+
+        if ($membership->tier_id === null) {
+            return;
+        }
+
+        $tierQuery = AffiliateProgramTier::query()
+            ->withoutGlobalScope('program_owner')
+            ->whereKey($membership->tier_id);
+
+        if ($membership->program_id !== null) {
+            $tierQuery->where('program_id', $membership->program_id);
+        }
+
+        if (! $tierQuery->exists()) {
+            throw new AuthorizationException('Cross-tenant or mismatched program tier reference is not allowed.');
+        }
+    }
+
+    private static function programExistsInCurrentOrGlobalScope(string $programId): bool
+    {
+        if (AffiliateProgram::query()->whereKey($programId)->exists()) {
+            return true;
+        }
+
+        $config = AffiliateProgram::ownerScopeConfig();
+
+        return AffiliateProgram::query()
+            ->withoutGlobalScope(OwnerScope::class)
+            ->whereKey($programId)
+            ->whereNull($config->ownerTypeColumn)
+            ->whereNull($config->ownerIdColumn)
+            ->exists();
     }
 }

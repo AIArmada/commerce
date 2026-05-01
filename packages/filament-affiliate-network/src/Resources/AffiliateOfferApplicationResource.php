@@ -22,6 +22,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class AffiliateOfferApplicationResource extends Resource
@@ -54,7 +55,7 @@ final class AffiliateOfferApplicationResource extends Resource
                     ->schema([
                         Select::make('offer_id')
                             ->label('Offer')
-                            ->relationship('offer', 'name')
+                            ->relationship('offer', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope('owner_via_site'))
                             ->required()
                             ->disabled(),
 
@@ -111,15 +112,13 @@ final class AffiliateOfferApplicationResource extends Resource
                     ->searchable()
                     ->toggleable(),
 
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'warning' => AffiliateOfferApplication::STATUS_PENDING,
-                        'success' => AffiliateOfferApplication::STATUS_APPROVED,
-                        'danger' => fn (string $state): bool => in_array($state, [
-                            AffiliateOfferApplication::STATUS_REJECTED,
-                            AffiliateOfferApplication::STATUS_REVOKED,
-                        ]),
-                    ]),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        AffiliateOfferApplication::STATUS_APPROVED => 'success',
+                        AffiliateOfferApplication::STATUS_PENDING => 'warning',
+                        default => 'danger',
+                    }),
 
                 Tables\Columns\TextColumn::make('reviewed_by')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -144,7 +143,7 @@ final class AffiliateOfferApplicationResource extends Resource
 
                 Tables\Filters\SelectFilter::make('offer_id')
                     ->label('Offer')
-                    ->relationship('offer', 'name'),
+                    ->relationship('offer', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope('owner_via_site')),
             ])
             ->actions([
                 Actions\Action::make('approve')
@@ -240,6 +239,22 @@ final class AffiliateOfferApplicationResource extends Resource
     public static function getRelations(): array
     {
         return [];
+    }
+
+    /**
+     * @return Builder<AffiliateOfferApplication>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        // Admin resource: bypass per-affiliate owner scope to show all applications network-wide.
+        /** @var Builder<AffiliateOfferApplication> $query */
+        $query = parent::getEloquentQuery()
+            ->with([
+                'offer' => fn ($builder) => $builder->withoutGlobalScope('owner_via_site'),
+                'affiliate' => fn ($builder) => $builder->withoutOwnerScope(),
+            ]);
+
+        return $query->withoutGlobalScope('owner_via_affiliate');
     }
 
     public static function getPages(): array
