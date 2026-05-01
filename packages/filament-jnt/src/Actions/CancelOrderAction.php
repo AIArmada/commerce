@@ -41,6 +41,7 @@ final class CancelOrderAction
                     ->label('Additional Details')
                     ->placeholder('Provide additional context if needed...')
                     ->rows(2)
+                    ->maxLength(255)
                     ->visible(fn (callable $get): bool => $get('reason') === CancellationReason::OTHER->value),
             ])
             ->action(function (JntOrder $record, array $data): void {
@@ -48,29 +49,6 @@ final class CancelOrderAction
                     Notification::make()
                         ->title('Authentication Required')
                         ->body('Please sign in to cancel orders.')
-                        ->danger()
-                        ->send();
-
-                    return;
-                }
-
-                $reasonValue = mb_trim((string) ($data['reason'] ?? ''));
-                $customReason = mb_trim((string) ($data['custom_reason'] ?? ''));
-
-                if ($reasonValue === '') {
-                    Notification::make()
-                        ->title('Invalid Request')
-                        ->body('Please select a cancellation reason.')
-                        ->danger()
-                        ->send();
-
-                    return;
-                }
-
-                if ($reasonValue === CancellationReason::OTHER->value && $customReason === '') {
-                    Notification::make()
-                        ->title('Additional Details Required')
-                        ->body('Please provide additional details for the selected cancellation reason.')
                         ->danger()
                         ->send();
 
@@ -88,26 +66,24 @@ final class CancelOrderAction
                 }
 
                 try {
-                    $jntService = app(JntExpressService::class);
+                    $validated = self::validateCancellationRequest($data);
 
-                    $reason = CancellationReason::tryFrom($reasonValue) ?? $reasonValue;
-
-                    if ($reason === CancellationReason::OTHER) {
-                        $reasonString = $customReason;
-                    } else {
-                        $reasonString = $reason instanceof CancellationReason ? $reason->getDescription() : (string) $reason;
+                    if ($validated === null) {
+                        return;
                     }
+
+                    $jntService = app(JntExpressService::class);
 
                     $jntService->cancelOrder(
                         orderId: $record->order_id,
-                        reason: $reasonString,
+                        reason: $validated['reason_string'],
                         trackingNumber: $record->tracking_number
                     );
 
                     $record->update([
                         'status' => 'cancelled',
                         'cancelled_at' => CarbonImmutable::now(),
-                        'cancellation_reason' => $reasonString,
+                        'cancellation_reason' => $validated['reason_string'],
                     ]);
 
                     Notification::make()
@@ -144,6 +120,65 @@ final class CancelOrderAction
             ->forOwner($owner, false)
             ->whereKey($record->getKey())
             ->exists();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{reason: CancellationReason, reason_string: string}|null
+     */
+    private static function validateCancellationRequest(array $data): ?array
+    {
+        $reasonValue = mb_trim((string) ($data['reason'] ?? ''));
+        $customReason = mb_trim((string) ($data['custom_reason'] ?? ''));
+
+        if ($reasonValue === '') {
+            Notification::make()
+                ->title('Invalid Request')
+                ->body('Please select a cancellation reason.')
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
+        $reason = CancellationReason::tryFrom($reasonValue);
+
+        if ($reason === null) {
+            Notification::make()
+                ->title('Invalid Request')
+                ->body('Please choose one of the supported cancellation reasons.')
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
+        if ($reason === CancellationReason::OTHER && $customReason === '') {
+            Notification::make()
+                ->title('Additional Details Required')
+                ->body('Please provide additional details for the selected cancellation reason.')
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
+        if ($reason === CancellationReason::OTHER && mb_strlen($customReason) > 255) {
+            Notification::make()
+                ->title('Invalid Request')
+                ->body('Additional details must be 255 characters or fewer.')
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
+        return [
+            'reason' => $reason,
+            'reason_string' => $reason === CancellationReason::OTHER
+                ? $customReason
+                : $reason->getDescription(),
+        ];
     }
 
     /**

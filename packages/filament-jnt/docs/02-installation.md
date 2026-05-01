@@ -120,7 +120,7 @@ Ensure the core JNT package is properly configured:
 
 3. **Verify configuration**:
    ```bash
-   php artisan jnt:config-check
+    php artisan jnt:config:check
    ```
 
 See the [JNT package installation](../../jnt/docs/02-installation.md) for detailed setup.

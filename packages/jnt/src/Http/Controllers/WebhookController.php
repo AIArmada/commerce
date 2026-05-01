@@ -6,6 +6,7 @@ namespace AIArmada\Jnt\Http\Controllers;
 
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use AIArmada\Jnt\Services\WebhookService;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -41,6 +42,10 @@ class WebhookController
     public function handle(Request $request, WebhookConfig $config): JsonResponse
     {
         try {
+            if (! (bool) config('jnt.webhooks.enabled', true)) {
+                throw new NotFoundHttpException;
+            }
+
             if ($config->signingSecret === '') {
                 $config->signingSecret = (string) config('jnt.private_key', '');
             }

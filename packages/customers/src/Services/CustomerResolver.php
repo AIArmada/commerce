@@ -72,6 +72,10 @@ final class CustomerResolver
             ->first();
 
         if ($existingCustomer !== null) {
+            if (! $existingCustomer->is_guest || $existingCustomer->user_id !== null) {
+                return null;
+            }
+
             $this->syncAddressesFromPayload($existingCustomer, $billingData, $shippingData);
 
             return $existingCustomer;
@@ -337,8 +341,10 @@ final class CustomerResolver
 
     private function mergeSegments(Customer $source, Customer $target): void
     {
-        $segmentIds = $source->segments()
-            ->pluck('customer_segments.id')
+        $segmentsRelation = $source->segments();
+
+        $segmentIds = $segmentsRelation
+            ->pluck($segmentsRelation->getRelated()->qualifyColumn($segmentsRelation->getRelatedKeyName()))
             ->all();
 
         if (! empty($segmentIds)) {
@@ -348,8 +354,10 @@ final class CustomerResolver
 
     private function mergeGroups(Customer $source, Customer $target): void
     {
-        $groupIds = $source->groups()
-            ->pluck('customer_groups.id')
+        $groupsRelation = $source->groups();
+
+        $groupIds = $groupsRelation
+            ->pluck($groupsRelation->getRelated()->qualifyColumn($groupsRelation->getRelatedKeyName()))
             ->all();
 
         if (! empty($groupIds)) {

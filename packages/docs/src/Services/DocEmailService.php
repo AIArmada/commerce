@@ -31,6 +31,9 @@ final class DocEmailService
         ?string $recipientName = null,
         ?DocEmailTemplate $template = null,
         array $variables = [],
+        ?string $subjectOverride = null,
+        ?string $bodyOverride = null,
+        array $metadata = [],
     ): DocEmail {
         // Find template if not provided
         $template ??= $this->findTemplate($doc, 'send');
@@ -39,9 +42,11 @@ final class DocEmailService
         $templateVars = $this->buildVariables($doc, $variables);
 
         // Render subject and body
-        $subject = $template?->renderSubject($templateVars)
+        $subject = $subjectOverride
+            ?? $template?->renderSubject($templateVars)
             ?? $this->getDefaultSubject($doc);
-        $body = $template?->renderBody($templateVars)
+        $body = $bodyOverride
+            ?? $template?->renderBody($templateVars)
             ?? $this->getDefaultBody($doc);
 
         $ownerAttributes = [];
@@ -60,6 +65,7 @@ final class DocEmailService
             'subject' => $subject,
             'body' => $body,
             'status' => EmailStatus::Queued,
+            'metadata' => $metadata,
         ], $ownerAttributes));
 
         // Queue the email

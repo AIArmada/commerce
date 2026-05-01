@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart;
 
+use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Pages\CartDashboard;
 use AIArmada\FilamentCart\Pages\LiveDashboardPage;
 use AIArmada\FilamentCart\Resources\CartConditionResource;
@@ -87,9 +88,15 @@ final class FilamentCartPlugin implements Plugin
      */
     private function getWidgets(): array
     {
-        $widgets = [
-            CartStatsWidget::class,
-        ];
+        $widgets = [];
+
+        if (config('filament-cart.widgets.stats_overview', true)) {
+            $widgets[] = CartStatsWidget::class;
+        }
+
+        if (config('filament-cart.widgets.abandoned_carts', true)) {
+            $widgets[] = AbandonedCartsWidget::class;
+        }
 
         if (config('filament-cart.features.monitoring', true)) {
             $widgets[] = LiveStatsWidget::class;

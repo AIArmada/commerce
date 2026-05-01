@@ -129,3 +129,113 @@ it('covers stripe branches in customer portal invoices and payment methods via a
     $paymentMethodsPage->setDefaultPaymentMethod('stripe', 'pm_1');
     $paymentMethodsPage->deletePaymentMethod('stripe', 'pm_1');
 });
+
+it('sorts customer portal invoices by actual invoice date descending', function (): void {
+    app()->bind(GatewayDetector::class, function (): object {
+        return new class
+        {
+            public function isAvailable(string $gateway): bool
+            {
+                return $gateway === 'stripe';
+            }
+
+            public function availableGateways(): Collection
+            {
+                return collect(['stripe']);
+            }
+
+            public function getGatewayOptions(): array
+            {
+                return ['stripe' => 'Stripe'];
+            }
+
+            public function getLabel(string $gateway): string
+            {
+                return 'Stripe';
+            }
+
+            public function getColor(string $gateway): string
+            {
+                return 'info';
+            }
+
+            public function getIcon(string $gateway): string
+            {
+                return 'heroicon-o-credit-card';
+            }
+        };
+    });
+
+    $olderInvoice = new class
+    {
+        public string $id = 'in_old';
+
+        public ?string $number = 'INV-OLD';
+
+        public bool $paid = true;
+
+        public function total(): string
+        {
+            return '$10.00';
+        }
+
+        public function date(): Carbon
+        {
+            return Carbon::parse('2025-01-31 00:00:00');
+        }
+
+        public function invoicePdf(): string
+        {
+            return 'https://example.test/invoices/in_old.pdf';
+        }
+    };
+
+    $newerInvoice = new class
+    {
+        public string $id = 'in_new';
+
+        public ?string $number = 'INV-NEW';
+
+        public bool $paid = true;
+
+        public function total(): string
+        {
+            return '$20.00';
+        }
+
+        public function date(): Carbon
+        {
+            return Carbon::parse('2025-02-01 00:00:00');
+        }
+
+        public function invoicePdf(): string
+        {
+            return 'https://example.test/invoices/in_new.pdf';
+        }
+    };
+
+    $authUser = new class extends AuthenticatableUser
+    {
+        protected $guarded = [];
+
+        public object $older;
+
+        public object $newer;
+
+        public function invoices(array $options = []): array
+        {
+            return [$this->older, $this->newer];
+        }
+    };
+
+    $authUser->older = $olderInvoice;
+    $authUser->newer = $newerInvoice;
+    $authUser->forceFill(['id' => 124]);
+    Auth::guard()->setUser($authUser);
+
+    $invoices = app(ViewInvoices::class)->getInvoices();
+
+    expect($invoices)->toHaveCount(2)
+        ->and($invoices->first()['id'])->toBe('in_new')
+        ->and($invoices->last()['id'])->toBe('in_old');
+});

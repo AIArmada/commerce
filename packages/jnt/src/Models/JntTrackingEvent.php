@@ -19,6 +19,7 @@ use InvalidArgumentException;
 /**
  * @property string $id
  * @property string|null $order_id
+ * @property string|null $event_hash
  * @property string $tracking_number
  * @property string|null $order_reference
  * @property string|null $scan_type_code
@@ -106,6 +107,7 @@ final class JntTrackingEvent extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'event_hash',
         'order_id',
         'tracking_number',
         'order_reference',
@@ -199,11 +201,14 @@ final class JntTrackingEvent extends Model
      */
     public function getNormalizedStatus(): TrackingStatus
     {
-        if ($this->scan_type_code === null) {
+        if ($this->scan_type_code === null && $this->description === null && $this->scan_type_name === null && $this->scan_type === null) {
             return TrackingStatus::Pending;
         }
 
-        return app(JntStatusMapper::class)->fromCode($this->scan_type_code);
+        return app(JntStatusMapper::class)->resolve(
+            scanTypeCode: $this->scan_type_code,
+            statusDescription: $this->description ?? $this->scan_type_name ?? $this->scan_type,
+        );
     }
 
     /**

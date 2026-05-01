@@ -40,7 +40,7 @@ class WebhookCommand extends Command
 
         $this->components->bulletList([
             'Configure this URL in your CHIP dashboard under Webhooks',
-            'Enable the following events: purchase.payment.success, purchase.payment.failed, purchase.completed',
+            'Enable the following events: purchase.paid, purchase.payment_failure',
             'Make sure your webhook secret is set in your .env file as CHIP_WEBHOOK_SECRET',
         ]);
 
@@ -49,7 +49,7 @@ class WebhookCommand extends Command
         $this->components->info('Required Environment Variables:');
 
         $this->components->twoColumnDetail('CHIP_WEBHOOK_SECRET', config('cashier-chip.webhooks.secret') ? '✓ Set' : '✗ Not set');
-        $this->components->twoColumnDetail('CHIP_WEBHOOK_VERIFY', config('cashier-chip.webhooks.verify_signature', true) ? 'Enabled' : 'Disabled');
+        $this->components->twoColumnDetail('CHIP_WEBHOOK_VERIFY_SIGNATURE', config('cashier-chip.webhooks.verify_signature', true) ? 'Enabled' : 'Disabled');
 
         return Command::SUCCESS;
     }

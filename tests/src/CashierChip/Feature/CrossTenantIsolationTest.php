@@ -90,3 +90,31 @@ it('blocks subscription creation when billable differs from owner and owner-scop
         'type' => 'default',
     ]))->toThrow(AuthorizationException::class);
 });
+
+it('allows subscription creation when validate_billable_owner is disabled', function (): void {
+    config()->set('cashier-chip.features.owner.enabled', true);
+    config()->set('cashier-chip.features.owner.include_global', false);
+    config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
+    config()->set('cashier-chip.features.owner.validate_billable_owner', false);
+
+    $owner = User::query()->create([
+        'name' => 'Owner Skip Validation',
+        'email' => 'cashier-chip-owner-no-validate@example.com',
+    ]);
+
+    $customer = User::query()->create([
+        'name' => 'Customer Skip Validation',
+        'email' => 'cashier-chip-customer-no-validate@example.com',
+    ]);
+
+    bindCashierChipOwner($owner);
+
+    $subscription = Subscription::factory()->create([
+        'user_id' => $customer->id,
+        'type' => 'default',
+    ]);
+
+    expect($subscription->owner_type)->toBe($owner->getMorphClass());
+    expect($subscription->owner_id)->toBe($owner->getKey());
+    expect($subscription->user_id)->toBe($customer->getKey());
+});

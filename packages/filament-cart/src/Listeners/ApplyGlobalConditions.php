@@ -15,13 +15,11 @@ use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use InvalidArgumentException;
+use Illuminate\Support\Facades\Context;
 
 final class ApplyGlobalConditions
 {
-    /**
-     * Track if we're currently applying conditions to prevent infinite recursion
-     */
-    private static bool $applying = false;
+    private const APPLYING_CONTEXT_KEY = 'filament_cart.applying_global_conditions';
 
     public function __construct(
         private RulesFactoryInterface $rulesFactory,
@@ -37,7 +35,7 @@ final class ApplyGlobalConditions
             return;
         }
 
-        if (self::$applying) {
+        if ($this->isApplying()) {
             return;
         }
 
@@ -53,7 +51,7 @@ final class ApplyGlobalConditions
             return;
         }
 
-        if (self::$applying) {
+        if ($this->isApplying()) {
             return;
         }
 
@@ -65,9 +63,7 @@ final class ApplyGlobalConditions
      */
     private function applyGlobalConditions(Cart $cart): void
     {
-        self::$applying = true;
-
-        try {
+        Context::scope(function () use ($cart): void {
             $cart = $this->cartInstances->prepare($cart);
 
             // Remove deactivated global conditions from cart
@@ -126,9 +122,12 @@ final class ApplyGlobalConditions
                     }
                 }
             }
-        } finally {
-            self::$applying = false;
-        }
+        }, hidden: [self::APPLYING_CONTEXT_KEY => true]);
+    }
+
+    private function isApplying(): bool
+    {
+        return (bool) Context::getHidden(self::APPLYING_CONTEXT_KEY, false);
     }
 
     /**

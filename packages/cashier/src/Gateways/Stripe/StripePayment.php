@@ -161,7 +161,13 @@ class StripePayment implements PaymentContract
      */
     public function redirect(): RedirectResponse
     {
-        return redirect()->to($this->redirectUrl());
+        $url = $this->redirectUrl();
+
+        if (! is_string($url) || $url === '') {
+            throw new InvalidArgumentException('Stripe payment requires action but no redirect URL is available.');
+        }
+
+        return redirect()->to($url);
     }
 
     /**

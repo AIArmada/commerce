@@ -10,7 +10,7 @@ Filament admin panel integration for the AIArmada Docs package.
 
 This package provides a complete Filament admin interface for managing documents (invoices, quotations, receipts) with full PDF generation, email integration, and multi-tenancy support. It includes:
 
-- **DocResource** - Full CRUD for invoices, quotations, receipts with PDF/email
+- **DocResource** - CRUD for documents with filters, export, and PDF/status actions
 - **DocTemplateResource** - Configure templates with PDF settings
 - **DocSequenceResource** - Manage automatic document numbering
 - **DocEmailTemplateResource** - Email templates with variables
@@ -35,6 +35,7 @@ composer require aiarmada/filament-docs
 
 ```php
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
+use Filament\Panel;
 
 public function panel(Panel $panel): Panel
 {
@@ -67,7 +68,7 @@ public function panel(Panel $panel): Panel
 | Email | Templates with variable substitution |
 | PDF | Generate, preview, download directly from panel |
 | Multi-tenancy | Full owner scoping via HasOwner trait |
-| Widgets | Stats, revenue chart, status breakdown, recent docs |
+| Widgets | Stats, revenue chart, status breakdown, quick actions, recent docs |
 | Reports | Aging report, pending approvals pages |
 
 ## Support

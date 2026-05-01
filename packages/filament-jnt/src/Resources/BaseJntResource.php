@@ -81,10 +81,9 @@ abstract class BaseJntResource extends Resource
             return $query;
         }
 
-        $owner = OwnerContext::resolve();
         $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
         /** @phpstan-ignore-next-line dynamic scope */
-        return $query->forOwner($owner, $includeGlobal);
+        return $query->forOwner(includeGlobal: $includeGlobal);
     }
 }

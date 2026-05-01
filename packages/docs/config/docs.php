@@ -69,14 +69,6 @@ return [
         'sandbox' => env('DOCS_EINVOICE_SANDBOX', true),
     ],
 
-    /* HTTP */
-
-    /* Webhooks */
-
-    /* Cache */
-
-    /* Logging */
-
     /* Document Types */
     'types' => [
         'invoice' => [

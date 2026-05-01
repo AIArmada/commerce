@@ -4,19 +4,17 @@ title: Document Status
 
 # Document Status
 
-## Available Statuses
+## Common model helpers
 
 ```php
-use AIArmada\Docs\Enums\DocStatus;
+$document->markAsPaid();
+$document->markAsPaid('Payment received via bank transfer');
 
-DocStatus::DRAFT           // Initial state
-DocStatus::PENDING         // Awaiting approval or action
-DocStatus::SENT            // Delivered to customer
-DocStatus::PAID            // Payment received
-DocStatus::PARTIALLY_PAID  // Partial payment received
-DocStatus::OVERDUE         // Past due date
-DocStatus::CANCELLED       // Cancelled
-DocStatus::REFUNDED        // Payment refunded
+$document->markAsSent();
+$document->markAsSent('Emailed to customer');
+
+$document->cancel();
+$document->cancel('Customer requested cancellation');
 ```
 
 ## Updating Status
@@ -24,36 +22,24 @@ DocStatus::REFUNDED        // Payment refunded
 Use the service for full tracking:
 
 ```php
-$docService->updateDocStatus(
+use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\States\Paid;
+
+app(DocService::class)->updateStatus(
     $document, 
-    DocStatus::PAID, 
+    Paid::class,
     'Payment received via bank transfer'
 );
-```
-
-## Model Convenience Methods
-
-Quick status updates with automatic history tracking:
-
-```php
-// Mark as paid
-$document->markAsPaid();
-$document->markAsPaid('Payment received via PayPal');
-
-// Mark as sent
-$document->markAsSent();
-$document->markAsSent('Emailed to customer');
-
-// Cancel document
-$document->cancel();
-$document->cancel('Customer requested cancellation');
 ```
 
 ## Checking Status
 
 ```php
+use AIArmada\Docs\States\Cancelled;
+use AIArmada\Docs\States\Paid;
+
 // Check current status
-if ($document->status === DocStatus::PAID) {
+if ($document->status->equals(Paid::class)) {
     // Document is paid
 }
 
@@ -95,10 +81,10 @@ $document->updateStatus();
 
 // Query overdue documents
 $overdue = Doc::where('due_date', '<', now())
-    ->whereNotIn('status', [DocStatus::PAID, DocStatus::CANCELLED])
+    ->whereNotIn('status', [Paid::class, Cancelled::class])
     ->get();
 
 foreach ($overdue as $doc) {
-    $doc->update(['status' => DocStatus::OVERDUE]);
+    $doc->updateStatus();
 }
 ```

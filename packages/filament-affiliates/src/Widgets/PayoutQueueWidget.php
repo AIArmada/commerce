@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -79,7 +80,7 @@ final class PayoutQueueWidget extends BaseWidget
 
                 Action::make('view')
                     ->icon('heroicon-o-eye')
-                    ->url(fn ($record) => route('filament.admin.resources.affiliate-payouts.view', $record)),
+                    ->url(fn (AffiliatePayout $record): string => AffiliatePayoutResource::getUrl('view', ['record' => $record])),
             ])
             ->paginated(false)
             ->emptyStateHeading('No pending payouts')

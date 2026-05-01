@@ -4,7 +4,7 @@ title: Tailwind CSS Usage
 
 # Tailwind CSS Usage
 
-The docs package uses [Spatie Laravel PDF](https://spatie.be/docs/laravel-pdf/v1/introduction) which supports Tailwind CSS for styling templates.
+The docs package uses Spatie Laravel PDF and Browsershot, so standard Tailwind-friendly Blade templates work well for generated PDFs.
 
 ## Basic Setup
 
@@ -141,8 +141,8 @@ module.exports = {
    <div class="page-break-after:always"></div>
    ```
 
-## References
+## Practical advice
 
-- [Spatie Laravel PDF Documentation](https://spatie.be/docs/laravel-pdf/v1/introduction)
-- [Using Tailwind with Spatie Laravel PDF](https://spatie.be/docs/laravel-pdf/v1/advanced-usage/using-tailwind)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- Keep layouts simple and print-friendly.
+- Prefer explicit spacing and fixed widths for predictable PDF output.
+- If you build a dedicated CSS file, make sure the generated path is readable by the PDF process.

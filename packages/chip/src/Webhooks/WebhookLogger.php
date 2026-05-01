@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Models\Webhook;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -24,7 +25,9 @@ class WebhookLogger
         Request $request,
         string $idempotencyKey,
     ): Webhook {
-        return Webhook::create([
+        return Webhook::query()
+            ->forOwner()
+            ->create([
             'event' => $event,
             'payload' => $payload,
             'status' => 'pending',
@@ -38,7 +41,9 @@ class WebhookLogger
      */
     public function isDuplicate(string $idempotencyKey): bool
     {
-        return Webhook::where('idempotency_key', $idempotencyKey)
+        return Webhook::query()
+            ->forOwner()
+            ->where('idempotency_key', $idempotencyKey)
             ->where('status', 'processed')
             ->exists();
     }
@@ -50,10 +55,14 @@ class WebhookLogger
      */
     public function generateIdempotencyKey(array $payload): string
     {
+        $owner = OwnerContext::resolve();
+
         return hash('sha256', json_encode([
             'event' => $payload['event_type'] ?? $payload['event'] ?? null,
             'object_id' => $payload['id'] ?? $payload['data']['id'] ?? null,
             'created' => $payload['created'] ?? $payload['created_on'] ?? null,
+            'owner_type' => $payload['__owner_type'] ?? $owner?->getMorphClass(),
+            'owner_id' => $payload['__owner_id'] ?? ($owner ? (string) $owner->getKey() : null),
         ], JSON_THROW_ON_ERROR));
     }
 

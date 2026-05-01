@@ -89,12 +89,20 @@ final class BulkPrintAwbAction extends BulkAction
                         }
 
                         if ($waybill->hasBase64Content()) {
+                            $pdfContent = $waybill->getPdfContent();
+
+                            if ($pdfContent === null) {
+                                $errors[] = "{$record->order_id}: invalid base64 waybill content";
+
+                                continue;
+                            }
+
                             $url = OwnerSignedDownload::issueUrl(
                                 cachePrefix: 'jnt_awb',
                                 routeName: 'jnt.awb.show',
                                 routeParameters: ['orderId' => $record->order_id],
                                 payload: [
-                                'content' => base64_decode((string) $waybill->base64Content, true),
+                                'content' => $pdfContent,
                                 'format' => 'pdf',
                                 'order_id' => $record->order_id,
                                 'tracking_number' => $record->tracking_number,
@@ -132,7 +140,7 @@ final class BulkPrintAwbAction extends BulkAction
                 }
 
                 if (count($labels) === 1) {
-                    $livewire->js("window.open('{$labels[0]['url']}', '_blank')");
+                    $livewire->js('window.open(' . json_encode((string) $labels[0]['url']) . ', "_blank")');
 
                     Notification::make()
                         ->title('AWB Ready')

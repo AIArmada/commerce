@@ -78,7 +78,6 @@ return [
     |--------------------------------------------------------------------------
     */
     'links' => [
-        'signing_key' => env('AFFILIATE_NETWORK_LINK_SIGNING_KEY', env('AFFILIATES_LINK_SIGNING_KEY', env('APP_KEY'))),
         'default_ttl_minutes' => env('AFFILIATE_NETWORK_LINK_TTL', 60 * 24 * 30),
         'parameter' => env('AFFILIATE_NETWORK_LINK_PARAM', 'anl'),
     ],
@@ -118,6 +117,18 @@ return [
         'enabled' => env('AFFILIATE_NETWORK_CHECKOUT_ENABLED', false),
         'middleware_group' => env('AFFILIATE_NETWORK_MIDDLEWARE_GROUP', 'web'),
         'listen_for_orders' => env('AFFILIATE_NETWORK_LISTEN_ORDERS', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP
+    |--------------------------------------------------------------------------
+    */
+    'http' => [
+        'connect_timeout_seconds' => 3,
+        'timeout_seconds' => 5,
+        'retries' => 1,
+        'retry_sleep_ms' => 150,
     ],
 
     /*

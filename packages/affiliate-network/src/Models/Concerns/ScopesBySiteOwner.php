@@ -66,7 +66,7 @@ trait ScopesBySiteOwner
 
             $site = $model->site;
             if ($site === null) {
-                return;
+                throw new RuntimeException('Cannot create record for an inaccessible or missing site.');
             }
 
             if ($owner === null) {
@@ -105,7 +105,7 @@ trait ScopesBySiteOwner
 
             $site = $model->site;
             if ($site === null) {
-                return;
+                throw new RuntimeException('Cannot assign record to an inaccessible or missing site.');
             }
 
             if ($owner === null) {

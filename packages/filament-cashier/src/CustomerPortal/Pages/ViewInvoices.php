@@ -50,14 +50,17 @@ final class ViewInvoices extends Page
                 $stripeInvoices = $user->invoices();
 
                 foreach ($stripeInvoices as $invoice) {
+                    $invoiceDate = $invoice->date();
+
                     $invoices->push([
                         'id' => $invoice->id,
                         'gateway' => 'stripe',
                         'number' => $invoice->number ?? $invoice->id,
                         'amount' => $invoice->total(),
-                        'date' => $invoice->date()->format('M d, Y'),
+                        'date' => $invoiceDate->format('M d, Y'),
                         'status' => $invoice->paid ? 'paid' : 'open',
                         'download_url' => $invoice->invoicePdf(),
+                        'sort_timestamp' => $invoiceDate->timestamp,
                     ]);
                 }
             } catch (Throwable $e) {
@@ -71,14 +74,17 @@ final class ViewInvoices extends Page
                 $chipInvoices = $user->chipInvoices();
 
                 foreach ($chipInvoices as $invoice) {
+                    $createdAt = $invoice->created_at;
+
                     $invoices->push([
                         'id' => $invoice->id,
                         'gateway' => 'chip',
                         'number' => $invoice->number ?? $invoice->id,
                         'amount' => $this->formatAmount(($invoice->amount ?? 0), 'MYR'),
-                        'date' => $invoice->created_at?->format('M d, Y') ?? 'N/A',
+                        'date' => $createdAt?->format('M d, Y') ?? 'N/A',
                         'status' => $invoice->status ?? 'unknown',
                         'download_url' => $invoice->pdf_url ?? null,
+                        'sort_timestamp' => $createdAt?->timestamp ?? 0,
                     ]);
                 }
             } catch (Throwable $e) {
@@ -86,7 +92,14 @@ final class ViewInvoices extends Page
             }
         }
 
-        return $invoices->sortByDesc('date')->values();
+        return $invoices
+            ->sortByDesc('sort_timestamp')
+            ->values()
+            ->map(function (array $invoice): array {
+                unset($invoice['sort_timestamp']);
+
+                return $invoice;
+            });
     }
 
     private function formatAmount(int $amountInCents, string $currency): string

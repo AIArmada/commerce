@@ -195,14 +195,32 @@ final class CalculatePricingStep extends AbstractCheckoutStep
         }
 
         // Defense-in-depth: when checkout owner mode is enabled, reject any model whose
-        // owner morph doesn't match the session's owner, preventing cross-tenant pricing
-        // lookups via a crafted cart snapshot's associated_model.class/id pair.
-        if (
-            config('checkout.owner.enabled', false)
-            && property_exists($model, 'owner_type')
-            && ($model->owner_type ?? null) !== ($session->owner_type ?? null)
-        ) {
-            return null;
+        // owner tuple does not exactly match the checkout session owner tuple. This blocks
+        // crafted associated_model.class/id payloads from resolving cross-tenant records.
+        if (config('checkout.owner.enabled', false)) {
+            $attributes = $model->getAttributes();
+
+            if (array_key_exists('owner_type', $attributes) && array_key_exists('owner_id', $attributes)) {
+                $modelOwnerType = $model->getAttribute('owner_type');
+                $modelOwnerId = $model->getAttribute('owner_id');
+                $sessionOwnerType = $session->owner_type;
+                $sessionOwnerId = $session->owner_id;
+
+                if (($modelOwnerType === null) !== ($modelOwnerId === null)) {
+                    return null;
+                }
+
+                if (($sessionOwnerType === null) !== ($sessionOwnerId === null)) {
+                    return null;
+                }
+
+                if (
+                    $modelOwnerType !== $sessionOwnerType
+                    || (string) ($modelOwnerId ?? '') !== (string) ($sessionOwnerId ?? '')
+                ) {
+                    return null;
+                }
+            }
         }
 
         return $model instanceof Priceable ? $model : null;

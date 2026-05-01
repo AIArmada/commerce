@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers;
 
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
@@ -70,7 +71,7 @@ final class SubscriptionsRelationManager extends RelationManager
             ->headerActions([])
             ->actions([
                 ViewAction::make()
-                    ->url(fn (Subscription $record): string => route('filament.admin.resources.subscriptions.view', $record)),
+                    ->url(fn (Subscription $record): string => SubscriptionResource::getUrl('view', ['record' => $record])),
 
                 Action::make('cancel')
                     ->label('Cancel')

@@ -10,9 +10,7 @@ import Aside from "@components/Aside.astro"
 
 - PHP 8.4+
 - Laravel 12.0+
-- Spatie Laravel PDF 1.5+
-- Node.js 18+ and npm
-- Puppeteer (for PDF generation)
+- A working Browsershot / Chromium environment for PDF generation
 
 ## Install via Composer
 
@@ -40,13 +38,9 @@ php artisan vendor:publish --tag=docs-views
 php artisan migrate
 ```
 
-## Install PDF Dependencies
+## PDF Runtime
 
-Puppeteer is required for PDF generation:
-
-```bash
-npm install puppeteer
-```
+`aiarmada/docs` uses Spatie Laravel PDF and Browsershot under the hood. Make sure your deployment environment has the browser/runtime support required by Browsershot for PDF generation.
 
 ## Environment Configuration
 
@@ -74,8 +68,6 @@ DOCS_CURRENCY=MYR
 DOCS_TAX_RATE=0.06
 DOCS_DUE_DAYS=30
 
-# PDF Generation
-DOCS_GENERATE_PDF=true
 ```
 
 

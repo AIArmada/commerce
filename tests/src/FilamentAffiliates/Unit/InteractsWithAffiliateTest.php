@@ -5,9 +5,14 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     AffiliatePayout::query()->delete();
@@ -117,3 +122,59 @@ it('formatAmount handles VND zero decimal currency', function (): void {
 
     expect($formatted)->toBe('VND 100,000');
 });
+
+it('resolves affiliate by contact email when owner scope uses a tenant owner', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+
+    $tenantOwner = InteractsWithAffiliateTestOwner::create(['name' => 'Tenant Owner']);
+
+    app()->instance(OwnerResolverInterface::class, new class($tenantOwner) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    $user = User::create([
+        'name' => 'Portal User',
+        'email' => 'portal-user-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    Affiliate::create([
+        'code' => 'OWN-' . Str::uuid(),
+        'name' => 'Tenant Scoped Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'contact_email' => $user->email,
+        'owner_type' => $tenantOwner->getMorphClass(),
+        'owner_id' => (string) $tenantOwner->getKey(),
+    ]);
+
+    $this->actingAs($user);
+
+    $testClass = new TestInteractsWithAffiliateClass;
+
+    expect($testClass->hasAffiliate())->toBeTrue()
+        ->and($testClass->getAffiliate()?->contact_email)->toBe($user->email);
+});
+
+class InteractsWithAffiliateTestOwner extends Model
+{
+    use HasUuids;
+
+    public $incrementing = false;
+
+    protected $table = 'test_products';
+
+    protected $guarded = [];
+
+    protected $keyType = 'string';
+}

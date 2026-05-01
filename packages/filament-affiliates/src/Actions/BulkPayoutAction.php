@@ -10,10 +10,12 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Exception;
 use Filament\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 final class BulkPayoutAction extends BulkAction
 {
@@ -33,10 +35,16 @@ final class BulkPayoutAction extends BulkAction
             $processed = 0;
             $failed = 0;
 
-            foreach ($records as $payout) {
-                if (! $payout instanceof AffiliatePayout) {
+            foreach ($records as $record) {
+                if (! $record instanceof AffiliatePayout) {
                     continue;
                 }
+
+                Gate::authorize('update', $record);
+
+                $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
+                    ->whereKey($record->getKey())
+                    ->firstOrFail();
 
                 if (! $payout->status->equals(PendingPayout::class)) {
                     continue;
@@ -46,7 +54,7 @@ final class BulkPayoutAction extends BulkAction
                     DB::transaction(function () use ($payout, $factory, &$processed, &$failed): void {
                         $payout->update(['status' => ProcessingPayout::class]);
 
-                        $payoutMethod = $payout->affiliate->payoutMethods()
+                        $payoutMethod = $payout->affiliate?->payoutMethods()
                             ->where('is_default', true)
                             ->first();
 

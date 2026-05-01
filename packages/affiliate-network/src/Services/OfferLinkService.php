@@ -44,35 +44,14 @@ final class OfferLinkService
     public function generateTrackingUrl(AffiliateOfferLink $link): string
     {
         $param = config('affiliate-network.links.parameter', 'anl');
-        $signingKey = config('affiliate-network.links.signing_key', config('app.key'));
         $ttl = config('affiliate-network.links.default_ttl_minutes', 60 * 24 * 30);
-
-        $data = [
-            'code' => $link->code,
-            'offer' => $link->offer_id,
-            'aff' => $link->affiliate_id,
-        ];
-
-        if ($link->sub_id) {
-            $data['sub1'] = $link->sub_id;
-        }
-        if ($link->sub_id_2) {
-            $data['sub2'] = $link->sub_id_2;
-        }
-        if ($link->sub_id_3) {
-            $data['sub3'] = $link->sub_id_3;
-        }
-
-        $payload = base64_encode(json_encode($data, JSON_THROW_ON_ERROR));
-        $signature = hash_hmac('sha256', $payload, $signingKey);
 
         return URL::temporarySignedRoute(
             'affiliate-network.redirect',
             now()->addMinutes($ttl),
             [
                 'code' => $link->code,
-                $param => $payload,
-                'sig' => mb_substr($signature, 0, 16),
+                $param => $link->code,
             ]
         );
     }

@@ -110,8 +110,10 @@ class ImpersonateAction extends Action
             return false;
         }
 
-        if (method_exists($currentUser, 'canImpersonate') && ! $currentUser->canImpersonate()) {
-            return false;
+        if (method_exists($currentUser, 'canImpersonate')) {
+            if ($currentUser->canImpersonate()) {
+                return true;
+            }
         }
 
         if (method_exists($targetUser, 'canBeImpersonated') && ! $targetUser->canBeImpersonated()) {

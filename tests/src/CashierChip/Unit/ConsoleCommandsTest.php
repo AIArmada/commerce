@@ -27,4 +27,12 @@ class ConsoleCommandsTest extends CashierChipTestCase
             ->expectsOutputToContain('Environment Variables')
             ->assertSuccessful();
     }
+
+    public function test_webhook_command_outputs_supported_events(): void
+    {
+        $this->artisan('cashier-chip:webhook')
+            ->expectsOutputToContain('purchase.paid')
+            ->expectsOutputToContain('purchase.payment_failure')
+            ->assertSuccessful();
+    }
 }

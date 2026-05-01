@@ -72,7 +72,7 @@ final class DocExporter extends Exporter
 
             ExportColumn::make('paid_amount')
                 ->label('Paid Amount')
-                ->state(fn (Doc $record): float => (float) ($record->paid_amount ?? $record->payments()->sum('amount'))),
+                ->state(fn (Doc $record): float => (float) ($record->paid_amount ?? 0.0)),
 
             ExportColumn::make('notes')
                 ->label('Notes'),

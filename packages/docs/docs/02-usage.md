@@ -14,7 +14,7 @@ use AIArmada\Docs\DataObjects\DocData;
 
 $docService = app(DocService::class);
 
-$document = $docService->createDoc(DocData::from([
+$document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
     'items' => [
         [
@@ -70,7 +70,7 @@ Configure types in `config/docs.php`:
 The package automatically calculates totals:
 
 ```php
-$document = $docService->createDoc(DocData::from([
+$document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
     'items' => [
         ['name' => 'Item 1', 'quantity' => 2, 'price' => 100],  // $200
@@ -96,7 +96,7 @@ use App\Models\Order;
 
 $order = Order::find($orderId);
 
-$document = $docService->createDoc(DocData::from([
+$document = $docService->create(DocData::from([
     'doc_type' => 'invoice',
     'docable_type' => Order::class,
     'docable_id' => $order->id,
@@ -112,20 +112,19 @@ $order = $document->docable;
 
 ```php
 use AIArmada\Docs\Models\Doc;
-use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\States\Paid;
 
 // Get paid invoices
 $paidInvoices = Doc::where('doc_type', 'invoice')
-    ->where('status', DocStatus::PAID)
+    ->where('status', Paid::class)
     ->get();
 
-// Get overdue invoices
-$overdueInvoices = Doc::where('doc_type', 'invoice')
-    ->where('status', DocStatus::OVERDUE)
-    ->where('due_date', '<', now())
-    ->get();
+// Get docs with a generated PDF
+$docsWithPdf = Doc::whereNotNull('pdf_path')->get();
 
 // Eager load relationships
 $docs = Doc::with(['template', 'statusHistories', 'docable'])
     ->get();
 ```
+
+When owner mode is enabled, the package models use `HasOwner` and follow the configured owner-scoping rules from `commerce-support`.

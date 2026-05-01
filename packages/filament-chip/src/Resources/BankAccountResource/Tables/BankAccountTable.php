@@ -130,9 +130,19 @@ final class BankAccountTable
                         ->modalDescription('This will submit the bank account for verification with CHIP. Continue?')
                         ->action(function (BankAccount $record): void {
                             $service = app(ChipSendService::class);
+                            $scopedRecord = self::resolveScopedBankAccount($record);
+
+                            if ($scopedRecord === null) {
+                                Notification::make()
+                                    ->title('Bank account is outside your owner scope')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
 
                             try {
-                                $service->updateBankAccount((string) $record->getKey(), [
+                                $service->updateBankAccount((string) $scopedRecord->getKey(), [
                                     'status' => 'verifying',
                                 ]);
                                 Notification::make()
@@ -158,9 +168,19 @@ final class BankAccountTable
                         ->modalDescription('This will disable the bank account. It cannot be used for payouts until re-enabled.')
                         ->action(function (BankAccount $record): void {
                             $service = app(ChipSendService::class);
+                            $scopedRecord = self::resolveScopedBankAccount($record);
+
+                            if ($scopedRecord === null) {
+                                Notification::make()
+                                    ->title('Bank account is outside your owner scope')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
 
                             try {
-                                $service->deleteBankAccount((string) $record->getKey());
+                                $service->deleteBankAccount((string) $scopedRecord->getKey());
                                 Notification::make()
                                     ->title('Bank account disabled')
                                     ->success()
@@ -183,5 +203,13 @@ final class BankAccountTable
             ->emptyStateDescription('Register bank accounts to send payouts via CHIP Send.')
             ->emptyStateIcon(Heroicon::OutlinedBuildingLibrary)
             ->poll('30s');
+    }
+
+    private static function resolveScopedBankAccount(BankAccount $record): ?BankAccount
+    {
+        return BankAccount::query()
+            ->forOwner()
+            ->whereKey($record->getKey())
+            ->first();
     }
 }

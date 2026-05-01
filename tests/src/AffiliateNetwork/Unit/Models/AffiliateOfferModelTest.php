@@ -11,6 +11,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Carbon\CarbonImmutable;
+use RuntimeException;
 
 describe('AffiliateOffer Model', function (): void {
     beforeEach(function (): void {
@@ -184,6 +185,15 @@ describe('AffiliateOffer Model', function (): void {
     });
 
     describe('owner scoping via site', function (): void {
+        test('explicit global context cannot create offer for owned site', function (): void {
+            config(['affiliate-network.owner.enabled' => true]);
+
+            $owner = User::factory()->create();
+            $ownedSite = OwnerContext::withOwner($owner, fn () => AffiliateSite::factory()->verified()->forOwner($owner)->create());
+
+            OwnerContext::withOwner(null, fn () => AffiliateOffer::factory()->forSite($ownedSite)->create());
+        })->throws(RuntimeException::class, 'inaccessible or missing site');
+
         test('explicit global context only returns offers linked to global sites', function (): void {
             config(['affiliate-network.owner.enabled' => true]);
 

@@ -279,21 +279,12 @@ describe('AffiliateCommissionTemplate Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        // Just test that the affiliate fields are updated (not the rule creation which may have schema issues)
-        $rules = $template->getCommissionRules();
-        $baseRule = collect($rules)->firstWhere('type', CommissionRuleType::Affiliate->value);
-
-        if ($baseRule) {
-            $affiliate->update([
-                'commission_type' => $baseRule['commission_type'],
-                'commission_rate' => $baseRule['rate'],
-            ]);
-        }
+        $template->applyToAffiliate($affiliate);
 
         $affiliate->refresh();
 
-        // Check affiliate was updated
-        expect($affiliate->commission_rate)->toBe(1500);
+        expect($affiliate->commission_type)->toBe(CommissionType::Percentage->value)
+            ->and($affiliate->commission_rate)->toBe(1500);
     });
 
     it('unsets other defaults when setting new default', function (): void {

@@ -8,8 +8,9 @@ use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\FilamentChip\Actions\PurchaseExporter;
 use AIArmada\FilamentChip\Actions\SendInstructionExporter;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\CreateBankAccount;
-use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\ListBankAccounts;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\ViewBankAccount;
+use AIArmada\FilamentChip\Resources\BankAccountResource\Tables\BankAccountTable;
+use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\ListBankAccounts;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ViewClient;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages\ListCompanyStatements;
@@ -22,6 +23,8 @@ use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ViewPurchase;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\CreateSendInstruction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ListSendInstructions;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ViewSendInstruction;
+use AIArmada\FilamentChip\Resources\SendInstructionResource\Tables\SendInstructionTable;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Filament\Actions\Exports\Models\Export;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Exceptions\Halt;
@@ -236,4 +239,129 @@ it('covers resource pages and read-only list base class', function (): void {
     $listSend = new ListSendInstructions;
     $m = (new ReflectionClass($listSend))->getMethod('getHeaderActions');
     expect($m->invoke($listSend))->toBeArray();
+});
+
+it('enforces owner scoping in mutation action record resolution', function (): void {
+    config()->set('chip.owner.enabled', true);
+
+    Schema::dropIfExists('chip_bank_accounts');
+    Schema::create('chip_bank_accounts', function (Blueprint $table): void {
+        $table->integer('id')->primary();
+        $table->nullableMorphs('owner');
+        $table->string('status')->nullable();
+        $table->string('name')->nullable();
+        $table->string('account_number')->nullable();
+        $table->string('bank_code')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::dropIfExists('chip_send_instructions');
+    Schema::create('chip_send_instructions', function (Blueprint $table): void {
+        $table->integer('id')->primary();
+        $table->nullableMorphs('owner');
+        $table->integer('bank_account_id')->nullable();
+        $table->string('amount')->default('0');
+        $table->string('email')->nullable();
+        $table->string('description')->nullable();
+        $table->string('reference')->nullable();
+        $table->string('state')->nullable();
+        $table->timestamps();
+    });
+
+    $ownerModel = new class extends Model
+    {
+        protected $table = 'users';
+
+        public $incrementing = false;
+
+        protected $keyType = 'string';
+
+        protected $guarded = [];
+    };
+
+    $ownerA = $ownerModel::query()->create([
+        'id' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        'name' => 'Owner A',
+        'email' => 'owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = $ownerModel::query()->create([
+        'id' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        'name' => 'Owner B',
+        'email' => 'owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    $bankAccountForA = BankAccount::query()->create([
+        'id' => 101,
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => (string) $ownerA->getKey(),
+        'status' => 'active',
+        'name' => 'A Account',
+        'account_number' => '111',
+        'bank_code' => 'MBBEMYKL',
+    ]);
+
+    $bankAccountForB = BankAccount::query()->create([
+        'id' => 102,
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => (string) $ownerB->getKey(),
+        'status' => 'active',
+        'name' => 'B Account',
+        'account_number' => '222',
+        'bank_code' => 'MBBEMYKL',
+    ]);
+
+    $instructionForA = SendInstruction::query()->create([
+        'id' => 201,
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => (string) $ownerA->getKey(),
+        'bank_account_id' => 101,
+        'amount' => '10.00',
+        'email' => 'a@example.com',
+        'description' => 'A payout',
+        'reference' => 'A-REF',
+        'state' => 'completed',
+    ]);
+
+    $instructionForB = SendInstruction::query()->create([
+        'id' => 202,
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => (string) $ownerB->getKey(),
+        'bank_account_id' => 102,
+        'amount' => '20.00',
+        'email' => 'b@example.com',
+        'description' => 'B payout',
+        'reference' => 'B-REF',
+        'state' => 'completed',
+    ]);
+
+    $resolveBankTable = (new ReflectionClass(BankAccountTable::class))->getMethod('resolveScopedBankAccount');
+    $resolveSendTable = (new ReflectionClass(SendInstructionTable::class))->getMethod('resolveScopedSendInstruction');
+
+    expect($resolveBankTable->invoke(null, $bankAccountForA)?->getKey())->toBe($bankAccountForA->getKey());
+    expect($resolveBankTable->invoke(null, $bankAccountForB))->toBeNull();
+    expect($resolveSendTable->invoke(null, $instructionForA)?->getKey())->toBe($instructionForA->getKey());
+    expect($resolveSendTable->invoke(null, $instructionForB))->toBeNull();
+
+    $viewBank = new ViewBankAccount;
+    $resolveBankView = (new ReflectionClass($viewBank))->getMethod('resolveScopedBankAccount');
+    expect($resolveBankView->invoke($viewBank, $bankAccountForA)?->getKey())->toBe($bankAccountForA->getKey());
+    expect($resolveBankView->invoke($viewBank, $bankAccountForB))->toBeNull();
+
+    $viewSend = new ViewSendInstruction;
+    $resolveSendView = (new ReflectionClass($viewSend))->getMethod('resolveScopedSendInstruction');
+    expect($resolveSendView->invoke($viewSend, $instructionForA)?->getKey())->toBe($instructionForA->getKey());
+    expect($resolveSendView->invoke($viewSend, $instructionForB))->toBeNull();
 });

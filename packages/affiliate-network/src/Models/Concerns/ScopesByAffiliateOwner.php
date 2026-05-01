@@ -66,7 +66,7 @@ trait ScopesByAffiliateOwner
 
             $affiliate = $model->affiliate;
             if ($affiliate === null) {
-                return;
+                throw new RuntimeException('Cannot create record for an inaccessible or missing affiliate.');
             }
 
             if ($owner === null) {
@@ -105,7 +105,7 @@ trait ScopesByAffiliateOwner
 
             $affiliate = $model->affiliate;
             if ($affiliate === null) {
-                return;
+                throw new RuntimeException('Cannot assign record to an inaccessible or missing affiliate.');
             }
 
             if ($owner === null) {

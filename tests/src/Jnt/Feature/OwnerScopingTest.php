@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 beforeEach(function (): void {
     config()->set('jnt.owner.enabled', true);
@@ -15,7 +16,7 @@ beforeEach(function (): void {
     config()->set('jnt.owner.auto_assign_on_create', true);
 });
 
-it('returns strict global-only when owner resolver returns null', function (): void {
+it('requires an owner context for owner-scoped reads when the resolver returns null', function (): void {
     config()->set('jnt.owner.include_global', true);
 
     $ownerA = User::query()->create([
@@ -56,15 +57,11 @@ it('returns strict global-only when owner resolver returns null', function (): v
         }
     });
 
-    $ids = JntOrder::query()->forOwner(null, true)->pluck('id')->all();
-
-    expect($ids)
-        ->toContain($orderGlobal->id)
-        ->not->toContain($orderOwned->id)
-        ->not->toContain($orderCorrupt->id);
+    expect(fn () => JntOrder::query()->forOwner()->pluck('id')->all())
+        ->toThrow(RuntimeException::class);
 });
 
-it('returns no rows when owner resolver returns null and global records are disabled', function (): void {
+it('returns strict global-only rows only inside explicit global context', function (): void {
     config()->set('jnt.owner.include_global', false);
 
     $ownerA = User::query()->create([
@@ -78,22 +75,28 @@ it('returns no rows when owner resolver returns null and global records are disa
         'customer_code' => 'CUST',
     ]));
 
-    OwnerContext::withOwner(null, fn () => JntOrder::query()->create([
+    $orderGlobal = OwnerContext::withOwner(null, fn () => JntOrder::query()->create([
         'order_id' => 'ORD-GLOBAL2',
         'customer_code' => 'CUST',
     ]));
 
-    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
-    {
-        public function resolve(): ?Model
-        {
-            return null;
-        }
-    });
+    $corruptId = (string) str()->uuid();
+    DB::table((new JntOrder)->getTable())->insert([
+        'id' => $corruptId,
+        'order_id' => 'ORD-CORRUPT2',
+        'customer_code' => 'CUST',
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => null,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $orderCorrupt = JntOrder::query()->withoutOwnerScope()->find($corruptId);
 
-    $ids = JntOrder::query()->forOwner(null, false)->pluck('id')->all();
+    $ids = OwnerContext::withOwner(null, fn () => JntOrder::query()->forOwner()->pluck('id')->all());
 
-    expect($ids)->toBe([]);
+    expect($ids)
+        ->toContain($orderGlobal->id)
+        ->not->toContain($orderCorrupt?->id);
 });
 
 it('auto-assigns owner on create when enabled', function (): void {

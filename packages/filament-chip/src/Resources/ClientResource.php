@@ -87,7 +87,7 @@ final class ClientResource extends BaseChipResource
                             ->icon('heroicon-o-clock'),
                         TextColumn::make('updated_on')
                             ->label('Updated')
-                            ->dateTime(config('filament-chip.tables.created_on_format', 'Y-m-d H:i:s'))
+                            ->dateTime(config('filament-chip.tables.updated_on_format', 'Y-m-d H:i:s'))
                             ->placeholder('—')
                             ->icon('heroicon-o-arrow-path'),
                         TextColumn::make('registration_number')

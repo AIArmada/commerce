@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 trait InteractsWithAffiliate
@@ -36,11 +37,22 @@ trait InteractsWithAffiliate
 
         if ((bool) config('affiliates.owner.enabled', false)) {
             $owner = OwnerContext::resolve();
+            $contactEmail = is_string($user->email ?? null) ? mb_strtolower($user->email) : null;
 
             $this->affiliate = Affiliate::query()
                 ->forOwner($owner, false)
-                ->where('owner_type', $user->getMorphClass())
-                ->where('owner_id', $user->getKey())
+                ->where(function (Builder $query) use ($user, $contactEmail): void {
+                    $query
+                        ->where(function (Builder $ownedByUser) use ($user): void {
+                            $ownedByUser
+                                ->where('owner_type', $user->getMorphClass())
+                                ->where('owner_id', $user->getKey());
+                        });
+
+                    if (is_string($contactEmail) && $contactEmail !== '') {
+                        $query->orWhereRaw('LOWER(contact_email) = ?', [$contactEmail]);
+                    }
+                })
                 ->first();
         } else {
             $this->affiliate = Affiliate::query()

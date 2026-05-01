@@ -10,6 +10,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Services\OfferLinkService;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -105,6 +106,7 @@ final class AffiliateMarketplacePage extends Page
 
         return Affiliate::query()
             ->where('contact_email', $email)
+            ->where('status', Active::class)
             ->first();
     }
 
@@ -139,6 +141,13 @@ final class AffiliateMarketplacePage extends Page
     public function applyForOffer(string $offerId, string $reason = ''): void
     {
         $offer = app(OfferManagementService::class)->resolvePublicOfferOrFail($offerId);
+
+        if (! $offer->requires_approval) {
+            $this->generateLink($offerId);
+
+            return;
+        }
+
         $affiliate = $this->getAffiliate();
 
         if ($affiliate === null) {

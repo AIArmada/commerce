@@ -659,14 +659,12 @@ final class DocService implements DocServiceInterface
     protected function resolveStorageDisk(string $docType): string
     {
         return config("docs.types.{$docType}.storage.disk")
-            ?? config("docs.storage.disks.{$docType}")
             ?? config('docs.storage.disk', 'local');
     }
 
     protected function resolveStoragePath(string $docType): string
     {
         return config("docs.types.{$docType}.storage.path")
-            ?? config("docs.storage.paths.{$docType}")
             ?? config('docs.storage.path', 'docs');
     }
 

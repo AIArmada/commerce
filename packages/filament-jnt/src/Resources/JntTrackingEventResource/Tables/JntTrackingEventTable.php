@@ -93,7 +93,7 @@ final class JntTrackingEventTable
                 Filter::make('delivered')
                     ->label('Delivered')
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->where('scan_type_code', '100')),
+                    ->query(fn (Builder $query): Builder => self::applyDeliveredStatusFilter($query)),
             ], layout: FiltersLayout::AboveContent)
             ->actions([
                 ViewAction::make()
@@ -119,7 +119,7 @@ final class JntTrackingEventTable
 
         return match ($status) {
             TrackingStatus::Pending => $query->whereNull('scan_type_code'),
-            TrackingStatus::Delivered => $query->where('scan_type_code', '100'),
+            TrackingStatus::Delivered => self::applyDeliveredStatusFilter($query),
             TrackingStatus::Exception => $query->whereNotNull('problem_type'),
             TrackingStatus::InTransit => $query->whereIn('scan_type_code', ['20', '30', '401', '402']),
             TrackingStatus::AtHub => $query->whereIn('scan_type_code', ['403', '404', '405']),
@@ -129,5 +129,20 @@ final class JntTrackingEventTable
             TrackingStatus::Returned => $query->where('scan_type_code', '173'),
             TrackingStatus::DeliveryAttempted => $query->where('scan_type_code', '110'),
         };
+    }
+
+    private static function applyDeliveredStatusFilter(Builder $query): Builder
+    {
+        return $query->where(function (Builder $builder): void {
+            $builder->where('scan_type_code', '100')
+                ->orWhere('scan_type', 'POD')
+                ->orWhere('scan_type', 'SIGN')
+                ->orWhere('scan_type', 'SIGN_STATION')
+                ->orWhere('scan_type_name', 'like', '%deliver%')
+                ->orWhere('scan_type_name', 'like', '%sign%')
+                ->orWhere('description', 'like', '%deliver%')
+                ->orWhere('description', 'like', '%sign%')
+                ->orWhere('description', 'like', '%received by%');
+        });
     }
 }

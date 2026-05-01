@@ -61,7 +61,7 @@ class GatewayManager extends Manager
      */
     public function supportsGateway(string $name): bool
     {
-        return in_array($name, $this->supportedGateways());
+        return in_array($name, $this->supportedGateways(), true);
     }
 
     /**

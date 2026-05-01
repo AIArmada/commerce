@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCustomers\Resources;
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
@@ -26,8 +27,10 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use UnitEnum;
 
 class CustomerResource extends Resource
@@ -140,12 +143,16 @@ class CustomerResource extends Resource
                                     ->relationship(
                                         name: 'segments',
                                         titleAttribute: 'name',
-                                        modifyQueryUsing: fn (Builder $query): Builder => CustomersOwnerScope::applyToOwnedQuery($query),
+                                        modifyQueryUsing: fn (Builder $query): Builder => CustomersOwnerScope::applyToOwnedQuery($query)
+                                            ->where('is_automatic', false),
                                     )
                                     ->multiple()
                                     ->preload()
                                     ->searchable()
-                                    ->helperText('Manual segment assignment'),
+                                        ->helperText('Manual segment assignment')
+                                        ->saveRelationshipsUsing(function (Customer $record, ?array $state): void {
+                                            static::syncManualSegments($record, $state);
+                                        }),
                             ]),
                     ])
                     ->columnSpan(['lg' => 1]),
@@ -315,5 +322,61 @@ class CustomerResource extends Resource
     public static function getGloballySearchableAttributes(): array
     {
         return ['first_name', 'last_name', 'email', 'phone', 'company'];
+    }
+
+    /**
+     * @param  array<int, mixed>|null  $state
+     *
+     * @throws HttpException
+     */
+    public static function syncManualSegments(Customer $record, ?array $state): void
+    {
+        $owner = static::ensureRecordOwnerScope($record);
+
+        $ids = array_values(array_filter($state ?? []));
+
+        $allowedManualSegmentIds = Segment::query()
+            ->forOwner($owner, includeGlobal: false)
+            ->where('is_automatic', false)
+            ->whereKey($ids)
+            ->pluck('id')
+            ->all();
+
+        abort_unless(count($allowedManualSegmentIds) === count($ids), 403);
+
+        $automaticSegmentIds = $record->segments()
+            ->where('is_automatic', true)
+            ->pluck('id')
+            ->all();
+
+        $record->segments()->sync(array_values(array_unique([
+            ...$automaticSegmentIds,
+            ...$allowedManualSegmentIds,
+        ])));
+    }
+
+    protected static function ensureRecordOwnerScope(Customer $record): ?Model
+    {
+        $owner = CustomersOwnerScope::resolveOwner();
+
+        if ($owner === null) {
+            abort_unless($record->owner_type === null && $record->owner_id === null, 403);
+
+            return null;
+        }
+
+        if (method_exists($record, 'belongsToOwner')) {
+            abort_unless($record->belongsToOwner($owner), 403);
+
+            return $owner;
+        }
+
+        abort_unless(
+            $record->owner_type === $owner->getMorphClass()
+                && (string) $record->owner_id === (string) $owner->getKey(),
+            403
+        );
+
+        return $owner;
     }
 }

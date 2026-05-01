@@ -157,6 +157,91 @@ it('does not cancel when Other is selected without details', function (): void {
     expect(collect($notifications)->last()['title'])->toBe('Additional Details Required');
 });
 
+it('rejects tampered cancellation reasons that are not in the supported enum list', function (): void {
+    /** @var User $user */
+    $user = User::query()->create([
+        'name' => 'User',
+        'email' => 'user-invalid-reason@example.test',
+        'password' => bcrypt('password'),
+    ]);
+
+    $this->actingAs($user);
+
+    $called = false;
+
+    app()->bind(JntExpressService::class, function () use (&$called) {
+        return new class($called)
+        {
+            public function __construct(private bool &$called) {}
+
+            public function cancelOrder(string $orderId, string $reason, ?string $trackingNumber = null): void
+            {
+                $this->called = true;
+            }
+        };
+    });
+
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-7',
+        'customer_code' => 'CUST',
+        'status' => 'in_transit',
+    ]);
+
+    $action = CancelOrderAction::make()->record($order);
+    $handler = $action->getActionFunction();
+
+    $handler($order, ['reason' => 'tampered-value', 'custom_reason' => null]);
+
+    expect($called)->toBeFalse();
+
+    $notifications = session()->get('filament.notifications', []);
+    expect(collect($notifications)->last()['title'])->toBe('Invalid Request');
+});
+
+it('rejects oversized custom cancellation details', function (): void {
+    /** @var User $user */
+    $user = User::query()->create([
+        'name' => 'User',
+        'email' => 'user-oversized-reason@example.test',
+        'password' => bcrypt('password'),
+    ]);
+
+    $this->actingAs($user);
+
+    $called = false;
+
+    app()->bind(JntExpressService::class, function () use (&$called) {
+        return new class($called)
+        {
+            public function __construct(private bool &$called) {}
+
+            public function cancelOrder(string $orderId, string $reason, ?string $trackingNumber = null): void
+            {
+                $this->called = true;
+            }
+        };
+    });
+
+    $order = JntOrder::query()->create([
+        'order_id' => 'ORD-8',
+        'customer_code' => 'CUST',
+        'status' => 'in_transit',
+    ]);
+
+    $action = CancelOrderAction::make()->record($order);
+    $handler = $action->getActionFunction();
+
+    $handler($order, [
+        'reason' => CancellationReason::OTHER->value,
+        'custom_reason' => str_repeat('x', 256),
+    ]);
+
+    expect($called)->toBeFalse();
+
+    $notifications = session()->get('filament.notifications', []);
+    expect(collect($notifications)->last()['title'])->toBe('Invalid Request');
+});
+
 it('handles service exceptions and shows a failure notification', function (): void {
     /** @var User $user */
     $user = User::query()->create([

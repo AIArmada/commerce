@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Pages;
 
 use AIArmada\Chip\Chip;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use BackedEnum;
 use Exception;
+use Filament\Facades\Filament;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -83,7 +86,10 @@ final class GatewayManagement extends Page
      */
     public function getDefaultGateway(): ?string
     {
-        $cached = cache()->get('filament-cashier.default_gateway');
+        $cached = OwnerCache::get(
+            OwnerContext::resolve(),
+            $this->getDefaultGatewayCacheKey(),
+        );
 
         if (is_string($cached) && $cached !== '') {
             return $cached;
@@ -107,8 +113,20 @@ final class GatewayManagement extends Page
                     ->required(),
             ])
             ->action(function (array $data): void {
-                $health = $this->checkGatewayHealth($data['gateway']);
-                $label = $this->getGatewayDetector()->getLabel($data['gateway']);
+                $gateway = $data['gateway'] ?? null;
+
+                if (! is_string($gateway) || ! $this->getGatewayDetector()->isAvailable($gateway)) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('filament-cashier::gateway.notifications.connection_failed', ['gateway' => __('filament-cashier::gateway.fields.gateway')]))
+                        ->body(__('filament-cashier::gateway.health.unknown'))
+                        ->send();
+
+                    return;
+                }
+
+                $health = $this->checkGatewayHealth($gateway);
+                $label = $this->getGatewayDetector()->getLabel($gateway);
 
                 if ($health['status'] === 'healthy') {
                     Notification::make()
@@ -141,13 +159,29 @@ final class GatewayManagement extends Page
                     ->required(),
             ])
             ->action(function (array $data): void {
+                $gateway = $data['gateway'] ?? null;
+
+                if (! is_string($gateway) || ! $this->getGatewayDetector()->isAvailable($gateway)) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('filament-cashier::gateway.notifications.connection_failed', ['gateway' => __('filament-cashier::gateway.fields.gateway')]))
+                        ->body(__('filament-cashier::gateway.health.unknown'))
+                        ->send();
+
+                    return;
+                }
+
                 // Store in cache for runtime configuration
-                cache()->forever('filament-cashier.default_gateway', $data['gateway']);
+                OwnerCache::put(
+                    OwnerContext::resolve(),
+                    $this->getDefaultGatewayCacheKey(),
+                    $gateway,
+                );
 
                 Notification::make()
                     ->success()
                     ->title(__('filament-cashier::gateway.notifications.default_set', [
-                        'gateway' => $this->getGatewayDetector()->getLabel($data['gateway']),
+                        'gateway' => $this->getGatewayDetector()->getLabel($gateway),
                     ]))
                     ->send();
             });
@@ -190,7 +224,9 @@ final class GatewayManagement extends Page
      */
     protected function checkStripeHealth(): array
     {
-        if (! config('services.stripe.key') || ! config('services.stripe.secret')) {
+        $secret = $this->resolveStripeSecret();
+
+        if ($secret === null || $this->isPlaceholderSecret($secret)) {
             return [
                 'status' => 'not_configured',
                 'color' => 'warning',
@@ -200,8 +236,14 @@ final class GatewayManagement extends Page
 
         try {
             if (class_exists(Stripe::class)) {
-                Stripe::setApiKey(config('services.stripe.secret'));
-                Account::retrieve();
+                $previousApiKey = Stripe::getApiKey();
+                Stripe::setApiKey($secret);
+
+                try {
+                    Account::retrieve();
+                } finally {
+                    Stripe::setApiKey(is_string($previousApiKey) ? $previousApiKey : '');
+                }
 
                 return [
                     'status' => 'healthy',
@@ -231,7 +273,10 @@ final class GatewayManagement extends Page
      */
     protected function checkChipHealth(): array
     {
-        if (! config('chip.brand_id') || ! config('chip.api_key')) {
+        $brandId = config('chip.brand_id') ?? config('cashier.gateways.chip.brand_id');
+        $apiKey = config('chip.api_key') ?? config('chip.collect.api_key');
+
+        if (! is_string($brandId) || $brandId === '' || ! is_string($apiKey) || $apiKey === '') {
             return [
                 'status' => 'not_configured',
                 'color' => 'warning',
@@ -272,5 +317,34 @@ final class GatewayManagement extends Page
             $this->testConnectionAction(),
             $this->setDefaultAction(),
         ];
+    }
+
+    private function getDefaultGatewayCacheKey(): string
+    {
+        $panelId = Filament::getCurrentPanel()?->getId() ?? 'default';
+
+        return 'filament-cashier.default_gateway.' . $panelId;
+    }
+
+    private function resolveStripeSecret(): ?string
+    {
+        $serviceSecret = config('services.stripe.secret');
+
+        if (is_string($serviceSecret) && $serviceSecret !== '') {
+            return $serviceSecret;
+        }
+
+        $cashierSecret = config('cashier.gateways.stripe.secret');
+
+        if (is_string($cashierSecret) && $cashierSecret !== '') {
+            return $cashierSecret;
+        }
+
+        return null;
+    }
+
+    private function isPlaceholderSecret(string $secret): bool
+    {
+        return str_contains($secret, 'xxx') || str_contains($secret, 'placeholder');
     }
 }

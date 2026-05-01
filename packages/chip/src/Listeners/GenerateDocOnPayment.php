@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Listeners;
 
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
@@ -13,6 +14,7 @@ use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Arr;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Generates invoice/receipt document when a purchase is paid.
@@ -31,19 +33,54 @@ final class GenerateDocOnPayment implements ShouldQueue
             return;
         }
 
-        // Find the persisted Purchase model
-        $purchase = Purchase::find($event->getPurchaseId());
+        $runner = function () use ($event, $docType): void {
+            // Find the persisted Purchase model
+            $purchase = Purchase::find($event->getPurchaseId());
 
-        if ($purchase === null) {
+            if ($purchase === null) {
+                return;
+            }
+
+            // Skip if doc already exists for this purchase
+            if ($this->docExistsForPurchase($purchase)) {
+                return;
+            }
+
+            $this->generateDoc($purchase, $event, (string) $docType);
+        };
+
+        if (! (bool) config('chip.owner.enabled', false)) {
+            $runner();
+
             return;
         }
 
-        // Skip if doc already exists for this purchase
-        if ($this->docExistsForPurchase($purchase)) {
+        $owner = $this->resolveOwnerFromPayload($event->payload);
+
+        if ($owner === null) {
             return;
         }
 
-        $this->generateDoc($purchase, $event, (string) $docType);
+        OwnerContext::withOwner($owner, $runner);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function resolveOwnerFromPayload(array $payload): ?Model
+    {
+        $ownerType = Arr::get($payload, '__owner_type');
+        $ownerId = Arr::get($payload, '__owner_id');
+
+        if (! is_string($ownerType)) {
+            return null;
+        }
+
+        if (! is_string($ownerId) && ! is_int($ownerId)) {
+            return null;
+        }
+
+        return OwnerContext::fromTypeAndId($ownerType, $ownerId);
     }
 
     private function generateDoc(Purchase $purchase, PurchasePaid $event, string $docType): void

@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Carbon\CarbonImmutable;
+use RuntimeException;
 
 describe('AffiliateOfferApplication Model', function (): void {
     beforeEach(function (): void {
@@ -140,6 +141,32 @@ describe('AffiliateOfferApplication Model', function (): void {
     });
 
     describe('owner scoping via affiliate', function (): void {
+        test('explicit global context cannot create application for owned affiliate', function (): void {
+            config([
+                'affiliate-network.owner.enabled' => true,
+                'affiliates.owner.enabled' => true,
+            ]);
+
+            $owner = User::factory()->create();
+
+            $site = OwnerContext::withOwner($owner, fn () => AffiliateSite::factory()->verified()->forOwner($owner)->create());
+            $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->forSite($site)->create());
+            $affiliate = OwnerContext::withOwner($owner, fn () => Affiliate::create([
+                'code' => 'AFF' . uniqid(),
+                'name' => 'Owned Affiliate',
+                'status' => 'active',
+                'commission_type' => 'percentage',
+                'commission_rate' => 1000,
+                'currency' => 'USD',
+            ]));
+
+            OwnerContext::withOwner(null, fn () => AffiliateOfferApplication::factory()
+                ->forOffer($offer)
+                ->forAffiliate($affiliate)
+                ->pending()
+                ->create());
+        })->throws(RuntimeException::class, 'inaccessible or missing affiliate');
+
         test('explicit global context only returns applications linked to global affiliates', function (): void {
             config([
                 'affiliate-network.owner.enabled' => true,

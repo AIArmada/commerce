@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\SiteVerificationService;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 describe('SiteVerificationService', function (): void {
@@ -52,6 +53,40 @@ describe('SiteVerificationService', function (): void {
         $result = $service->verify($site, 'unknown_method');
 
         expect($result)->toBeFalse();
+    });
+
+    test('verify succeeds for meta tag when token is present in fetched page', function (): void {
+        $site = AffiliateSite::factory()->pending()->create([
+            'domain' => 'verified.example',
+            'verification_token' => 'affiliatenetwork-verify-' . Str::random(16),
+        ]);
+
+        Http::fake([
+            'https://verified.example/*' => Http::response("<html><head><meta name=\"affiliate-network-verify\" content=\"{$site->verification_token}\"></head></html>", 200),
+        ]);
+
+        $service = app(SiteVerificationService::class);
+
+        $result = $service->verify($site, 'meta_tag');
+
+        expect($result)->toBeTrue();
+        expect($site->fresh()->status)->toBe(AffiliateSite::STATUS_VERIFIED);
+    });
+
+    test('verify refuses localhost-like domains and does not perform HTTP request', function (): void {
+        $site = AffiliateSite::factory()->pending()->create([
+            'domain' => 'localhost',
+            'verification_token' => 'affiliatenetwork-verify-' . Str::random(16),
+        ]);
+
+        Http::fake();
+
+        $service = app(SiteVerificationService::class);
+
+        $result = $service->verify($site, 'file');
+
+        expect($result)->toBeFalse();
+        Http::assertNothingSent();
     });
 
     test('getInstructions returns DNS instructions', function (): void {

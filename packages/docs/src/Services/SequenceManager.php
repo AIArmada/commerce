@@ -50,7 +50,7 @@ final class SequenceManager
             $query->where('owner_type', $owner->getMorphClass())
                 ->where('owner_id', $owner->getKey());
         } else {
-            $query->whereNull('owner_type');
+            $query->whereNull('owner_type')->whereNull('owner_id');
         }
 
         return $query->first();

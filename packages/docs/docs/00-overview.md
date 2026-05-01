@@ -4,22 +4,22 @@ title: Overview
 
 # Docs Package Overview
 
-A comprehensive Laravel package for generating professional documents (invoices, quotations, receipts, credit notes, and more) with PDF support, email delivery, approval workflows, and multi-tenant support.
+A Laravel package for generating business documents with PDF output, numbering, email delivery, and optional tenant-aware owner scoping.
 
 ## Features
 
 ### Core Document Management
 
 - **Multiple Document Types** - Invoice, Receipt, Quotation, Credit Note, Delivery Note, Proforma Invoice
-- **PDF Generation** - Powered by Spatie Laravel PDF with Tailwind CSS support
-- **Status Lifecycle** - Draft → Pending → Sent → Paid (with partial payments, overdue, cancelled, refunded)
+- **PDF Generation** - Powered by Spatie Laravel PDF with Blade templates
+- **Status Lifecycle** - Draft, pending, sent, paid, partially paid, overdue, cancelled, refunded
 - **Automatic Calculations** - Subtotals, taxes, discounts, totals
 - **Polymorphic Linking** - Link documents to any model (Orders, Tickets, etc.)
 
 ### Templates & Customization
 
 - **Blade Templates** - Full control over document appearance
-- **Tailwind CSS** - Modern styling with CDN or build process
+- **Tailwind CSS** - Works well for PDF templates when rendered through Browsershot
 - **Per-Document Overrides** - PDF format, margins, orientation
 - **Custom Fields** - Metadata support for unlimited extensibility
 
@@ -34,20 +34,17 @@ A comprehensive Laravel package for generating professional documents (invoices,
 
 - **Email Templates** - Customizable per document type and trigger
 - **Variable Substitution** - Dynamic content with `{{doc_number}}`, `{{customer_name}}`, etc.
-- **Tracking** - Open and click tracking with encrypted tokens
-- **Automated Reminders** - Due soon and overdue notifications
+- **Tracking** - Open and click tracking routes with encrypted tokens
+- **Automated Reminders** - Due-soon and overdue reminder flows
 
 ### Approval Workflows
 
-- **Configurable Workflows** - Define approval chains per document type
-- **Rule-Based Routing** - Conditions based on document properties
-- **Timeout Handling** - Auto-escalation for stalled approvals
-- **Status Integration** - Approvals tied to document lifecycle
+- **Approval Records** - Persist approvers, requester, status, and timestamps
+- **Status Integration** - Filament pages can surface pending approvals for the current user
 
 ### E-Invoice Support (Malaysia)
 
 - **MyInvois Integration** - Ready for Malaysian e-invoicing compliance
-- **UBL XML** - Standard format generation
 - **Submission Tracking** - Track validation status and errors
 - **QR Code URLs** - Portal links for submitted documents
 
@@ -68,7 +65,7 @@ packages/docs/
 │   ├── Jobs/              # SendDocReminderJob
 │   ├── Models/            # All Eloquent models
 │   ├── Numbering/         # Strategy pattern for doc numbers
-│   └── Services/          # DocService, DocumentService, etc.
+│   └── Services/          # DocService, DocEmailService, SequenceManager
 ├── database/
 │   ├── factories/         # Model factories
 │   ├── migrations/        # Database migrations
@@ -105,7 +102,7 @@ use AIArmada\Docs\DataObjects\DocData;
 
 $docService = app(DocService::class);
 
-$invoice = $docService->createDoc(DocData::from([
+$invoice = $docService->create(DocData::from([
     'doc_type' => 'invoice',
     'items' => [
         ['name' => 'Consulting', 'quantity' => 5, 'price' => 200],

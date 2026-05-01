@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\Facades\Route;
 use Override;
 
 final class ListInvoices extends ListRecords
@@ -41,7 +42,16 @@ final class ListInvoices extends ListRecords
                 ->label('View Reports')
                 ->icon('heroicon-o-chart-bar')
                 ->color('primary')
-                ->url(fn (): string => route('filament.admin.pages.billing-dashboard')),
+                ->url(function (): string {
+                    $panelId = filament()->getCurrentPanel()?->getId() ?? 'admin';
+                    $routeName = "filament.{$panelId}.pages.cashier-chip-dashboard";
+
+                    if (! Route::has($routeName)) {
+                        return '#';
+                    }
+
+                    return route($routeName);
+                }),
         ];
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Models\Segment;
 
 describe('Customer Model', function (): void {
     describe('Customer Creation', function (): void {
@@ -99,6 +100,37 @@ describe('Customer Model', function (): void {
             Customer::create(['first_name' => 'OptedOut', 'last_name' => 'User', 'email' => 'optout-' . uniqid() . '@test.com', 'status' => CustomerStatus::Active, 'accepts_marketing' => false]);
 
             expect(Customer::where('accepts_marketing', true)->count())->toBeGreaterThanOrEqual(1);
+        });
+
+        it('can filter customers by segment membership', function (): void {
+            $segment = Segment::create([
+                'name' => 'Scope Segment ' . uniqid(),
+                'slug' => 'scope-segment-' . uniqid(),
+                'is_automatic' => false,
+                'is_active' => true,
+            ]);
+
+            $inSegment = Customer::create([
+                'first_name' => 'In',
+                'last_name' => 'Segment',
+                'email' => 'in-segment-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+            ]);
+
+            $outsideSegment = Customer::create([
+                'first_name' => 'Out',
+                'last_name' => 'Segment',
+                'email' => 'out-segment-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+            ]);
+
+            $segment->addCustomer($inSegment);
+
+            $matchedIds = Customer::query()->inSegment($segment)->pluck('id')->all();
+
+            expect($matchedIds)
+                ->toContain($inSegment->id)
+                ->not->toContain($outsideSegment->id);
         });
     });
 });
