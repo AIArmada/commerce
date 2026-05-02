@@ -28,28 +28,44 @@ This creates `config/cashier-chip.php`:
 
 ```php
 return [
-    // URL path prefix for webhooks
+    // Database
+    'database' => [
+        'table_prefix' => env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_'),
+        'json_column_type' => env('CASHIER_CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'tables' => [
+            'subscriptions' => 'cashier_chip_subscriptions',
+            'subscription_items' => 'cashier_chip_subscription_items',
+        ],
+    ],
+
+    // Defaults
+    'currency' => env('CASHIER_CHIP_CURRENCY', 'MYR'),
+    'currency_locale' => env('CASHIER_CHIP_CURRENCY_LOCALE', 'ms_MY'),
+
+    // Owner scope behavior
+    'features' => [
+        'owner' => [
+            'enabled' => env('CASHIER_CHIP_OWNER_ENABLED', true),
+            'include_global' => env('CASHIER_CHIP_OWNER_INCLUDE_GLOBAL', false),
+            'auto_assign_on_create' => env('CASHIER_CHIP_OWNER_AUTO_ASSIGN_ON_CREATE', true),
+            'validate_billable_owner' => env('CASHIER_CHIP_OWNER_VALIDATE_BILLABLE_OWNER', true),
+        ],
+    ],
+
+    // Subscription behavior
+    'subscriptions' => [
+        'retry_days' => env('CASHIER_CHIP_RETRY_DAYS', 3),
+        'max_retries' => env('CASHIER_CHIP_MAX_RETRIES', 3),
+        'grace_days' => env('CASHIER_CHIP_GRACE_DAYS', 7),
+    ],
+
+    // Webhook route prefix
     'path' => env('CASHIER_CHIP_PATH', 'chip'),
-    
-    // Default currency (CHIP supports MYR)
-    'currency' => env('CASHIER_CURRENCY', 'MYR'),
-    'currency_locale' => env('CASHIER_CURRENCY_LOCALE', 'ms_MY'),
-    
-    // Webhook configuration
+
+    // Webhook verification
     'webhooks' => [
         'secret' => env('CHIP_WEBHOOK_SECRET'),
-        'verify_signature' => true,
-    ],
-    
-    // Default redirect URLs
-    'success_url' => env('CASHIER_CHIP_SUCCESS_URL'),
-    'cancel_url' => env('CASHIER_CHIP_CANCEL_URL'),
-    
-    // Table names
-    'tables' => [
-        'customers' => 'chip_customers',
-        'subscriptions' => 'chip_subscriptions',
-        'subscription_items' => 'chip_subscription_items',
+        'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
     ],
 ];
 ```
@@ -61,12 +77,13 @@ Add to your `.env` file:
 ```env
 # CHIP API Credentials
 CHIP_BRAND_ID=your-brand-id
-CHIP_SECRET_KEY=your-secret-key
+CHIP_COLLECT_API_KEY=your-collect-api-key
 CHIP_WEBHOOK_SECRET=your-webhook-secret
 
-# Optional: Default URLs
-CASHIER_CHIP_SUCCESS_URL=https://example.com/checkout/success
-CASHIER_CHIP_CANCEL_URL=https://example.com/checkout/cancel
+# Cashier CHIP defaults
+CASHIER_CHIP_CURRENCY=MYR
+CASHIER_CHIP_CURRENCY_LOCALE=ms_MY
+CASHIER_CHIP_OWNER_ENABLED=true
 ```
 
 ### Run Migrations
@@ -76,11 +93,10 @@ php artisan vendor:publish --tag=cashier-chip-migrations
 php artisan migrate
 ```
 
-This creates the following tables:
+This creates the following tables by default:
 
-- `chip_customers` - Links users to CHIP client IDs
-- `chip_subscriptions` - Subscription records
-- `chip_subscription_items` - Subscription line items
+- `cashier_chip_subscriptions` - Subscription records
+- `cashier_chip_subscription_items` - Subscription line items
 
 ## Billable Model
 

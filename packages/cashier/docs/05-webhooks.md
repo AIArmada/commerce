@@ -1,3 +1,7 @@
+---
+title: Webhooks
+---
+
 # Webhooks
 
 This guide covers webhook handling for payment gateway events.
@@ -20,8 +24,8 @@ Webhooks allow payment gateways to notify your application about events like:
 # Stripe webhook secret
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 
-# CHIP webhook key
-CHIP_WEBHOOK_KEY=your_webhook_key
+# CHIP webhook secret
+CHIP_WEBHOOK_SECRET=your_webhook_secret
 ```
 
 ### Webhook Endpoints
@@ -59,7 +63,7 @@ Default webhook routes (can be customized in config):
 2. Add endpoint: `https://yourdomain.com/cashier/webhook/chip`
 3. Copy the webhook key to your `.env`:
    ```env
-   CHIP_WEBHOOK_KEY=your_webhook_key
+    CHIP_WEBHOOK_SECRET=your_webhook_secret
    ```
 
 ## Event Dispatching

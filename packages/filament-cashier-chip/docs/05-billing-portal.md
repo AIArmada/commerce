@@ -109,9 +109,8 @@ View and download invoice history:
 // config/filament-cashier-chip.php
 'billing' => [
     'panel_id' => 'billing',
-    'path' => 'billing',
-    'brand_name' => 'My App Billing',
-    'primary_color' => '#6366f1',
+    'billable_model' => null,
+    'auth_guard' => 'web',
 ],
 ```
 
@@ -119,9 +118,7 @@ View and download invoice history:
 
 ```php
 'billing' => [
-    'login_enabled' => true,    // Show login page
     'auth_guard' => 'web',      // Auth guard to use
-    'allowed_roles' => [],       // Empty = all authenticated
 ],
 ```
 
@@ -257,17 +254,6 @@ The portal requires authentication by default. Ensure your auth guard is properl
 ```php
 'billing' => [
     'auth_guard' => 'web',
-    'login_enabled' => true,
-],
-```
-
-### Role-Based Access
-
-Restrict portal access to specific roles:
-
-```php
-'billing' => [
-    'allowed_roles' => ['customer', 'subscriber'],
 ],
 ```
 

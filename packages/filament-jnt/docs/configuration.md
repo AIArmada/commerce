@@ -1,3 +1,7 @@
+---
+title: Configuration Reference (Legacy)
+---
+
 # Configuration Reference
 
 Complete configuration options for Filament J&T Express.

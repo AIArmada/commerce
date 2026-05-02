@@ -1,3 +1,7 @@
+---
+title: Payments
+---
+
 # Payments
 
 This guide covers one-time payments, checkout sessions, and payment method management.

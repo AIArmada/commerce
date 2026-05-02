@@ -17,6 +17,24 @@ return [
 ];
 ```
 
+## Navigation Configuration
+
+Configure navigation group and resource sort order:
+
+```php
+'navigation' => [
+    'group' => 'Catalog',
+    'resources' => [
+        'products' => 1,
+        'categories' => 2,
+        'collections' => 3,
+        'attributes' => 40,
+        'attribute_groups' => 41,
+        'attribute_sets' => 42,
+    ],
+],
+```
+
 ## Feature flags
 
 ### `features.collections`

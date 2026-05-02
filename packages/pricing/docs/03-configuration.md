@@ -80,23 +80,7 @@ return [
 PRICING_OWNER_ENABLED=true
 ```
 
-## Pricing Settings (Spatie Laravel Settings)
 
-The package includes settings classes for runtime configuration:
-
-### PricingSettings
-
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `defaultCurrency` | string | `'MYR'` | Default currency code |
-| `decimalPlaces` | int | `2` | Decimal places for display |
-| `pricesIncludeTax` | bool | `false` | Whether prices include tax |
-| `roundingMode` | string | `'half_up'` | Rounding mode ('up', 'down', 'half_up', 'half_down') |
-| `minimumOrderValue` | int | `0` | Minimum order value (cents) |
-| `maximumOrderValue` | int | `10000000` | Maximum order value (cents) |
-| `promotionalPricingEnabled` | bool | `true` | Enable promotional pricing |
-| `tieredPricingEnabled` | bool | `true` | Enable tiered pricing |
-| `customerGroupPricingEnabled` | bool | `false` | Enable customer group pricing |
 
 ### PromotionalPricingSettings
 

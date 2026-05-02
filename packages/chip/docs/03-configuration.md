@@ -11,7 +11,7 @@ The `config/chip.php` file contains all package settings organized by concern.
 ```php
 'database' => [
     'table_prefix' => env('CHIP_TABLE_PREFIX', 'chip_'),
-    'json_column_type' => env('CHIP_JSON_COLUMN_TYPE', 'json'),
+    'json_column_type' => env('CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
 ],
 ```
 
@@ -113,10 +113,15 @@ When owner scoping is enabled, incoming CHIP webhooks must be mapped to the corr
 ],
 ```
 
-**Fields:**
+**Fields (preferred):**
 - `owner_type`: Full class name or morph alias of the owner model (e.g., `\App\Models\Tenant::class` or `'tenant'` if using `morphMap`)
 - `owner_id`: ID of the owner record in your database (string or integer)
-- Both fields are required when owner scoping is enabled
+
+**Legacy aliases (also accepted):**
+- `type` (alias for `owner_type`)
+- `id` (alias for `owner_id`)
+
+For forward compatibility, prefer `owner_type`/`owner_id`.
 
 **Environment-based mapping:**
 ```php
@@ -154,8 +159,8 @@ See [Webhooks](webhooks.md) for detailed webhook handling.
         'enabled' => env('CHIP_DOCS_INTEGRATION_ENABLED', true),
         'auto_generate_invoice' => env('CHIP_DOCS_AUTO_INVOICE', true),
         'auto_generate_credit_note' => env('CHIP_DOCS_AUTO_CREDIT_NOTE', true),
-        'paid_doc_type' => 'invoice',
-        'refund_doc_type' => 'credit_note',
+        'paid_doc_type' => env('CHIP_DOCS_PAID_TYPE', 'invoice'),
+        'refund_doc_type' => env('CHIP_DOCS_REFUND_TYPE', 'credit_note'),
         'generate_pdf' => env('CHIP_DOCS_GENERATE_PDF', true),
     ],
 ],
