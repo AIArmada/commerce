@@ -91,6 +91,16 @@ return [
             'affiliates' => 60,
             'affiliate_conversions' => 61,
             'affiliate_payouts' => 62,
+            'affiliate_programs' => 63,
+            'affiliate_fraud_signals' => 64,
+        ],
+    ],
+
+    'pages' => [
+        'navigation_sort' => [
+            'reports' => 10,
+            'payout_batch' => 12,
+            'fraud_review' => 15,
         ],
     ],
 ];
@@ -183,6 +193,20 @@ Control the order of resources in navigation:
         'affiliate_payouts' => 62,
         'affiliate_programs' => 63,
         'affiliate_fraud_signals' => 64,
+    ],
+],
+```
+
+### Page Navigation Sort
+
+Control navigation order for non-resource pages:
+
+```php
+'pages' => [
+    'navigation_sort' => [
+        'reports' => 10,
+        'payout_batch' => 12,
+        'fraud_review' => 15,
     ],
 ],
 ```

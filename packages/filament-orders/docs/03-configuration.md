@@ -17,17 +17,14 @@ Configure navigation group and sort order:
 ],
 ```
 
-## Tables
+## Navigation
 
-Configure table display options:
+Configure navigation group and sort order:
 
 ```php
-'tables' => [
-    // Auto-refresh interval for order list
-    'poll_interval' => '30s',
-    
-    // Date format for table columns
-    'date_format' => 'd M Y, H:i',
+'navigation' => [
+    'group' => 'Sales',
+    'sort' => 1,
 ],
 ```
 
@@ -40,9 +37,6 @@ Define available payment gateways for manual payment confirmation:
     'stripe' => 'Stripe',
     'chip' => 'CHIP',
     'manual' => 'Manual',
-    // Add your gateways
-    'paypal' => 'PayPal',
-    'bank_transfer' => 'Bank Transfer',
 ],
 ```
 

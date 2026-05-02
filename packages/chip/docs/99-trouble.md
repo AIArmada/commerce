@@ -71,8 +71,8 @@ $allPurchases = Purchase::query()
     'enabled' => true,
     'webhook_brand_id_map' => [
         'your-brand-uuid' => [
-            'type' => \App\Models\Tenant::class,
-            'id' => 1,
+            'owner_type' => \App\Models\Tenant::class,
+            'owner_id' => 'tenant-uuid-1',
         ],
     ],
 ],

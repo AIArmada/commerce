@@ -1,3 +1,7 @@
+---
+title: CHIP Documentation
+---
+
 # CHIP Documentation
 
 Laravel integration for CHIP payment platform.

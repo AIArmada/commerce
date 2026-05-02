@@ -1,3 +1,7 @@
+---
+title: Multi-Gateway Usage
+---
+
 # Multi-Gateway Usage
 
 This guide covers advanced multi-gateway scenarios where users can have subscriptions and payments across different payment providers.

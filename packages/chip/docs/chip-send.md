@@ -1,3 +1,7 @@
+---
+title: CHIP Send
+---
+
 # CHIP Send
 
 Disbursements, vendor payouts, and transfers.

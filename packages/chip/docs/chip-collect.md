@@ -1,3 +1,7 @@
+---
+title: CHIP Collect
+---
+
 # CHIP Collect
 
 Accept payments via FPX, cards, e-wallets, and more.

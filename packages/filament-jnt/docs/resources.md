@@ -1,3 +1,7 @@
+---
+title: Resources (Legacy)
+---
+
 # Resources
 
 The Filament J&T Express plugin provides three read-only resources for monitoring shipping activity.

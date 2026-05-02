@@ -88,23 +88,8 @@ return [
         // Filament panel ID for billing portal
         'panel_id' => 'billing',
         
-        // URL path for billing portal
-        'path' => 'billing',
-        
-        // Brand name shown in billing portal
-        'brand_name' => 'Billing Portal',
-        
-        // Primary color for billing portal
-        'primary_color' => '#6366f1',
-        
-        // Enable login page for billing portal
-        'login_enabled' => true,
-        
         // Auth guard for billing portal
         'auth_guard' => 'web',
-        
-        // Allowed roles (empty = all authenticated users)
-        'allowed_roles' => [],
         
         // Billing portal features
         'features' => [
@@ -224,21 +209,8 @@ Uses PHP date format:
 ```php
 'billing' => [
     'panel_id' => 'customer-billing',
-    'path' => 'my-billing',
 ],
 ```
-
-Access at: `https://yourapp.com/my-billing`
-
-### Role-Based Access
-
-```php
-'billing' => [
-    'allowed_roles' => ['customer', 'subscriber'],
-],
-```
-
-Requires Spatie Permission or similar role middleware.
 
 ### Custom Auth Guard
 
@@ -259,24 +231,19 @@ Requires Spatie Permission or similar role middleware.
 
 ## Environment Variables
 
-Override config via `.env`:
+This package configuration is currently static by default (no dedicated `FILAMENT_CASHIER_CHIP_*` keys in `config/filament-cashier-chip.php`).
+
+It relies on upstream gateway configuration from `cashier-chip` and `cashier` for runtime billing behavior.
+
+Example upstream keys:
 
 ```env
-# Disable specific features
-FILAMENT_CASHIER_CHIP_CUSTOMERS=false
-FILAMENT_CASHIER_CHIP_INVOICES=false
+# From cashier-chip
+CASHIER_CHIP_OWNER_ENABLED=true
+CASHIER_CHIP_CURRENCY=MYR
 
-# Billing portal settings
-FILAMENT_CASHIER_CHIP_BILLING_PATH=account/billing
-```
-
-Use in config:
-
-```php
-'features' => [
-    'customers' => env('FILAMENT_CASHIER_CHIP_CUSTOMERS', true),
-    'invoices' => env('FILAMENT_CASHIER_CHIP_INVOICES', true),
-],
+# From cashier
+CASHIER_GATEWAY=chip
 ```
 
 ## Multi-Tenancy Configuration
