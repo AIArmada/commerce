@@ -293,7 +293,7 @@ public function test_with_mocked_gateway(): void
 ```php
 // phpunit.xml
 <env name="CHIP_BRAND_ID" value="test-brand"/>
-<env name="CHIP_SECRET_KEY" value="test-secret"/>
+<env name="CHIP_COLLECT_API_KEY" value="test-secret"/>
 <env name="CHIP_VERIFY_WEBHOOK" value="false"/>
 ```
 

@@ -9,46 +9,13 @@ title: Configuration
 ```php
 <?php
 
-// config/filament-affiliate-network.php
-
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Navigation
-    |--------------------------------------------------------------------------
-    */
     'navigation' => [
         'group' => 'Affiliate Network',
         'sort' => 50,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tables
-    |--------------------------------------------------------------------------
-    */
-    'tables' => [
-        'poll_interval' => null, // e.g., '10s' for live updates
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Features
-    |--------------------------------------------------------------------------
-    */
-    'features' => [
-        'merchant_portal' => true,
-        'affiliate_marketplace' => true,
-        'site_verification' => true,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Marketplace
-    |--------------------------------------------------------------------------
-    */
     'marketplace' => [
-        'offers_per_page' => 12,
         'show_commission_rates' => true,
         'show_cookie_duration' => true,
     ],
@@ -64,27 +31,12 @@ return [
 | `group` | Navigation group name | `Affiliate Network` |
 | `sort` | Navigation sort order | `50` |
 
-### Tables
-
-| Key | Description | Default |
-|-----|-------------|---------|
-| `poll_interval` | Auto-refresh interval | `null` (disabled) |
-
-### Features
-
-| Key | Description | Default |
-|-----|-------------|---------|
-| `merchant_portal` | Enable merchant dashboard | `true` |
-| `affiliate_marketplace` | Enable marketplace page | `true` |
-| `site_verification` | Enable verification UI | `true` |
-
 ### Marketplace
 
 | Key | Description | Default |
 |-----|-------------|---------|
-| `offers_per_page` | Offers per page | `12` |
-| `show_commission_rates` | Show commission in cards | `true` |
-| `show_cookie_duration` | Show cookie days in cards | `true` |
+| `show_commission_rates` | Show commission rates on marketplace cards | `true` |
+| `show_cookie_duration` | Show cookie duration on marketplace cards | `true` |
 
 ## Customizing Resources
 
@@ -180,28 +132,24 @@ class NetworkStatsWidget extends BaseWidget
 
 ## Disabling Components
 
-### Disable Specific Resources
+### Use a Custom Plugin Class
 
-Create a custom plugin:
+`FilamentAffiliateNetworkPlugin` registers a fixed set of resources/pages/widgets. To disable components, extend the plugin and register only the components you want:
 
 ```php
-use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkPlugin;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use Filament\Panel;
 
-FilamentAffiliateNetworkPlugin::make()
-    ->resources([
-        AffiliateSiteResource::class,
-        AffiliateOfferResource::class,
-        // Omit others to disable
-    ]);
-```
-
-### Disable Pages
-
-```php
-// In config
-'features' => [
-    'merchant_portal' => false,      // Disable dashboard
-    'affiliate_marketplace' => false, // Disable marketplace
-],
+final class CustomAffiliateNetworkPlugin extends FilamentAffiliateNetworkPlugin
+{
+    public function register(Panel $panel): void
+    {
+        $panel->resources([
+            AffiliateSiteResource::class,
+            AffiliateOfferResource::class,
+        ]);
+    }
+}
 ```

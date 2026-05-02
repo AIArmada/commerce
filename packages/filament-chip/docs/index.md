@@ -1,3 +1,7 @@
+---
+title: Filament CHIP
+---
+
 # Filament CHIP
 
 Filament admin plugin for exploring CHIP payment data.
@@ -16,10 +20,10 @@ $panel->plugin(FilamentChipPlugin::make());
 
 ## Documentation
 
-- [Installation](installation.md)
-- [Configuration](configuration.md)
-- [Resources](resources.md)
-- [Billing Portal](billing-portal.md)
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Resources](04-resources.md)
+- [Pages & Widgets](05-pages-widgets.md)
 
 ## Requirements
 

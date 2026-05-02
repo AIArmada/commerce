@@ -10,149 +10,109 @@ title: Configuration
 php artisan vendor:publish --tag="filament-chip-config"
 ```
 
-## Full Configuration Reference
+## Configuration File
+
+`config/filament-chip.php`:
 
 ```php
-<?php
-
-// config/filament-chip.php
-
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Navigation
-    |--------------------------------------------------------------------------
-    |
-    | Customize where CHIP resources appear in the Filament navigation.
-    |
-    */
     'navigation' => [
-        'group' => 'Payments',
-        'sort' => 50,
+        'group' => 'CHIP Operations',
+        'badge_color' => 'primary',
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tables
-    |--------------------------------------------------------------------------
-    |
-    | Table display settings.
-    |
-    */
+    'polling_interval' => '45s',
+
     'tables' => [
-        'poll_interval' => '30s',      // Auto-refresh interval
-        'date_format' => 'd M Y H:i',  // Date display format
+        'created_on_format' => 'Y-m-d H:i:s',
+        'updated_on_format' => 'Y-m-d H:i:s',
+        'amount_precision' => 2,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Features
-    |--------------------------------------------------------------------------
-    |
-    | Enable or disable specific features of the plugin.
-    |
-    */
-    'features' => [
-        'analytics_dashboard' => true,
-    ],
+    'default_currency' => 'MYR',
 
-    /*
-    |--------------------------------------------------------------------------
-    | Resources
-    |--------------------------------------------------------------------------
-    |
-    | Override default resource classes with custom implementations.
-    | Set to null to disable a resource entirely.
-    |
-    */
+    'enforce_owner_scoping' => true,
+
     'resources' => [
-        'purchase' => \AIArmada\FilamentChip\Resources\PurchaseResource::class,
-        'client' => \AIArmada\FilamentChip\Resources\ClientResource::class,
+        'navigation_sort' => [
+            'purchases' => 10,
+            'payments' => 20,
+            'clients' => 30,
+            'bank_accounts' => 40,
+            'send_instructions' => 50,
+            'company_statements' => 60,
+        ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Currency
-    |--------------------------------------------------------------------------
-    |
-    | Default currency for display formatting.
-    |
-    */
-    'currency' => 'MYR',
 ];
 ```
 
-## Environment Variables
+## Navigation
 
-The plugin uses environment variables from the core `chip` package:
-
-```env
-# Environment: 'sandbox' or 'production'
-CHIP_ENVIRONMENT=sandbox
-
-# CHIP Collect API (Payments)
-CHIP_BRAND_ID=your-brand-uuid
-CHIP_COLLECT_API_KEY=your-collect-api-key
-
-# CHIP Send API (Payouts)
-CHIP_SEND_API_KEY=your-send-api-key
-CHIP_SEND_API_SECRET=your-send-api-secret
-
-# Webhook Verification
-CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
-CHIP_WEBHOOK_VERIFY_SIGNATURE=true
+```php
+'navigation' => [
+    'group' => 'CHIP Operations',
+    'badge_color' => 'primary',
+],
 ```
 
-## Plugin Configuration Methods
+- `group` controls the sidebar navigation group used by CHIP resources/pages.
+- `badge_color` is used by navigation badge styling where badges are rendered.
 
-Configure the plugin fluently in your panel provider:
+## Table Behavior
+
+```php
+'polling_interval' => '45s',
+
+'tables' => [
+    'created_on_format' => 'Y-m-d H:i:s',
+    'updated_on_format' => 'Y-m-d H:i:s',
+    'amount_precision' => 2,
+],
+```
+
+- `polling_interval` controls auto-refresh for polling-enabled tables/widgets.
+- `created_on_format` / `updated_on_format` define date display formatting.
+- `amount_precision` controls decimal precision for rendered money values.
+
+## Feature Settings
+
+```php
+'default_currency' => 'MYR',
+'enforce_owner_scoping' => true,
+```
+
+- `default_currency` is the fallback currency used by UI formatting helpers.
+- `enforce_owner_scoping` hardens resource/page queries to stay owner-scoped when owner mode is enabled upstream.
+
+## Resource Navigation Sort
+
+```php
+'resources' => [
+    'navigation_sort' => [
+        'purchases' => 10,
+        'payments' => 20,
+        'clients' => 30,
+        'bank_accounts' => 40,
+        'send_instructions' => 50,
+        'company_statements' => 60,
+    ],
+],
+```
+
+These values control sidebar ordering when the corresponding resource is registered in the panel.
+
+## Plugin Registration
 
 ```php
 use AIArmada\FilamentChip\FilamentChipPlugin;
 
-$panel->plugin(
-    FilamentChipPlugin::make()
-);
+$panel->plugin(FilamentChipPlugin::make());
 ```
 
-## Disabling Resources
+By default, the plugin registers:
 
-Disable specific resources by setting them to `null` in config:
+- Page: `AnalyticsDashboardPage`
+- Resources: `PurchaseResource`, `ClientResource`
+- Widgets: `ChipStatsWidget`, `RevenueChartWidget`, `RecentTransactionsWidget`
 
-```php
-// config/filament-chip.php
-'resources' => [
-    'purchase' => PurchaseResource::class,
-    'client' => null,  // Disabled
-],
-```
-
-## Custom Navigation Group
-
-Change the navigation group for all CHIP resources:
-
-```php
-// config/filament-chip.php
-'navigation' => [
-    'group' => 'Finance',  // Custom group name
-    'sort' => 10,          // Sort order within sidebar
-],
-```
-
-## Table Polling
-
-Configure auto-refresh interval for tables:
-
-```php
-'tables' => [
-    'poll_interval' => '10s',  // Faster updates
-],
-```
-
-Set to `null` to disable polling:
-
-```php
-'tables' => [
-    'poll_interval' => null,  // No auto-refresh
-],
-```
+Optional resources/widgets can be registered explicitly in your panel provider.

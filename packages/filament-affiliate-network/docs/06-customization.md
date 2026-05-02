@@ -382,20 +382,7 @@ public function panel(Panel $panel): Panel
 
 ---
 
-## Feature Toggles
-
-### Disable Features via Config
-
-```php
-// config/filament-affiliate-network.php
-'features' => [
-    'merchant_portal' => true,        // Enable/disable merchant dashboard
-    'affiliate_marketplace' => true,   // Enable/disable marketplace
-    'site_verification' => false,      // Disable verification UI
-],
-```
-
-### Conditional Resource Registration
+## Conditional Resource Registration
 
 ```php
 // Custom plugin extending base
@@ -408,13 +395,13 @@ class CustomAffiliateNetworkPlugin extends FilamentAffiliateNetworkPlugin
             AffiliateOfferResource::class,
         ];
         
-        // Conditionally add category resource
-        if (config('filament-affiliate-network.features.categories', true)) {
+        // Example: conditionally add category resource
+        if (config('app.features.affiliate_network_categories', true)) {
             $resources[] = AffiliateOfferCategoryResource::class;
         }
         
-        // Conditionally add applications
-        if (config('filament-affiliate-network.features.applications', true)) {
+        // Example: conditionally add applications
+        if (config('app.features.affiliate_network_applications', true)) {
             $resources[] = AffiliateOfferApplicationResource::class;
         }
         

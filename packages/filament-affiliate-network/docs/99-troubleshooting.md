@@ -87,8 +87,9 @@ TextInput::make('domain')->unique(ignoreRecord: true)
 
 1. Verify feature is enabled:
 ```php
-'features' => [
-    'affiliate_marketplace' => true,
+'marketplace' => [
+    'show_commission_rates' => true,
+    'show_cookie_duration' => true,
 ],
 ```
 

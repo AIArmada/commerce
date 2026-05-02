@@ -1,3 +1,7 @@
+---
+title: Payment Gateway
+---
+
 # Payment Gateway
 
 Universal payment gateway interface for provider-agnostic checkout.

@@ -72,7 +72,7 @@ php artisan migrate
 
 ```env
 CHIP_BRAND_ID=your-brand-id
-CHIP_SECRET_KEY=your-secret-key
+CHIP_COLLECT_API_KEY=your-collect-api-key
 CHIP_WEBHOOK_SECRET=your-webhook-secret
 ```
 

@@ -310,7 +310,7 @@ use AIArmada\Checkout\Events\CheckoutCompleted;
 use AIArmada\Checkout\Events\CheckoutFailed;
 use AIArmada\Checkout\Events\CheckoutStepCompleted;
 use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
-use AIArmada\Checkout\Events\PaymentProcessed;
+use AIArmada\Checkout\Events\PaymentCompleted;
 use AIArmada\Checkout\Events\PaymentFailed;
 
 // Listen in EventServiceProvider

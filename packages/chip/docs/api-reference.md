@@ -1,3 +1,7 @@
+---
+title: API Reference
+---
+
 # API Reference
 
 Complete method reference for CHIP package.

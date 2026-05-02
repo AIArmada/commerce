@@ -1,3 +1,7 @@
+---
+title: Getting Started
+---
+
 # Getting Started
 
 This guide will help you get started with the AIArmada Cashier package for multi-gateway billing.
@@ -6,7 +10,7 @@ This guide will help you get started with the AIArmada Cashier package for multi
 
 Before you begin, ensure you have:
 
-- PHP 8.2 or higher
+- PHP 8.4 or higher
 - Laravel 12.0 or higher
 - Composer installed
 - At least one payment gateway account (Stripe, CHIP, etc.)
@@ -72,7 +76,9 @@ Add the following to your `.env` file:
 # Default Gateway
 CASHIER_GATEWAY=stripe
 CASHIER_CURRENCY=USD
-CASHIER_CURRENCY_LOCALE=en_US
+CASHIER_LOCALE=en
+CASHIER_STRIPE_CURRENCY_LOCALE=en_US
+CASHIER_CHIP_CURRENCY_LOCALE=ms_MY
 
 # Stripe Credentials
 STRIPE_KEY=pk_test_...
@@ -81,8 +87,8 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 # CHIP Credentials (if using CHIP)
 CHIP_BRAND_ID=your_brand_id
-CHIP_API_KEY=your_api_key
-CHIP_WEBHOOK_KEY=your_webhook_key
+CHIP_COLLECT_API_KEY=your_api_key
+CHIP_WEBHOOK_SECRET=your_webhook_secret
 ```
 
 ### Model Setup
@@ -210,5 +216,5 @@ This is not needed for Stripe - Stripe handles subscription renewals automatical
 
 - [Subscriptions Guide](02-subscriptions.md) - Learn about managing subscriptions
 - [Payments Guide](03-payments.md) - Handle one-time payments
-- [Webhooks Guide](04-webhooks.md) - Set up webhook handling
-- [Multi-Gateway Guide](05-multi-gateway.md) - Advanced multi-gateway usage
+- [Multi-Gateway Guide](04-multi-gateway.md) - Advanced multi-gateway usage
+- [Webhooks Guide](05-webhooks.md) - Set up webhook handling

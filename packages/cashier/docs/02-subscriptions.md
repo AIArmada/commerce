@@ -1,3 +1,7 @@
+---
+title: Subscriptions
+---
+
 # Subscriptions
 
 This guide covers everything you need to know about managing subscriptions with AIArmada Cashier.

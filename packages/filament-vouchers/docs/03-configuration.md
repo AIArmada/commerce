@@ -19,7 +19,7 @@ php artisan vendor:publish --tag=filament-vouchers-config
 ### Navigation Group
 
 ```php
-'navigation_group' => 'E-commerce',
+'navigation_group' => 'Vouchers & Discounts',
 ```
 
 Controls the navigation group label for voucher resources. Set to `null` to place resources at the root level.
@@ -35,10 +35,10 @@ ISO-4217 currency code used for displaying monetary values in widgets. Individua
 ### Polling Interval
 
 ```php
-'polling_interval' => 60,
+'polling_interval' => '30s',
 ```
 
-How frequently (in seconds) voucher tables poll for updates. Set to `null` to disable polling.
+How frequently voucher tables poll for updates. Set to `null` to disable polling.
 
 ### Resource Navigation Sort
 

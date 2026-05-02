@@ -127,8 +127,8 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 ```env
 CHIP_BRAND_ID=your_brand_id
-CHIP_API_KEY=your_api_key
-CHIP_WEBHOOK_KEY=your_webhook_key
+CHIP_COLLECT_API_KEY=your_api_key
+CHIP_WEBHOOK_SECRET=your_webhook_secret
 ```
 
 ### Default Gateway
