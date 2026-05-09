@@ -184,10 +184,6 @@ final class SignalAlertEvaluator
             return $this->compare((float) $actual, $operator, (float) $expected);
         }
 
-        if ((is_int($actual) || is_float($actual)) && (is_int($expected) || is_float($expected))) {
-            return $this->compare((float) $actual, $operator, (float) $expected);
-        }
-
         return match ($operator) {
             '!=', '<>', 'not_eq' => $actual !== $expected,
             'contains' => is_string($actual) && is_string($expected) && str_contains($actual, $expected),
