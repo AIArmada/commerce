@@ -221,7 +221,9 @@ dd($resources);
 
 // 3. Reduce polling frequency
 // config/filament-chip.php
-'polling_interval' => '60s', // Or null/empty to disable where applicable
+'tables' => [
+    'poll_interval' => '60s',  // Or null to disable
+],
 ```
 
 ### Widget Loading Slow
