@@ -7,6 +7,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 describe('GenerateInvoice Action', function (): void {
     describe('Invoice Generation', function (): void {
@@ -44,6 +45,24 @@ describe('GenerateInvoice Action', function (): void {
         it('has download method', function (): void {
             $action = new GenerateInvoice;
             expect(method_exists($action, 'download'))->toBeTrue();
+        });
+
+        it('falls back to html download when puppeteer runtime is unavailable', function (): void {
+            $order = Order::create([
+                'order_number' => 'ORD-INV2-' . uniqid(),
+                'status' => Completed::class,
+                'currency' => 'MYR',
+                'subtotal' => 10000,
+                'grand_total' => 10000,
+            ]);
+
+            $action = new GenerateInvoice;
+
+            $response = $action->download($order);
+
+            expect($response)->toBeInstanceOf(StreamedResponse::class)
+                ->and((string) $response->headers->get('content-type'))->toContain('text/html')
+                ->and((string) $response->headers->get('content-disposition'))->toContain('.html');
         });
     });
 });

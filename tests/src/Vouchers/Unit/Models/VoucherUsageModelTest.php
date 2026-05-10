@@ -273,6 +273,31 @@ describe('VoucherUsage Model', function (): void {
 
             expect($usage->user_identifier)->toBe('ORD-12345');
         });
+
+        it('does not read missing attributes from order-like models', function (): void {
+            $usage = new VoucherUsage;
+            $usage->redeemed_by_type = 'order';
+
+            $redeemedBy = new class extends Model
+            {
+                protected $attributes = [
+                    'order_number' => 'ORD-99999',
+                ];
+
+                public function getAttribute($key): mixed
+                {
+                    if ($key === 'email') {
+                        throw new RuntimeException('email should not be accessed');
+                    }
+
+                    return parent::getAttribute($key);
+                }
+            };
+
+            $usage->setRelation('redeemedBy', $redeemedBy);
+
+            expect($usage->user_identifier)->toBe('ORD-99999');
+        });
     });
 
     describe('isOrderRedemption method', function (): void {
