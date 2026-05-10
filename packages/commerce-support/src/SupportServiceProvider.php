@@ -11,10 +11,15 @@ use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingEngine;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
+use OwenIt\Auditing\AuditingServiceProvider;
 use ReflectionClass;
 use RuntimeException;
+use Spatie\Activitylog\ActivitylogServiceProvider;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
+use Spatie\MediaLibrary\MediaLibraryServiceProvider;
+use Spatie\Tags\TagsServiceProvider;
 
 /**
  * Support Service Provider
@@ -55,7 +60,7 @@ final class SupportServiceProvider extends PackageServiceProvider
     private function loadDependencyMigrations(): void
     {
         $settingsMigrationPath = $this->resolveDependencyPath(
-            \Spatie\LaravelSettings\LaravelSettingsServiceProvider::class,
+            LaravelSettingsServiceProvider::class,
             'database/migrations/create_settings_table.php.stub',
             'vendor/spatie/laravel-settings/database/migrations/create_settings_table.php.stub'
         );
@@ -68,7 +73,7 @@ final class SupportServiceProvider extends PackageServiceProvider
         }
 
         $auditsMigrationPath = $this->resolveDependencyPath(
-            \OwenIt\Auditing\AuditingServiceProvider::class,
+            AuditingServiceProvider::class,
             'database/migrations/audits.stub',
             'vendor/owen-it/laravel-auditing/database/migrations/audits.stub'
         );
@@ -82,7 +87,7 @@ final class SupportServiceProvider extends PackageServiceProvider
         }
 
         $activityLogMigrationsPath = $this->resolveDependencyPath(
-            \Spatie\Activitylog\ActivitylogServiceProvider::class,
+            ActivitylogServiceProvider::class,
             'database/migrations',
             'vendor/spatie/laravel-activitylog/database/migrations'
         );
@@ -95,7 +100,7 @@ final class SupportServiceProvider extends PackageServiceProvider
         }
 
         $tagsMigrationPath = $this->resolveDependencyPath(
-            \Spatie\Tags\TagsServiceProvider::class,
+            TagsServiceProvider::class,
             'database/migrations/create_tag_tables.php.stub',
             'vendor/spatie/laravel-tags/database/migrations/create_tag_tables.php.stub'
         );
@@ -108,7 +113,7 @@ final class SupportServiceProvider extends PackageServiceProvider
         }
 
         $mediaMigrationPath = $this->resolveDependencyPath(
-            \Spatie\MediaLibrary\MediaLibraryServiceProvider::class,
+            MediaLibraryServiceProvider::class,
             'database/migrations/create_media_table.php.stub',
             'vendor/spatie/laravel-medialibrary/database/migrations/create_media_table.php.stub'
         );
@@ -131,7 +136,7 @@ final class SupportServiceProvider extends PackageServiceProvider
 
             if (is_string($providerFile) && $providerFile !== '') {
                 $packageRoot = dirname($providerFile, 2);
-                $resolved = $packageRoot . '/' . ltrim($relativePath, '/');
+                $resolved = $packageRoot . '/' . mb_ltrim($relativePath, '/');
 
                 if (is_file($resolved) || is_dir($resolved)) {
                     return $resolved;
