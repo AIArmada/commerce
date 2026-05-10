@@ -32,6 +32,24 @@ Run the migrations:
 php artisan migrate
 ```
 
+`aiarmada/cashier-chip` auto-discovers its package migrations. You only need to publish the
+`cashier-chip-migrations` tag if you want to customize the migration files in your application.
+
+### Migration Ownership
+
+By default, Cashier CHIP owns these schema pieces:
+
+- `users.chip_id`
+- `users.default_pm_id`
+- `cashier_chip_subscriptions`
+- `cashier_chip_subscription_items`
+
+When `laravel/cashier` is **not** installed, Cashier CHIP also provisions the shared convenience
+columns `pm_type`, `pm_last_four`, and `trial_ends_at` so it can operate standalone.
+
+When `laravel/cashier` **is** installed, those shared columns remain owned by Laravel Cashier and
+Cashier CHIP intentionally does not recreate them.
+
 ## Billable Model
 
 Add the `Billable` trait to your User model:

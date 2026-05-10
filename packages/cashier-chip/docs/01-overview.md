@@ -64,9 +64,16 @@ return $checkout->redirect();
 ```bash
 composer require aiarmada/cashier-chip
 php artisan vendor:publish --tag=cashier-chip-config
-php artisan vendor:publish --tag=cashier-chip-migrations
 php artisan migrate
 ```
+
+Cashier CHIP auto-discovers its package migrations. Publish `cashier-chip-migrations` only when
+you need to customize the migration files in your own app.
+
+It always owns `chip_id`, `default_pm_id`, and the `cashier_chip_*` subscription tables. When
+`laravel/cashier` is absent it also provisions shared standalone columns such as `pm_type`,
+`pm_last_four`, and `trial_ends_at`; when Laravel Cashier is present, those shared columns remain
+owned by Laravel Cashier.
 
 ## Configuration
 

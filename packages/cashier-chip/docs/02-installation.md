@@ -89,14 +89,33 @@ CASHIER_CHIP_OWNER_ENABLED=true
 ### Run Migrations
 
 ```bash
-php artisan vendor:publish --tag=cashier-chip-migrations
 php artisan migrate
+```
+
+Cashier CHIP auto-discovers its package migrations, so `php artisan migrate` is enough for the
+default install.
+
+Only publish the migration tag when you want to customize the package-owned migration files:
+
+```bash
+php artisan vendor:publish --tag=cashier-chip-migrations
 ```
 
 This creates the following tables by default:
 
 - `cashier_chip_subscriptions` - Subscription records
 - `cashier_chip_subscription_items` - Subscription line items
+
+It also adds the billable columns:
+
+- `chip_id`
+- `default_pm_id`
+
+When `laravel/cashier` is **not** installed, Cashier CHIP additionally provisions the shared
+standalone columns `pm_type`, `pm_last_four`, and `trial_ends_at`.
+
+When `laravel/cashier` **is** installed, those shared columns remain owned by Laravel Cashier and
+Cashier CHIP intentionally leaves them alone to avoid duplicated ownership.
 
 ## Billable Model
 

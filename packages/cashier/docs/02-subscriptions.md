@@ -4,46 +4,35 @@ title: Subscriptions
 
 # Subscriptions
 
-This guide covers everything you need to know about managing subscriptions with AIArmada Cashier.
+This guide covers the unified subscription helpers exposed by `aiarmada/cashier`.
 
 ## Gateway Differences
 
-> **Important:** Subscription handling differs between gateways.
+> **Important:** Subscription behavior still depends on the underlying gateway package.
 
 | Feature | Stripe | CHIP |
 |---------|--------|------|
-| **Native Subscriptions** | ✅ Yes | ❌ No |
-| **Automatic Renewals** | ✅ Stripe handles it | ❌ Your app handles it |
-| **Scheduler Required** | No | **Yes** |
+| **Native subscriptions** | ✅ Yes | ❌ No |
+| **Automatic renewals** | ✅ Handled by Stripe | ❌ Your app must renew them |
+| **Scheduler required** | No | **Yes** |
 
 ### CHIP Subscription Renewals
 
-Since CHIP doesn't have native subscriptions, your application must schedule renewals. Add this to your `app/Console/Kernel.php`:
+Since CHIP does not provide native subscription renewal, your application must schedule it:
 
 ```php
 protected function schedule(Schedule $schedule): void
 {
-    // Process CHIP subscription renewals every hour
     $schedule->command('cashier-chip:renew-subscriptions')
         ->hourly()
         ->withoutOverlapping();
 }
 ```
 
-The command:
-- Finds subscriptions where `next_billing_at <= now()`
-- Charges the stored `recurring_token`
-- Updates `next_billing_at` to the next billing period
-- Marks subscriptions as `past_due` if payment fails
-- Dispatches `SubscriptionRenewed` or `SubscriptionRenewalFailed` events
-
-You can also run it manually with options:
+You can also run it manually:
 
 ```bash
-# Dry run - see what would be renewed
 php artisan cashier-chip:renew-subscriptions --dry-run
-
-# With grace period (hours before considering due)
 php artisan cashier-chip:renew-subscriptions --grace-hours=2
 ```
 
@@ -52,28 +41,26 @@ php artisan cashier-chip:renew-subscriptions --grace-hours=2
 ### Basic Subscription
 
 ```php
-$subscription = $user->newSubscription('default', 'price_monthly')
+$subscription = $user->newGatewaySubscription('default', 'price_monthly')
     ->create($paymentMethod);
 ```
 
 ### With Trial Period
 
 ```php
-// Trial for 14 days
-$subscription = $user->newSubscription('default', 'price_monthly')
+$subscription = $user->newGatewaySubscription('default', 'price_monthly')
     ->trialDays(14)
     ->create($paymentMethod);
 
-// Trial until specific date
-$subscription = $user->newSubscription('default', 'price_monthly')
+$subscription = $user->newGatewaySubscription('default', 'price_monthly')
     ->trialUntil(now()->addMonth())
     ->create($paymentMethod);
 ```
 
-### Without Trial (Skip Trial)
+### Without Trial
 
 ```php
-$subscription = $user->newSubscription('default', 'price_monthly')
+$subscription = $user->newGatewaySubscription('default', 'price_monthly')
     ->skipTrial()
     ->create($paymentMethod);
 ```
@@ -81,328 +68,169 @@ $subscription = $user->newSubscription('default', 'price_monthly')
 ### With Quantity
 
 ```php
-// For metered or per-seat billing
-$subscription = $user->newSubscription('default', 'price_per_seat')
-    ->quantity(5) // 5 seats
+$subscription = $user->newGatewaySubscription('default', 'price_per_seat')
+    ->quantity(5)
     ->create($paymentMethod);
 ```
 
-### On Specific Gateway
+### On a Specific Gateway
 
 ```php
-// Create on CHIP instead of default Stripe
-$subscription = $user->newSubscription('local', 'price_id', 'chip')
-    ->create();
+$stripeSubscription = $user->newGatewaySubscription('default', 'price_monthly', 'stripe')
+    ->create($stripePaymentMethod);
+
+$chipSubscription = $user->newGatewaySubscription('local-plan', 'gym_monthly', 'chip')
+    ->create($chipRecurringToken);
+```
+
+### With Multiple Prices
+
+```php
+$subscription = $user->newGatewaySubscription('bundle', [
+    'price_base',
+    'price_addon',
+], 'stripe')->create($stripePaymentMethod);
 ```
 
 ## Checking Subscription Status
 
-### Basic Status Checks
+### Cross-Gateway Status Checks
 
 ```php
-// Check if user has any active subscription
-if ($user->subscribed()) {
-    // User is subscribed
+$hasAnyValidSubscription = $user->allSubscriptions()
+    ->contains(fn ($subscription) => $subscription->valid());
+
+if ($user->subscribedOnAny('premium')) {
+    // User has an active premium subscription on any installed gateway.
 }
 
-// Check specific subscription type
-if ($user->subscribed('premium')) {
-    // User has premium subscription
+if ($user->subscribedViaGateway(type: 'premium', gateway: 'stripe')) {
+    // User has an active premium subscription specifically on Stripe.
 }
 
-// Check if on trial (model level or subscription level)
-if ($user->onTrial()) {
-    // User is on trial
+if ($user->onTrialOnAny('default')) {
+    // At least one matching subscription is currently on trial.
 }
 ```
 
 ### Subscription Object Status
 
 ```php
-$subscription = $user->subscription('default');
+$subscription = $user->findSubscription('default');
 
-// Is the subscription valid (active, trial, or grace period)?
+if (! $subscription) {
+    return;
+}
+
 $subscription->valid();
-
-// Is the subscription currently active?
 $subscription->active();
-
-// Is the subscription on trial?
 $subscription->onTrial();
-
-// Has trial expired?
 $subscription->hasExpiredTrial();
-
-// Is the subscription canceled?
 $subscription->canceled();
-
-// Is subscription in grace period after cancellation?
 $subscription->onGracePeriod();
-
-// Has the subscription fully ended?
 $subscription->ended();
-
-// Is the subscription recurring (not on trial and not canceled)?
 $subscription->recurring();
-
-// Has incomplete payment?
 $subscription->incomplete();
 $subscription->pastDue();
 $subscription->hasIncompletePayment();
 ```
 
-## Managing Subscriptions
-
-### Retrieving Subscriptions
+## Retrieving Subscriptions
 
 ```php
-// Get a specific subscription by type
-$subscription = $user->subscription('default');
+// First matching subscription across installed gateways.
+$subscription = $user->findSubscription('default');
 
-// Get all subscriptions
-$subscriptions = $user->subscriptions();
+// Every subscription across installed gateways.
+$allSubscriptions = $user->allSubscriptions();
 
-// Get subscriptions for specific gateway
-$stripeSubscriptions = $user->subscriptions('stripe');
-$chipSubscriptions = $user->subscriptions('chip');
+// Subscriptions for one gateway only.
+$stripeSubscriptions = $user->gatewaySubscriptions('stripe');
+$chipSubscriptions = $user->gatewaySubscriptions('chip');
+
+// One subscription from one gateway.
+$chipGym = $user->gatewaySubscription('gym', 'chip');
 ```
 
-### Updating Quantity
+## Updating Subscriptions
 
 ```php
-$subscription = $user->subscription('default');
+$subscription = $user->findSubscription('default');
 
-// Update to specific quantity
+if (! $subscription) {
+    return;
+}
+
 $subscription->updateQuantity(10);
+$subscription->incrementQuantity();
+$subscription->incrementQuantity(5);
+$subscription->decrementQuantity();
+$subscription->decrementQuantity(3);
 
-// Increment quantity
-$subscription->incrementQuantity();     // +1
-$subscription->incrementQuantity(5);    // +5
-
-// Decrement quantity
-$subscription->decrementQuantity();     // -1
-$subscription->decrementQuantity(3);    // -3
-```
-
-### Swapping Plans
-
-```php
-$subscription = $user->subscription('default');
-
-// Swap to a different price
 $subscription->swap('price_yearly');
-
-// For multi-price subscriptions, swap specific item
-$subscription->findItemOrFail('price_old')->swap('price_new');
 ```
 
-## Canceling Subscriptions
+## Canceling and Resuming Subscriptions
 
 ### Cancel at Period End
 
-The subscription remains active until the end of the current billing period:
-
 ```php
-$subscription = $user->subscription('default');
-$subscription->cancel();
+$subscription = $user->findSubscription('default');
 
-// Check if canceled but still accessible
-if ($subscription->onGracePeriod()) {
-    // User can still use the service
+if ($subscription) {
+    $subscription->cancel();
 }
 ```
 
 ### Cancel Immediately
 
 ```php
-$subscription->cancelNow();
+$subscription = $user->findSubscription('default');
 
-// The subscription is immediately ended
-if ($subscription->ended()) {
-    // Subscription is no longer active
+if ($subscription) {
+    $subscription->cancelNow();
 }
 ```
 
-### Cancel at Specific Date
+### Resume During Grace Period
 
 ```php
-$subscription->cancelAt(now()->addDays(30));
-```
+$subscription = $user->findSubscription('default');
 
-## Resuming Subscriptions
-
-A canceled subscription can be resumed while on grace period:
-
-```php
-$subscription = $user->subscription('default');
-
-if ($subscription->onGracePeriod()) {
+if ($subscription && $subscription->onGracePeriod()) {
     $subscription->resume();
-    
-    // Subscription is now active again
-    if ($subscription->active()) {
-        echo "Subscription resumed!";
-    }
 }
 ```
 
-**Note:** You cannot resume a subscription that has fully ended.
-
-## Trial Management
-
-### Extending Trial
+## Working with Subscription Items
 
 ```php
-$subscription = $user->subscription('default');
+$subscription = $user->findSubscription('default');
 
-// Extend trial to a future date
-$subscription->extendTrial(now()->addDays(30));
-```
-
-### Ending Trial Early
-
-```php
-$subscription = $user->subscription('default');
-
-// End trial immediately
-$subscription->endTrial();
-```
-
-### Skip Trial on New Subscription
-
-```php
-$subscription = $user->newSubscription('default', 'price_monthly')
-    ->skipTrial()
-    ->create($paymentMethod);
-```
-
-## Multi-Price Subscriptions
-
-For subscriptions with multiple line items:
-
-```php
-// Check if subscription has multiple prices
-if ($subscription->hasMultiplePrices()) {
-    // Handle multi-price subscription
+if (! $subscription) {
+    return;
 }
 
-// Check for specific price
 if ($subscription->hasPrice('price_addon')) {
-    // User has the addon
-}
+    $item = $subscription->items()
+        ->first(fn ($item) => $item->priceId() === 'price_addon');
 
-// Get specific item
-$item = $subscription->findItemOrFail('price_addon');
-
-// Update item quantity
-$item->updateQuantity(3);
-$item->incrementQuantity();
-$item->decrementQuantity();
-
-// Swap item to different price
-$item->swap('price_new_addon');
-```
-
-## Subscription Scopes
-
-Use Eloquent scopes to query subscriptions:
-
-```php
-use AIArmada\Cashier\Models\Subscription;
-
-// Active subscriptions
-$active = Subscription::active()->get();
-
-// Canceled subscriptions
-$canceled = Subscription::canceled()->get();
-
-// On trial subscriptions
-$onTrial = Subscription::onTrial()->get();
-
-// On grace period
-$gracePeriod = Subscription::onGracePeriod()->get();
-
-// Incomplete subscriptions
-$incomplete = Subscription::incomplete()->get();
-
-// Past due subscriptions
-$pastDue = Subscription::pastDue()->get();
-
-// Filter by gateway
-$stripeOnly = Subscription::forGateway('stripe')->get();
-$chipOnly = Subscription::forGateway('chip')->get();
-
-// Combine scopes
-$activeStripe = Subscription::active()->forGateway('stripe')->get();
-```
-
-## Subscription Events
-
-Listen to subscription lifecycle events:
-
-```php
-use AIArmada\Cashier\Events\SubscriptionCreated;
-use AIArmada\Cashier\Events\SubscriptionCanceled;
-use AIArmada\Cashier\Events\SubscriptionResumed;
-
-// In EventServiceProvider
-protected $listen = [
-    SubscriptionCreated::class => [
-        SendWelcomeEmail::class,
-    ],
-    SubscriptionCanceled::class => [
-        SendCancellationSurvey::class,
-    ],
-];
-```
-
-## Error Handling
-
-```php
-use AIArmada\Cashier\Exceptions\SubscriptionUpdateFailure;
-use AIArmada\Cashier\Exceptions\SubscriptionNotFoundException;
-
-try {
-    $subscription = $user->subscription('premium');
-    
-    if (!$subscription) {
-        throw SubscriptionNotFoundException::create('premium');
-    }
-    
-    $subscription->swap('new_price');
-} catch (SubscriptionUpdateFailure $e) {
-    // Handle update failure
-    logger()->error('Subscription update failed: ' . $e->getMessage());
-} catch (SubscriptionNotFoundException $e) {
-    // Handle not found
-    return redirect()->route('subscribe');
+    $item?->updateQuantity(3);
+    $item?->incrementQuantity();
+    $item?->decrementQuantity();
+    $item?->swap('price_new_addon');
 }
 ```
 
-## Best Practices
+## When You Need Gateway-Specific Features
 
-1. **Always check status before operations:**
-   ```php
-   if ($subscription->valid()) {
-       // Safe to perform operations
-   }
-   ```
+`aiarmada/cashier` intentionally exposes a smaller, unified subscription surface.
 
-2. **Handle incomplete payments:**
-   ```php
-   if ($subscription->hasIncompletePayment()) {
-       // Prompt user to complete payment
-   }
-   ```
+For gateway-only features such as advanced proration flags, dashboard-specific metadata,
+or direct access to the underlying Stripe / CHIP models, drop down to the wrapped object:
 
-3. **Use scopes for queries:**
-   ```php
-   // Instead of manual filtering
-   $active = Subscription::active()->forGateway('stripe')->get();
-   ```
+```php
+$gatewaySubscription = $subscription->asGatewaySubscription();
+```
 
-4. **Listen to events for side effects:**
-   ```php
-   // Don't put business logic in controllers
-   // Use event listeners instead
-   ```
+Use that sparingly and keep the unified helpers as your default API.

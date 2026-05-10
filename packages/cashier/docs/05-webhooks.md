@@ -4,46 +4,47 @@ title: Webhooks
 
 # Webhooks
 
-This guide covers webhook handling for payment gateway events.
+This guide covers how `aiarmada/cashier` fits into webhook handling across multiple gateways.
 
-## Overview
+## Important Architecture Note
 
-Webhooks allow payment gateways to notify your application about events like:
+`aiarmada/cashier` does **not** own the concrete Stripe or CHIP webhook endpoints.
 
-- Successful payments
-- Failed payments
-- Subscription renewals
-- Subscription cancellations
-- Invoice creation
+Instead:
+
+- `laravel/cashier` owns the Stripe webhook controller / route
+- `aiarmada/cashier-chip` owns the CHIP webhook flow
+- `aiarmada/cashier` listens at the **unified event layer** and dispatches cross-gateway events such as `PaymentSucceeded` and `SubscriptionCreated`
+
+That means you configure gateway webhooks in the underlying packages, then listen to unified events here.
 
 ## Configuration
 
 ### Environment Variables
 
 ```env
-# Stripe webhook secret
 STRIPE_WEBHOOK_SECRET=whsec_xxx
-
-# CHIP webhook secret
 CHIP_WEBHOOK_SECRET=your_webhook_secret
 ```
 
-### Webhook Endpoints
+## Default Endpoints
 
-Default webhook routes (can be customized in config):
+Default webhook routes depend on the installed gateway packages:
 
-| Gateway | Endpoint |
-|---------|----------|
-| Stripe | `/cashier/webhook/stripe` |
-| CHIP | `/cashier/webhook/chip` |
+| Gateway | Owner | Default endpoint |
+|---------|-------|------------------|
+| Stripe | `laravel/cashier` | `/stripe/webhook` |
+| CHIP | `aiarmada/cashier-chip` | `/chip/webhook` |
+
+If you customize the path in those packages, update your gateway dashboard to match.
 
 ## Gateway-Specific Setup
 
 ### Stripe Webhooks
 
 1. Go to [Stripe Dashboard > Developers > Webhooks](https://dashboard.stripe.com/webhooks)
-2. Add endpoint: `https://yourdomain.com/cashier/webhook/stripe`
-3. Select events to listen to:
+2. Add endpoint: `https://yourdomain.com/stripe/webhook`
+3. Select the events your app needs, for example:
    - `customer.subscription.created`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
@@ -51,33 +52,34 @@ Default webhook routes (can be customized in config):
    - `invoice.payment_failed`
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
+4. Copy the signing secret into `.env`:
 
-4. Copy the signing secret to your `.env`:
    ```env
    STRIPE_WEBHOOK_SECRET=whsec_xxx
    ```
 
 ### CHIP Webhooks
 
-1. Go to CHIP Dashboard > Webhooks
-2. Add endpoint: `https://yourdomain.com/cashier/webhook/chip`
-3. Copy the webhook key to your `.env`:
+1. Go to the CHIP dashboard
+2. Add endpoint: `https://yourdomain.com/chip/webhook`
+3. Copy the webhook secret into `.env`:
+
    ```env
-    CHIP_WEBHOOK_SECRET=your_webhook_secret
+   CHIP_WEBHOOK_SECRET=your_webhook_secret
    ```
 
-## Event Dispatching
+## Unified Events
 
-Webhooks dispatch unified events that you can listen to:
+Once the gateway packages receive and verify their webhooks, `aiarmada/cashier` can dispatch
+gateway-agnostic events that your application listens to.
 
 ### Payment Events
 
 ```php
-use AIArmada\Cashier\Events\PaymentSucceeded;
 use AIArmada\Cashier\Events\PaymentFailed;
 use AIArmada\Cashier\Events\PaymentRefunded;
+use AIArmada\Cashier\Events\PaymentSucceeded;
 
-// In EventServiceProvider
 protected $listen = [
     PaymentSucceeded::class => [
         Listeners\SendPaymentReceipt::class,
@@ -85,7 +87,6 @@ protected $listen = [
     ],
     PaymentFailed::class => [
         Listeners\NotifyPaymentFailure::class,
-        Listeners\RetryPayment::class,
     ],
     PaymentRefunded::class => [
         Listeners\ProcessRefund::class,
@@ -96,19 +97,17 @@ protected $listen = [
 ### Subscription Events
 
 ```php
-use AIArmada\Cashier\Events\SubscriptionCreated;
-use AIArmada\Cashier\Events\SubscriptionUpdated;
 use AIArmada\Cashier\Events\SubscriptionCanceled;
+use AIArmada\Cashier\Events\SubscriptionCreated;
 use AIArmada\Cashier\Events\SubscriptionRenewed;
 use AIArmada\Cashier\Events\SubscriptionTrialEnding;
+use AIArmada\Cashier\Events\SubscriptionUpdated;
 
 protected $listen = [
     SubscriptionCreated::class => [
-        Listeners\SendWelcomeEmail::class,
         Listeners\GrantAccess::class,
     ],
     SubscriptionCanceled::class => [
-        Listeners\SendCancellationSurvey::class,
         Listeners\RevokeAccess::class,
     ],
     SubscriptionRenewed::class => [
@@ -120,15 +119,11 @@ protected $listen = [
 ];
 ```
 
-## Event Listeners
+## Writing Listeners
 
-### Basic Listener
+### Payment Listener
 
 ```php
-<?php
-
-namespace App\Listeners;
-
 use AIArmada\Cashier\Events\PaymentSucceeded;
 
 class SendPaymentReceipt
@@ -138,22 +133,15 @@ class SendPaymentReceipt
         $payment = $event->payment();
         $gateway = $event->gateway();
         $billable = $event->billable();
-        
-        // Send receipt email
-        Mail::to($billable->email)->send(
-            new PaymentReceiptMail($payment)
-        );
+
+        // Send a receipt using the unified payment contract.
     }
 }
 ```
 
-### Gateway-Specific Handling
+### Gateway-Aware Listener
 
 ```php
-<?php
-
-namespace App\Listeners;
-
 use AIArmada\Cashier\Events\SubscriptionCreated;
 
 class HandleSubscriptionCreated
@@ -161,124 +149,91 @@ class HandleSubscriptionCreated
     public function handle(SubscriptionCreated $event): void
     {
         $subscription = $event->subscription();
-        $gateway = $event->gateway();
-        
-        match ($gateway) {
+
+        match ($event->gateway()) {
             'stripe' => $this->handleStripe($subscription),
             'chip' => $this->handleChip($subscription),
-            default => $this->handleDefault($subscription),
+            default => null,
         };
-    }
-    
-    private function handleStripe($subscription): void
-    {
-        // Stripe-specific logic
-    }
-    
-    private function handleChip($subscription): void
-    {
-        // CHIP-specific logic
     }
 }
 ```
 
-## Webhook Security
+## Security
 
 ### Signature Verification
 
-Webhooks are automatically verified using the secrets in your config:
+Signature verification stays in the gateway packages and happens automatically when configured.
 
-```php
-// This happens automatically in the webhook handlers
-// Throws WebhookVerificationException if signature is invalid
-```
+If verification fails, those packages may throw `WebhookVerificationException` or their own
+gateway-specific exception before your application logic runs.
 
 ### CSRF Protection
 
-Webhook routes are automatically excluded from CSRF protection. If you've customized your routes, ensure they're excluded:
+Webhook routes should be excluded from CSRF protection if they are not already handled for you:
 
 ```php
 use Illuminate\Foundation\Configuration\Middleware;
 
 ->withMiddleware(function (Middleware $middleware): void {
     $middleware->validateCsrfTokens(except: [
-        'cashier/webhook/*',
+        'stripe/*',
+        'chip/*',
     ]);
 })
 ```
 
-## Custom Webhook Handlers
+## Customizing Webhook Controllers
 
-### Extending Default Handlers
+Customize the **gateway package**, not `aiarmada/cashier` itself.
+
+### Stripe
+
+`laravel/cashier` exposes a real webhook controller you can extend:
 
 ```php
-<?php
-
 namespace App\Http\Controllers;
 
-use AIArmada\Cashier\Http\Controllers\WebhookController;
-use Illuminate\Http\Request;
+use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
 
-class CustomStripeWebhookController extends WebhookController
+class StripeWebhookController extends CashierWebhookController
 {
-    protected function handleCustomerCreated(array $payload): void
+    protected function handleInvoicePaymentSucceeded(array $payload)
     {
-        // Handle customer.created event
-    }
-    
-    protected function handleInvoiceCreated(array $payload): void
-    {
-        // Handle invoice.created event
+        // Custom Stripe-specific logic...
+
+        return parent::handleInvoicePaymentSucceeded($payload);
     }
 }
 ```
 
-### Registering Custom Handler
+Then register your customized Stripe route:
 
 ```php
-// In routes/web.php
-Route::post('cashier/webhook/stripe', [CustomStripeWebhookController::class, 'handleWebhook']);
+use App\Http\Controllers\StripeWebhookController;
+use Illuminate\Support\Facades\Route;
+
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 ```
 
-## Error Handling
+### CHIP
 
-### Webhook Exceptions
+For CHIP, customize the concrete webhook flow in `aiarmada/cashier-chip` / `aiarmada/chip`
+according to those packages' documentation. `aiarmada/cashier` does not ship its own CHIP
+webhook controller.
 
-```php
-use AIArmada\Cashier\Exceptions\WebhookVerificationException;
-
-// In your exception handler
-public function render($request, Throwable $exception)
-{
-    if ($exception instanceof WebhookVerificationException) {
-        Log::error('Webhook verification failed', [
-            'gateway' => $exception->gateway(),
-            'message' => $exception->getMessage(),
-        ]);
-        
-        return response('Invalid signature', 400);
-    }
-    
-    return parent::render($request, $exception);
-}
-```
-
-### Logging Webhook Events
+## Logging Webhook Activity
 
 ```php
-<?php
-
-namespace App\Listeners;
-
 use AIArmada\Cashier\Events\WebhookReceived;
 
 class LogWebhookEvent
 {
     public function handle(WebhookReceived $event): void
     {
-        Log::info('Webhook received', [
-            'gateway' => $event->gateway,
-            'type' => $event->payload['type'] ?? 'unknown',
+        logger()->info('Webhook received', [
+            'gateway' => $event->gateway(),
+            'type' => $event->eventType(),
             'timestamp' => now(),
         ]);
     }
@@ -289,119 +244,55 @@ class LogWebhookEvent
 
 ### Local Development
 
-Use tools like ngrok to expose your local server:
+Use a tunnel such as ngrok to expose your local app:
 
 ```bash
 ngrok http 8000
 ```
 
-Then use the ngrok URL in your gateway's webhook settings.
+Then configure your gateway dashboard to call the public ngrok URL.
 
 ### Stripe CLI
 
 ```bash
-# Install Stripe CLI
 brew install stripe/stripe-cli/stripe
-
-# Login
 stripe login
-
-# Forward webhooks to local
-stripe listen --forward-to localhost:8000/cashier/webhook/stripe
+stripe listen --forward-to localhost:8000/stripe/webhook
 ```
 
-### Unit Testing
+### Testing Unified Events
 
 ```php
 use AIArmada\Cashier\Events\SubscriptionCreated;
 
-it('handles subscription created webhook', function () {
+it('handles subscription created events', function () {
     Event::fake();
-    
+
     $user = createUser();
     $subscription = createSubscription($user);
-    
+
     event(new SubscriptionCreated($subscription, $user));
-    
+
     Event::assertDispatched(SubscriptionCreated::class, function ($event) use ($subscription) {
-        return $event->subscription()->id === $subscription->id;
+        return $event->subscription()->id() === $subscription->id();
     });
 });
 ```
 
 ## Best Practices
 
-### 1. Respond Quickly
+### 1. Keep Handlers Fast
 
-Webhook handlers should return 200 quickly. Queue heavy processing:
+Queue heavy work from event listeners instead of doing it inline.
 
-```php
-class SendPaymentReceipt implements ShouldQueue
-{
-    use Dispatchable, InteractsWithQueue, Queueable;
-    
-    public function handle(PaymentSucceeded $event): void
-    {
-        // This runs in a queue worker
-    }
-}
-```
+### 2. Make Processing Idempotent
 
-### 2. Idempotency
+Webhook deliveries can be retried. Check whether a payment or subscription change has already been processed before acting on it again.
 
-Webhooks may be delivered multiple times. Make handlers idempotent:
+### 3. Store Raw Payloads When Needed
 
-```php
-public function handle(PaymentSucceeded $event): void
-{
-    $payment = $event->payment();
-    
-    // Check if already processed
-    if (Order::where('payment_id', $payment->id())->exists()) {
-        return;
-    }
-    
-    // Process payment
-    Order::create([
-        'payment_id' => $payment->id(),
-        // ...
-    ]);
-}
-```
+Persist raw webhook payloads if you need audit trails, reconciliation, or easier debugging.
 
-### 3. Store Raw Webhooks
+### 4. Prefer Unified Events for Application Logic
 
-For debugging and compliance:
-
-```php
-class LogRawWebhook
-{
-    public function handle(WebhookReceived $event): void
-    {
-        WebhookLog::create([
-            'gateway' => $event->gateway,
-            'payload' => $event->payload,
-            'processed_at' => now(),
-        ]);
-    }
-}
-```
-
-### 4. Handle All States
-
-Ensure your listeners handle edge cases:
-
-```php
-public function handle(SubscriptionUpdated $event): void
-{
-    $subscription = $event->subscription();
-    
-    if ($subscription->ended()) {
-        $this->revokeAccess();
-    } elseif ($subscription->pastDue()) {
-        $this->sendPaymentReminder();
-    } elseif ($subscription->active()) {
-        $this->ensureAccess();
-    }
-}
-```
+Use the gateway packages to receive webhooks, but prefer `aiarmada/cashier` events for your domain logic when the behavior should work across gateways.

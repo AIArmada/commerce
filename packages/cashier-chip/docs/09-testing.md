@@ -312,8 +312,11 @@ class BillingTest extends TestCase
 }
 ```
 
-Ensure migrations are published:
+RefreshDatabase will pick up Cashier CHIP's auto-discovered package migrations automatically:
 
 ```bash
-php artisan vendor:publish --tag=cashier-chip-migrations
+php artisan migrate
 ```
+
+Only publish `cashier-chip-migrations` in tests when your application is intentionally exercising a
+customized copy of the package migrations.

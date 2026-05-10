@@ -53,6 +53,25 @@ Publish the configuration:
 php artisan vendor:publish --tag=cashier-config
 ```
 
+## Migration Ownership
+
+`aiarmada/cashier` does not ship a unified billing schema.
+
+- **Stripe** columns and subscription tables come from `laravel/cashier`
+- **CHIP** columns and subscription tables come from `aiarmada/cashier-chip`
+
+If `laravel/cashier` is installed, this package will conditionally auto-load the vendor Stripe
+migrations when your app has not published them yet. Publish them when you need to customize
+the schema:
+
+```bash
+php artisan vendor:publish --tag=cashier-stripe-migrations
+php artisan migrate
+```
+
+If you also install `aiarmada/cashier-chip`, just run your normal migrations and its package
+tables / billable columns will be created by that package.
+
 ## Configuration
 
 ### Environment Variables
@@ -119,7 +138,7 @@ $user->newGatewaySubscription('default', 'price_xxx')->create();
 // Via specific gateway
 $user->newGatewaySubscription('default', 'price_xxx', 'chip')->create();
 
-// Or use the gateway directly
+// Or drop down to the gateway adapter when you need gateway-specific behavior
 $user->gateway('stripe')->subscription($user, 'default', 'price_xxx')->create();
 ```
 
@@ -155,6 +174,18 @@ $payment = $user->chargeWithGateway(1000, 'pm_xxx');
 
 // Charge via specific gateway
 $payment = $user->chargeWithGateway(5000, 'pm_xxx', 'chip');
+```
+
+### Checkout Sessions
+
+```php
+$checkout = $user->checkoutWithGateway('stripe')
+    ->price('price_monthly')
+    ->price('price_addon', 2)
+    ->successUrl(route('checkout.success'))
+    ->cancelUrl(route('checkout.cancel'))
+    ->metadata(['order_id' => $order->id])
+    ->create();
 ```
 
 ### Payment Methods
