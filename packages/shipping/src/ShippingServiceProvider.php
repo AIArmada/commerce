@@ -30,6 +30,7 @@ final class ShippingServiceProvider extends PackageServiceProvider
             ->name('shipping')
             ->hasConfigFile()
             ->hasRoute('web')
+            ->runsMigrations()
             ->discoversMigrations();
     }
 

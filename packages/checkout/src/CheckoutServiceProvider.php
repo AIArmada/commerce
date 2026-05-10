@@ -46,6 +46,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $package
             ->name('checkout')
             ->hasConfigFile()
+            ->runsMigrations()
             ->discoversMigrations();
 
         // Conditionally register views

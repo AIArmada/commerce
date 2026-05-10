@@ -19,6 +19,7 @@ final class DocsServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasRoute('docs')
+            ->runsMigrations()
             ->discoversMigrations();
     }
 

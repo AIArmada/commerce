@@ -32,6 +32,7 @@ final class CashierChipServiceProvider extends PackageServiceProvider
             ->name('cashier-chip')
             ->hasConfigFile('cashier-chip')
             ->hasViews('cashier-chip')
+            ->runsMigrations()
             ->discoversMigrations()
             ->hasCommands([
                 RenewSubscriptionsCommand::class,

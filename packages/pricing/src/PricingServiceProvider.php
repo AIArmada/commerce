@@ -15,6 +15,7 @@ final class PricingServiceProvider extends PackageServiceProvider
             ->name('pricing')
             ->hasConfigFile()
             ->hasTranslations()
+            ->runsMigrations()
             ->discoversMigrations();
     }
 
