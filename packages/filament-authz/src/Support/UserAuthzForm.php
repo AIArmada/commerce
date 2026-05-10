@@ -200,7 +200,7 @@ final class UserAuthzForm
             ->all();
 
         if (! $registrar->teams) {
-            $record->syncRoles($selectedRoleIds);
+            $record->syncRoles(static::normalizeRoleIdsForSync($selectedRoleIds));
             $registrar->forgetCachedPermissions();
 
             return;
@@ -245,7 +245,7 @@ final class UserAuthzForm
         try {
             foreach ($scopeKeys as $scopeKey) {
                 setPermissionsTeamId($scopeKey === '__global__' ? null : $scopeKey);
-                $record->syncRoles($selectedByScope[$scopeKey] ?? []);
+                $record->syncRoles(static::normalizeRoleIdsForSync($selectedByScope[$scopeKey] ?? []));
             }
         } finally {
             setPermissionsTeamId($previousScope);
@@ -301,6 +301,18 @@ final class UserAuthzForm
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  list<string>  $roleIds
+     * @return list<int|string>
+     */
+    protected static function normalizeRoleIdsForSync(array $roleIds): array
+    {
+        return array_map(
+            static fn (string $roleId): int|string => ctype_digit($roleId) ? (int) $roleId : $roleId,
+            $roleIds,
+        );
     }
 
     /**

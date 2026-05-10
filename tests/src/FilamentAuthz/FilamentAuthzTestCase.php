@@ -90,19 +90,9 @@ abstract class FilamentAuthzTestCase extends BaseTestCase
             $table->index('team_id', 'roles_team_foreign_key_index');
             $table->string('name');
             $table->string('guard_name');
-            $table->foreignUuid('parent_role_id')->nullable();
-            $table->foreignUuid('template_id')->nullable();
-            $table->text('description')->nullable();
-            $table->integer('level')->default(0);
-            $table->json('metadata')->nullable();
-            $table->boolean('is_system')->default(false);
-            $table->boolean('is_assignable')->default(true);
             $table->timestamps();
 
             $table->unique(['team_id', 'name', 'guard_name']);
-            $table->index('parent_role_id', 'roles_parent_role_id_index');
-            $table->index('template_id', 'roles_template_id_index');
-            $table->index('level', 'roles_level_index');
         });
 
         Schema::create('model_has_permissions', function (Blueprint $table): void {
@@ -113,7 +103,7 @@ abstract class FilamentAuthzTestCase extends BaseTestCase
 
             $table->index(['model_id', 'model_type'], 'model_has_permissions_model_id_model_type_index');
             $table->index('team_id', 'model_has_permissions_team_foreign_key_index');
-            $table->primary(['team_id', 'permission_id', 'model_id', 'model_type'], 'model_has_permissions_permission_model_type_primary');
+            $table->unique(['team_id', 'permission_id', 'model_id', 'model_type'], 'model_has_permissions_team_permission_model_type_unique');
         });
 
         Schema::create('model_has_roles', function (Blueprint $table): void {
@@ -124,7 +114,7 @@ abstract class FilamentAuthzTestCase extends BaseTestCase
 
             $table->index(['model_id', 'model_type'], 'model_has_roles_model_id_model_type_index');
             $table->index('team_id', 'model_has_roles_team_foreign_key_index');
-            $table->primary(['team_id', 'role_id', 'model_id', 'model_type'], 'model_has_roles_role_model_type_primary');
+            $table->unique(['team_id', 'role_id', 'model_id', 'model_type'], 'model_has_roles_team_role_model_type_unique');
         });
 
         Schema::create('role_has_permissions', function (Blueprint $table): void {

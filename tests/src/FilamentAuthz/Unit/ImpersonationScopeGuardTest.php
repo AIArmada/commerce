@@ -34,7 +34,7 @@ it('allows impersonation when target has role assignment in current scope', func
         'guard_name' => 'web',
     ]);
 
-    $target->syncRoles([(string) $role->getKey()]);
+    $target->syncRoles([$role->getKey()]);
 
     expect(ImpersonationScopeGuard::canAccessTarget($target))->toBeTrue();
 });
@@ -65,7 +65,7 @@ it('blocks impersonation when target is outside current scope', function (): voi
         'guard_name' => 'web',
     ]);
 
-    $target->syncRoles([(string) $role->getKey()]);
+    $target->syncRoles([$role->getKey()]);
 
     setPermissionsTeamId($scopeB->getKey());
 
@@ -123,14 +123,14 @@ it('filters user queries to current scope assignments', function (): void {
         'name' => 'scope_a_support_query',
         'guard_name' => 'web',
     ]);
-    $scopeAUser->syncRoles([(string) $scopeARole->getKey()]);
+    $scopeAUser->syncRoles([$scopeARole->getKey()]);
 
     setPermissionsTeamId($scopeB->getKey());
     $scopeBRole = Role::create([
         'name' => 'scope_b_support_query',
         'guard_name' => 'web',
     ]);
-    $scopeBUser->syncRoles([(string) $scopeBRole->getKey()]);
+    $scopeBUser->syncRoles([$scopeBRole->getKey()]);
 
     setPermissionsTeamId($scopeA->getKey());
 
