@@ -113,30 +113,24 @@ final class VoucherUsage extends Model
                 }
 
                 // Prefer email when available, regardless of morph alias/class naming.
-                if (method_exists($redeemedBy, 'getAttribute')) {
-                    /** @var string|null $email */
-                    $email = $redeemedBy->getAttribute('email');
+                $email = $this->getLoadedStringAttribute($redeemedBy, 'email');
 
-                    if ($email !== null && $email !== '') {
-                        return $email;
-                    }
+                if ($email !== null) {
+                    return $email;
                 }
 
-                if ($this->isOrderRedemption() && method_exists($redeemedBy, 'getAttribute')) {
-                    /** @var string|null $orderNumber */
-                    $orderNumber = $redeemedBy->getAttribute('order_number');
+                if ($this->isOrderRedemption()) {
+                    $orderNumber = $this->getLoadedStringAttribute($redeemedBy, 'order_number');
 
-                    if ($orderNumber !== null && $orderNumber !== '') {
+                    if ($orderNumber !== null) {
                         return $orderNumber;
                     }
                 }
 
-                // For other types, try to get an identifier
-                if (method_exists($redeemedBy, 'getAttribute')) {
-                    /** @var string|int|null $id */
-                    $id = $redeemedBy->getAttribute('id');
+                $identifier = $redeemedBy->getKey();
 
-                    return $id !== null ? (string) $id : 'N/A';
+                if ($identifier !== null && $identifier !== '') {
+                    return (string) $identifier;
                 }
 
                 return 'N/A';
@@ -153,6 +147,25 @@ final class VoucherUsage extends Model
         $relation = $this->getRelation('redeemedBy');
 
         return $relation instanceof Model ? $relation : null;
+    }
+
+    private function getLoadedStringAttribute(Model $model, string $attribute): ?string
+    {
+        $attributes = $model->getAttributes();
+
+        if (! array_key_exists($attribute, $attributes)) {
+            return null;
+        }
+
+        $value = $attributes[$attribute];
+
+        if ($value === null) {
+            return null;
+        }
+
+        $stringValue = (string) $value;
+
+        return $stringValue !== '' ? $stringValue : null;
     }
 
     protected function casts(): array
