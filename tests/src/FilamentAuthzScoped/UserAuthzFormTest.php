@@ -346,7 +346,7 @@ it('does not remove roles from another tenant scope while syncing current scope'
         'name' => 'scope_b_only',
         'guard_name' => 'web',
     ]);
-    $user->syncRoles([(string) $scopeBRole->getKey()]);
+    $user->syncRoles([$scopeBRole->getKey()]);
 
     setPermissionsTeamId($scopeA->getKey());
 
@@ -386,14 +386,14 @@ it('scopes user resource query and route binding to the active tenant', function
         'name' => 'scope_a_user_role',
         'guard_name' => 'web',
     ]);
-    $scopeAUser->syncRoles([(string) $scopeARole->getKey()]);
+    $scopeAUser->syncRoles([$scopeARole->getKey()]);
 
     setPermissionsTeamId($scopeB->getKey());
     $scopeBRole = Role::create([
         'name' => 'scope_b_user_role',
         'guard_name' => 'web',
     ]);
-    $scopeBUser->syncRoles([(string) $scopeBRole->getKey()]);
+    $scopeBUser->syncRoles([$scopeBRole->getKey()]);
 
     setPermissionsTeamId($scopeA->getKey());
 
