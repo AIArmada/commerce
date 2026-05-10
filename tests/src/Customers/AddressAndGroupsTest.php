@@ -51,6 +51,7 @@ describe('Address Model', function (): void {
                 'last_name' => 'Doe',
                 'line1' => '100 Ship Street',
                 'city' => 'Petaling Jaya',
+                'postcode' => '47810',
                 'country' => 'MY',
                 'type' => 'shipping',
             ]);
@@ -61,6 +62,7 @@ describe('Address Model', function (): void {
                 'last_name' => 'Doe',
                 'line1' => '200 Bill Street',
                 'city' => 'Shah Alam',
+                'postcode' => '40100',
                 'country' => 'MY',
                 'type' => 'billing',
             ]);
@@ -83,20 +85,26 @@ describe('Address Model', function (): void {
                 'customer_id' => $customer->id,
                 'line1' => 'Default Street',
                 'city' => 'KL',
+                'postcode' => '50000',
                 'country' => 'MY',
-                'is_default' => true,
+                'is_default_billing' => true,
+                'is_default_shipping' => true,
             ]);
 
             $other = Address::create([
                 'customer_id' => $customer->id,
                 'line1' => 'Other Street',
                 'city' => 'KL',
+                'postcode' => '50001',
                 'country' => 'MY',
-                'is_default' => false,
+                'is_default_billing' => false,
+                'is_default_shipping' => false,
             ]);
 
-            expect($default->is_default)->toBeTrue()
-                ->and($other->is_default)->toBeFalse();
+            expect($default->is_default_billing)->toBeTrue()
+                ->and($default->is_default_shipping)->toBeTrue()
+                ->and($other->is_default_billing)->toBeFalse()
+                ->and($other->is_default_shipping)->toBeFalse();
         });
     });
 });

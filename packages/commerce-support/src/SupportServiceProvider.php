@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingEngine;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
+use ReflectionClass;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -53,31 +54,98 @@ final class SupportServiceProvider extends PackageServiceProvider
 
     private function loadDependencyMigrations(): void
     {
-        ConditionalMigrationLoader::loadFileIfMissing(
-            $this,
-            base_path('vendor/spatie/laravel-settings/database/migrations/create_settings_table.php.stub')
+        $settingsMigrationPath = $this->resolveDependencyPath(
+            \Spatie\LaravelSettings\LaravelSettingsServiceProvider::class,
+            'database/migrations/create_settings_table.php.stub',
+            'vendor/spatie/laravel-settings/database/migrations/create_settings_table.php.stub'
         );
 
-        ConditionalMigrationLoader::loadFileIfMissing(
-            $this,
-            base_path('vendor/owen-it/laravel-auditing/database/migrations/audits.stub'),
-            'create_audits_table'
+        if ($settingsMigrationPath !== null) {
+            ConditionalMigrationLoader::loadFileIfMissing(
+                $this,
+                $settingsMigrationPath
+            );
+        }
+
+        $auditsMigrationPath = $this->resolveDependencyPath(
+            \OwenIt\Auditing\AuditingServiceProvider::class,
+            'database/migrations/audits.stub',
+            'vendor/owen-it/laravel-auditing/database/migrations/audits.stub'
         );
 
-        ConditionalMigrationLoader::loadDirectoryIfMissing(
-            $this,
-            base_path('vendor/spatie/laravel-activitylog/database/migrations')
+        if ($auditsMigrationPath !== null) {
+            ConditionalMigrationLoader::loadFileIfMissing(
+                $this,
+                $auditsMigrationPath,
+                'create_audits_table'
+            );
+        }
+
+        $activityLogMigrationsPath = $this->resolveDependencyPath(
+            \Spatie\Activitylog\ActivitylogServiceProvider::class,
+            'database/migrations',
+            'vendor/spatie/laravel-activitylog/database/migrations'
         );
 
-        ConditionalMigrationLoader::loadFileIfMissing(
-            $this,
-            base_path('vendor/spatie/laravel-tags/database/migrations/create_tag_tables.php.stub')
+        if ($activityLogMigrationsPath !== null) {
+            ConditionalMigrationLoader::loadDirectoryIfMissing(
+                $this,
+                $activityLogMigrationsPath
+            );
+        }
+
+        $tagsMigrationPath = $this->resolveDependencyPath(
+            \Spatie\Tags\TagsServiceProvider::class,
+            'database/migrations/create_tag_tables.php.stub',
+            'vendor/spatie/laravel-tags/database/migrations/create_tag_tables.php.stub'
         );
 
-        ConditionalMigrationLoader::loadFileIfMissing(
-            $this,
-            base_path('vendor/spatie/laravel-medialibrary/database/migrations/create_media_table.php.stub')
+        if ($tagsMigrationPath !== null) {
+            ConditionalMigrationLoader::loadFileIfMissing(
+                $this,
+                $tagsMigrationPath
+            );
+        }
+
+        $mediaMigrationPath = $this->resolveDependencyPath(
+            \Spatie\MediaLibrary\MediaLibraryServiceProvider::class,
+            'database/migrations/create_media_table.php.stub',
+            'vendor/spatie/laravel-medialibrary/database/migrations/create_media_table.php.stub'
         );
+
+        if ($mediaMigrationPath !== null) {
+            ConditionalMigrationLoader::loadFileIfMissing(
+                $this,
+                $mediaMigrationPath
+            );
+        }
+    }
+
+    private function resolveDependencyPath(
+        string $providerClass,
+        string $relativePath,
+        string $fallbackBasePath
+    ): ?string {
+        if (class_exists($providerClass)) {
+            $providerFile = (new ReflectionClass($providerClass))->getFileName();
+
+            if (is_string($providerFile) && $providerFile !== '') {
+                $packageRoot = dirname($providerFile, 2);
+                $resolved = $packageRoot . '/' . ltrim($relativePath, '/');
+
+                if (is_file($resolved) || is_dir($resolved)) {
+                    return $resolved;
+                }
+            }
+        }
+
+        $fallback = base_path($fallbackBasePath);
+
+        if (is_file($fallback) || is_dir($fallback)) {
+            return $fallback;
+        }
+
+        return null;
     }
 
     private function validateMorphKeyType(): void

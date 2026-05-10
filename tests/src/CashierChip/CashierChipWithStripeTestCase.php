@@ -42,7 +42,7 @@ abstract class CashierChipWithStripeTestCase extends CashierChipTestCase
             });
         }
 
-        $this->loadMigrationsFrom(base_path('vendor/laravel/cashier/database/migrations'));
+        $this->loadMigrationsFrom(__DIR__ . '/../../../vendor/laravel/cashier/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../../packages/cashier-chip/database/migrations');
     }
 }
