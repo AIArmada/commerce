@@ -4,85 +4,77 @@ title: Multi-Gateway Usage
 
 # Multi-Gateway Usage
 
-This guide covers advanced multi-gateway scenarios where users can have subscriptions and payments across different payment providers.
+This guide covers scenarios where the same billable model uses more than one gateway at the same time.
 
 ## Overview
 
-AIArmada Cashier allows you to:
+AIArmada Cashier lets you:
 
-- Have subscriptions on multiple gateways simultaneously
-- Process payments through different gateways
-- Maintain separate customer IDs per gateway
-- Query subscriptions by gateway
+- create subscriptions on different gateways for the same user
+- charge through different gateways per order or region
+- keep separate customer IDs per gateway
+- query subscriptions, invoices, and payment methods without hard-coding one provider
 
 ## Gateway Comparison
 
 | Feature | Stripe | CHIP |
 |---------|--------|------|
-| **Native Subscriptions** | ✅ Yes | ❌ No (local) |
-| **Automatic Renewals** | ✅ Automatic | ❌ Scheduled |
-| **Recurring Tokens** | ✅ Payment Methods | ✅ Recurring Tokens |
-| **Checkout Sessions** | ✅ Yes | ✅ Purchases |
+| **Native subscriptions** | ✅ Yes | ❌ No (local renewal flow) |
+| **Automatic renewals** | ✅ Automatic | ❌ Scheduled |
+| **Hosted checkout** | ✅ Yes | ✅ Yes |
 | **Webhooks** | ✅ Yes | ✅ Yes |
-| **Scheduler Required** | No | **Yes** |
+| **Scheduler required** | No | **Yes** |
 
-> **CHIP Users:** Since CHIP doesn't have native subscriptions, you must schedule renewals:
-> ```php
-> // In app/Console/Kernel.php
-> $schedule->command('cashier-chip:renew-subscriptions')->hourly();
-> ```
-
-## Why Multi-Gateway?
-
-Common scenarios:
-
-1. **Regional Payment Methods**: Use Stripe for international cards, CHIP for Malaysian FPX
-2. **Product Segmentation**: Different products on different gateways
-3. **Migration**: Gradually migrate from one gateway to another
-4. **Redundancy**: Fallback to another gateway if one is down
+> **CHIP users:** schedule `cashier-chip:renew-subscriptions` in your console kernel.
 
 ## Customer IDs
 
-Each gateway maintains its own customer ID:
+Each installed gateway keeps its own customer identifier on the billable model.
 
 ### Storage
 
 ```php
-// Users table has columns for each gateway
 Schema::table('users', function (Blueprint $table) {
     $table->string('stripe_id')->nullable()->index();
     $table->string('chip_id')->nullable()->index();
-    // Add more as needed
 });
 ```
 
-### Creating Customers
+Those columns come from the gateway packages:
+
+- `laravel/cashier` owns `stripe_id`
+- `aiarmada/cashier-chip` owns `chip_id`
+
+### Creating / Syncing Customers
 
 ```php
-// Create on default gateway
-$user->createAsCustomer([
+$user->createOrGetCustomer(options: [
     'email' => $user->email,
     'name' => $user->name,
 ]);
 
-// Create on specific gateway
-$user->gateway('chip')->createCustomer($user, [
+$user->createOrGetCustomer(gateway: 'chip', options: [
     'email' => $user->email,
     'name' => $user->name,
     'phone' => $user->phone,
 ]);
+
+$user->syncCustomer(gateway: 'stripe', options: [
+    'email' => $user->email,
+    'name' => $user->name,
+]);
 ```
 
-### Retrieving Customer IDs
+### Retrieving Gateway IDs
 
 ```php
-// Get ID for specific gateway
-$stripeId = $user->gatewayId('stripe'); // 'cus_xxx'
-$chipId = $user->gatewayId('chip');     // 'cus_yyy'
+$stripeId = $user->gatewayId('stripe');
+$chipId = $user->gatewayId('chip');
 
-// Get all gateway IDs
-$ids = $user->gatewayIds();
-// ['stripe' => 'cus_xxx', 'chip' => 'cus_yyy']
+$ids = collect([
+    'stripe' => $stripeId,
+    'chip' => $chipId,
+])->filter()->all();
 ```
 
 ## Multi-Gateway Subscriptions
@@ -90,57 +82,44 @@ $ids = $user->gatewayIds();
 ### Creating Subscriptions on Different Gateways
 
 ```php
-// Stripe subscription for international streaming service
-$streamingSubscription = $user->newSubscription('streaming', 'price_streaming', 'stripe')
+$streamingSubscription = $user->newGatewaySubscription('streaming', 'price_streaming', 'stripe')
     ->trialDays(7)
     ->create($stripePaymentMethod);
 
-// CHIP subscription for local gym membership
-$gymSubscription = $user->newSubscription('gym', 'gym_monthly', 'chip')
-    ->create();
+$gymSubscription = $user->newGatewaySubscription('gym', 'gym_monthly', 'chip')
+    ->create($chipRecurringToken);
 
-// Another Stripe subscription
-$softwareSubscription = $user->newSubscription('software', 'price_software', 'stripe')
+$softwareSubscription = $user->newGatewaySubscription('software', 'price_software', 'stripe')
     ->create($stripePaymentMethod);
 ```
 
 ### Querying Subscriptions
 
 ```php
-// Get all subscriptions
-$allSubscriptions = $user->subscriptions();
+$allSubscriptions = $user->allSubscriptions();
 
-// Get subscriptions for specific gateway
-$stripeSubscriptions = $user->subscriptions('stripe');
-$chipSubscriptions = $user->subscriptions('chip');
+$stripeSubscriptions = $user->gatewaySubscriptions('stripe');
+$chipSubscriptions = $user->gatewaySubscriptions('chip');
 
-// Get specific subscription by type
-$streaming = $user->subscription('streaming');
+$streaming = $user->findSubscription('streaming');
+$gymOnChip = $user->gatewaySubscription('gym', 'chip');
 
-// Using Eloquent scopes
-use AIArmada\Cashier\Models\Subscription;
+$activeStripe = $user->gatewaySubscriptions('stripe')
+    ->filter(fn ($subscription) => $subscription->active());
 
-$activeStripe = Subscription::active()->forGateway('stripe')->get();
-$canceledChip = Subscription::canceled()->forGateway('chip')->get();
+$canceledChip = $user->gatewaySubscriptions('chip')
+    ->filter(fn ($subscription) => $subscription->canceled());
 ```
 
-### Checking Subscription Status
+### Checking Status
 
 ```php
-// Check if subscribed to any plan on any gateway
-if ($user->subscribed()) {
-    // Has at least one active subscription
+if ($user->subscribedOnAny('streaming')) {
+    // Active streaming subscription exists on at least one gateway.
 }
 
-// Check specific subscription type
-if ($user->subscribed('streaming')) {
-    // Has active streaming subscription (on any gateway)
-}
-
-// Check subscription on specific gateway
-$subscription = $user->subscription('gym');
-if ($subscription && $subscription->gateway() === 'chip') {
-    // Gym subscription is on CHIP
+if ($user->subscribedViaGateway(type: 'gym', gateway: 'chip')) {
+    // Gym subscription is active on CHIP.
 }
 ```
 
@@ -149,40 +128,31 @@ if ($subscription && $subscription->gateway() === 'chip') {
 ### Charging on Different Gateways
 
 ```php
-// Charge on default gateway (Stripe)
-$payment = $user->charge(1000, $stripePaymentMethod);
+$stripePayment = $user->chargeWithGateway(1000, $stripePaymentMethod, 'stripe');
 
-// Charge on CHIP
-$payment = $user->charge(5000, $chipPaymentMethod, [
-    'gateway' => 'chip',
-]);
+$chipPayment = $user->chargeWithGateway(5000, $chipPaymentMethod, 'chip');
 ```
 
-### Gateway-Specific Payment Methods
+### Payment Methods
 
 ```php
-// Stripe payment methods
-$stripePaymentMethods = $user->gateway('stripe')->paymentMethods();
+$stripePaymentMethods = $user->gatewayPaymentMethods('stripe');
+$chipPaymentMethods = $user->gatewayPaymentMethods('chip');
 
-// CHIP payment methods (FPX, etc.)
-$chipPaymentMethods = $user->gateway('chip')->paymentMethods();
+$defaultStripeMethod = $user->defaultGatewayPaymentMethod('stripe');
 ```
 
 ### Checkout on Different Gateways
 
 ```php
-// Stripe checkout for international products
-$stripeCheckout = $user->checkout([
-    ['price' => 'price_international', 'quantity' => 1],
-], 'stripe')
+$stripeCheckout = $user->checkoutWithGateway('stripe')
+    ->price('price_international')
     ->successUrl(route('checkout.success'))
     ->cancelUrl(route('checkout.cancel'))
     ->create();
 
-// CHIP checkout for Malaysian customers
-$chipCheckout = $user->checkout([
-    ['price' => 'price_local', 'quantity' => 1],
-], 'chip')
+$chipCheckout = $user->checkoutWithGateway('chip')
+    ->price('price_local')
     ->successUrl(route('checkout.success'))
     ->cancelUrl(route('checkout.cancel'))
     ->create();
@@ -202,9 +172,8 @@ public function selectGateway(User $user, string $currency): string
     };
 }
 
-// Usage
 $gateway = $this->selectGateway($user, $order->currency);
-$payment = $user->charge($amount, $paymentMethod, ['gateway' => $gateway]);
+$payment = $user->chargeWithGateway($amount, $paymentMethod, $gateway);
 ```
 
 ### Based on User Location
@@ -213,9 +182,8 @@ $payment = $user->charge($amount, $paymentMethod, ['gateway' => $gateway]);
 public function selectGateway(User $user): string
 {
     return match ($user->country) {
-        'MY' => 'chip',     // Malaysia
-        'SG' => 'stripe',   // Singapore
-        'ID' => 'chip',     // Indonesia (if CHIP supports)
+        'MY' => 'chip',
+        'SG' => 'stripe',
         default => 'stripe',
     };
 }
@@ -224,125 +192,95 @@ public function selectGateway(User $user): string
 ### Based on Product Type
 
 ```php
-// In config/cashier.php
 'subscription_gateways' => [
-    'streaming' => 'stripe',  // International streaming
-    'gym' => 'chip',          // Local gym
-    'software' => 'stripe',   // SaaS product
+    'streaming' => 'stripe',
+    'gym' => 'chip',
+    'software' => 'stripe',
 ],
 
-// Usage
 $gateway = config("cashier.subscription_gateways.{$type}", config('cashier.default'));
-$subscription = $user->newSubscription($type, $price, $gateway)->create();
+
+$subscription = $user->newGatewaySubscription($type, $price, $gateway)
+    ->create($paymentMethod);
 ```
 
 ## Data Model
 
-### Subscription Table
+### Gateway-Owned Tables
 
 ```php
-Schema::create('gateway_subscriptions', function (Blueprint $table) {
-    $table->id();
-    $table->morphs('billable');
-    $table->string('gateway')->default('stripe')->index();
-    $table->string('gateway_id')->index();
-    $table->string('gateway_status')->nullable();
-    $table->string('gateway_price')->nullable();
-    $table->string('type')->index();
-    $table->integer('quantity')->nullable();
-    $table->timestamp('trial_ends_at')->nullable();
-    $table->timestamp('ends_at')->nullable();
-    $table->timestamps();
+// Stripe schema comes from laravel/cashier
+subscriptions
+subscription_items
+users.stripe_id
 
-    // Unique: one subscription type per gateway per user
-    $table->unique(['billable_type', 'billable_id', 'type', 'gateway']);
-});
+// CHIP schema comes from aiarmada/cashier-chip
+chip_subscriptions
+chip_subscription_items
+users.chip_id
 ```
+
+`aiarmada/cashier` does not create a unified `gateway_subscriptions` table. It wraps the
+underlying gateway records behind `SubscriptionContract`, `PaymentContract`, `InvoiceContract`,
+and the collection helpers shown above.
 
 ## Event Handling
 
-All events include gateway information:
+All unified events still include gateway context:
 
 ```php
 use AIArmada\Cashier\Events\SubscriptionCreated;
 
 class HandleSubscriptionCreated
 {
-    public function handle(SubscriptionCreated $event)
+    public function handle(SubscriptionCreated $event): void
     {
         $subscription = $event->subscription();
-        $gateway = $event->gateway(); // 'stripe' or 'chip'
+        $gateway = $event->gateway();
         $user = $event->billable();
-        
-        // Gateway-specific handling
+
         match ($gateway) {
-            'stripe' => $this->handleStripeSubscription($subscription),
-            'chip' => $this->handleChipSubscription($subscription),
+            'stripe' => $this->handleStripeSubscription($subscription, $user),
+            'chip' => $this->handleChipSubscription($subscription, $user),
         };
     }
 }
 ```
 
+Concrete webhook routes and controllers remain owned by the underlying gateway packages.
+`aiarmada/cashier` stays at the unified event layer.
+
 ## Best Practices
 
-### 1. Always Specify Gateway Explicitly
+### 1. Prefer Explicit Gateways
 
 ```php
-// Explicit is better than implicit
-$subscription = $user->newSubscription('plan', 'price_id', 'stripe')->create();
-
-// Instead of relying on default
-$subscription = $user->newSubscription('plan', 'price_id')->create();
+$subscription = $user->newGatewaySubscription('plan', 'price_id', 'stripe')->create($paymentMethod);
 ```
 
-### 2. Track Gateway in Your Orders
+### 2. Persist Gateway Metadata on Your Own Records
 
 ```php
-// Store which gateway was used
 $order->update([
     'payment_gateway' => $gateway,
     'payment_id' => $payment->id(),
 ]);
 ```
 
-### 3. Handle Gateway-Specific Errors
+### 3. Use Unified Reads, Gateway-Native Escapes Only When Needed
 
 ```php
-try {
-    $payment = $user->charge($amount, $pm, ['gateway' => $gateway]);
-} catch (PaymentFailedException $e) {
-    if ($e->gateway() === 'chip') {
-        // CHIP-specific error handling
-    } else {
-        // Stripe-specific error handling
-    }
-}
+$gatewayPayment = $payment->asGatewayPayment();
+$gatewaySubscription = $subscription->asGatewaySubscription();
 ```
 
-### 4. Unified Webhook Handling
+### 4. Migrate Between Gateways Explicitly
 
 ```php
-// Routes
-Route::post('webhook/stripe', [StripeWebhookController::class, 'handle']);
-Route::post('webhook/chip', [ChipWebhookController::class, 'handle']);
+$newSubscription = $user->newGatewaySubscription('plan', 'new_price', 'chip')
+    ->skipTrial()
+    ->create($chipRecurringToken);
 
-// Both controllers dispatch unified events
-event(new PaymentSucceeded($payment, $gateway, $billable));
-```
-
-### 5. Migration Strategy
-
-When migrating between gateways:
-
-```php
-// Create new subscription on new gateway
-$newSubscription = $user->newSubscription('plan', 'new_price', 'chip')
-    ->skipTrial() // User already had trial on Stripe
-    ->create();
-
-// Cancel old subscription at period end
-$oldSubscription = $user->subscription('plan', 'stripe');
-$oldSubscription->cancel();
-
-// Once old subscription ends, new one takes over
+$oldSubscription = $user->gatewaySubscription('plan', 'stripe');
+$oldSubscription?->cancel();
 ```

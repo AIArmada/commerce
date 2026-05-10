@@ -4,18 +4,16 @@ title: Payments
 
 # Payments
 
-This guide covers one-time payments, checkout sessions, and payment method management.
+This guide covers one-time charges, hosted checkout, payment methods, invoices, and customer sync.
 
 ## One-Time Charges
 
 ### Basic Charge
 
 ```php
-// Charge $10.00 (1000 cents)
-$payment = $user->charge(1000, $paymentMethodId);
+$payment = $user->chargeWithGateway(1000, $paymentMethodId);
 
-if ($payment->isSuccessful()) {
-    // Payment completed
+if ($payment->isSucceeded()) {
     $transactionId = $payment->id();
 }
 ```
@@ -23,7 +21,7 @@ if ($payment->isSuccessful()) {
 ### Charge with Options
 
 ```php
-$payment = $user->charge(2500, $paymentMethodId, [
+$payment = $user->chargeWithGateway(2500, $paymentMethodId, options: [
     'description' => 'One-time purchase',
     'metadata' => [
         'order_id' => $order->id,
@@ -32,66 +30,55 @@ $payment = $user->charge(2500, $paymentMethodId, [
 ]);
 ```
 
-### Charge on Specific Gateway
+### Charge on a Specific Gateway
 
 ```php
-// Use CHIP for local Malaysian payments
-$payment = $user->charge(5000, $paymentMethodId, [
-    'gateway' => 'chip',
-    'description' => 'Local payment',
+$payment = $user->chargeWithGateway(5000, $paymentMethodId, 'chip', [
+    'description' => 'Local Malaysian payment',
 ]);
 ```
 
 ### Handling Payment Status
 
 ```php
-$payment = $user->charge(1000, $paymentMethodId);
+$payment = $user->chargeWithGateway(1000, $paymentMethodId);
 
-if ($payment->isSuccessful()) {
-    // Payment completed successfully
+if ($payment->isSucceeded()) {
     $amount = $payment->amount();
     $currency = $payment->currency();
-    
-} elseif ($payment->requiresAction()) {
-    // 3D Secure or additional verification required
-    $actionUrl = $payment->actionUrl();
-    $clientSecret = $payment->clientSecret();
-    
-    // Redirect user to complete verification
-    return redirect($actionUrl);
-    
+} elseif ($payment->requiresAction() || $payment->requiresRedirect()) {
+    return redirect($payment->redirectUrl());
 } elseif ($payment->isFailed()) {
-    // Payment failed
-    $errorMessage = $payment->errorMessage();
+    report($payment->errorCode());
 }
 ```
 
 ## Checkout Sessions
 
-Checkout sessions redirect users to a hosted payment page.
+Checkout builders are gateway-specific under the hood, but you create them through the unified wrapper.
 
-### Creating a Checkout Session
+### Basic Checkout
 
 ```php
-$checkout = $user->checkout([
-    ['price' => 'price_product_a', 'quantity' => 1],
-    ['price' => 'price_product_b', 'quantity' => 2],
-])
+$checkout = $user->checkoutWithGateway('stripe')
+    ->price('price_product_a')
+    ->price('price_product_b', 2)
     ->successUrl(route('checkout.success'))
     ->cancelUrl(route('checkout.cancel'))
     ->create();
 
-// Redirect to checkout
 return redirect($checkout->url());
 ```
 
-### With Metadata
+### Using `prices()`
 
 ```php
-$checkout = $user->checkout([
-    ['price' => 'price_xxx', 'quantity' => 1],
-])
-    ->successUrl(route('checkout.success', ['session_id' => '{CHECKOUT_SESSION_ID}']))
+$checkout = $user->checkoutWithGateway('stripe')
+    ->prices([
+        'price_product_a' => 1,
+        'price_product_b' => 2,
+    ])
+    ->successUrl(route('checkout.success'))
     ->cancelUrl(route('checkout.cancel'))
     ->metadata([
         'order_id' => $order->id,
@@ -100,45 +87,35 @@ $checkout = $user->checkout([
     ->create();
 ```
 
-### For Subscriptions
+### Subscription Checkout
 
 ```php
-$checkout = $user->checkout([
-    ['price' => 'price_monthly_subscription', 'quantity' => 1],
-])
+$checkout = $user->checkoutWithGateway('stripe')
+    ->price('price_monthly_subscription')
     ->mode('subscription')
+    ->trialDays(14)
     ->successUrl(route('subscription.success'))
     ->cancelUrl(route('subscription.cancel'))
     ->create();
 ```
 
-### On Specific Gateway
+### Retrieving Checkout Status
 
 ```php
-// Create CHIP checkout for Malaysian users
-$checkout = $user->checkout([
-    ['price' => 'price_xxx', 'quantity' => 1],
-], 'chip')
-    ->successUrl(route('checkout.success'))
-    ->cancelUrl(route('checkout.cancel'))
-    ->create();
-```
+use AIArmada\Cashier\Facades\Cashier;
 
-### Checking Checkout Status
+$checkout = Cashier::gateway('stripe')->retrieveCheckout($checkoutId);
 
-```php
-$checkout = $gateway->findCheckout($checkoutId);
-
-if ($checkout->isComplete()) {
-    // Checkout completed
+if ($checkout && $checkout->isComplete()) {
+    // Checkout reached a terminal state.
 }
 
-if ($checkout->isPaid()) {
-    // Payment received
+if ($checkout && $checkout->isSuccessful()) {
+    // Payment completed.
 }
 
-if ($checkout->isExpired()) {
-    // Session expired, user needs to start over
+if ($checkout && $checkout->isExpired()) {
+    // Customer must start over.
 }
 ```
 
@@ -147,174 +124,152 @@ if ($checkout->isExpired()) {
 ### Listing Payment Methods
 
 ```php
-// Get all payment methods
-$paymentMethods = $user->paymentMethods();
+$allMethods = $user->allGatewayPaymentMethods();
 
-foreach ($paymentMethods as $pm) {
-    echo $pm->type();     // 'card', 'fpx', etc.
-    echo $pm->lastFour(); // Last 4 digits (for cards)
+$stripeCards = $user->gatewayPaymentMethods('stripe', 'card');
+$chipMethods = $user->gatewayPaymentMethods('chip');
+
+$defaultStripeMethod = $user->defaultGatewayPaymentMethod('stripe');
+```
+
+### Inspecting a Payment Method
+
+```php
+$paymentMethod = $user->gatewayPaymentMethods('stripe')
+    ->first(fn ($method) => $method->id() === 'pm_xxx');
+
+if ($paymentMethod) {
+    $paymentMethod->gateway();
+    $paymentMethod->type();
+    $paymentMethod->brand();
+    $paymentMethod->lastFour();
+    $paymentMethod->expirationMonth();
+    $paymentMethod->expirationYear();
+    $paymentMethod->isDefault();
 }
 ```
 
-### Adding a Payment Method
+### Deleting a Payment Method
 
 ```php
-// Add a new payment method
-$paymentMethod = $user->addPaymentMethod('pm_xxx');
+$paymentMethod = $user->gatewayPaymentMethods('stripe')
+    ->first(fn ($method) => $method->id() === 'pm_xxx');
 
-// Make it the default
-$user->updateDefaultPaymentMethod('pm_xxx');
+$paymentMethod?->delete();
 ```
 
-### Setting Default Payment Method
-
-```php
-// Update default payment method
-$user->updateDefaultPaymentMethod('pm_new_default');
-
-// Get current default
-$default = $user->defaultPaymentMethod();
-```
-
-### Removing Payment Methods
-
-```php
-// Delete a specific payment method
-$paymentMethod = $user->findPaymentMethod('pm_xxx');
-$paymentMethod->delete();
-
-// Delete all payment methods
-$user->deletePaymentMethods();
-```
-
-### Payment Method Details
-
-```php
-$paymentMethod = $user->findPaymentMethod('pm_xxx');
-
-$paymentMethod->id();
-$paymentMethod->type();      // 'card', 'fpx', 'bank_transfer'
-$paymentMethod->lastFour();  // Card last 4 digits
-$paymentMethod->brand();     // 'visa', 'mastercard'
-$paymentMethod->expMonth();  // Expiration month
-$paymentMethod->expYear();   // Expiration year
-```
+> **Note:** Attaching payment methods, updating default methods, or using setup intents remains
+> gateway-native behavior. Use the installed gateway package directly when you need those write APIs.
 
 ## Invoices
 
 ### Listing Invoices
 
 ```php
-// Get paid invoices
-$invoices = $user->invoices();
+$stripeInvoices = $user->gatewayInvoices('stripe');
 
-// Include pending invoices
-$allInvoices = $user->invoicesIncludingPending();
+$stripeInvoicesIncludingPending = $user->gatewayInvoices('stripe', [
+    'include_pending' => true,
+]);
+
+$allInvoices = $user->allGatewayInvoices([
+    'include_pending' => true,
+]);
 ```
 
 ### Finding an Invoice
 
 ```php
-$invoice = $user->findInvoice('in_xxx');
+$invoice = $user->allGatewayInvoices(['include_pending' => true])
+    ->first(fn ($invoice) => $invoice->id() === 'in_xxx');
 ```
 
 ### Invoice Details
 
 ```php
-$invoice = $user->findInvoice('in_xxx');
+if ($invoice) {
+    $invoice->gateway();
+    $invoice->number();
+    $invoice->date();
+    $invoice->dueDate();
+    $invoice->status();
+    $invoice->total();
+    $invoice->subtotal();
+    $invoice->tax();
+    $invoice->currency();
+    $invoice->hostedUrl();
+    $invoice->pdfUrl();
 
-$invoice->id();
-$invoice->number();
-$invoice->date();
-$invoice->total();
-$invoice->subtotal();
-$invoice->tax();
-$invoice->currency();
-
-// Line items
-foreach ($invoice->lineItems() as $item) {
-    echo $item->description();
-    echo $item->quantity();
-    echo $item->unitAmount();
-    echo $item->amount();
+    foreach ($invoice->items() as $item) {
+        $item->description();
+        $item->quantity();
+        $item->unitAmount();
+        $item->amount();
+    }
 }
 ```
 
-### Downloading Invoices
+### Downloading / Viewing Invoices
 
 ```php
-// Download as PDF response
 return $invoice->download();
 
-// Get PDF as string
-$pdf = $invoice->pdf();
+return $invoice->view();
+```
 
-// Save to file
-file_put_contents('invoice.pdf', $invoice->pdf());
+## Customer Sync
+
+```php
+$customer = $user->createOrGetCustomer(options: [
+    'email' => $user->email,
+    'name' => $user->name,
+]);
+
+$chipCustomer = $user->createOrGetCustomer(gateway: 'chip', options: [
+    'email' => $user->email,
+    'name' => $user->name,
+    'phone' => $user->phone,
+]);
+
+$user->syncCustomer(gateway: 'stripe', options: [
+    'email' => $user->email,
+    'name' => $user->name,
+]);
 ```
 
 ## Error Handling
 
-### Payment Failures
-
 ```php
-use AIArmada\Cashier\Exceptions\PaymentFailedException;
 use AIArmada\Cashier\Exceptions\PaymentActionRequired;
+use AIArmada\Cashier\Exceptions\PaymentFailedException;
 
 try {
-    $payment = $user->charge(1000, $paymentMethodId);
+    $payment = $user->chargeWithGateway(1000, $paymentMethodId, 'stripe');
 } catch (PaymentActionRequired $e) {
-    // 3D Secure required
-    $paymentId = $e->paymentId();
-    $clientSecret = $e->clientSecret();
-    $actionUrl = $e->actionUrl();
-    
-    // Redirect to action URL or handle client-side
-    return view('payment.action-required', [
-        'clientSecret' => $clientSecret,
-    ]);
+    return redirect($e->actionUrl());
 } catch (PaymentFailedException $e) {
-    // Payment failed
-    $errorCode = $e->errorCode();
-    $gateway = $e->gateway();
-    
-    return back()->with('error', 'Payment failed: ' . $e->getMessage());
-}
-```
-
-### Customer Not Found
-
-```php
-use AIArmada\Cashier\Exceptions\CustomerNotFoundException;
-
-try {
-    $customer = $user->asCustomer();
-} catch (CustomerNotFoundException $e) {
-    // Create customer first
-    $user->createAsCustomer([
-        'email' => $user->email,
-        'name' => $user->name,
+    report([
+        'gateway' => $e->gateway(),
+        'payment_id' => $e->paymentId(),
+        'error_code' => $e->errorCode(),
     ]);
+
+    return back()->with('error', 'Payment failed: ' . $e->getMessage());
 }
 ```
 
 ## Best Practices
 
-### 1. Always Handle Action Required
+### 1. Prefer Explicit Gateways in Cross-Gateway Flows
 
 ```php
-$payment = $user->charge($amount, $paymentMethod);
-
-if ($payment->requiresAction()) {
-    // Don't ignore this - 3D Secure is becoming mandatory
-    return redirect($payment->actionUrl());
-}
+$payment = $user->chargeWithGateway(1000, $paymentMethodId, 'stripe');
 ```
 
-### 2. Use Metadata for Tracking
+### 2. Use Metadata for Traceability
 
 ```php
-$payment = $user->charge(1000, $pm, [
+$payment = $user->chargeWithGateway(1000, $paymentMethodId, 'stripe', [
     'metadata' => [
         'order_id' => $order->id,
         'user_id' => $user->id,
@@ -323,38 +278,15 @@ $payment = $user->charge(1000, $pm, [
 ]);
 ```
 
-### 3. Handle Idempotency
+### 3. Handle Idempotency at the Gateway Layer
 
 ```php
-$payment = $user->charge(1000, $pm, [
+$payment = $user->chargeWithGateway(1000, $paymentMethodId, 'stripe', [
     'idempotency_key' => 'order_' . $order->id,
 ]);
 ```
 
-### 4. Validate Amounts
+### 4. Keep Gateway-Native APIs for Gateway-Native Features
 
-```php
-// Ensure amount is positive integer (cents)
-$amount = max(50, (int) ($price * 100)); // Minimum 50 cents
-
-$payment = $user->charge($amount, $pm);
-```
-
-### 5. Log Payment Events
-
-```php
-use AIArmada\Cashier\Events\PaymentSucceeded;
-use AIArmada\Cashier\Events\PaymentFailed;
-
-// In EventServiceProvider
-protected $listen = [
-    PaymentSucceeded::class => [
-        LogPaymentSuccess::class,
-        SendPaymentReceipt::class,
-    ],
-    PaymentFailed::class => [
-        LogPaymentFailure::class,
-        NotifyAdminOfFailure::class,
-    ],
-];
-```
+The wrapper is great for unified reads and common write flows. For gateway-specific setup intents,
+payment-method attachment flows, or advanced refund controls, call the installed gateway package directly.
