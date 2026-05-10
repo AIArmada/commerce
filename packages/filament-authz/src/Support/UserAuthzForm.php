@@ -310,7 +310,7 @@ final class UserAuthzForm
     protected static function normalizeRoleIdsForSync(array $roleIds): array
     {
         return array_map(
-            static fn (string $roleId): int|string => ctype_digit($roleId) ? (int) $roleId : $roleId,
+            static fn (string $roleId): int | string => ctype_digit($roleId) ? (int) $roleId : $roleId,
             $roleIds,
         );
     }
