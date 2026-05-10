@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier;
 
-use AIArmada\CommerceSupport\Support\ConditionalMigrationLoader;
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
+use AIArmada\CommerceSupport\Support\ConditionalMigrationLoader;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

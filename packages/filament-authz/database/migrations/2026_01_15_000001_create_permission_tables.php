@@ -58,7 +58,7 @@ return new class extends Migration
             $table->unique(['name', 'guard_name']);
         });
 
-        Schema::create($modelHasPermissionsTable, function (Blueprint $table) use ($permissionTable, $permissionColumnName, $modelMorphKey, $teams, $teamForeignKey): void {
+        Schema::create($modelHasPermissionsTable, function (Blueprint $table) use ($permissionColumnName, $modelMorphKey, $teams, $teamForeignKey): void {
             $table->uuid($permissionColumnName);
             $table->string('model_type');
             $table->uuid($modelMorphKey);
@@ -75,7 +75,7 @@ return new class extends Migration
             $table->primary([$permissionColumnName, $modelMorphKey, 'model_type'], 'model_has_permissions_permission_model_type_primary');
         });
 
-        Schema::create($modelHasRolesTable, function (Blueprint $table) use ($roleTable, $roleColumnName, $modelMorphKey, $teams, $teamForeignKey): void {
+        Schema::create($modelHasRolesTable, function (Blueprint $table) use ($roleColumnName, $modelMorphKey, $teams, $teamForeignKey): void {
             $table->uuid($roleColumnName);
             $table->string('model_type');
             $table->uuid($modelMorphKey);
@@ -92,7 +92,7 @@ return new class extends Migration
             $table->primary([$roleColumnName, $modelMorphKey, 'model_type'], 'model_has_roles_role_model_type_primary');
         });
 
-        Schema::create($roleHasPermissionsTable, function (Blueprint $table) use ($permissionTable, $roleTable, $roleColumnName, $permissionColumnName): void {
+        Schema::create($roleHasPermissionsTable, function (Blueprint $table) use ($roleColumnName, $permissionColumnName): void {
             $table->uuid($permissionColumnName);
             $table->uuid($roleColumnName);
 
