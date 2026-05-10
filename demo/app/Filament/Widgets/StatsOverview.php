@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active as ActiveAffiliate;
+use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Products\Models\Product;
@@ -81,10 +81,10 @@ final class StatsOverview extends BaseWidget
             ->count();
 
         // Affiliate stats
-        $activeAffiliates = Affiliate::query()->forOwner($owner)->where('status', AffiliateStatus::Active)->count();
+        $activeAffiliates = Affiliate::query()->forOwner($owner)->where('status', ActiveAffiliate::class)->count();
         $pendingCommissions = AffiliateConversion::query()
             ->whereIn('affiliate_id', Affiliate::query()->forOwner($owner)->select('id'))
-            ->where('status', ConversionStatus::Pending)
+            ->where('status', PendingConversion::class)
             ->sum('commission_minor');
 
         $lowStockProducts = 0;

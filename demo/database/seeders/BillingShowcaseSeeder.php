@@ -10,7 +10,6 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use Laravel\Cashier\Database\Factories\SubscriptionFactory;
 
 /**
  * Seeds billing demo data for the self-service billing portal showcase.
@@ -44,7 +43,7 @@ final class BillingShowcaseSeeder extends Seeder
         // Setup admin with CHIP customer ID and payment method
         $this->setupBillableUser($admin, [
             'chip_id' => 'cli_demo_admin_'.Str::random(16),
-            'chip_default_payment_method' => 'tok_'.Str::random(32),
+            'default_pm_id' => 'tok_'.Str::random(32),
             'pm_type' => 'visa',
             'pm_last_four' => '4242',
         ]);
@@ -65,20 +64,6 @@ final class BillingShowcaseSeeder extends Seeder
             'billing_interval' => 'month',
             'trial_ends_at' => Carbon::now()->addDays(7),
             'next_billing_at' => Carbon::now()->addDays(7),
-        ]);
-
-        // Add Stripe data alongside Chip
-        $admin->update([
-            'stripe_id' => 'cus_demo_admin_'.Str::random(16),
-            'stripe_default_payment_method' => 'pm_'.Str::random(24),
-        ]);
-
-        // Create Stripe subscriptions (mock for demo)
-        SubscriptionFactory::new()->create([
-            'user_id' => $admin->id,
-            'stripe_status' => 'active',
-            'stripe_id' => 'sub_stripe_'.Str::random(20),
-            'stripe_price' => 'price_stripe_pro',
         ]);
 
         // Note: we intentionally only seed subscriptions for the current tenant owner.
@@ -116,13 +101,5 @@ final class BillingShowcaseSeeder extends Seeder
             'ends_at' => $attributes['ends_at'] ?? null,
             'next_billing_at' => $attributes['next_billing_at'] ?? Carbon::now()->addMonth(),
         ]);
-    }
-
-    /**
-     * Get a random card brand.
-     */
-    private function randomCardBrand(): string
-    {
-        return collect(['visa', 'mastercard', 'amex'])->random();
     }
 }

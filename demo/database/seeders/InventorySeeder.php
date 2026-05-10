@@ -192,6 +192,9 @@ final class InventorySeeder extends Seeder
 
         $locations = [];
         foreach ($warehouses as $data) {
+            $data['line1'] = $data['address'];
+            unset($data['address']);
+
             $location = InventoryLocation::firstOrCreate(
                 ['code' => $data['code']],
                 $data

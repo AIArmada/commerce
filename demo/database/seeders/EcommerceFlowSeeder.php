@@ -97,8 +97,6 @@ final class EcommerceFlowSeeder extends Seeder
 
         $cart1 = Cart::create([
             'identifier' => (string) Str::uuid(),
-            'owner_type' => Customer::class,
-            'owner_id' => $malaysianCustomer->id,
             'metadata' => [
                 'currency' => 'MYR',
                 'tax_zone' => 'MY-ALL',
@@ -224,8 +222,6 @@ final class EcommerceFlowSeeder extends Seeder
 
         $cart2 = Cart::create([
             'identifier' => (string) Str::uuid(),
-            'owner_type' => Customer::class,
-            'owner_id' => $singaporeCustomer->id,
             'metadata' => [
                 'currency' => 'MYR',
                 'tax_zone' => 'SG',
@@ -318,8 +314,6 @@ final class EcommerceFlowSeeder extends Seeder
 
         $cart3 = Cart::create([
             'identifier' => (string) Str::uuid(),
-            'owner_type' => Customer::class,
-            'owner_id' => $thaiCustomer->id,
             'metadata' => [
                 'currency' => 'MYR',
                 'tax_zone' => 'TH',
@@ -415,8 +409,6 @@ final class EcommerceFlowSeeder extends Seeder
 
         $cart4 = Cart::create([
             'identifier' => (string) Str::uuid(),
-            'owner_type' => Customer::class,
-            'owner_id' => $educationCustomer->id,
             'metadata' => [
                 'currency' => 'MYR',
                 'tax_zone' => 'MY-ALL',
@@ -549,8 +541,6 @@ final class EcommerceFlowSeeder extends Seeder
 
         $cart5 = Cart::create([
             'identifier' => (string) Str::uuid(),
-            'owner_type' => Customer::class,
-            'owner_id' => $indonesianCustomer->id,
             'metadata' => [
                 'currency' => 'MYR',
                 'tax_zone' => 'ID',

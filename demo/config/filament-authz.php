@@ -2,7 +2,23 @@
 
 declare(strict_types=1);
 
+use Filament\Pages\Dashboard;
+use Filament\Widgets\AccountWidget;
+use Filament\Widgets\FilamentInfoWidget;
+
 return [
+    /*
+    |--------------------------------------------------------------------------
+    | Database
+    |--------------------------------------------------------------------------
+    */
+    'database' => [
+        'table_prefix' => 'authz_',
+        'tables' => [
+            'authz_scopes' => 'authz_scopes',
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Defaults
@@ -26,6 +42,13 @@ return [
 
     'scoped_to_tenant' => true,
 
+    'central_app' => false,
+
+    'authz_scopes' => [
+        'enabled' => false,
+        'auto_create' => true,
+    ],
+
     'permissions' => [
         'separator' => '.',
         'case' => 'camel',
@@ -42,15 +65,15 @@ return [
     'pages' => [
         'prefix' => 'page',
         'exclude' => [
-            \Filament\Pages\Dashboard::class,
+            Dashboard::class,
         ],
     ],
 
     'widgets' => [
         'prefix' => 'widget',
         'exclude' => [
-            \Filament\Widgets\AccountWidget::class,
-            \Filament\Widgets\FilamentInfoWidget::class,
+            AccountWidget::class,
+            FilamentInfoWidget::class,
         ],
     ],
 
@@ -89,11 +112,13 @@ return [
     */
     'role_resource' => [
         'slug' => 'authz/roles',
+        'scope_options' => null,
         'tabs' => [
             'resources' => true,
             'pages' => true,
             'widgets' => true,
             'custom_permissions' => true,
+            'direct_permissions' => true,
         ],
         'grid_columns' => 2,
         'checkbox_columns' => 3,
@@ -113,6 +138,7 @@ return [
         'form' => [
             'fields' => ['name', 'email', 'password'],
             'roles' => true,
+            'role_scope_mode' => 'all',
             'permissions' => true,
         ],
     ],

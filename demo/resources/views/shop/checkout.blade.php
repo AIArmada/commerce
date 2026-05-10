@@ -1,4 +1,26 @@
 <x-shop-layout title="Checkout">
+    @php
+        $states = [
+            'Johor',
+            'Kedah',
+            'Kelantan',
+            'Melaka',
+            'Negeri Sembilan',
+            'Pahang',
+            'Perak',
+            'Perlis',
+            'Pulau Pinang',
+            'Sabah',
+            'Sarawak',
+            'Selangor',
+            'Terengganu',
+            'Kuala Lumpur',
+            'Labuan',
+            'Putrajaya',
+        ];
+        $selectedPaymentMethod = old('payment_method', 'fpx');
+    @endphp
+
     <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
 
@@ -71,28 +93,15 @@
                                     <select name="state" required
                                             class="w-full border rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500">
                                         <option value="">Select</option>
-                                        <option value="Johor">Johor</option>
-                                        <option value="Kedah">Kedah</option>
-                                        <option value="Kelantan">Kelantan</option>
-                                        <option value="Melaka">Melaka</option>
-                                        <option value="Negeri Sembilan">Negeri Sembilan</option>
-                                        <option value="Pahang">Pahang</option>
-                                        <option value="Perak">Perak</option>
-                                        <option value="Perlis">Perlis</option>
-                                        <option value="Pulau Pinang">Pulau Pinang</option>
-                                        <option value="Sabah">Sabah</option>
-                                        <option value="Sarawak">Sarawak</option>
-                                        <option value="Selangor" selected>Selangor</option>
-                                        <option value="Terengganu">Terengganu</option>
-                                        <option value="Kuala Lumpur">Kuala Lumpur</option>
-                                        <option value="Labuan">Labuan</option>
-                                        <option value="Putrajaya">Putrajaya</option>
+                                        @foreach($states as $state)
+                                            <option value="{{ $state }}" @selected(old('state', 'Selangor') === $state)>{{ $state }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Postcode</label>
                                     <input type="text" name="postcode" required
-                                           value="{{ old('postcode') }}"
+                                           value="{{ old('postcode', '50000') }}"
                                            class="w-full border rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500">
                                 </div>
                             </div>
@@ -103,8 +112,8 @@
                     <div class="bg-white rounded-xl shadow p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-4">Shipping Method</h2>
                         <div class="space-y-3">
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer border-amber-500 bg-amber-50">
-                                <input type="radio" name="shipping_method" value="jnt_standard" checked
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {{ $selectedShippingMethod === 'jnt_standard' ? 'border-amber-500 bg-amber-50' : 'hover:border-amber-300' }}">
+                                <input type="radio" name="shipping_method" value="jnt_standard" {{ $selectedShippingMethod === 'jnt_standard' ? 'checked' : '' }}
                                        class="text-amber-500 focus:ring-amber-500">
                                 <div class="ml-4 flex-1">
                                     <div class="flex justify-between">
@@ -114,8 +123,8 @@
                                     <p class="text-sm text-gray-500">3-5 business days</p>
                                 </div>
                             </label>
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-amber-300">
-                                <input type="radio" name="shipping_method" value="jnt_express"
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {{ $selectedShippingMethod === 'jnt_express' ? 'border-amber-500 bg-amber-50' : 'hover:border-amber-300' }}">
+                                <input type="radio" name="shipping_method" value="jnt_express" {{ $selectedShippingMethod === 'jnt_express' ? 'checked' : '' }}
                                        class="text-amber-500 focus:ring-amber-500">
                                 <div class="ml-4 flex-1">
                                     <div class="flex justify-between">
@@ -125,8 +134,9 @@
                                     <p class="text-sm text-gray-500">1-2 business days</p>
                                 </div>
                             </label>
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-amber-300">
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {{ $selectedShippingMethod === 'free' ? 'border-amber-500 bg-amber-50' : 'hover:border-amber-300' }}">
                                 <input type="radio" name="shipping_method" value="free"
+                                       {{ $selectedShippingMethod === 'free' && $subtotal >= 10000 ? 'checked' : '' }}
                                        class="text-amber-500 focus:ring-amber-500"
                                        {{ $subtotal >= 10000 ? '' : 'disabled' }}>
                                 <div class="ml-4 flex-1">
@@ -147,8 +157,8 @@
                         <h2 class="text-xl font-bold text-gray-900 mb-4">Payment Method</h2>
                         <p class="text-sm text-gray-600 mb-4">Powered by CHIP - Malaysia's trusted payment gateway</p>
                         <div class="space-y-3">
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer border-amber-500 bg-amber-50">
-                                <input type="radio" name="payment_method" value="fpx" checked
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {{ $selectedPaymentMethod === 'fpx' ? 'border-amber-500 bg-amber-50' : 'hover:border-amber-300' }}">
+                                <input type="radio" name="payment_method" value="fpx" {{ $selectedPaymentMethod === 'fpx' ? 'checked' : '' }}
                                        class="text-amber-500 focus:ring-amber-500">
                                 <div class="ml-4 flex items-center gap-3">
                                     <span class="text-2xl">🏦</span>
@@ -158,8 +168,8 @@
                                     </div>
                                 </div>
                             </label>
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-amber-300">
-                                <input type="radio" name="payment_method" value="card"
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {{ $selectedPaymentMethod === 'card' ? 'border-amber-500 bg-amber-50' : 'hover:border-amber-300' }}">
+                                <input type="radio" name="payment_method" value="card" {{ $selectedPaymentMethod === 'card' ? 'checked' : '' }}
                                        class="text-amber-500 focus:ring-amber-500">
                                 <div class="ml-4 flex items-center gap-3">
                                     <span class="text-2xl">💳</span>
@@ -169,8 +179,8 @@
                                     </div>
                                 </div>
                             </label>
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-amber-300">
-                                <input type="radio" name="payment_method" value="ewallet"
+                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {{ $selectedPaymentMethod === 'ewallet' ? 'border-amber-500 bg-amber-50' : 'hover:border-amber-300' }}">
+                                <input type="radio" name="payment_method" value="ewallet" {{ $selectedPaymentMethod === 'ewallet' ? 'checked' : '' }}
                                        class="text-amber-500 focus:ring-amber-500">
                                 <div class="ml-4 flex items-center gap-3">
                                     <span class="text-2xl">📱</span>
@@ -188,7 +198,7 @@
                         <h2 class="text-xl font-bold text-gray-900 mb-4">Order Notes (Optional)</h2>
                         <textarea name="notes" rows="3" 
                                   placeholder="Special instructions for your order..."
-                                  class="w-full border rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500"></textarea>
+                                  class="w-full border rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500">{{ old('notes') }}</textarea>
                     </div>
                 </div>
 
@@ -220,11 +230,11 @@
                                 <span>RM {{ number_format($subtotalWithoutConditions / 100, 2) }}</span>
                             </div>
 
-                            @foreach($conditions as $condition)
-                            @php $conditionValue = (float) $condition->getValue(); @endphp
+                            @foreach($conditionBreakdown['conditions'] as $condition)
+                            @php $conditionValue = (int) ($condition['calculated_value'] ?? 0); @endphp
                             <div class="flex justify-between {{ $conditionValue < 0 ? 'text-green-600' : 'text-gray-600' }}">
                                 @php
-                                    $conditionName = (string) $condition->getName();
+                                    $conditionName = (string) ($condition['name'] ?? 'Condition');
 
                                     $displayConditionName = match (true) {
                                         str_starts_with($conditionName, 'voucher_') => 'Voucher Discount',
@@ -245,14 +255,19 @@
 
                             <div class="flex justify-between text-gray-600" id="shipping-cost">
                                 <span>Shipping</span>
-                                <span>RM 8.00</span>
+                                <span id="shipping-cost-amount">{{ ($shippingSummaries[$selectedShippingMethod]['cost'] ?? 0) === 0 ? 'FREE' : 'RM '.number_format(($shippingSummaries[$selectedShippingMethod]['cost'] ?? 0) / 100, 2) }}</span>
+                            </div>
+
+                            <div class="flex justify-between text-gray-600" id="estimated-tax-row">
+                                <span>Estimated Tax</span>
+                                <span id="estimated-tax-amount">RM {{ number_format($estimatedTax / 100, 2) }}</span>
                             </div>
 
                             <hr>
 
                             <div class="flex justify-between text-xl font-bold text-gray-900">
                                 <span>Total</span>
-                                <span id="order-total">RM {{ number_format(($total + 800) / 100, 2) }}</span>
+                                <span id="order-total">RM {{ number_format($estimatedGrandTotal / 100, 2) }}</span>
                             </div>
                         </div>
 
@@ -292,28 +307,38 @@
     </div>
 
     <script>
-        // Update shipping cost based on selection
-        document.querySelectorAll('input[name="shipping_method"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const shippingCost = document.getElementById('shipping-cost').querySelector('span:last-child');
-                const total = document.getElementById('order-total');
-                const baseTotal = {{ $total }};
-                
-                let shipping = 800;
-                if (this.value === 'jnt_express') {
-                    shipping = 1500;
-                    shippingCost.textContent = 'RM 15.00';
-                } else if (this.value === 'free') {
-                    shipping = 0;
-                    shippingCost.textContent = 'FREE';
-                    shippingCost.classList.add('text-green-600');
-                } else {
-                    shippingCost.textContent = 'RM 8.00';
-                    shippingCost.classList.remove('text-green-600');
-                }
-                
-                total.textContent = 'RM ' + ((baseTotal + shipping) / 100).toFixed(2);
+        const shippingSummaries = @json($shippingSummaries);
+        const shippingCostRow = document.getElementById('shipping-cost');
+        const shippingCostAmount = document.getElementById('shipping-cost-amount');
+        const estimatedTaxAmount = document.getElementById('estimated-tax-amount');
+        const totalAmount = document.getElementById('order-total');
+
+        const formatMoney = (cents) => `RM ${Number(cents / 100).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
+
+        const updateSummary = (shippingMethod) => {
+            const summary = shippingSummaries[shippingMethod] ?? shippingSummaries.jnt_standard;
+
+            if (summary.cost === 0) {
+                shippingCostAmount.textContent = 'FREE';
+                shippingCostRow.classList.add('text-green-600');
+            } else {
+                shippingCostAmount.textContent = formatMoney(summary.cost);
+                shippingCostRow.classList.remove('text-green-600');
+            }
+
+            estimatedTaxAmount.textContent = formatMoney(summary.tax);
+            totalAmount.textContent = formatMoney(summary.grand_total);
+        };
+
+        document.querySelectorAll('input[name="shipping_method"]').forEach((radio) => {
+            radio.addEventListener('change', function () {
+                updateSummary(this.value);
             });
         });
+
+        updateSummary(document.querySelector('input[name="shipping_method"]:checked')?.value ?? 'jnt_standard');
     </script>
 </x-shop-layout>

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
@@ -17,6 +17,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -65,6 +66,32 @@ it('owner-scopes the LatestOrders widget query', function (): void {
     expect($numbers)->not->toContain($orderB->order_number);
 });
 
+it('formats LatestOrders totals in major currency units', function (): void {
+    $owner = User::factory()->create();
+
+    $order = OwnerContext::withOwner($owner, function (): Order {
+        return Order::create([
+            'order_number' => 'ORD-WIDGET-MONEY-0001',
+            'status' => Created::class,
+            'subtotal' => 10_000,
+            'discount_total' => 0,
+            'shipping_total' => 0,
+            'tax_total' => 0,
+            'grand_total' => 10_000,
+            'currency' => 'MYR',
+        ]);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($order): void {
+        Livewire::test(LatestOrders::class)
+            ->assertSuccessful()
+            ->assertSee($order->order_number)
+            ->assertSee('MYR')
+            ->assertSee('100.00')
+            ->assertDontSee('MYR 10,000.00');
+    });
+});
+
 it('owner-scopes the TopAffiliates widget query', function (): void {
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();
@@ -73,7 +100,7 @@ it('owner-scopes the TopAffiliates widget query', function (): void {
         return Affiliate::create([
             'code' => 'OWNER-A-CODE',
             'name' => 'Owner A Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
         ]);
     });
 
@@ -81,7 +108,7 @@ it('owner-scopes the TopAffiliates widget query', function (): void {
         return Affiliate::create([
             'code' => 'OWNER-B-CODE',
             'name' => 'Owner B Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
         ]);
     });
 

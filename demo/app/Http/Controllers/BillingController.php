@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use AIArmada\CashierChip\Facades\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use App\Models\User;
@@ -23,12 +23,13 @@ class BillingController extends Controller
     {
         $owner = OwnerContext::resolve();
 
+        if ($owner === null) {
+            abort(404);
+        }
+
         $product = Product::query()
-            ->when(
-                $owner,
-                fn ($query) => $query->forOwner($owner),
-                fn ($query) => $query->whereRaw('1 = 0'),
-            )
+            ->where('owner_type', $owner->getMorphClass())
+            ->where('owner_id', (string) $owner->getKey())
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -47,12 +48,13 @@ class BillingController extends Controller
 
         $owner = OwnerContext::resolve();
 
+        if ($owner === null) {
+            abort(404);
+        }
+
         $product = Product::query()
-            ->when(
-                $owner,
-                fn ($query) => $query->forOwner($owner),
-                fn ($query) => $query->whereRaw('1 = 0'),
-            )
+            ->where('owner_type', $owner->getMorphClass())
+            ->where('owner_id', (string) $owner->getKey())
             ->whereKey((string) $request->product_id)
             ->firstOrFail();
 
@@ -63,7 +65,7 @@ class BillingController extends Controller
         ]);
 
         // Create purchase with Chip
-        $purchase = CashierChip::createPurchase([
+        $purchase = Cashier::chip()->createPurchase([
             'amount' => $product->price,
             'currency' => 'MYR',
             'token' => $request->chip_token,
@@ -84,8 +86,8 @@ class BillingController extends Controller
     public function subscribeChip(string $plan): View
     {
         $plans = [
-            'pro' => ['name' => 'Pro Monthly', 'price_id' => 'price_pro_monthly', 'amount' => 9900],
-            'business' => ['name' => 'Business Annual', 'price_id' => 'price_business_yearly', 'amount' => 99900],
+            'pro' => ['name' => 'Pro Monthly', 'price_id' => 'price_pro_monthly', 'amount' => 9900, 'billing_interval' => 'month'],
+            'business' => ['name' => 'Business Annual', 'price_id' => 'price_business_yearly', 'amount' => 99900, 'billing_interval' => 'year'],
         ];
 
         $planData = $plans[$plan] ?? abort(404);
@@ -99,7 +101,7 @@ class BillingController extends Controller
     public function processSubscribeChip(Request $request): RedirectResponse
     {
         $request->validate([
-            'chip_token' => 'required|string',
+            'plan' => 'required|in:pro,business',
         ]);
 
         $user = Auth::user();
@@ -107,72 +109,49 @@ class BillingController extends Controller
             abort(401, 'Authentication required');
         }
 
-        $plan = $request->plan ?? 'pro';
+        $plan = (string) $request->input('plan', 'pro');
 
-        $subscription = $user->newChipSubscription($plan, $request->chip_token)
-            ->create();
+        $planData = [
+            'pro' => ['price_id' => 'price_pro_monthly', 'amount' => 9900, 'billing_interval' => 'month'],
+            'business' => ['price_id' => 'price_business_yearly', 'amount' => 99900, 'billing_interval' => 'year'],
+        ][$plan] ?? abort(404);
 
-        return redirect()->route('billing.portal')
-            ->with('success', "Subscribed to {$plan} plan!");
-    }
+        $subscriptionBuilder = $user->newSubscription('default')
+            ->price([
+                'price' => $planData['price_id'],
+                'unit_amount' => $planData['amount'],
+                'quantity' => 1,
+            ]);
 
-    /**
-     * Stripe subscription checkout.
-     */
-    public function subscribeStripe(string $plan): View
-    {
-        $user = Auth::user();
-        if (! $user) {
-            abort(401);
-        }
+        $subscriptionBuilder = $planData['billing_interval'] === 'year'
+            ? $subscriptionBuilder->yearly()
+            : $subscriptionBuilder->monthly();
 
-        $user->createOrRetrieveStripeCustomer();
-
-        $plans = [
-            'pro' => 'price_pro_monthly_stripe', // Assume price IDs
-            'business' => 'price_business_yearly_stripe',
-        ];
-
-        $intent = $user->createSetupIntent();
-
-        return view('billing.subscribe-stripe', [
-            'intent' => $intent,
-            'plan' => $plans[$plan] ?? abort(404),
+        $checkout = $subscriptionBuilder->checkout([
+            'success_url' => route('billing.portal'),
+            'cancel_url' => route('subscribe.chip', ['plan' => $plan]),
         ]);
+
+        return $checkout->redirect();
     }
 
     /**
-     * Process Stripe subscription.
+     * Billing portal for CHIP subscriptions.
      */
-    public function processSubscribeStripe(Request $request): RedirectResponse
-    {
-        $user = Auth::user();
-
-        $subscription = $user->newSubscription('default', $request->plan)
-            ->create($request->stripe_token);
-
-        return redirect()->route('billing.portal')
-            ->with('success', 'Stripe subscription created!');
-    }
-
-    /**
-     * Billing portal (unified for Chip + Stripe).
-     */
-    public function portal(): RedirectResponse|View
+    public function portal(): RedirectResponse
     {
         $user = Auth::user();
         if (! $user) {
             return redirect('/login');
         }
 
-        // CashierChip portal
-        if ($user->hasChipSubscription()) {
-            return redirect(CashierChip::portalUrl($user));
+        if ($user->subscribed('default')) {
+            return redirect('/admin')
+                ->with('success', 'Your CHIP subscription is active. Manage billing from the demo admin panel.');
         }
 
-        // Stripe portal
-        $portalUrl = $user->billingPortalUrl();
-
-        return redirect($portalUrl);
+        return redirect()
+            ->route('subscribe.chip', ['plan' => 'pro'])
+            ->with('info', 'Choose a CHIP plan to start billing through the demo checkout flow.');
     }
 }
