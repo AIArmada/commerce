@@ -37,6 +37,7 @@ final class ChipServiceProvider extends PackageServiceProvider
         $package
             ->name('chip')
             ->hasConfigFile()
+            ->runsMigrations()
             ->discoversMigrations()
             ->hasCommands([
                 ChipHealthCheckCommand::class,

@@ -32,6 +32,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $package
             ->name('cart')
             ->hasConfigFile()
+            ->runsMigrations()
             ->discoversMigrations()
             ->hasCommands([
                 Console\Commands\ClearAbandonedCartsCommand::class,

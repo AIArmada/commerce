@@ -28,6 +28,7 @@ final class ProductsServiceProvider extends PackageServiceProvider
             ->name('products')
             ->hasConfigFile()
             ->hasTranslations()
+            ->runsMigrations()
             ->discoversMigrations();
     }
 

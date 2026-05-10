@@ -41,6 +41,7 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 MarkAbandonedCartsCommand::class,
             ])
+            ->runsMigrations()
             ->discoversMigrations();
     }
 
