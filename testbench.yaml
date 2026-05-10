@@ -45,7 +45,6 @@ migrations:
   - packages/chip/database/migrations
   - packages/customers/database/migrations
   - packages/docs/database/migrations
-  # filament-authz migrations loaded via service provider
   - packages/filament-cart/database/migrations
   - packages/jnt/database/migrations
   - packages/inventory/database/migrations

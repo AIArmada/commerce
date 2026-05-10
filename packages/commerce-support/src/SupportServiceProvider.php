@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\ConditionalMigrationLoader;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingEngine;
@@ -45,8 +46,38 @@ final class SupportServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        $this->loadDependencyMigrations();
         $this->validateMorphKeyType();
         $this->ensureOwnerResolverIsConfiguredWhenOwnerModeEnabled();
+    }
+
+    private function loadDependencyMigrations(): void
+    {
+        ConditionalMigrationLoader::loadFileIfMissing(
+            $this,
+            base_path('vendor/spatie/laravel-settings/database/migrations/create_settings_table.php.stub')
+        );
+
+        ConditionalMigrationLoader::loadFileIfMissing(
+            $this,
+            base_path('vendor/owen-it/laravel-auditing/database/migrations/audits.stub'),
+            'create_audits_table'
+        );
+
+        ConditionalMigrationLoader::loadDirectoryIfMissing(
+            $this,
+            base_path('vendor/spatie/laravel-activitylog/database/migrations')
+        );
+
+        ConditionalMigrationLoader::loadFileIfMissing(
+            $this,
+            base_path('vendor/spatie/laravel-tags/database/migrations/create_tag_tables.php.stub')
+        );
+
+        ConditionalMigrationLoader::loadFileIfMissing(
+            $this,
+            base_path('vendor/spatie/laravel-medialibrary/database/migrations/create_media_table.php.stub')
+        );
     }
 
     private function validateMorphKeyType(): void

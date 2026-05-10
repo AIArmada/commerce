@@ -419,14 +419,6 @@ abstract class TestCase extends Orchestra
             }
             $table->string('name');
             $table->string('guard_name');
-            // Hierarchy columns for filament-authz
-            $table->foreignUuid('parent_role_id')->nullable();
-            $table->foreignUuid('template_id')->nullable();
-            $table->text('description')->nullable();
-            $table->integer('level')->default(0);
-            $table->json('metadata')->nullable();
-            $table->boolean('is_system')->default(false);
-            $table->boolean('is_assignable')->default(true);
             $table->timestamps();
 
             if (config('permission.teams')) {
@@ -434,9 +426,6 @@ abstract class TestCase extends Orchestra
             } else {
                 $table->unique(['name', 'guard_name']);
             }
-            $table->index('parent_role_id', 'roles_parent_role_id_index');
-            $table->index('template_id', 'roles_template_id_index');
-            $table->index('level', 'roles_level_index');
         });
 
         Schema::create('model_has_permissions', function (Blueprint $table): void {
@@ -446,9 +435,9 @@ abstract class TestCase extends Orchestra
 
             $table->index(['model_id', 'model_type'], 'model_has_permissions_model_id_model_type_index');
             if (config('permission.teams')) {
-                $table->uuid('team_id');
+                $table->uuid('team_id')->nullable();
                 $table->index('team_id', 'model_has_permissions_team_foreign_key_index');
-                $table->primary(['team_id', 'permission_id', 'model_id', 'model_type'], 'model_has_permissions_permission_model_type_primary');
+                $table->unique(['team_id', 'permission_id', 'model_id', 'model_type'], 'model_has_permissions_team_permission_model_type_unique');
             } else {
                 $table->primary(['permission_id', 'model_id', 'model_type'], 'model_has_permissions_permission_model_type_primary');
             }
@@ -461,9 +450,9 @@ abstract class TestCase extends Orchestra
 
             $table->index(['model_id', 'model_type'], 'model_has_roles_model_id_model_type_index');
             if (config('permission.teams')) {
-                $table->uuid('team_id');
+                $table->uuid('team_id')->nullable();
                 $table->index('team_id', 'model_has_roles_team_foreign_key_index');
-                $table->primary(['team_id', 'role_id', 'model_id', 'model_type'], 'model_has_roles_role_model_type_primary');
+                $table->unique(['team_id', 'role_id', 'model_id', 'model_type'], 'model_has_roles_team_role_model_type_unique');
             } else {
                 $table->primary(['role_id', 'model_id', 'model_type'], 'model_has_roles_role_model_type_primary');
             }
@@ -968,30 +957,24 @@ abstract class TestCase extends Orchestra
         // =========================================================================
         // CUSTOMERS PACKAGE TABLES
         // =========================================================================
-        Schema::dropIfExists('customer_segment');
-        Schema::dropIfExists('customer_customer_group');
-        Schema::dropIfExists('customer_notes');
-        Schema::dropIfExists('customer_addresses');
-        Schema::dropIfExists('customer_segments');
-        Schema::dropIfExists('customer_groups');
-        Schema::dropIfExists('customers');
-
-        Schema::create('customers', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->uuid('user_id')->nullable()->index();
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->string('email')->index();
-            $table->string('phone')->nullable();
-            $table->string('company')->nullable();
-            $table->string('status')->default('active');
-            $table->boolean('accepts_marketing')->default(false);
-            $table->boolean('is_guest')->default(false)->index();
-            $table->nullableUuidMorphs('owner');
-            $table->json('metadata')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        if (! Schema::hasTable('customers')) {
+            Schema::create('customers', function (Blueprint $table): void {
+                $table->uuid('id')->primary();
+                $table->uuid('user_id')->nullable()->index();
+                $table->string('first_name');
+                $table->string('last_name');
+                $table->string('email')->index();
+                $table->string('phone')->nullable();
+                $table->string('company')->nullable();
+                $table->string('status')->default('active');
+                $table->boolean('accepts_marketing')->default(false);
+                $table->boolean('is_guest')->default(false)->index();
+                $table->nullableUuidMorphs('owner');
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
 
         if (! Schema::hasColumn('customers', 'is_guest')) {
             Schema::table('customers', function (Blueprint $table): void {
@@ -999,109 +982,127 @@ abstract class TestCase extends Orchestra
             });
         }
 
-        Schema::create('tags', function (Blueprint $table): void {
-            $table->id();
-            $table->json('name');
-            $table->json('slug');
-            $table->string('type')->nullable();
-            $table->integer('order_column')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('tags')) {
+            Schema::create('tags', function (Blueprint $table): void {
+                $table->id();
+                $table->json('name');
+                $table->json('slug');
+                $table->string('type')->nullable();
+                $table->integer('order_column')->nullable();
+                $table->timestamps();
+            });
+        }
 
-        Schema::create('taggables', function (Blueprint $table): void {
-            $table->foreignId('tag_id')->constrained()->cascadeOnDelete();
-            $table->morphs('taggable');
-            $table->unique(['tag_id', 'taggable_id', 'taggable_type']);
-        });
+        if (! Schema::hasTable('taggables')) {
+            Schema::create('taggables', function (Blueprint $table): void {
+                $table->foreignId('tag_id')->constrained()->cascadeOnDelete();
+                $table->morphs('taggable');
+                $table->unique(['tag_id', 'taggable_id', 'taggable_type']);
+            });
+        }
 
-        Schema::create('customer_groups', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->boolean('requires_approval')->default(true);
-            $table->nullableUuidMorphs('owner');
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        if (! Schema::hasTable('customer_groups')) {
+            Schema::create('customer_groups', function (Blueprint $table): void {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->text('description')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->boolean('requires_approval')->default(true);
+                $table->nullableUuidMorphs('owner');
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
 
-        Schema::create('customer_group_members', function (Blueprint $table): void {
-            $table->id();
-            $table->uuid('group_id');
-            $table->uuid('customer_id');
-            $table->string('role')->default('member');
-            $table->timestamp('joined_at')->useCurrent();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('customer_group_members')) {
+            Schema::create('customer_group_members', function (Blueprint $table): void {
+                $table->id();
+                $table->uuid('group_id');
+                $table->uuid('customer_id');
+                $table->string('role')->default('member');
+                $table->timestamp('joined_at')->useCurrent();
+                $table->timestamps();
+            });
+        }
 
-        Schema::create('customer_segments', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->string('type')->nullable();
-            $table->text('description')->nullable();
-            $table->json('conditions')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_automatic')->default(true);
-            $table->integer('priority')->default(0);
-            $table->nullableUuidMorphs('owner');
-            $table->json('metadata')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        if (! Schema::hasTable('customer_segments')) {
+            Schema::create('customer_segments', function (Blueprint $table): void {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->string('slug')->unique();
+                $table->string('type')->nullable();
+                $table->text('description')->nullable();
+                $table->json('conditions')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->boolean('is_automatic')->default(true);
+                $table->integer('priority')->default(0);
+                $table->nullableUuidMorphs('owner');
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
 
-        Schema::create('customer_addresses', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->uuid('customer_id');
-            $table->nullableUuidMorphs('owner');
-            $table->string('type')->default('shipping');
-            $table->string('first_name')->nullable();
-            $table->string('last_name')->nullable();
-            $table->string('company')->nullable();
-            $table->string('line1');
-            $table->string('line2')->nullable();
-            $table->string('city');
-            $table->string('state')->nullable();
-            $table->string('country');
-            $table->string('phone')->nullable();
-            $table->string('recipient_name')->nullable();
-            $table->boolean('is_default')->default(false);
-            $table->boolean('is_default_billing')->default(false);
-            $table->boolean('is_default_shipping')->default(false);
-            $table->boolean('is_verified')->default(false);
-            $table->string('postcode')->nullable();
-            $table->string('label')->nullable();
-            $table->decimal('latitude', 10, 7)->nullable();
-            $table->decimal('longitude', 10, 7)->nullable();
-            $table->json('metadata')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        if (! Schema::hasTable('customer_addresses')) {
+            Schema::create('customer_addresses', function (Blueprint $table): void {
+                $table->uuid('id')->primary();
+                $table->uuid('customer_id');
+                $table->nullableUuidMorphs('owner');
+                $table->string('type')->default('shipping');
+                $table->string('first_name')->nullable();
+                $table->string('last_name')->nullable();
+                $table->string('company')->nullable();
+                $table->string('line1');
+                $table->string('line2')->nullable();
+                $table->string('city');
+                $table->string('state')->nullable();
+                $table->string('country');
+                $table->string('phone')->nullable();
+                $table->string('recipient_name')->nullable();
+                $table->boolean('is_default')->default(false);
+                $table->boolean('is_default_billing')->default(false);
+                $table->boolean('is_default_shipping')->default(false);
+                $table->boolean('is_verified')->default(false);
+                $table->string('postcode')->nullable();
+                $table->string('label')->nullable();
+                $table->decimal('latitude', 10, 7)->nullable();
+                $table->decimal('longitude', 10, 7)->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
 
-        Schema::create('customer_notes', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->uuid('customer_id');
-            $table->nullableUuidMorphs('owner');
-            $table->text('content');
-            $table->boolean('is_internal')->default(true);
-            $table->boolean('is_pinned')->default(false);
-            $table->nullableUuidMorphs('created_by');
-            $table->json('metadata')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('customer_notes')) {
+            Schema::create('customer_notes', function (Blueprint $table): void {
+                $table->uuid('id')->primary();
+                $table->uuid('customer_id');
+                $table->nullableUuidMorphs('owner');
+                $table->text('content');
+                $table->boolean('is_internal')->default(true);
+                $table->boolean('is_pinned')->default(false);
+                $table->nullableUuidMorphs('created_by');
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+            });
+        }
 
-        Schema::create('customer_customer_group', function (Blueprint $table): void {
-            $table->uuid('customer_id');
-            $table->uuid('customer_group_id');
-            $table->primary(['customer_id', 'customer_group_id']);
-        });
+        if (! Schema::hasTable('customer_customer_group')) {
+            Schema::create('customer_customer_group', function (Blueprint $table): void {
+                $table->uuid('customer_id');
+                $table->uuid('customer_group_id');
+                $table->primary(['customer_id', 'customer_group_id']);
+            });
+        }
 
-        Schema::create('customer_segment_customer', function (Blueprint $table): void {
-            $table->uuid('customer_id');
-            $table->uuid('segment_id');
-            $table->timestamps();
-            $table->primary(['customer_id', 'segment_id']);
-        });
+        if (! Schema::hasTable('customer_segment_customer')) {
+            Schema::create('customer_segment_customer', function (Blueprint $table): void {
+                $table->uuid('customer_id');
+                $table->uuid('segment_id');
+                $table->timestamps();
+                $table->primary(['customer_id', 'segment_id']);
+            });
+        }
 
         // =========================================================================
         // ORDERS PACKAGE TABLES
