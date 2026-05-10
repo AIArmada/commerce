@@ -65,6 +65,38 @@ it('fails closed when commerce owner mode uses the null owner resolver', functio
     }
 });
 
+it('registers fallback dependency migration paths when they are not published', function (): void {
+    $paths = collect(app('migrator')->paths());
+    $containsRuntimePath = static fn (string $suffix): bool => $paths->contains(
+        static fn (string $path): bool => str_contains($path, "{$suffix}.php")
+    );
+
+    $expectsPath = function (string $suffix): bool {
+        return glob(database_path("migrations/*_{$suffix}.php")) === [];
+    };
+
+    if ($expectsPath('create_settings_table')) {
+        expect($containsRuntimePath('create_settings_table'))->toBeTrue();
+    }
+
+    if ($expectsPath('create_audits_table')) {
+        expect($containsRuntimePath('create_audits_table'))->toBeTrue();
+    }
+
+    if ($expectsPath('create_activity_log_table')) {
+        expect($containsRuntimePath('create_activity_log_table'))->toBeTrue();
+    }
+
+    if ($expectsPath('create_tag_tables')) {
+        expect($containsRuntimePath('create_tag_tables'))->toBeTrue();
+    }
+
+    if ($expectsPath('create_media_table')) {
+        expect($containsRuntimePath('create_media_table'))->toBeTrue();
+    }
+
+});
+
 class SupportTestOwnerResolver implements OwnerResolverInterface
 {
     public function resolve(): ?Model
