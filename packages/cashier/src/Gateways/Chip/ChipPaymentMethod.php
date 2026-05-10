@@ -112,6 +112,10 @@ class ChipPaymentMethod implements PaymentMethodContract
             return false;
         }
 
+        if (! method_exists($this->billable, 'defaultPaymentMethod')) {
+            return false;
+        }
+
         $default = $this->billable->defaultPaymentMethod();
 
         if (is_string($default)) {
@@ -146,6 +150,10 @@ class ChipPaymentMethod implements PaymentMethodContract
     {
         if (! $this->billable) {
             throw new Exception('Cannot delete payment method without billable owner');
+        }
+
+        if (! method_exists($this->billable, 'deletePaymentMethod')) {
+            throw new Exception('Billable owner cannot delete CHIP payment methods');
         }
 
         $this->billable->deletePaymentMethod($this->id());

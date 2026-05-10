@@ -66,7 +66,7 @@ class StripeGateway extends AbstractGateway
      */
     public function customer(BillableContract $billable): CustomerContract
     {
-        $stripeCustomer = $billable->asStripeCustomer();
+        $stripeCustomer = $this->callBillableMethod($billable, 'asStripeCustomer');
 
         return new StripeCustomer($stripeCustomer, $billable);
     }
@@ -78,7 +78,7 @@ class StripeGateway extends AbstractGateway
      */
     public function createCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
-        $stripeCustomer = $billable->createOrGetStripeCustomer($options);
+        $stripeCustomer = $this->callBillableMethod($billable, 'createOrGetStripeCustomer', [$options]);
 
         return new StripeCustomer($stripeCustomer, $billable);
     }
@@ -90,7 +90,7 @@ class StripeGateway extends AbstractGateway
      */
     public function updateCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
-        $stripeCustomer = $billable->updateStripeCustomer($options);
+        $stripeCustomer = $this->callBillableMethod($billable, 'updateStripeCustomer', [$options]);
 
         return new StripeCustomer($stripeCustomer, $billable);
     }
@@ -102,7 +102,7 @@ class StripeGateway extends AbstractGateway
      */
     public function syncCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
-        $stripeCustomer = $billable->syncStripeCustomerDetails($options);
+        $stripeCustomer = $this->callBillableMethod($billable, 'syncStripeCustomerDetails', [$options]);
 
         return new StripeCustomer($stripeCustomer, $billable);
     }
@@ -114,7 +114,7 @@ class StripeGateway extends AbstractGateway
      */
     public function charge(BillableContract $billable, int $amount, #[SensitiveParameter] ?string $paymentMethod = null, array $options = []): PaymentContract
     {
-        $payment = $billable->charge($amount, $paymentMethod, $options);
+        $payment = $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $options]);
 
         return new StripePayment($payment);
     }
@@ -216,8 +216,9 @@ class StripeGateway extends AbstractGateway
      */
     public function subscriptions(BillableContract $billable): Collection
     {
-        $subscriptions = $billable->subscriptions()
-            ->get()
+        $subscriptionsRelation = $this->callBillableMethod($billable, 'subscriptions');
+
+        $subscriptions = $subscriptionsRelation->get()
             ->map(fn ($subscription) => new StripeSubscription($subscription))
             ->values();
 
@@ -235,7 +236,7 @@ class StripeGateway extends AbstractGateway
     {
         $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
 
-        $invoices = $billable->invoices($includePending)
+        $invoices = collect($this->callBillableMethod($billable, 'invoices', [$includePending]))
             ->map(fn ($invoice) => new StripeInvoice($invoice->asStripeInvoice()))
             ->values();
 
@@ -251,7 +252,9 @@ class StripeGateway extends AbstractGateway
      */
     public function paymentMethods(BillableContract $billable, ?string $type = null): Collection
     {
-        $paymentMethods = $billable->paymentMethods($type)
+        $arguments = $type === null ? [] : [$type];
+
+        $paymentMethods = collect($this->callBillableMethod($billable, 'paymentMethods', $arguments))
             ->map(fn ($paymentMethod) => new StripePaymentMethod($paymentMethod, $billable))
             ->values();
 
@@ -264,7 +267,7 @@ class StripeGateway extends AbstractGateway
      */
     public function findPaymentMethod(BillableContract $billable, string $paymentMethodId): ?PaymentMethodContract
     {
-        $paymentMethod = $billable->findPaymentMethod($paymentMethodId);
+        $paymentMethod = $this->callBillableMethod($billable, 'findPaymentMethod', [$paymentMethodId]);
 
         if (! $paymentMethod) {
             return null;
@@ -278,7 +281,7 @@ class StripeGateway extends AbstractGateway
      */
     public function defaultPaymentMethod(BillableContract $billable): ?PaymentMethodContract
     {
-        $paymentMethod = $billable->defaultPaymentMethod();
+        $paymentMethod = $this->callBillableMethod($billable, 'defaultPaymentMethod');
 
         if (! $paymentMethod) {
             return null;
@@ -294,7 +297,7 @@ class StripeGateway extends AbstractGateway
      */
     public function createSetupIntent(BillableContract $billable, array $options = []): mixed
     {
-        return $billable->createSetupIntent($options);
+        return $this->callBillableMethod($billable, 'createSetupIntent', [$options]);
     }
 
     /**
@@ -344,7 +347,7 @@ class StripeGateway extends AbstractGateway
      */
     public function customerPortalUrl(BillableContract $billable, string $returnUrl, array $options = []): string
     {
-        return $billable->billingPortalUrl($returnUrl);
+        return $this->callBillableMethod($billable, 'billingPortalUrl', [$returnUrl, $options]);
     }
 
     /**
@@ -355,7 +358,7 @@ class StripeGateway extends AbstractGateway
     public function createBillingPortalSession(BillableContract $billable, string $returnUrl, array $options = []): mixed
     {
         return $this->client()->billingPortal->sessions->create(array_merge([
-            'customer' => $billable->stripeId(),
+            'customer' => $this->callBillableMethod($billable, 'stripeId'),
             'return_url' => $returnUrl,
         ], $options));
     }

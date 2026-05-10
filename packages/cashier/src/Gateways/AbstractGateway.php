@@ -22,6 +22,7 @@ use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use RuntimeException;
 
 /**
  * Abstract base class for payment gateway implementations.
@@ -324,5 +325,29 @@ abstract class AbstractGateway implements GatewayContract
     protected function gatewayIdColumn(): string
     {
         return $this->name() . '_id';
+    }
+
+    /**
+     * Call a gateway-native hook on the billable model.
+     *
+     * These methods are intentionally not all part of {@see BillableContract}
+     * because Stripe and CHIP expose different native signatures. The unified
+     * bridge API remains on the contract, while adapters guard and invoke the
+     * underlying gateway-specific hooks explicitly.
+     *
+     * @param  list<mixed>  $arguments
+     */
+    protected function callBillableMethod(BillableContract $billable, string $method, array $arguments = []): mixed
+    {
+        if (! method_exists($billable, $method)) {
+            throw new RuntimeException(sprintf(
+                'Billable model [%s] must define [%s] to use the [%s] gateway.',
+                $billable::class,
+                $method,
+                $this->name(),
+            ));
+        }
+
+        return $billable->{$method}(...$arguments);
     }
 }

@@ -38,7 +38,7 @@ describe('CashierServiceProvider', function (): void {
             ->and(config('cashier.gateways.chip.brand_id'))->toBe('test_brand_id');
     });
 
-    it('does not auto-run Stripe migrations and instead makes them publishable', function (): void {
+    it('makes Stripe migrations publishable and auto-loads them when unpublished', function (): void {
         $provider = $this->app->getProvider(CashierServiceProvider::class);
 
         expect($provider)->not()->toBeNull();
@@ -49,8 +49,14 @@ describe('CashierServiceProvider', function (): void {
 
         if ($isInstalled && is_dir($migrationsPath)) {
             $pathsToPublish = ServiceProvider::pathsToPublish(CashierServiceProvider::class, 'cashier-stripe-migrations');
+            $migratorPaths = collect(app('migrator')->paths());
 
             expect($pathsToPublish)->toBeArray()->not()->toBeEmpty();
+
+            if (glob(database_path('migrations/*_create_customer_columns.php')) === []) {
+                expect($migratorPaths->contains($migrationsPath . '/2019_05_03_000001_create_customer_columns.php'))
+                    ->toBeTrue();
+            }
         } else {
             expect(true)->toBeTrue();
         }

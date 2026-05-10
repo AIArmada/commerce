@@ -127,7 +127,6 @@ abstract class CashierChipTestCase extends Orchestra
             $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->string('chip_id')->nullable()->index();
-            $table->string('chip_default_payment_method')->nullable();
             $table->string('pm_type')->nullable();
             $table->string('pm_last_four', 4)->nullable();
             $table->string('default_pm_id')->nullable();

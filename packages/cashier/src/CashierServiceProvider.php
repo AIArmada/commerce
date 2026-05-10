@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier;
 
+use AIArmada\CommerceSupport\Support\ConditionalMigrationLoader;
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -40,6 +41,7 @@ final class CashierServiceProvider extends PackageServiceProvider
     public function bootingPackage(): void
     {
         $this->registerPublishing();
+        $this->loadStripeMigrationFallbacks();
         $this->registerRoutes();
 
         // Register cart integration if cart package is installed
@@ -90,5 +92,17 @@ final class CashierServiceProvider extends PackageServiceProvider
         if (Cashier::$registersRoutes) {
             $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
         }
+    }
+
+    protected function loadStripeMigrationFallbacks(): void
+    {
+        if (! class_exists(\Laravel\Cashier\CashierServiceProvider::class)) {
+            return;
+        }
+
+        ConditionalMigrationLoader::loadDirectoryIfMissing(
+            $this,
+            base_path('vendor/laravel/cashier/database/migrations')
+        );
     }
 }

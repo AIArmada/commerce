@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Cashier\Fixtures;
 
 use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Contracts\InvoiceContract;
+use AIArmada\Cashier\Contracts\PaymentContract;
+use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
@@ -42,9 +45,24 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
         return Cashier::gateway($gateway);
     }
 
+    public function preferredGateway(): string
+    {
+        /** @var string|null $preferredGateway */
+        $preferredGateway = $this->getAttribute('preferred_gateway');
+
+        return $preferredGateway ?? config('cashier.default', 'stripe');
+    }
+
+    public function setPreferredGateway(string $gateway): static
+    {
+        $this->setAttribute('preferred_gateway', $gateway);
+
+        return $this;
+    }
+
     public function defaultGateway(): string
     {
-        return config('cashier.default', 'stripe');
+        return $this->preferredGateway();
     }
 
     public function gatewayId(?string $gateway = null): ?string
@@ -62,17 +80,22 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
         throw new RuntimeException('Not implemented for tests.');
     }
 
-    public function createOrGetCustomer(array $options = [], ?string $gateway = null): CustomerContract
+    public function createOrGetCustomer(?string $gateway = null, array $options = []): CustomerContract
     {
         throw new RuntimeException('Not implemented for tests.');
     }
 
-    public function updateCustomer(array $options = [], ?string $gateway = null): CustomerContract
+    public function updateCustomer(?string $gateway = null, array $options = []): CustomerContract
     {
         throw new RuntimeException('Not implemented for tests.');
     }
 
     public function asCustomer(?string $gateway = null): CustomerContract
+    {
+        throw new RuntimeException('Not implemented for tests.');
+    }
+
+    public function syncCustomer(?string $gateway = null, array $options = []): CustomerContract
     {
         throw new RuntimeException('Not implemented for tests.');
     }
@@ -122,6 +145,96 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
     public function preferredLocale(): ?string
     {
         return config('cashier.locale');
+    }
+
+    public function chargeWithGateway(int $amount, string $paymentMethod, ?string $gateway = null, array $options = []): PaymentContract
+    {
+        throw new RuntimeException('Not implemented for tests.');
+    }
+
+    public function newGatewaySubscription(string $type, string | array $prices = [], ?string $gateway = null): SubscriptionBuilderContract
+    {
+        throw new RuntimeException('Not implemented for tests.');
+    }
+
+    public function checkoutWithGateway(?string $gateway = null): CheckoutBuilderContract
+    {
+        throw new RuntimeException('Not implemented for tests.');
+    }
+
+    public function allGatewaySubscriptions(): Collection
+    {
+        return collect();
+    }
+
+    public function gatewaySubscriptions(?string $gateway = null): Collection
+    {
+        return collect();
+    }
+
+    public function gatewaySubscription(string $type, ?string $gateway = null): ?SubscriptionContract
+    {
+        return null;
+    }
+
+    public function subscribedViaGateway(string $type = 'default', ?string $price = null, ?string $gateway = null): bool
+    {
+        return false;
+    }
+
+    public function allGatewayPaymentMethods(): Collection
+    {
+        return collect();
+    }
+
+    public function gatewayPaymentMethods(?string $gateway = null, ?string $type = null): Collection
+    {
+        return collect();
+    }
+
+    public function defaultGatewayPaymentMethod(?string $gateway = null): ?PaymentMethodContract
+    {
+        return null;
+    }
+
+    public function createGatewaySetupIntent(?string $gateway = null, array $options = []): mixed
+    {
+        return null;
+    }
+
+    public function allGatewayInvoices(array $parameters = []): Collection
+    {
+        return collect();
+    }
+
+    public function gatewayInvoices(?string $gateway = null, array $parameters = []): Collection
+    {
+        return collect();
+    }
+
+    public function gatewayBillingPortalUrl(string $returnUrl, ?string $gateway = null, array $options = []): ?string
+    {
+        return null;
+    }
+
+    public function allSubscriptions(): Collection
+    {
+        return collect();
+    }
+
+    public function findSubscription(string $type = 'default'): ?SubscriptionContract
+    {
+        return null;
+    }
+
+    public function subscribedOnAny(string $type = 'default', ?string $price = null): bool
+    {
+        return false;
+    }
+
+    public function onTrialOnAny(string $type = 'default'): bool
+    {
+        return $this->onTrial($type);
     }
 
     public function newSubscription(string $type, string | array $prices = [], ?string $gateway = null): SubscriptionBuilderContract
@@ -178,47 +291,47 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
         return false;
     }
 
-    public function paymentMethods(?string $gateway = null): Collection
+    public function paymentMethods(?string $type = null): Collection
     {
         return collect();
     }
 
-    public function findPaymentMethod(string $paymentMethodId, ?string $gateway = null): mixed
+    public function findPaymentMethod(string $paymentMethodId): mixed
     {
         return null;
     }
 
-    public function hasDefaultPaymentMethod(?string $gateway = null): bool
+    public function hasDefaultPaymentMethod(): bool
     {
         return false;
     }
 
-    public function hasPaymentMethod(?string $gateway = null): bool
+    public function hasPaymentMethod(?string $type = null): bool
     {
         return false;
     }
 
-    public function defaultPaymentMethod(?string $gateway = null): mixed
+    public function defaultPaymentMethod(): mixed
     {
         return null;
     }
 
-    public function updateDefaultPaymentMethod(string $paymentMethodId, ?string $gateway = null): self
+    public function updateDefaultPaymentMethod(string $paymentMethodId): self
     {
         return $this;
     }
 
-    public function deletePaymentMethod(string $paymentMethodId, ?string $gateway = null): void
+    public function deletePaymentMethod(string $paymentMethodId): void
     {
         // no-op for tests
     }
 
-    public function deletePaymentMethods(?string $gateway = null): void
+    public function deletePaymentMethods(): void
     {
         // no-op for tests
     }
 
-    public function charge(int $amount, ?string $paymentMethod = null, array $options = [], ?string $gateway = null): mixed
+    public function charge(int $amount, ?string $paymentMethod = null, array $options = []): mixed
     {
         throw new RuntimeException('Not implemented for tests.');
     }
@@ -233,27 +346,27 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
         throw new RuntimeException('Not implemented for tests.');
     }
 
-    public function invoices(bool $includePending = false, ?string $gateway = null): Collection
+    public function invoices(bool | array $parameters = false): Collection
     {
         return collect();
     }
 
-    public function findInvoice(string $invoiceId, ?string $gateway = null): ?InvoiceContract
+    public function findInvoice(string $invoiceId): ?InvoiceContract
     {
         return null;
     }
 
-    public function upcomingInvoice(?string $gateway = null): ?InvoiceContract
+    public function upcomingInvoice(array $options = []): ?InvoiceContract
     {
         return null;
     }
 
-    public function asStripeCustomer(): mixed
+    public function asStripeCustomer(array $expand = []): mixed
     {
         throw new RuntimeException('Not implemented for tests.');
     }
 
-    public function createOrGetStripeCustomer(array $options = []): mixed
+    public function createOrGetStripeCustomer(array $options = [], array $requestOptions = []): mixed
     {
         throw new RuntimeException('Not implemented for tests.');
     }
@@ -322,7 +435,7 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
         throw new RuntimeException('Not implemented for tests.');
     }
 
-    public function billingPortalUrl(string $returnUrl, array $options = []): string
+    public function billingPortalUrl(?string $returnUrl = null, array $options = []): string
     {
         throw new RuntimeException('Not implemented for tests.');
     }

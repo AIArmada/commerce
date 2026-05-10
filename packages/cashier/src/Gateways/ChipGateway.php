@@ -76,7 +76,7 @@ class ChipGateway extends AbstractGateway
      */
     public function createCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
-        $chipCustomer = $billable->createOrGetChipCustomer($options);
+        $chipCustomer = $this->callBillableMethod($billable, 'createOrGetChipCustomer', [$options]);
 
         return new ChipCustomer($billable, $chipCustomer);
     }
@@ -88,7 +88,7 @@ class ChipGateway extends AbstractGateway
      */
     public function updateCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
-        $chipCustomer = $billable->updateChipCustomer($options);
+        $chipCustomer = $this->callBillableMethod($billable, 'updateChipCustomer', [$options]);
 
         return new ChipCustomer($billable, $chipCustomer);
     }
@@ -100,7 +100,7 @@ class ChipGateway extends AbstractGateway
      */
     public function syncCustomer(BillableContract $billable, array $options = []): CustomerContract
     {
-        $chipCustomer = $billable->syncChipCustomerDetails();
+        $chipCustomer = $this->callBillableMethod($billable, 'syncChipCustomerDetails');
 
         return new ChipCustomer($billable, $chipCustomer);
     }
@@ -112,7 +112,7 @@ class ChipGateway extends AbstractGateway
      */
     public function charge(BillableContract $billable, int $amount, #[SensitiveParameter] ?string $paymentMethod = null, array $options = []): PaymentContract
     {
-        $payment = $billable->charge($amount, $paymentMethod, $options);
+        $payment = $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $options]);
 
         return new ChipPayment($payment);
     }
@@ -234,8 +234,9 @@ class ChipGateway extends AbstractGateway
      */
     public function subscriptions(BillableContract $billable): Collection
     {
-        $subscriptions = $billable->subscriptions()
-            ->get()
+        $subscriptionsRelation = $this->callBillableMethod($billable, 'subscriptions');
+
+        $subscriptions = $subscriptionsRelation->get()
             ->map(fn ($subscription) => new ChipSubscription($subscription))
             ->values();
 
@@ -252,9 +253,7 @@ class ChipGateway extends AbstractGateway
      */
     public function invoices(BillableContract $billable, bool | array $parameters = false): Collection
     {
-        $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
-
-        $invoices = $billable->invoices($includePending)
+        $invoices = collect($this->callBillableMethod($billable, 'invoices'))
             ->map(fn ($invoice) => new Chip\ChipInvoice($invoice))
             ->values();
 
@@ -270,7 +269,7 @@ class ChipGateway extends AbstractGateway
      */
     public function paymentMethods(BillableContract $billable, ?string $type = null): Collection
     {
-        $paymentMethods = $billable->paymentMethods($type)
+        $paymentMethods = collect($this->callBillableMethod($billable, 'paymentMethods'))
             ->map(fn ($paymentMethod) => new ChipPaymentMethod($paymentMethod, $billable))
             ->values();
 
@@ -283,7 +282,7 @@ class ChipGateway extends AbstractGateway
      */
     public function findPaymentMethod(BillableContract $billable, string $paymentMethodId): ?PaymentMethodContract
     {
-        $paymentMethod = $billable->findPaymentMethod($paymentMethodId);
+        $paymentMethod = $this->callBillableMethod($billable, 'findPaymentMethod', [$paymentMethodId]);
 
         if (! $paymentMethod) {
             return null;
@@ -297,7 +296,7 @@ class ChipGateway extends AbstractGateway
      */
     public function defaultPaymentMethod(BillableContract $billable): ?PaymentMethodContract
     {
-        $paymentMethod = $billable->defaultPaymentMethod();
+        $paymentMethod = $this->callBillableMethod($billable, 'defaultPaymentMethod');
 
         if (! $paymentMethod) {
             return null;
@@ -314,7 +313,7 @@ class ChipGateway extends AbstractGateway
     public function createSetupIntent(BillableContract $billable, array $options = []): mixed
     {
         // CHIP uses a zero-amount purchase with skip_capture for setup
-        return $billable->createSetupPurchase($options);
+        return $this->callBillableMethod($billable, 'createSetupPurchase', [$options]);
     }
 
     /**

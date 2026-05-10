@@ -38,8 +38,8 @@ use Throwable;
  * // Use default gateway
  * $user->newGatewaySubscription('default', 'price_xxx')->create();
  *
- * // Use specific gateway
- * $user->gateway('chip')->subscription($user, 'default', 'price_xxx')->create();
+ * // Use a specific gateway explicitly
+ * $user->newGatewaySubscription('default', 'price_xxx', 'chip')->create();
  *
  * // Get all subscriptions across gateways
  * $user->allSubscriptions();
