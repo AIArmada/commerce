@@ -94,6 +94,10 @@ class StripePaymentMethod implements PaymentMethodContract
             return false;
         }
 
+        if (! method_exists($this->billable, 'defaultPaymentMethod')) {
+            return false;
+        }
+
         $default = $this->billable->defaultPaymentMethod();
 
         if ($default instanceof PaymentMethod) {

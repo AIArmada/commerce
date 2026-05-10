@@ -6,6 +6,7 @@ use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Gateways\AbstractGateway;
 use AIArmada\Cashier\Gateways\StripeGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
+use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 
 uses(CashierTestCase::class);
 
@@ -99,6 +100,17 @@ describe('Gateways', function (): void {
             $gateway = $this->gatewayManager->gateway('chip');
 
             expect($gateway->currency())->toBe('MYR');
+        });
+
+        it('does not forward stripe-style arguments into chip billable payment and invoice methods', function (): void {
+            $gateway = $this->gatewayManager->gateway('chip');
+            $user = new ChipBillableUser;
+
+            $paymentMethods = $gateway->paymentMethods($user, 'card');
+            $invoices = $gateway->invoices($user, ['include_pending' => true]);
+
+            expect($paymentMethods)->toHaveCount(2)
+                ->and($invoices)->toHaveCount(2);
         });
     });
 });

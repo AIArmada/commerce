@@ -5,18 +5,23 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\FilamentCashier\Fixtures;
 
 use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Contracts\InvoiceContract;
+use AIArmada\Cashier\Contracts\PaymentContract;
+use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use RuntimeException;
 
 class ChipBillableUser extends User implements BillableContract
 {
@@ -25,9 +30,24 @@ class ChipBillableUser extends User implements BillableContract
         return Cashier::gateway($gateway);
     }
 
+    public function preferredGateway(): string
+    {
+        /** @var string|null $preferredGateway */
+        $preferredGateway = $this->getAttribute('preferred_gateway');
+
+        return $preferredGateway ?? 'chip';
+    }
+
+    public function setPreferredGateway(string $gateway): static
+    {
+        $this->setAttribute('preferred_gateway', $gateway);
+
+        return $this;
+    }
+
     public function defaultGateway(): string
     {
-        return config('cashier.default', 'stripe');
+        return $this->preferredGateway();
     }
 
     public function gatewayId(?string $gateway = null): ?string
@@ -45,17 +65,22 @@ class ChipBillableUser extends User implements BillableContract
         throw new RuntimeException('Not implemented for tests.');
     }
 
-    public function createOrGetCustomer(array $options = [], ?string $gateway = null): CustomerContract
+    public function createOrGetCustomer(?string $gateway = null, array $options = []): CustomerContract
     {
         throw new RuntimeException('Not implemented for tests.');
     }
 
-    public function updateCustomer(array $options = [], ?string $gateway = null): CustomerContract
+    public function updateCustomer(?string $gateway = null, array $options = []): CustomerContract
     {
         throw new RuntimeException('Not implemented for tests.');
     }
 
     public function asCustomer(?string $gateway = null): CustomerContract
+    {
+        throw new RuntimeException('Not implemented for tests.');
+    }
+
+    public function syncCustomer(?string $gateway = null, array $options = []): CustomerContract
     {
         throw new RuntimeException('Not implemented for tests.');
     }
@@ -93,6 +118,96 @@ class ChipBillableUser extends User implements BillableContract
     public function preferredLocale(): ?string
     {
         return null;
+    }
+
+    public function chargeWithGateway(int $amount, string $paymentMethod, ?string $gateway = null, array $options = []): PaymentContract
+    {
+        throw new RuntimeException('Not implemented for tests.');
+    }
+
+    public function newGatewaySubscription(string $type, string | array $prices = [], ?string $gateway = null): SubscriptionBuilderContract
+    {
+        throw new RuntimeException('Not implemented for tests.');
+    }
+
+    public function checkoutWithGateway(?string $gateway = null): CheckoutBuilderContract
+    {
+        throw new RuntimeException('Not implemented for tests.');
+    }
+
+    public function allGatewaySubscriptions(): Collection
+    {
+        return collect();
+    }
+
+    public function gatewaySubscriptions(?string $gateway = null): Collection
+    {
+        return collect();
+    }
+
+    public function gatewaySubscription(string $type, ?string $gateway = null): ?SubscriptionContract
+    {
+        return null;
+    }
+
+    public function subscribedViaGateway(string $type = 'default', ?string $price = null, ?string $gateway = null): bool
+    {
+        return false;
+    }
+
+    public function allGatewayPaymentMethods(): Collection
+    {
+        return collect($this->nativeChipPaymentMethods());
+    }
+
+    public function gatewayPaymentMethods(?string $gateway = null, ?string $type = null): Collection
+    {
+        return $gateway === null || $gateway === 'chip' ? collect($this->nativeChipPaymentMethods()) : collect();
+    }
+
+    public function defaultGatewayPaymentMethod(?string $gateway = null): ?PaymentMethodContract
+    {
+        return null;
+    }
+
+    public function createGatewaySetupIntent(?string $gateway = null, array $options = []): mixed
+    {
+        return null;
+    }
+
+    public function allGatewayInvoices(array $parameters = []): Collection
+    {
+        return collect($this->nativeChipInvoices());
+    }
+
+    public function gatewayInvoices(?string $gateway = null, array $parameters = []): Collection
+    {
+        return $gateway === null || $gateway === 'chip' ? collect($this->nativeChipInvoices()) : collect();
+    }
+
+    public function gatewayBillingPortalUrl(string $returnUrl, ?string $gateway = null, array $options = []): ?string
+    {
+        return null;
+    }
+
+    public function allSubscriptions(): Collection
+    {
+        return collect();
+    }
+
+    public function findSubscription(string $type = 'default'): ?SubscriptionContract
+    {
+        return null;
+    }
+
+    public function subscribedOnAny(string $type = 'default', ?string $price = null): bool
+    {
+        return false;
+    }
+
+    public function onTrialOnAny(string $type = 'default'): bool
+    {
+        return false;
     }
 
     public function newSubscription(string $type, string | array $prices = [], ?string $gateway = null): SubscriptionBuilderContract
@@ -145,41 +260,46 @@ class ChipBillableUser extends User implements BillableContract
         return false;
     }
 
-    public function paymentMethods(?string $gateway = null): Collection
+    public function paymentMethods(?string $type = null): Collection
     {
-        return $gateway === 'chip' ? $this->chipPaymentMethods() : collect();
+        return collect($this->nativeChipPaymentMethods());
     }
 
-    public function findPaymentMethod(string $paymentMethodId, ?string $gateway = null): mixed
+    public function findPaymentMethod(string $paymentMethodId): mixed
     {
-        return null;
+        return collect($this->nativeChipPaymentMethods())->firstWhere('id', $paymentMethodId);
     }
 
-    public function hasDefaultPaymentMethod(?string $gateway = null): bool
+    public function hasDefaultPaymentMethod(): bool
     {
-        return false;
+        return $this->defaultPaymentMethod() !== null;
     }
 
-    public function hasPaymentMethod(?string $gateway = null): bool
+    public function hasPaymentMethod(?string $type = null): bool
     {
-        return false;
+        return collect($this->nativeChipPaymentMethods())->isNotEmpty();
     }
 
-    public function defaultPaymentMethod(?string $gateway = null): mixed
+    public function defaultPaymentMethod(): mixed
     {
-        return null;
+        return collect($this->nativeChipPaymentMethods())->firstWhere('is_default', true);
     }
 
-    public function updateDefaultPaymentMethod(string $paymentMethodId, ?string $gateway = null): self
+    public function updateDefaultPaymentMethod(string $paymentMethodId): self
     {
+        $this->updateDefaultChipPaymentMethod($paymentMethodId);
+
         return $this;
     }
 
-    public function deletePaymentMethod(string $paymentMethodId, ?string $gateway = null): void {}
+    public function deletePaymentMethod(string $paymentMethodId): void
+    {
+        $this->deleteChipPaymentMethod($paymentMethodId);
+    }
 
-    public function deletePaymentMethods(?string $gateway = null): void {}
+    public function deletePaymentMethods(): void {}
 
-    public function charge(int $amount, ?string $paymentMethod = null, array $options = [], ?string $gateway = null): mixed
+    public function charge(int $amount, ?string $paymentMethod = null, array $options = []): mixed
     {
         throw new RuntimeException('Not implemented for tests.');
     }
@@ -194,17 +314,17 @@ class ChipBillableUser extends User implements BillableContract
         return null;
     }
 
-    public function invoices(bool $includePending = false, ?string $gateway = null): Collection
+    public function invoices(bool | array $parameters = false): Collection
     {
-        return $gateway === 'chip' ? collect($this->chipInvoices()) : collect();
+        return collect($this->nativeChipInvoices());
     }
 
-    public function findInvoice(string $invoiceId, ?string $gateway = null): ?InvoiceContract
+    public function findInvoice(string $invoiceId): ?InvoiceContract
     {
         return null;
     }
 
-    public function upcomingInvoice(?string $gateway = null): ?InvoiceContract
+    public function upcomingInvoice(array $options = []): ?InvoiceContract
     {
         return null;
     }
@@ -214,12 +334,12 @@ class ChipBillableUser extends User implements BillableContract
         return null;
     }
 
-    public function asStripeCustomer(): mixed
+    public function asStripeCustomer(array $expand = []): mixed
     {
         return null;
     }
 
-    public function createOrGetStripeCustomer(array $options = []): mixed
+    public function createOrGetStripeCustomer(array $options = [], array $requestOptions = []): mixed
     {
         return null;
     }
@@ -239,7 +359,7 @@ class ChipBillableUser extends User implements BillableContract
         return null;
     }
 
-    public function billingPortalUrl(string $returnUrl, array $options = []): string
+    public function billingPortalUrl(?string $returnUrl = null, array $options = []): string
     {
         return '';
     }
@@ -284,6 +404,33 @@ class ChipBillableUser extends User implements BillableContract
         ]);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function nativeChipPaymentMethods(): array
+    {
+        return [
+            [
+                'id' => 'chip_pm_1',
+                'recurring_token' => 'chip_pm_1',
+                'payment_method' => 'Card',
+                'card_brand' => 'Visa',
+                'card_last4' => '1111',
+                'card_expiry' => '12/30',
+                'is_default' => true,
+            ],
+            [
+                'id' => 'chip_pm_2',
+                'recurring_token' => 'chip_pm_2',
+                'payment_method' => 'Card',
+                'card_brand' => 'Mastercard',
+                'card_last4' => '2222',
+                'card_expiry' => '01/31',
+                'is_default' => false,
+            ],
+        ];
+    }
+
     public function defaultChipPaymentMethod(): ?object
     {
         return $this->chipPaymentMethods()->first();
@@ -297,6 +444,41 @@ class ChipBillableUser extends User implements BillableContract
     public function deleteChipPaymentMethod(string $paymentMethodId): void
     {
         $this->attributes['deleted_chip_payment_method_id'] = $paymentMethodId;
+    }
+
+    /**
+     * @return array<int, PurchaseData>
+     */
+    public function nativeChipInvoices(int $limit = 3): array
+    {
+        return array_slice([
+            PurchaseData::from([
+                'id' => 'chip_inv_2',
+                'status' => 'paid',
+                'created_on' => strtotime('2025-01-02 00:00:00'),
+                'purchase' => [
+                    'currency' => 'MYR',
+                    'total' => 1299,
+                    'products' => [[
+                        'name' => 'Invoice 2',
+                        'price' => 1299,
+                    ]],
+                ],
+            ]),
+            PurchaseData::from([
+                'id' => 'chip_inv_1',
+                'status' => 'created',
+                'created_on' => strtotime('2025-01-01 00:00:00'),
+                'purchase' => [
+                    'currency' => 'MYR',
+                    'total' => 3999,
+                    'products' => [[
+                        'name' => 'Invoice 1',
+                        'price' => 3999,
+                    ]],
+                ],
+            ]),
+        ], 0, $limit);
     }
 
     /**

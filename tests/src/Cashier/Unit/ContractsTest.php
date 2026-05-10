@@ -48,14 +48,20 @@ describe('Contracts', function (): void {
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
             expect($methods)->toContain('gateway')
+                ->and($methods)->toContain('preferredGateway')
+                ->and($methods)->toContain('setPreferredGateway')
                 ->and($methods)->toContain('gatewayId')
-                ->and($methods)->toContain('newSubscription')
-                ->and($methods)->toContain('subscription')
-                ->and($methods)->toContain('subscriptions')
-                ->and($methods)->toContain('subscribed')
-                ->and($methods)->toContain('onTrial')
-                ->and($methods)->toContain('charge')
-                ->and($methods)->toContain('paymentMethods');
+                ->and($methods)->toContain('createOrGetCustomer')
+                ->and($methods)->toContain('syncCustomer')
+                ->and($methods)->toContain('chargeWithGateway')
+                ->and($methods)->toContain('newGatewaySubscription')
+                ->and($methods)->toContain('allGatewaySubscriptions')
+                ->and($methods)->toContain('gatewayPaymentMethods')
+                ->and($methods)->toContain('allGatewayInvoices')
+                ->and($methods)->toContain('allSubscriptions')
+                ->and($methods)->toContain('onGenericTrial')
+                ->and($methods)->toContain('asStripeCustomer')
+                ->and($methods)->toContain('createOrGetChipCustomer');
         });
     });
 
