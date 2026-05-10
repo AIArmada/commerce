@@ -7,7 +7,6 @@ namespace App\Providers\Filament;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 use AIArmada\FilamentCart\FilamentCartPlugin;
-use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashierChip\FilamentCashierChipPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
 use AIArmada\FilamentCustomers\FilamentCustomersPlugin;
@@ -135,7 +134,6 @@ final class AdminPanelProvider extends PanelProvider
                 FilamentInventoryPlugin::make(),
                 FilamentAffiliatesPlugin::make(),
                 FilamentChipPlugin::make(),
-                FilamentCashierPlugin::make(),
                 FilamentCashierChipPlugin::make(),
                 FilamentJntPlugin::make(),
                 FilamentShippingPlugin::make(),

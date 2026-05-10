@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -25,7 +26,6 @@ use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\VoucherStatus;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
-use App\Listeners\HandleChipPaymentSuccess;
 use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -214,13 +214,13 @@ final class ShopController extends Controller
     public function cart(): View
     {
         $cartItems = Cart::getItems();
-        $cartTotal = Cart::isEmpty() ? 0 : Cart::getRawTotal();
         $cartSubtotal = Cart::isEmpty() ? 0 : Cart::getRawSubtotalWithoutConditions();
+        $cartDiscountedSubtotal = Cart::isEmpty() ? 0 : Cart::getRawSubtotal();
         $cartQuantity = Cart::getTotalQuantity();
 
         $appliedVoucher = session('applied_voucher');
         $appliedVouchers = Cart::getAppliedVoucherCodes();
-        $cartConditions = Cart::getConditions()->toArray();
+        $conditionBreakdown = Cart::getConditions()->toDetailedArray($cartSubtotal);
 
         $owner = OwnerContext::resolve();
 
@@ -242,7 +242,16 @@ final class ShopController extends Controller
             ->take(3)
             ->get();
 
-        return view('shop.cart', compact('cartItems', 'cartTotal', 'cartSubtotal', 'cartQuantity', 'activeVouchers', 'appliedVoucher', 'appliedVouchers', 'cartConditions'));
+        return view('shop.cart', compact(
+            'cartItems',
+            'cartSubtotal',
+            'cartDiscountedSubtotal',
+            'cartQuantity',
+            'activeVouchers',
+            'appliedVoucher',
+            'appliedVouchers',
+            'conditionBreakdown',
+        ));
     }
 
     /**
@@ -426,10 +435,46 @@ final class ShopController extends Controller
         $items = Cart::getItems();
         $subtotalWithoutConditions = Cart::getRawSubtotalWithoutConditions();
         $subtotal = Cart::getRawSubtotal();
-        $total = Cart::getRawTotal();
         $conditions = Cart::getConditions();
+        $conditionBreakdown = $conditions->toDetailedArray($subtotalWithoutConditions);
 
-        return view('shop.checkout', compact('items', 'subtotalWithoutConditions', 'subtotal', 'total', 'conditions'));
+        $selectedShippingMethod = old('shipping_method', 'jnt_standard');
+
+        if (! is_string($selectedShippingMethod) || ! array_key_exists($selectedShippingMethod, $this->shippingMethodCosts())) {
+            $selectedShippingMethod = 'jnt_standard';
+        }
+
+        if ($selectedShippingMethod === 'free' && $subtotal < 10_000) {
+            $selectedShippingMethod = 'jnt_standard';
+        }
+
+        $selectedState = old('state');
+        $selectedState = is_string($selectedState) && $selectedState !== '' ? $selectedState : 'Selangor';
+
+        $selectedPostcode = old('postcode');
+        $selectedPostcode = is_string($selectedPostcode) && $selectedPostcode !== '' ? $selectedPostcode : '50000';
+
+        $shippingSummaries = $this->calculateCheckoutSummaries(
+            subtotalAfterConditions: $subtotal,
+            state: $selectedState,
+            postcode: $selectedPostcode,
+        );
+
+        $selectedShippingSummary = $shippingSummaries[$selectedShippingMethod] ?? $shippingSummaries['jnt_standard'];
+        $estimatedTax = $selectedShippingSummary['tax'];
+        $estimatedGrandTotal = $selectedShippingSummary['grand_total'];
+
+        return view('shop.checkout', compact(
+            'items',
+            'subtotalWithoutConditions',
+            'subtotal',
+            'conditions',
+            'conditionBreakdown',
+            'selectedShippingMethod',
+            'shippingSummaries',
+            'estimatedTax',
+            'estimatedGrandTotal',
+        ));
     }
 
     /**
@@ -454,12 +499,16 @@ final class ShopController extends Controller
             return redirect()->route('shop.cart')->with('error', 'Your cart is empty.');
         }
 
+        if ($request->shipping_method === 'free' && (int) Cart::getRawSubtotal() < 10_000) {
+            return redirect()->route('shop.checkout')
+                ->withErrors([
+                    'shipping_method' => 'Free shipping is only available for orders over RM 100.00.',
+                ])
+                ->withInput();
+        }
+
         // Calculate shipping cost
-        $shippingCost = match ($request->shipping_method) {
-            'jnt_express' => 1500,
-            'free' => 0,
-            default => 800,
-        };
+        $shippingCost = $this->shippingCostForMethod($request->shipping_method);
 
         $owner = OwnerContext::resolve();
 
@@ -693,6 +742,7 @@ final class ShopController extends Controller
             $purchase = Chip::purchase()
                 ->currency('MYR')
                 ->reference($order->order_number)
+                ->idempotencyKey('order-' . $order->id)
                 ->customer(
                     email: $request->email,
                     fullName: $request->first_name . ' ' . $request->last_name,
@@ -705,37 +755,45 @@ final class ShopController extends Controller
                     zipCode: $request->postcode,
                     state: $request->state,
                     country: 'MY'
+                )
+                ->shippingAddress(
+                    streetAddress: $request->line1,
+                    city: $request->city,
+                    zipCode: $request->postcode,
+                    state: $request->state,
+                    country: 'MY'
                 );
 
-            // Add order items as products
+            // Add order items as exact unit-level purchase lines so discounts round precisely.
             foreach ($order->items as $item) {
-                $purchase->addProductCents(
-                    name: $item->name,
-                    priceInCents: $item->unit_price,
-                    quantity: $item->quantity
-                );
+                foreach ($this->buildChipProductLines($item) as $productLine) {
+                    $purchase->addProductCents(
+                        name: $productLine['name'],
+                        priceInCents: $productLine['price'],
+                        quantity: $productLine['quantity'],
+                        discountInCents: $productLine['discount'],
+                        category: $productLine['category'],
+                    );
+                }
             }
 
             // Add shipping as a product if applicable
             if ($shippingCost > 0) {
                 $purchase->addProductCents(
-                    name: 'Shipping (' . ucfirst(str_replace('_', ' ', $request->shipping_method)) . ')',
+                    name: 'Shipping (' . $this->shippingMethodLabel($request->shipping_method) . ')',
                     priceInCents: $shippingCost,
-                    quantity: 1
+                    quantity: 1,
+                    category: 'shipping',
                 );
             }
 
-            // Apply discount using CHIP's total_discount_override
-            if ($order->discount_total > 0) {
-                $purchase->discount($order->discount_total);
-            }
-
-            // Represent tax explicitly so payment total matches order.
+            // Represent tax explicitly so the payment total matches the order exactly.
             if ($order->tax_total > 0) {
                 $purchase->addProductCents(
-                    name: 'Tax',
+                    name: 'Sales Tax',
                     priceInCents: $order->tax_total,
-                    quantity: 1
+                    quantity: 1,
+                    category: 'tax',
                 );
             }
 
@@ -1072,11 +1130,34 @@ final class ShopController extends Controller
      */
     private function simulatePaymentWebhook(Order $order): void
     {
+        $purchaseId = $order->metadata['chip_purchase_id'] ?? null;
+
+        if (is_string($purchaseId) && $purchaseId !== '' && ! str_starts_with($purchaseId, 'demo-')) {
+            try {
+                $purchase = Chip::getPurchase($purchaseId);
+                $payload = [
+                    ...$purchase->toArray(),
+                    'event_type' => 'purchase.paid',
+                ];
+
+                WebhookReceived::dispatch('purchase.paid', $payload, $purchase);
+                PurchasePaid::dispatch($purchase, $payload);
+
+                return;
+            } catch (Exception $exception) {
+                Log::warning('Falling back to simulated CHIP webhook after purchase sync failed.', [
+                    'order_id' => $order->id,
+                    'chip_purchase_id' => $purchaseId,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
         $shipping = $order->shippingAddress;
         $streetAddress = $shipping?->line1 ?? '';
 
         $simulator = WebhookSimulator::paid()
-            ->purchaseId($order->metadata['chip_purchase_id'])
+            ->purchaseId((string) $purchaseId)
             ->reference($order->order_number)
             ->amount($order->grand_total)
             ->customer(
@@ -1104,32 +1185,162 @@ final class ShopController extends Controller
                         'order_id' => $order->id,
                         'order_number' => $order->order_number,
                     ],
-                    'products' => $order->items->map(fn ($item) => [
-                        'name' => $item->name,
-                        'price' => $item->unit_price,
-                        'quantity' => (string) $item->quantity,
-                        'category' => 'product',
-                        'discount' => 0,
-                        'tax_percent' => '0.00',
-                    ])->toArray(),
-                    'subtotal_override' => $order->subtotal,
-                    'total_discount_override' => $order->discount_total,
-                    'shipping_options' => $order->shipping_total > 0 ? [
-                        ['amount' => $order->shipping_total, 'title' => 'Shipping'],
-                    ] : [],
+                    'products' => [
+                        ...$order->items
+                            ->flatMap(fn (OrderItem $item): array => $this->buildChipProductLines($item))
+                            ->map(fn (array $productLine): array => [
+                                'name' => $productLine['name'],
+                                'price' => $productLine['price'],
+                                'quantity' => (string) $productLine['quantity'],
+                                'category' => $productLine['category'],
+                                'discount' => $productLine['discount'],
+                                'tax_percent' => '0.00',
+                            ])
+                            ->values()
+                            ->all(),
+                        ...($order->shipping_total > 0 ? [[
+                            'name' => 'Shipping (' . $this->shippingMethodLabel((string) ($order->metadata['shipping_method'] ?? 'jnt_standard')) . ')',
+                            'price' => $order->shipping_total,
+                            'quantity' => '1',
+                            'category' => 'shipping',
+                            'discount' => 0,
+                            'tax_percent' => '0.00',
+                        ]] : []),
+                        ...($order->tax_total > 0 ? [[
+                            'name' => 'Sales Tax',
+                            'price' => $order->tax_total,
+                            'quantity' => '1',
+                            'category' => 'tax',
+                            'discount' => 0,
+                            'tax_percent' => '0.00',
+                        ]] : []),
+                    ],
                 ],
             ])
             ->fpx()
             ->isTest();
 
-        $payload = $simulator->getPayload();
-        $purchase = $simulator->toPurchase();
+        $simulator->dispatch();
+    }
 
-        app(HandleChipPaymentSuccess::class)->handle(
-            new PurchasePaid(
-                purchase: $purchase,
-                payload: $payload,
-            ),
-        );
+    /**
+     * @return array<string, array{cost: int, tax: int, grand_total: int, label: string}>
+     */
+    private function calculateCheckoutSummaries(int $subtotalAfterConditions, string $state, string $postcode): array
+    {
+        /** @var TaxCalculator $taxCalculator */
+        $taxCalculator = app(TaxCalculator::class);
+
+        $taxContext = [
+            'shipping_address' => [
+                'country' => 'MY',
+                'state' => $state,
+                'postcode' => $postcode,
+            ],
+        ];
+
+        $itemsTax = 0;
+
+        try {
+            $itemsTax = $taxCalculator
+                ->calculateTax(max(0, $subtotalAfterConditions), 'standard', null, $taxContext)
+                ->taxAmount;
+        } catch (QueryException $exception) {
+            Log::warning('Checkout tax estimate skipped due to missing DB tables.', [
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        $summaries = [];
+
+        foreach ($this->shippingMethodCosts() as $method => $cost) {
+            $shippingTax = 0;
+
+            try {
+                $shippingTax = $taxCalculator
+                    ->calculateShippingTax($cost, null, $taxContext)
+                    ->taxAmount;
+            } catch (QueryException $exception) {
+                Log::warning('Checkout shipping tax estimate skipped due to missing DB tables.', [
+                    'message' => $exception->getMessage(),
+                    'shipping_method' => $method,
+                ]);
+            }
+
+            $summaries[$method] = [
+                'cost' => $cost,
+                'tax' => $itemsTax + $shippingTax,
+                'grand_total' => max(0, $subtotalAfterConditions) + $cost + $itemsTax + $shippingTax,
+                'label' => $this->shippingMethodLabel($method),
+            ];
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * @return array<int, array{name: string, price: int, quantity: int, discount: int, category: string}>
+     */
+    private function buildChipProductLines(OrderItem $item): array
+    {
+        $lines = [];
+
+        foreach ($this->splitCentsAcrossQuantity($item->discount_amount, $item->quantity) as $unitDiscount) {
+            $lines[] = [
+                'name' => $item->name,
+                'price' => $item->unit_price,
+                'quantity' => 1,
+                'discount' => $unitDiscount,
+                'category' => 'product',
+            ];
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function splitCentsAcrossQuantity(int $amount, int $quantity): array
+    {
+        $quantity = max(1, $quantity);
+        $amount = max(0, $amount);
+        $baseAmount = intdiv($amount, $quantity);
+        $remainder = $amount % $quantity;
+        $parts = array_fill(0, $quantity, $baseAmount);
+
+        for ($index = $quantity - $remainder; $index < $quantity; $index++) {
+            if ($index >= 0 && array_key_exists($index, $parts)) {
+                $parts[$index]++;
+            }
+        }
+
+        return $parts;
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function shippingMethodCosts(): array
+    {
+        return [
+            'jnt_standard' => 800,
+            'jnt_express' => 1500,
+            'free' => 0,
+        ];
+    }
+
+    private function shippingCostForMethod(string $shippingMethod): int
+    {
+        return $this->shippingMethodCosts()[$shippingMethod] ?? 800;
+    }
+
+    private function shippingMethodLabel(string $shippingMethod): string
+    {
+        return match ($shippingMethod) {
+            'jnt_express' => 'J&T Express',
+            'free' => 'Free Shipping',
+            default => 'J&T Standard',
+        };
     }
 }

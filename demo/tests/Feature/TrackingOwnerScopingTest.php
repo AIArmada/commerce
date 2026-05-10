@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Models\JntTrackingEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -70,5 +71,42 @@ it('can search shipments by order id within the current owner context', function
         $this->get('/tracking?tracking_number=ORD-SEARCH-0001')
             ->assertOk()
             ->assertSee('JT333333333333');
+    });
+});
+
+it('renders tracking event locations using the jnt location helper', function (): void {
+    $owner = User::factory()->create();
+
+    OwnerContext::withOwner($owner, function () use ($owner): void {
+        $shipment = JntOrder::create([
+            'order_id' => 'ORD-TRACK-LOC-0001',
+            'tracking_number' => 'JT444444444444',
+            'customer_code' => 'DEMO-A',
+            'action_type' => '2',
+            'status' => 'ARRIVED',
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+            'receiver' => ['city' => 'Kuala Lumpur'],
+        ]);
+
+        JntTrackingEvent::create([
+            'order_id' => $shipment->id,
+            'tracking_number' => $shipment->tracking_number,
+            'description' => 'Arrived at destination hub',
+            'scan_time' => now(),
+            'scan_network_area' => 'Bukit Bintang',
+            'scan_network_city' => 'Kuala Lumpur',
+            'scan_network_province' => 'Kuala Lumpur',
+            'scan_network_country' => 'MY',
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ]);
+    });
+
+    OwnerContext::withOwner($owner, function (): void {
+        $this->get('/tracking?tracking_number=JT444444444444')
+            ->assertOk()
+            ->assertSee('Arrived at destination hub')
+            ->assertSee('Bukit Bintang, Kuala Lumpur, Kuala Lumpur, MY');
     });
 });

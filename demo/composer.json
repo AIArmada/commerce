@@ -48,10 +48,6 @@
         },
         {
             "type": "path",
-            "url": "../packages/cashier"
-        },
-        {
-            "type": "path",
             "url": "../packages/cashier-chip"
         },
         {
@@ -77,10 +73,6 @@
         {
             "type": "path",
             "url": "../packages/filament-cart"
-        },
-        {
-            "type": "path",
-            "url": "../packages/filament-cashier"
         },
         {
             "type": "path",
@@ -161,7 +153,6 @@
         "aiarmada/shipping": "*",
         "aiarmada/tax": "*",
         "aiarmada/cart": "*",
-        "aiarmada/cashier": "*",
         "aiarmada/cashier-chip": "*",
         "aiarmada/chip": "*",
         "aiarmada/commerce-support": "*",
@@ -169,7 +160,6 @@
         "aiarmada/affiliates": "*",
         "aiarmada/jnt": "*",
         "aiarmada/filament-cart": "*",
-        "aiarmada/filament-cashier": "*",
         "aiarmada/filament-cashier-chip": "*",
         "aiarmada/filament-vouchers": "*",
         "aiarmada/filament-affiliates": "*",
@@ -185,8 +175,7 @@
         "aiarmada/filament-tax": "*",
         "aiarmada/filament-authz": "*",
         "aiarmada/inventory": "*",
-        "aiarmada/filament-inventory": "*",
-        "laravel/cashier": "^16.0"
+        "aiarmada/filament-inventory": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -214,9 +203,11 @@
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
             "@php artisan key:generate",
             "@php artisan vendor:publish --provider=\"Spatie\\LaravelSettings\\LaravelSettingsServiceProvider\" --tag=migrations --force --ansi",
             "@php artisan migrate --force",
+            "@php artisan db:seed --force --ansi",
             "npm install",
             "npm run build"
         ],
@@ -243,8 +234,8 @@
             "@php artisan key:generate --ansi",
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
             "@php artisan vendor:publish --provider=\"Spatie\\LaravelSettings\\LaravelSettingsServiceProvider\" --tag=migrations --force --ansi",
-            "@php artisan vendor:publish --provider=\"Laravel\\Cashier\\CashierServiceProvider\" --tag=cashier-migrations --force --ansi",
-            "@php artisan migrate --graceful --ansi"
+            "@php artisan migrate --graceful --ansi",
+            "@php artisan db:seed --force --ansi"
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"

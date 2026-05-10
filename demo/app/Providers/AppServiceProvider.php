@@ -75,16 +75,23 @@ final class AppServiceProvider extends ServiceProvider
             return new class implements OwnerResolverInterface
             {
                 /**
-                 * Single tenancy: All data belongs to one owner (admin@commerce.demo).
-                 * This ensures all users see the same data and can interact with it.
+                 * Default to the seeded admin owner, while still allowing demo owner switching
+                 * through the session-backed /demo/owner/{user} route.
                  */
                 public function resolve(): ?Model
                 {
-                    // Cache the single tenant owner for performance
-                    static $singleTenantOwner = null;
+                    $request = request();
 
-                    if ($singleTenantOwner instanceof Model) {
-                        return $singleTenantOwner;
+                    if ($request->hasSession()) {
+                        $ownerId = $request->session()->get('demo_owner_id');
+
+                        if (is_string($ownerId) || is_int($ownerId)) {
+                            $sessionOwner = User::query()->find((string) $ownerId);
+
+                            if ($sessionOwner instanceof Model) {
+                                return $sessionOwner;
+                            }
+                        }
                     }
 
                     $owner = User::query()
@@ -92,9 +99,7 @@ final class AppServiceProvider extends ServiceProvider
                         ->first();
 
                     if ($owner instanceof Model) {
-                        $singleTenantOwner = $owner;
-
-                        return $singleTenantOwner;
+                        return $owner;
                     }
 
                     return User::query()->first();

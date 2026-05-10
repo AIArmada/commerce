@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Pending;
+use AIArmada\Affiliates\States\Paused;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -32,7 +35,7 @@ final class AffiliateSeeder extends Seeder
             'code' => 'INFLUENCER-MAYA',
             'name' => 'Maya\'s Tech Reviews',
             'description' => 'Top tech influencer with 500K followers',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000, // 10%
             'currency' => 'MYR',
@@ -54,7 +57,7 @@ final class AffiliateSeeder extends Seeder
             'code' => 'LIFESTYLE-AMIR',
             'name' => 'Amir Lifestyle Blog',
             'description' => 'Popular lifestyle blogger',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 800, // 8%
             'currency' => 'MYR',
@@ -75,7 +78,7 @@ final class AffiliateSeeder extends Seeder
             'code' => 'PARTNER-TECHMART',
             'name' => 'TechMart Partner',
             'description' => 'Strategic business partner',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Fixed,
             'commission_rate' => 5000, // RM 50 per sale
             'currency' => 'MYR',
@@ -135,7 +138,7 @@ final class AffiliateSeeder extends Seeder
                 'code' => $data['code'],
                 'name' => $data['name'],
                 'description' => 'Affiliate partner',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => $data['commission_rate'],
                 'currency' => 'MYR',
@@ -156,7 +159,7 @@ final class AffiliateSeeder extends Seeder
             'code' => 'PENDING-NEW',
             'name' => 'New Applicant',
             'description' => 'Pending approval',
-            'status' => AffiliateStatus::Pending,
+            'status' => Pending::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 500,
             'currency' => 'MYR',
@@ -169,7 +172,7 @@ final class AffiliateSeeder extends Seeder
             'code' => 'SUSPENDED-OLD',
             'name' => 'Suspended Partner',
             'description' => 'Account suspended due to policy violation',
-            'status' => AffiliateStatus::Suspended,
+            'status' => Disabled::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 600,
             'currency' => 'MYR',
@@ -187,7 +190,7 @@ final class AffiliateSeeder extends Seeder
             'code' => 'INACTIVE-PARTNER',
             'name' => 'Inactive Partner',
             'description' => 'No activity for 90 days',
-            'status' => AffiliateStatus::Inactive,
+            'status' => Paused::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 500,
             'currency' => 'MYR',
@@ -199,7 +202,7 @@ final class AffiliateSeeder extends Seeder
 
     private function createTouchpointsAndConversions(): void
     {
-        $affiliates = Affiliate::where('status', AffiliateStatus::Active)->get();
+        $affiliates = Affiliate::where('status', Active::class)->get();
         $orders = Order::whereNotNull('affiliate_code')->get();
 
         if ($affiliates->isEmpty()) {

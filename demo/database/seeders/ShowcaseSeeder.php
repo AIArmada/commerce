@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active as ActiveAffiliate;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\Pending as PendingAffiliate;
+use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Expired;
@@ -451,7 +454,7 @@ final class ShowcaseSeeder extends Seeder
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 800,
                 'contact_email' => 'alex@gaming.stream',
-                'status' => AffiliateStatus::Pending,
+                'status' => PendingAffiliate::class,
                 'metadata' => ['platform' => 'Twitch', 'followers' => 10000, 'niche' => 'Gaming'],
             ],
             [
@@ -461,7 +464,7 @@ final class ShowcaseSeeder extends Seeder
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 600,
                 'contact_email' => 'hello@techstartup.my',
-                'status' => AffiliateStatus::Pending,
+                'status' => PendingAffiliate::class,
                 'metadata' => ['platform' => 'Blog', 'monthly_visitors' => 5000],
             ],
         ];
@@ -472,7 +475,7 @@ final class ShowcaseSeeder extends Seeder
         foreach ($topInfluencers as $data) {
             // Single tenancy: use clean codes without tenant suffixes
             $affiliate = Affiliate::create(array_merge([
-                'status' => AffiliateStatus::Active,
+                'status' => ActiveAffiliate::class,
                 'currency' => 'MYR',
                 'activated_at' => now()->subMonths(rand(3, 12)),
             ], $data));
@@ -482,7 +485,7 @@ final class ShowcaseSeeder extends Seeder
         foreach ($businessPartners as $data) {
             // Single tenancy: use clean codes without tenant suffixes
             $affiliate = Affiliate::create(array_merge([
-                'status' => AffiliateStatus::Active,
+                'status' => ActiveAffiliate::class,
                 'currency' => 'MYR',
                 'activated_at' => now()->subMonths(rand(6, 18)),
             ], $data));
@@ -492,7 +495,7 @@ final class ShowcaseSeeder extends Seeder
         foreach ($regularAffiliates as $data) {
             // Single tenancy: use clean codes without tenant suffixes
             $affiliate = Affiliate::create(array_merge([
-                'status' => AffiliateStatus::Active,
+                'status' => ActiveAffiliate::class,
                 'currency' => 'MYR',
                 'payout_terms' => 'monthly',
                 'activated_at' => now()->subMonths(rand(1, 6)),
@@ -577,13 +580,13 @@ final class ShowcaseSeeder extends Seeder
                     : (int) $affiliate->commission_rate;
 
                 $status = fake()->randomElement([
-                    ConversionStatus::Pending,
-                    ConversionStatus::Pending,
-                    ConversionStatus::Approved,
-                    ConversionStatus::Approved,
-                    ConversionStatus::Approved,
-                    ConversionStatus::Paid,
-                    ConversionStatus::Paid,
+                    PendingConversion::class,
+                    PendingConversion::class,
+                    ApprovedConversion::class,
+                    ApprovedConversion::class,
+                    ApprovedConversion::class,
+                    PaidConversion::class,
+                    PaidConversion::class,
                 ]);
 
                 AffiliateConversion::create([
@@ -596,7 +599,7 @@ final class ShowcaseSeeder extends Seeder
                     'commission_currency' => 'MYR',
                     'status' => $status,
                     'channel' => fake()->randomElement(['web', 'mobile', 'api']),
-                    'approved_at' => $status !== ConversionStatus::Pending ? now()->subDays(rand(1, 30)) : null,
+                    'approved_at' => $status !== PendingConversion::class ? now()->subDays(rand(1, 30)) : null,
                     'occurred_at' => now()->subDays(rand(1, 60)),
                     'metadata' => [
                         'items_count' => rand(1, 5),

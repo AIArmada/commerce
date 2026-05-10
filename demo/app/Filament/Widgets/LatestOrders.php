@@ -60,7 +60,7 @@ final class LatestOrders extends BaseWidget
 
                 TextColumn::make('grand_total')
                     ->label('Total')
-                    ->money('MYR')
+                    ->money(fn (Order $record): string => $record->currency, divideBy: 100)
                     ->sortable(),
 
                 TextColumn::make('created_at')

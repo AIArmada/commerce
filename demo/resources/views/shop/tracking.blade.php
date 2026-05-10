@@ -125,7 +125,7 @@
                         </div>
                         <div class="pb-4">
                             <p class="font-medium text-gray-900">{{ $event->description }}</p>
-                            <p class="text-sm text-gray-600">{{ $event->location }}</p>
+                            <p class="text-sm text-gray-600">{{ $event->getLocation() }}</p>
                             <p class="text-xs text-gray-400">{{ $event->scan_time->format('M d, Y - h:i A') }}</p>
                         </div>
                     </div>

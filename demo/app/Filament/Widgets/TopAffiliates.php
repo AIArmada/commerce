@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -37,7 +38,7 @@ final class TopAffiliates extends BaseWidget
                 fn ($query) => $query->forOwner($owner),
                 fn ($query) => $query->whereRaw('1 = 0'),
             )
-            ->where('status', AffiliateStatus::Active)
+            ->where('status', AffiliateStatus::normalize(Active::class))
             ->withCount('conversions')
             ->withSum('conversions', 'commission_minor')
             ->orderByDesc('conversions_sum_commission_minor')

@@ -6,6 +6,9 @@ namespace App\Listeners;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Vouchers\Models\Voucher;
@@ -44,6 +47,8 @@ final class HandleChipPaymentSuccess
 
         // Don't process if already paid
         if ($order->isPaid() || $order->payments()->where('transaction_id', $event->getPurchaseId())->exists()) {
+            $this->ensureShipmentCreated($order);
+
             Log::info('Order already marked as paid', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
@@ -75,6 +80,8 @@ final class HandleChipPaymentSuccess
             'order_id' => $order->id,
             'order_number' => $order->order_number,
         ]);
+
+        $this->ensureShipmentCreated($order);
 
         // Process post-payment actions
         $this->trackAffiliateConversion($order, $event);
@@ -189,5 +196,125 @@ final class HandleChipPaymentSuccess
             'discount_amount' => $order->discount_total,
             'new_applied_count' => $voucher->applied_count,
         ]);
+    }
+
+    private function ensureShipmentCreated(Order $order): void
+    {
+        $owner = OwnerContext::fromTypeAndId($order->owner_type, $order->owner_id);
+
+        OwnerContext::withOwner($owner, function () use ($order): void {
+            $order->loadMissing('items', 'shippingAddress');
+
+            $shipment = JntOrder::query()
+                ->where('order_id', $order->order_number)
+                ->first();
+
+            if ($shipment === null) {
+                $shippingAddress = $order->shippingAddress;
+
+                if ($shippingAddress === null) {
+                    Log::warning('Skipping demo shipment creation because shipping address is missing.', [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                    ]);
+
+                    return;
+                }
+
+                $shippingMethod = (string) ($order->metadata['shipping_method'] ?? 'jnt_standard');
+                $packageWeightGrams = max(
+                    100,
+                    (int) $order->items->sum(fn ($item): int => (int) (($item->metadata['weight'] ?? 100) * $item->quantity)),
+                );
+
+                $shipment = JntOrder::create([
+                    'order_id' => $order->order_number,
+                    'tracking_number' => $this->generateTrackingNumber(),
+                    'customer_code' => (string) (config('jnt.customer_code') ?: 'DEMO123'),
+                    'action_type' => '2',
+                    'service_type' => '1',
+                    'payment_type' => 'PP_PM',
+                    'express_type' => $shippingMethod === 'jnt_express' ? 'NEXT' : 'EZ',
+                    'status' => 'PICKUP',
+                    'sorting_code' => (string) ($shippingAddress->city ?? 'Demo Hub'),
+                    'package_quantity' => max(1, (int) $order->items->sum('quantity')),
+                    'package_weight' => number_format($packageWeightGrams / 1000, 2, '.', ''),
+                    'package_value' => number_format($order->grand_total / 100, 2, '.', ''),
+                    'goods_type' => 'PACKAGE',
+                    'ordered_at' => now(),
+                    'last_synced_at' => now(),
+                    'last_tracked_at' => now(),
+                    'last_status_code' => 'PU',
+                    'last_status' => 'Parcel picked up from sender',
+                    'remark' => 'Demo shipment created automatically after payment confirmation.',
+                    'sender' => [
+                        'name' => config('app.name', 'Commerce Demo'),
+                        'phone' => '+60123456789',
+                        'address' => 'Demo Fulfillment Centre',
+                        'city' => 'Shah Alam',
+                        'state' => 'Selangor',
+                        'postcode' => '40000',
+                        'country' => 'MY',
+                    ],
+                    'receiver' => [
+                        'name' => $shippingAddress->getFullName(),
+                        'phone' => $shippingAddress->phone,
+                        'address' => trim(implode(', ', array_filter([
+                            $shippingAddress->line1,
+                            $shippingAddress->line2,
+                        ]))),
+                        'city' => $shippingAddress->city,
+                        'state' => $shippingAddress->state,
+                        'postcode' => $shippingAddress->postcode,
+                        'country' => $shippingAddress->country ?? 'MY',
+                    ],
+                    'metadata' => [
+                        'source' => 'demo_checkout',
+                        'commerce_order_id' => $order->id,
+                        'shipping_method' => $shippingMethod,
+                    ],
+                    'owner_type' => $order->owner_type,
+                    'owner_id' => $order->owner_id,
+                ]);
+
+                Log::info('Demo J&T shipment created for paid order.', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'tracking_number' => $shipment->tracking_number,
+                ]);
+            }
+
+            if (! $shipment->trackingEvents()->exists()) {
+                $this->createInitialTrackingEvent($shipment);
+            }
+        });
+    }
+
+    private function createInitialTrackingEvent(JntOrder $shipment): void
+    {
+        JntTrackingEvent::create([
+            'order_id' => $shipment->id,
+            'tracking_number' => (string) $shipment->tracking_number,
+            'order_reference' => $shipment->order_id,
+            'scan_type_code' => 'PU',
+            'scan_type_name' => 'PICKUP',
+            'description' => 'Parcel picked up from sender',
+            'scan_network_city' => $shipment->sender['city'] ?? 'Shah Alam',
+            'scan_network_province' => $shipment->sender['state'] ?? 'Selangor',
+            'scan_network_country' => $shipment->sender['country'] ?? 'MY',
+            'scan_time' => now(),
+            'payload' => [
+                'billCode' => $shipment->tracking_number,
+                'scanType' => 'PICKUP',
+                'orderId' => $shipment->order_id,
+            ],
+            'owner_type' => $shipment->owner_type,
+            'owner_id' => $shipment->owner_id,
+        ]);
+    }
+
+    private function generateTrackingNumber(): string
+    {
+        return 'JT' . (string) random_int(600000000000, 699999999999);
     }
 }

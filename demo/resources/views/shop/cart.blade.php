@@ -113,46 +113,63 @@
 
                     <!-- Totals -->
                     <div class="space-y-3 border-t pt-4">
+                        @php
+                            $cartConditions = $conditionBreakdown['conditions'] ?? [];
+                            $cartSummary = $conditionBreakdown['summary'] ?? [];
+                            $totalDiscount = (int) ($cartSummary['total_discount_amount'] ?? max(0, $cartSubtotal - $cartDiscountedSubtotal));
+                        @endphp
+
                         <div class="flex justify-between text-gray-600">
                             <span>Subtotal ({{ $cartQuantity }} items)</span>
                             <span>RM {{ number_format($cartSubtotal / 100, 2) }}</span>
                         </div>
 
-                        @php
-                            $totalVoucherDiscount = 0;
-                            $vouchers = collect($cartConditions)->filter(fn($c) => ($c['type'] ?? '') === 'voucher');
-                        @endphp
+                        @foreach($cartConditions as $condition)
+                            @php
+                                $conditionValue = (int) ($condition['calculated_value'] ?? 0);
+                                $conditionName = (string) ($condition['name'] ?? 'Condition');
+                                $displayConditionName = match (true) {
+                                    str_starts_with($conditionName, 'voucher_') => 'Voucher Discount',
+                                    str_starts_with($conditionName, 'affiliate_') => 'Affiliate Discount',
+                                    default => $conditionName,
+                                };
+                            @endphp
+                            @continue($conditionValue === 0)
 
-                        @foreach($vouchers as $name => $cond)
-                            <div class="flex justify-between text-green-600 text-sm">
-                                <span>🎫 {{ $name }}</span>
-                                @php
-                                    // Use the same logic as Cart::getVoucherDiscount() or just calculate from conditions
-                                    // But since we are already in the view and have conditions, let's show their parsed values if possible
-                                    // Actually, let's just show the calculated value if we had it.
-                                    // For now, let's use a simpler approach since we know it's a discount.
-                                @endphp
-                                <span>Applied</span>
+                            <div class="flex justify-between {{ $conditionValue < 0 ? 'text-green-600' : 'text-gray-600' }} text-sm">
+                                <span>{{ $displayConditionName }}</span>
+                                <span>
+                                    @if($conditionValue < 0)
+                                        -RM {{ number_format(abs($conditionValue) / 100, 2) }}
+                                    @else
+                                        RM {{ number_format($conditionValue / 100, 2) }}
+                                    @endif
+                                </span>
                             </div>
                         @endforeach
 
-                        @if($cartSubtotal > $cartTotal)
+                        @if($totalDiscount > 0)
                         <div class="flex justify-between text-green-600 font-bold border-t border-dashed pt-2">
                             <span>Total Discount</span>
-                            <span>-RM {{ number_format(($cartSubtotal - $cartTotal) / 100, 2) }}</span>
+                            <span>-RM {{ number_format($totalDiscount / 100, 2) }}</span>
                         </div>
                         @endif
 
                         <div class="flex justify-between text-gray-600">
                             <span>Shipping</span>
-                            <span class="text-green-600">Free</span>
+                            <span>Calculated at checkout</span>
+                        </div>
+
+                        <div class="flex justify-between text-gray-600">
+                            <span>Tax</span>
+                            <span>Calculated at checkout</span>
                         </div>
 
                         <hr>
 
                         <div class="flex justify-between text-xl font-bold text-gray-900">
-                            <span>Total</span>
-                            <span>RM {{ number_format($cartTotal / 100, 2) }}</span>
+                            <span>Cart Total</span>
+                            <span>RM {{ number_format($cartDiscountedSubtotal / 100, 2) }}</span>
                         </div>
                     </div>
 

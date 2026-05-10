@@ -90,9 +90,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/subscribe/chip/{plan}', [BillingController::class, 'subscribeChip'])->name('subscribe.chip');
     Route::post('/subscribe/chip', [BillingController::class, 'processSubscribeChip'])->name('subscribe.chip.process');
 
-    Route::get('/subscribe/stripe/{plan}', [BillingController::class, 'subscribeStripe'])->name('subscribe.stripe');
-    Route::post('/subscribe/stripe', [BillingController::class, 'processSubscribeStripe'])->name('subscribe.stripe.process');
-
     Route::get('/billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
 });
 
