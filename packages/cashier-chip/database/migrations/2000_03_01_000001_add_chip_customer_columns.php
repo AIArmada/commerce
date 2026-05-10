@@ -5,13 +5,14 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Cashier\CashierServiceProvider;
 
 return new class extends Migration
 {
     private function stripeCashierIsLoaded(): bool
     {
-        return class_exists(\Laravel\Cashier\CashierServiceProvider::class)
-            && app()->getProvider(\Laravel\Cashier\CashierServiceProvider::class) !== null;
+        return class_exists(CashierServiceProvider::class)
+            && app()->getProvider(CashierServiceProvider::class) !== null;
     }
 
     /**

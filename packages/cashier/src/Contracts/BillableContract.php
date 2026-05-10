@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Contracts;
 
+use AIArmada\Cashier\Billable;
 use Illuminate\Support\Collection;
 
 /**
  * Contract for billable bridge models used by unified cashier features.
  *
  * The methods below describe the stable, package-owned bridge API exposed by
- * {@see \AIArmada\Cashier\Billable} and its supporting concern. Gateway
+ * {@see Billable} and its supporting concern. Gateway
  * adapters may still call gateway-native hooks (for example Stripe- or
  * CHIP-specific customer methods), but those are grouped separately below so
  * the contract reflects the package's real responsibilities instead of an
@@ -24,13 +25,13 @@ interface BillableContract
     public function gateway(?string $gateway = null): GatewayContract;
 
     /**
-    * Get the preferred gateway name for this billable.
+     * Get the preferred gateway name for this billable.
      */
     public function preferredGateway(): string;
 
     /**
-    * Persist the preferred gateway for this billable.
-    */
+     * Persist the preferred gateway for this billable.
+     */
     public function setPreferredGateway(string $gateway): static;
 
     /**
@@ -97,125 +98,125 @@ interface BillableContract
     public function preferredLocale(): ?string;
 
     /**
-    * Create a one-time charge using the selected gateway.
-    *
-    * @param  array<string, mixed>  $options
+     * Create a one-time charge using the selected gateway.
+     *
+     * @param  array<string, mixed>  $options
      */
     public function chargeWithGateway(int $amount, string $paymentMethod, ?string $gateway = null, array $options = []): PaymentContract;
 
     /**
-    * Begin a new subscription on the selected gateway.
+     * Begin a new subscription on the selected gateway.
      */
     public function newGatewaySubscription(string $type, string | array $prices = [], ?string $gateway = null): SubscriptionBuilderContract;
 
     /**
-    * Start a checkout flow on the selected gateway.
+     * Start a checkout flow on the selected gateway.
      */
     public function checkoutWithGateway(?string $gateway = null): CheckoutBuilderContract;
 
     /**
-    * Get all subscriptions across supported gateways.
-    *
-    * @return Collection<int, SubscriptionContract>
+     * Get all subscriptions across supported gateways.
+     *
+     * @return Collection<int, SubscriptionContract>
      */
     public function allGatewaySubscriptions(): Collection;
 
     /**
-    * Get subscriptions for a single gateway.
-    *
-    * @return Collection<int, SubscriptionContract>
+     * Get subscriptions for a single gateway.
+     *
+     * @return Collection<int, SubscriptionContract>
      */
     public function gatewaySubscriptions(?string $gateway = null): Collection;
 
     /**
-    * Get a single subscription for a gateway.
+     * Get a single subscription for a gateway.
      */
     public function gatewaySubscription(string $type, ?string $gateway = null): ?SubscriptionContract;
 
     /**
-    * Determine if the billable is subscribed on a specific gateway.
+     * Determine if the billable is subscribed on a specific gateway.
      */
     public function subscribedViaGateway(string $type = 'default', ?string $price = null, ?string $gateway = null): bool;
 
     /**
-    * Get all payment methods across supported gateways.
-    *
-    * @return Collection<int, PaymentMethodContract>
+     * Get all payment methods across supported gateways.
+     *
+     * @return Collection<int, PaymentMethodContract>
      */
     public function allGatewayPaymentMethods(): Collection;
 
     /**
-    * Get payment methods for a single gateway.
-    *
-    * @return Collection<int, PaymentMethodContract>
+     * Get payment methods for a single gateway.
+     *
+     * @return Collection<int, PaymentMethodContract>
      */
     public function gatewayPaymentMethods(?string $gateway = null, ?string $type = null): Collection;
 
     /**
-    * Get the default payment method for a gateway.
+     * Get the default payment method for a gateway.
      */
     public function defaultGatewayPaymentMethod(?string $gateway = null): ?PaymentMethodContract;
 
     /**
-    * Create a setup intent (or gateway equivalent) for the selected gateway.
-    *
-    * @param  array<string, mixed>  $options
+     * Create a setup intent (or gateway equivalent) for the selected gateway.
+     *
+     * @param  array<string, mixed>  $options
      */
     public function createGatewaySetupIntent(?string $gateway = null, array $options = []): mixed;
 
     /**
-    * Get all invoices across supported gateways.
-    *
-    * @param  array<string, mixed>  $parameters
-    * @return Collection<int, InvoiceContract>
+     * Get all invoices across supported gateways.
+     *
+     * @param  array<string, mixed>  $parameters
+     * @return Collection<int, InvoiceContract>
      */
     public function allGatewayInvoices(array $parameters = []): Collection;
 
     /**
-    * Get invoices for a single gateway.
-    *
-    * @param  array<string, mixed>  $parameters
-    * @return Collection<int, InvoiceContract>
+     * Get invoices for a single gateway.
+     *
+     * @param  array<string, mixed>  $parameters
+     * @return Collection<int, InvoiceContract>
      */
     public function gatewayInvoices(?string $gateway = null, array $parameters = []): Collection;
 
     /**
-    * Get the customer billing portal URL for a gateway when supported.
-    *
-    * @param  array<string, mixed>  $options
+     * Get the customer billing portal URL for a gateway when supported.
+     *
+     * @param  array<string, mixed>  $options
      */
     public function gatewayBillingPortalUrl(string $returnUrl, ?string $gateway = null, array $options = []): ?string;
 
     /**
-    * Get all subscriptions across all available gateways.
-    *
-    * @return Collection<int, SubscriptionContract>
+     * Get all subscriptions across all available gateways.
+     *
+     * @return Collection<int, SubscriptionContract>
      */
     public function allSubscriptions(): Collection;
 
     /**
-    * Find the first matching subscription across all available gateways.
+     * Find the first matching subscription across all available gateways.
      */
     public function findSubscription(string $type = 'default'): ?SubscriptionContract;
 
     /**
-    * Determine if the billable is subscribed on any gateway.
+     * Determine if the billable is subscribed on any gateway.
      */
     public function subscribedOnAny(string $type = 'default', ?string $price = null): bool;
 
     /**
-    * Determine if the billable is on trial on any gateway.
+     * Determine if the billable is on trial on any gateway.
      */
     public function onTrialOnAny(string $type = 'default'): bool;
 
     /**
-    * Determine if the billable is on a generic trial stored on the model.
+     * Determine if the billable is on a generic trial stored on the model.
      */
     public function onGenericTrial(): bool;
 
     /**
-    * Gateway-native bridge hooks required by the Stripe adapter.
-    */
+     * Gateway-native bridge hooks required by the Stripe adapter.
+     */
 
     /**
      * Stripe: Get the Stripe customer ID.

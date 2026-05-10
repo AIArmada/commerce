@@ -6,6 +6,7 @@ namespace AIArmada\Commerce\Tests\CashierChip;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Cashier\CashierServiceProvider;
 
 abstract class CashierChipWithStripeTestCase extends CashierChipTestCase
 {
@@ -13,7 +14,7 @@ abstract class CashierChipWithStripeTestCase extends CashierChipTestCase
     {
         return [
             ...parent::getPackageProviders($app),
-            \Laravel\Cashier\CashierServiceProvider::class,
+            CashierServiceProvider::class,
         ];
     }
 

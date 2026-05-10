@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Support;
 
+use Closure;
 use Illuminate\Support\ServiceProvider;
 
 final class ConditionalMigrationLoader
@@ -19,7 +20,7 @@ final class ConditionalMigrationLoader
             return;
         }
 
-        $files = glob(rtrim($directory, '/'). '/*');
+        $files = glob(mb_rtrim($directory, '/') . '/*');
 
         if (! is_array($files)) {
             return;
@@ -50,7 +51,7 @@ final class ConditionalMigrationLoader
 
         $runtimeMigrationPath = self::materializeRuntimeMigration($migrationPath, $publishedSuffix);
 
-        \Closure::bind(
+        Closure::bind(
             function (string $path): void {
                 $this->loadMigrationsFrom($path);
             },
@@ -106,7 +107,7 @@ final class ConditionalMigrationLoader
         $filename = basename($migrationPath);
 
         if (str_ends_with($filename, '.php.stub')) {
-            $filename = substr($filename, 0, -5);
+            $filename = mb_substr($filename, 0, -5);
         } elseif (str_ends_with($filename, '.stub')) {
             $filename = $publishedSuffix . '.php';
         }
@@ -124,7 +125,7 @@ final class ConditionalMigrationLoader
             }
         }
 
-        $runtimePath = rtrim($runtimeDirectory, '/') . '/' . $filename;
+        $runtimePath = mb_rtrim($runtimeDirectory, '/') . '/' . $filename;
         $contents = file_get_contents($migrationPath);
 
         if (is_string($contents) && (! is_file($runtimePath) || file_get_contents($runtimePath) !== $contents)) {
