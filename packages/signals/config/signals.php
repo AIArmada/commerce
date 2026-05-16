@@ -83,6 +83,7 @@ return [
         ],
         'privacy' => [
             'property_allowlist' => [
+                'assignment_id',
                 'affiliate_code',
                 'affiliate_id',
                 'attribution_id',
@@ -99,6 +100,9 @@ return [
                 'cookie_value',
                 'currency',
                 'external_reference',
+                'experiment_contexts',
+                'experiment_id',
+                'experiment_slug',
                 'first_order',
                 'gateway',
                 'item_count',
@@ -108,12 +112,14 @@ return [
                 'landing_url',
                 'line_total_minor',
                 'medium',
+                'module_type',
                 'order_id',
                 'order_number',
                 'order_reference',
                 'payment_gateway',
                 'quantity',
                 'referrer_url',
+                'refund_reason',
                 'shipping_method',
                 'source_event_id',
                 'status',
@@ -132,6 +138,8 @@ return [
                 'voucher_name',
                 'voucher_type',
                 'voucher_value',
+                'variant_code',
+                'variant_id',
             ],
         ],
         'alerts' => [
@@ -194,8 +202,11 @@ return [
         'orders' => [
             'enabled' => true,
             'listen_for_paid' => true,
+            'listen_for_refunded' => true,
             'event_name' => 'order.paid',
             'event_category' => 'conversion',
+            'refund_event_name' => 'order.refunded',
+            'refund_event_category' => 'conversion',
         ],
         'vouchers' => [
             'enabled' => true,

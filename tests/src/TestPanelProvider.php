@@ -6,6 +6,7 @@ namespace AIArmada\Commerce\Tests;
 
 use AIArmada\FilamentAffiliates\FilamentAffiliates;
 use AIArmada\FilamentCart\FilamentCartPlugin;
+use AIArmada\FilamentGrowth\FilamentGrowthPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -39,6 +40,7 @@ class TestPanelProvider extends PanelProvider
                 FilamentCartPlugin::make(),
                 FilamentVouchersPlugin::make(),
                 FilamentAffiliates::make(),
+                FilamentGrowthPlugin::make(),
             ])
             ->middleware([
                 EncryptCookies::class,

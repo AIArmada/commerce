@@ -16,6 +16,7 @@ use AIArmada\Signals\Listeners\RecordCheckoutCompletedSignal;
 use AIArmada\Signals\Listeners\RecordCheckoutStartedSignal;
 use AIArmada\Signals\Listeners\RecordHighValueCartDetectedSignal;
 use AIArmada\Signals\Listeners\RecordOrderPaidSignal;
+use AIArmada\Signals\Listeners\RecordOrderRefundedSignal;
 use AIArmada\Signals\Listeners\RecordVoucherAppliedSignal;
 use AIArmada\Signals\Listeners\RecordVoucherRemovedSignal;
 use Illuminate\Support\Facades\Event;
@@ -113,10 +114,18 @@ final class CommerceSignalsIntegrationRegistrar
         }
 
         if (! config('signals.integrations.orders.listen_for_paid', true)) {
+            if (! config('signals.integrations.orders.listen_for_refunded', true)) {
+                return;
+            }
+        } else {
+            $this->listenIfAvailable('AIArmada\\Orders\\Events\\OrderPaid', RecordOrderPaidSignal::class);
+        }
+
+        if (! config('signals.integrations.orders.listen_for_refunded', true)) {
             return;
         }
 
-        $this->listenIfAvailable('AIArmada\\Orders\\Events\\OrderPaid', RecordOrderPaidSignal::class);
+        $this->listenIfAvailable('AIArmada\\Orders\\Events\\OrderRefunded', RecordOrderRefundedSignal::class);
     }
 
     private function bootVoucherIntegration(): void
