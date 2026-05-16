@@ -68,7 +68,7 @@ final class AssignmentOwnerScopingContractTest extends TestCase
         $model = $this->createGlobalModel();
 
         expect(fn () => $model->assignOwner($owner)->save())
-            ->toThrow(\InvalidArgumentException::class, 'Owner cannot be assigned to a persisted global');
+            ->toThrow(InvalidArgumentException::class, 'Owner cannot be assigned to a persisted global');
     }
 
     /**

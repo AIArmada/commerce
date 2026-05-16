@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\TrackedProperty;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
 function growthIsolationOwner(string $label): User

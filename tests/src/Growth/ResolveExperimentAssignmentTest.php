@@ -127,7 +127,7 @@ it('rejects assignment resolution for non-active experiments', function (): void
     $action = app(ResolveExperimentAssignment::class);
 
     expect(fn () => OwnerContext::withOwner($owner, fn () => $action->handle($experiment, $identity)))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 });
 
 it('enforces unique assignment rows per experiment and signal session', function (): void {

@@ -21,7 +21,7 @@ function growthFactoryOwner(): User
 it('growth factories honor the current owner context by default', function (): void {
     $owner = growthFactoryOwner();
 
-    [$experiment, $variant, $assignment] = OwnerContext::withOwner($owner, function () use ($owner): array {
+    [$experiment, $variant, $assignment] = OwnerContext::withOwner($owner, function (): array {
         /** @var Experiment $experiment */
         $experiment = Experiment::factory()->create();
         /** @var Variant $variant */

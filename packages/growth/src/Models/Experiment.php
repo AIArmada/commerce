@@ -13,8 +13,8 @@ use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,10 +45,10 @@ use RuntimeException;
  */
 final class Experiment extends Model
 {
+    use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasOwnerScopeKey;
-    use HasFactory;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'growth.features.owner';
