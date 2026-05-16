@@ -156,6 +156,16 @@ final class TrackedProperty extends Model
         });
 
         static::deleting(function (TrackedProperty $trackedProperty): void {
+            $growthExperimentModel = 'AIArmada\\Growth\\Models\\Experiment';
+
+            if (class_exists($growthExperimentModel)) {
+                $growthExperimentModel::query()
+                    ->withoutOwnerScope()
+                    ->where('tracked_property_id', $trackedProperty->getKey())
+                    ->get()
+                    ->each(static fn ($experiment): mixed => $experiment->delete());
+            }
+
             $trackedProperty->goals()->update(['tracked_property_id' => null]);
             $trackedProperty->savedReports()->update(['tracked_property_id' => null]);
             $trackedProperty->alertRules()->update(['tracked_property_id' => null]);

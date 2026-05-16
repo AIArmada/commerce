@@ -33,11 +33,12 @@ final class CommerceSignalsRecorder
             'occurred_at' => $this->timestampValue($session->getAttribute('completed_at') ?? $session->getAttribute('updated_at')),
             'revenue_minor' => (int) ($session->getAttribute('grand_total') ?? 0),
             'currency' => $this->stringValue($session->getAttribute('currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
-            'properties' => array_filter([
+            'properties' => $this->enrichProperties($session, $trackedProperty, [
                 'checkout_session_id' => $this->stringValue($session->getKey()),
+                'cart_id' => $this->stringValue($session->getAttribute('cart_id')),
                 'order_id' => $this->stringValue($session->getAttribute('order_id')),
                 'payment_gateway' => $this->stringValue($session->getAttribute('selected_payment_gateway')),
-            ], static fn (mixed $value): bool => $value !== null),
+            ]),
         ]);
     }
 
@@ -57,11 +58,12 @@ final class CommerceSignalsRecorder
             'occurred_at' => $this->timestampValue($session->getAttribute('created_at') ?? $session->getAttribute('updated_at')),
             'revenue_minor' => (int) ($session->getAttribute('grand_total') ?? 0),
             'currency' => $this->stringValue($session->getAttribute('currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
-            'properties' => array_filter([
+            'properties' => $this->enrichProperties($session, $trackedProperty, [
                 'checkout_session_id' => $this->stringValue($session->getKey()),
+                'cart_id' => $this->stringValue($session->getAttribute('cart_id')),
                 'payment_gateway' => $this->stringValue($session->getAttribute('selected_payment_gateway')),
                 'shipping_method' => $this->stringValue($session->getAttribute('selected_shipping_method')),
-            ], static fn (mixed $value): bool => $value !== null),
+            ]),
         ]);
     }
 
@@ -73,19 +75,54 @@ final class CommerceSignalsRecorder
             return null;
         }
 
+        $checkoutSessionId = $this->checkoutSessionIdForOrder($order);
+        $cartId = $this->cartIdForOrder($order);
+
         return $this->ingestSignalEvent->handle($trackedProperty, [
             'event_name' => (string) config('signals.integrations.orders.event_name', 'order.paid'),
             'event_category' => (string) config('signals.integrations.orders.event_category', 'conversion'),
             'external_id' => $this->stringValue($order->getAttribute('customer_id')),
+            'anonymous_id' => $cartId,
             'occurred_at' => $this->timestampValue($order->getAttribute('paid_at') ?? $order->getAttribute('updated_at')),
             'revenue_minor' => (int) ($order->getAttribute('grand_total') ?? 0),
             'currency' => $this->stringValue($order->getAttribute('currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
-            'properties' => array_filter([
+            'properties' => $this->enrichProperties($order, $trackedProperty, [
+                'checkout_session_id' => $checkoutSessionId,
+                'cart_id' => $cartId,
                 'order_id' => $this->stringValue($order->getKey()),
                 'order_number' => $this->stringValue($order->getAttribute('order_number')),
                 'gateway' => $gateway,
                 'transaction_id' => $transactionId,
-            ], static fn (mixed $value): bool => $value !== null),
+            ]),
+        ]);
+    }
+
+    public function recordOrderRefunded(Model $order, int $amount, ?string $reason = null): ?SignalEvent
+    {
+        $trackedProperty = $this->trackedPropertyResolver->resolveForModel($order);
+
+        if ($trackedProperty === null) {
+            return null;
+        }
+
+        $checkoutSessionId = $this->checkoutSessionIdForOrder($order);
+        $cartId = $this->cartIdForOrder($order);
+
+        return $this->ingestSignalEvent->handle($trackedProperty, [
+            'event_name' => (string) config('signals.integrations.orders.refund_event_name', 'order.refunded'),
+            'event_category' => (string) config('signals.integrations.orders.refund_event_category', 'conversion'),
+            'external_id' => $this->stringValue($order->getAttribute('customer_id')),
+            'anonymous_id' => $cartId,
+            'occurred_at' => $this->timestampValue($order->getAttribute('updated_at')),
+            'revenue_minor' => $amount,
+            'currency' => $this->stringValue($order->getAttribute('currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
+            'properties' => $this->enrichProperties($order, $trackedProperty, [
+                'checkout_session_id' => $checkoutSessionId,
+                'cart_id' => $cartId,
+                'order_id' => $this->stringValue($order->getKey()),
+                'order_number' => $this->stringValue($order->getAttribute('order_number')),
+                'refund_reason' => $reason,
+            ]),
         ]);
     }
 
@@ -465,6 +502,60 @@ final class CommerceSignalsRecorder
             $this->stringValue($model->getAttribute('owner_type')),
             $model->getAttribute('owner_id'),
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $properties
+     * @return array<string, mixed>|null
+     */
+    private function enrichProperties(Model $source, TrackedProperty $trackedProperty, array $properties): ?array
+    {
+        $baseProperties = array_filter($properties, static fn (mixed $value): bool => $value !== null);
+
+        if (! app()->bound('growth.signal_event_property_enricher')) {
+            return $baseProperties === [] ? null : $baseProperties;
+        }
+
+        $enricher = app('growth.signal_event_property_enricher');
+
+        if (! is_object($enricher) || ! method_exists($enricher, 'handle')) {
+            return $baseProperties === [] ? null : $baseProperties;
+        }
+
+        $enriched = $enricher->handle($source, $trackedProperty, $baseProperties);
+
+        if (! is_array($enriched)) {
+            return $baseProperties === [] ? null : $baseProperties;
+        }
+
+        return $enriched === [] ? null : $enriched;
+    }
+
+    private function cartIdForOrder(Model $order): ?string
+    {
+        $cartId = $this->stringValue($order->getAttribute('cart_id'));
+
+        if ($cartId !== null) {
+            return $cartId;
+        }
+
+        return $this->orderMetadataValue($order, 'cart_id');
+    }
+
+    private function checkoutSessionIdForOrder(Model $order): ?string
+    {
+        return $this->orderMetadataValue($order, 'checkout_session_id');
+    }
+
+    private function orderMetadataValue(Model $order, string $key): ?string
+    {
+        $metadata = $order->getAttribute('metadata');
+
+        if (! is_array($metadata)) {
+            return null;
+        }
+
+        return $this->stringValue(data_get($metadata, $key));
     }
 
     private function buildCartSessionIdentifier(?string $cartIdentifier, string $instanceName): ?string

@@ -20,6 +20,7 @@ use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkServiceProvider;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
+use AIArmada\FilamentGrowth\FilamentGrowthServiceProvider;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
@@ -27,12 +28,15 @@ use AIArmada\FilamentCart\FilamentCartServiceProvider;
 use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
 use AIArmada\FilamentChip\FilamentChipServiceProvider;
 use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
+use AIArmada\FilamentSignals\FilamentSignalsServiceProvider;
 use AIArmada\FilamentShipping\FilamentShippingServiceProvider;
 use AIArmada\FilamentVouchers\FilamentVouchersServiceProvider;
+use AIArmada\Growth\GrowthServiceProvider;
 use AIArmada\Jnt\JntServiceProvider;
 use AIArmada\Products\ProductsServiceProvider;
 use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Shipping\ShippingServiceProvider;
+use AIArmada\Signals\SignalsServiceProvider;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use BackedEnum;
@@ -143,7 +147,11 @@ abstract class TestCase extends Orchestra
             ChipServiceProvider::class,
             JntServiceProvider::class,
             DocsServiceProvider::class,
+            SignalsServiceProvider::class,
+            GrowthServiceProvider::class,
             FilamentDocsServiceProvider::class,
+            FilamentSignalsServiceProvider::class,
+            FilamentGrowthServiceProvider::class,
             CustomersServiceProvider::class,
             VoucherServiceProvider::class,
             FilamentCartServiceProvider::class,
