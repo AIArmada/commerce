@@ -41,11 +41,11 @@ it('rejects saving an experiment with a tracked property from another owner scop
         'tracked_property_id' => $propertyB->getKey(),
         'name' => 'Cross Tenant Experiment',
         'slug' => 'cross-tenant-experiment',
-    ])))->toThrow(\RuntimeException::class, 'Invalid tracked_property_id: does not belong to the current owner scope.');
+    ])))->toThrow(RuntimeException::class, 'Invalid tracked_property_id: does not belong to the current owner scope.');
 
     expect(fn (): Experiment => OwnerContext::withOwner($ownerA, fn (): Experiment => Experiment::factory()->create([
         'tracked_property_id' => $propertyA->getKey(),
         'name' => 'Owner A Experiment',
         'slug' => 'owner-a-experiment',
-    ])))->not->toThrow(\RuntimeException::class);
+    ])))->not->toThrow(RuntimeException::class);
 });

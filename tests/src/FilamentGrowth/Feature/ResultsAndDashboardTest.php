@@ -15,6 +15,7 @@ use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Str;
 
 function filamentGrowthOwner(): User
@@ -28,7 +29,7 @@ function filamentGrowthOwner(): User
 
 function filamentGrowthExperiment(User $owner, string $currency = 'MYR'): array
 {
-    return OwnerContext::withOwner($owner, function () use ($currency, $owner): array {
+    return OwnerContext::withOwner($owner, function () use ($currency): array {
         $trackedProperty = TrackedProperty::query()->create([
             'name' => 'Filament Growth Property ' . Str::random(6),
             'slug' => 'filament-growth-' . Str::lower(Str::random(8)),
@@ -148,11 +149,11 @@ it('shows mixed revenue totals on the dashboard when experiments use different c
     filamentGrowthExperiment($owner, 'USD');
 
     $widget = app(GrowthStatsWidget::class);
-    $method = new \ReflectionMethod(GrowthStatsWidget::class, 'getStats');
+    $method = new ReflectionMethod(GrowthStatsWidget::class, 'getStats');
     $method->setAccessible(true);
 
     OwnerContext::withOwner($owner, function () use ($method, $widget): void {
-        /** @var array<int, \Filament\Widgets\StatsOverviewWidget\Stat> $stats */
+        /** @var array<int, Stat> $stats */
         $stats = $method->invoke($widget);
 
         expect($stats[3]->getValue())->toBe('Mixed')

@@ -22,10 +22,10 @@ use UnitEnum;
 
 final class ExperimentResultsPage extends Page implements HasForms
 {
-    use InteractsWithForms;
     use FormatsMoney {
         formatMoney as private formatMinorMoney;
     }
+    use InteractsWithForms;
 
     public ?string $experimentId = null;
 

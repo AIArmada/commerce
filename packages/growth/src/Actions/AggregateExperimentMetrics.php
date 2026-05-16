@@ -16,7 +16,7 @@ final class AggregateExperimentMetrics
     /**
      * @return array{
      *     experiment_id: string,
-    *     currency: string,
+     *     currency: string,
      *     winner_metric: string,
      *     winner_variant_id: string|null,
      *     totals: array{assignments: int, checkout_starts: int, purchases: int, refunds: int, revenue_minor: int},

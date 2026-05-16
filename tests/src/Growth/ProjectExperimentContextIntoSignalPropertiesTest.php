@@ -140,7 +140,7 @@ it('projects multiple experiment contexts into order properties when the same bu
 
     expect($properties['experiment_contexts'])->toHaveCount(2)
         ->and(collect($properties['experiment_contexts'])->pluck('experiment_id')->all())
-            ->toEqualCanonicalizing([(string) $experimentA->getKey(), (string) $experimentB->getKey()])
+        ->toEqualCanonicalizing([(string) $experimentA->getKey(), (string) $experimentB->getKey()])
         ->and($properties)->toHaveKeys(['experiment_id', 'variant_id', 'assignment_id']);
 });
 

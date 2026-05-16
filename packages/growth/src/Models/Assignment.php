@@ -9,8 +9,8 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use InvalidArgumentException;
@@ -36,9 +36,9 @@ use InvalidArgumentException;
  */
 final class Assignment extends Model
 {
+    use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
-    use HasFactory;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'growth.features.owner';

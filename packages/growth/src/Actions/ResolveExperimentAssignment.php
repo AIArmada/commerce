@@ -13,8 +13,8 @@ use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use Carbon\CarbonImmutable;
 use Closure;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
@@ -379,6 +379,7 @@ final class ResolveExperimentAssignment
 
     /**
      * @template TReturn
+     *
      * @param  Closure(): TReturn  $callback
      * @return TReturn
      */
