@@ -11,6 +11,11 @@ final class EditVariant extends EditRecord
 {
     protected static string $resource = VariantResource::class;
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return VariantResource::normalizeFormData($data);
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

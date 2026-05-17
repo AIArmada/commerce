@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Growth\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final class ProjectExperimentContextIntoSignalProperties
 {
@@ -28,13 +31,18 @@ final class ProjectExperimentContextIntoSignalProperties
             return $properties;
         }
 
+        $trackedProperty = $this->resolveTrackedPropertyForCurrentScope($trackedProperty);
+
         $assignments = $this->resolveAssignments($source, $trackedProperty);
 
         if ($assignments->isEmpty()) {
             return $properties;
         }
 
-        $contexts = $this->buildExperimentSignalProperties->contextsForAssignments($assignments);
+        $contexts = collect($this->buildExperimentSignalProperties->contextsForAssignments($assignments))
+            ->unique('experiment_id')
+            ->values()
+            ->all();
 
         if ($contexts === []) {
             return $properties;
@@ -43,12 +51,14 @@ final class ProjectExperimentContextIntoSignalProperties
         /** @var array<string, string> $primaryContext */
         $primaryContext = $contexts[0];
 
-        return array_filter(
-            array_merge($properties, $primaryContext, [
+        $enrichedContext = array_filter(
+            array_merge($primaryContext, [
                 'experiment_contexts' => $contexts,
             ]),
             static fn (mixed $value): bool => $value !== null,
         );
+
+        return array_merge($properties, $enrichedContext);
     }
 
     /**
@@ -63,15 +73,18 @@ final class ProjectExperimentContextIntoSignalProperties
             return new Collection;
         }
 
-        return Assignment::query()
-            ->withoutOwnerScope()
-            ->with(['experiment', 'variant'])
+        $assignmentsQuery = Assignment::query()->with(['experiment', 'variant']);
+        $experimentsQuery = Experiment::query()
+            ->where('tracked_property_id', $trackedProperty->getKey())
+            ->select('id');
+
+        $assignmentsQuery = $this->scopeQueryToTrackedPropertyOwner($assignmentsQuery, $trackedProperty);
+        $experimentsQuery = $this->scopeQueryToTrackedPropertyOwner($experimentsQuery, $trackedProperty);
+
+        return $assignmentsQuery
             ->whereIn(
                 'experiment_id',
-                Experiment::query()
-                    ->withoutOwnerScope()
-                    ->where('tracked_property_id', $trackedProperty->getKey())
-                    ->select('id'),
+                $experimentsQuery,
             )
             ->where(function (Builder $query) use ($identityIds, $subjectKeys): void {
                 if ($identityIds !== []) {
@@ -92,9 +105,7 @@ final class ProjectExperimentContextIntoSignalProperties
             })
             ->orderByDesc('last_seen_at')
             ->orderByDesc('assigned_at')
-            ->get()
-            ->unique('experiment_id')
-            ->values();
+            ->get();
     }
 
     /**
@@ -109,9 +120,12 @@ final class ProjectExperimentContextIntoSignalProperties
             return [];
         }
 
-        return SignalIdentity::query()
-            ->withoutOwnerScope()
-            ->where('tracked_property_id', $trackedProperty->getKey())
+        $identityQuery = $this->scopeQueryToTrackedPropertyOwner(
+            SignalIdentity::query()->where('tracked_property_id', $trackedProperty->getKey()),
+            $trackedProperty,
+        );
+
+        return $identityQuery
             ->where(function (Builder $query) use ($anonymousIds, $externalIds): void {
                 if ($externalIds !== []) {
                     $query->whereIn('external_id', $externalIds);
@@ -186,5 +200,68 @@ final class ProjectExperimentContextIntoSignalProperties
     private function uniqueStrings(array $values): array
     {
         return array_values(array_unique(array_filter($values, static fn (?string $value): bool => $value !== null && $value !== '')));
+    }
+
+    private function resolveTrackedPropertyForCurrentScope(TrackedProperty $trackedProperty): TrackedProperty
+    {
+        if (Experiment::ownerScopeConfig()->enabled || TrackedProperty::ownerScopeConfig()->enabled) {
+            $owner = OwnerContext::resolve();
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                'Tracked property is not accessible in the current owner scope.',
+            );
+
+            $resolvedTrackedProperty = app(ScopeSignalQueryToOwner::class)
+                ->handle(
+                    TrackedProperty::query(),
+                    $owner,
+                    TrackedProperty::ownerScopeConfig()->includeGlobal,
+                )
+                ->whereKey((string) $trackedProperty->getKey())
+                ->first();
+
+            if ($resolvedTrackedProperty instanceof TrackedProperty) {
+                return $resolvedTrackedProperty;
+            }
+
+            throw new AuthorizationException('Tracked property is not accessible in the current owner scope.');
+        }
+
+        $resolvedTrackedProperty = TrackedProperty::query()
+            ->whereKey((string) $trackedProperty->getKey())
+            ->first();
+
+        if (! $resolvedTrackedProperty instanceof TrackedProperty) {
+            throw new InvalidArgumentException('Tracked property could not be resolved for signal enrichment.');
+        }
+
+        return $resolvedTrackedProperty;
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    private function scopeQueryToTrackedPropertyOwner(Builder $query, TrackedProperty $trackedProperty): Builder
+    {
+        /** @var class-string<Model> $modelClass */
+        $modelClass = $query->getModel()::class;
+
+        if (! method_exists($modelClass, 'ownerScopeConfig')) {
+            return $query;
+        }
+
+        $config = $modelClass::ownerScopeConfig();
+
+        if (! $config->enabled && ! Experiment::ownerScopeConfig()->enabled) {
+            return $query;
+        }
+
+        $owner = OwnerContext::fromTypeAndId($trackedProperty->owner_type, $trackedProperty->owner_id);
+
+        return app(ScopeSignalQueryToOwner::class)->handle($query, $owner);
     }
 }

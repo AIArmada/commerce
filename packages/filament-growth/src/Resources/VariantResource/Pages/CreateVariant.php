@@ -11,6 +11,11 @@ final class CreateVariant extends CreateRecord
 {
     protected static string $resource = VariantResource::class;
 
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return VariantResource::normalizeFormData($data);
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

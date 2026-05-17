@@ -6,9 +6,12 @@ namespace AIArmada\FilamentGrowth\Pages;
 
 use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
+use AIArmada\Growth\Models\Experiment;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Pages\Dashboard;
+use Illuminate\Support\Facades\Gate;
 
 final class GrowthDashboard extends Dashboard
 {
@@ -30,7 +33,17 @@ final class GrowthDashboard extends Dashboard
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-growth.features.dashboard', true);
+        return (bool) config('filament-growth.features.dashboard', true)
+            && static::canAccess();
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null
+            && parent::canAccess()
+            && Gate::forUser($user)->allows('viewAny', Experiment::class);
     }
 
     public function getColumns(): int | array
@@ -63,6 +76,7 @@ final class GrowthDashboard extends Dashboard
             Action::make('viewResults')
                 ->label('View Results')
                 ->icon('heroicon-o-chart-bar')
+                ->visible(fn (): bool => ExperimentResultsPage::canAccess())
                 ->url(fn (): string => ExperimentResultsPage::getUrl()),
         ];
     }

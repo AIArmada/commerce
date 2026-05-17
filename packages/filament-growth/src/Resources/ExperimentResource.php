@@ -6,16 +6,20 @@ namespace AIArmada\FilamentGrowth\Resources;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource\Pages;
+use AIArmada\FilamentGrowth\Support\AccessibleGrowthRecords;
 use AIArmada\Growth\Actions\ResolveExperimentPreset;
 use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Enums\ExperimentStatus;
+use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\TrackedProperty;
 use BackedEnum;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
@@ -26,7 +30,12 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 use UnitEnum;
 
 final class ExperimentResource extends Resource
@@ -46,7 +55,20 @@ final class ExperimentResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return Experiment::query()->forOwner();
+        /** @var Builder<Experiment> $query */
+        $query = static::applyOwnerSafeRelationCounts(Experiment::query())
+            ->with([
+                'trackedProperty' => function ($query) {
+                    $builder = $query instanceof Relation ? $query->getQuery() : $query;
+
+                    /** @var Builder<TrackedProperty> $builder */
+                    return app(AccessibleGrowthRecords::class)
+                        ->accessibleTrackedProperties($builder)
+                        ->select(['id', 'name']);
+                },
+            ]);
+
+        return app(AccessibleGrowthRecords::class)->experiments($query);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null
@@ -81,11 +103,9 @@ final class ExperimentResource extends Resource
                         ->relationship(
                             name: 'trackedProperty',
                             titleAttribute: 'name',
-                            modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn(
-                                $query->getModel()->qualifyColumn('id'),
-                                TrackedProperty::query()->forOwner()->select('id'),
-                            ),
+                            modifyQueryUsing: fn (Builder $query): Builder => static::scopeTrackedPropertyQueryToCurrentOwner($query),
                         )
+                        ->disabledOn('edit')
                         ->required()
                         ->preload()
                         ->searchable(),
@@ -106,10 +126,7 @@ final class ExperimentResource extends Resource
                             $set('goal_event_name', $preset['goal_event_name']);
                             $set('goal_event_category', $preset['goal_event_category']);
                             $set('winner_metric', $preset['winner_metric']);
-                            $set('settings', array_replace_recursive(
-                                $preset['settings'],
-                                is_array($existingSettings) ? $existingSettings : [],
-                            ));
+                            $set('settings', static::normalizeSettingsForModuleType($state, $existingSettings));
                         }),
 
                     Forms\Components\Select::make('status')
@@ -200,10 +217,10 @@ final class ExperimentResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->description(fn (Experiment $record): string => $record->slug),
-                Tables\Columns\TextColumn::make('trackedProperty.name')
+                Tables\Columns\TextColumn::make('tracked_property_id')
                     ->label('Tracked Property')
-                    ->searchable()
-                    ->sortable(),
+                    ->state(fn (Experiment $record): string => static::trackedPropertyName($record))
+                    ->searchable(query: fn (Builder $query, string $search): Builder => static::filterByTrackedPropertyName($query, $search)),
                 Tables\Columns\TextColumn::make('module_type')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => ExperimentModuleType::labelFor($state))
@@ -216,13 +233,11 @@ final class ExperimentResource extends Resource
                     ->label('Goal')
                     ->badge(),
                 Tables\Columns\TextColumn::make('variants_count')
-                    ->counts('variants')
                     ->label('Variants')
-                    ->sortable(),
+                    ->numeric(),
                 Tables\Columns\TextColumn::make('assignments_count')
-                    ->counts('assignments')
                     ->label('Assignments')
-                    ->sortable(),
+                    ->numeric(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -233,18 +248,53 @@ final class ExperimentResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(collect(ExperimentStatus::cases())->mapWithKeys(fn (ExperimentStatus $status): array => [$status->value => $status->label()])),
             ])
-            ->actions([
-                Tables\Actions\Action::make('results')
-                    ->label('Results')
-                    ->icon('heroicon-o-chart-bar')
-                    ->url(fn (Experiment $record): string => ExperimentResultsPage::getUrl(['experiment' => $record->getKey()])),
-                EditAction::make(),
-            ])
+            ->actions(array_values(array_filter([
+                config('filament-growth.features.results', true)
+                    ? Tables\Actions\Action::make('results')
+                        ->label('Results')
+                        ->icon('heroicon-o-chart-bar')
+                        ->visible(fn (): bool => ExperimentResultsPage::canAccess())
+                        ->url(fn (Experiment $record): string => ExperimentResultsPage::getUrl(['experiment' => $record->getKey()]))
+                    : null,
+                EditAction::make()
+                    ->visible(fn (Experiment $record): bool => static::canEdit($record)),
+            ])))
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    BulkAction::make('deleteSelected')
+                        ->label('Delete Selected')
+                        ->visible(fn (): bool => static::canDeleteAny())
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records): void {
+                            static::deleteSelectedExperiments($records);
+                        }),
                 ]),
             ]);
+    }
+
+    public static function canCreate(): bool
+    {
+        return parent::canCreate()
+            && app(AccessibleGrowthRecords::class)->canCreateExperiments();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return $record instanceof Experiment
+            && parent::canEdit($record)
+            && app(AccessibleGrowthRecords::class)->canMutateExperiment($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return $record instanceof Experiment
+            && parent::canDelete($record)
+            && app(AccessibleGrowthRecords::class)->canMutateExperiment($record);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return parent::canDeleteAny();
     }
 
     public static function getPages(): array
@@ -256,8 +306,240 @@ final class ExperimentResource extends Resource
         ];
     }
 
+    /**
+     * @param  Builder<Experiment>  $query
+     * @return Builder<Experiment>
+     */
+    private static function applyOwnerSafeRelationCounts(Builder $query): Builder
+    {
+        $experimentTable = $query->getModel()->getTable();
+
+        if ($query->getQuery()->columns === null) {
+            $query->select($experimentTable . '.*');
+        }
+
+        return $query
+            ->selectSub(static::ownerMatchedExperimentChildCount(Variant::class, $experimentTable), 'variants_count')
+            ->selectSub(static::ownerMatchedExperimentChildCount(Assignment::class, $experimentTable), 'assignments_count');
+    }
+
+    /**
+     * @template TChildModel of Model
+     *
+     * @param  class-string<TChildModel>  $childModelClass
+     * @return Builder<TChildModel>
+     */
+    private static function ownerMatchedExperimentChildCount(string $childModelClass, string $experimentTable): Builder
+    {
+        $childModel = new $childModelClass;
+        $childTable = $childModel->getTable();
+        $experimentOwnerColumns = OwnerTupleColumns::forModelClass(Experiment::class);
+        $childOwnerColumns = OwnerTupleColumns::forModelClass($childModelClass);
+
+        /** @var Builder<TChildModel> $childQuery */
+        $childQuery = $childModelClass::query();
+
+        if (method_exists($childModelClass, 'scopeWithoutOwnerScope')) {
+            /** @phpstan-ignore-next-line dynamic Eloquent scope */
+            $childQuery = $childQuery->withoutOwnerScope();
+        }
+
+        return $childQuery
+            ->selectRaw('count(*)')
+            ->whereColumn($childTable . '.experiment_id', $experimentTable . '.id')
+            ->where(function (Builder $query) use ($childOwnerColumns, $childTable, $experimentOwnerColumns, $experimentTable): void {
+                $query
+                    ->where(function (Builder $ownerMatchedQuery) use ($childOwnerColumns, $childTable, $experimentOwnerColumns, $experimentTable): void {
+                        $ownerMatchedQuery
+                            ->whereColumn(
+                                $childTable . '.' . $childOwnerColumns->ownerTypeColumn,
+                                $experimentTable . '.' . $experimentOwnerColumns->ownerTypeColumn,
+                            )
+                            ->whereColumn(
+                                $childTable . '.' . $childOwnerColumns->ownerIdColumn,
+                                $experimentTable . '.' . $experimentOwnerColumns->ownerIdColumn,
+                            );
+                    })
+                    ->orWhere(function (Builder $globalQuery) use ($childOwnerColumns, $childTable, $experimentOwnerColumns, $experimentTable): void {
+                        $globalQuery
+                            ->whereNull($childTable . '.' . $childOwnerColumns->ownerTypeColumn)
+                            ->whereNull($childTable . '.' . $childOwnerColumns->ownerIdColumn)
+                            ->whereNull($experimentTable . '.' . $experimentOwnerColumns->ownerTypeColumn)
+                            ->whereNull($experimentTable . '.' . $experimentOwnerColumns->ownerIdColumn);
+                    });
+            });
+    }
+
     private static function ownerScopeKey(): string
     {
+        if (! Experiment::ownerScopeConfig()->enabled && ! TrackedProperty::ownerScopeConfig()->enabled) {
+            return OwnerScopeKey::GLOBAL;
+        }
+
         return OwnerScopeKey::forOwner(OwnerContext::resolve());
+    }
+
+    private static function normalizeSettingsForModuleType(mixed $moduleType, mixed $settings): ?array
+    {
+        if (! config('growth.features.preset_modules.enabled', true)) {
+            return is_array($settings) ? $settings : null;
+        }
+
+        if (! is_scalar($moduleType)) {
+            return is_array($settings) ? $settings : null;
+        }
+
+        $resolvedModuleType = ExperimentModuleType::tryFrom((string) $moduleType);
+
+        if (! $resolvedModuleType instanceof ExperimentModuleType) {
+            return is_array($settings) ? $settings : null;
+        }
+
+        $preset = app(ResolveExperimentPreset::class)->handle($resolvedModuleType->value);
+        $presetSettings = is_array($preset['settings'] ?? null) ? $preset['settings'] : [];
+
+        if ($presetSettings === []) {
+            return null;
+        }
+
+        $existingSettings = is_array($settings) ? $settings : [];
+        $normalizedSettings = [];
+
+        foreach ($presetSettings as $key => $defaultValue) {
+            $existingValue = $existingSettings[$key] ?? null;
+
+            if (is_array($defaultValue)) {
+                $normalizedSettings[$key] = is_array($existingValue)
+                    ? array_replace_recursive($defaultValue, $existingValue)
+                    : $defaultValue;
+
+                continue;
+            }
+
+            $normalizedSettings[$key] = $existingValue ?? $defaultValue;
+        }
+
+        return $normalizedSettings;
+    }
+
+    private static function trackedPropertyName(Experiment $record): string
+    {
+        if ($record->relationLoaded('trackedProperty') && $record->trackedProperty instanceof TrackedProperty) {
+            return (string) $record->trackedProperty->name;
+        }
+
+        $trackedProperty = static::findTrackedPropertyForExperiment($record);
+
+        return $trackedProperty instanceof TrackedProperty ? (string) $trackedProperty->name : '—';
+    }
+
+    /**
+     * @param  Builder<Experiment>  $query
+     * @return Builder<Experiment>
+     */
+    private static function filterByTrackedPropertyName(Builder $query, string $search): Builder
+    {
+        $normalizedSearch = mb_trim($search);
+
+        if ($normalizedSearch === '') {
+            return $query;
+        }
+
+        $experimentTable = $query->getModel()->getTable();
+        $trackedPropertyTable = (new TrackedProperty)->getTable();
+
+        /** @var Builder<TrackedProperty> $trackedPropertyQuery */
+        $trackedPropertyQuery = TrackedProperty::query();
+
+        if (method_exists(TrackedProperty::class, 'scopeWithoutOwnerScope')) {
+            /** @phpstan-ignore-next-line dynamic Eloquent scope */
+            $trackedPropertyQuery = $trackedPropertyQuery->withoutOwnerScope();
+        }
+
+        $trackedPropertyQuery = $trackedPropertyQuery
+            ->selectRaw('1')
+            ->whereColumn($trackedPropertyTable . '.id', $experimentTable . '.tracked_property_id')
+            ->where($trackedPropertyTable . '.name', 'like', '%' . $normalizedSearch . '%');
+
+        if (Experiment::ownerScopeConfig()->enabled) {
+            return $query->whereExists(
+                static::scopeTrackedPropertyQueryToExperimentOwner(
+                    $trackedPropertyQuery,
+                    $trackedPropertyTable,
+                    $experimentTable,
+                ),
+            );
+        }
+
+        return $query->whereExists(
+            app(AccessibleGrowthRecords::class)->accessibleTrackedProperties($trackedPropertyQuery),
+        );
+    }
+
+    /**
+     * @param  Builder<TrackedProperty>  $query
+     * @return Builder<TrackedProperty>
+     */
+    private static function scopeTrackedPropertyQueryToCurrentOwner(Builder $query): Builder
+    {
+        return app(AccessibleGrowthRecords::class)->writableTrackedProperties($query);
+    }
+
+    /**
+     * @param  Builder<TrackedProperty>  $query
+     * @return Builder<TrackedProperty>
+     */
+    private static function scopeTrackedPropertyQueryToExperimentOwner(
+        Builder $query,
+        string $trackedPropertyTable,
+        string $experimentTable,
+    ): Builder {
+        $experimentOwnerColumns = OwnerTupleColumns::forModelClass(Experiment::class);
+        $trackedPropertyOwnerColumns = OwnerTupleColumns::forModelClass(TrackedProperty::class);
+
+        return $query->where(function (Builder $query) use ($experimentOwnerColumns, $experimentTable, $trackedPropertyOwnerColumns, $trackedPropertyTable): void {
+            $query
+                ->where(function (Builder $ownerMatchedQuery) use ($experimentOwnerColumns, $experimentTable, $trackedPropertyOwnerColumns, $trackedPropertyTable): void {
+                    $ownerMatchedQuery
+                        ->whereColumn(
+                            $trackedPropertyTable . '.' . $trackedPropertyOwnerColumns->ownerTypeColumn,
+                            $experimentTable . '.' . $experimentOwnerColumns->ownerTypeColumn,
+                        )
+                        ->whereColumn(
+                            $trackedPropertyTable . '.' . $trackedPropertyOwnerColumns->ownerIdColumn,
+                            $experimentTable . '.' . $experimentOwnerColumns->ownerIdColumn,
+                        );
+                })
+                ->orWhere(function (Builder $globalQuery) use ($experimentOwnerColumns, $experimentTable, $trackedPropertyOwnerColumns, $trackedPropertyTable): void {
+                    $globalQuery
+                        ->whereNull($trackedPropertyTable . '.' . $trackedPropertyOwnerColumns->ownerTypeColumn)
+                        ->whereNull($trackedPropertyTable . '.' . $trackedPropertyOwnerColumns->ownerIdColumn)
+                        ->whereNull($experimentTable . '.' . $experimentOwnerColumns->ownerTypeColumn)
+                        ->whereNull($experimentTable . '.' . $experimentOwnerColumns->ownerIdColumn);
+                });
+        });
+    }
+
+    private static function findTrackedPropertyForExperiment(Experiment $record): ?TrackedProperty
+    {
+        return app(AccessibleGrowthRecords::class)->findTrackedPropertyForExperiment($record);
+    }
+
+    /**
+     * @param  Collection<int|string, Experiment>  $records
+     */
+    private static function deleteSelectedExperiments(Collection $records): void
+    {
+        DB::transaction(function () use ($records): void {
+            foreach ($records as $record) {
+                if (! $record instanceof Experiment || ! static::canDelete($record)) {
+                    throw new RuntimeException('Global growth experiments can only be deleted from explicit global context.');
+                }
+            }
+
+            foreach ($records as $record) {
+                $record->delete();
+            }
+        });
     }
 }

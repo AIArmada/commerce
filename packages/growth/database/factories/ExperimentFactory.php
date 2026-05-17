@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Signals\Models\TrackedProperty;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -48,7 +49,7 @@ final class ExperimentFactory extends Factory
             'winner_metric' => 'revenue_per_visitor',
             'audience' => null,
             'settings' => null,
-            'started_at' => now(),
+            'started_at' => CarbonImmutable::now(),
             'ended_at' => null,
         ];
     }

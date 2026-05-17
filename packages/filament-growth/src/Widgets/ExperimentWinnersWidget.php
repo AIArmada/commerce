@@ -6,10 +6,13 @@ namespace AIArmada\FilamentGrowth\Widgets;
 
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
+use AIArmada\FilamentGrowth\Support\AccessibleGrowthRecords;
 use AIArmada\Growth\Actions\AggregateExperimentMetrics;
 use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Models\Experiment;
+use Filament\Facades\Filament;
 use Filament\Widgets\Widget;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 final class ExperimentWinnersWidget extends Widget
@@ -25,13 +28,22 @@ final class ExperimentWinnersWidget extends Widget
     /** @var view-string */
     protected string $view = 'filament-growth::widgets.experiment-winners';
 
+    public static function canView(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null
+            && parent::canView()
+            && Gate::forUser($user)->allows('viewAny', Experiment::class);
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
     public function getExperimentSnapshots(): array
     {
-        return Experiment::query()
-            ->forOwner()
+        return app(AccessibleGrowthRecords::class)
+            ->experiments(Experiment::query())
             ->orderByDesc('updated_at')
             ->limit(5)
             ->get()
@@ -90,6 +102,10 @@ final class ExperimentWinnersWidget extends Widget
 
     private function resultsUrl(Experiment $experiment): string
     {
+        if (! config('filament-growth.features.results', true)) {
+            return '#';
+        }
+
         try {
             return ExperimentResultsPage::getUrl(['experiment' => $experiment->getKey()]);
         } catch (Throwable) {

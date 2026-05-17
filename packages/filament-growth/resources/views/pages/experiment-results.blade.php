@@ -23,8 +23,8 @@
 
             <x-filament::card>
                 <div class="text-sm text-gray-500 dark:text-gray-400">Winner Metric</div>
-                <div class="text-2xl font-semibold">{{ $chartMetricLabel }}</div>
-                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">Property: {{ $experiment->trackedProperty->name ?? 'Tracked Property' }}</div>
+                <div class="text-2xl font-semibold">{{ $winnerMetricLabel }}</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">Property: {{ $experiment->trackedProperty?->name ?? 'Tracked Property' }}</div>
             </x-filament::card>
         </div>
 
