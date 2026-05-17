@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Support;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
+
 /**
  * Shared currency formatting utilities.
  *
@@ -13,35 +15,11 @@ namespace AIArmada\FilamentCashier\Support;
 final class CurrencyFormatter
 {
     /**
-     * @var array<string, string>
-     */
-    private const CURRENCY_SYMBOLS = [
-        'MYR' => 'RM',
-        'USD' => '$',
-        'EUR' => '€',
-        'GBP' => '£',
-        'SGD' => 'S$',
-        'AUD' => 'A$',
-        'CAD' => 'C$',
-        'JPY' => '¥',
-        'CNY' => '¥',
-        'KRW' => '₩',
-        'INR' => '₹',
-        'THB' => '฿',
-        'IDR' => 'Rp',
-        'PHP' => '₱',
-        'VND' => '₫',
-    ];
-
-    /**
      * Format amount in cents to a human-readable currency string.
      */
     public static function format(int $amountInCents, string $currency, int $precision = 2): string
     {
-        $symbol = self::getSymbol($currency);
-        $value = $amountInCents / 100;
-
-        return $symbol . number_format($value, $precision, '.', ',');
+        return MoneyFormatter::formatMinor($amountInCents, $currency, $precision);
     }
 
     /**
@@ -49,9 +27,7 @@ final class CurrencyFormatter
      */
     public static function formatWithCode(int $amountInCents, string $currency, int $precision = 2): string
     {
-        $value = $amountInCents / 100;
-
-        return number_format($value, $precision, '.', ',') . ' ' . mb_strtoupper($currency);
+        return MoneyFormatter::formatMinorWithCode($amountInCents, $currency, $precision);
     }
 
     /**
@@ -59,9 +35,7 @@ final class CurrencyFormatter
      */
     public static function getSymbol(string $currency): string
     {
-        $upper = mb_strtoupper($currency);
-
-        return self::CURRENCY_SYMBOLS[$upper] ?? $upper . ' ';
+        return MoneyFormatter::symbol($currency);
     }
 
     /**
@@ -69,15 +43,7 @@ final class CurrencyFormatter
      */
     public static function isZeroDecimal(string $currency): bool
     {
-        return in_array(mb_strtoupper($currency), [
-            'JPY',
-            'KRW',
-            'VND',
-            'CLP',
-            'ISK',
-            'UGX',
-            'RWF',
-        ], true);
+        return self::getPrecision($currency) === 0;
     }
 
     /**
@@ -85,7 +51,7 @@ final class CurrencyFormatter
      */
     public static function getPrecision(string $currency): int
     {
-        return self::isZeroDecimal($currency) ? 0 : 2;
+        return MoneyFormatter::precisionFor($currency);
     }
 
     /**
@@ -93,13 +59,6 @@ final class CurrencyFormatter
      */
     public static function formatAuto(int $amountInCents, string $currency): string
     {
-        $precision = self::getPrecision($currency);
-
-        // For zero decimal currencies, amount is already in main units
-        $divisor = $precision === 0 ? 1 : 100;
-        $symbol = self::getSymbol($currency);
-        $value = $amountInCents / $divisor;
-
-        return $symbol . number_format($value, $precision, '.', ',');
+        return MoneyFormatter::formatMinor($amountInCents, $currency, self::getPrecision($currency));
     }
 }

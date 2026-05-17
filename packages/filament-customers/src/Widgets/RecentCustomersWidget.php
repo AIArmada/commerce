@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -22,7 +22,7 @@ class RecentCustomersWidget extends BaseWidget
     {
         return $table
             ->query(
-                CustomersOwnerScope::applyToOwnedQuery(Customer::query())
+                OwnerUiScope::apply(Customer::query(), includeGlobal: false)
                     ->orderByDesc('created_at')
                     ->limit(10)
             )

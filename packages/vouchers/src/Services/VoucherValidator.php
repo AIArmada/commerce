@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Services;
 
 use AIArmada\Cart\Cart;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\Enums\TargetingMode;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
@@ -15,7 +16,6 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\States\Depleted;
 use AIArmada\Vouchers\States\Expired;
 use AIArmada\Vouchers\States\Paused;
-use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -104,8 +104,7 @@ class VoucherValidator
             $cartTotal = $this->getCartTotal($cart);
 
             if ($cartTotal < $voucher->min_cart_value) {
-                $currency = mb_strtoupper($voucher->currency ?? config('vouchers.default_currency', 'MYR'));
-                $formattedMinValue = (string) Money::{$currency}($voucher->min_cart_value);
+                $formattedMinValue = MoneyFormatter::formatMinor($voucher->min_cart_value, (string) ($voucher->currency ?? config('vouchers.default_currency', 'MYR')));
 
                 Log::info('Voucher min cart value check failed', [
                     'code' => $code,

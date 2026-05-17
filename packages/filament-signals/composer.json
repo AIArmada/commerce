@@ -17,6 +17,7 @@
         }
     ],
     "require": {
+        "aiarmada/commerce-support": "self.version",
         "aiarmada/signals": "self.version",
         "filament/filament": "^5.6"
     },

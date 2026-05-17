@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Spatie\LaravelData\Data;
 
 /**
@@ -26,7 +27,7 @@ final class RevenueMetrics extends Data
      */
     public function grossRevenueFormatted(): string
     {
-        return number_format($this->grossRevenue / 100, 2) . ' ' . $this->currency;
+        return MoneyFormatter::formatMinorWithCode($this->grossRevenue, $this->currency);
     }
 
     /**
@@ -34,7 +35,7 @@ final class RevenueMetrics extends Data
      */
     public function netRevenueFormatted(): string
     {
-        return number_format($this->netRevenue / 100, 2) . ' ' . $this->currency;
+        return MoneyFormatter::formatMinorWithCode($this->netRevenue, $this->currency);
     }
 
     /**
@@ -42,7 +43,7 @@ final class RevenueMetrics extends Data
      */
     public function averageTransactionFormatted(): string
     {
-        return number_format($this->averageTransaction / 100, 2) . ' ' . $this->currency;
+        return MoneyFormatter::formatMinorWithCode((int) round($this->averageTransaction), $this->currency);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
+use AIArmada\FilamentCashier\Support\CurrencyFormatter;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
@@ -58,10 +59,12 @@ final class RecentInvoicesWidget extends Widget
                 $chipInvoices = $user->chipInvoices(3);
 
                 foreach ($chipInvoices as $invoice) {
+                    $currency = (string) ($invoice->currency ?? config('cashier.currency', 'MYR'));
+
                     $invoices->push([
                         'id' => $invoice->id,
                         'gateway' => 'chip',
-                        'amount' => 'RM ' . number_format(($invoice->amount ?? 0) / 100, 2),
+                        'amount' => CurrencyFormatter::format((int) ($invoice->amount ?? 0), $currency),
                         'date' => $invoice->created_at?->format('M d, Y') ?? 'N/A',
                         'status' => $invoice->status ?? 'unknown',
                     ]);

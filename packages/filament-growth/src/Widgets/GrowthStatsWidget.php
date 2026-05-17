@@ -15,6 +15,7 @@ use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Gate;
+use Throwable;
 
 final class GrowthStatsWidget extends StatsOverviewWidget
 {
@@ -54,7 +55,12 @@ final class GrowthStatsWidget extends StatsOverviewWidget
             ->get(['id', 'tracked_property_id', 'owner_type', 'owner_id', 'name', 'module_type', 'status', 'goal_event_name', 'winner_metric', 'created_at', 'updated_at']);
 
         $summary = $experiments->reduce(function (array $carry, Experiment $experiment): array {
-            $metrics = app(AggregateExperimentMetrics::class)->handle($experiment);
+            $metrics = $this->safeAggregateExperimentMetrics($experiment);
+
+            if ($metrics === null) {
+                return $carry;
+            }
+
             $currency = (string) ($metrics['currency'] ?? config('signals.defaults.currency', 'MYR'));
 
             $carry['revenue_minor_by_currency'][$currency] = ($carry['revenue_minor_by_currency'][$currency] ?? 0) + (int) $metrics['totals']['revenue_minor'];
@@ -104,6 +110,18 @@ final class GrowthStatsWidget extends StatsOverviewWidget
     private function formatDisplayMoney(int $minor, string $currency): string
     {
         return $this->formatMinorMoney($minor, $currency);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function safeAggregateExperimentMetrics(Experiment $experiment): ?array
+    {
+        try {
+            return app(AggregateExperimentMetrics::class)->handle($experiment);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**

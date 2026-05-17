@@ -23,6 +23,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
+use Throwable;
 use UnitEnum;
 
 final class ExperimentResultsPage extends Page implements HasForms
@@ -174,7 +175,7 @@ final class ExperimentResultsPage extends Page implements HasForms
             return [];
         }
 
-        return app(AggregateExperimentMetrics::class)->handle($experiment);
+        return $this->safeAggregateExperimentMetrics($experiment);
     }
 
     /**
@@ -414,5 +415,17 @@ final class ExperimentResultsPage extends Page implements HasForms
     private function findTrackedPropertyForExperiment(Experiment $experiment): ?TrackedProperty
     {
         return app(AccessibleGrowthRecords::class)->findTrackedPropertyForExperiment($experiment);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function safeAggregateExperimentMetrics(Experiment $experiment): array
+    {
+        try {
+            return app(AggregateExperimentMetrics::class)->handle($experiment);
+        } catch (Throwable) {
+            return [];
+        }
     }
 }

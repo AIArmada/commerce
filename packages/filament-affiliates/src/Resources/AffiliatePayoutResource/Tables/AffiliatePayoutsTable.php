@@ -11,6 +11,7 @@ use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
@@ -40,11 +41,7 @@ final class AffiliatePayoutsTable
                     ->sortable(),
                 TextColumn::make('total_minor')
                     ->label('Total')
-                    ->formatStateUsing(fn (AffiliatePayout $record): string => sprintf(
-                        '%s %.2f',
-                        $record->currency,
-                        $record->total_minor / 100
-                    ))
+                    ->formatStateUsing(fn (AffiliatePayout $record): string => MoneyFormatter::formatMinor($record->total_minor, $record->currency))
                     ->badge()
                     ->color('primary')
                     ->sortable(),

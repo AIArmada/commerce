@@ -172,6 +172,6 @@ final class MRRWidget extends BaseWidget
         $currency = config('cashier-chip.currency', 'MYR');
         $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision);
+        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision, '.', ',');
     }
 }

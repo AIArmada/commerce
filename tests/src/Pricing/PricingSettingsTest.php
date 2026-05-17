@@ -70,7 +70,15 @@ describe('PricingSettings', function (): void {
 
             // Test SGD
             $defaultCurrencyProp->setValue($instance, 'SGD');
-            expect($method->invoke($instance))->toBe('$');
+            expect($method->invoke($instance))->toBe('S$');
+
+            // Test AUD
+            $defaultCurrencyProp->setValue($instance, 'AUD');
+            expect($method->invoke($instance))->toBe('A$');
+
+            // Test CAD
+            $defaultCurrencyProp->setValue($instance, 'CAD');
+            expect($method->invoke($instance))->toBe('C$');
 
             // Test THB (known to Akaunting Money)
             $defaultCurrencyProp->setValue($instance, 'THB');
@@ -127,6 +135,21 @@ describe('PricingSettings', function (): void {
             $decimalPlacesProp->setValue($instance, 0);
 
             expect($method->invoke($instance, 100))->toBe('¥100');
+        });
+
+        it('preserves configured decimal precision when it differs from the currency default', function (): void {
+            $reflection = new ReflectionClass(PricingSettings::class);
+            $method = $reflection->getMethod('formatAmount');
+
+            $instance = $reflection->newInstanceWithoutConstructor();
+
+            $defaultCurrencyProp = $reflection->getProperty('defaultCurrency');
+            $defaultCurrencyProp->setValue($instance, 'USD');
+
+            $decimalPlacesProp = $reflection->getProperty('decimalPlaces');
+            $decimalPlacesProp->setValue($instance, 4);
+
+            expect($method->invoke($instance, 1234))->toBe('$0.1234');
         });
     });
 });

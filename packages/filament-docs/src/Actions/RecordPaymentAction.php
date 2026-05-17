@@ -7,7 +7,6 @@ namespace AIArmada\FilamentDocs\Actions;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\Overdue;
-use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
@@ -69,7 +68,7 @@ final class RecordPaymentAction
                 ->prefix($record->currency)
                 ->default($remaining)
                 ->maxValue($remaining)
-                ->helperText("Outstanding: {$record->currency} " . number_format($remaining, 2)),
+                ->helperText("Outstanding: {$record->currency} " . number_format($remaining, 2, '.', ',')),
 
             Select::make('payment_method')
                 ->label('Payment Method')

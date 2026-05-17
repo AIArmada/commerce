@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -114,7 +115,9 @@ final class VariantsRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('price')
                     ->label('Price')
-                    ->money('MYR', divideBy: 100)
+                    ->formatStateUsing(fn ($state): ?string => $state === null
+                        ? null
+                        : MoneyFormatter::formatMinor((int) $state, (string) ($this->getOwnerRecord()->currency ?? config('products.defaults.currency', 'MYR'))))
                     ->placeholder('Uses product price'),
 
                 Tables\Columns\IconColumn::make('is_default')

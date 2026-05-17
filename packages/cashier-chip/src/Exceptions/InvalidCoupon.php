@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Exceptions;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Exception;
 
 /**
@@ -90,10 +91,11 @@ class InvalidCoupon extends Exception
      */
     public static function minimumNotMet(string $couponId, int $minValue, string $currency): self
     {
-        $formatted = number_format($minValue / 100, 2);
+        $currencyCode = mb_strtoupper($currency);
+        $formatted = MoneyFormatter::decimalFromMinor($minValue, $currency);
 
         return new self(
-            "The coupon [{$couponId}] requires a minimum order value of {$currency} {$formatted}."
+            "The coupon [{$couponId}] requires a minimum order value of {$currencyCode} {$formatted}."
         );
     }
 }

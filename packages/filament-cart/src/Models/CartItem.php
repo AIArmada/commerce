@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Models;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCart\Database\Factories\CartItemFactory;
-use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -239,8 +239,6 @@ final class CartItem extends Model
 
     private function formatMoney(int $amount): string
     {
-        $currency = mb_strtoupper($this->cart->currency ?? config('cart.money.default_currency', 'USD'));
-
-        return (string) Money::{$currency}($amount);
+        return MoneyFormatter::formatMinor($amount, (string) ($this->cart->currency ?? config('cart.money.default_currency', 'USD')));
     }
 }

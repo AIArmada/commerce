@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Support\CashierOwnerScope;
+use AIArmada\FilamentCashier\Support\CurrencyFormatter;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\StatsOverviewWidget;
@@ -123,14 +124,6 @@ final class TotalMrrWidget extends StatsOverviewWidget
 
     protected function formatCurrency(int $amountInCents, string $currency): string
     {
-        $symbol = match ($currency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            default => $currency . ' ',
-        };
-
-        return $symbol . number_format($amountInCents / 100, 2);
+        return CurrencyFormatter::format($amountInCents, $currency);
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Settings;
 
-use Akaunting\Money\Currency;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Spatie\LaravelSettings\Settings;
 
 /**
@@ -70,13 +70,7 @@ class PricingSettings extends Settings
      */
     public function getCurrencySymbol(): string
     {
-        $currencies = Currency::getCurrencies();
-
-        if (isset($currencies[$this->defaultCurrency])) {
-            return $currencies[$this->defaultCurrency]['symbol'] ?? $this->defaultCurrency;
-        }
-
-        return $this->defaultCurrency . ' ';
+        return MoneyFormatter::symbol($this->defaultCurrency);
     }
 
     /**
@@ -84,8 +78,9 @@ class PricingSettings extends Settings
      */
     public function formatAmount(int $amountInMinorUnits): string
     {
-        $amount = $amountInMinorUnits / (10 ** $this->decimalPlaces);
+        $precision = max(0, $this->decimalPlaces);
+        $scale = 10 ** $precision;
 
-        return $this->getCurrencySymbol() . number_format($amount, $this->decimalPlaces);
+        return MoneyFormatter::formatMajor($amountInMinorUnits / $scale, $this->defaultCurrency, $precision);
     }
 }

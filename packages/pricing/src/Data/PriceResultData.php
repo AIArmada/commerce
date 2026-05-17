@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Data;
 
-use Akaunting\Money\Currency;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Spatie\LaravelData\Data;
 
 /**
@@ -39,7 +39,7 @@ final class PriceResultData extends Data
      */
     public function getFormattedSavings(): string
     {
-        return $this->currencySymbol() . number_format($this->discountAmount / 100, 2);
+        return MoneyFormatter::formatMinor($this->discountAmount, $this->currency);
     }
 
     /**
@@ -47,7 +47,7 @@ final class PriceResultData extends Data
      */
     public function getFormattedFinalPrice(): string
     {
-        return $this->currencySymbol() . number_format($this->finalPrice / 100, 2);
+        return MoneyFormatter::formatMinor($this->finalPrice, $this->currency);
     }
 
     /**
@@ -55,17 +55,6 @@ final class PriceResultData extends Data
      */
     public function getFormattedOriginalPrice(): string
     {
-        return $this->currencySymbol() . number_format($this->originalPrice / 100, 2);
-    }
-
-    private function currencySymbol(): string
-    {
-        $currencies = Currency::getCurrencies();
-
-        if (isset($currencies[$this->currency])) {
-            return $currencies[$this->currency]['symbol'] ?? $this->currency;
-        }
-
-        return $this->currency . ' ';
+        return MoneyFormatter::formatMinor($this->originalPrice, $this->currency);
     }
 }

@@ -287,8 +287,14 @@ it('covers the filament-cashier public surface', function (): void {
     expect(app()->bound(FilamentCashierPlugin::class))->toBeTrue();
 
     expect(CurrencyFormatter::getSymbol('usd'))->toBe('$');
+    expect(CurrencyFormatter::getSymbol('sgd'))->toBe('S$');
+    expect(CurrencyFormatter::getSymbol('aud'))->toBe('A$');
+    expect(CurrencyFormatter::getSymbol('cad'))->toBe('C$');
     expect(CurrencyFormatter::getSymbol('zzz'))->toBe('ZZZ ');
     expect(CurrencyFormatter::format(12345, 'USD'))->toBe('$123.45');
+    expect(CurrencyFormatter::format(12345, 'SGD'))->toBe('S$123.45');
+    expect(CurrencyFormatter::format(12345, 'AUD'))->toBe('A$123.45');
+    expect(CurrencyFormatter::format(12345, 'CAD'))->toBe('C$123.45');
     expect(CurrencyFormatter::formatWithCode(12345, 'usd'))->toBe('123.45 USD');
     expect(CurrencyFormatter::isZeroDecimal('JPY'))->toBeTrue();
     expect(CurrencyFormatter::getPrecision('JPY'))->toBe(0);

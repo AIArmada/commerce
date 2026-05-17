@@ -6,8 +6,8 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
-use Akaunting\Money\Money;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -59,7 +59,7 @@ final class AppliedVouchersWidget extends BaseWidget
 
                         return match ($type) {
                             'percentage' => number_format($value / 100, 2) . ' %',
-                            'fixed' => Money::{$currency}($value)->format(),
+                            'fixed' => MoneyHelper::formatMoney((int) $value, (string) $currency),
                             'free_shipping' => 'Free Shipping',
                             default => 'N/A',
                         };

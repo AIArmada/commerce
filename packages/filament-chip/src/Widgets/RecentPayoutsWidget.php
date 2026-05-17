@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
@@ -47,7 +48,7 @@ final class RecentPayoutsWidget extends BaseWidget
 
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn ($state): string => 'RM ' . number_format((float) $state, 2))
+                    ->formatStateUsing(fn ($state): string => MoneyFormatter::formatMajor((float) $state, config('filament-chip.default_currency', 'MYR')))
                     ->alignEnd(),
 
                 TextColumn::make('state')

@@ -8,6 +8,7 @@ use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
 use AIArmada\FilamentGrowth\Pages\GrowthDashboard;
 use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
 use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
+use AIArmada\Growth\Actions\AggregateExperimentMetrics;
 use AIArmada\Growth\Actions\BuildExperimentSignalProperties;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
@@ -247,6 +248,19 @@ function filamentGrowthGlobalExperiment(string $currency = 'USD', ?string $prope
     });
 }
 
+function filamentGrowthBindFailingAggregator(string $message = 'Aggregation failed'): void
+{
+    app()->bind(AggregateExperimentMetrics::class, fn () => new class($message)
+    {
+        public function __construct(private readonly string $message) {}
+
+        public function handle(Experiment $experiment): array
+        {
+            throw new RuntimeException($this->message);
+        }
+    });
+}
+
 it('loads winner summaries and variant comparison data on the results page', function (): void {
     $owner = filamentGrowthOwner();
     [$experiment, $variantA] = filamentGrowthExperiment($owner);
@@ -267,6 +281,23 @@ it('loads winner summaries and variant comparison data on the results page', fun
             ->and($winnerSummary)->not->toBeNull()
             ->and($winnerSummary['variant_id'])->toBe((string) $variantA->getKey())
             ->and($variantComparison)->toHaveCount(2);
+    });
+});
+
+it('fails softly on the results page when metric aggregation throws', function (): void {
+    $owner = filamentGrowthOwner();
+    [$experiment] = filamentGrowthExperiment($owner);
+    $page = app(ExperimentResultsPage::class);
+
+    filamentGrowthBindFailingAggregator('results aggregation failure');
+
+    OwnerContext::withOwner($owner, function () use ($experiment, $page): void {
+        $page->experimentId = (string) $experiment->getKey();
+        $page->loadResults();
+
+        expect($page->getResults())->toBe([])
+            ->and($page->getWinnerSummary())->toBeNull()
+            ->and($page->getVariantComparison())->toBe([]);
     });
 });
 
@@ -328,6 +359,28 @@ it('shows mixed revenue totals on the dashboard when experiments use different c
         expect($stats[3]->getValue())->toBe('Mixed')
             ->and((string) $stats[3]->getDescription())->toContain(money(35000, 'MYR', false)->format())
             ->and((string) $stats[3]->getDescription())->toContain(money(35000, 'USD', false)->format());
+    });
+});
+
+it('skips broken metric aggregation rows when rendering growth widgets', function (): void {
+    $owner = filamentGrowthOwner();
+    filamentGrowthExperiment($owner);
+
+    filamentGrowthBindFailingAggregator('widget aggregation failure');
+
+    $statsWidget = app(GrowthStatsWidget::class);
+    $statsMethod = new ReflectionMethod(GrowthStatsWidget::class, 'getStats');
+    $statsMethod->setAccessible(true);
+    $winnersWidget = app(ExperimentWinnersWidget::class);
+
+    OwnerContext::withOwner($owner, function () use ($statsMethod, $statsWidget, $winnersWidget): void {
+        /** @var array<int, Stat> $stats */
+        $stats = $statsMethod->invoke($statsWidget);
+
+        expect($stats[0]->getValue())->toBe('1')
+            ->and($stats[3]->getValue())->toBe(money(0, 'MYR', false)->format())
+            ->and((string) $stats[3]->getDescription())->toContain('0 experiment(s) with winner-ready metrics')
+            ->and($winnersWidget->getExperimentSnapshots())->toBe([]);
     });
 });
 

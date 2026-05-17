@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use Akaunting\Money\Money;
 use Carbon\Carbon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
@@ -84,7 +84,7 @@ final class VoucherUsageTimelineWidget extends Widget
         if (! $this->record instanceof Voucher) {
             return [
                 'total_redemptions' => 0,
-                'total_savings' => 'RM0.00',
+                'total_savings' => MoneyHelper::formatMoney(0, (string) config('filament-vouchers.default_currency', 'MYR')),
                 'unique_customers' => 0,
             ];
         }
@@ -97,7 +97,7 @@ final class VoucherUsageTimelineWidget extends Widget
             if (! $isVisible) {
                 return [
                     'total_redemptions' => 0,
-                    'total_savings' => 'RM0.00',
+                    'total_savings' => MoneyHelper::formatMoney(0, (string) config('filament-vouchers.default_currency', 'MYR')),
                     'unique_customers' => 0,
                 ];
             }
@@ -113,7 +113,7 @@ final class VoucherUsageTimelineWidget extends Widget
 
         return [
             'total_redemptions' => $usages->count(),
-            'total_savings' => Money::{$currency}($totalSavings)->format(),
+            'total_savings' => MoneyHelper::formatMoney($totalSavings, (string) $currency),
             'unique_customers' => $uniqueCustomers,
         ];
     }
@@ -135,7 +135,7 @@ final class VoucherUsageTimelineWidget extends Widget
      */
     protected function buildTimelineEvent(VoucherUsage $usage): array
     {
-        $savings = Money::{$usage->currency}($usage->discount_amount)->format();
+        $savings = MoneyHelper::formatMoney($usage->discount_amount, (string) $usage->currency);
 
         // Determine event type based on channel and redemption
         $isManual = $usage->channel === VoucherUsage::CHANNEL_MANUAL;
@@ -158,6 +158,7 @@ final class VoucherUsageTimelineWidget extends Widget
         // Build details array
         $details = [
             'savings' => $savings,
+            'currency' => $usage->currency,
             'cart_identifier' => $usage->cart_identifier,
             'user_identifier' => $usage->user_identifier,
             'channel' => $usage->channel,

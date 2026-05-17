@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
-use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -47,7 +47,7 @@ class SegmentResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = CustomersOwnerScope::applyToOwnedQuery(static::getModel()::query())
+        $count = OwnerUiScope::apply(static::getModel()::query(), includeGlobal: false)
             ->where('is_active', true)
             ->count();
 
@@ -62,7 +62,7 @@ class SegmentResource extends Resource
         /** @var Builder<Segment> $query */
         $query = parent::getEloquentQuery();
 
-        return CustomersOwnerScope::applyToOwnedQuery($query);
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema
@@ -87,7 +87,7 @@ class SegmentResource extends Resource
                                     ->required()
                                     ->maxLength(100)
                                     ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
-                                        $owner = CustomersOwnerScope::resolveOwner();
+                                        $owner = OwnerUiScope::resolveOwner(Segment::class);
 
                                         if ($owner !== null) {
                                             return $rule
@@ -186,7 +186,7 @@ class SegmentResource extends Resource
                                     ->relationship(
                                         name: 'customers',
                                         titleAttribute: 'email',
-                                        modifyQueryUsing: fn (Builder $query): Builder => CustomersOwnerScope::applyToOwnedQuery($query),
+                                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
                                     )
                                     ->multiple()
                                     ->preload()
@@ -329,7 +329,7 @@ class SegmentResource extends Resource
 
     protected static function ensureRecordOwnerScope(Segment $record): ?Model
     {
-        $owner = CustomersOwnerScope::resolveOwner();
+        $owner = OwnerUiScope::resolveOwner(Segment::class);
 
         if ($owner === null) {
             abort_unless($record->owner_type === null && $record->owner_id === null, 403);

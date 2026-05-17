@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentShipping\Resources\ShippingRateResource\Pages;
@@ -220,8 +221,8 @@ class ShippingRateResource extends Resource
                             ->itemLabel(fn (array $state): ?string => match ($state['type'] ?? null) {
                                 'min_weight' => 'Min Weight: ' . ($state['value'] ?? '?') . 'g',
                                 'max_weight' => 'Max Weight: ' . ($state['value'] ?? '?') . 'g',
-                                'min_order_total' => 'Min Order: RM' . number_format(($state['value'] ?? 0) / 100, 2),
-                                'max_order_total' => 'Max Order: RM' . number_format(($state['value'] ?? 0) / 100, 2),
+                                'min_order_total' => 'Min Order: ' . MoneyFormatter::formatMinor((int) ($state['value'] ?? 0), config('shipping.defaults.currency', 'MYR')),
+                                'max_order_total' => 'Max Order: ' . MoneyFormatter::formatMinor((int) ($state['value'] ?? 0), config('shipping.defaults.currency', 'MYR')),
                                 'min_items' => 'Min Items: ' . ($state['value'] ?? '?'),
                                 'max_items' => 'Max Items: ' . ($state['value'] ?? '?'),
                                 default => null,

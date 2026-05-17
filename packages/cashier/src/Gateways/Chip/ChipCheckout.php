@@ -7,6 +7,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 
 /**
@@ -143,7 +144,7 @@ class ChipCheckout implements CheckoutContract
      */
     public function total(): string
     {
-        return number_format($this->rawTotal() / 100, 2) . ' ' . mb_strtoupper($this->currency());
+        return MoneyFormatter::formatMinorWithCode($this->rawTotal(), $this->currency());
     }
 
     /**

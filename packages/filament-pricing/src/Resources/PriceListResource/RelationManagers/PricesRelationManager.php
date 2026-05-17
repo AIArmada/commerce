@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Products\Models\Product;
@@ -130,7 +131,10 @@ final class PricesRelationManager extends RelationManager
                     ->label('Price (cents)')
                     ->numeric()
                     ->required()
-                    ->helperText('Enter price in cents (e.g., 1000 = RM 10.00)'),
+                    ->helperText(fn (): string => sprintf(
+                        'Enter price in minor units (e.g., 1000 = %s)',
+                        MoneyFormatter::formatMinor(1000, (string) config('pricing.defaults.currency', 'MYR'))
+                    )),
 
                 Forms\Components\TextInput::make('compare_amount')
                     ->label('Compare Price (cents)')
@@ -173,12 +177,12 @@ final class PricesRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Price')
-                    ->money('MYR', divideBy: 100)
+                    ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, (string) ($record->currency ?? config('pricing.defaults.currency', 'MYR'))))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('compare_amount')
                     ->label('Compare')
-                    ->money('MYR', divideBy: 100)
+                    ->formatStateUsing(fn ($state, $record): ?string => $state === null ? null : MoneyFormatter::formatMinor((int) $state, (string) ($record->currency ?? config('pricing.defaults.currency', 'MYR'))))
                     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('min_quantity')

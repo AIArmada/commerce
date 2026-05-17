@@ -6,13 +6,13 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\VoucherStatus;
-use Akaunting\Money\Money;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
@@ -121,7 +121,7 @@ final class VoucherSuggestionsWidget extends Widget
                 })
                 ->map(function (Voucher $voucher) use ($cartTotal, $cartCurrency) {
                     $potentialSavings = $this->calculatePotentialSavings($voucher, $cartTotal);
-                    $savingsText = (string) Money::{$cartCurrency}($potentialSavings)->format();
+                    $savingsText = MoneyHelper::formatMoney($potentialSavings, $cartCurrency);
 
                     $recommendation = $this->generateRecommendation($voucher, $cartTotal, $potentialSavings);
 

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Tables;
 
 use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Services\ChipSendService;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
@@ -49,7 +50,7 @@ final class SendInstructionTable
 
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn (?string $state): string => 'MYR ' . number_format((float) ($state ?? 0), 2))
+                    ->formatStateUsing(fn (?string $state): string => MoneyFormatter::formatMajor((float) ($state ?? 0), config('filament-chip.default_currency', 'MYR')))
                     ->weight(FontWeight::SemiBold)
                     ->sortable(),
 

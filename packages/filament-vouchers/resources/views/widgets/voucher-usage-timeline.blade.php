@@ -94,9 +94,9 @@
                                                 <div style="font-size: 0.625rem; color: #6b7280; text-transform: uppercase;">Order Total</div>
                                                 <div style="font-size: 0.875rem; font-weight: 600;">
                                                     @if($event['details']['grand_total'] ?? null)
-                                                        {{ \Akaunting\Money\Money::MYR($event['details']['grand_total'])->format() }}
+                                                        {{ \AIArmada\FilamentVouchers\Support\MoneyHelper::formatMoney((int) $event['details']['grand_total'], (string) ($event['details']['currency'] ?? config('filament-vouchers.default_currency', 'MYR'))) }}
                                                     @elseif($event['details']['cart_total'] ?? null)
-                                                        {{ \Akaunting\Money\Money::MYR($event['details']['cart_total'])->format() }}
+                                                        {{ \AIArmada\FilamentVouchers\Support\MoneyHelper::formatMoney((int) $event['details']['cart_total'], (string) ($event['details']['currency'] ?? config('filament-vouchers.default_currency', 'MYR'))) }}
                                                     @else
                                                         —
                                                     @endif
@@ -111,7 +111,7 @@
                                                 <div style="font-size: 0.625rem; color: #6b7280; text-transform: uppercase;">Subtotal</div>
                                                 <div style="font-size: 0.875rem; font-weight: 600;">
                                                     @if($event['details']['subtotal'] ?? null)
-                                                        {{ \Akaunting\Money\Money::MYR($event['details']['subtotal'])->format() }}
+                                                        {{ \AIArmada\FilamentVouchers\Support\MoneyHelper::formatMoney((int) $event['details']['subtotal'], (string) ($event['details']['currency'] ?? config('filament-vouchers.default_currency', 'MYR'))) }}
                                                     @else
                                                         —
                                                     @endif

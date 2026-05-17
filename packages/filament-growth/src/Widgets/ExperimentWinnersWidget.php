@@ -47,9 +47,14 @@ final class ExperimentWinnersWidget extends Widget
             ->orderByDesc('updated_at')
             ->limit(5)
             ->get()
-            ->map(function (Experiment $experiment): array {
-                $metrics = app(AggregateExperimentMetrics::class)->handle($experiment);
-                $winnerVariant = collect($metrics['variants'])->firstWhere('variant_id', $metrics['winner_variant_id']);
+            ->map(function (Experiment $experiment): ?array {
+                $metrics = $this->safeAggregateExperimentMetrics($experiment);
+
+                if ($metrics === null) {
+                    return null;
+                }
+
+                $winnerVariant = collect($metrics['variants'] ?? [])->firstWhere('variant_id', $metrics['winner_variant_id'] ?? null);
 
                 return [
                     'name' => (string) $experiment->name,
@@ -65,6 +70,8 @@ final class ExperimentWinnersWidget extends Widget
                     'results_url' => $this->resultsUrl($experiment),
                 ];
             })
+            ->filter(static fn (?array $snapshot): bool => is_array($snapshot))
+            ->values()
             ->all();
     }
 
@@ -110,6 +117,18 @@ final class ExperimentWinnersWidget extends Widget
             return ExperimentResultsPage::getUrl(['experiment' => $experiment->getKey()]);
         } catch (Throwable) {
             return '#';
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function safeAggregateExperimentMetrics(Experiment $experiment): ?array
+    {
+        try {
+            return app(AggregateExperimentMetrics::class)->handle($experiment);
+        } catch (Throwable) {
+            return null;
         }
     }
 }

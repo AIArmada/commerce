@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources\ConditionResource\Tables;
 
 use AIArmada\Cart\Models\Condition;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCart\Resources\ConditionResource;
 use AIArmada\FilamentCart\Services\OwnerActionGuard;
-use Akaunting\Money\Money;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -242,8 +242,6 @@ final class ConditionsTable
 
     private static function formatMoney(int $amount): string
     {
-        $currency = mb_strtoupper(config('cart.money.default_currency', 'USD'));
-
-        return (string) Money::{$currency}($amount);
+        return MoneyFormatter::formatMinor($amount, (string) config('cart.money.default_currency', 'USD'));
     }
 }

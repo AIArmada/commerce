@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -34,11 +35,7 @@ final class AffiliatePayoutInfolist
                     Grid::make(2)->schema([
                         TextEntry::make('total_minor')
                             ->label('Total')
-                            ->formatStateUsing(fn ($state, $record): string => sprintf(
-                                '%s %.2f',
-                                $record->currency,
-                                $state / 100
-                            ))
+                            ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency))
                             ->badge()
                             ->color('primary'),
                         TextEntry::make('currency')

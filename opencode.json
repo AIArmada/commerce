@@ -9,17 +9,6 @@
                 "artisan",
                 "boost:mcp"
             ]
-        },
-        "herd": {
-            "type": "local",
-            "enabled": true,
-            "command": [
-                "php",
-                "/Applications/Herd.app/Contents/Resources/herd-mcp.phar"
-            ],
-            "environment": {
-                "SITE_PATH": "/Users/saiffil/Herd/commerce"
-            }
         }
     }
 }

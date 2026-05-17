@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -17,7 +17,7 @@ class CustomerStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $baseQuery = CustomersOwnerScope::applyToOwnedQuery(Customer::query());
+        $baseQuery = OwnerUiScope::apply(Customer::query(), includeGlobal: false);
 
         $now = CarbonImmutable::now();
         $startOfMonth = $now->startOfMonth();

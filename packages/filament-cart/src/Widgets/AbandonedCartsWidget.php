@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
-use Akaunting\Money\Money;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -118,9 +118,7 @@ final class AbandonedCartsWidget extends BaseWidget
 
     private function getCartValue(Cart $record): string
     {
-        $currency = mb_strtoupper($record->currency ?: config('cart.money.default_currency', 'USD'));
-
-        return (string) Money::{$currency}((int) $record->subtotal);
+        return MoneyFormatter::formatMinor((int) $record->subtotal, (string) ($record->currency ?: config('cart.money.default_currency', 'USD')));
     }
 
     private function getTimeSinceAbandonment(Cart $record): string

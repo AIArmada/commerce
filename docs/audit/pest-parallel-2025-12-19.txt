@@ -6827,7 +6827,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Unit\PermissionBuilderTest[22m [90m>[39m `PermissionBuilder` → `r… [41;1m TypeError [49;22m  
-[39;1m  AIArmada\FilamentAuthz\Services\PermissionBuilder::register(): Argument #1 ($registry) must be of type ?AIArmada\FilamentAuthz\Services\PermissionRegistry, Mockery_28__PermissionRegistry given, called in /Users/Saiffil/Herd/commerce/tests/src/FilamentAuthz/Unit/PermissionBuilderTest.php on line 297[39;22m
+[39;1m  AIArmada\FilamentAuthz\Services\PermissionBuilder::register(): Argument #1 ($registry) must be of type ?AIArmada\FilamentAuthz\Services\PermissionRegistry, Mockery_28__PermissionRegistry given, called in <repo-root>/tests/src/FilamentAuthz/Unit/PermissionBuilderTest.php on line 297[39;22m
 
   at [32mpackages/filament-authz/src/Services/PermissionBuilder.php[39m:[32m208[39m
     204▕      * Build and register with the registry.
@@ -7008,7 +7008,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\Pricing\CrossTenantIsolationTest[22m [90m>[39m it blocks cross-tenant read… [41;1m QueryException [49;22m  
-[39;1m  SQLSTATE[HY000]: General error: 1 table prices has no column named owner_type (Connection: testing, SQL: insert into "prices" ("min_quantity", "currency", "price_list_id", "priceable_type", "priceable_id", "amount", "owner_type", "owner_id", "id", "updated_at", "created_at") values (1, MYR, 019b337c-7a16-7079-b643-8db315b5c386, AIArmada\Pricing\Contracts\Priceable@anonymous\/Users/Saiffil/Herd/commerce/tests/src/Pricing/CrossTenantIsolationTest.php:52$791, item-xt, 5000, AIArmada\Commerce\Tests\Fixtures\Models\User, 2, 019b337c-7a1c-724f-a8c1-e81e75aa51f0, 2025-12-18 22:02:34, 2025-12-18 22:02:34))[39;22m
+[39;1m  SQLSTATE[HY000]: General error: 1 table prices has no column named owner_type (Connection: testing, SQL: insert into "prices" ("min_quantity", "currency", "price_list_id", "priceable_type", "priceable_id", "amount", "owner_type", "owner_id", "id", "updated_at", "created_at") values (1, MYR, 019b337c-7a16-7079-b643-8db315b5c386, AIArmada\Pricing\Contracts\Priceable@anonymous\<repo-root>/tests/src/Pricing/CrossTenantIsolationTest.php:52$791, item-xt, 5000, AIArmada\Commerce\Tests\Fixtures\Models\User, 2, 019b337c-7a1c-724f-a8c1-e81e75aa51f0, 2025-12-18 22:02:34, 2025-12-18 22:02:34))[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Database/Connection.php[39m:[32m564[39m
     560▕             if ($this->pretending()) {
@@ -8844,7 +8844,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\DelegationResourceLivewireTest[22m…  [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -8862,7 +8862,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\DelegationResourceLivewireTest[22m…  [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -8880,7 +8880,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\DelegationResourceLivewireTest[22m…  [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -8898,7 +8898,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\DelegationResourceLivewireTest[22m…  [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -8916,7 +8916,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\RoleResourceLivewireTest[22m [90m>[39m list… [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -8934,7 +8934,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\RoleResourceLivewireTest[22m [90m>[39m crea… [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -8952,7 +8952,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\RoleResourceLivewireTest[22m [90m>[39m edit… [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -12054,7 +12054,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\PermissionResourceLivewireTest[22m…  [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -12072,7 +12072,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\PermissionResourceLivewireTest[22m…  [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key
@@ -12090,7 +12090,7 @@
 
   [31m───────────────────────────────────────────────────────────────────────────────────────────────────[39m  
   [41;1m FAILED [49;22m [1mTests\src\FilamentAuthz\Feature\Resources\PermissionResourceLivewireTest[22m…  [41;1m ViewException [49;22m  
-[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in /Users/Saiffil/Herd/commerce/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: /Users/Saiffil/Herd/commerce/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
+[39;1m  Illuminate\Support\ViewErrorBag::put(): Argument #2 ($bag) must be of type Illuminate\Contracts\Support\MessageBag, null given, called in <repo-root>/vendor/livewire/livewire/src/Features/SupportValidation/SupportValidation.php on line 21 (View: <repo-root>/vendor/orchestra/testbench-core/laravel/storage/framework/views/a168b0ebcff266df6b662fc4b6d06e88.blade.php)[39;22m
 
   at [32mvendor/laravel/framework/src/Illuminate/Support/ViewErrorBag.php[39m:[32m60[39m
      56▕      * @param  string  $key

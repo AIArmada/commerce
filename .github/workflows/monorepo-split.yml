@@ -77,14 +77,23 @@ jobs:
           PAT: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Instant Packagist Update
+        env:
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+          PACKAGIST_USERNAME: ${{ vars['PACKAGIST_USERNAME'] }}
+          PACKAGIST_USERNAME_SECRET: ${{ secrets['PACKAGIST_USERNAME'] }}
         run: |
           sleep 12
 
+          packagist_username="${PACKAGIST_USERNAME:-${PACKAGIST_USERNAME_SECRET:-}}"
+
+          if [[ -z "$packagist_username" ]]; then
+            echo "::error::Set PACKAGIST_USERNAME as a repository or organization variable (preferred) or secret."
+            exit 1
+          fi
+
           echo "Triggering Packagist update for aiarmada/${{ matrix.package }}"
 
-          curl -X POST \
-            "https://packagist.org/api/update-package?username=saiffil&apiToken=${{ secrets.PACKAGIST_TOKEN }}" \
+          curl --fail-with-body --silent --show-error -X POST \
+            "https://packagist.org/api/update-package?username=${packagist_username}&apiToken=${PACKAGIST_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"repository\":{\"url\":\"https://github.com/AIArmada/${{ matrix.package }}\"}}"
-        env:
-          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}

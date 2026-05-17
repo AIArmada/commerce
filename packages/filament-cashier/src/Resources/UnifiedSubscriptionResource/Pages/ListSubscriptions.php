@@ -134,7 +134,15 @@ final class ListSubscriptions extends ListRecords
             return $this->allSubscriptions;
         }
 
-        $userId = auth()->id();
+        $user = auth()->user();
+
+        if ($user === null) {
+            $this->allSubscriptions = collect();
+
+            return $this->allSubscriptions;
+        }
+
+        $userId = $this->resolveAuthIdentifier($user);
 
         if ($userId === null) {
             $this->allSubscriptions = collect();
@@ -257,5 +265,36 @@ final class ListSubscriptions extends ListRecords
         $status = $record->getAttribute('status');
 
         return $status;
+    }
+
+    private function resolveAuthIdentifier(mixed $user): int | string | null
+    {
+        if ($user instanceof Model) {
+            $identifierName = $user->getKeyName();
+            $attributes = $user->getAttributes();
+            $attributeIdentifier = $attributes[$identifierName] ?? null;
+
+            if (is_int($attributeIdentifier) || is_string($attributeIdentifier)) {
+                return $attributeIdentifier;
+            }
+
+            $rawIdentifier = $user->getRawOriginal($identifierName);
+
+            if (is_int($rawIdentifier) || is_string($rawIdentifier)) {
+                return $rawIdentifier;
+            }
+
+            return null;
+        }
+
+        if (is_object($user) && method_exists($user, 'getAuthIdentifier')) {
+            $identifier = $user->getAuthIdentifier();
+
+            if (is_int($identifier) || is_string($identifier)) {
+                return $identifier;
+            }
+        }
+
+        return null;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Widgets;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Orders\Models\Order;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -78,7 +79,7 @@ final class OrderTimelineWidget extends Widget implements HasForms
                 'description' => sprintf(
                     '%s payment of %s via %s',
                     $statusLabel,
-                    $currency . ' ' . number_format($payment->amount / 100, 2),
+                    MoneyFormatter::formatMinor($payment->amount, $currency),
                     $payment->gateway
                 ),
                 'icon' => $payment->status->isFinal() ? 'heroicon-o-check-circle' : 'heroicon-o-credit-card',

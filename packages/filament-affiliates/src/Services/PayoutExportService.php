@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Services;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -145,7 +146,7 @@ final class PayoutExportService
         return [
             (string) $conversion->affiliate_code,
             (string) $conversion->external_reference,
-            number_format((int) $conversion->commission_minor / 100, 2),
+            MoneyFormatter::decimalFromMinor((int) $conversion->commission_minor, (string) $conversion->commission_currency),
             (string) $conversion->commission_currency,
             $conversion->status->value ?? (string) $conversion->status,
             $conversion->created_at?->format('Y-m-d H:i:s') ?? '',
@@ -292,8 +293,9 @@ final class PayoutExportService
         $headers = array_shift($data);
         $rows = $data;
 
-        $totalCommission = collect($payout->conversions)->sum('commission_minor') / 100;
+        $totalCommissionMinor = (int) collect($payout->conversions)->sum('commission_minor');
         $currency = $payout->conversions->first()?->commission_currency ?? 'USD';
+        $formattedTotalCommission = MoneyFormatter::formatMinor($totalCommissionMinor, $currency);
 
         $html = <<<HTML
 <!DOCTYPE html>
@@ -320,7 +322,7 @@ final class PayoutExportService
         <p><strong>Status:</strong> {$this->getStatusValue($payout)}</p>
         <p><strong>Generated:</strong> {$payout->created_at->format('Y-m-d H:i:s')}</p>
         <p><strong>Total Conversions:</strong> {$payout->conversions->count()}</p>
-        <p><strong>Total Amount:</strong> {$currency} " . number_format($totalCommission, 2) . "</p>
+        <p><strong>Total Amount:</strong> {$formattedTotalCommission}</p>
     </div>
     <table>
         <thead>

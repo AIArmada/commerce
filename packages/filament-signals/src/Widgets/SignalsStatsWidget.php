@@ -55,6 +55,6 @@ final class SignalsStatsWidget extends StatsOverviewWidget
 
     private function formatMoney(int $minor): string
     {
-        return config('signals.defaults.currency', 'MYR') . ' ' . number_format($minor / 100, 2);
+        return config('signals.defaults.currency', 'MYR') . ' ' . number_format($minor / 100, 2, '.', ',');
     }
 }

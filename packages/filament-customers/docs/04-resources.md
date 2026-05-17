@@ -125,7 +125,7 @@ All queries are automatically scoped:
 public static function getEloquentQuery(): Builder
 {
     $query = parent::getEloquentQuery();
-    return CustomersOwnerScope::applyToOwnedQuery($query);
+    return OwnerUiScope::apply($query, includeGlobal: false);
 }
 ```
 
@@ -221,7 +221,7 @@ Segment queries are owner-scoped:
 public static function getEloquentQuery(): Builder
 {
     $query = parent::getEloquentQuery();
-    return CustomersOwnerScope::applyToOwnedQuery($query);
+    return OwnerUiScope::apply($query, includeGlobal: false);
 }
 ```
 
@@ -232,7 +232,7 @@ Forms\Components\Select::make('customers')
         name: 'customers',
         titleAttribute: 'email',
         modifyQueryUsing: fn (Builder $query) =>
-            CustomersOwnerScope::applyToOwnedQuery($query)
+            OwnerUiScope::apply($query, includeGlobal: false)
     );
 ```
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Support;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\MoneyNormalizer;
-use Akaunting\Money\Money;
 
 /**
  * Helper class for money and percentage conversions in Filament forms.
@@ -83,9 +83,7 @@ final class MoneyHelper
      */
     public static function formatMoney(int $cents, string $currency = 'MYR'): string
     {
-        $currency = mb_strtoupper($currency ?: self::defaultCurrency());
-
-        return (string) Money::{$currency}($cents);
+        return MoneyFormatter::formatMinor($cents, $currency ?: self::defaultCurrency());
     }
 
     /**

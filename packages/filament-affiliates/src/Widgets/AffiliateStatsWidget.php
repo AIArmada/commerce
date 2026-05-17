@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Widgets;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -51,6 +52,6 @@ final class AffiliateStatsWidget extends BaseWidget
 
     private function formatMoney(int $amount, string $currency): string
     {
-        return sprintf('%s %.2f', $currency, $amount / 100);
+        return MoneyFormatter::formatMinor($amount, $currency);
     }
 }

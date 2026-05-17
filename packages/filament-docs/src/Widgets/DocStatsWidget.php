@@ -66,6 +66,6 @@ final class DocStatsWidget extends BaseWidget
     {
         $currency = config('docs.defaults.currency', 'MYR');
 
-        return $currency . ' ' . number_format((float) $amount, 2);
+        return $currency . ' ' . number_format((float) $amount, 2, '.', ',');
     }
 }

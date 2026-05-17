@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Tables;
 
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use Akaunting\Money\Money;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -50,10 +50,7 @@ final class VoucherUsagesTable
                 TextColumn::make('discount_amount')
                     ->label('Discount')
                     ->formatStateUsing(static function ($state, VoucherUsage $record): string {
-                        $currency = mb_strtoupper((string) ($record->currency ?? config('filament-vouchers.default_currency', 'MYR')));
-
-                        // Value is already stored as cents (integer)
-                        return (string) Money::{$currency}((int) $state);
+                        return MoneyHelper::formatMoney((int) $state, (string) ($record->currency ?? config('filament-vouchers.default_currency', 'MYR')));
                     })
                     ->alignEnd(),
 

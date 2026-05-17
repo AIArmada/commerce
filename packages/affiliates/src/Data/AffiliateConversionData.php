@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonInterface;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Attributes\MapOutputName;
@@ -175,11 +176,11 @@ class AffiliateConversionData extends Data
 
     public function getFormattedCommission(): string
     {
-        return number_format($this->commissionMinor / 100, 2) . ' ' . $this->commissionCurrency;
+        return MoneyFormatter::formatMinorWithCode($this->commissionMinor, $this->commissionCurrency);
     }
 
     public function getFormattedTotal(): string
     {
-        return number_format($this->totalMinor / 100, 2) . ' ' . $this->commissionCurrency;
+        return MoneyFormatter::formatMinorWithCode($this->totalMinor, $this->commissionCurrency);
     }
 }

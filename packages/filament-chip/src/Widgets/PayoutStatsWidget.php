@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -95,8 +96,6 @@ final class PayoutStatsWidget extends BaseWidget
 
     private function formatCurrency(float $amount): string
     {
-        $currency = config('filament-chip.default_currency', 'MYR');
-
-        return sprintf('%s %s', mb_strtoupper($currency), number_format($amount, 2));
+        return MoneyFormatter::formatMajor($amount, config('filament-chip.default_currency', 'MYR'));
     }
 }

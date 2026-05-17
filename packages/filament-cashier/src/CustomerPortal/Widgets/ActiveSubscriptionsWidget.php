@@ -9,6 +9,7 @@ use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\Widget;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Cashier\Subscription;
@@ -34,6 +35,12 @@ final class ActiveSubscriptionsWidget extends Widget
             return collect();
         }
 
+        $userIdentifier = $this->resolveAuthIdentifier($user);
+
+        if ($userIdentifier === null) {
+            return collect();
+        }
+
         $subscriptions = collect();
         $detector = app(GatewayDetector::class);
         $limit = max(1, $this->perGatewayLimit);
@@ -45,7 +52,7 @@ final class ActiveSubscriptionsWidget extends Widget
         ) {
             $stripeSubscriptions = CashierOwnerScope::apply(Subscription::query())
                 ->with('items')
-                ->where('user_id', $user->getAuthIdentifier())
+                ->where('user_id', $userIdentifier)
                 ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
@@ -62,7 +69,7 @@ final class ActiveSubscriptionsWidget extends Widget
             $subscriptionModel = CashierChip::$subscriptionModel;
             $chipSubscriptions = CashierOwnerScope::apply($subscriptionModel::query())
                 ->with('items')
-                ->where('user_id', $user->getAuthIdentifier())
+                ->where('user_id', $userIdentifier)
                 ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
@@ -76,5 +83,36 @@ final class ActiveSubscriptionsWidget extends Widget
         }
 
         return $subscriptions->filter(fn (UnifiedSubscription $sub) => $sub->status->isActive());
+    }
+
+    private function resolveAuthIdentifier(mixed $user): int | string | null
+    {
+        if ($user instanceof Model) {
+            $identifierName = $user->getKeyName();
+            $attributes = $user->getAttributes();
+            $attributeIdentifier = $attributes[$identifierName] ?? null;
+
+            if (is_int($attributeIdentifier) || is_string($attributeIdentifier)) {
+                return $attributeIdentifier;
+            }
+
+            $rawIdentifier = $user->getRawOriginal($identifierName);
+
+            if (is_int($rawIdentifier) || is_string($rawIdentifier)) {
+                return $rawIdentifier;
+            }
+
+            return null;
+        }
+
+        if (is_object($user) && method_exists($user, 'getAuthIdentifier')) {
+            $identifier = $user->getAuthIdentifier();
+
+            if (is_int($identifier) || is_string($identifier)) {
+                return $identifier;
+            }
+        }
+
+        return null;
     }
 }

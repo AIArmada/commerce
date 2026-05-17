@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -128,6 +129,6 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
 
     private function formatMoney(int $amountMinor): string
     {
-        return Number::currency($amountMinor / 100, config('affiliates.currency.default', 'USD'));
+        return MoneyFormatter::formatMinor($amountMinor, config('affiliates.currency.default', 'USD'));
     }
 }

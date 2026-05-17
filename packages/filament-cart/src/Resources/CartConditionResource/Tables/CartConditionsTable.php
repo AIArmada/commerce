@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartConditionResource\Tables;
 
-use Akaunting\Money\Money;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -198,9 +198,9 @@ final class CartConditionsTable
     private static function formatMoney(int $amount, ?string $currency = null): string
     {
         $resolvedCurrency = is_string($currency) && $currency !== ''
-            ? mb_strtoupper($currency)
-            : mb_strtoupper(config('cart.money.default_currency', 'USD'));
+            ? $currency
+            : (string) config('cart.money.default_currency', 'USD');
 
-        return (string) Money::{$resolvedCurrency}($amount);
+        return MoneyFormatter::formatMinor($amount, $resolvedCurrency);
     }
 }

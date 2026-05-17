@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use DateTimeInterface;
@@ -65,6 +66,9 @@ final class GatewayComparisonWidget extends ChartWidget
 
     protected function getOptions(): array
     {
+        $currency = (string) config('cashier.currency', 'USD');
+        $symbol = addslashes(MoneyFormatter::symbol($currency));
+
         return [
             'plugins' => [
                 'legend' => [
@@ -75,7 +79,7 @@ final class GatewayComparisonWidget extends ChartWidget
                 'y' => [
                     'beginAtZero' => true,
                     'ticks' => [
-                        'callback' => "function(value) { return '$' + value.toLocaleString(); }",
+                        'callback' => "function(value) { return '{$symbol}' + value.toLocaleString(); }",
                     ],
                 ],
             ],

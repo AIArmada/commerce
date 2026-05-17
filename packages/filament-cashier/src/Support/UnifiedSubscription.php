@@ -108,15 +108,7 @@ final readonly class UnifiedSubscription
      */
     public function formattedAmount(): string
     {
-        $symbol = match ($this->currency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            default => $this->currency . ' ',
-        };
-
-        return $symbol . number_format($this->amount / 100, 2);
+        return CurrencyFormatter::format($this->amount, $this->currency);
     }
 
     /**

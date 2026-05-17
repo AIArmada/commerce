@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -45,10 +46,10 @@ it('resolveOwner fails closed when resolver is not bound and context is not expl
     }
 
     expect(app()->bound(OwnerResolverInterface::class))->toBeFalse();
-    expect(fn (): ?Model => CustomersOwnerScope::resolveOwner())->toThrow(RuntimeException::class);
+    expect(fn (): ?Model => OwnerUiScope::resolveOwner(Customer::class))->toThrow(NoCurrentOwnerException::class);
 });
 
-it('applyToOwnedQuery returns global-only rows in explicit global context when model has no scopeForOwner', function (): void {
+it('apply returns global-only rows in explicit global context when model has no scopeForOwner', function (): void {
     $ownerA = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
 
     $global = OwnerContext::withOwner(null, fn (): Customer => Customer::query()->create([
@@ -78,7 +79,7 @@ it('applyToOwnedQuery returns global-only rows in explicit global context when m
     $noScopeModel = new class extends Model {};
     $noScopeModel->setTable($tableName);
 
-    $emails = OwnerContext::withOwner(null, fn (): array => CustomersOwnerScope::applyToOwnedQuery($noScopeModel->newQuery())
+    $emails = OwnerContext::withOwner(null, fn (): array => OwnerUiScope::apply($noScopeModel->newQuery(), configKey: 'customers.features.owner', includeGlobal: false)
         ->orderBy('email')
         ->pluck('email')
         ->all());
@@ -86,7 +87,7 @@ it('applyToOwnedQuery returns global-only rows in explicit global context when m
     expect($emails)->toEqual([$global->email]);
 });
 
-it('applyToOwnedQuery returns only owner rows when owner is resolved and model has no scopeForOwner', function (): void {
+it('apply returns only owner rows when owner is resolved and model has no scopeForOwner', function (): void {
     $ownerA = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
     $ownerB = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000b');
 
@@ -142,7 +143,7 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
     $noScopeModel = new class extends Model {};
     $noScopeModel->setTable($tableName);
 
-    $emails = CustomersOwnerScope::applyToOwnedQuery($noScopeModel->newQuery())
+    $emails = OwnerUiScope::apply($noScopeModel->newQuery(), configKey: 'customers.features.owner', includeGlobal: false)
         ->orderBy('email')
         ->pluck('email')
         ->all();

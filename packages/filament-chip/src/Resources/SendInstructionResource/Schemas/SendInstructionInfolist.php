@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\SendInstructionResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -41,7 +42,7 @@ final class SendInstructionInfolist
                         ->schema([
                             TextEntry::make('amount')
                                 ->label('Amount')
-                                ->formatStateUsing(fn ($state): string => 'RM ' . number_format((float) $state, 2))
+                                ->formatStateUsing(fn ($state): string => MoneyFormatter::formatMajor((float) $state, config('filament-chip.default_currency', 'MYR')))
                                 ->size('lg')
                                 ->weight(FontWeight::Bold),
 

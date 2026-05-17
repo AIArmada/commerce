@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Jnt\Models\JntOrderItem;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -189,21 +191,21 @@ final class JntOrderInfolist
                         ->schema([
                             TextEntry::make('package_value')
                                 ->label('Declared Value')
-                                ->money('MYR')
+                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
                                 ->placeholder('—'),
                             TextEntry::make('insurance_value')
                                 ->label('Insurance')
-                                ->money('MYR')
+                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
                                 ->placeholder('—'),
                             TextEntry::make('cod_value')
                                 ->label('Cash on Delivery')
-                                ->money('MYR')
+                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
                                 ->color('warning')
                                 ->weight(FontWeight::SemiBold)
                                 ->placeholder('—'),
                             TextEntry::make('offer_value')
                                 ->label('Offer Value')
-                                ->money('MYR')
+                                ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
                                 ->placeholder('—'),
                         ]),
                 ])
@@ -289,7 +291,7 @@ final class JntOrderInfolist
                                 ->formatStateUsing(fn (int $state): string => number_format($state / 1000, 2) . ' kg'),
                             TextEntry::make('unit_price')
                                 ->label('Unit Price')
-                                ->money('MYR'),
+                                ->formatStateUsing(fn ($state, JntOrderItem $record): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, $record->currency ?: 'MYR')),
                             TextEntry::make('description')
                                 ->label('Description')
                                 ->columnSpanFull()
