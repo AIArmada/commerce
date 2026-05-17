@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Growth;
 
-use AIArmada\Growth\Actions\ResolveReadableExperimentBySlug;
 use AIArmada\Growth\Actions\ProjectExperimentContextIntoSignalProperties;
 use AIArmada\Growth\Actions\ResolveExperimentPreset;
+use AIArmada\Growth\Actions\ResolveReadableExperimentBySlug;
 use AIArmada\Growth\Contracts\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Http\Middleware\ResolveExperiment;
 use AIArmada\Growth\Support\ExperimentContextManager;
 use AIArmada\Growth\Support\Http\DefaultRequestExperimentSubjectResolver;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\View\Compilers\BladeCompiler;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -81,7 +82,7 @@ final class GrowthServiceProvider extends PackageServiceProvider
             return;
         }
 
-        /** @var \Illuminate\View\Compilers\BladeCompiler $bladeCompiler */
+        /** @var BladeCompiler $bladeCompiler */
         $bladeCompiler = $this->app['blade.compiler'];
         $customDirectives = $bladeCompiler->getCustomDirectives();
         $reservedDirectiveNames = ['variant', 'elsevariant', 'endvariant', 'unlessvariant'];
