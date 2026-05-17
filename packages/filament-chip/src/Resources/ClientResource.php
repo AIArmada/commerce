@@ -23,6 +23,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 
 final class ClientResource extends BaseChipResource
@@ -42,7 +43,7 @@ final class ClientResource extends BaseChipResource
         return FilamentPermission::hasAbility('purchase.viewAny');
     }
 
-    public static function canView(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canView(Model $record): bool
     {
         return FilamentPermission::hasAbility('purchase.view');
     }
