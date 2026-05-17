@@ -11,12 +11,12 @@ class AffiliatePayoutPolicy
 {
     public function viewAny(Authorizable $user): bool
     {
-        return $user->can('affiliates.payout.view-any');
+        return $user->can('affiliates.payout.view-any') || $user->can('affiliate.viewAny');
     }
 
     public function view(Authorizable $user, AffiliatePayout $payout): bool
     {
-        return $user->can('affiliates.payout.view');
+        return $user->can('affiliates.payout.view') || $user->can('affiliate.view');
     }
 
     public function create(Authorizable $user): bool
@@ -26,7 +26,7 @@ class AffiliatePayoutPolicy
 
     public function update(Authorizable $user, AffiliatePayout $payout): bool
     {
-        return $user->can('affiliates.payout.update');
+        return $user->can('affiliates.payout.update') || $user->can('affiliate.payout');
     }
 
     public function delete(Authorizable $user, AffiliatePayout $payout): bool
@@ -66,6 +66,6 @@ class AffiliatePayoutPolicy
 
     public function export(Authorizable $user, AffiliatePayout $payout): bool
     {
-        return $user->can('affiliates.payout.export');
+        return $user->can('affiliates.payout.export') || $user->can('affiliate.payout');
     }
 }

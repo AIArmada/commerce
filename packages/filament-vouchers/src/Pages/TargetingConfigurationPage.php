@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Pages;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
@@ -37,6 +38,16 @@ final class TargetingConfigurationPage extends Page implements HasForms
     protected static string | UnitEnum | null $navigationGroup = 'Vouchers & Discounts';
 
     protected static ?int $navigationSort = 101;
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAbility('voucher.update');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
 
     public function mount(): void
     {

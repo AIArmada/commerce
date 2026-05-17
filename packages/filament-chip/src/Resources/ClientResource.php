@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Resources;
 
 use AIArmada\Chip\Models\Client;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ViewClient;
 use AIArmada\FilamentChip\Resources\ClientResource\Schemas\ClientInfolist;
@@ -35,6 +36,21 @@ final class ClientResource extends BaseChipResource
     protected static ?string $pluralModelLabel = 'Clients';
 
     protected static ?string $recordTitleAttribute = 'email';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('purchase.viewAny');
+    }
+
+    public static function canView(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return FilamentPermission::hasAbility('purchase.view');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     #[Override]
     public static function table(Table $table): Table

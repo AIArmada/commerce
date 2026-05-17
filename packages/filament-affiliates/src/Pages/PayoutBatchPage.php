@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Pages;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
@@ -45,6 +46,16 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
     public static function getNavigationSort(): ?int
     {
         return config('filament-affiliates.pages.navigation_sort.payout_batch', 12);
+    }
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAnyAbility(['affiliate.payout', 'affiliates.payout.update']);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 
     /** @var view-string */
@@ -104,7 +115,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->icon('heroicon-o-arrow-right-circle')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate.payout', 'affiliates.payout.update']))
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
@@ -134,7 +145,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate.payout', 'affiliates.payout.update']))
                     ->form([
                         Forms\Components\Textarea::make('reason')
                             ->label('Rejection Reason')
@@ -176,7 +187,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->icon('heroicon-o-arrow-right-circle')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate.payout', 'affiliates.payout.update']))
                     ->action(function (Collection $records): void {
                         $success = 0;
                         $failed = 0;

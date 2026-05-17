@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Resources;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ListPurchases;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ViewPurchase;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Schemas\PurchaseInfolist;
@@ -26,6 +27,21 @@ final class PurchaseResource extends BaseChipResource
     protected static ?string $pluralModelLabel = 'Purchases';
 
     protected static ?string $recordTitleAttribute = 'reference';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('purchase.viewAny');
+    }
+
+    public static function canView(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return FilamentPermission::hasAbility('purchase.view');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     #[Override]
     public static function table(Table $table): Table

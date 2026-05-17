@@ -51,27 +51,56 @@ class UserResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return static::checkAbility('viewAny');
+        return static::hasAuthzDirectoryAccess() && static::checkAbility('viewAny');
     }
 
     public static function canView(Model $record): bool
     {
-        return static::checkAbility('view');
+        return static::hasAuthzDirectoryAccess() && static::checkAbility('view');
     }
 
     public static function canCreate(): bool
     {
-        return static::checkAbility('create');
+        return static::hasAuthzDirectoryAccess() && static::checkAbility('create');
     }
 
     public static function canEdit(Model $record): bool
     {
-        return static::checkAbility('update');
+        return static::hasAuthzDirectoryAccess() && static::checkAbility('update');
     }
 
     public static function canDelete(Model $record): bool
     {
-        return static::checkAbility('delete');
+        return static::hasAuthzDirectoryAccess() && static::checkAbility('delete');
+    }
+
+    protected static function hasAuthzDirectoryAccess(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof Authorizable) {
+            return false;
+        }
+
+        $superAdminRole = config('filament-authz.super_admin_role');
+
+        if (method_exists($user, 'hasRole')) {
+            $registrar = app(PermissionRegistrar::class);
+            $teams = $registrar->teams;
+            $registrar->teams = false;
+
+            try {
+                if ((bool) call_user_func([$user, 'hasRole'], $superAdminRole)) {
+                    return true;
+                }
+            } finally {
+                $registrar->teams = $teams;
+            }
+        }
+
+        return $user->can('role.viewAny')
+            || $user->can('permission.viewAny')
+            || $user->can('settings.manage');
     }
 
     protected static function checkAbility(string $action): bool

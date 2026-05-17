@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Pages;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
@@ -43,6 +44,16 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
     protected static ?int $navigationSort = 98;
 
     protected static ?string $title = 'Bulk Edit';
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAbility('product.update');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
 
     /**
      * Bulk editing should never mutate global records when a tenant owner is resolved.

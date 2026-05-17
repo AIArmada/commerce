@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Pages;
 
 use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -39,6 +40,16 @@ final class ReportsPage extends Page implements HasForms
     public static function getNavigationSort(): ?int
     {
         return config('filament-affiliates.pages.navigation_sort.reports', 10);
+    }
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.analytics');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 
     /** @var view-string */
