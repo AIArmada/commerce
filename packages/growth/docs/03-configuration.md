@@ -37,6 +37,12 @@ return [
         'preset_modules' => [
             'enabled' => true,
         ],
+        'experiment_middleware' => [
+            'enabled' => false,
+        ],
+        'blade_directives' => [
+            'enabled' => false,
+        ],
     ],
 
     'integrations' => [
@@ -45,6 +51,16 @@ return [
             'checkout_started_event_name' => 'checkout.started',
             'purchase_event_name' => 'order.paid',
             'refund_event_name' => 'order.refunded',
+        ],
+    ],
+
+    'http' => [
+        'experiment_middleware' => [
+            'subject_resolver' => null,
+            'anonymous_id_source' => 'cookie',
+            'anonymous_id_key' => 'visitor_id',
+            'session_identifier_source' => 'laravel',
+            'session_identifier_key' => 'X-Session-Identifier',
         ],
     ],
 ];
@@ -100,6 +116,17 @@ The built-in presets ship with these settings shapes:
 - `funnel_test`: `funnel_steps[]` with `label`, `event_name`, and `event_category`
 - `pricing_test`: `checkout_event_name`, `price_labels`
 
+## Slug behavior
+
+Growth keeps experiment slugs explicit and lightweight:
+
+- if `slug` is blank during creation, the model fills it from `name` using `Str::slug()`
+- slugs remain unique per `owner_scope` at the database level
+- the HTTP middleware expects the exact slug you pass in `growth.experiment:{slug}`
+- Growth does **not** use Spatie Sluggable or automatic route-model binding for experiments
+
+That makes the slug a stable route-facing identifier without turning it into a separate SEO subsystem.
+
 ## Features
 
 ### `features.owner`
@@ -122,6 +149,18 @@ Owner scoping controls for growth models:
 
 Enables module presets and preset-aware defaults for new experiments.
 
+### `features.experiment_middleware.enabled`
+
+Turns on request-time experiment resolution for routes that opt into the `growth.experiment:{slug}` middleware alias.
+
+When disabled, the alias may still exist, but the middleware becomes a no-op and no experiment context is written onto the request.
+
+### `features.blade_directives.enabled`
+
+Enables the `@variant / @elsevariant / @endvariant` helpers.
+
+When disabled, the directives fall through as if no current variant matched, so your fallback branch should handle the default UI.
+
 ## Integrations
 
 ### `integrations.signals.enabled`
@@ -137,6 +176,45 @@ These keys control which event names the aggregator and enrichment flow care abo
 - `refund_event_name`
 
 `purchase_event_name` is also the fallback goal event name used when an experiment does not provide one explicitly.
+
+## HTTP
+
+### `http.experiment_middleware.subject_resolver`
+
+Optional class-string for a custom request subject resolver.
+
+The class must implement `AIArmada\Growth\Contracts\RequestExperimentSubjectResolver`.
+
+Leave this as `null` to use the built-in resolver.
+
+### `http.experiment_middleware.anonymous_id_source`
+
+Controls where the middleware looks for an anonymous visitor identifier.
+
+Supported values:
+
+- `cookie`
+- `header`
+
+### `http.experiment_middleware.anonymous_id_key`
+
+The cookie or header name used when resolving the anonymous visitor id.
+
+### `http.experiment_middleware.session_identifier_source`
+
+Controls where the middleware looks for the session identifier used to match `SignalSession.session_identifier`.
+
+Supported values:
+
+- `laravel` — use the current Laravel session id
+- `cookie`
+- `header`
+
+### `http.experiment_middleware.session_identifier_key`
+
+The cookie or header name used when `session_identifier_source` is `cookie` or `header`.
+
+The default built-in resolver does **not** need this key when `session_identifier_source` is `laravel`.
 
 ## Example custom configuration
 
@@ -180,6 +258,12 @@ return [
         'preset_modules' => [
             'enabled' => true,
         ],
+        'experiment_middleware' => [
+            'enabled' => true,
+        ],
+        'blade_directives' => [
+            'enabled' => true,
+        ],
     ],
 
     'integrations' => [
@@ -188,6 +272,16 @@ return [
             'checkout_started_event_name' => 'checkout.started',
             'purchase_event_name' => 'checkout.completed',
             'refund_event_name' => 'order.refunded',
+        ],
+    ],
+
+    'http' => [
+        'experiment_middleware' => [
+            'subject_resolver' => null,
+            'anonymous_id_source' => 'header',
+            'anonymous_id_key' => 'X-Visitor-Id',
+            'session_identifier_source' => 'laravel',
+            'session_identifier_key' => 'X-Session-Identifier',
         ],
     ],
 ];

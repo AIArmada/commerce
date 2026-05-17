@@ -20,6 +20,9 @@
         "aiarmada/signals": "self.version"
     },
     "autoload": {
+        "files": [
+            "src/helpers.php"
+        ],
         "psr-4": {
             "AIArmada\\Growth\\": "src/",
             "AIArmada\\Growth\\Database\\Factories\\": "database/factories/"

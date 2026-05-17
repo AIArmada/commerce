@@ -22,6 +22,32 @@ OwnerContext::withOwner($store, function (): void {
 });
 ```
 
+If this happens through the HTTP middleware, also verify that the route slug points at an **active** experiment the current owner is allowed to read.
+
+## "Growth experiment slug is required"
+
+**Cause:** The middleware was invoked without a slug parameter, or your custom integration passed an empty slug string.
+
+**Fix:** Always provide the explicit stored slug in the middleware declaration:
+
+```php
+Route::middleware('growth.experiment:pricing-page-test');
+```
+
+Growth does not infer experiment slugs from route names or URLs.
+
+## "A signal identity, signal session, or anonymous id is required to resolve an assignment"
+
+**Cause:** The HTTP middleware ran, but the request could not be mapped to any subject.
+
+**Fix:** Ensure at least one of these is true:
+
+- an authenticated user can be matched to `SignalIdentity`
+- the current session id can be matched to `SignalSession.session_identifier`
+- the configured anonymous id cookie/header is present
+
+If your application uses a different identification scheme, provide a custom `growth.http.experiment_middleware.subject_resolver` implementation.
+
 ## "Signal identity/session must belong to the same tracked property as the experiment"
 
 **Cause:** The identity or session you passed to `ResolveExperimentAssignment` was created for a different Signals tracked property.
@@ -77,6 +103,38 @@ This is intentional. The Filament UI renders a pending state instead of inventin
 - the tracked property passed to the enricher matches the assignment's experiment tracked property
 
 Double-check the order or checkout payload and the assignment rows being created.
+
+## `experiment()` returns `null`
+
+**Cause:** No experiment context is currently stored on the request.
+
+That usually means one of these is true:
+
+- the route did not use `growth.experiment:{slug}`
+- `growth.features.experiment_middleware.enabled` is `false`
+- the middleware ran but assignment resolution failed before writing request attributes
+- you are calling the helper outside the current HTTP request lifecycle
+
+**Fix:**
+
+- enable the middleware feature flag
+- attach the middleware to the route you want to experiment on
+- confirm the request resolves an owner and a subject identifier
+- for non-HTTP flows, call `ResolveExperimentAssignment` directly instead of relying on request helpers
+
+## Blade variant directives render the fallback branch or nothing
+
+**Cause:** One of these is usually true:
+
+- `growth.features.blade_directives.enabled` is `false`
+- the current request has no experiment context
+- the current variant code does not match any branch you defined
+
+**Fix:**
+
+- enable the Blade directives feature flag
+- ensure the request passed through `growth.experiment:{slug}` first
+- add an `@else` branch if you want a deterministic fallback UI
 
 ## Deleting a tracked property or experiment leaves related data behind
 
