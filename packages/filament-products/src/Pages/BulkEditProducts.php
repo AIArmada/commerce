@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Pages;
 
-use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
