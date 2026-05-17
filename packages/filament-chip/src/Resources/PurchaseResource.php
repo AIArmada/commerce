@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 
 final class PurchaseResource extends BaseChipResource
@@ -33,7 +34,7 @@ final class PurchaseResource extends BaseChipResource
         return FilamentPermission::hasAbility('purchase.viewAny');
     }
 
-    public static function canView(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canView(Model $record): bool
     {
         return FilamentPermission::hasAbility('purchase.view');
     }
