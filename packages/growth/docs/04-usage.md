@@ -95,11 +95,14 @@ $assignment = OwnerContext::withOwner($store, function () use ($experiment) {
 });
 ```
 
+If the anonymous identifier would make `subject_key` longer than the database column allows, Growth stores it as `anonymous:sha256:{hash}` instead.
+
 ### Important assignment rules
 
 - the experiment must be accessible in the current owner scope
 - the experiment must be `active`
 - any provided `SignalIdentity` or `SignalSession` must belong to the **same tracked property** as the experiment
+- persisted global experiments require an explicit global owner context before assignments can be resolved
 - assignments stay sticky for the same subject
 
 ## Project experiment context into Signals event properties
@@ -120,6 +123,12 @@ $properties = OwnerContext::withOwner($store, function () use ($order, $trackedP
     );
 });
 ```
+
+The enricher looks for matching identities and assignments from these source fields:
+
+- `customer_id`
+- `cart_id`
+- `metadata.cart_id`
 
 The action adds keys such as:
 
@@ -143,6 +152,8 @@ $results = OwnerContext::withOwner($store, function () use ($experiment): array 
     return app(AggregateExperimentMetrics::class)->handle($experiment);
 });
 ```
+
+The aggregator reads Signals events from the experiment's tracked property, counts purchase and refund events by event name, and only sums revenue from events whose currency matches the experiment property's currency.
 
 Example response shape:
 
@@ -191,6 +202,8 @@ $assignments = Assignment::query()
     ->latest('assigned_at')
     ->get();
 ```
+
+`forOwner()` requires either a resolved owner or an explicit global owner context.
 
 ## Optional Filament admin UI
 

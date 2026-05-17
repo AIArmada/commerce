@@ -21,10 +21,12 @@ title: Overview
 
 - Filament plugin registration through `FilamentGrowthPlugin`
 - Owner-scoped experiment and variant queries by default
+- Policy-gated resources, pages, and widgets backed by `ExperimentPolicy` and `VariantPolicy`
 - Preset-aware experiment forms powered by `ResolveExperimentPreset`
 - Module-aware variant settings based on the selected experiment type
 - Results page backed by `AggregateExperimentMetrics`
 - Dashboard widgets that handle mixed-currency revenue summaries and pending winner states
+- Fail-soft reporting surfaces that render empty or partial states when aggregation throws
 
 ## Requirements
 

@@ -12,6 +12,10 @@ All package options live in `config/filament-growth.php`.
 return [
     'navigation_group' => 'Growth',
 
+    'tables' => [
+        'stats_experiment_limit' => 10,
+    ],
+
     'features' => [
         'dashboard' => true,
         'results' => true,
@@ -37,6 +41,14 @@ return [
 
 Controls the Filament navigation group used by the dashboard, results page, and resources.
 
+## Tables
+
+### `tables.stats_experiment_limit`
+
+Limits how many of the most recently updated visible experiments `GrowthStatsWidget` will aggregate when building tracked revenue and winner-ready summaries.
+
+This does not change the all-record counts for active experiments, variants, or assignments.
+
 ## Features
 
 ### `features.dashboard`
@@ -45,7 +57,7 @@ Registers the `GrowthDashboard` page in the panel.
 
 ### `features.results`
 
-Registers the `ExperimentResultsPage` and enables dashboard header actions that link to results.
+Registers the `ExperimentResultsPage`, enables the dashboard header action that links to results, and allows the per-row `Results` action on `ExperimentResource`.
 
 ### `features.widgets`
 
@@ -82,6 +94,10 @@ Controls the order of registered navigation items:
 
 return [
     'navigation_group' => 'Optimization',
+
+    'tables' => [
+        'stats_experiment_limit' => 5,
+    ],
 
     'features' => [
         'dashboard' => true,

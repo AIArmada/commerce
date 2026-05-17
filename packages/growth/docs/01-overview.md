@@ -46,9 +46,11 @@ The main runtime flows are:
 
 - Owner-scoped experiments, variants, and assignments by default
 - Sticky assignment resolution for identities, sessions, and anonymous visitors
+- Oversized anonymous identifiers are hashed into deterministic subject keys before persistence
 - Signals event enrichment through `ProjectExperimentContextIntoSignalProperties`
 - Aggregate metrics through `AggregateExperimentMetrics`
 - Preset-aware defaults during experiment creation
+- Service-container binding for `growth.signal_event_property_enricher`
 - Optional admin UI via [`aiarmada/filament-growth`](../../filament-growth/docs/01-overview.md)
 
 ## Related packages

@@ -93,6 +93,13 @@ When preset modules are enabled, blank experiment fields are hydrated from the s
 
 Custom module types that do not match a built-in preset still receive the generic goal and winner defaults, but their `module_type` value is not rewritten.
 
+The built-in presets ship with these settings shapes:
+
+- `ab_test`: empty `settings`
+- `sales_page_test`: `cta_event_name`, `entry_paths`, `destination_urls`
+- `funnel_test`: `funnel_steps[]` with `label`, `event_name`, and `event_category`
+- `pricing_test`: `checkout_event_name`, `price_labels`
+
 ## Features
 
 ### `features.owner`
@@ -108,8 +115,8 @@ Owner scoping controls for growth models:
 ```
 
 - `enabled`: apply owner scoping to `Experiment`, `Variant`, and `Assignment`
-- `include_global`: whether owner-scoped reads should include global rows
-- `auto_assign_on_create`: automatically stamp the current owner on new rows
+- `include_global`: whether readable owner-scoped queries may include global rows
+- `auto_assign_on_create`: automatically stamp the current owner on new rows when owner columns are omitted
 
 ### `features.preset_modules.enabled`
 
@@ -128,6 +135,8 @@ These keys control which event names the aggregator and enrichment flow care abo
 - `checkout_started_event_name`
 - `purchase_event_name`
 - `refund_event_name`
+
+`purchase_event_name` is also the fallback goal event name used when an experiment does not provide one explicitly.
 
 ## Example custom configuration
 
