@@ -6,7 +6,7 @@ title: Troubleshooting
 
 ## Nothing appears in the Filament navigation
 
-**Cause:** The plugin is not registered on the panel, or the relevant feature flags are disabled.
+**Cause:** The plugin is not registered on the panel, the relevant feature flags are disabled, or the current user is not allowed to `viewAny` experiments.
 
 **Fix:**
 
@@ -23,6 +23,12 @@ title: Troubleshooting
 **Cause:** `features.widgets` is `false`.
 
 **Fix:** Enable `filament-growth.features.widgets`.
+
+## The results page or widgets show empty data instead of crashing
+
+**Cause:** `ExperimentResultsPage`, `GrowthStatsWidget`, and `ExperimentWinnersWidget` fail softly when `AggregateExperimentMetrics` throws.
+
+**Fix:** Inspect the underlying Growth experiment, tracked property, and Signals attribution data. The empty state usually points to bad or inaccessible experiment metrics rather than a Filament rendering bug.
 
 ## Tracked property or experiment selects are empty
 
@@ -45,6 +51,8 @@ title: Troubleshooting
 **Cause:** The visible experiments use tracked properties with different currencies.
 
 **Expected behavior:** `GrowthStatsWidget` switches to `Mixed` and lists per-currency totals in the description.
+
+Remember that the widget only aggregates revenue and winner-ready summaries from the most recently updated visible experiments up to `filament-growth.tables.stats_experiment_limit`.
 
 ## Variant settings fields do not appear
 

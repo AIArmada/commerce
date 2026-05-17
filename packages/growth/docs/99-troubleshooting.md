@@ -31,6 +31,21 @@ OwnerContext::withOwner($store, function (): void {
 - resolve assignments with a `SignalIdentity` or `SignalSession` from the same tracked property as the experiment
 - if you only have an anonymous browser or cart token, use the `anonymousId` argument instead
 
+## "Explicit global owner context is required to resolve assignments for global growth experiments"
+
+**Cause:** You tried to resolve an assignment for a persisted global experiment while owner scoping is enabled, but the current context was not explicitly global.
+
+**Fix:** Wrap the assignment resolution in explicit global context:
+
+```php
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Growth\Actions\ResolveExperimentAssignment;
+
+OwnerContext::withOwner(null, function () use ($experiment): void {
+    app(ResolveExperimentAssignment::class)->handle($experiment, anonymousId: 'cart-123');
+});
+```
+
 ## An experiment shows no winner yet
 
 **Cause:** The experiment has no assignments yet, or there is not enough qualifying attributed activity for the configured winner metric.
@@ -58,7 +73,7 @@ This is intentional. The Filament UI renders a pending state instead of inventin
 **Cause:** Enrichment only works when:
 
 - `growth.integrations.signals.enabled` is `true`
-- the source model exposes a matching `customer_id`, `cart_id`, or metadata value that can be resolved back to existing assignments
+- the source model exposes a matching `customer_id`, `cart_id`, or `metadata.cart_id` value that can be resolved back to existing assignments
 - the tracked property passed to the enricher matches the assignment's experiment tracked property
 
 Double-check the order or checkout payload and the assignment rows being created.

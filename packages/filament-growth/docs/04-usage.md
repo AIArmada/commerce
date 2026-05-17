@@ -21,7 +21,7 @@ public function panel(Panel $panel): Panel
 
 ## Manage experiments
 
-`ExperimentResource` gives you CRUD screens for experiments with owner-scoped queries and tracked property selection.
+`ExperimentResource` gives you CRUD screens for experiments with owner-safe queries, tracked property selection, relation counts, and gated mutation checks.
 
 ### Experiment form highlights
 
@@ -45,6 +45,8 @@ The experiment form exposes module-specific settings for supported presets:
 - `pricing_test`: checkout event name and price labels
 
 The resource table includes counts for variants and assignments, plus a direct `Results` action for each experiment.
+
+Bulk deletes are transactional and reject mixed selections that include records the current context is not allowed to delete, including global records outside explicit global context.
 
 ## Manage variants
 
@@ -70,6 +72,8 @@ The visible settings fields depend on the selected experiment's module type:
 
 If no experiment is selected, module-specific settings stay hidden.
 
+Bulk deletes follow the same safety rule as experiments: all selected rows must be deletable in the current context before any record is removed.
+
 ## Review experiment results
 
 `ExperimentResultsPage` is the reporting surface for a single experiment.
@@ -86,6 +90,8 @@ If no experiment is selected, module-specific settings stay hidden.
 
 The page reads from `AggregateExperimentMetrics`, so it stays aligned with the same winner and attribution rules used by the domain package.
 
+If metric aggregation throws, the page fails softly and renders empty results instead of crashing the panel.
+
 ## Use the Growth dashboard
 
 `GrowthDashboard` provides the overview page for the package.
@@ -101,6 +107,8 @@ The page reads from `AggregateExperimentMetrics`, so it stays aligned with the s
 
 If experiments use multiple currencies, tracked revenue is shown as `Mixed` with per-currency details in the description.
 
+Tracked revenue and winner-ready summaries are aggregated from the most recently updated visible experiments, capped by `filament-growth.tables.stats_experiment_limit`.
+
 ### Recent winners widget
 
 `ExperimentWinnersWidget` shows the five most recently updated experiments with:
@@ -114,14 +122,17 @@ If experiments use multiple currencies, tracked revenue is shown as `Mixed` with
 
 Each row links back to the results page when available.
 
+If aggregation fails for a visible experiment, that row is skipped instead of breaking the widget.
+
 ## Owner scoping expectations
 
-Both resources query Growth models with `forOwner()`, and their relationship fields only show accessible records.
+The package resolves readable and writable records through `AccessibleGrowthRecords`, and the policies delegate to the same access rules.
 
 That means:
 
 - tracked properties must belong to the current owner scope
 - experiments must belong to the current owner scope
 - result pages only load experiments the current owner can access
+- dashboard pages and widgets require an authenticated user who can `viewAny` experiments
 
 For multi-tenant applications, make sure your owner resolver is configured through [`commerce-support`](../../commerce-support/docs/04-multi-tenancy.md).

@@ -47,7 +47,7 @@ The package does not ship its own database tables or migrations.
 
 ## Verify the installation
 
-After registering the plugin, confirm that your panel shows the configured Growth navigation items:
+After registering the plugin, confirm that your panel shows the enabled Growth navigation items for an authenticated user who can `viewAny` experiments:
 
 - dashboard
 - results page
