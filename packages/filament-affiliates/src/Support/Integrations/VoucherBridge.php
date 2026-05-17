@@ -36,7 +36,7 @@ final class VoucherBridge
 
         $voucherQuery = VoucherResource::getEloquentQuery()->where('code', $code);
 
-        if ((bool) config('affiliates.owner.enabled', false)) {
+        if ((bool) config('vouchers.owner.enabled', false)) {
             /** @var Model|null $owner */
             $owner = OwnerContext::resolve();
             $voucherQuery->forOwner($owner, false);
@@ -46,11 +46,6 @@ final class VoucherBridge
         $voucher = $voucherQuery->first();
 
         if (! $voucher) {
-            return null;
-        }
-
-        /** @phpstan-ignore function.alreadyNarrowedType */
-        if (method_exists(VoucherResource::class, 'canView') && ! VoucherResource::canView($voucher)) {
             return null;
         }
 
