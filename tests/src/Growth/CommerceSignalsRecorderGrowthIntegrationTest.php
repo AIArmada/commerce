@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
@@ -12,6 +13,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\CommerceSignalsRecorder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 function growthRecorderOwner(): User
@@ -121,4 +123,43 @@ it('records checkout and order signals with projected experiment context', funct
         ->and(data_get($orderPaid?->properties, 'checkout_session_id'))->toBe((string) $checkoutSession->getKey())
         ->and(data_get($orderRefunded?->properties, 'refund_reason'))->toBe('customer-request')
         ->and($orderRefunded?->event_name)->toBe('order.refunded');
+});
+
+it('uses the tracked property owner for growth enrichment when only a resolver owner is present', function (): void {
+    $owner = growthRecorderOwner();
+    $foreignOwner = growthRecorderOwner();
+    $trackedProperty = growthRecorderTrackedProperty($owner);
+    [$experiment, $variant] = growthRecorderExperimentContext($owner, $trackedProperty, 'customer-recorder-2', 'cart-recorder-2');
+
+    $order = OwnerContext::withOwner($owner, fn (): Order => Order::query()->create([
+        'customer_id' => 'customer-recorder-2',
+        'grand_total' => 219900,
+        'currency' => 'MYR',
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => (string) $owner->getKey(),
+        'metadata' => [
+            'cart_id' => 'cart-recorder-2',
+        ],
+        'paid_at' => now(),
+    ]));
+
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($foreignOwner) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly User $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    $recorder = app(CommerceSignalsRecorder::class);
+    $orderPaid = $recorder->recordOrderPaid($order, 'txn-growth-2', 'chip');
+
+    expect($orderPaid)->not->toBeNull()
+        ->and(data_get($orderPaid?->properties, 'experiment_contexts.0.experiment_id'))->toBe((string) $experiment->getKey())
+        ->and(data_get($orderPaid?->properties, 'experiment_contexts.0.variant_id'))->toBe((string) $variant->getKey())
+        ->and(data_get($orderPaid?->properties, 'order_id'))->toBe((string) $order->getKey());
 });
