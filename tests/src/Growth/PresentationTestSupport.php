@@ -24,7 +24,7 @@ function growthPresentationCreateOwner(): User
 
 function growthPresentationCreateExperiment(User $owner, ExperimentStatus $status = ExperimentStatus::Active): Experiment
 {
-    return OwnerContext::withOwner($owner, function () use ($owner, $status): Experiment {
+    return OwnerContext::withOwner($owner, function () use ($status): Experiment {
         $trackedProperty = TrackedProperty::query()->create([
             'name' => 'Growth Presentation Property ' . Str::random(6),
             'slug' => 'growth-presentation-' . Str::lower(Str::random(8)),
