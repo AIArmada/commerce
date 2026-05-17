@@ -32,7 +32,7 @@ BLADE;
 
     $output = Blade::render(sprintf($template, mb_strtoupper((string) $assignment->variant->code)), [], true);
 
-    expect(trim($output))->toBe("<section data-growth='enabled'>\nA\n</section>");
+    expect(mb_trim($output))->toBe("<section data-growth='enabled'>\nA\n</section>");
 });
 
 it('falls back to the else branch when blade directives are disabled', function (): void {
@@ -58,7 +58,7 @@ BLADE;
 
     $output = Blade::render(sprintf($template, (string) $assignment->variant->code), [], true);
 
-    expect(trim($output))->toBe("<section data-growth='disabled'>\nC\n</section>");
+    expect(mb_trim($output))->toBe("<section data-growth='disabled'>\nC\n</section>");
 });
 
 it('supports nested blade control flow inside variant blocks', function (): void {
@@ -86,7 +86,7 @@ BLADE;
 
     $output = Blade::render(sprintf($template, (string) $assignment->variant->code), [], true);
 
-    expect(trim($output))->toContain('NESTED_OK')
+    expect(mb_trim($output))->toContain('NESTED_OK')
         ->and($output)->not->toContain('NESTED_FAIL')
         ->and($output)->not->toContain('OUTER_FAIL');
 });

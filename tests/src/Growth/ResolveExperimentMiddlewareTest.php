@@ -6,6 +6,7 @@ require_once __DIR__ . '/PresentationTestSupport.php';
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
+use AIArmada\Growth\Actions\ResolveReadableExperimentBySlug;
 use AIArmada\Growth\Http\Middleware\ResolveExperiment;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
@@ -113,7 +114,7 @@ it('throws a clear exception when experiment slug is missing', function (): void
     expect(fn (): Response => app(ResolveExperiment::class)->handle(
         $request,
         static fn (): Response => response('ok'),
-    ))->toThrow(\InvalidArgumentException::class, 'Growth experiment slug is required.');
+    ))->toThrow(InvalidArgumentException::class, 'Growth experiment slug is required.');
 });
 
 it('throws a clear exception for invalid anonymous id source configuration', function (): void {
@@ -130,7 +131,7 @@ it('throws a clear exception for invalid anonymous id source configuration', fun
         $request,
         static fn (): Response => response('ok'),
         $experiment->slug,
-    ))->toThrow(\InvalidArgumentException::class, 'Invalid growth http.experiment_middleware.anonymous_id_source [cookies]. Supported values: cookie, header.');
+    ))->toThrow(InvalidArgumentException::class, 'Invalid growth http.experiment_middleware.anonymous_id_source [cookies]. Supported values: cookie, header.');
 });
 
 it('throws a clear exception for invalid session identifier source configuration', function (): void {
@@ -147,7 +148,7 @@ it('throws a clear exception for invalid session identifier source configuration
         $request,
         static fn (): Response => response('ok'),
         $experiment->slug,
-    ))->toThrow(\InvalidArgumentException::class, 'Invalid growth http.experiment_middleware.session_identifier_source [sessions]. Supported values: laravel, cookie, header.');
+    ))->toThrow(InvalidArgumentException::class, 'Invalid growth http.experiment_middleware.session_identifier_source [sessions]. Supported values: laravel, cookie, header.');
 });
 
 it('throws a clear exception for empty anonymous id key when using cookie source', function (): void {
@@ -165,7 +166,7 @@ it('throws a clear exception for empty anonymous id key when using cookie source
         $request,
         static fn (): Response => response('ok'),
         $experiment->slug,
-    ))->toThrow(\InvalidArgumentException::class, 'Invalid growth http.experiment_middleware.anonymous_id_key. Value cannot be empty.');
+    ))->toThrow(InvalidArgumentException::class, 'Invalid growth http.experiment_middleware.anonymous_id_key. Value cannot be empty.');
 });
 
 it('throws a clear exception for empty session identifier key when using header source', function (): void {
@@ -183,13 +184,13 @@ it('throws a clear exception for empty session identifier key when using header 
         $request,
         static fn (): Response => response('ok'),
         $experiment->slug,
-    ))->toThrow(\InvalidArgumentException::class, 'Invalid growth http.experiment_middleware.session_identifier_key. Value cannot be empty.');
+    ))->toThrow(InvalidArgumentException::class, 'Invalid growth http.experiment_middleware.session_identifier_key. Value cannot be empty.');
 });
 
 it('returns authorization exception when slug is not readable and owner scopes are disabled', function (): void {
     config()->set('growth.features.owner.enabled', false);
     config()->set('signals.owner.enabled', false);
 
-    expect(fn (): mixed => app(\AIArmada\Growth\Actions\ResolveReadableExperimentBySlug::class)->handle('missing-slug'))
+    expect(fn (): mixed => app(ResolveReadableExperimentBySlug::class)->handle('missing-slug'))
         ->toThrow(AuthorizationException::class, 'Growth experiment is not accessible in the current owner scope.');
 });
