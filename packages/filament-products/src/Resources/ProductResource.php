@@ -30,6 +30,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\SpatieTagsInput;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -433,7 +434,9 @@ final class ProductResource extends Resource
                                     ->preload()
                                     ->searchable(),
 
-                                SpatieTagsInput::make('tags')
+                                (class_exists(SpatieTagsInput::class)
+                                    ? SpatieTagsInput::make('tags')
+                                    : TagsInput::make('tags'))
                                     ->label('Tags'),
                             ]),
                     ])
@@ -506,7 +509,9 @@ final class ProductResource extends Resource
                     ->boolean()
                     ->toggleable(),
 
-                SpatieTagsColumn::make('tags')
+                (class_exists(SpatieTagsColumn::class)
+                    ? SpatieTagsColumn::make('tags')
+                    : Tables\Columns\TextColumn::make('tags')->state(fn (Product $record): string => $record->tags->pluck('name')->implode(', ')))
                     ->label('Tags')
                     ->badge()
                     ->separator(',')
