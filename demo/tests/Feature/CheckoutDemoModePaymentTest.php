@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\Completed;
@@ -125,4 +126,61 @@ test('checkout falls back to demo payment simulation when CHIP is not configured
     expect($order)->not()->toBeNull();
 
     $finalResponse->assertRedirect(route('shop.order.success', ['order' => $orderId]));
+});
+
+test('adding the same product twice keeps the cart writable', function (): void {
+    /** @var User $owner */
+    $owner = User::factory()->create();
+
+    $product = OwnerContext::withOwner($owner, function (): Product {
+        return Product::create([
+            'name' => 'Demo Cart Item',
+            'sku' => 'DEMO-CART-001',
+            'price' => 10_00,
+            'currency' => 'MYR',
+            'status' => ProductStatus::Active,
+        ]);
+    });
+
+    OwnerContext::withOwner($owner, function () use ($product): void {
+        PriceList::create([
+            'name' => 'Retail',
+            'slug' => 'retail',
+            'currency' => 'MYR',
+            'is_default' => true,
+            'is_active' => true,
+        ]);
+
+        $priceList = PriceList::query()->firstOrFail();
+
+        Price::create([
+            'price_list_id' => $priceList->id,
+            'priceable_type' => $product->getMorphClass(),
+            'priceable_id' => $product->getKey(),
+            'amount' => 10_00,
+            'currency' => 'MYR',
+        ]);
+    });
+
+    /** @var TestCase $this */
+    $this->actingAs($owner);
+
+    Cart::clear();
+
+    $this->post(route('shop.cart.add'), [
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ])->assertRedirect();
+
+    $this->post(route('shop.cart.add'), [
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ])->assertRedirect();
+
+    $cartItem = Cart::get($product->id);
+
+    expect($cartItem)
+        ->not->toBeNull()
+        ->and($cartItem?->quantity)->toBe(2)
+        ->and(Cart::getTotalQuantity())->toBe(2);
 });
