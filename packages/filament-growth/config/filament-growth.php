@@ -6,6 +6,11 @@ return [
     /* Navigation */
     'navigation_group' => 'Growth',
 
+    /* Tables */
+    'tables' => [
+        'stats_experiment_limit' => 10,
+    ],
+
     /* Features */
     'features' => [
         'dashboard' => true,

@@ -6,11 +6,14 @@ namespace AIArmada\FilamentGrowth\Pages;
 
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource;
+use AIArmada\FilamentGrowth\Support\AccessibleGrowthRecords;
 use AIArmada\Growth\Actions\AggregateExperimentMetrics;
 use AIArmada\Growth\Enums\ExperimentModuleType;
 use AIArmada\Growth\Models\Experiment;
+use AIArmada\Signals\Models\TrackedProperty;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -18,27 +21,20 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Computed;
 use UnitEnum;
 
 final class ExperimentResultsPage extends Page implements HasForms
 {
-    use InteractsWithForms;
     use FormatsMoney {
         formatMoney as private formatMinorMoney;
     }
+    use InteractsWithForms;
 
-    public ?string $experimentId = null;
+    public mixed $experimentId = null;
 
-    public ?string $chartMetric = 'revenue_per_visitor';
-
-    /** @var array<string, mixed> */
-    public array $results = [];
-
-    /** @var array<int, array<string, mixed>> */
-    public array $variantComparison = [];
-
-    /** @var array<string, mixed>|null */
-    public ?array $winnerSummary = null;
+    public mixed $chartMetric = 'revenue_per_visitor';
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar';
 
@@ -63,12 +59,27 @@ final class ExperimentResultsPage extends Page implements HasForms
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) config('filament-growth.features.results', true);
+        return (bool) config('filament-growth.features.results', true)
+            && static::canAccess();
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null
+            && parent::canAccess()
+            && Gate::forUser($user)->allows('viewAny', Experiment::class);
     }
 
     public function mount(): void
     {
-        $this->experimentId = request()->query('experiment', $this->defaultExperimentId());
+        abort_unless(static::canAccess(), 403);
+
+        $requestedExperimentId = $this->normalizeRequestedExperimentId(request()->query('experiment'), null);
+
+        $this->experimentId = $requestedExperimentId ?? $this->defaultExperimentId();
+        $this->chartMetric = $this->normalizeChartMetric($this->chartMetric);
 
         $this->form->fill([
             'experimentId' => $this->experimentId,
@@ -108,36 +119,83 @@ final class ExperimentResultsPage extends Page implements HasForms
 
     public function loadResults(): void
     {
-        $experiment = $this->selectedExperiment();
+        $requestedExperimentId = $this->normalizeRequestedExperimentId($this->experimentId, null);
+        $this->chartMetric = $this->normalizeChartMetric($this->chartMetric);
 
-        if (! $experiment instanceof Experiment) {
-            $this->results = [];
-            $this->variantComparison = [];
-            $this->winnerSummary = null;
+        if ($requestedExperimentId === null) {
+            $this->experimentId = $this->defaultExperimentId();
 
             return;
         }
 
-        $results = app(AggregateExperimentMetrics::class)->handle($experiment);
+        $this->experimentId = $requestedExperimentId;
 
-        $this->results = $results;
-        $this->variantComparison = $this->buildVariantComparison($results['variants'], $this->chartMetric ?? 'revenue_per_visitor');
-        $this->winnerSummary = $this->buildWinnerSummary($results);
+        if ($this->experimentId === null) {
+            return;
+        }
+
+        if (! app(AccessibleGrowthRecords::class)->findExperiment($this->experimentId) instanceof Experiment) {
+            $this->experimentId = null;
+        }
     }
 
+    #[Computed]
     public function selectedExperiment(): ?Experiment
     {
-        if (! is_string($this->experimentId) || $this->experimentId === '') {
+        $experimentId = $this->normalizeRequestedExperimentId($this->experimentId, null);
+
+        if ($experimentId === null) {
             return null;
         }
 
-        $experiment = Experiment::query()
-            ->forOwner()
-            ->with(['trackedProperty'])
-            ->whereKey($this->experimentId)
-            ->first();
+        $experiment = app(AccessibleGrowthRecords::class)->findExperiment($experimentId);
 
-        return $experiment instanceof Experiment ? $experiment : null;
+        if (! $experiment instanceof Experiment) {
+            return null;
+        }
+
+        $experiment->setRelation(
+            'trackedProperty',
+            $this->findTrackedPropertyForExperiment($experiment),
+        );
+
+        return $experiment;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    #[Computed]
+    public function getResults(): array
+    {
+        $experiment = $this->selectedExperiment();
+
+        if (! $experiment instanceof Experiment) {
+            return [];
+        }
+
+        return app(AggregateExperimentMetrics::class)->handle($experiment);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    #[Computed]
+    public function getVariantComparison(): array
+    {
+        /** @var array<int, array<string, float|int|string|null>> $variants */
+        $variants = $this->getResults()['variants'] ?? [];
+
+        return $this->buildVariantComparison($variants, $this->normalizeChartMetric($this->chartMetric));
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    #[Computed]
+    public function getWinnerSummary(): ?array
+    {
+        return $this->buildWinnerSummary($this->getResults());
     }
 
     public function formatMoney(int $minor): string
@@ -163,16 +221,22 @@ final class ExperimentResultsPage extends Page implements HasForms
 
     protected function getHeaderActions(): array
     {
-        return [
-            Action::make('manageExperiments')
+        $actions = [];
+
+        if (config('filament-growth.features.experiments', true)) {
+            $actions[] = Action::make('manageExperiments')
                 ->label('Manage Experiments')
                 ->icon('heroicon-o-beaker')
-                ->url(fn (): string => ExperimentResource::getUrl('index')),
-            Action::make('refreshResults')
-                ->label('Refresh')
-                ->icon('heroicon-o-arrow-path')
-                ->action(fn (): null => $this->loadResults()),
-        ];
+                ->visible(fn (): bool => ExperimentResource::canViewAny())
+                ->url(fn (): string => ExperimentResource::getUrl('index'));
+        }
+
+        $actions[] = Action::make('refreshResults')
+            ->label('Refresh')
+            ->icon('heroicon-o-arrow-path')
+            ->action(fn (): null => $this->loadResults());
+
+        return $actions;
     }
 
     /**
@@ -180,11 +244,16 @@ final class ExperimentResultsPage extends Page implements HasForms
      */
     public function getViewData(): array
     {
+        $results = $this->getResults();
+        $chartMetric = $this->normalizeChartMetric($this->chartMetric);
+
         return [
             'experiment' => $this->selectedExperiment(),
-            'winnerSummary' => $this->winnerSummary,
-            'variantComparison' => $this->variantComparison,
-            'chartMetricLabel' => $this->metricLabel($this->chartMetric ?? 'revenue_per_visitor'),
+            'results' => $results,
+            'winnerSummary' => $this->getWinnerSummary(),
+            'variantComparison' => $this->getVariantComparison(),
+            'winnerMetricLabel' => $this->metricLabel((string) ($results['winner_metric'] ?? 'revenue_per_visitor')),
+            'chartMetricLabel' => $this->metricLabel($chartMetric),
         ];
     }
 
@@ -193,8 +262,8 @@ final class ExperimentResultsPage extends Page implements HasForms
      */
     private function experimentOptions(): array
     {
-        return Experiment::query()
-            ->forOwner()
+        return app(AccessibleGrowthRecords::class)
+            ->experiments(Experiment::query())
             ->orderByDesc('created_at')
             ->get(['id', 'name'])
             ->mapWithKeys(fn (Experiment $experiment): array => [(string) $experiment->getKey() => (string) $experiment->name])
@@ -217,12 +286,38 @@ final class ExperimentResultsPage extends Page implements HasForms
 
     private function defaultExperimentId(): ?string
     {
-        $experimentId = Experiment::query()
-            ->forOwner()
+        $experimentId = app(AccessibleGrowthRecords::class)
+            ->experiments(Experiment::query())
             ->orderByDesc('created_at')
             ->value('id');
 
         return is_scalar($experimentId) ? (string) $experimentId : null;
+    }
+
+    private function normalizeRequestedExperimentId(mixed $requestedExperimentId, ?string $fallback): ?string
+    {
+        if (is_scalar($requestedExperimentId)) {
+            $normalizedExperimentId = mb_trim((string) $requestedExperimentId);
+
+            if ($normalizedExperimentId !== '') {
+                return $normalizedExperimentId;
+            }
+        }
+
+        return $fallback;
+    }
+
+    private function normalizeChartMetric(mixed $chartMetric): string
+    {
+        if (is_scalar($chartMetric)) {
+            $normalizedChartMetric = mb_trim((string) $chartMetric);
+
+            if (array_key_exists($normalizedChartMetric, $this->metricOptions())) {
+                return $normalizedChartMetric;
+            }
+        }
+
+        return 'revenue_per_visitor';
     }
 
     /**
@@ -313,6 +408,11 @@ final class ExperimentResultsPage extends Page implements HasForms
 
     private function currentCurrency(): string
     {
-        return (string) ($this->results['currency'] ?? $this->selectedExperiment()?->trackedProperty?->currency ?? config('signals.defaults.currency', 'MYR'));
+        return (string) ($this->getResults()['currency'] ?? $this->selectedExperiment()?->trackedProperty?->currency ?? config('signals.defaults.currency', 'MYR'));
+    }
+
+    private function findTrackedPropertyForExperiment(Experiment $experiment): ?TrackedProperty
+    {
+        return app(AccessibleGrowthRecords::class)->findTrackedPropertyForExperiment($experiment);
     }
 }

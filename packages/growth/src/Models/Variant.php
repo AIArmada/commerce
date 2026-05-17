@@ -6,10 +6,11 @@ namespace AIArmada\Growth\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Growth\Actions\ResolveAccessibleExperiment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -33,9 +34,9 @@ use InvalidArgumentException;
  */
 final class Variant extends Model
 {
+    use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
-    use HasFactory;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'growth.features.owner';
@@ -99,7 +100,19 @@ final class Variant extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (Variant $variant): void {
+            $variant->assertExperimentConsistency();
+        });
+
         static::saving(function (Variant $variant): void {
+            if (! $variant->exists) {
+                return;
+            }
+
+            if ($variant->isDirty('experiment_id')) {
+                throw new InvalidArgumentException('Variant experiment_id cannot be changed after creation.');
+            }
+
             $variant->assertExperimentConsistency();
         });
 
@@ -110,14 +123,10 @@ final class Variant extends Model
 
     private function assertExperimentConsistency(): void
     {
-        $experiment = Experiment::query()
-            ->withoutOwnerScope()
-            ->whereKey($this->experiment_id)
-            ->first();
-
-        if (! $experiment instanceof Experiment) {
-            throw new InvalidArgumentException('Variant experiment could not be resolved.');
-        }
+        $experiment = app(ResolveAccessibleExperiment::class)->handle(
+            (string) $this->experiment_id,
+            'Variant experiment is not accessible in the current owner scope.',
+        );
 
         if (! $this->exists && $this->owner_type === null && $this->owner_id === null) {
             $this->owner_type = $experiment->owner_type;
