@@ -8,6 +8,14 @@
     <title>{{ $title ?? 'AIArmada Shop' }} - Commerce Demo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @if(isset($signalsWriteKey) && is_string($signalsWriteKey) && $signalsWriteKey !== '')
+        <script
+            defer
+            src="{{ url('/api/signals/tracker.js') }}"
+            data-write-key="{{ $signalsWriteKey }}"
+            data-enable-geolocation="true"
+        ></script>
+    @endif
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <style>
@@ -156,6 +164,10 @@
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">vouchers</span>
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">inventory</span>
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">affiliates</span>
+                        <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">checkout</span>
+                        <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">signals</span>
+                        <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">growth</span>
+                        <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">cashier</span>
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">chip</span>
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">jnt</span>
                     </div>

@@ -40,7 +40,7 @@ A Filament admin panel integration for the AIArmada Docs package. It exposes res
 
 - **Aging Report** - Accounts receivable aging by bucket
 - **Pending Approvals** - Approval queue for current user
-- **Stats Widget** - Total, draft, pending, paid, overdue counts
+- **Stats Widget** - Total, draft, pending/sent, paid, overdue counts
 - **Revenue Chart** - Revenue over time
 - **Status Breakdown** - Visual status distribution
 
@@ -70,11 +70,13 @@ A Filament admin panel integration for the AIArmada Docs package. It exposes res
 
 | Widget | Purpose |
 |--------|---------|
-| `DocStatsWidget` | Overview stats (total, draft, pending, paid, overdue) |
+| `DocStatsWidget` | Overview stats (total, draft, pending/sent, paid, overdue) |
 | `QuickActionsWidget` | New invoice, quotation, credit note, receipt, delivery note, proforma invoice, and aging report shortcuts |
 | `RecentDocumentsWidget` | Latest document list |
 | `RevenueChartWidget` | Paid revenue over the last 30 days |
 | `StatusBreakdownWidget` | Status distribution doughnut chart |
+
+The Filament package uses the docs state-cast status values consistently across tables, filters, badges, widgets, and exports so the UI matches the underlying `AIArmada\Docs\States\DocStatus` behavior.
 
 ## Relation Managers
 

@@ -15,7 +15,7 @@ it('shows only orders for the current owner context', function (): void {
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();
 
-    $orderA = OwnerContext::withOwner($ownerA, function (): Order {
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
         $order = Order::create([
             'order_number' => 'ORD-OWNER-A-0001',
             'status' => Created::class,
@@ -25,6 +25,8 @@ it('shows only orders for the current owner context', function (): void {
             'tax_total' => 0,
             'grand_total' => 10_000,
             'currency' => 'MYR',
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
         ]);
 
         OrderItem::create([
@@ -41,7 +43,7 @@ it('shows only orders for the current owner context', function (): void {
         return $order;
     });
 
-    $orderB = OwnerContext::withOwner($ownerB, function (): Order {
+    $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
         $order = Order::create([
             'order_number' => 'ORD-OWNER-B-0001',
             'status' => Created::class,
@@ -51,6 +53,8 @@ it('shows only orders for the current owner context', function (): void {
             'tax_total' => 0,
             'grand_total' => 20_000,
             'currency' => 'MYR',
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => (string) $ownerB->getKey(),
         ]);
 
         OrderItem::create([
@@ -67,8 +71,9 @@ it('shows only orders for the current owner context', function (): void {
         return $order;
     });
 
-    OwnerContext::withOwner($ownerA, function () use ($orderA, $orderB): void {
-        $this->get('/my-orders')
+    OwnerContext::withOwner($ownerA, function () use ($ownerA, $orderA, $orderB): void {
+        $this->withSession(['demo_owner_id' => (string) $ownerA->getKey()])
+            ->get('/my-orders')
             ->assertOk()
             ->assertSee($orderA->order_number)
             ->assertDontSee($orderB->order_number);
@@ -79,7 +84,7 @@ it('returns 404 when viewing another owner\'s order success page', function (): 
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();
 
-    $orderA = OwnerContext::withOwner($ownerA, function (): Order {
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
         $order = Order::create([
             'order_number' => 'ORD-OWNER-A-DETAILS',
             'status' => Created::class,
@@ -89,6 +94,8 @@ it('returns 404 when viewing another owner\'s order success page', function (): 
             'tax_total' => 0,
             'grand_total' => 30_000,
             'currency' => 'MYR',
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
         ]);
 
         OrderItem::create([
@@ -105,8 +112,13 @@ it('returns 404 when viewing another owner\'s order success page', function (): 
         return $order;
     });
 
-    OwnerContext::withOwner($ownerB, function () use ($orderA): void {
-        $this->get(route('shop.order.success', $orderA))
+    OwnerContext::withOwner($ownerB, function () use ($ownerA, $ownerB, $orderA): void {
+        $this->withSession(['demo_owner_id' => (string) $ownerB->getKey()])
+            ->get(route('shop.order.success', $orderA))
             ->assertNotFound();
+
+        $this->withSession(['demo_owner_id' => (string) $ownerA->getKey()])
+            ->get(route('shop.order.success', $orderA))
+            ->assertOk();
     });
 });

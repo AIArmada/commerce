@@ -4,8 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Widgets;
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\Cancelled;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\PartiallyPaid;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Refunded;
+use AIArmada\Docs\States\Sent;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Widgets\ChartWidget;
 
@@ -19,15 +27,16 @@ final class StatusBreakdownWidget extends ChartWidget
     {
         $docs = DocsOwnerScope::applyToDocs(Doc::query());
 
+        /** @var array<int, class-string<DocStatus>> $statuses */
         $statuses = [
-            DocStatus::DRAFT,
-            DocStatus::PENDING,
-            DocStatus::SENT,
-            DocStatus::PAID,
-            DocStatus::PARTIALLY_PAID,
-            DocStatus::OVERDUE,
-            DocStatus::CANCELLED,
-            DocStatus::REFUNDED,
+            Draft::class,
+            Pending::class,
+            Sent::class,
+            Paid::class,
+            PartiallyPaid::class,
+            Overdue::class,
+            Cancelled::class,
+            Refunded::class,
         ];
 
         $labels = [];
@@ -35,11 +44,11 @@ final class StatusBreakdownWidget extends ChartWidget
         $colors = [];
 
         foreach ($statuses as $status) {
-            $count = (clone $docs)->where('status', $status)->count();
+            $count = (clone $docs)->where('status', DocStatus::normalize($status))->count();
             if ($count > 0) {
-                $labels[] = $status->label();
+                $labels[] = DocStatus::labelFor($status);
                 $data[] = $count;
-                $colors[] = $this->getColorHex($status->color());
+                $colors[] = $this->getColorHex(DocStatus::colorFor($status));
             }
         }
 

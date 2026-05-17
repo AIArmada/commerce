@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Widgets;
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -18,15 +23,15 @@ final class DocStatsWidget extends BaseWidget
         $docs = DocsOwnerScope::applyToDocs(Doc::query());
 
         $totalDocs = (clone $docs)->count();
-        $draftCount = (clone $docs)->where('status', DocStatus::DRAFT)->count();
-        $pendingCount = (clone $docs)->whereIn('status', [DocStatus::PENDING, DocStatus::SENT])->count();
-        $paidCount = (clone $docs)->where('status', DocStatus::PAID)->count();
-        $overdueCount = (clone $docs)->where('status', DocStatus::OVERDUE)->count();
+        $draftCount = (clone $docs)->where('status', DocStatus::normalize(Draft::class))->count();
+        $pendingCount = (clone $docs)->whereIn('status', [DocStatus::normalize(Pending::class), DocStatus::normalize(Sent::class)])->count();
+        $paidCount = (clone $docs)->where('status', DocStatus::normalize(Paid::class))->count();
+        $overdueCount = (clone $docs)->where('status', DocStatus::normalize(Overdue::class))->count();
 
-        $totalRevenue = (clone $docs)->where('status', DocStatus::PAID)->sum('total');
+        $totalRevenue = (clone $docs)->where('status', DocStatus::normalize(Paid::class))->sum('total');
 
         $pendingRevenue = (clone $docs)
-            ->whereIn('status', [DocStatus::PENDING, DocStatus::SENT, DocStatus::OVERDUE])
+            ->whereIn('status', [DocStatus::normalize(Pending::class), DocStatus::normalize(Sent::class), DocStatus::normalize(Overdue::class)])
             ->sum('total');
 
         return [

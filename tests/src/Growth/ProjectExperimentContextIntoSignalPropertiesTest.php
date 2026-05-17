@@ -13,6 +13,7 @@ use AIArmada\Orders\Models\Order;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -113,6 +114,37 @@ it('projects a single experiment context into checkout properties', function ():
         ->and($properties['experiment_contexts'])->toHaveCount(1)
         ->and(data_get($properties, 'experiment_contexts.0.experiment_id'))->toBe((string) $experiment->getKey())
         ->and(data_get($properties, 'experiment_contexts.0.variant_id'))->toBe((string) $variant->getKey());
+});
+
+it('does not throw when strict missing-attribute protection is enabled for checkout sessions without metadata', function (): void {
+    $previous = Model::preventsAccessingMissingAttributes();
+    Model::preventAccessingMissingAttributes(true);
+
+    try {
+        $owner = growthProjectionOwner();
+        $trackedProperty = growthProjectionTrackedProperty($owner);
+        [$experiment, $variant] = growthProjectionExperiment($owner, $trackedProperty, 'sales_page_test', 'strict');
+        $identity = growthProjectionIdentity($owner, $trackedProperty, 'customer-projection-strict', 'cart-projection-strict');
+        $assignment = growthProjectionAssignment($owner, $experiment, $variant, $identity, 'cart-projection-strict');
+
+        $checkoutSession = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::query()->create([
+            'cart_id' => 'cart-projection-strict',
+            'customer_id' => 'customer-projection-strict',
+            'grand_total' => 19900,
+            'currency' => 'MYR',
+        ]));
+
+        $properties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+            'checkout_session_id' => $checkoutSession->getKey(),
+        ]));
+
+        expect($properties['experiment_id'])->toBe((string) $experiment->getKey())
+            ->and($properties['variant_id'])->toBe((string) $variant->getKey())
+            ->and($properties['assignment_id'])->toBe((string) $assignment->getKey())
+            ->and($properties['experiment_contexts'])->toHaveCount(1);
+    } finally {
+        Model::preventAccessingMissingAttributes($previous);
+    }
 });
 
 it('projects multiple experiment contexts into order properties when the same buyer participates in multiple tests', function (): void {

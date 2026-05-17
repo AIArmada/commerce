@@ -9,9 +9,15 @@ use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
 use AIArmada\FilamentChip\Widgets\ChipStatsWidget;
 use AIArmada\FilamentChip\Widgets\RecentTransactionsWidget;
+use AIArmada\FilamentDocs\Widgets\DocStatsWidget;
+use AIArmada\FilamentGrowth\Widgets\ExperimentWinnersWidget;
+use AIArmada\FilamentGrowth\Widgets\GrowthStatsWidget;
 use AIArmada\FilamentInventory\Widgets\InventoryStatsWidget;
 use AIArmada\FilamentInventory\Widgets\LowInventoryAlertsWidget;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
+use AIArmada\FilamentPromotions\Widgets\PromotionStatsWidget;
+use AIArmada\FilamentSignals\Widgets\EventTrendWidget;
+use AIArmada\FilamentSignals\Widgets\SignalsStatsWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherStatsWidget;
 use App\Filament\Widgets\LatestOrders;
 use App\Filament\Widgets\RevenueChart;
@@ -34,11 +40,11 @@ use Filament\Support\Icons\Heroicon;
  */
 final class Dashboard extends BaseDashboard
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::Home;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::Home;
 
     protected static ?int $navigationSort = -2;
 
-    protected int|string|array $columns = [
+    protected int | string | array $columns = [
         'default' => 1,
         'sm' => 2,
         'md' => 3,
@@ -59,7 +65,7 @@ final class Dashboard extends BaseDashboard
 
     public function getSubheading(): ?string
     {
-        return 'Real-time overview of your entire commerce ecosystem — Cart • Vouchers • Inventory • Affiliates • Payments • Shipping';
+        return 'Real-time overview of your commerce ecosystem — Cart • Checkout • Signals • Growth • Payments • Shipping';
     }
 
     public function getWidgets(): array
@@ -78,15 +84,25 @@ final class Dashboard extends BaseDashboard
             LowInventoryAlertsWidget::class,
 
             // ============================================
-            // ROW 4: VOUCHERS & MARKETING
+            // ROW 4: VOUCHERS, PROMOTIONS & DOCS
             // ============================================
             VoucherStatsWidget::class,
+            PromotionStatsWidget::class,
+            DocStatsWidget::class,
+            SignalsStatsWidget::class,
+            EventTrendWidget::class,
 
             // ============================================
             // ROW 5: AFFILIATES & PARTNERS
             // ============================================
             AffiliateStatsWidget::class,
             TopAffiliates::class,
+
+            // ============================================
+            // ROW 5B: GROWTH & EXPERIMENTATION
+            // ============================================
+            GrowthStatsWidget::class,
+            ExperimentWinnersWidget::class,
 
             // ============================================
             // ROW 6: PAYMENTS (CHIP)

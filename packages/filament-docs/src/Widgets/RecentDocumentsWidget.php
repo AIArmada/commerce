@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Widgets;
 
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\DocStatus;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
@@ -53,7 +54,7 @@ final class RecentDocumentsWidget extends BaseWidget
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn ($state) => $state->color()),
+                    ->color(fn (DocStatus $state): string => $state->color()),
 
                 TextColumn::make('issue_date')
                     ->date()

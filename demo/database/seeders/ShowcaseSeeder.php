@@ -14,12 +14,12 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\Pending as PendingAffiliate;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\Expired;
-use AIArmada\Vouchers\States\Paused;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\States\Paused;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -47,6 +47,8 @@ final class ShowcaseSeeder extends Seeder
         $this->call(ProductShowcaseSeeder::class);
         $this->call(EcommerceFlowSeeder::class);
         $this->call(PricingShowcaseSeeder::class);
+        $this->call(PromotionsShowcaseSeeder::class);
+        $this->call(DocsShowcaseSeeder::class);
 
         // Existing showcase components
         $this->seedVouchers();
@@ -277,7 +279,7 @@ final class ShowcaseSeeder extends Seeder
             }
         }
 
-        $this->command->info('   ✓ Created '.count($allVouchers).' voucher campaigns');
+        $this->command->info('   ✓ Created ' . count($allVouchers) . ' voucher campaigns');
     }
 
     private function createVoucherUsageHistory(Voucher $voucher, int $count): void
@@ -294,7 +296,7 @@ final class ShowcaseSeeder extends Seeder
                 'channel' => fake()->randomElement(['automatic', 'manual', 'api']),
                 'used_at' => now()->subDays(rand(1, 60)),
                 'metadata' => [
-                    'order_id' => 'ORD-'.Str::upper(Str::random(8)),
+                    'order_id' => 'ORD-' . Str::upper(Str::random(8)),
                     'source' => fake()->randomElement(['checkout', 'cart', 'api']),
                 ],
             ]);
@@ -514,7 +516,7 @@ final class ShowcaseSeeder extends Seeder
         // Create attributions and conversions for active affiliates
         $this->createAffiliateActivity($allAffiliates);
 
-        $this->command->info('   ✓ Created '.(count($topInfluencers) + count($businessPartners) + count($regularAffiliates) + count($pendingAffiliates)).' affiliates');
+        $this->command->info('   ✓ Created ' . (count($topInfluencers) + count($businessPartners) + count($regularAffiliates) + count($pendingAffiliates)) . ' affiliates');
     }
 
     /**
@@ -547,10 +549,10 @@ final class ShowcaseSeeder extends Seeder
                         '/sale',
                     ]),
                     'referrer_url' => fake()->randomElement([
-                        'https://youtube.com/watch?v='.Str::random(11),
-                        'https://tiktok.com/@'.Str::random(8),
-                        'https://instagram.com/p/'.Str::random(11),
-                        'https://facebook.com/posts/'.rand(1000000, 9999999),
+                        'https://youtube.com/watch?v=' . Str::random(11),
+                        'https://tiktok.com/@' . Str::random(8),
+                        'https://instagram.com/p/' . Str::random(11),
+                        'https://facebook.com/posts/' . rand(1000000, 9999999),
                         null,
                     ]),
                     'source' => $affiliate->code,
@@ -592,7 +594,7 @@ final class ShowcaseSeeder extends Seeder
                 AffiliateConversion::create([
                     'affiliate_id' => $affiliate->id,
                     'affiliate_code' => $affiliate->code,
-                    'order_reference' => 'ORD-'.Str::upper(Str::random(8)),
+                    'order_reference' => 'ORD-' . Str::upper(Str::random(8)),
                     'subtotal_minor' => $orderValue,
                     'total_minor' => $orderValue,
                     'commission_minor' => $commissionAmount,

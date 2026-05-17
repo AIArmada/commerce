@@ -9,6 +9,7 @@ use AIArmada\FilamentInventory\Resources\InventoryLevelResource;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -20,14 +21,14 @@ test('inventory and customers filament navigation badges are owner-scoped (no cr
     config()->set('customers.owner.enabled', true);
     config()->set('customers.owner.include_global', false);
 
-    $ownerA = \App\Models\User::factory()->create();
-    $ownerB = \App\Models\User::factory()->create();
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
 
     OwnerContext::withOwner($ownerA, function () use ($ownerA): void {
         $locationA = InventoryLocation::create([
             'name' => 'Warehouse A',
             'code' => 'WH-A',
-            'address' => '123 A St',
+            'line1' => '123 A St',
             'is_active' => true,
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
@@ -57,7 +58,7 @@ test('inventory and customers filament navigation badges are owner-scoped (no cr
         $locationB = InventoryLocation::create([
             'name' => 'Warehouse B',
             'code' => 'WH-B',
-            'address' => '456 B St',
+            'line1' => '456 B St',
             'is_active' => true,
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => (string) $ownerB->getKey(),

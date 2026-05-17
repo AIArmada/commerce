@@ -31,6 +31,19 @@ php artisan cache:clear
 composer show aiarmada/promotions
 ```
 
+4. If `aiarmada/filament-promotions` is installed, Promotions are intentionally provided by the dedicated promotions plugin instead of under Pricing:
+```bash
+composer show aiarmada/filament-promotions
+```
+
+### Promotions Missing Under Pricing
+
+**Symptom**: Price Lists are visible, but Promotions do not appear under the Pricing navigation.
+
+**Cause**: `aiarmada/filament-promotions` is installed. Filament Pricing suppresses its fallback `PromotionResource` so you do not get duplicate promotions navigation.
+
+**Expected behavior**: use the dedicated promotions navigation/resource provided by `aiarmada/filament-promotions`.
+
 ### Price Simulator Not Available
 
 **Symptom**: Price Simulator page doesn't appear.

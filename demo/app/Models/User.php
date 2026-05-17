@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use AIArmada\Cashier\Billable as UnifiedBillable;
 use AIArmada\CashierChip\Billable as ChipBillable;
 use AIArmada\Orders\Models\Order;
 use Filament\Models\Contracts\FilamentUser;
@@ -35,6 +36,10 @@ final class User extends Authenticatable implements FilamentUser
     use HasRoles;
     use HasUuids;
     use Notifiable;
+    use UnifiedBillable {
+        UnifiedBillable::onGenericTrial insteadof ChipBillable;
+        ChipBillable::onGenericTrial as onChipGenericTrial;
+    }
 
     /**
      * The attributes that are mass assignable.

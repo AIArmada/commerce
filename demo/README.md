@@ -1,59 +1,99 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AIArmada Commerce Demo
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This demo application is the working showcase for the packages required by `demo/composer.json`. It combines a storefront, admin panel, seeded showcase data, and owner-scoped feature tests so the ecosystem can be exercised as a real app instead of just being installed.
 
-## About Laravel
+## What the demo showcases
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Storefront flows
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- catalog browsing and product detail pages
+- cart management and voucher application
+- checkout with demo-mode payments and CHIP-backed flows
+- order success, payment callbacks, and “My Orders”
+- affiliate referral tracking and shipment tracking
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Admin surfaces
 
-## Learning Laravel
+- products, pricing, promotions, inventory, orders, customers, affiliates, shipping, tax, authz, and billing integrations
+- signals and growth dashboards
+- billing documents and approvals via `aiarmada/docs` + `aiarmada/filament-docs`
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Promotions and docs showcase
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The demo now explicitly surfaces promotions and docs as first-class showcase features:
 
-## Laravel Sponsors
+- `demo/app/Providers/Filament/AdminPanelProvider.php` registers both `FilamentPromotionsPlugin` and `FilamentDocsPlugin`
+- `demo/app/Filament/Pages/Dashboard.php` includes `PromotionStatsWidget` and `DocStatsWidget`
+- `demo/database/seeders/PromotionsShowcaseSeeder.php` seeds real promotions
+- `demo/database/seeders/DocsShowcaseSeeder.php` seeds templates, sequences, documents, status history, and approvals
+- `demo/tests/Feature/FilamentPromotionsAndDocsShowcaseTest.php` verifies both admin resources load with seeded records
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Bootstrapping the demo
 
-### Premium Partners
+From the `demo/` directory:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+composer setup
+```
 
-## Contributing
+That script installs dependencies, prepares `.env`, runs migrations, seeds the demo data, installs front-end assets, and builds the demo UI.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+For local iteration, the demo also provides:
 
-## Code of Conduct
+```bash
+composer dev
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Seeded data
 
-## Security Vulnerabilities
+`DatabaseSeeder` builds the demo in this order:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1. permissions and demo users
+2. categories and products
+3. inventory and orders
+4. showcase data (pricing, vouchers, affiliates, promotions, docs)
+5. J&T shipping data
+6. billing/subscription examples
+7. analytics, signals, and growth experiments
 
-## License
+The main showcase seeders to know about are:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- `ShowcaseSeeder`
+- `PromotionsShowcaseSeeder`
+- `DocsShowcaseSeeder`
+- `BillingShowcaseSeeder`
+- `AnalyticsShowcaseSeeder`
+
+## Demo accounts
+
+All seeded accounts use the password `password`:
+
+- `admin@commerce.demo` — super admin
+- `manager@commerce.demo` — operations manager
+- `warehouse@commerce.demo` — inventory manager
+- `marketing@commerce.demo` — marketing manager
+- `finance@commerce.demo` — finance manager
+- `support@commerce.demo` — customer support
+- `viewer@commerce.demo` — analyst (read-only)
+
+## Useful routes
+
+- `/` — storefront home
+- `/products` — product catalog
+- `/cart` — cart flow
+- `/checkout` — checkout flow
+- `/tracking` — shipment tracking
+- `/my-orders` — order history
+- `/admin` — Filament admin panel
+- `/demo/owner/{user}` — owner switcher for owner-scoping demos
+
+## Verification
+
+The showcase is covered by targeted feature tests, including:
+
+- `tests/Feature/FilamentAdminDashboardSmokeTest.php`
+- `tests/Feature/FilamentPromotionsAndDocsShowcaseTest.php`
+- `tests/Feature/CheckoutIntegrationTest.php`
+- `tests/Feature/PaymentSuccessWebhookSimulationTest.php`
+
+If you change demo package wiring, seeders, or dashboard widgets, update those tests at the same time.

@@ -190,7 +190,7 @@ DocTemplate::create([
 
 2. **Use service method for full tracking**
    ```php
-   $docService->updateDocStatus($doc, DocStatus::PAID, 'Manual override');
+   $docService->updateStatus($doc, \AIArmada\Docs\States\Paid::class, 'Manual override');
    ```
 
 ### Status History Not Recording

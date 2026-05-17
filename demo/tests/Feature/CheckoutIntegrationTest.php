@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Builders\PurchaseBuilder;
+use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Facades\Chip;
-use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Models\Order;
@@ -18,7 +18,10 @@ use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Tests\TestCase;
 
 uses(RefreshDatabase::class);
 
@@ -30,11 +33,11 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
     config()->set('chip.collect.api_key', 'test-api-key');
     config()->set('chip.collect.brand_id', 'test-brand-id');
 
-    /** @var \App\Models\User $ownerA */
-    $ownerA = \App\Models\User::factory()->create();
+    /** @var User $ownerA */
+    $ownerA = User::factory()->create();
 
-    /** @var \App\Models\User $ownerB */
-    $ownerB = \App\Models\User::factory()->create();
+    /** @var User $ownerB */
+    $ownerB = User::factory()->create();
 
     $productA = OwnerContext::withOwner($ownerA, function (): Product {
         return Product::create([
@@ -98,7 +101,7 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
     });
 
     $purchase = PurchaseData::from([
-        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'id' => (string) Str::uuid(),
         'checkout_url' => 'https://chip.test/checkout',
         'purchase' => [
             'total' => 0,
@@ -108,12 +111,11 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
         'client' => [],
     ]);
 
-    $chipCollectService = \Mockery::mock(ChipCollectService::class);
-    $chipCollectService->shouldReceive('createPurchase')->andReturn($purchase);
+    Chip::shouldReceive('createPurchase')
+        ->once()
+        ->andReturn($purchase);
 
-    Chip::shouldReceive('purchase')->andReturn(new PurchaseBuilder($chipCollectService));
-
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs($ownerA);
 
     $this->post(route('shop.cart.add'), [
@@ -143,28 +145,23 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
     $customerA = OwnerContext::withOwner($ownerA, fn () => Customer::query()->where('email', 'buyer-a@example.com')->first());
     expect($customerA)->not()->toBeNull();
 
-    $orderA = OwnerContext::withOwner($ownerA, fn () => Order::query()->latest('created_at')->first());
-    expect($orderA)->not()->toBeNull();
+    $checkoutSession = OwnerContext::withOwner($ownerA, fn () => CheckoutSession::query()->latest('created_at')->first());
 
-    $audit = \OwenIt\Auditing\Models\Audit::query()
-        ->where('auditable_type', $orderA->getMorphClass())
-        ->where('auditable_id', $orderA->id)
-        ->latest('id')
-        ->first();
-    expect($audit)->not()->toBeNull();
+    expect($checkoutSession)->not()->toBeNull()
+        ->and($checkoutSession?->status instanceof AwaitingPayment)->toBeTrue()
+        ->and($checkoutSession?->payment_redirect_url)->toBe('https://chip.test/checkout')
+        ->and($checkoutSession?->subtotal)->toBe(800_00)
+        ->and($checkoutSession?->tax_total)->toBe(48_00)
+        ->and($checkoutSession?->grand_total)->toBe(848_00)
+        ->and($checkoutSession?->customer_id)->toBe($customerA?->id)
+        ->and($checkoutSession?->order_id)->toBeNull();
 
-    $tags = array_filter(array_map('trim', explode(',', (string) $audit->tags)));
-    expect($tags)->toContain('commerce');
-    expect($tags)->toContain('orders');
+    $pendingOrder = OwnerContext::withOwner($ownerA, fn () => Order::query()->latest('created_at')->first());
 
-    expect($orderA->subtotal)->toBe(800_00);
-    expect($orderA->tax_total)->toBe(48_00);
-    expect($orderA->grand_total)->toBe(848_00);
-    expect($orderA->customer_type)->toBe($customerA->getMorphClass());
-    expect($orderA->customer_id)->toBe($customerA->id);
+    expect($pendingOrder)->toBeNull();
 
-    OwnerContext::withOwner($ownerB, function () use ($orderA): void {
-        $shouldBeNull = Order::query()->whereKey($orderA->id)->first();
+    OwnerContext::withOwner($ownerB, function () use ($checkoutSession): void {
+        $shouldBeNull = CheckoutSession::query()->whereKey($checkoutSession?->id)->first();
         expect($shouldBeNull)->toBeNull();
     });
 });
@@ -173,8 +170,8 @@ test('checkout builds CHIP purchase lines from exact order math without cart-lev
     config()->set('chip.collect.api_key', 'test-api-key');
     config()->set('chip.collect.brand_id', 'test-brand-id');
 
-    /** @var \App\Models\User $owner */
-    $owner = \App\Models\User::factory()->create();
+    /** @var User $owner */
+    $owner = User::factory()->create();
 
     $product = OwnerContext::withOwner($owner, function (): Product {
         return Product::create([
@@ -234,7 +231,7 @@ test('checkout builds CHIP purchase lines from exact order math without cart-lev
     $capturedPurchasePayload = [];
 
     $purchase = PurchaseData::from([
-        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'id' => (string) Str::uuid(),
         'checkout_url' => 'https://chip.test/checkout',
         'purchase' => [
             'total' => 0,
@@ -244,8 +241,7 @@ test('checkout builds CHIP purchase lines from exact order math without cart-lev
         'client' => [],
     ]);
 
-    $chipCollectService = \Mockery::mock(ChipCollectService::class);
-    $chipCollectService->shouldReceive('createPurchase')
+    Chip::shouldReceive('createPurchase')
         ->once()
         ->andReturnUsing(function (array $data) use (&$capturedPurchasePayload, $purchase) {
             $capturedPurchasePayload = $data;
@@ -253,9 +249,7 @@ test('checkout builds CHIP purchase lines from exact order math without cart-lev
             return $purchase;
         });
 
-    Chip::shouldReceive('purchase')->andReturn(new PurchaseBuilder($chipCollectService));
-
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs($owner);
 
     $this->post(route('shop.cart.add'), [
@@ -281,22 +275,35 @@ test('checkout builds CHIP purchase lines from exact order math without cart-lev
         'payment_method' => 'fpx',
     ])->assertRedirect('https://chip.test/checkout');
 
-    $order = OwnerContext::withOwner($owner, fn () => Order::query()->latest('created_at')->first());
+    $checkoutSession = OwnerContext::withOwner($owner, fn () => CheckoutSession::query()->latest('created_at')->first());
 
-    expect($order)->not()->toBeNull();
-    expect($order->discount_total)->toBe(3_000);
-    expect($order->tax_total)->toBe(1_020);
-    expect($order->grand_total)->toBe(18_020);
+    expect($checkoutSession)->not()->toBeNull()
+        ->and($checkoutSession?->status instanceof AwaitingPayment)->toBeTrue()
+        ->and($checkoutSession?->payment_redirect_url)->toBe('https://chip.test/checkout')
+        ->and($checkoutSession?->selected_payment_gateway)->toBe('chip')
+        ->and($checkoutSession?->order_id)->toBeNull();
+
     expect(data_get($capturedPurchasePayload, 'purchase.total_discount_override'))->toBeNull();
 
     $products = collect(data_get($capturedPurchasePayload, 'purchase.products', []));
+    $summaryProduct = $products->first();
 
-    expect($products->where('name', 'Discounted Widget')->values()->all())->toHaveCount(2);
-    expect($products->where('name', 'Discounted Widget')->pluck('discount')->sort()->values()->all())->toBe([1500, 1500]);
-    expect($products->firstWhere('category', 'shipping'))->toBeNull();
-    expect($products->firstWhere('category', 'tax')['price'] ?? null)->toBe(1_020);
+    expect($products)->toHaveCount(1);
+    expect(is_array($summaryProduct))->toBeTrue();
+
+    if (! is_array($summaryProduct)) {
+        return;
+    }
+
+    expect((string) ($summaryProduct['name'] ?? ''))->toContain('Order checkout - Session')
+        ->and($summaryProduct['quantity'] ?? null)->toBe(1)
+        ->and($summaryProduct['price'] ?? null)->toBe($checkoutSession?->grand_total);
 
     $payloadTotal = $products->sum(static fn (array $product): int => (((int) $product['price']) - ((int) ($product['discount'] ?? 0))) * (int) $product['quantity']);
 
-    expect($payloadTotal)->toBe($order->grand_total);
+    expect($payloadTotal)->toBe($checkoutSession?->grand_total);
+
+    $pendingOrder = OwnerContext::withOwner($owner, fn () => Order::query()->latest('created_at')->first());
+
+    expect($pendingOrder)->toBeNull();
 });

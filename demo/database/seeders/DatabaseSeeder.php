@@ -18,6 +18,7 @@ use Illuminate\Database\Seeder;
  * 4. Orders (commerce history)
  * 5. Showcase (vouchers, affiliates, etc.)
  * 6. Billing (subscription demos)
+ * 7. Analytics (signals + growth experiments)
  *
  * SINGLE TENANCY MODE:
  * - All data belongs to one tenant owner (admin@commerce.demo)
@@ -58,6 +59,7 @@ final class DatabaseSeeder extends Seeder
                 ShowcaseSeeder::class,
                 JntShippingSeeder::class,
                 BillingShowcaseSeeder::class,
+                AnalyticsShowcaseSeeder::class,
             ]);
         });
 

@@ -4,20 +4,34 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Growth\Models\Assignment;
+use AIArmada\Growth\Models\Experiment;
+use AIArmada\Growth\Models\Variant;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
+use AIArmada\Signals\Models\SignalEvent;
+use AIArmada\Signals\Models\TrackedProperty;
 use App\Models\User;
+use Database\Seeders\AnalyticsShowcaseSeeder;
 use Database\Seeders\BillingShowcaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
 
-it('uses chip-only billing schema for the demo', function (): void {
+it('loads checkout, signals, growth, and chip-backed billing schema for the demo', function (): void {
     expect(Schema::hasColumn('users', 'chip_id'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'default_pm_id'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'pm_type'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'pm_last_four'))->toBeTrue()
+        ->and(Schema::hasTable('checkout_sessions'))->toBeTrue()
+        ->and(Schema::hasTable('signal_tracked_properties'))->toBeTrue()
+        ->and(Schema::hasTable('signal_identities'))->toBeTrue()
+        ->and(Schema::hasTable('signal_sessions'))->toBeTrue()
+        ->and(Schema::hasTable('signal_events'))->toBeTrue()
+        ->and(Schema::hasTable('growth_experiments'))->toBeTrue()
+        ->and(Schema::hasTable('growth_variants'))->toBeTrue()
+        ->and(Schema::hasTable('growth_assignments'))->toBeTrue()
         ->and(Schema::hasTable('cashier_chip_subscriptions'))->toBeTrue()
         ->and(Schema::hasTable('cashier_chip_subscription_items'))->toBeTrue()
         ->and(Schema::hasColumn('users', 'stripe_id'))->toBeFalse()
@@ -25,12 +39,15 @@ it('uses chip-only billing schema for the demo', function (): void {
         ->and(Schema::hasTable('subscription_items'))->toBeFalse();
 });
 
-it('seeds billing showcase data with chip subscriptions only', function (): void {
+it('seeds chip billing and analytics showcase data for the active demo owner', function (): void {
     $admin = User::factory()->create([
         'email' => 'admin@commerce.demo',
     ]);
 
-    $this->seed(BillingShowcaseSeeder::class);
+    OwnerContext::withOwner($admin, function (): void {
+        $this->seed(BillingShowcaseSeeder::class);
+        $this->seed(AnalyticsShowcaseSeeder::class);
+    });
 
     $admin->refresh();
 
@@ -38,17 +55,35 @@ it('seeds billing showcase data with chip subscriptions only', function (): void
         ->and($admin->default_pm_id)->not->toBeNull()
         ->and(Subscription::query()->count())->toBe(2)
         ->and(Subscription::query()->pluck('chip_status')->all())
-        ->toContain(Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING);
+        ->toContain(Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING)
+        ->and(TrackedProperty::query()->count())->toBe(1)
+        ->and(TrackedProperty::query()->first()?->domain)->toBe('cdemo.test')
+        ->and(Experiment::query()->count())->toBe(1)
+        ->and(Variant::query()->count())->toBe(2)
+        ->and(Assignment::query()->count())->toBe(2)
+        ->and(SignalEvent::query()->count())->toBe(6);
 });
 
-it('does not expose stripe subscription routes in the chip-only demo', function (): void {
-    $user = User::factory()->create();
+it('renders the storefront Signals tracker for the active demo owner', function (): void {
+    $admin = User::factory()->create([
+        'email' => 'admin@commerce.demo',
+    ]);
 
-    $this->actingAs($user)
+    OwnerContext::withOwner($admin, function (): void {
+        $this->seed(AnalyticsShowcaseSeeder::class);
+    });
+
+    $this->withSession(['demo_owner_id' => $admin->id])
+        ->get('/')
+        ->assertOk()
+        ->assertSee('/api/signals/tracker.js', false)
+        ->assertSee('data-write-key="demo-storefront-write-key-0000000000000"', false);
+
+    $this->actingAs($admin)
         ->get('/subscribe/stripe/pro')
         ->assertNotFound();
 
-    $this->actingAs($user)
+    $this->actingAs($admin)
         ->post('/subscribe/stripe', [])
         ->assertNotFound();
 });

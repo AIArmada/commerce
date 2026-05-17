@@ -7,16 +7,19 @@ namespace App\Providers\Filament;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 use AIArmada\FilamentCart\FilamentCartPlugin;
-use AIArmada\FilamentCashierChip\FilamentCashierChipPlugin;
+use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
 use AIArmada\FilamentCustomers\FilamentCustomersPlugin;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
+use AIArmada\FilamentGrowth\FilamentGrowthPlugin;
 use AIArmada\FilamentInventory\FilamentInventoryPlugin;
 use AIArmada\FilamentJnt\FilamentJntPlugin;
 use AIArmada\FilamentOrders\FilamentOrdersPlugin;
 use AIArmada\FilamentPricing\FilamentPricingPlugin;
 use AIArmada\FilamentProducts\FilamentProductsPlugin;
+use AIArmada\FilamentPromotions\FilamentPromotionsPlugin;
 use AIArmada\FilamentShipping\FilamentShippingPlugin;
+use AIArmada\FilamentSignals\FilamentSignalsPlugin;
 use AIArmada\FilamentTax\FilamentTaxPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use App\Filament\Pages\Dashboard;
@@ -105,7 +108,13 @@ final class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Marketing'),
                 NavigationGroup::make()
+                    ->label('Insights'),
+                NavigationGroup::make()
+                    ->label('Growth'),
+                NavigationGroup::make()
                     ->label('Payments'),
+                NavigationGroup::make()
+                    ->label('Billing'),
                 NavigationGroup::make()
                     ->label('Shipping'),
                 NavigationGroup::make()
@@ -133,8 +142,11 @@ final class AdminPanelProvider extends PanelProvider
                 FilamentVouchersPlugin::make(),
                 FilamentInventoryPlugin::make(),
                 FilamentAffiliatesPlugin::make(),
+                FilamentPromotionsPlugin::make(),
                 FilamentChipPlugin::make(),
-                FilamentCashierChipPlugin::make(),
+                FilamentCashierPlugin::make(),
+                FilamentSignalsPlugin::make(),
+                FilamentGrowthPlugin::make(),
                 FilamentJntPlugin::make(),
                 FilamentShippingPlugin::make(),
                 FilamentTaxPlugin::make(),

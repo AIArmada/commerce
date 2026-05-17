@@ -102,9 +102,16 @@ Configure quantity-based tiered pricing:
 - Amount
 - Discount value
 
-## Promotion Resource
+## Promotions UI Modes
 
-Manage promotional discounts (requires `aiarmada/promotions`).
+Promotion management works in one of two ways:
+
+- **Fallback mode** — Filament Pricing registers `PromotionResource` when `aiarmada/promotions` is installed and `aiarmada/filament-promotions` is not.
+- **Dedicated mode** — the `aiarmada/filament-promotions` plugin owns the promotions resource and navigation, while Filament Pricing keeps handling price lists, settings, simulator flows, and pricing stats.
+
+## Promotion Resource (Fallback Mode)
+
+Manage promotional discounts in fallback mode (requires `aiarmada/promotions` and no dedicated `aiarmada/filament-promotions` plugin).
 
 ### List View
 
@@ -254,7 +261,9 @@ Widget auto-refreshes every 30 seconds.
 
 ### Setting Up a Time-Limited Promotion
 
-1. Navigate to **Pricing > Promotions**
+1. Open the promotions resource
+   - **Pricing > Promotions** in fallback mode
+   - the dedicated promotions navigation from `aiarmada/filament-promotions` when that plugin is installed
 2. Click **Create**
 3. Enter details:
    - Name: "Weekend Sale"

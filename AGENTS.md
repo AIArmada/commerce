@@ -165,6 +165,40 @@ When a task changes user behavior (entry points, forms, actions, or meaningful w
 - Prefer high-signal events over noisy click logs.
 - Prefer server-confirmed events for backend outcomes.
 
+## 5) Thoughtfulness Before Changes
+
+### Before coding
+
+- State assumptions explicitly.
+- If there are multiple interpretations, name them and ask instead of guessing.
+- Surface tradeoffs and push back when a request is unclear or overcomplicated.
+
+### Keep it simple
+
+- Use the smallest correct change.
+- Do not add speculative abstractions, configurability, error handling for impossible cases, or features beyond the request.
+- If a 50-line fix is enough, do not write 200.
+- Prefer the simplest solution a senior engineer would not call overengineered.
+
+### Be surgical
+
+- Touch only what the request requires.
+- Match existing style; do not refactor adjacent code, comments, or formatting.
+- Clean up only your own mess.
+- Mention unrelated dead code instead of deleting it.
+- Remove only imports, variables, or functions your change makes unused.
+
+### Work toward proof
+
+- Write a brief plan for multi-step work.
+- Define success criteria up front.
+- Verify each step until the result is done.
+- Turn tasks into tests or checks when possible:
+  - Add validation → write failing tests first, then make them pass.
+  - Fix a bug → reproduce it with a test, then fix it.
+  - Refactor X → verify behavior before and after.
+- Every changed line should trace directly to the request.
+
 === .ai/model rules ===
 
 # Model Guidelines
@@ -365,7 +399,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4
+- php - 8.5
 
 ## Conventions
 
@@ -427,6 +461,13 @@ This application is a Laravel application and its main Laravel ecosystems packag
 # Deployment
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+
+=== herd rules ===
+
+# Laravel Herd
+
+- The application is served by Laravel Herd at `https?://[kebab-case-project-dir].test`. Use the `get-absolute-url` tool to generate valid URLs. Never run commands to serve the site. It is always available.
+- Use the `herd` CLI to manage services, PHP versions, and sites (e.g. `herd sites`, `herd services:start <service>`, `herd php:list`). Run `herd list` to discover all available commands.
 
 === tests rules ===
 

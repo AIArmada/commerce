@@ -46,9 +46,11 @@ private static function resolveOwner(): ?Model
 }
 ```
 
-### PromotionResource
+### PromotionResource (fallback mode)
 
 Similar pattern using `promotions.features.owner.enabled` config.
+
+If `aiarmada/filament-promotions` is installed, promotion multitenancy behavior moves to the dedicated promotions plugin because Filament Pricing does not register its fallback `PromotionResource` in that combined install.
 
 ## Relation Manager Scoping
 

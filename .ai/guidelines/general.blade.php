@@ -24,3 +24,33 @@ If runtime-provided, preserve behavior and fix analysis with a narrow, targeted 
 When a task changes user behavior (entry points, forms, actions, or meaningful workflow transitions), evaluate whether product tracking should be updated.
 - Prefer high-signal events over noisy click logs.
 - Prefer server-confirmed events for backend outcomes.
+
+## 5) Thoughtfulness Before Changes
+
+### Before coding
+- State assumptions explicitly.
+- If there are multiple interpretations, name them and ask instead of guessing.
+- Surface tradeoffs and push back when a request is unclear or overcomplicated.
+
+### Keep it simple
+- Use the smallest correct change.
+- Do not add speculative abstractions, configurability, error handling for impossible cases, or features beyond the request.
+- If a 50-line fix is enough, do not write 200.
+- Prefer the simplest solution a senior engineer would not call overengineered.
+
+### Be surgical
+- Touch only what the request requires.
+- Match existing style; do not refactor adjacent code, comments, or formatting.
+- Clean up only your own mess.
+- Mention unrelated dead code instead of deleting it.
+- Remove only imports, variables, or functions your change makes unused.
+
+### Work toward proof
+- Write a brief plan for multi-step work.
+- Define success criteria up front.
+- Verify each step until the result is done.
+- Turn tasks into tests or checks when possible:
+  - Add validation → write failing tests first, then make them pass.
+  - Fix a bug → reproduce it with a test, then fix it.
+  - Refactor X → verify behavior before and after.
+- Every changed line should trace directly to the request.
