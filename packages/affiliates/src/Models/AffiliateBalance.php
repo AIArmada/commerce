@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -108,6 +109,6 @@ class AffiliateBalance extends Model
 
     private function formatAmount(int $amountMinor): string
     {
-        return number_format($amountMinor / 100, 2);
+        return MoneyFormatter::decimalFromMinor($amountMinor, $this->currency);
     }
 }

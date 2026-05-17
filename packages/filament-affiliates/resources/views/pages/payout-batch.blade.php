@@ -8,7 +8,7 @@
         @foreach(($pendingByCurrency ?? []) as $currency)
             <x-filament::card>
                 <div class="text-sm text-gray-500">{{ $currency->currency }} Pending</div>
-                <div class="text-2xl font-bold">{{ \Illuminate\Support\Number::currency($currency->total / 100, $currency->currency) }}</div>
+                <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($currency->total, $currency->currency) }}</div>
                 <div class="text-xs text-gray-400">{{ $currency->count }} payouts</div>
             </x-filament::card>
         @endforeach

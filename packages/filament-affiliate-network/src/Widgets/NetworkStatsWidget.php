@@ -8,6 +8,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -54,7 +55,7 @@ final class NetworkStatsWidget extends StatsOverviewWidget
                     ->icon('heroicon-o-arrow-trending-up')
                     ->color($conversionRate > 5 ? 'success' : 'warning'),
 
-                Stat::make('Total Revenue', '$' . number_format($totalRevenue / 100, 2))
+                Stat::make('Total Revenue', MoneyFormatter::formatMinor($totalRevenue, 'USD'))
                     ->description('Tracked revenue')
                     ->icon('heroicon-o-banknotes')
                     ->color('success'),

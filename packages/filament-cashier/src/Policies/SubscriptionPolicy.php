@@ -67,13 +67,43 @@ class SubscriptionPolicy
      */
     protected function ownsSubscription(Model $user, Model $subscription): bool
     {
-        $userId = $user->getKey();
-        $subscriptionUserId = $subscription->getAttribute('user_id') ?? $subscription->getAttribute('billable_id');
+        $userId = $this->resolveIdentifier($user, [$user->getKeyName()]);
+        $subscriptionUserId = $this->resolveIdentifier($subscription, ['user_id', 'billable_id']);
 
         if ($userId === null || $subscriptionUserId === null) {
             return false;
         }
 
         return (string) $userId === (string) $subscriptionUserId;
+    }
+
+    /**
+     * @param  array<int, string>  $attributeNames
+     */
+    private function resolveIdentifier(Model $model, array $attributeNames): int | string | null
+    {
+        $attributes = $model->getAttributes();
+
+        foreach ($attributeNames as $attributeName) {
+            if (! array_key_exists($attributeName, $attributes)) {
+                continue;
+            }
+
+            $value = $attributes[$attributeName];
+
+            if (is_int($value) || is_string($value)) {
+                return $value;
+            }
+        }
+
+        foreach ($attributeNames as $attributeName) {
+            $value = $model->getRawOriginal($attributeName);
+
+            if (is_int($value) || is_string($value)) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

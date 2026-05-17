@@ -14,7 +14,6 @@ use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Models\JntWebhookLog;
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 uses(FilamentJntTestCase::class);
 

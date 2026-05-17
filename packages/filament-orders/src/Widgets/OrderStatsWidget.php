@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Widgets;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
@@ -117,7 +118,7 @@ final class OrderStatsWidget extends StatsOverviewWidget
                 ->color($todayChange >= 0 ? 'success' : 'danger')
                 ->chart([7, 3, 4, 5, 6, $todayOrders]),
 
-            Stat::make('Today\'s Revenue', $currency . ' ' . number_format($todayRevenue / 100, 2))
+            Stat::make('Today\'s Revenue', MoneyFormatter::formatMinor($todayRevenue, $currency))
                 ->description($revenueChange >= 0 ? "{$revenueChange}% increase" : abs($revenueChange) . '% decrease')
                 ->descriptionIcon($revenueChange >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($revenueChange >= 0 ? 'success' : 'danger'),
@@ -127,7 +128,7 @@ final class OrderStatsWidget extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($pendingOrders > 10 ? 'warning' : 'gray'),
 
-            Stat::make('Monthly Revenue', $currency . ' ' . number_format($monthlyRevenue / 100, 2))
+            Stat::make('Monthly Revenue', MoneyFormatter::formatMinor($monthlyRevenue, $currency))
                 ->description($monthlyChange >= 0 ? "{$monthlyChange}% vs last month" : abs($monthlyChange) . '% vs last month')
                 ->descriptionIcon($monthlyChange >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($monthlyChange >= 0 ? 'success' : 'danger'),

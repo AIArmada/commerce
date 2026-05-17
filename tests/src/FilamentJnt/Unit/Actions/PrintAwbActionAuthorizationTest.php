@@ -12,7 +12,7 @@ use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
-use Mockery;
+use Mockery\MockInterface;
 
 uses(FilamentJntTestCase::class);
 
@@ -86,7 +86,7 @@ it('uses safely encoded javascript when opening AWB urls', function (): void {
         }
     });
 
-    /** @var Component&Mockery\MockInterface $livewire */
+    /** @var Component&MockInterface $livewire */
     $livewire = Mockery::mock(Component::class);
 
     $expectedJs = 'window.open(' . json_encode($url) . ', "_blank")';
@@ -140,7 +140,7 @@ it('uses safely encoded javascript for bulk AWB url opening', function (): void 
         }
     });
 
-    /** @var Component&Mockery\MockInterface $livewire */
+    /** @var Component&MockInterface $livewire */
     $livewire = Mockery::mock(Component::class);
 
     $expectedJs = 'window.open(' . json_encode($url) . ', "_blank")';
@@ -186,7 +186,7 @@ it('does not open a download when waybill base64 payload is invalid', function (
         }
     });
 
-    /** @var Component&Mockery\MockInterface $livewire */
+    /** @var Component&MockInterface $livewire */
     $livewire = Mockery::mock(Component::class);
     $livewire->shouldNotReceive('js');
 
@@ -229,7 +229,7 @@ it('skips invalid base64 labels in bulk print action and reports warning', funct
         }
     });
 
-    /** @var Component&Mockery\MockInterface $livewire */
+    /** @var Component&MockInterface $livewire */
     $livewire = Mockery::mock(Component::class);
     $livewire->shouldNotReceive('js');
 

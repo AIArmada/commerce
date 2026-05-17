@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\CollectionResource\Pages;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
 use AIArmada\FilamentProducts\Resources\CollectionResource;
-use AIArmada\FilamentProducts\Support\OwnerScope;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use Filament\Actions;
@@ -28,7 +28,7 @@ final class EditCollection extends EditRecord
         if (array_key_exists('products', $data)) {
             /** @var array<int, string>|null $products */
             $products = is_array($data['products'] ?? null) ? $data['products'] : null;
-            $data['products'] = OwnerScope::ensureAllowed('products', Product::class, $products);
+            $data['products'] = OwnerScopedIds::ensureAllowed('products', Product::class, $products);
         }
 
         if (isset($data['conditions']) && is_array($data['conditions'])) {
@@ -46,7 +46,7 @@ final class EditCollection extends EditRecord
                     continue;
                 }
 
-                $allowed = OwnerScope::allowedIds(Category::class, [$value]);
+                $allowed = OwnerScopedIds::allowedIds(Category::class, [$value]);
                 if ($allowed === []) {
                     unset($data['conditions'][$index]['value']);
                 } else {

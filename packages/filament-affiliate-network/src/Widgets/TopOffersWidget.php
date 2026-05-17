@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Widgets;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -52,7 +53,7 @@ final class TopOffersWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('links_sum_revenue')
                     ->label('Revenue')
-                    ->money('USD', divideBy: 100)
+                    ->formatStateUsing(fn ($state, AffiliateOffer $record): string => MoneyFormatter::formatMinor((int) ($state ?? 0), $record->currency ?? 'USD'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('commission_rate')
@@ -62,7 +63,7 @@ final class TopOffersWidget extends BaseWidget
                             return number_format($record->commission_rate / 100, 2) . '%';
                         }
 
-                        return '$' . number_format($record->commission_rate / 100, 2);
+                        return MoneyFormatter::formatMinor($record->commission_rate, $record->currency ?? 'USD');
                     }),
             ])
             ->heading('Top Performing Offers')

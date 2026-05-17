@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Signals\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Actions\IngestSignalEvent;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
@@ -522,7 +523,11 @@ final class CommerceSignalsRecorder
             return $baseProperties === [] ? null : $baseProperties;
         }
 
-        $enriched = $enricher->handle($source, $trackedProperty, $baseProperties);
+        $handleEnrichment = fn (): mixed => $enricher->handle($source, $trackedProperty, $baseProperties);
+
+        $enriched = OwnerContext::hasOverride()
+            ? $handleEnrichment()
+            : OwnerContext::withOwner($trackedProperty->owner, $handleEnrichment);
 
         if (! is_array($enriched)) {
             return $baseProperties === [] ? null : $baseProperties;

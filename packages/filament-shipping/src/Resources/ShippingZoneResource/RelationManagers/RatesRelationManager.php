@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Shipping\Models\ShippingRate;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -168,8 +169,8 @@ class RatesRelationManager extends RelationManager
                             ->itemLabel(fn (array $state): ?string => match ($state['type'] ?? null) {
                                 'min_weight' => 'Min Weight: ' . ($state['value'] ?? '?') . 'g',
                                 'max_weight' => 'Max Weight: ' . ($state['value'] ?? '?') . 'g',
-                                'min_order_total' => 'Min Order: RM' . number_format(($state['value'] ?? 0) / 100, 2),
-                                'max_order_total' => 'Max Order: RM' . number_format(($state['value'] ?? 0) / 100, 2),
+                                'min_order_total' => 'Min Order: ' . MoneyFormatter::formatMinor((int) ($state['value'] ?? 0), config('shipping.defaults.currency', 'MYR')),
+                                'max_order_total' => 'Max Order: ' . MoneyFormatter::formatMinor((int) ($state['value'] ?? 0), config('shipping.defaults.currency', 'MYR')),
                                 'min_items' => 'Min Items: ' . ($state['value'] ?? '?'),
                                 'max_items' => 'Max Items: ' . ($state['value'] ?? '?'),
                                 default => null,

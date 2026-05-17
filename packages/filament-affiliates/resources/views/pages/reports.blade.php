@@ -10,12 +10,12 @@
             
             <x-filament::card>
                 <div class="text-sm text-gray-500">Total Revenue</div>
-                <div class="text-2xl font-bold">{{ \Illuminate\Support\Number::currency(($reportData['summary']['total_revenue_minor'] ?? 0) / 100) }}</div>
+                <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($reportData['summary']['total_revenue_minor'] ?? 0, config('affiliates.currency.default', 'USD')) }}</div>
             </x-filament::card>
             
             <x-filament::card>
                 <div class="text-sm text-gray-500">Total Commission</div>
-                <div class="text-2xl font-bold">{{ \Illuminate\Support\Number::currency(($reportData['summary']['total_commission_minor'] ?? 0) / 100) }}</div>
+                <div class="text-2xl font-bold">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($reportData['summary']['total_commission_minor'] ?? 0, config('affiliates.currency.default', 'USD')) }}</div>
             </x-filament::card>
             
             <x-filament::card>
@@ -44,8 +44,8 @@
                             <tr class="border-b">
                                 <td class="py-2 px-4">{{ $affiliate['name'] ?? 'Unknown' }}</td>
                                 <td class="text-right py-2 px-4">{{ number_format($affiliate['conversions'] ?? 0) }}</td>
-                                <td class="text-right py-2 px-4">{{ \Illuminate\Support\Number::currency(($affiliate['revenue_minor'] ?? 0) / 100) }}</td>
-                                <td class="text-right py-2 px-4">{{ \Illuminate\Support\Number::currency(($affiliate['commission_minor'] ?? 0) / 100) }}</td>
+                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($affiliate['revenue_minor'] ?? 0, $affiliate['currency'] ?? config('affiliates.currency.default', 'USD')) }}</td>
+                                <td class="text-right py-2 px-4">{{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($affiliate['commission_minor'] ?? 0, $affiliate['currency'] ?? config('affiliates.currency.default', 'USD')) }}</td>
                             </tr>
                         @endforeach
                     </tbody>

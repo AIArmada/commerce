@@ -66,13 +66,43 @@ class PaymentMethodPolicy
      */
     protected function ownsPaymentMethod(Model $user, Model $paymentMethod): bool
     {
-        $userId = $user->getKey();
-        $pmUserId = $paymentMethod->getAttribute('billable_id') ?? $paymentMethod->getAttribute('user_id');
+        $userId = $this->resolveIdentifier($user, [$user->getKeyName()]);
+        $pmUserId = $this->resolveIdentifier($paymentMethod, ['billable_id', 'user_id']);
 
         if ($userId === null || $pmUserId === null) {
             return false;
         }
 
         return (string) $userId === (string) $pmUserId;
+    }
+
+    /**
+     * @param  array<int, string>  $attributeNames
+     */
+    private function resolveIdentifier(Model $model, array $attributeNames): int | string | null
+    {
+        $attributes = $model->getAttributes();
+
+        foreach ($attributeNames as $attributeName) {
+            if (! array_key_exists($attributeName, $attributes)) {
+                continue;
+            }
+
+            $value = $attributes[$attributeName];
+
+            if (is_int($value) || is_string($value)) {
+                return $value;
+            }
+        }
+
+        foreach ($attributeNames as $attributeName) {
+            $value = $model->getRawOriginal($attributeName);
+
+            if (is_int($value) || is_string($value)) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

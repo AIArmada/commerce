@@ -8,6 +8,7 @@
 /vendor.nosync
 /var
 /.vscode
+/auth.json
 .DS_Store
 .phpunit.cache
 .phpunit.result.cache

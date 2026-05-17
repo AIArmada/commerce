@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
-use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\BulkAction;
@@ -47,7 +47,7 @@ class CustomerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = CustomersOwnerScope::applyToOwnedQuery(static::getModel()::query())
+        $count = OwnerUiScope::apply(static::getModel()::query(), includeGlobal: false)
             ->where('status', CustomerStatus::Active)
             ->count();
 
@@ -62,7 +62,7 @@ class CustomerResource extends Resource
         /** @var Builder<Customer> $query */
         $query = parent::getEloquentQuery();
 
-        return CustomersOwnerScope::applyToOwnedQuery($query);
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema
@@ -88,7 +88,7 @@ class CustomerResource extends Resource
                                     ->email()
                                     ->required()
                                     ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
-                                        $owner = CustomersOwnerScope::resolveOwner();
+                                        $owner = OwnerUiScope::resolveOwner(Customer::class);
                                         if ($owner !== null) {
                                             return $rule
                                                 ->where('owner_type', $owner->getMorphClass())
@@ -143,7 +143,7 @@ class CustomerResource extends Resource
                                     ->relationship(
                                         name: 'segments',
                                         titleAttribute: 'name',
-                                        modifyQueryUsing: fn (Builder $query): Builder => CustomersOwnerScope::applyToOwnedQuery($query)
+                                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)
                                             ->where('is_automatic', false),
                                     )
                                     ->multiple()
@@ -207,7 +207,7 @@ class CustomerResource extends Resource
                     ->relationship(
                         name: 'segments',
                         titleAttribute: 'name',
-                        modifyQueryUsing: fn (Builder $query): Builder => CustomersOwnerScope::applyToOwnedQuery($query),
+                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
                     )
                     ->multiple()
                     ->preload(),
@@ -357,7 +357,7 @@ class CustomerResource extends Resource
 
     protected static function ensureRecordOwnerScope(Customer $record): ?Model
     {
-        $owner = CustomersOwnerScope::resolveOwner();
+        $owner = OwnerUiScope::resolveOwner(Customer::class);
 
         if ($owner === null) {
             abort_unless($record->owner_type === null && $record->owner_id === null, 403);

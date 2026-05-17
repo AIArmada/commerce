@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Pages;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Pricing\Contracts\Priceable;
@@ -110,9 +111,10 @@ final class PriceSimulator extends Page
                                     ->mapWithKeys(function (Product $product): array {
                                         $name = (string) $product->getAttribute('name');
                                         $priceMinor = (int) $product->getAttribute('price');
+                                        $currency = (string) ($product->getAttribute('currency') ?? config('commerce-support.currency.default', 'MYR'));
 
                                         return [
-                                            (string) $product->getKey() => $name . ' (Base: RM' . number_format($priceMinor / 100, 2) . ')',
+                                            (string) $product->getKey() => $name . ' (Base: ' . MoneyFormatter::formatMinor($priceMinor, $currency) . ')',
                                         ];
                                     })
                                     ->toArray();
@@ -140,8 +142,9 @@ final class PriceSimulator extends Page
 
                                 $name = (string) $product->getAttribute('name');
                                 $priceMinor = (int) $product->getAttribute('price');
+                                $currency = (string) ($product->getAttribute('currency') ?? config('commerce-support.currency.default', 'MYR'));
 
-                                return $name . ' (Base: RM' . number_format($priceMinor / 100, 2) . ')';
+                                return $name . ' (Base: ' . MoneyFormatter::formatMinor($priceMinor, $currency) . ')';
                             }),
 
                         Forms\Components\Select::make('variant_id')
@@ -187,9 +190,10 @@ final class PriceSimulator extends Page
                                         $productPriceMinor = is_int($productPrice) ? $productPrice : 0;
 
                                         $priceMinor = $variantPriceMinor ?? $productPriceMinor;
+                                        $currency = (string) ($variant->getAttribute('currency') ?? $variant->product?->getAttribute('currency') ?? config('commerce-support.currency.default', 'MYR'));
 
                                         return [
-                                            (string) $variant->getKey() => $productName . ' - ' . $sku . ' (RM' . number_format($priceMinor / 100, 2) . ')',
+                                            (string) $variant->getKey() => $productName . ' - ' . $sku . ' (' . MoneyFormatter::formatMinor($priceMinor, $currency) . ')',
                                         ];
                                     })
                                     ->toArray();
@@ -227,8 +231,9 @@ final class PriceSimulator extends Page
                                 $productPriceMinor = is_int($productPrice) ? $productPrice : 0;
 
                                 $priceMinor = $variantPriceMinor ?? $productPriceMinor;
+                                $currency = (string) ($variant->getAttribute('currency') ?? $variant->product?->getAttribute('currency') ?? config('commerce-support.currency.default', 'MYR'));
 
-                                return $productName . ' - ' . $sku . ' (RM' . number_format($priceMinor / 100, 2) . ')';
+                                return $productName . ' - ' . $sku . ' (' . MoneyFormatter::formatMinor($priceMinor, $currency) . ')';
                             }),
 
                         Forms\Components\Select::make('customer_id')
@@ -381,6 +386,7 @@ final class PriceSimulator extends Page
             'promotion_name' => $priceResult->promotionName,
             'breakdown' => $priceResult->breakdown,
             'quantity' => (int) $data['quantity'],
+            'currency' => $priceResult->currency,
             'unit_price' => $priceResult->finalPrice,
             'total_price' => $priceResult->finalPrice * (int) $data['quantity'],
         ];
@@ -407,18 +413,18 @@ final class PriceSimulator extends Page
                             ->schema([
                                 TextEntry::make('original_price')
                                     ->label('Original Price (per unit)')
-                                    ->money('MYR')
+                                    ->formatStateUsing(fn ($state): string => $this->formatResultAmount((int) $state))
                                     ->weight(FontWeight::Bold),
 
                                 TextEntry::make('final_price')
                                     ->label('Final Price (per unit)')
-                                    ->money('MYR')
+                                    ->formatStateUsing(fn ($state): string => $this->formatResultAmount((int) $state))
                                     ->weight(FontWeight::Bold)
                                     ->color('success'),
 
                                 TextEntry::make('discount_amount')
                                     ->label('Discount (per unit)')
-                                    ->money('MYR')
+                                    ->formatStateUsing(fn ($state): string => $this->formatResultAmount((int) $state))
                                     ->weight(FontWeight::Bold)
                                     ->color('danger'),
                             ]),
@@ -431,7 +437,7 @@ final class PriceSimulator extends Page
 
                                 TextEntry::make('total_price')
                                     ->label('Total Price')
-                                    ->money('MYR')
+                                    ->formatStateUsing(fn ($state): string => $this->formatResultAmount((int) $state))
                                     ->weight(FontWeight::Bold)
                                     ->size(TextSize::Large)
                                     ->color('success'),
@@ -488,7 +494,7 @@ final class PriceSimulator extends Page
                                     ->label('Step'),
                                 TextEntry::make('value')
                                     ->label('Value')
-                                    ->money('MYR'),
+                                    ->formatStateUsing(fn ($state): string => is_numeric($state) ? $this->formatResultAmount((int) $state) : (string) $state),
                             ])
                             ->columns(2),
                     ])
@@ -512,5 +518,10 @@ final class PriceSimulator extends Page
                 ->action('clear')
                 ->visible(fn () => $this->result !== null),
         ];
+    }
+
+    private function formatResultAmount(int $amountMinor): string
+    {
+        return MoneyFormatter::formatMinor($amountMinor, (string) ($this->result['currency'] ?? config('commerce-support.currency.default', 'MYR')));
     }
 }

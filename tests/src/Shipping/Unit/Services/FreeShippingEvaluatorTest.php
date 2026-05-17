@@ -130,10 +130,10 @@ describe('FreeShippingResult', function (): void {
     it('formats remaining amount as currency', function (): void {
         $result = new FreeShippingResult(
             applies: false,
-            remainingAmount: 2500, // RM25.00
+            remainingAmount: 2500, // RM25.00 — default currency from config
         );
 
-        expect($result->getFormattedRemaining())->toBe('25.00');
+        expect($result->getFormattedRemaining())->toBe('RM25.00');
     });
 
     it('returns null formatted remaining when no amount', function (): void {

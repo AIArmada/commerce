@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Tables;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentJnt\Actions\BulkPrintAwbAction;
 use AIArmada\FilamentJnt\Actions\PrintAwbTableAction;
 use AIArmada\Jnt\Enums\TrackingStatus;
@@ -78,12 +79,12 @@ final class JntOrderTable
                     ->toggleable(),
                 TextColumn::make('package_value')
                     ->label('Value')
-                    ->money('MYR')
+                    ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('cod_value')
                     ->label('COD')
-                    ->money('MYR')
+                    ->formatStateUsing(fn ($state): ?string => blank($state) ? null : MoneyFormatter::formatMajor($state, 'MYR'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('—'),

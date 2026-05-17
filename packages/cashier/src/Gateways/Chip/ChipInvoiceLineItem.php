@@ -6,6 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
 use AIArmada\Chip\Data\ProductData;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 
 /**
  * Wrapper for CHIP invoice line item (product).
@@ -57,7 +58,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function unitAmount(): string
     {
-        return number_format($this->rawUnitAmount() / 100, 2) . ' ' . mb_strtoupper($this->currency());
+        return MoneyFormatter::formatMinorWithCode($this->rawUnitAmount(), $this->currency());
     }
 
     /**
@@ -73,7 +74,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function total(): string
     {
-        return number_format($this->rawTotal() / 100, 2) . ' ' . mb_strtoupper($this->currency());
+        return MoneyFormatter::formatMinorWithCode($this->rawTotal(), $this->currency());
     }
 
     /**

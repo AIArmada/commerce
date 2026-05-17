@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Products\Models\Product;
@@ -242,7 +243,7 @@ final class TiersRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount')
-                    ->money('MYR', divideBy: 100)
+                    ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, (string) ($record->currency ?? config('pricing.defaults.currency', 'MYR'))))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('discount_value')
@@ -253,7 +254,7 @@ final class TiersRelationManager extends RelationManager
                         }
 
                         if ($record->discount_type === 'fixed' && $record->discount_value !== null) {
-                            return 'RM ' . number_format($record->discount_value / 100, 2);
+                            return MoneyFormatter::formatMinor($record->discount_value, (string) ($record->currency ?? config('pricing.defaults.currency', 'MYR')));
                         }
 
                         return null;

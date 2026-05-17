@@ -167,6 +167,22 @@ it('allows resolving assignments without an owner context when growth owner scop
         ->and($assignment->experiment_id)->toBe((string) $experiment->getKey());
 });
 
+it('hashes oversized anonymous identifiers into deterministic assignment subject keys', function (): void {
+    $owner = growthCreateOwner();
+    $experiment = growthCreateExperiment($owner);
+    $action = app(ResolveExperimentAssignment::class);
+    $anonymousId = str_repeat('oversized-anonymous-id-', 20);
+    $expectedSubjectKey = 'anonymous:sha256:' . hash('sha256', $anonymousId);
+
+    $firstAssignment = OwnerContext::withOwner($owner, fn (): Assignment => $action->handle($experiment, anonymousId: $anonymousId));
+    $secondAssignment = OwnerContext::withOwner($owner, fn (): Assignment => $action->handle($experiment, anonymousId: $anonymousId));
+
+    expect($firstAssignment->subject_key)->toBe($expectedSubjectKey)
+        ->and(mb_strlen($firstAssignment->subject_key))->toBeLessThanOrEqual(255)
+        ->and(str_starts_with($firstAssignment->subject_key, 'anonymous:sha256:'))->toBeTrue()
+        ->and($secondAssignment->getKey())->toBe($firstAssignment->getKey());
+});
+
 it('rejects resolving assignments for experiments tied to a foreign tracked property when growth owner scoping is disabled but signals owner scoping remains enabled', function (): void {
     config()->set('growth.features.owner.enabled', false);
 

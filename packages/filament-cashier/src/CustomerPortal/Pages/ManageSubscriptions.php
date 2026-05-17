@@ -14,6 +14,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -54,6 +55,12 @@ final class ManageSubscriptions extends Page
             return collect();
         }
 
+        $userIdentifier = $this->resolveAuthIdentifier($user);
+
+        if ($userIdentifier === null) {
+            return collect();
+        }
+
         $subscriptions = collect();
         $detector = app(GatewayDetector::class);
         $limit = max(1, $this->perGatewayLimit);
@@ -70,7 +77,7 @@ final class ManageSubscriptions extends Page
         ) {
             $stripeModels = CashierOwnerScope::apply(Subscription::query())
                 ->with('items')
-                ->where('user_id', $user->getAuthIdentifier())
+                ->where('user_id', $userIdentifier)
                 ->orderByDesc('created_at')
                 ->limit($fetchLimit)
                 ->get()
@@ -90,7 +97,7 @@ final class ManageSubscriptions extends Page
             $subscriptionModel = CashierChip::$subscriptionModel;
             $chipModels = CashierOwnerScope::apply($subscriptionModel::query())
                 ->with('items')
-                ->where('user_id', $user->getAuthIdentifier())
+                ->where('user_id', $userIdentifier)
                 ->orderByDesc('created_at')
                 ->limit($fetchLimit)
                 ->get()
@@ -229,7 +236,17 @@ final class ManageSubscriptions extends Page
     protected function findSubscription(string $gateway, string $id): ?UnifiedSubscription
     {
         $detector = app(GatewayDetector::class);
-        $userId = auth()->id();
+        $user = auth()->user();
+
+        if ($user === null) {
+            return null;
+        }
+
+        $userId = $this->resolveAuthIdentifier($user);
+
+        if ($userId === null) {
+            return null;
+        }
 
         if (
             $gateway === 'stripe'
@@ -258,6 +275,37 @@ final class ManageSubscriptions extends Page
 
             if ($sub) {
                 return UnifiedSubscription::fromChip($sub);
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveAuthIdentifier(mixed $user): int | string | null
+    {
+        if ($user instanceof Model) {
+            $identifierName = $user->getKeyName();
+            $attributes = $user->getAttributes();
+            $attributeIdentifier = $attributes[$identifierName] ?? null;
+
+            if (is_int($attributeIdentifier) || is_string($attributeIdentifier)) {
+                return $attributeIdentifier;
+            }
+
+            $rawIdentifier = $user->getRawOriginal($identifierName);
+
+            if (is_int($rawIdentifier) || is_string($rawIdentifier)) {
+                return $rawIdentifier;
+            }
+
+            return null;
+        }
+
+        if (is_object($user) && method_exists($user, 'getAuthIdentifier')) {
+            $identifier = $user->getAuthIdentifier();
+
+            if (is_int($identifier) || is_string($identifier)) {
+                return $identifier;
             }
         }
 

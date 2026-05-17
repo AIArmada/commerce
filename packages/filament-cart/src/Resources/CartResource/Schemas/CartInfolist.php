@@ -100,7 +100,6 @@ final class CartInfolist
                 //
                 //                                            TextEntry::make('price')
                 //                                                ->label('Unit Price')
-                //                                                ->money('USD')
                 //                                                ->icon(Heroicon::OutlinedCurrencyDollar),
                 // //                                        ]),
                 //

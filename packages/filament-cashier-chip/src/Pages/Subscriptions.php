@@ -144,7 +144,7 @@ class Subscriptions extends Page
 
         $currency = config('cashier-chip.currency', 'MYR');
 
-        return $currency . ' ' . number_format($amount / 100, 2);
+        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, 2, '.', ',');
     }
 
     /**

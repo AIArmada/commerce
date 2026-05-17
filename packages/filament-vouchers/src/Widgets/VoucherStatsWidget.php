@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\FilamentVouchers\Services\VoucherStatsAggregator;
-use Akaunting\Money\Money;
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -52,6 +52,6 @@ final class VoucherStatsWidget extends BaseWidget
 
     private function formatMoney(int $amount, string $currency): string
     {
-        return (string) Money::{$currency}($amount);
+        return MoneyHelper::formatMoney($amount, $currency);
     }
 }

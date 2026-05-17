@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Widgets;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Services\ValuationService;
 use Filament\Widgets\StatsOverviewWidget;
@@ -35,7 +36,7 @@ final class InventoryValuationWidget extends StatsOverviewWidget
             : 0;
 
         return [
-            Stat::make('Total Inventory Value', $currency . ' ' . number_format($totalValue, 2))
+            Stat::make('Total Inventory Value', MoneyFormatter::formatMajor($totalValue, $currency))
                 ->description("Using {$method->shortLabel()} method")
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
@@ -50,7 +51,7 @@ final class InventoryValuationWidget extends StatsOverviewWidget
                 ->icon('heroicon-o-tag')
                 ->color('primary'),
 
-            Stat::make('Avg Unit Cost', $currency . ' ' . number_format($avgCost, 2))
+            Stat::make('Avg Unit Cost', MoneyFormatter::formatMajor($avgCost, $currency))
                 ->description('Weighted average')
                 ->icon('heroicon-o-calculator')
                 ->color('warning'),

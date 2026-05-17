@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
-use RuntimeException;
 
 uses(FilamentJntTestCase::class);
 

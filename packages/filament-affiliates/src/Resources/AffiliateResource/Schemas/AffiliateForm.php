@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -113,7 +114,7 @@ final class AffiliateForm
                                 : (
                                     $get('commission_type') === CommissionType::Percentage->value
                                     ? number_format($state / 100, 2, '.', '')
-                                    : number_format($state / 100, 2, '.', '')
+                                    : MoneyFormatter::decimalFromMinor($state, (string) ($get('currency') ?? $currency))
                                 ))
                             ->dehydrateStateUsing(
                                 fn (?string $state, Get $get): ?int => $state === null || $state === ''

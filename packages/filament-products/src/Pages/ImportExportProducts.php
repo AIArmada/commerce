@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Pages;
 
-use AIArmada\FilamentProducts\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -41,7 +41,7 @@ final class ImportExportProducts extends Page
 
     private function resolveOwner(): ?Model
     {
-        return OwnerScope::resolveOwner();
+        return OwnerContext::resolve();
     }
 
     public function getImportFormProperty(): Schema

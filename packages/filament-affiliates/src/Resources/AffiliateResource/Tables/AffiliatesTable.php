@@ -12,6 +12,7 @@ use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\Pending;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -69,7 +70,7 @@ final class AffiliatesTable
 
                         return $type === CommissionType::Percentage
                             ? number_format($value / 100, 2) . ' %'
-                            : sprintf('%s %.2f', $record->currency, $value / 100);
+                            : MoneyFormatter::formatMinor($value, $record->currency);
                     })
                     ->badge()
                     ->color('primary'),

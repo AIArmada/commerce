@@ -16,7 +16,7 @@
                 <x-filament::section>
                     <div class="text-center">
                         <div class="text-3xl font-bold text-success-600 dark:text-success-400">
-                            MYR {{ number_format($balance['available'] / 100, 2) }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($balance['available'], 'MYR') }}
                         </div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                             {{ __('Available Balance') }}
@@ -27,7 +27,7 @@
                 <x-filament::section>
                     <div class="text-center">
                         <div class="text-3xl font-bold text-warning-600 dark:text-warning-400">
-                            MYR {{ number_format($balance['pending'] / 100, 2) }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($balance['pending'], 'MYR') }}
                         </div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                             {{ __('Pending Balance') }}
@@ -38,7 +38,7 @@
                 <x-filament::section>
                     <div class="text-center">
                         <div class="text-3xl font-bold text-info-600 dark:text-info-400">
-                            MYR {{ number_format($balance['reserved'] / 100, 2) }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($balance['reserved'], 'MYR') }}
                         </div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                             {{ __('Reserved') }}
@@ -49,7 +49,7 @@
                 <x-filament::section>
                     <div class="text-center">
                         <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                            MYR {{ number_format($balance['total'] / 100, 2) }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($balance['total'], 'MYR') }}
                         </div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                             {{ __('Total Balance') }}
@@ -71,7 +71,7 @@
                             <span class="text-sm font-medium text-success-800 dark:text-success-200">{{ __('Income') }}</span>
                         </div>
                         <div class="text-2xl font-bold text-success-600">
-                            MYR {{ number_format($turnover['income'] / 100, 2) }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($turnover['income'], 'MYR') }}
                         </div>
                     </div>
 
@@ -81,7 +81,7 @@
                             <span class="text-sm font-medium text-danger-800 dark:text-danger-200">{{ __('Fees') }}</span>
                         </div>
                         <div class="text-2xl font-bold text-danger-600">
-                            MYR {{ number_format($turnover['fees'] / 100, 2) }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($turnover['fees'], 'MYR') }}
                         </div>
                     </div>
 
@@ -91,7 +91,7 @@
                             <span class="text-sm font-medium text-warning-800 dark:text-warning-200">{{ __('Refunds') }}</span>
                         </div>
                         <div class="text-2xl font-bold text-warning-600">
-                            MYR {{ number_format($turnover['refunds'] / 100, 2) }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($turnover['refunds'], 'MYR') }}
                         </div>
                     </div>
 
@@ -101,7 +101,7 @@
                             <span class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ __('Net') }}</span>
                         </div>
                         <div class="text-2xl font-bold text-primary-600">
-                            MYR {{ number_format($turnover['net'] / 100, 2) }}
+                            {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($turnover['net'], 'MYR') }}
                         </div>
                     </div>
                 </div>

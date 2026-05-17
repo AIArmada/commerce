@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -159,11 +160,15 @@ final class TrackedProperty extends Model
             $growthExperimentModel = 'AIArmada\\Growth\\Models\\Experiment';
 
             if (class_exists($growthExperimentModel)) {
-                $growthExperimentModel::query()
-                    ->withoutOwnerScope()
-                    ->where('tracked_property_id', $trackedProperty->getKey())
-                    ->get()
-                    ->each(static fn ($experiment): mixed => $experiment->delete());
+                $growthExperiment = new $growthExperimentModel;
+
+                if (Schema::hasTable($growthExperiment->getTable())) {
+                    $growthExperimentModel::query()
+                        ->withoutOwnerScope()
+                        ->where('tracked_property_id', $trackedProperty->getKey())
+                        ->get()
+                        ->each(static fn ($experiment): mixed => $experiment->delete());
+                }
             }
 
             $trackedProperty->goals()->update(['tracked_property_id' => null]);

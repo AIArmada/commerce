@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Pages;
 
-use AIArmada\FilamentProducts\Support\OwnerScope;
+use AIArmada\CommerceSupport\Support\Filament\OwnerScopedIds;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
@@ -50,7 +51,7 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
      */
     private function getOwnerOnlyProductsQuery(): Builder
     {
-        $owner = OwnerScope::resolveOwner();
+        $owner = OwnerContext::resolve();
 
         return Product::query()->forOwner($owner, false);
     }
@@ -61,7 +62,7 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
      */
     private function scopeCategoriesQuery(Builder $query): Builder
     {
-        $owner = OwnerScope::resolveOwner();
+        $owner = OwnerContext::resolve();
 
         return $query->forOwner($owner, false);
     }
@@ -125,10 +126,12 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
 
                             TextInput::make('value')
                                 ->label(function (Get $get) {
+                                    $currency = mb_strtoupper((string) config('products.defaults.currency', 'MYR'));
+
                                     return match ($get('price_action')) {
-                                        'set' => 'New Price (RM)',
+                                        'set' => "New Price ({$currency})",
                                         'increase_percent', 'decrease_percent' => 'Percentage (%)',
-                                        'increase_amount', 'decrease_amount' => 'Amount (RM)',
+                                        'increase_amount', 'decrease_amount' => "Amount ({$currency})",
                                         default => 'Value',
                                     };
                                 })
@@ -231,7 +234,7 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
                         ->action(function ($records, array $data): void {
                             /** @var array<int, string> $categories */
                             $categories = $data['categories'] ?? [];
-                            $categories = OwnerScope::ensureAllowed('categories', Category::class, $categories);
+                            $categories = OwnerScopedIds::ensureAllowed('categories', Category::class, $categories);
 
                             foreach ($records as $product) {
                                 if ($data['mode'] === 'replace') {

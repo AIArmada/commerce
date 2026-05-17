@@ -6,6 +6,7 @@ namespace AIArmada\Cashier\Gateways\Stripe;
 
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 use Stripe\Checkout\Session;
 
@@ -130,7 +131,7 @@ class StripeCheckout implements CheckoutContract
      */
     public function total(): string
     {
-        return number_format($this->rawTotal() / 100, 2) . ' ' . mb_strtoupper($this->currency());
+        return MoneyFormatter::formatMinorWithCode($this->rawTotal(), $this->currency());
     }
 
     /**

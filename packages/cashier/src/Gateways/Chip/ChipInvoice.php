@@ -8,6 +8,7 @@ use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
@@ -85,7 +86,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function total(): string
     {
-        return number_format($this->rawTotal() / 100, 2) . ' ' . mb_strtoupper($this->currency());
+        return MoneyFormatter::formatMinorWithCode($this->rawTotal(), $this->currency());
     }
 
     /**
@@ -107,7 +108,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function subtotal(): string
     {
-        return number_format($this->rawSubtotal() / 100, 2) . ' ' . mb_strtoupper($this->currency());
+        return MoneyFormatter::formatMinorWithCode($this->rawSubtotal(), $this->currency());
     }
 
     /**
@@ -123,7 +124,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function tax(): string
     {
-        return number_format($this->rawTax() / 100, 2) . ' ' . mb_strtoupper($this->currency());
+        return MoneyFormatter::formatMinorWithCode($this->rawTax(), $this->currency());
     }
 
     /**

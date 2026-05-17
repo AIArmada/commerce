@@ -5,7 +5,7 @@
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ $metrics['revenue']['currency'] ?? 'MYR' }} {{ number_format(($metrics['revenue']['grossRevenue'] ?? 0) / 100, 2) }}
+                        {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($metrics['revenue']['grossRevenue'] ?? 0, $metrics['revenue']['currency'] ?? 'MYR') }}
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ __('Total Revenue') }}
@@ -43,7 +43,7 @@
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ $metrics['revenue']['currency'] ?? 'MYR' }} {{ number_format(($metrics['revenue']['averageTransaction'] ?? 0) / 100, 2) }}
+                        {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($metrics['revenue']['averageTransaction'] ?? 0, $metrics['revenue']['currency'] ?? 'MYR') }}
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ __('Avg. Transaction') }}
@@ -73,7 +73,7 @@
                             <div 
                                 class="w-full bg-primary-500 rounded-t transition-all hover:bg-primary-600" 
                                 style="height: {{ $maxRevenue > 0 ? ($data['revenue'] / $maxRevenue) * 100 : 0 }}%"
-                                title="{{ $data['period'] }}: {{ number_format($data['revenue'] / 100, 2) }}"
+                                title="{{ $data['period'] }}: {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($data['revenue'], $metrics['revenue']['currency'] ?? 'MYR') }}"
                             ></div>
                             @if(count($revenueTrend) <= 14)
                                 <span class="text-xs text-gray-500 mt-1 truncate w-full text-center">
@@ -108,7 +108,7 @@
                                 <div class="flex justify-between text-sm mb-1">
                                     <span class="text-gray-700 dark:text-gray-300">{{ ucfirst($method['method'] ?? 'Unknown') }}</span>
                                     <span class="text-gray-500">
-                                        {{ $method['attempts'] ?? 0 }} ({{ number_format(($method['revenue'] ?? 0) / 100, 2) }})
+                                        {{ $method['attempts'] ?? 0 }} ({{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($method['revenue'] ?? 0, $metrics['revenue']['currency'] ?? 'MYR') }})
                                     </span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
@@ -193,7 +193,7 @@
                                     <td class="py-2 text-gray-900 dark:text-gray-100">{{ $failure['reason'] ?? 'Unknown' }}</td>
                                     <td class="py-2 text-right text-gray-600 dark:text-gray-400">{{ $failure['count'] ?? 0 }}</td>
                                     <td class="py-2 text-right text-danger-600">
-                                        {{ number_format(($failure['lost_revenue'] ?? 0) / 100, 2) }}
+                                        {{ \AIArmada\CommerceSupport\Support\MoneyFormatter::formatMinor($failure['lost_revenue'] ?? 0, $metrics['revenue']['currency'] ?? 'MYR') }}
                                     </td>
                                 </tr>
                             @endforeach

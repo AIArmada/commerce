@@ -25,6 +25,12 @@ use InvalidArgumentException;
 
 final class ResolveExperimentAssignment
 {
+    private const SUBJECT_KEY_MAX_LENGTH = 255;
+
+    private const ANONYMOUS_SUBJECT_KEY_PREFIX = 'anonymous:';
+
+    private const HASHED_ANONYMOUS_SUBJECT_KEY_PREFIX = 'anonymous:sha256:';
+
     public function handle(
         Experiment $experiment,
         ?SignalIdentity $identity = null,
@@ -75,11 +81,32 @@ final class ResolveExperimentAssignment
             $candidateKeys[] = 'session:' . (string) $session->getKey();
         }
 
-        if (is_string($anonymousId) && $anonymousId !== '') {
-            $candidateKeys[] = 'anonymous:' . $anonymousId;
+        if (is_string($anonymousId)) {
+            $anonymousSubjectKey = $this->anonymousSubjectKey($anonymousId);
+
+            if ($anonymousSubjectKey !== null) {
+                $candidateKeys[] = $anonymousSubjectKey;
+            }
         }
 
         return array_values(array_unique($candidateKeys));
+    }
+
+    private function anonymousSubjectKey(string $anonymousId): ?string
+    {
+        $normalizedAnonymousId = mb_trim($anonymousId);
+
+        if ($normalizedAnonymousId === '') {
+            return null;
+        }
+
+        $subjectKey = self::ANONYMOUS_SUBJECT_KEY_PREFIX . $normalizedAnonymousId;
+
+        if (mb_strlen($subjectKey) <= self::SUBJECT_KEY_MAX_LENGTH) {
+            return $subjectKey;
+        }
+
+        return self::HASHED_ANONYMOUS_SUBJECT_KEY_PREFIX . hash('sha256', $normalizedAnonymousId);
     }
 
     /**

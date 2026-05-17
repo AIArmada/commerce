@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
@@ -150,16 +151,16 @@ final class CreateSubscription extends CreateRecord
         // Return some common defaults for demo purposes
         return match ($gateway) {
             'stripe' => [
-                'price_basic_monthly' => 'Basic Monthly - $9/mo',
-                'price_pro_monthly' => 'Pro Monthly - $29/mo',
-                'price_premium_monthly' => 'Premium Monthly - $99/mo',
-                'price_basic_yearly' => 'Basic Yearly - $90/yr',
-                'price_pro_yearly' => 'Pro Yearly - $290/yr',
+                'price_basic_monthly' => 'Basic Monthly - ' . MoneyFormatter::formatMajor(9, 'USD') . '/mo',
+                'price_pro_monthly' => 'Pro Monthly - ' . MoneyFormatter::formatMajor(29, 'USD') . '/mo',
+                'price_premium_monthly' => 'Premium Monthly - ' . MoneyFormatter::formatMajor(99, 'USD') . '/mo',
+                'price_basic_yearly' => 'Basic Yearly - ' . MoneyFormatter::formatMajor(90, 'USD') . '/yr',
+                'price_pro_yearly' => 'Pro Yearly - ' . MoneyFormatter::formatMajor(290, 'USD') . '/yr',
             ],
             'chip' => [
-                'plan_basic_monthly' => 'Basic Monthly - RM 39/mo',
-                'plan_pro_monthly' => 'Pro Monthly - RM 99/mo',
-                'plan_premium_monthly' => 'Premium Monthly - RM 299/mo',
+                'plan_basic_monthly' => 'Basic Monthly - ' . MoneyFormatter::formatMajor(39, 'MYR') . '/mo',
+                'plan_pro_monthly' => 'Pro Monthly - ' . MoneyFormatter::formatMajor(99, 'MYR') . '/mo',
+                'plan_premium_monthly' => 'Premium Monthly - ' . MoneyFormatter::formatMajor(299, 'MYR') . '/mo',
             ],
             default => [],
         };

@@ -55,8 +55,7 @@ abstract class BaseCashierChipResource extends Resource
     {
         $currency = $currency ?? config('cashier-chip.currency', 'MYR');
         $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
-        $value = $amount / 100;
 
-        return mb_strtoupper($currency) . ' ' . number_format($value, $precision, '.', ',');
+        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision, '.', ',');
     }
 }

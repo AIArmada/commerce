@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -68,17 +69,17 @@ final class AffiliateConversionInfolist
                     Grid::make(4)->schema([
                         TextEntry::make('subtotal_minor')
                             ->label('Subtotal')
-                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2) . ' ' . config('affiliates.currency.default', 'MYR'))
+                            ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->commission_currency ?? config('affiliates.currency.default', 'MYR')))
                             ->weight(FontWeight::SemiBold),
 
                         TextEntry::make('total_minor')
                             ->label('Total')
-                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2) . ' ' . config('affiliates.currency.default', 'MYR'))
+                            ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->commission_currency ?? config('affiliates.currency.default', 'MYR')))
                             ->weight(FontWeight::SemiBold),
 
                         TextEntry::make('commission_minor')
                             ->label('Commission')
-                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2) . ' ' . config('affiliates.currency.default', 'MYR'))
+                            ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->commission_currency ?? config('affiliates.currency.default', 'MYR')))
                             ->badge()
                             ->color('success')
                             ->weight(FontWeight::Bold),

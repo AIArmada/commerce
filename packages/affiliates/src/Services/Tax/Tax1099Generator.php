@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services\Tax;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Support\Facades\Storage;
 
 final class Tax1099Generator
@@ -58,7 +59,7 @@ final class Tax1099Generator
         $content .= 'Address: ' . ($taxInfo['address'] ?? '') . "\n";
         $content .= 'TIN: ' . $this->maskTin($taxInfo['tin']) . "\n\n";
 
-        $content .= 'Box 1 - Nonemployee Compensation: $' . number_format($totalAmountMinor / 100, 2) . "\n";
+        $content .= 'Box 1 - Nonemployee Compensation: ' . MoneyFormatter::formatMinor($totalAmountMinor, 'USD') . "\n";
 
         return $content;
     }

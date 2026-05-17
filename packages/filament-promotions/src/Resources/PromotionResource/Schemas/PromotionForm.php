@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentPromotions\Enums\PromotionType;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
@@ -19,6 +20,8 @@ final class PromotionForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $currency = (string) config('promotions.defaults.currency', 'USD');
+
         return $schema
             ->components([
                 Section::make('Basic Information')
@@ -53,12 +56,12 @@ final class PromotionForm
                             ->label('Discount Value')
                             ->required()
                             ->numeric()
-                            ->helperText('For percentage: enter number (e.g., 20 for 20%). For fixed: enter cents (e.g., 1000 for $10)'),
+                            ->helperText('For percentage: enter number (e.g., 20 for 20%). For fixed: enter minor units (e.g., 1000 = ' . MoneyFormatter::formatMinor(1000, $currency) . ')'),
 
                         TextInput::make('min_purchase_amount')
                             ->label('Minimum Order Value')
                             ->numeric()
-                            ->helperText('In cents (e.g., 5000 for $50)')
+                            ->helperText('In minor units (e.g., 5000 = ' . MoneyFormatter::formatMinor(5000, $currency) . ')')
                             ->nullable(),
                     ])
                     ->columns(2),

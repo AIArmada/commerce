@@ -20,6 +20,7 @@
         }
     ],
     "require": {
+        "aiarmada/commerce-support": "self.version",
         "aiarmada/cashier": "self.version",
         "filament/filament": "^5.6"
     },

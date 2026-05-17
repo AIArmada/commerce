@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Attributes\MapOutputName;
 use Spatie\LaravelData\Data;
@@ -73,6 +74,6 @@ class AffiliateData extends Data
             return number_format($this->commissionRate / 100, 2) . '%';
         }
 
-        return number_format($this->commissionRate / 100, 2) . ' ' . $this->currency;
+        return MoneyFormatter::formatMinorWithCode($this->commissionRate, $this->currency);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Resources\PurchaseResource\Schemas;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
@@ -223,10 +224,6 @@ final class PurchaseInfolist
             return null;
         }
 
-        $precision = (int) config('filament-chip.tables.amount_precision', 2);
-        $value = $amount / 100;
-        $formatted = number_format($value, $precision, '.', ',');
-
-        return mb_trim(sprintf('%s%s', $currency !== null && $currency !== '' && $currency !== '0' ? mb_strtoupper($currency) . ' ' : '', $formatted));
+        return MoneyFormatter::formatMinor($amount, $currency ?? config('filament-chip.default_currency', 'MYR'), (int) config('filament-chip.tables.amount_precision', 2));
     }
 }

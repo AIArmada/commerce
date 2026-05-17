@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCart\Models\Cart;
-use Akaunting\Money\Money;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -181,8 +181,6 @@ final class CartStatsOverviewWidget extends BaseWidget
 
     private function formatMoney(int $amount): string
     {
-        $currency = mb_strtoupper(config('cart.money.default_currency', 'USD'));
-
-        return (string) Money::{$currency}($amount);
+        return MoneyFormatter::formatMinor($amount, (string) config('cart.money.default_currency', 'USD'));
     }
 }

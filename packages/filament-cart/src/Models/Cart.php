@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Models;
 
 use AIArmada\Cart\Cart as BaseCart;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -13,7 +14,6 @@ use AIArmada\FilamentCart\Database\Factories\CartFactory;
 use AIArmada\FilamentCart\Events\CartAbandoned;
 use AIArmada\FilamentCart\Events\CartCheckoutStarted;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
-use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -261,9 +261,7 @@ class Cart extends Model
 
     public function formatMoney(int $amount): string
     {
-        $currency = mb_strtoupper($this->currency ?: config('cart.money.default_currency', 'USD'));
-
-        return (string) Money::{$currency}($amount);
+        return MoneyFormatter::formatMinor($amount, (string) ($this->currency ?: config('cart.money.default_currency', 'USD')));
     }
 
     /**

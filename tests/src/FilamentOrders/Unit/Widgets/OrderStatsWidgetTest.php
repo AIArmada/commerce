@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentOrders\Widgets\OrderStatsWidget;
 use AIArmada\Orders\Models\Order;
@@ -146,5 +147,5 @@ it('calculates stats using an owner-scoped query', function (): void {
 
     $currency = (string) config('orders.currency.default', 'MYR');
 
-    expect($stats[1]->getValue())->toBe($currency . ' ' . number_format($scopedTodayRevenue / 100, 2));
+    expect($stats[1]->getValue())->toBe(MoneyFormatter::formatMinor($scopedTodayRevenue, $currency));
 });

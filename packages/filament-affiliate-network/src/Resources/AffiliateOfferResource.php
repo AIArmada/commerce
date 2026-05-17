@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Pages\CreateAffiliateOffer;
@@ -214,7 +215,7 @@ final class AffiliateOfferResource extends Resource
                             return number_format($record->commission_rate / 100, 2) . '%';
                         }
 
-                        return '$' . number_format($record->commission_rate / 100, 2);
+                        return MoneyFormatter::formatMinor($record->commission_rate, $record->currency ?? 'USD');
                     })
                     ->sortable(),
 

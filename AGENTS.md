@@ -70,6 +70,8 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 ## Best Practices
 
+- **Tooling commands**: Prefer standard project-local binaries directly (`./vendor/bin/pest`, `./vendor/bin/phpstan`, `./vendor/bin/rector`, `./vendor/bin/pint`) in a normal local shell. Do **not** add or commit machine-specific launcher files/symlinks such as `php-local`; personal PHP/Herd wrappers belong in local shell config, not the repo.
+- **Repo-safe local tooling**: Keep tracked agent/MCP config repo-safe. Local development credential files like `auth.json` may exist on your machine, but they must stay ignored and never be committed. Do **not** commit absolute home-directory paths, personal `SITE_PATH` values, or other machine-specific local tool wiring.
 - **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
 - **Modern PHP**: 8.4+ (readonly, match, modern typing).
 - **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
@@ -326,6 +328,9 @@ When a task changes user behavior (entry points, forms, actions, or meaningful w
 # Testing Guidelines
 
 - **Goal**: ELIMINATE BUGS.
+- **Parallelism is mandatory**: Every Pest or PHPUnit test invocation must include `--parallel`.
+  This applies to single files, directories, package sweeps, and final verification runs.
+  If a command does not support `--parallel`, use the closest parallel-capable equivalent instead of omitting it.
 - **Refs** (Filament v4 docs are acceptable for v5 testing APIs):
   - [Overview](https://filamentphp.com/docs/4.x/testing/overview)
   - [Resources](https://filamentphp.com/docs/4.x/testing/testing-resources)
@@ -337,6 +342,7 @@ When a task changes user behavior (entry points, forms, actions, or meaningful w
 ## Execution
 
 - **Do not run everything**. Run tests per package/scope.
+- **Always use `--parallel`**. No exceptions.
 - **Single**: `./vendor/bin/pest --parallel path/to/Test.php`
 - **Dir**: `./vendor/bin/pest --parallel path/to/dir`
 - **Full**: `./vendor/bin/pest --parallel ...` (final only)

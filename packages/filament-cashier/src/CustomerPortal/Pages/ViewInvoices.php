@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
+use AIArmada\FilamentCashier\Support\CurrencyFormatter;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use BackedEnum;
 use Filament\Pages\Page;
@@ -75,12 +76,13 @@ final class ViewInvoices extends Page
 
                 foreach ($chipInvoices as $invoice) {
                     $createdAt = $invoice->created_at;
+                    $currency = (string) ($invoice->currency ?? config('cashier.currency', 'MYR'));
 
                     $invoices->push([
                         'id' => $invoice->id,
                         'gateway' => 'chip',
                         'number' => $invoice->number ?? $invoice->id,
-                        'amount' => $this->formatAmount(($invoice->amount ?? 0), 'MYR'),
+                        'amount' => CurrencyFormatter::format((int) ($invoice->amount ?? 0), $currency),
                         'date' => $createdAt?->format('M d, Y') ?? 'N/A',
                         'status' => $invoice->status ?? 'unknown',
                         'download_url' => $invoice->pdf_url ?? null,
@@ -103,18 +105,5 @@ final class ViewInvoices extends Page
             });
 
         return $result;
-    }
-
-    private function formatAmount(int $amountInCents, string $currency): string
-    {
-        $symbol = match ($currency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            default => $currency . ' ',
-        };
-
-        return $symbol . number_format($amountInCents / 100, 2);
     }
 }

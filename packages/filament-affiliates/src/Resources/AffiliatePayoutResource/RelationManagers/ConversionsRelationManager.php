@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\RelationManagers;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -28,11 +29,7 @@ final class ConversionsRelationManager extends RelationManager
                     ->placeholder('—'),
                 TextColumn::make('commission_minor')
                     ->label('Commission')
-                    ->formatStateUsing(fn (AffiliateConversion $record): string => sprintf(
-                        '%s %.2f',
-                        $record->commission_currency,
-                        $record->commission_minor / 100
-                    ))
+                    ->formatStateUsing(fn (AffiliateConversion $record): string => MoneyFormatter::formatMinor($record->commission_minor, $record->commission_currency))
                     ->badge()
                     ->color('success'),
                 TextColumn::make('status')

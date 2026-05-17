@@ -8,6 +8,7 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;
 use InvalidArgumentException;
 
@@ -251,7 +252,7 @@ class ChipPayment implements PaymentContract
             return $this->payment->amount();
         }
 
-        return number_format($this->rawAmount() / 100, 2) . ' ' . $this->currency();
+        return MoneyFormatter::formatMinorWithCode($this->rawAmount(), $this->currency());
     }
 
     /**

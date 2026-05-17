@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Gateways\Stripe;
 
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Stripe\InvoiceLineItem;
 use Stripe\Price;
 
@@ -148,6 +149,6 @@ class StripeInvoiceLineItem implements InvoiceLineItemContract
      */
     protected function formatAmount(int $amount): string
     {
-        return number_format($amount / 100, 2) . ' ' . mb_strtoupper($this->currency());
+        return MoneyFormatter::formatMinorWithCode($amount, $this->currency());
     }
 }

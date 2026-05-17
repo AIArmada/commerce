@@ -9,6 +9,7 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
@@ -36,11 +37,7 @@ final class ConversionsRelationManager extends RelationManager
 
                 TextColumn::make('commission_minor')
                     ->label('Commission')
-                    ->formatStateUsing(fn (AffiliateConversion $record): string => sprintf(
-                        '%s %.2f',
-                        $record->commission_currency,
-                        $record->commission_minor / 100
-                    ))
+                    ->formatStateUsing(fn (AffiliateConversion $record): string => MoneyFormatter::formatMinor($record->commission_minor, $record->commission_currency))
                     ->badge()
                     ->color('success')
                     ->sortable(),

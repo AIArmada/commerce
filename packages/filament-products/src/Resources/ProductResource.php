@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages;
@@ -45,7 +46,6 @@ use Filament\Tables\Columns\SpatieTagsColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -679,7 +679,7 @@ final class ProductResource extends Resource
 
     private static function formatCurrency(int $amountMinor, ?string $currency): string
     {
-        return Number::currency($amountMinor / 100, $currency ?? 'MYR');
+        return MoneyFormatter::formatMinor($amountMinor, $currency ?? 'MYR');
     }
 
     public static function getRelations(): array

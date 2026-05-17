@@ -8,6 +8,7 @@
     "source": "https://github.com/aiarmada/commerce"
   },
   "require": {
+    "aiarmada/commerce-support": "self.version",
     "aiarmada/chip": "self.version",
     "filament/filament": "^5.6"
   },
