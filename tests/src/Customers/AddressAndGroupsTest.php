@@ -21,8 +21,7 @@ describe('Address Model', function (): void {
 
             $address = Address::create([
                 'customer_id' => $customer->id,
-                'first_name' => 'John',
-                'last_name' => 'Doe',
+                'recipient_name' => 'John Doe',
                 'line1' => '123 Main Street',
                 'city' => 'Kuala Lumpur',
                 'state' => 'KL',
@@ -47,8 +46,7 @@ describe('Address Model', function (): void {
 
             $shipping = Address::create([
                 'customer_id' => $customer->id,
-                'first_name' => 'Jane',
-                'last_name' => 'Doe',
+                'recipient_name' => 'Jane Doe',
                 'line1' => '100 Ship Street',
                 'city' => 'Petaling Jaya',
                 'postcode' => '47810',
@@ -58,8 +56,7 @@ describe('Address Model', function (): void {
 
             $billing = Address::create([
                 'customer_id' => $customer->id,
-                'first_name' => 'Jane',
-                'last_name' => 'Doe',
+                'recipient_name' => 'Jane Doe',
                 'line1' => '200 Bill Street',
                 'city' => 'Shah Alam',
                 'postcode' => '40100',
