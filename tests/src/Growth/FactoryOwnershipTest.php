@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
 function growthFactoryOwner(): User
@@ -21,7 +22,7 @@ function growthFactoryOwner(): User
 it('growth factories honor the current owner context by default', function (): void {
     $owner = growthFactoryOwner();
 
-    [$experiment, $variant, $assignment] = OwnerContext::withOwner($owner, function () use ($owner): array {
+    [$experiment, $variant, $assignment] = OwnerContext::withOwner($owner, function (): array {
         /** @var Experiment $experiment */
         $experiment = Experiment::factory()->create();
         /** @var Variant $variant */
@@ -60,4 +61,10 @@ it('growth factories support explicit global states', function (): void {
         ->and($assignment->isGlobal())->toBeTrue()
         ->and($assignment->experiment->isGlobal())->toBeTrue()
         ->and($assignment->variant->isGlobal())->toBeTrue();
+});
+
+it('growth experiment factory definitions use immutable started_at values', function (): void {
+    $startedAt = Experiment::factory()->definition()['started_at'];
+
+    expect($startedAt)->toBeInstanceOf(CarbonImmutable::class);
 });

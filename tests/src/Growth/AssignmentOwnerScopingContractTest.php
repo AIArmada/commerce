@@ -11,7 +11,9 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class AssignmentOwnerScopingContractTest extends TestCase
@@ -68,7 +70,33 @@ final class AssignmentOwnerScopingContractTest extends TestCase
         $model = $this->createGlobalModel();
 
         expect(fn () => $model->assignOwner($owner)->save())
-            ->toThrow(\InvalidArgumentException::class, 'Owner cannot be assigned to a persisted global');
+            ->toThrow(InvalidArgumentException::class, 'Owner cannot be assigned to a persisted global');
+    }
+
+    public function test_persisted_assignment_revalidates_the_parent_experiment_on_save(): void
+    {
+        $ownerA = $this->createOwner();
+        $ownerB = $this->createOwner();
+        [$experimentA, $variantA] = $this->createExperimentAndVariant($ownerA);
+        [$experimentB] = $this->createExperimentAndVariant($ownerB);
+
+        $assignment = OwnerContext::withOwner($ownerA, fn (): Assignment => Assignment::factory()->create([
+            'experiment_id' => $experimentA->getKey(),
+            'variant_id' => $variantA->getKey(),
+            'subject_key' => 'identity:' . Str::uuid()->toString(),
+            'assigned_at' => CarbonImmutable::now(),
+        ]));
+
+        DB::table($assignment->getTable())
+            ->where('id', $assignment->getKey())
+            ->update(['experiment_id' => $experimentB->getKey()]);
+
+        expect(fn (): bool => OwnerContext::withOwner($ownerA, function () use ($assignment): bool {
+            $corruptAssignment = Assignment::query()->findOrFail($assignment->getKey());
+            $corruptAssignment->subject_key = 'identity:' . Str::uuid()->toString();
+
+            return $corruptAssignment->save();
+        }))->toThrow(AuthorizationException::class, 'Assignment experiment is not accessible in the current owner scope.');
     }
 
     /**

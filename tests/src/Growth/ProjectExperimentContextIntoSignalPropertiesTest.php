@@ -12,6 +12,8 @@ use AIArmada\Growth\Models\Variant;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\TrackedProperty;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 function growthProjectionOwner(): User
@@ -100,9 +102,9 @@ it('projects a single experiment context into checkout properties', function ():
         'currency' => 'MYR',
     ]));
 
-    $properties = app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+    $properties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
         'checkout_session_id' => $checkoutSession->getKey(),
-    ]);
+    ]));
 
     expect($properties['experiment_id'])->toBe((string) $experiment->getKey())
         ->and($properties['variant_id'])->toBe((string) $variant->getKey())
@@ -134,14 +136,64 @@ it('projects multiple experiment contexts into order properties when the same bu
         'paid_at' => now(),
     ]));
 
-    $properties = app(ProjectExperimentContextIntoSignalProperties::class)->handle($order, $trackedProperty, [
+    $properties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($order, $trackedProperty, [
         'order_id' => $order->getKey(),
-    ]);
+    ]));
 
     expect($properties['experiment_contexts'])->toHaveCount(2)
         ->and(collect($properties['experiment_contexts'])->pluck('experiment_id')->all())
-            ->toEqualCanonicalizing([(string) $experimentA->getKey(), (string) $experimentB->getKey()])
+        ->toEqualCanonicalizing([(string) $experimentA->getKey(), (string) $experimentB->getKey()])
         ->and($properties)->toHaveKeys(['experiment_id', 'variant_id', 'assignment_id']);
+});
+
+it('skips newer invalid assignments when projecting experiment contexts for a source', function (): void {
+    $owner = growthProjectionOwner();
+    $trackedProperty = growthProjectionTrackedProperty($owner);
+    [$experiment, $variant] = growthProjectionExperiment($owner, $trackedProperty, 'sales_page_test', 'fallback');
+    $identity = growthProjectionIdentity($owner, $trackedProperty, 'customer-projection-fallback', 'cart-projection-fallback');
+    $assignment = growthProjectionAssignment($owner, $experiment, $variant, $identity, 'cart-projection-fallback');
+
+    OwnerContext::withOwner($owner, function () use ($assignment): void {
+        $assignment->subject_key = 'identity-only:cart-projection-fallback';
+        $assignment->save();
+    });
+
+    $invalidTimestamp = now()->addMinute();
+
+    DB::table((new Assignment)->getTable())->insert([
+        'id' => (string) Str::uuid(),
+        'experiment_id' => $experiment->getKey(),
+        'variant_id' => (string) Str::uuid(),
+        'signal_identity_id' => null,
+        'signal_session_id' => null,
+        'subject_key' => 'anonymous:cart-projection-fallback',
+        'bucket' => 1,
+        'metadata' => json_encode([]),
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => (string) $owner->getKey(),
+        'assigned_at' => $invalidTimestamp,
+        'first_exposed_at' => $invalidTimestamp,
+        'last_seen_at' => $invalidTimestamp,
+        'created_at' => $invalidTimestamp,
+        'updated_at' => $invalidTimestamp,
+    ]);
+
+    $checkoutSession = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::query()->create([
+        'cart_id' => 'cart-projection-fallback',
+        'customer_id' => 'customer-projection-fallback',
+        'grand_total' => 29900,
+        'currency' => 'MYR',
+    ]));
+
+    $properties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+        'checkout_session_id' => $checkoutSession->getKey(),
+    ]));
+
+    expect($properties['experiment_id'])->toBe((string) $experiment->getKey())
+        ->and($properties['variant_id'])->toBe((string) $variant->getKey())
+        ->and($properties['assignment_id'])->toBe((string) $assignment->getKey())
+        ->and($properties['experiment_contexts'])->toHaveCount(1)
+        ->and(data_get($properties, 'experiment_contexts.0.assignment_id'))->toBe((string) $assignment->getKey());
 });
 
 it('does not enrich properties when the growth signals integration is disabled', function (): void {
@@ -170,4 +222,230 @@ it('does not enrich properties when the growth signals integration is disabled',
     ]);
 
     config()->set('growth.integrations.signals.enabled', true);
+});
+
+it('preserves existing null-valued properties while enriching experiment context', function (): void {
+    $owner = growthProjectionOwner();
+    $trackedProperty = growthProjectionTrackedProperty($owner);
+    [$experiment, $variant] = growthProjectionExperiment($owner, $trackedProperty, 'sales_page_test', 'null-preservation');
+    $identity = growthProjectionIdentity($owner, $trackedProperty, 'customer-projection-null', 'cart-projection-null');
+
+    growthProjectionAssignment($owner, $experiment, $variant, $identity, 'cart-projection-null');
+
+    $checkoutSession = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::query()->create([
+        'cart_id' => 'cart-projection-null',
+        'customer_id' => 'customer-projection-null',
+        'grand_total' => 39900,
+        'currency' => 'MYR',
+    ]));
+
+    $properties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+        'checkout_session_id' => $checkoutSession->getKey(),
+        'coupon_code' => null,
+    ]));
+
+    expect($properties)->toHaveKey('coupon_code')
+        ->and($properties['coupon_code'])->toBeNull()
+        ->and($properties['experiment_id'])->toBe((string) $experiment->getKey())
+        ->and($properties['variant_id'])->toBe((string) $variant->getKey())
+        ->and($properties['experiment_contexts'])->toHaveCount(1);
+});
+
+it('rejects enrichment when the tracked property is outside the current owner scope', function (): void {
+    $ownerA = growthProjectionOwner();
+    $ownerB = growthProjectionOwner();
+    $trackedProperty = growthProjectionTrackedProperty($ownerA);
+    [$experiment, $variant] = growthProjectionExperiment($ownerA, $trackedProperty, 'sales_page_test', 'd');
+    $identity = growthProjectionIdentity($ownerA, $trackedProperty, 'customer-projection-4', 'cart-projection-4');
+
+    growthProjectionAssignment($ownerA, $experiment, $variant, $identity, 'cart-projection-4');
+
+    $checkoutSession = OwnerContext::withOwner($ownerB, fn (): CheckoutSession => CheckoutSession::query()->create([
+        'cart_id' => 'cart-projection-4',
+        'customer_id' => 'customer-projection-4',
+        'grand_total' => 29900,
+        'currency' => 'MYR',
+    ]));
+
+    expect(fn (): array => OwnerContext::withOwner($ownerB, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+        'checkout_session_id' => $checkoutSession->getKey(),
+    ])))
+        ->toThrow(AuthorizationException::class, 'Tracked property is not accessible in the current owner scope.');
+});
+
+it('rejects enrichment when growth owner scoping is disabled but the tracked property is outside the current signals owner scope', function (): void {
+    config()->set('growth.features.owner.enabled', false);
+
+    $ownerA = growthProjectionOwner();
+    $ownerB = growthProjectionOwner();
+    $trackedProperty = growthProjectionTrackedProperty($ownerA);
+    [$experiment, $variant] = growthProjectionExperiment($ownerA, $trackedProperty, 'sales_page_test', 'tracked-property-only-scope');
+    $identity = growthProjectionIdentity($ownerA, $trackedProperty, 'customer-projection-4b', 'cart-projection-4b');
+
+    growthProjectionAssignment($ownerA, $experiment, $variant, $identity, 'cart-projection-4b');
+
+    $checkoutSession = OwnerContext::withOwner($ownerB, fn (): CheckoutSession => CheckoutSession::query()->create([
+        'cart_id' => 'cart-projection-4b',
+        'customer_id' => 'customer-projection-4b',
+        'grand_total' => 29900,
+        'currency' => 'MYR',
+    ]));
+
+    expect(fn (): array => OwnerContext::withOwner($ownerB, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+        'checkout_session_id' => $checkoutSession->getKey(),
+    ])))
+        ->toThrow(AuthorizationException::class, 'Tracked property is not accessible in the current owner scope.');
+});
+
+it('rejects enrichment from global tracked properties when include_global is disabled', function (): void {
+    $owner = growthProjectionOwner();
+
+    $trackedProperty = OwnerContext::withOwner(null, fn (): TrackedProperty => TrackedProperty::query()->create([
+        'name' => 'Global Growth Projection Property ' . Str::random(6),
+        'slug' => 'global-growth-projection-' . Str::lower(Str::random(8)),
+        'write_key' => Str::random(40),
+        'type' => 'website',
+        'timezone' => 'UTC',
+        'currency' => 'MYR',
+        'is_active' => true,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]));
+
+    [$experiment, $variant] = OwnerContext::withOwner(null, function () use ($trackedProperty): array {
+        /** @var Experiment $experiment */
+        $experiment = Experiment::factory()->global()->create([
+            'tracked_property_id' => $trackedProperty->getKey(),
+            'name' => 'Global Projection Experiment',
+            'slug' => 'global-projection-experiment-' . Str::lower(Str::random(6)),
+            'module_type' => 'sales_page_test',
+            'status' => 'active',
+        ]);
+
+        /** @var Variant $variant */
+        $variant = Variant::factory()->global()->create([
+            'experiment_id' => $experiment->getKey(),
+            'code' => 'G',
+            'name' => 'Global Variant',
+            'position' => 1,
+            'traffic_percentage' => 100,
+            'is_control' => true,
+        ]);
+
+        return [$experiment, $variant];
+    });
+
+    $identity = OwnerContext::withOwner(null, fn (): SignalIdentity => SignalIdentity::query()->create([
+        'tracked_property_id' => $trackedProperty->getKey(),
+        'external_id' => 'customer-projection-global',
+        'anonymous_id' => 'cart-projection-global',
+        'email' => 'projection-global-' . Str::lower(Str::random(8)) . '@example.com',
+        'owner_type' => null,
+        'owner_id' => null,
+    ]));
+
+    OwnerContext::withOwner(null, fn (): Assignment => Assignment::query()->create([
+        'experiment_id' => $experiment->getKey(),
+        'variant_id' => $variant->getKey(),
+        'signal_identity_id' => $identity->getKey(),
+        'subject_key' => 'anonymous:cart-projection-global',
+        'bucket' => 0,
+        'assigned_at' => now(),
+        'first_exposed_at' => now(),
+        'last_seen_at' => now(),
+        'owner_type' => null,
+        'owner_id' => null,
+    ]));
+
+    $checkoutSession = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::query()->create([
+        'cart_id' => 'cart-projection-global',
+        'customer_id' => 'customer-projection-global',
+        'grand_total' => 29900,
+        'currency' => 'MYR',
+    ]));
+
+    expect(fn (): array => OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+        'checkout_session_id' => $checkoutSession->getKey(),
+    ])))
+        ->toThrow(AuthorizationException::class, 'Tracked property is not accessible in the current owner scope.');
+});
+
+it('enriches signals from global tracked properties when include_global is enabled', function (): void {
+    config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.include_global', true);
+
+    $owner = growthProjectionOwner();
+
+    $trackedProperty = OwnerContext::withOwner(null, fn (): TrackedProperty => TrackedProperty::query()->create([
+        'name' => 'Global Include Projection Property ' . Str::random(6),
+        'slug' => 'global-include-projection-' . Str::lower(Str::random(8)),
+        'write_key' => Str::random(40),
+        'type' => 'website',
+        'timezone' => 'UTC',
+        'currency' => 'MYR',
+        'is_active' => true,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]));
+
+    [$experiment, $variant] = OwnerContext::withOwner(null, function () use ($trackedProperty): array {
+        /** @var Experiment $experiment */
+        $experiment = Experiment::factory()->global()->create([
+            'tracked_property_id' => $trackedProperty->getKey(),
+            'name' => 'Global Include Projection Experiment',
+            'slug' => 'global-include-projection-experiment-' . Str::lower(Str::random(6)),
+            'module_type' => 'sales_page_test',
+            'status' => 'active',
+        ]);
+
+        /** @var Variant $variant */
+        $variant = Variant::factory()->global()->create([
+            'experiment_id' => $experiment->getKey(),
+            'code' => 'GI',
+            'name' => 'Global Include Variant',
+            'position' => 1,
+            'traffic_percentage' => 100,
+            'is_control' => true,
+        ]);
+
+        return [$experiment, $variant];
+    });
+
+    $identity = OwnerContext::withOwner(null, fn (): SignalIdentity => SignalIdentity::query()->create([
+        'tracked_property_id' => $trackedProperty->getKey(),
+        'external_id' => 'customer-projection-global-include',
+        'anonymous_id' => 'cart-projection-global-include',
+        'email' => 'projection-global-include-' . Str::lower(Str::random(8)) . '@example.com',
+        'owner_type' => null,
+        'owner_id' => null,
+    ]));
+
+    OwnerContext::withOwner(null, fn (): Assignment => Assignment::query()->create([
+        'experiment_id' => $experiment->getKey(),
+        'variant_id' => $variant->getKey(),
+        'signal_identity_id' => $identity->getKey(),
+        'subject_key' => 'anonymous:cart-projection-global-include',
+        'bucket' => 0,
+        'assigned_at' => now(),
+        'first_exposed_at' => now(),
+        'last_seen_at' => now(),
+        'owner_type' => null,
+        'owner_id' => null,
+    ]));
+
+    $checkoutSession = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::query()->create([
+        'cart_id' => 'cart-projection-global-include',
+        'customer_id' => 'customer-projection-global-include',
+        'grand_total' => 29900,
+        'currency' => 'MYR',
+    ]));
+
+    $enrichedProperties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+        'checkout_session_id' => $checkoutSession->getKey(),
+    ]));
+
+    expect($enrichedProperties['experiment_id'])->toBe((string) $experiment->getKey())
+        ->and($enrichedProperties['variant_id'])->toBe((string) $variant->getKey())
+        ->and($enrichedProperties['assignment_id'])->toBeString()
+        ->and($enrichedProperties['experiment_contexts'])->toHaveCount(1);
 });

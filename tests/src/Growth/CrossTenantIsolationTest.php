@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\TrackedProperty;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
 function growthIsolationOwner(string $label): User
@@ -37,6 +37,32 @@ function growthIsolationExperiment(User $owner, string $name): Experiment
             'tracked_property_id' => $trackedProperty->getKey(),
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::lower(Str::random(6)),
+        ]);
+
+        return $experiment;
+    });
+}
+
+function growthIsolationGlobalExperiment(string $name): Experiment
+{
+    return OwnerContext::withOwner(null, function () use ($name): Experiment {
+        $trackedProperty = TrackedProperty::query()->create([
+            'name' => $name . ' Global Property',
+            'slug' => Str::slug($name) . '-global-' . Str::lower(Str::random(6)),
+            'write_key' => Str::random(40),
+            'type' => 'website',
+            'timezone' => 'UTC',
+            'currency' => 'MYR',
+            'is_active' => true,
+            'owner_type' => null,
+            'owner_id' => null,
+        ]);
+
+        /** @var Experiment $experiment */
+        $experiment = Experiment::factory()->global()->create([
+            'tracked_property_id' => $trackedProperty->getKey(),
+            'name' => $name,
+            'slug' => Str::slug($name) . '-global-' . Str::lower(Str::random(6)),
         ]);
 
         return $experiment;
@@ -73,4 +99,21 @@ it('prevents cross-tenant variant creation against another owners experiment', f
         'is_control' => false,
         'is_active' => true,
     ])))->toThrow(AuthorizationException::class);
+});
+
+it('prevents tenant-scoped variant creation against a global experiment when include_global only enables reads', function (): void {
+    config()->set('growth.features.owner.include_global', true);
+
+    $owner = growthIsolationOwner('GLOBAL');
+    $globalExperiment = growthIsolationGlobalExperiment('Global Experiment');
+
+    expect(fn () => OwnerContext::withOwner($owner, fn (): Variant => Variant::query()->create([
+        'experiment_id' => $globalExperiment->getKey(),
+        'code' => 'GLB',
+        'name' => 'Global Variant Attempt',
+        'traffic_percentage' => 100,
+        'position' => 1,
+        'is_control' => false,
+        'is_active' => true,
+    ])))->toThrow(InvalidArgumentException::class, 'Variant owner must match the parent experiment owner.');
 });
