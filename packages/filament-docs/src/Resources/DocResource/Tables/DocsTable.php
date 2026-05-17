@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\Tables;
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\States\Cancelled;
+use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
 use AIArmada\FilamentDocs\Exports\DocExporter;
@@ -106,19 +108,19 @@ final class DocsTable
 
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options(collect(DocStatus::cases())->mapWithKeys(fn (DocStatus $status) => [$status->value => $status->label()])),
+                    ->options(DocStatus::options()),
 
                 Filter::make('overdue')
                     ->label('Overdue')
                     ->query(
                         fn (Builder $query): Builder => $query
                             ->where('due_date', '<', CarbonImmutable::now())
-                            ->whereNotIn('status', [DocStatus::PAID->value, DocStatus::CANCELLED->value])
+                            ->whereNotIn('status', [DocStatus::normalize(Paid::class), DocStatus::normalize(Cancelled::class)])
                     ),
 
                 Filter::make('paid')
                     ->label('Paid')
-                    ->query(fn (Builder $query): Builder => $query->where('status', DocStatus::PAID->value)),
+                    ->query(fn (Builder $query): Builder => $query->where('status', DocStatus::normalize(Paid::class))),
 
                 Filter::make('has_pdf')
                     ->label('Has PDF')

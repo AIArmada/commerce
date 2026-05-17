@@ -5,13 +5,15 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 test('products are owner-scoped (read isolation + write guard)', function (): void {
-    $ownerA = \App\Models\User::factory()->create();
-    $ownerB = \App\Models\User::factory()->create();
+    $ownerA = User::factory()->create();
+    $ownerB = User::factory()->create();
 
     $productA = OwnerContext::withOwner($ownerA, function () {
         return Product::create([
@@ -56,6 +58,6 @@ test('products are owner-scoped (read isolation + write guard)', function (): vo
             'status' => ProductStatus::Active,
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => $ownerB->getKey(),
-        ]))->toThrow(\InvalidArgumentException::class);
+        ]))->toThrow(AuthorizationException::class);
     });
 });

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
-use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\States\DocStatus;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;

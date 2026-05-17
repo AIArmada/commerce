@@ -156,7 +156,7 @@ final class ProjectExperimentContextIntoSignalProperties
     private function candidateExternalIds(Model $source): array
     {
         return $this->uniqueStrings([
-            $this->stringValue($source->getAttribute('customer_id')),
+            $this->stringValue($this->attributeValue($source, 'customer_id')),
         ]);
     }
 
@@ -165,12 +165,21 @@ final class ProjectExperimentContextIntoSignalProperties
      */
     private function candidateAnonymousIds(Model $source): array
     {
-        $metadata = $source->getAttribute('metadata');
+        $metadata = $this->attributeValue($source, 'metadata');
 
         return $this->uniqueStrings([
-            $this->stringValue($source->getAttribute('cart_id')),
+            $this->stringValue($this->attributeValue($source, 'cart_id')),
             is_array($metadata) ? $this->stringValue(data_get($metadata, 'cart_id')) : null,
         ]);
+    }
+
+    private function attributeValue(Model $source, string $attribute): mixed
+    {
+        if (! array_key_exists($attribute, $source->getAttributes())) {
+            return null;
+        }
+
+        return $source->getAttribute($attribute);
     }
 
     /**

@@ -38,9 +38,11 @@ Displays totals for:
 
 - all documents
 - draft documents
-- pending documents
+- pending and sent documents (combined as the awaiting-payment bucket)
 - paid documents
 - overdue documents
+
+The widget uses the same normalized docs state values as the rest of the Filament UI, so labels and counts stay aligned with document status casting.
 
 ### QuickActionsWidget
 

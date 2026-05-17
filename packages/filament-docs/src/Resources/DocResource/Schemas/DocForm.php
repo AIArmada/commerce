@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Draft;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
@@ -85,8 +86,8 @@ final class DocForm
                             ->schema([
                                 Select::make('status')
                                     ->label('Status')
-                                    ->options(collect(DocStatus::cases())->mapWithKeys(fn (DocStatus $status) => [$status->value => $status->label()]))
-                                    ->default(DocStatus::DRAFT->value)
+                                    ->options(DocStatus::options())
+                                    ->default(DocStatus::normalize(Draft::class))
                                     ->required(),
 
                                 DatePicker::make('issue_date')

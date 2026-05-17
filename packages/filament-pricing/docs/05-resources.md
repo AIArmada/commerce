@@ -98,9 +98,9 @@ public static function getRelations(): array
 
 ---
 
-## PromotionResource
+## PromotionResource (Fallback)
 
-Resource for managing promotions (conditional on `aiarmada/promotions`).
+Fallback resource for managing promotions when `aiarmada/promotions` is installed and `aiarmada/filament-promotions` is not.
 
 ### Model
 

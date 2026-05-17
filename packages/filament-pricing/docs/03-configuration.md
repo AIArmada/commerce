@@ -65,7 +65,9 @@ Resources use these default navigation settings:
 | Navigation Sort | 1 |
 | Record Title | name |
 
-### PromotionResource
+### PromotionResource (fallback only)
+
+These navigation details apply only when Filament Pricing is providing the fallback promotions resource. If `aiarmada/filament-promotions` is installed, the dedicated promotions plugin owns the promotions navigation and resource settings.
 
 | Setting | Value |
 |---------|-------|

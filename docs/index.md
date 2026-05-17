@@ -12,7 +12,9 @@ AIArmada Commerce is a comprehensive Laravel e-commerce monorepo providing produ
 **Key Features:**
 - 🛒 **Shopping Cart** with session/cache/database storage
 - 💳 **CHIP Payment Gateway** with webhook support
+- 🏷️ **Pricing & Promotions** with price lists, tiers, and campaign management
 - 🎟️ **Voucher System** with flexible conditions
+- 🧾 **Billing Documents** with templates, PDFs, approvals, and Filament admin tools
 - 📦 **J&T Shipping** integration
 - 🏬 **Inventory Management** with multi-location allocations
 - 🎨 **Filament Admin Panels** for all packages
@@ -102,9 +104,12 @@ Deep dive into each package:
 | **aiarmada/vouchers** | Voucher/coupon system | [Vouchers Docs](03-packages/03-vouchers.md) |
 | **aiarmada/jnt** | J&T Express shipping | [JNT Docs](03-packages/04-jnt.md) |
 | **aiarmada/inventory** | Multi-location inventory | [Inventory README](../packages/inventory/README.md) |
-| **aiarmada/docs** | Documentation package | [Docs Docs](03-packages/06-docs.md) |
+| **aiarmada/promotions** | Promotion rules and campaigns | [Promotions Docs](../packages/promotions/docs/01-overview.md) |
+| **aiarmada/docs** | Document generation, templates, PDFs, and approvals | [Docs Docs](../packages/docs/docs/00-overview.md) |
 | **aiarmada/filament-cart** | Cart admin panel | [Filament Cart Docs](03-packages/07-filament-cart.md) |
 | **aiarmada/filament-chip** | Payment admin panel | [Filament CHIP Docs](03-packages/08-filament-chip.md) |
+| **aiarmada/filament-docs** | Billing documents admin panel | [Filament Docs Docs](../packages/filament-docs/docs/00-overview.md) |
+| **aiarmada/filament-promotions** | Promotions admin panel | [Filament Promotions Docs](../packages/filament-promotions/docs/01-overview.md) |
 | **aiarmada/filament-vouchers** | Voucher admin panel | [Filament Vouchers Docs](03-packages/09-filament-vouchers.md) |
 | **aiarmada/commerce-support** | Shared utilities | [Support Docs](03-packages/10-support.md) |
 
@@ -141,6 +146,8 @@ Advanced topics and maintenance:
 |---------|---------|--------------|
 | **aiarmada/filament-cart** | Cart admin panel | cart, filament ^5.0 |
 | **aiarmada/filament-chip** | Payment admin panel | chip, filament ^5.0 |
+| **aiarmada/filament-docs** | Billing documents admin panel | docs, filament ^5.0 |
+| **aiarmada/filament-promotions** | Promotions admin panel | promotions, filament ^5.0 |
 | **aiarmada/filament-vouchers** | Voucher admin panel | vouchers, filament ^5.0 |
 
 ### Infrastructure
@@ -148,7 +155,7 @@ Advanced topics and maintenance:
 | Package | Purpose |
 |---------|---------|
 | **aiarmada/commerce-support** | Shared utilities (exceptions, HTTP client, helpers) |
-| **aiarmada/docs** | Documentation package |
+| **aiarmada/docs** | Document generation, templates, PDFs, and approvals |
 | **aiarmada/commerce** | Meta-package (installs all packages) |
 
 ---

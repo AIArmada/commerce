@@ -29,16 +29,16 @@ final class CommerceSignalsRecorder
         return $this->ingestSignalEvent->handle($trackedProperty, [
             'event_name' => (string) config('signals.integrations.checkout.event_name', 'checkout.completed'),
             'event_category' => (string) config('signals.integrations.checkout.event_category', 'checkout'),
-            'external_id' => $this->stringValue($session->getAttribute('customer_id')),
-            'anonymous_id' => $this->stringValue($session->getAttribute('cart_id')),
-            'occurred_at' => $this->timestampValue($session->getAttribute('completed_at') ?? $session->getAttribute('updated_at')),
-            'revenue_minor' => (int) ($session->getAttribute('grand_total') ?? 0),
-            'currency' => $this->stringValue($session->getAttribute('currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
+            'external_id' => $this->stringValue($this->attributeValue($session, 'customer_id')),
+            'anonymous_id' => $this->stringValue($this->attributeValue($session, 'cart_id')),
+            'occurred_at' => $this->timestampValue($this->attributeValue($session, 'completed_at') ?? $this->attributeValue($session, 'updated_at')),
+            'revenue_minor' => (int) ($this->attributeValue($session, 'grand_total') ?? 0),
+            'currency' => $this->stringValue($this->attributeValue($session, 'currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
             'properties' => $this->enrichProperties($session, $trackedProperty, [
                 'checkout_session_id' => $this->stringValue($session->getKey()),
-                'cart_id' => $this->stringValue($session->getAttribute('cart_id')),
-                'order_id' => $this->stringValue($session->getAttribute('order_id')),
-                'payment_gateway' => $this->stringValue($session->getAttribute('selected_payment_gateway')),
+                'cart_id' => $this->stringValue($this->attributeValue($session, 'cart_id')),
+                'order_id' => $this->stringValue($this->attributeValue($session, 'order_id')),
+                'payment_gateway' => $this->stringValue($this->attributeValue($session, 'selected_payment_gateway')),
             ]),
         ]);
     }
@@ -54,16 +54,16 @@ final class CommerceSignalsRecorder
         return $this->ingestSignalEvent->handle($trackedProperty, [
             'event_name' => (string) config('signals.integrations.checkout.started_event_name', 'checkout.started'),
             'event_category' => (string) config('signals.integrations.checkout.event_category', 'checkout'),
-            'external_id' => $this->stringValue($session->getAttribute('customer_id')),
-            'anonymous_id' => $this->stringValue($session->getAttribute('cart_id')),
-            'occurred_at' => $this->timestampValue($session->getAttribute('created_at') ?? $session->getAttribute('updated_at')),
-            'revenue_minor' => (int) ($session->getAttribute('grand_total') ?? 0),
-            'currency' => $this->stringValue($session->getAttribute('currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
+            'external_id' => $this->stringValue($this->attributeValue($session, 'customer_id')),
+            'anonymous_id' => $this->stringValue($this->attributeValue($session, 'cart_id')),
+            'occurred_at' => $this->timestampValue($this->attributeValue($session, 'created_at') ?? $this->attributeValue($session, 'updated_at')),
+            'revenue_minor' => (int) ($this->attributeValue($session, 'grand_total') ?? 0),
+            'currency' => $this->stringValue($this->attributeValue($session, 'currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
             'properties' => $this->enrichProperties($session, $trackedProperty, [
                 'checkout_session_id' => $this->stringValue($session->getKey()),
-                'cart_id' => $this->stringValue($session->getAttribute('cart_id')),
-                'payment_gateway' => $this->stringValue($session->getAttribute('selected_payment_gateway')),
-                'shipping_method' => $this->stringValue($session->getAttribute('selected_shipping_method')),
+                'cart_id' => $this->stringValue($this->attributeValue($session, 'cart_id')),
+                'payment_gateway' => $this->stringValue($this->attributeValue($session, 'selected_payment_gateway')),
+                'shipping_method' => $this->stringValue($this->attributeValue($session, 'selected_shipping_method')),
             ]),
         ]);
     }
@@ -82,16 +82,16 @@ final class CommerceSignalsRecorder
         return $this->ingestSignalEvent->handle($trackedProperty, [
             'event_name' => (string) config('signals.integrations.orders.event_name', 'order.paid'),
             'event_category' => (string) config('signals.integrations.orders.event_category', 'conversion'),
-            'external_id' => $this->stringValue($order->getAttribute('customer_id')),
+            'external_id' => $this->stringValue($this->attributeValue($order, 'customer_id')),
             'anonymous_id' => $cartId,
-            'occurred_at' => $this->timestampValue($order->getAttribute('paid_at') ?? $order->getAttribute('updated_at')),
-            'revenue_minor' => (int) ($order->getAttribute('grand_total') ?? 0),
-            'currency' => $this->stringValue($order->getAttribute('currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
+            'occurred_at' => $this->timestampValue($this->attributeValue($order, 'paid_at') ?? $this->attributeValue($order, 'updated_at')),
+            'revenue_minor' => (int) ($this->attributeValue($order, 'grand_total') ?? 0),
+            'currency' => $this->stringValue($this->attributeValue($order, 'currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
             'properties' => $this->enrichProperties($order, $trackedProperty, [
                 'checkout_session_id' => $checkoutSessionId,
                 'cart_id' => $cartId,
                 'order_id' => $this->stringValue($order->getKey()),
-                'order_number' => $this->stringValue($order->getAttribute('order_number')),
+                'order_number' => $this->stringValue($this->attributeValue($order, 'order_number')),
                 'gateway' => $gateway,
                 'transaction_id' => $transactionId,
             ]),
@@ -112,16 +112,16 @@ final class CommerceSignalsRecorder
         return $this->ingestSignalEvent->handle($trackedProperty, [
             'event_name' => (string) config('signals.integrations.orders.refund_event_name', 'order.refunded'),
             'event_category' => (string) config('signals.integrations.orders.refund_event_category', 'conversion'),
-            'external_id' => $this->stringValue($order->getAttribute('customer_id')),
+            'external_id' => $this->stringValue($this->attributeValue($order, 'customer_id')),
             'anonymous_id' => $cartId,
-            'occurred_at' => $this->timestampValue($order->getAttribute('updated_at')),
+            'occurred_at' => $this->timestampValue($this->attributeValue($order, 'updated_at')),
             'revenue_minor' => $amount,
-            'currency' => $this->stringValue($order->getAttribute('currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
+            'currency' => $this->stringValue($this->attributeValue($order, 'currency')) ?? (string) config('signals.defaults.currency', 'MYR'),
             'properties' => $this->enrichProperties($order, $trackedProperty, [
                 'checkout_session_id' => $checkoutSessionId,
                 'cart_id' => $cartId,
                 'order_id' => $this->stringValue($order->getKey()),
-                'order_number' => $this->stringValue($order->getAttribute('order_number')),
+                'order_number' => $this->stringValue($this->attributeValue($order, 'order_number')),
                 'refund_reason' => $reason,
             ]),
         ]);
@@ -538,7 +538,7 @@ final class CommerceSignalsRecorder
 
     private function cartIdForOrder(Model $order): ?string
     {
-        $cartId = $this->stringValue($order->getAttribute('cart_id'));
+        $cartId = $this->stringValue($this->attributeValue($order, 'cart_id'));
 
         if ($cartId !== null) {
             return $cartId;
@@ -554,13 +554,22 @@ final class CommerceSignalsRecorder
 
     private function orderMetadataValue(Model $order, string $key): ?string
     {
-        $metadata = $order->getAttribute('metadata');
+        $metadata = $this->attributeValue($order, 'metadata');
 
         if (! is_array($metadata)) {
             return null;
         }
 
         return $this->stringValue(data_get($metadata, $key));
+    }
+
+    private function attributeValue(Model $model, string $attribute): mixed
+    {
+        if (! array_key_exists($attribute, $model->getAttributes())) {
+            return null;
+        }
+
+        return $model->getAttribute($attribute);
     }
 
     private function buildCartSessionIdentifier(?string $cartIdentifier, string $instanceName): ?string

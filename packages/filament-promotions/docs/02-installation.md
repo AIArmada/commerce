@@ -41,6 +41,24 @@ class AdminPanelProvider extends PanelProvider
 }
 ```
 
+## Using with Filament Pricing
+
+If your app already uses `aiarmada/filament-pricing`, keep both plugins registered:
+
+```php
+use AIArmada\FilamentPricing\FilamentPricingPlugin;
+use AIArmada\FilamentPromotions\FilamentPromotionsPlugin;
+
+->plugins([
+    FilamentPricingPlugin::make(),
+    FilamentPromotionsPlugin::make(),
+])
+```
+
+When both are present, the promotions navigation/resource comes from `aiarmada/filament-promotions`. Filament Pricing suppresses its fallback `PromotionResource` to avoid duplicate admin surfaces.
+
+See [Filament Pricing Installation](../../filament-pricing/docs/02-installation.md) for the matching pricing-side notes.
+
 ## Configuration
 
 Publish the configuration file (optional):

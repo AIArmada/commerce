@@ -14,7 +14,7 @@ it('returns 404 for payment callback pages belonging to another owner', function
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();
 
-    $orderA = OwnerContext::withOwner($ownerA, function (): Order {
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
         return Order::create([
             'order_number' => 'ORD-OWNER-A-PAYMENT',
             'status' => Created::class,
@@ -24,21 +24,30 @@ it('returns 404 for payment callback pages belonging to another owner', function
             'tax_total' => 0,
             'grand_total' => 10_000,
             'currency' => 'MYR',
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
             'metadata' => [
                 'chip_purchase_id' => 'chip-demo-purchase-id',
             ],
         ]);
     });
 
-    OwnerContext::withOwner($ownerB, function () use ($orderA): void {
-        $this->get(route('shop.payment.success', $orderA))
+    OwnerContext::withOwner($ownerB, function () use ($ownerA, $ownerB, $orderA): void {
+        $this->withSession(['demo_owner_id' => (string) $ownerB->getKey()])
+            ->get(route('shop.payment.success', $orderA))
             ->assertNotFound();
 
-        $this->get(route('shop.payment.failed', $orderA))
+        $this->withSession(['demo_owner_id' => (string) $ownerB->getKey()])
+            ->get(route('shop.payment.failed', $orderA))
             ->assertNotFound();
 
-        $this->get(route('shop.payment.cancelled', $orderA))
+        $this->withSession(['demo_owner_id' => (string) $ownerB->getKey()])
+            ->get(route('shop.payment.cancelled', $orderA))
             ->assertNotFound();
+
+        $this->withSession(['demo_owner_id' => (string) $ownerA->getKey()])
+            ->get(route('shop.payment.success', $orderA))
+            ->assertOk();
     });
 });
 
@@ -46,7 +55,7 @@ it('returns 404 and does not mutate status for another owner\'s payment callback
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();
 
-    $orderA = OwnerContext::withOwner($ownerA, function (): Order {
+    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
         return Order::create([
             'order_number' => 'ORD-OWNER-A-PAYMENT-MUTATION',
             'status' => Created::class,
@@ -56,6 +65,8 @@ it('returns 404 and does not mutate status for another owner\'s payment callback
             'tax_total' => 0,
             'grand_total' => 12_000,
             'currency' => 'MYR',
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => (string) $ownerA->getKey(),
             'metadata' => [
                 'chip_purchase_id' => 'chip-demo-purchase-id',
             ],
@@ -64,14 +75,17 @@ it('returns 404 and does not mutate status for another owner\'s payment callback
 
     $initialStatus = (string) $orderA->status;
 
-    OwnerContext::withOwner($ownerB, function () use ($orderA): void {
-        $this->post(route('demo.simulate-payment', $orderA))
+    OwnerContext::withOwner($ownerB, function () use ($ownerB, $orderA): void {
+        $this->withSession(['demo_owner_id' => (string) $ownerB->getKey()])
+            ->post(route('demo.simulate-payment', $orderA))
             ->assertNotFound();
 
-        $this->get(route('shop.payment.failed', $orderA))
+        $this->withSession(['demo_owner_id' => (string) $ownerB->getKey()])
+            ->get(route('shop.payment.failed', $orderA))
             ->assertNotFound();
 
-        $this->get(route('shop.payment.cancelled', $orderA))
+        $this->withSession(['demo_owner_id' => (string) $ownerB->getKey()])
+            ->get(route('shop.payment.cancelled', $orderA))
             ->assertNotFound();
     });
 

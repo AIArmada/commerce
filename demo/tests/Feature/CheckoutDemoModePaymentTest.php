@@ -2,13 +2,18 @@
 
 declare(strict_types=1);
 
+use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\States\AwaitingPayment;
+use AIArmada\Checkout\States\Completed;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 uses(RefreshDatabase::class);
 
@@ -16,8 +21,8 @@ test('checkout falls back to demo payment simulation when CHIP is not configured
     config()->set('chip.collect.api_key', null);
     config()->set('chip.collect.brand_id', null);
 
-    /** @var \App\Models\User $owner */
-    $owner = \App\Models\User::factory()->create();
+    /** @var User $owner */
+    $owner = User::factory()->create();
 
     $product = OwnerContext::withOwner($owner, function (): Product {
         return Product::create([
@@ -49,7 +54,7 @@ test('checkout falls back to demo payment simulation when CHIP is not configured
         ]);
     });
 
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->actingAs($owner);
 
     $this->post(route('shop.cart.add'), [
@@ -67,16 +72,57 @@ test('checkout falls back to demo payment simulation when CHIP is not configured
         'city' => 'Kuala Lumpur',
         'state' => 'WP Kuala Lumpur',
         'postcode' => '50000',
-        'shipping_method' => 'free',
+        'shipping_method' => 'jnt_standard',
         'payment_method' => 'fpx',
     ]);
 
-    $order = OwnerContext::withOwner($owner, fn () => Order::query()->latest('created_at')->first());
+    $checkoutSession = CheckoutSession::withoutOwnerScope()
+        ->latest('created_at')
+        ->firstOrFail();
+
+    expect($checkoutSession)->not()->toBeNull()
+        ->and($checkoutSession?->selected_payment_gateway)->toBe('demo')
+        ->and($checkoutSession?->payment_redirect_url)->not()->toBeNull()
+        ->and($checkoutSession?->status instanceof AwaitingPayment)->toBeTrue();
+
+    $response->assertRedirect(route('demo.payment.show', ['checkoutSession' => $checkoutSession]));
+
+    $orderBeforeCallback = OwnerContext::withOwner($owner, fn () => Order::query()->latest('created_at')->first());
+
+    expect($orderBeforeCallback)->toBeNull();
+
+    $callbackResponse = $this->post(route('demo.payment.process', [
+        'checkoutSession' => $checkoutSession,
+        'decision' => 'success',
+    ]));
+
+    $callbackUrl = $callbackResponse->headers->get('Location');
+
+    expect(is_string($callbackUrl) && $callbackUrl !== '')->toBeTrue();
+
+    if (! is_string($callbackUrl) || $callbackUrl === '') {
+        return;
+    }
+
+    $finalResponse = $this->get($callbackUrl);
+
+    $checkoutSession->refresh();
+
+    expect($checkoutSession->status instanceof Completed)->toBeTrue()
+        ->and($checkoutSession->order_id)->not()->toBeNull()
+        ->and($checkoutSession->payment_data['demo_gateway']['status'] ?? null)->toBe('completed');
+
+    $orderId = $checkoutSession->order_id;
+
+    expect(is_string($orderId) && $orderId !== '')->toBeTrue();
+
+    if (! is_string($orderId) || $orderId === '') {
+        return;
+    }
+
+    $order = OwnerContext::withOwner($owner, fn () => Order::query()->find($orderId));
+
     expect($order)->not()->toBeNull();
 
-    $expectedRedirect = route('shop.payment.success', $order);
-    $response->assertRedirect($expectedRedirect);
-
-    expect($order->metadata['chip_purchase_id'] ?? null)
-        ->toBe('demo-'.$order->order_number);
+    $finalResponse->assertRedirect(route('shop.order.success', ['order' => $orderId]));
 });

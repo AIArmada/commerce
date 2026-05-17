@@ -6,26 +6,26 @@ namespace App\Http\Controllers;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Checkout\Facades\Checkout;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderAddress;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Pricing\Services\PriceCalculator;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
+use AIArmada\Shipping\Cart\ShippingCondition;
 use AIArmada\Tax\Services\TaxCalculator;
-use AIArmada\Vouchers\States\Active;
-use AIArmada\Vouchers\States\VoucherStatus;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -33,6 +33,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Throwable;
 
 final class ShopController extends Controller
 {
@@ -293,6 +294,7 @@ final class ShopController extends Controller
             'name' => $product->name,
             'price' => $priceResult->finalPrice,
             'quantity' => $quantity,
+            'associated_model' => $product,
             'attributes' => [
                 'sku' => $product->sku,
                 'category' => $product->categories->first()?->name,
@@ -424,6 +426,8 @@ final class ShopController extends Controller
             return redirect()->route('shop.cart')->with('error', 'Your cart is empty.');
         }
 
+        $this->removeDemoShippingCondition();
+
         // Mark cart as checkout started for recovery tracking
         $identifier = Cart::getIdentifier();
         $snapshot = CartSnapshot::query()->forOwner()->where('identifier', $identifier)->first();
@@ -478,7 +482,7 @@ final class ShopController extends Controller
     }
 
     /**
-     * Process checkout and create order, then redirect to CHIP payment.
+     * Process checkout through the Checkout package and redirect to the active payment gateway.
      */
     public function processCheckout(Request $request): RedirectResponse
     {
@@ -507,338 +511,53 @@ final class ShopController extends Controller
                 ->withInput();
         }
 
-        // Calculate shipping cost
-        $shippingCost = $this->shippingCostForMethod($request->shipping_method);
+        $cartId = Cart::getId();
 
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null) {
-            abort(404);
+        if (! is_string($cartId) || $cartId === '') {
+            return redirect()->route('shop.checkout')
+                ->with('error', 'Unable to resolve the active cart for checkout.')
+                ->withInput();
         }
 
-        $customer = Customer::query()
-            ->forOwner($owner)
-            ->where('email', $request->email)
-            ->first();
-
-        if ($customer === null) {
-            $customer = new Customer([
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'user_id' => Auth::id(),
-            ]);
-
-            if ($owner !== null) {
-                $customer->assignOwner($owner);
-            }
-
-            $customer->save();
-        } else {
-            $customer->fill([
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'phone' => $request->phone,
-                'user_id' => Auth::id(),
-            ]);
-            $customer->save();
-        }
-
-        /** @var PriceCalculator $priceCalculator */
-        $priceCalculator = app(PriceCalculator::class);
-
-        /** @var TaxCalculator $taxCalculator */
-        $taxCalculator = app(TaxCalculator::class);
-
-        $pricingContext = [
-            'currency' => 'MYR',
-            'customer_id' => $customer->id,
-        ];
-
-        $taxContext = [
-            'customer_id' => $customer->id,
-            'shipping_address' => [
-                'country' => 'MY',
-                'state' => $request->state,
-                'postcode' => $request->postcode,
-            ],
-        ];
-
-        $lineSnapshots = [];
-        $itemsSubtotal = 0;
-
-        foreach (Cart::getItems() as $item) {
-            $product = Product::query()
-                ->forOwner($owner)
-                ->whereKey((string) $item->id)
-                ->firstOrFail();
-            $quantity = max(1, (int) $item->quantity);
-
-            $priceResult = $priceCalculator->calculate($product, $quantity, $pricingContext);
-            $unitPrice = $priceResult->finalPrice;
-            $lineSubtotal = $unitPrice * $quantity;
-
-            $itemsSubtotal += $lineSubtotal;
-            $lineSnapshots[] = [
-                'product' => $product,
-                'name' => $item->name,
-                'sku' => $item->attributes['sku'] ?? null,
-                'quantity' => $quantity,
-                'unit_price' => $unitPrice,
-                'line_subtotal' => $lineSubtotal,
-            ];
-
-            // Keep cart math consistent with Pricing-derived unit price.
-            Cart::update((string) $item->id, ['price' => $unitPrice]);
-        }
-
-        // Calculate discount properly (subtotal without conditions - subtotal with conditions)
-        $subtotalWithoutConditions = (int) Cart::getRawSubtotalWithoutConditions();
-        $subtotalWithConditions = (int) Cart::getRawSubtotal();
-        $discountTotal = max(0, $subtotalWithoutConditions - $subtotalWithConditions);
-
-        $taxableItemsAmount = max(0, $itemsSubtotal - $discountTotal);
-
-        $itemsTax = 0;
-        $shippingTax = 0;
+        $this->applySelectedShippingToCart($request->shipping_method);
 
         try {
-            $itemsTax = $taxCalculator
-                ->calculateTax($taxableItemsAmount, 'standard', null, $taxContext)
-                ->taxAmount;
+            $checkoutSession = Checkout::startCheckout($cartId);
 
-            $shippingTax = $taxCalculator
-                ->calculateShippingTax($shippingCost, null, $taxContext)
-                ->taxAmount;
-        } catch (QueryException $exception) {
-            Log::warning('Tax calculation skipped due to missing DB tables.', [
-                'message' => $exception->getMessage(),
-            ]);
-        }
-
-        $taxTotal = $itemsTax + $shippingTax;
-
-        // Create order with pending_payment status
-        $order = Order::create([
-            'order_number' => Order::generateOrderNumber(),
-            'status' => 'pending_payment',
-            'customer_type' => $customer->getMorphClass(),
-            'customer_id' => $customer->getKey(),
-            'subtotal' => $itemsSubtotal,
-            'discount_total' => $discountTotal,
-            'tax_total' => $taxTotal,
-            'shipping_total' => $shippingCost,
-            'grand_total' => max(0, $itemsSubtotal - $discountTotal) + $shippingCost + $taxTotal,
-            'currency' => 'MYR',
-            'metadata' => [
-                'shipping_method' => $request->shipping_method,
-                'payment_method' => $request->payment_method,
-                'affiliate_code' => session('affiliate_code'),
-                'voucher_code' => session('applied_voucher'),
-                'tax' => [
-                    'items_tax' => $itemsTax,
-                    'shipping_tax' => $shippingTax,
-                ],
-            ],
-            'notes' => $request->notes,
-        ]);
-
-        if ($owner !== null && $order->owner_id === null) {
-            $order->assignOwner($owner);
-            $order->save();
-        }
-
-        OrderAddress::create([
-            'order_id' => $order->id,
-            'type' => 'shipping',
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'line1' => $request->line1,
-            'line2' => $request->line2,
-            'city' => $request->city,
-            'state' => $request->state,
-            'postcode' => $request->postcode,
-            'country' => 'MY',
-            'phone' => $request->phone,
-            'email' => $request->email,
-        ]);
-
-        // Create order items (don't deduct stock yet - wait for payment)
-        $remainingDiscount = $discountTotal;
-        $remainingTax = $itemsTax;
-
-        foreach ($lineSnapshots as $index => $snapshot) {
-            $lineSubtotal = (int) $snapshot['line_subtotal'];
-            $isLast = $index === array_key_last($lineSnapshots);
-
-            $lineDiscount = 0;
-            if ($discountTotal > 0 && $itemsSubtotal > 0) {
-                $lineDiscount = $isLast
-                    ? $remainingDiscount
-                    : (int) floor(($lineSubtotal / $itemsSubtotal) * $discountTotal);
-                $lineDiscount = min($remainingDiscount, max(0, $lineDiscount));
-                $remainingDiscount -= $lineDiscount;
-            }
-
-            $lineTax = 0;
-            if ($itemsTax > 0 && $taxableItemsAmount > 0) {
-                $taxableLineAmount = max(0, $lineSubtotal - $lineDiscount);
-                $lineTax = $isLast
-                    ? $remainingTax
-                    : (int) floor(($taxableLineAmount / $taxableItemsAmount) * $itemsTax);
-                $lineTax = min($remainingTax, max(0, $lineTax));
-                $remainingTax -= $lineTax;
-            }
-
-            /** @var Product $product */
-            $product = $snapshot['product'];
-            $quantity = (int) $snapshot['quantity'];
-            $unitPrice = (int) $snapshot['unit_price'];
-
-            OrderItem::create([
-                'order_id' => $order->id,
-                'purchasable_type' => $product->getMorphClass(),
-                'purchasable_id' => $product->getKey(),
-                'name' => (string) $snapshot['name'],
-                'sku' => $snapshot['sku'],
-                'quantity' => $quantity,
-                'unit_price' => $unitPrice,
-                'discount_amount' => $lineDiscount,
-                'tax_amount' => $lineTax,
-                'total' => max(0, ($unitPrice * $quantity) - $lineDiscount + $lineTax),
-                'currency' => 'MYR',
-            ]);
-        }
-
-        // Store cart data in session for potential recovery
-        session([
-            'pending_order_id' => $order->id,
-            'pending_affiliate_code' => session('affiliate_code'),
-            'pending_voucher_code' => session('applied_voucher'),
-        ]);
-
-        $chipApiKey = config('chip.collect.api_key');
-        $chipBrandId = config('chip.collect.brand_id');
-
-        if ($chipApiKey === null || $chipBrandId === null) {
-            Log::warning('CHIP is not configured; using demo payment simulation.', [
-                'order_id' => $order->id,
-                'chip_api_key_set' => $chipApiKey !== null,
-                'chip_brand_id_set' => $chipBrandId !== null,
-            ]);
-
-            $order->update([
-                'metadata' => array_merge($order->metadata ?? [], [
-                    'chip_purchase_id' => 'demo-' . $order->order_number,
+            $checkoutSession->update([
+                'billing_data' => $this->buildCheckoutBillingData($request),
+                'shipping_data' => $this->buildCheckoutShippingData($request),
+                'selected_shipping_method' => $request->shipping_method,
+                'selected_payment_gateway' => $this->determineCheckoutPaymentGateway(),
+                'payment_data' => array_merge($checkoutSession->payment_data ?? [], [
+                    'requested_payment_method' => $request->payment_method,
+                    'storefront' => 'demo',
                 ]),
             ]);
 
-            return redirect()->route('shop.payment.success', $order);
-        }
+            $result = Checkout::processCheckout($checkoutSession->fresh());
 
-        // Create CHIP purchase
-        try {
-            $purchase = Chip::purchase()
-                ->currency('MYR')
-                ->reference($order->order_number)
-                ->idempotencyKey('order-' . $order->id)
-                ->customer(
-                    email: $request->email,
-                    fullName: $request->first_name . ' ' . $request->last_name,
-                    phone: $request->phone,
-                    country: 'MY'
-                )
-                ->billingAddress(
-                    streetAddress: $request->line1,
-                    city: $request->city,
-                    zipCode: $request->postcode,
-                    state: $request->state,
-                    country: 'MY'
-                )
-                ->shippingAddress(
-                    streetAddress: $request->line1,
-                    city: $request->city,
-                    zipCode: $request->postcode,
-                    state: $request->state,
-                    country: 'MY'
-                );
-
-            // Add order items as exact unit-level purchase lines so discounts round precisely.
-            foreach ($order->items as $item) {
-                foreach ($this->buildChipProductLines($item) as $productLine) {
-                    $purchase->addProductCents(
-                        name: $productLine['name'],
-                        priceInCents: $productLine['price'],
-                        quantity: $productLine['quantity'],
-                        discountInCents: $productLine['discount'],
-                        category: $productLine['category'],
-                    );
-                }
+            if ($result->requiresRedirect() && is_string($result->redirectUrl)) {
+                return redirect()->to($result->redirectUrl);
             }
 
-            // Add shipping as a product if applicable
-            if ($shippingCost > 0) {
-                $purchase->addProductCents(
-                    name: 'Shipping (' . $this->shippingMethodLabel($request->shipping_method) . ')',
-                    priceInCents: $shippingCost,
-                    quantity: 1,
-                    category: 'shipping',
-                );
+            if ($result->success && is_string($result->orderId) && $result->orderId !== '') {
+                return redirect()->route('shop.order.success', ['order' => $result->orderId])
+                    ->with('success', 'Checkout completed successfully.');
             }
-
-            // Represent tax explicitly so the payment total matches the order exactly.
-            if ($order->tax_total > 0) {
-                $purchase->addProductCents(
-                    name: 'Sales Tax',
-                    priceInCents: $order->tax_total,
-                    quantity: 1,
-                    category: 'tax',
-                );
-            }
-
-            // Set redirect URLs
-            $purchase->redirects(
-                successUrl: route('shop.payment.success', $order),
-                failureUrl: route('shop.payment.failed', $order),
-                cancelUrl: route('shop.payment.cancelled', $order)
-            );
-
-            // Set webhook URL
-            $purchase->webhook(Chip::webhookUrl());
-
-            // Store order metadata
-            $purchase->metadata([
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'affiliate_code' => session('affiliate_code'),
-            ]);
-
-            // Create the purchase and get the checkout URL
-            $chipPurchase = $purchase->create();
-
-            // Store CHIP purchase ID in order metadata
-            $order->update([
-                'metadata' => array_merge($order->metadata ?? [], [
-                    'chip_purchase_id' => $chipPurchase->id,
-                ]),
-            ]);
-
-            // Redirect to CHIP payment page
-            return redirect()->away($chipPurchase->getCheckoutUrl());
-
-        } catch (Exception $e) {
-            // Log the error
-            Log::error('CHIP payment creation failed', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            // Mark order as failed
-            $order->update(['status' => 'payment_failed']);
 
             return redirect()->route('shop.checkout')
-                ->with('error', 'Payment initialization failed. Please try again. Error: ' . $e->getMessage());
+                ->withErrors($result->errors !== [] ? $result->errors : ['checkout' => $result->message ?? 'Checkout failed.'])
+                ->withInput();
+        } catch (Throwable $exception) {
+            Log::error('Demo checkout failed', [
+                'message' => $exception->getMessage(),
+                'exception' => $exception,
+            ]);
+
+            return redirect()->route('shop.checkout')
+                ->with('error', 'Checkout failed: ' . $exception->getMessage())
+                ->withInput();
         }
     }
 
@@ -885,7 +604,7 @@ final class ShopController extends Controller
     {
         $this->ensureOrderAccessible($order);
 
-        $order->update(['status' => 'cancelled']);
+        $order->update(['status' => 'canceled']);
 
         return view('shop.payment-cancelled', compact('order'));
     }
@@ -971,6 +690,7 @@ final class ShopController extends Controller
             'name' => $product->name,
             'price' => $priceResult->finalPrice,
             'quantity' => $quantity,
+            'associated_model' => $product,
             'attributes' => [
                 'sku' => $product->sku,
                 'category' => $product->categories->first()?->name,
@@ -1027,6 +747,89 @@ final class ShopController extends Controller
             ->get();
 
         return view('shop.account', compact('user', 'recentOrders'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildCheckoutBillingData(Request $request): array
+    {
+        return [
+            'first_name' => (string) $request->first_name,
+            'last_name' => (string) $request->last_name,
+            'name' => mb_trim((string) $request->first_name . ' ' . (string) $request->last_name),
+            'email' => (string) $request->email,
+            'phone' => (string) $request->phone,
+            'line1' => (string) $request->line1,
+            'line2' => $request->filled('line2') ? (string) $request->line2 : null,
+            'city' => (string) $request->city,
+            'state' => (string) $request->state,
+            'postcode' => (string) $request->postcode,
+            'country' => 'MY',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildCheckoutShippingData(Request $request): array
+    {
+        return $this->buildCheckoutBillingData($request);
+    }
+
+    private function determineCheckoutPaymentGateway(): string
+    {
+        $chipApiKey = config('chip.collect.api_key');
+        $chipBrandId = config('chip.collect.brand_id');
+
+        return is_string($chipApiKey) && $chipApiKey !== '' && is_string($chipBrandId) && $chipBrandId !== ''
+            ? 'chip'
+            : 'demo';
+    }
+
+    private function applySelectedShippingToCart(string $shippingMethod): void
+    {
+        $this->removeDemoShippingCondition();
+
+        $attributes = match ($shippingMethod) {
+            'jnt_express' => [
+                'carrier' => 'jnt',
+                'service' => 'express',
+                'estimated_days' => 2,
+                'currency' => 'MYR',
+            ],
+            'free' => [
+                'carrier' => 'promotion',
+                'service' => 'free',
+                'estimated_days' => 4,
+                'currency' => 'MYR',
+            ],
+            default => [
+                'carrier' => 'jnt',
+                'service' => 'standard',
+                'estimated_days' => 4,
+                'currency' => 'MYR',
+            ],
+        };
+
+        $condition = new ShippingCondition(
+            name: $this->demoShippingConditionName(),
+            type: 'shipping',
+            value: $this->shippingCostForMethod($shippingMethod),
+            attributes: $attributes,
+        );
+
+        Cart::addCondition($condition->asCartCondition());
+    }
+
+    private function removeDemoShippingCondition(): void
+    {
+        Cart::removeCondition($this->demoShippingConditionName());
+    }
+
+    private function demoShippingConditionName(): string
+    {
+        return 'demo_checkout_shipping';
     }
 
     private function ensureOrderAccessible(Order $order): void

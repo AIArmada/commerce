@@ -19,6 +19,7 @@
             'Putrajaya',
         ];
         $selectedPaymentMethod = old('payment_method', 'fpx');
+        $chipConfigured = filled(config('chip.collect.api_key')) && filled(config('chip.collect.brand_id'));
     @endphp
 
     <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -155,7 +156,11 @@
                     <!-- Payment Method -->
                     <div class="bg-white rounded-xl shadow p-6">
                         <h2 class="text-xl font-bold text-gray-900 mb-4">Payment Method</h2>
-                        <p class="text-sm text-gray-600 mb-4">Powered by CHIP - Malaysia's trusted payment gateway</p>
+                        <p class="text-sm text-gray-600 mb-4">
+                            {{ $chipConfigured
+                                ? 'Powered by Checkout + CHIP for the live payment redirect flow.'
+                                : 'Powered by Checkout with the local demo gateway fallback for development.' }}
+                        </p>
                         <div class="space-y-3">
                             <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer {{ $selectedPaymentMethod === 'fpx' ? 'border-amber-500 bg-amber-50' : 'hover:border-amber-300' }}">
                                 <input type="radio" name="payment_method" value="fpx" {{ $selectedPaymentMethod === 'fpx' ? 'checked' : '' }}
@@ -231,6 +236,7 @@
                             </div>
 
                             @foreach($conditionBreakdown['conditions'] as $condition)
+                            @continue(($condition['type'] ?? null) === 'shipping')
                             @php $conditionValue = (int) ($condition['calculated_value'] ?? 0); @endphp
                             <div class="flex justify-between {{ $conditionValue < 0 ? 'text-green-600' : 'text-gray-600' }}">
                                 @php

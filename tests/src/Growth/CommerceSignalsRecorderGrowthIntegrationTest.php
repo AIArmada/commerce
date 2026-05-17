@@ -125,6 +125,40 @@ it('records checkout and order signals with projected experiment context', funct
         ->and($orderRefunded?->event_name)->toBe('order.refunded');
 });
 
+it('reads cart context from order metadata when strict missing-attribute protection is enabled', function (): void {
+    $previous = Model::preventsAccessingMissingAttributes();
+    Model::preventAccessingMissingAttributes(true);
+
+    try {
+        $owner = growthRecorderOwner();
+        $trackedProperty = growthRecorderTrackedProperty($owner);
+        [$experiment, $variant] = growthRecorderExperimentContext($owner, $trackedProperty, 'customer-recorder-strict', 'cart-recorder-strict');
+
+        $order = OwnerContext::withOwner($owner, fn (): Order => Order::query()->create([
+            'customer_id' => 'customer-recorder-strict',
+            'grand_total' => 90900,
+            'currency' => 'MYR',
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+            'metadata' => [
+                'checkout_session_id' => 'checkout-session-strict',
+                'cart_id' => 'cart-recorder-strict',
+            ],
+            'paid_at' => now(),
+        ]));
+
+        $orderPaid = app(CommerceSignalsRecorder::class)->recordOrderPaid($order, 'txn-growth-strict', 'chip');
+
+        expect($orderPaid)->not->toBeNull()
+            ->and(data_get($orderPaid?->properties, 'cart_id'))->toBe('cart-recorder-strict')
+            ->and(data_get($orderPaid?->properties, 'checkout_session_id'))->toBe('checkout-session-strict')
+            ->and(data_get($orderPaid?->properties, 'experiment_contexts.0.experiment_id'))->toBe((string) $experiment->getKey())
+            ->and(data_get($orderPaid?->properties, 'experiment_contexts.0.variant_id'))->toBe((string) $variant->getKey());
+    } finally {
+        Model::preventAccessingMissingAttributes($previous);
+    }
+});
+
 it('uses the tracked property owner for growth enrichment when only a resolver owner is present', function (): void {
     $owner = growthRecorderOwner();
     $foreignOwner = growthRecorderOwner();

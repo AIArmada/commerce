@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources;
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Pending;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\CreateDoc;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\EditDoc;
@@ -83,7 +85,7 @@ final class DocResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $count = static::getEloquentQuery()
-            ->whereIn('status', [DocStatus::PENDING, DocStatus::OVERDUE])
+            ->whereIn('status', [DocStatus::normalize(Pending::class), DocStatus::normalize(Overdue::class)])
             ->count();
 
         return $count > 0 ? (string) $count : null;
@@ -92,7 +94,7 @@ final class DocResource extends Resource
     public static function getNavigationBadgeColor(): string
     {
         $overdueCount = static::getEloquentQuery()
-            ->where('status', DocStatus::OVERDUE)
+            ->where('status', DocStatus::normalize(Overdue::class))
             ->count();
 
         return $overdueCount > 0 ? 'danger' : 'warning';

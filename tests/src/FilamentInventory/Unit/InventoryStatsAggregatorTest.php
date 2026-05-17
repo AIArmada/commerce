@@ -2,12 +2,18 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwner;
+use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
     config()->set('filament-inventory.cache.stats_ttl', 0);
@@ -137,4 +143,59 @@ it('builds cached overview widget stats', function (): void {
     expect($stats['total_reserved'])->toBe(6);
     expect($stats['total_available'])->toBe(17);
     expect($stats['low_stock_count'])->toBe(1);
+});
+
+it('counts distinct skus under owner-scoped location relations without SQL alias errors', function (): void {
+    Schema::dropIfExists('filament_inventory_test_owners');
+
+    Schema::create('filament_inventory_test_owners', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', false);
+
+    $ownerA = TestOwner::create(['name' => 'Owner A']);
+    $ownerB = TestOwner::create(['name' => 'Owner B']);
+
+    $locationA = OwnerContext::withOwner($ownerA, fn (): InventoryLocation => InventoryLocation::factory()->create([
+        'code' => 'OWN-A',
+        'is_active' => true,
+    ]));
+
+    $locationB = OwnerContext::withOwner($ownerB, fn (): InventoryLocation => InventoryLocation::factory()->create([
+        'code' => 'OWN-B',
+        'is_active' => true,
+    ]));
+
+    OwnerContext::withOwner($ownerA, function () use ($locationA): void {
+        InventoryLevel::create([
+            'inventoryable_type' => 'Product',
+            'inventoryable_id' => 'sku-shared',
+            'location_id' => $locationA->id,
+            'quantity_on_hand' => 11,
+            'quantity_reserved' => 1,
+            'reorder_point' => 2,
+        ]);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($locationB): void {
+        InventoryLevel::create([
+            'inventoryable_type' => 'Product',
+            'inventoryable_id' => 'sku-shared',
+            'location_id' => $locationB->id,
+            'quantity_on_hand' => 7,
+            'quantity_reserved' => 0,
+            'reorder_point' => 1,
+        ]);
+    });
+
+    app()->bind(OwnerResolverInterface::class, fn () => new TestOwnerResolver($ownerA));
+
+    $stats = app(InventoryStatsAggregator::class)->getOverviewStats();
+
+    expect($stats['active_locations'])->toBeGreaterThanOrEqual(1)
+        ->and($stats['total_skus'])->toBe(1);
 });

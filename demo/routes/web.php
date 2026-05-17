@@ -7,6 +7,7 @@ use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\DemoPaymentController;
 use App\Http\Controllers\ShopController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -51,6 +52,12 @@ Route::post('/cart/voucher/remove', [ShopController::class, 'removeVoucher'])->n
 Route::get('/checkout', [ShopController::class, 'checkout'])->name('shop.checkout');
 Route::post('/checkout', [ShopController::class, 'processCheckout'])->name('shop.checkout.process');
 Route::post('/checkout/buy-now', [ShopController::class, 'buyNow'])->name('shop.checkout.buy-now');
+
+// Local demo gateway fallback (only used when live CHIP is unavailable)
+Route::get('/demo/pay/{checkoutSession}', [DemoPaymentController::class, 'show'])->name('demo.payment.show');
+Route::post('/demo/pay/{checkoutSession}/{decision}', [DemoPaymentController::class, 'process'])
+    ->whereIn('decision', ['success', 'failure', 'cancel'])
+    ->name('demo.payment.process');
 
 // Payment callbacks (from CHIP gateway)
 Route::get('/payment/{order}/success', [ShopController::class, 'paymentSuccess'])->name('shop.payment.success');

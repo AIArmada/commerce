@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Widgets;
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Paid;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
@@ -31,7 +32,7 @@ final class RevenueChartWidget extends ChartWidget
         }
 
         $totalsByDate = DocsOwnerScope::applyToDocs(Doc::query())
-            ->where('status', DocStatus::PAID)
+            ->where('status', DocStatus::normalize(Paid::class))
             ->whereBetween('paid_at', [$startDate, $today->endOfDay()])
             ->selectRaw('DATE(paid_at) as paid_date, SUM(total) as total_sum')
             ->groupBy('paid_date')

@@ -6,7 +6,7 @@
             <x-filament::card>
                 <div class="text-sm text-gray-500 dark:text-gray-400">Assignments</div>
                 <div class="text-2xl font-semibold">{{ number_format($results['totals']['assignments'] ?? 0) }}</div>
-                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $moduleLabel() }} preset</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $this->moduleLabel() }} preset</div>
             </x-filament::card>
 
             <x-filament::card>

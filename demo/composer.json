@@ -16,11 +16,23 @@
         },
         {
             "type": "path",
+            "url": "../packages/cashier"
+        },
+        {
+            "type": "path",
+            "url": "../packages/checkout"
+        },
+        {
+            "type": "path",
             "url": "../packages/customers"
         },
         {
             "type": "path",
             "url": "../packages/docs"
+        },
+        {
+            "type": "path",
+            "url": "../packages/growth"
         },
         {
             "type": "path",
@@ -76,7 +88,7 @@
         },
         {
             "type": "path",
-            "url": "../packages/filament-cashier-chip"
+            "url": "../packages/filament-cashier"
         },
         {
             "type": "path",
@@ -100,6 +112,10 @@
         },
         {
             "type": "path",
+            "url": "../packages/filament-growth"
+        },
+        {
+            "type": "path",
             "url": "../packages/filament-jnt"
         },
         {
@@ -120,6 +136,10 @@
         },
         {
             "type": "path",
+            "url": "../packages/filament-signals"
+        },
+        {
+            "type": "path",
             "url": "../packages/filament-shipping"
         },
         {
@@ -136,6 +156,10 @@
         },
         {
             "type": "path",
+            "url": "../packages/signals"
+        },
+        {
+            "type": "path",
             "url": "../packages/filament-inventory"
         }
     ],
@@ -144,8 +168,11 @@
         "laravel/framework": "^13.6",
         "laravel/tinker": "^3.0",
         "filament/filament": "^5.6",
+        "aiarmada/cashier": "*",
+        "aiarmada/checkout": "*",
         "aiarmada/customers": "*",
         "aiarmada/docs": "*",
+        "aiarmada/growth": "*",
         "aiarmada/orders": "*",
         "aiarmada/pricing": "*",
         "aiarmada/products": "*",
@@ -156,21 +183,24 @@
         "aiarmada/cashier-chip": "*",
         "aiarmada/chip": "*",
         "aiarmada/commerce-support": "*",
+        "aiarmada/signals": "*",
         "aiarmada/vouchers": "*",
         "aiarmada/affiliates": "*",
         "aiarmada/jnt": "*",
         "aiarmada/filament-cart": "*",
-        "aiarmada/filament-cashier-chip": "*",
+        "aiarmada/filament-cashier": "*",
         "aiarmada/filament-vouchers": "*",
         "aiarmada/filament-affiliates": "*",
         "aiarmada/filament-chip": "*",
         "aiarmada/filament-customers": "*",
         "aiarmada/filament-docs": "*",
+        "aiarmada/filament-growth": "*",
         "aiarmada/filament-jnt": "*",
         "aiarmada/filament-orders": "*",
         "aiarmada/filament-pricing": "*",
         "aiarmada/filament-products": "*",
         "aiarmada/filament-promotions": "*",
+        "aiarmada/filament-signals": "*",
         "aiarmada/filament-shipping": "*",
         "aiarmada/filament-tax": "*",
         "aiarmada/filament-authz": "*",

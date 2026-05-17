@@ -6,7 +6,9 @@ namespace App\Providers;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\CashierChip\Cashier;
+use AIArmada\Cashier\Cashier;
+use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
@@ -41,6 +43,7 @@ use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use App\Checkout\DemoPaymentProcessor;
 use App\Listeners\HandleChipPaymentSuccess;
 use App\Models\User;
 use Filament\Support\Facades\FilamentTimezone;
@@ -57,6 +60,24 @@ final class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         config()->set('commerce-support.owner.team_type', User::class);
+        config()->set('cashier.default', 'chip');
+        config()->set('cashier.models.billable', User::class);
+        config()->set('checkout.owner.enabled', true);
+        config()->set('checkout.payment.default_gateway', $this->defaultCheckoutGateway());
+        config()->set('checkout.payment.gateway_priority', ['chip', 'demo', 'cashier-chip', 'cashier']);
+        config()->set('checkout.redirects.success', '/order/{order_id}/success');
+        config()->set('checkout.redirects.failure', '/checkout?checkout_result=failed&checkout_session_id={session_id}');
+        config()->set('checkout.redirects.cancel', '/checkout?checkout_result=cancelled&checkout_session_id={session_id}');
+        config()->set('customers.features.owner.enabled', true);
+        config()->set('growth.features.owner.enabled', true);
+        config()->set('inventory.owner.enabled', true);
+        config()->set('orders.owner.enabled', true);
+        config()->set('products.features.owner.enabled', true);
+        config()->set('signals.owner.enabled', true);
+        config()->set('signals.integrations.cart.enabled', true);
+        config()->set('signals.integrations.filament_cart.enabled', true);
+        config()->set('filament-growth.features.dashboard', false);
+        config()->set('filament-signals.features.dashboard', false);
         config()->set('filament-cart.owner.enabled', true);
         config()->set('pricing.features.owner.enabled', true);
         config()->set('tax.features.owner.enabled', true);
@@ -70,6 +91,13 @@ final class AppServiceProvider extends ServiceProvider
         config()->set('chip.integrations.docs.paid_doc_type', null);
 
         Cashier::useCustomerModel(User::class);
+        CashierChip::useCustomerModel(User::class);
+
+        $this->app->afterResolving(PaymentGatewayResolverInterface::class, function (PaymentGatewayResolverInterface $resolver): void {
+            if (! $resolver->hasGateway('demo')) {
+                $resolver->register('demo', $this->app->make(DemoPaymentProcessor::class));
+            }
+        });
 
         $this->app->bind(OwnerResolverInterface::class, function (): OwnerResolverInterface {
             return new class implements OwnerResolverInterface
@@ -158,5 +186,15 @@ final class AppServiceProvider extends ServiceProvider
 
         FilamentTimezone::set('Asia/Kuala_Lumpur');
 
+    }
+
+    private function defaultCheckoutGateway(): string
+    {
+        $chipApiKey = config('chip.collect.api_key');
+        $chipBrandId = config('chip.collect.brand_id');
+
+        return is_string($chipApiKey) && $chipApiKey !== '' && is_string($chipBrandId) && $chipBrandId !== ''
+            ? 'chip'
+            : 'demo';
     }
 }

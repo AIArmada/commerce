@@ -121,7 +121,7 @@ $document = $docService->create(DocData::from([
 ```php
 $doc->doc_number          // Document number
 $doc->doc_type            // Type (invoice, receipt)
-$doc->status              // DocStatus enum
+$doc->status              // State-cast status object (AIArmada\Docs\States\DocStatus)
 $doc->issue_date          // Carbon instance
 $doc->due_date            // Carbon instance (nullable)
 $doc->subtotal            // Subtotal amount

@@ -192,20 +192,17 @@ final class InventoryStatsAggregator
      */
     private function countDistinctSkus(): int
     {
-        $baseQuery = InventoryOwnerScope::applyToQueryByLocationRelation(
+        $scopedDistinctSkuQuery = InventoryOwnerScope::applyToQueryByLocationRelation(
             InventoryLevel::query(),
             'location'
-        );
+        )
+            ->select('inventoryable_type', 'inventoryable_id')
+            ->distinct();
 
-        return (int) (clone $baseQuery)
-            ->selectRaw('COUNT(*) as count')
-            ->fromSub(
-                (clone $baseQuery)
-                    ->select('inventoryable_type', 'inventoryable_id')
-                    ->distinct(),
-                'distinct_skus'
-            )
-            ->value('count');
+        return (int) InventoryLevel::query()
+            ->getQuery()
+            ->fromSub($scopedDistinctSkuQuery->toBase(), 'distinct_skus')
+            ->count();
     }
 
     /**
