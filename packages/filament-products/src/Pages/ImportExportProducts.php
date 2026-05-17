@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Pages;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
@@ -38,6 +39,16 @@ final class ImportExportProducts extends Page
     protected static ?int $navigationSort = 99;
 
     protected static ?string $title = 'Import / Export';
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAnyAbility(['product.create', 'product.update']);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
 
     private function resolveOwner(): ?Model
     {

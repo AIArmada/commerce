@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentVouchers\Models\Voucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\CreateVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\EditVoucher;
@@ -21,6 +22,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class VoucherResource extends Resource
@@ -40,6 +42,36 @@ final class VoucherResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return VoucherForm::configure($schema);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('voucher.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('voucher.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('voucher.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('voucher.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('voucher.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
     }
 
     public static function infolist(Schema $schema): Schema

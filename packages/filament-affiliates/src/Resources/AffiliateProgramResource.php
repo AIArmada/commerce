@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -27,6 +28,36 @@ final class AffiliateProgramResource extends Resource
     protected static ?string $model = AffiliateProgram::class;
 
     protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('affiliate.delete');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function getEloquentQuery(): Builder
     {

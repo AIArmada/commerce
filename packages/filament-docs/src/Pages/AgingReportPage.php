@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Pages;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Overdue;
@@ -35,6 +36,16 @@ final class AgingReportPage extends Page implements HasTable
     protected static ?string $navigationLabel = 'Aging Report';
 
     protected string $view = 'filament-docs::pages.aging-report';
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAbility('purchase.viewAny');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
 
     public function getTitle(): string
     {

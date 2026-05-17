@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Overdue;
@@ -28,6 +29,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class DocResource extends Resource
@@ -45,6 +47,36 @@ final class DocResource extends Resource
     protected static ?string $modelLabel = 'Document';
 
     protected static ?string $pluralModelLabel = 'Documents';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('purchase.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('purchase.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAnyAbility(['purchase.create', 'purchase.viewAny']);
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAnyAbility(['purchase.update', 'purchase.viewAny']);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAnyAbility(['purchase.delete', 'purchase.viewAny']);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function form(Schema $schema): Schema
     {

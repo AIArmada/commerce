@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Models\DocSequence;
@@ -29,6 +30,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 final class DocSequenceResource extends Resource
@@ -44,6 +46,36 @@ final class DocSequenceResource extends Resource
     protected static ?string $modelLabel = 'Document Sequence';
 
     protected static ?string $pluralModelLabel = 'Document Sequences';
+
+    public static function canViewAny(): bool
+    {
+        return FilamentPermission::hasAbility('purchase.viewAny');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return FilamentPermission::hasAbility('purchase.view');
+    }
+
+    public static function canCreate(): bool
+    {
+        return FilamentPermission::hasAnyAbility(['purchase.create', 'purchase.viewAny']);
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return FilamentPermission::hasAnyAbility(['purchase.update', 'purchase.viewAny']);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return FilamentPermission::hasAnyAbility(['purchase.delete', 'purchase.viewAny']);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
 
     public static function form(Schema $schema): Schema
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Pages;
 
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
@@ -60,6 +61,16 @@ final class PendingApprovalsPage extends Page implements HasTable
     public static function getNavigationBadgeColor(): string | array | null
     {
         return 'warning';
+    }
+
+    public static function canAccess(): bool
+    {
+        return FilamentPermission::hasAbility('purchase.viewAny');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 
     public static function getPendingApprovalsCount(): int
