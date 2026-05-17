@@ -46,10 +46,15 @@ The main runtime flows are:
 
 - Owner-scoped experiments, variants, and assignments by default
 - Sticky assignment resolution for identities, sessions, and anonymous visitors
+- Optional HTTP middleware that resolves an active experiment by explicit slug and stores request-scoped variant context
+- Global `experiment()` helper and `Growth` facade for the current request context
+- Optional Blade `@variant / @elsevariant / @endvariant` branching helpers
+- Lightweight Livewire-friendly `InteractsWithExperimentContext` concern
 - Oversized anonymous identifiers are hashed into deterministic subject keys before persistence
 - Signals event enrichment through `ProjectExperimentContextIntoSignalProperties`
 - Aggregate metrics through `AggregateExperimentMetrics`
 - Preset-aware defaults during experiment creation
+- Explicit experiment slugs with automatic `Str::slug()` fallback when the slug is left blank on create
 - Service-container binding for `growth.signal_event_property_enricher`
 - Optional admin UI via [`aiarmada/filament-growth`](../../filament-growth/docs/01-overview.md)
 

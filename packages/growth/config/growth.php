@@ -83,6 +83,12 @@ return [
         'preset_modules' => [
             'enabled' => true,
         ],
+        'experiment_middleware' => [
+            'enabled' => false,
+        ],
+        'blade_directives' => [
+            'enabled' => false,
+        ],
     ],
 
     /* Integrations */
@@ -92,6 +98,17 @@ return [
             'checkout_started_event_name' => 'checkout.started',
             'purchase_event_name' => 'order.paid',
             'refund_event_name' => 'order.refunded',
+        ],
+    ],
+
+    /* HTTP */
+    'http' => [
+        'experiment_middleware' => [
+            'subject_resolver' => null,
+            'anonymous_id_source' => 'cookie',
+            'anonymous_id_key' => 'visitor_id',
+            'session_identifier_source' => 'laravel',
+            'session_identifier_key' => 'X-Session-Identifier',
         ],
     ],
 ];

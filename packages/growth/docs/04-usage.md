@@ -48,6 +48,8 @@ $experiment = OwnerContext::withOwner($store, function () use ($trackedProperty)
 });
 ```
 
+If `slug` is blank during creation, Growth fills it from `name` using `Str::slug()`. The slug remains an explicit route-facing identifier, so middleware usage should always reference the stored slug value directly.
+
 ## Use module presets
 
 Resolve preset defaults when you need to seed UI state or custom creation flows:
@@ -104,6 +106,108 @@ If the anonymous identifier would make `subject_key` longer than the database co
 - any provided `SignalIdentity` or `SignalSession` must belong to the **same tracked property** as the experiment
 - persisted global experiments require an explicit global owner context before assignments can be resolved
 - assignments stay sticky for the same subject
+
+## Resolve assignments through HTTP middleware
+
+When `growth.features.experiment_middleware.enabled` is `true`, Growth can resolve the assignment for you on an incoming request and store the result on the request attributes.
+
+Route example:
+
+```php
+use Illuminate\Support\Facades\Route;
+
+Route::get('/pricing', function () {
+    return view('pricing.show');
+})->middleware('growth.experiment:pricing-page-test');
+```
+
+Important notes:
+
+- the middleware slug is explicit: Growth does **not** infer slugs from route names, paths, or controllers
+- the experiment must be `active`
+- the current owner context must allow the experiment to be read
+- the request must resolve at least one subject: authenticated identity, matching Laravel/session identifier, or configured anonymous id cookie/header
+
+The built-in resolver tries, in order:
+
+1. authenticated user → `SignalIdentity.auth_user_type + auth_user_id`, then `external_id`
+2. request session → `SignalSession.session_identifier`
+3. anonymous id from the configured cookie or header
+
+## Read the current experiment context
+
+Once middleware has stored the request context, you can read it from controllers, actions, view models, or any other HTTP-layer code.
+
+Helper example:
+
+```php
+$context = experiment();
+
+if ($context?->isVariant('hero-b')) {
+    // render challenger hero
+}
+
+$variantCode = $context?->variantCode();
+$experimentSlug = $context?->slug;
+$assignmentId = $context?->assignmentId();
+```
+
+Facade example:
+
+```php
+use AIArmada\Growth\Facades\Growth;
+
+$variantCode = Growth::variantCode();
+$experimentSlug = Growth::experimentSlug();
+```
+
+`experiment()` returns `null` when no experiment context has been stored on the current request.
+
+## Branch in Blade views
+
+When `growth.features.blade_directives.enabled` is `true`, you can branch templates by the current variant code:
+
+```blade
+@variant('hero-a')
+    <x-sales.hero-a />
+@elsevariant('hero-b')
+    <x-sales.hero-b />
+@else
+    <x-sales.default-hero />
+@endvariant
+```
+
+For simpler checks, you can also use the helper directly:
+
+```blade
+@if (experiment()?->isVariant('hero-a'))
+    <p>Showing the control hero.</p>
+@endif
+```
+
+## Use the Livewire-friendly helper concern
+
+Growth ships a lightweight concern for Laravel Livewire components that want to read the current request context without introducing a hard Livewire dependency into the package itself.
+
+```php
+use AIArmada\Growth\Livewire\Concerns\InteractsWithExperimentContext;
+use Livewire\Component;
+
+final class PricingHero extends Component
+{
+    use InteractsWithExperimentContext;
+
+    public function render()
+    {
+        return view('livewire.pricing-hero', [
+            'variantCode' => $this->experimentVariantCode(),
+            'isControl' => $this->isExperimentControl(),
+        ]);
+    }
+}
+```
+
+The concern is a thin wrapper over `experiment()`. If no request context exists, its methods return `null`/`false`.
 
 ## Project experiment context into Signals event properties
 

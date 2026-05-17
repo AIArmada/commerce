@@ -28,6 +28,29 @@ php artisan vendor:publish --tag=growth-config
 
 This creates `config/growth.php`.
 
+## Enable optional presentation helpers
+
+The HTTP middleware and Blade directives are **disabled by default**. Turn them on only if you want route-level assignment resolution and template branching helpers:
+
+```php
+'features' => [
+    'experiment_middleware' => [
+        'enabled' => true,
+    ],
+    'blade_directives' => [
+        'enabled' => true,
+    ],
+],
+```
+
+If you enable the middleware, review the request subject settings under `growth.http.experiment_middleware` as well. The defaults assume:
+
+- anonymous visitors are identified by a cookie named `visitor_id`
+- session matching uses Laravel's current session id
+- authenticated users are matched to `SignalIdentity` by `auth_user_type + auth_user_id`, then by `external_id`
+
+The global `experiment()` helper, `Growth` facade, and Livewire concern do not require extra setup beyond the package booting, but they only return data after an experiment context has been placed on the current request.
+
 ## Owner scoping setup
 
 Growth models are owner-scoped by default. Before creating or querying experiments in an owner-aware application, make sure you have a current owner context.
@@ -82,3 +105,5 @@ For package-specific navigation, feature flags, and page/widget behavior, see th
 ## Verify the installation
 
 Create a tracked property, experiment, and variant, then resolve an assignment using the examples in [usage](./04-usage.md).
+
+If you plan to use HTTP presentation helpers, also add one route with `growth.experiment:{slug}` and confirm `experiment()` returns the current variant context.
