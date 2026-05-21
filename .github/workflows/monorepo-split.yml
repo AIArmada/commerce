@@ -81,21 +81,23 @@ jobs:
       - name: Instant Packagist Update
         env:
           PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
-          PACKAGIST_USERNAME: ${{ vars['PACKAGIST_USERNAME'] }}
-          PACKAGIST_USERNAME_SECRET: ${{ secrets['PACKAGIST_USERNAME'] }}
+          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME }}
         run: |
           sleep 12
 
-          packagist_username="${PACKAGIST_USERNAME:-${PACKAGIST_USERNAME_SECRET:-}}"
+          if [[ -z "$PACKAGIST_USERNAME" ]]; then
+            echo "::error::PACKAGIST_USERNAME is not set. Add it as a repository or organization variable."
+            exit 1
+          fi
 
-          if [[ -z "$packagist_username" ]]; then
-            echo "::error::Set PACKAGIST_USERNAME as a repository or organization variable (preferred) or secret."
+          if [[ -z "$PACKAGIST_TOKEN" ]]; then
+            echo "::error::PACKAGIST_TOKEN is not set. Add it as a repository or organization secret."
             exit 1
           fi
 
           echo "Triggering Packagist update for aiarmada/${{ matrix.package }}"
 
           curl --fail-with-body --silent --show-error -X POST \
-            "https://packagist.org/api/update-package?username=${packagist_username}&apiToken=${PACKAGIST_TOKEN}" \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"repository\":{\"url\":\"https://github.com/AIArmada/${{ matrix.package }}\"}}"
