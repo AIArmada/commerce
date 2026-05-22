@@ -64,7 +64,7 @@ final class PurchasesApi extends CollectApi
         return PurchaseData::from($response);
     }
 
-    public function refund(string $purchaseId, ?int $amount = null): PurchaseData|PaymentData
+    public function refund(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
     {
         $payload = [];
         if ($amount !== null) {

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\PaymentData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Gateways\ChipPaymentIntent;
