@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
+use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
@@ -22,6 +23,7 @@ use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\Services\RankQualificationService;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
+use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\CartManager;
@@ -29,6 +31,7 @@ use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\View;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -39,9 +42,10 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $package
             ->name('affiliates')
             ->hasConfigFile('affiliates')
+            ->hasViews('affiliates')
             ->runsMigrations()
             ->discoversMigrations()
-            ->hasRoutes(['api'])
+            ->hasRoutes(['api', 'web'])
             ->hasCommands([
                 Console\Commands\ExportAffiliatePayoutCommand::class,
                 Console\Commands\AggregateDailyStatsCommand::class,
@@ -108,6 +112,8 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         if (config('affiliates.cookies.enabled', true)) {
             $this->registerCookieTrackingMiddleware();
         }
+
+        $this->registerPublicPageSupport();
     }
 
     /**
@@ -126,5 +132,42 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         if (config('affiliates.cookies.auto_register_middleware', true)) {
             $router->pushMiddlewareToGroup('web', TrackAffiliateCookie::class);
         }
+    }
+
+    private function registerPublicPageSupport(): void
+    {
+        if (! config('affiliates.public_pages.enabled', true)) {
+            return;
+        }
+
+        if ($this->app->bound('router')) {
+            /** @var Router $router */
+            $router = $this->app['router'];
+            $router->aliasMiddleware('affiliates.public_context', HydratePublicAffiliateReferralContext::class);
+
+            if (config('affiliates.public_pages.auto_register_middleware', true)) {
+                $router->pushMiddlewareToGroup('web', HydratePublicAffiliateReferralContext::class);
+            }
+        }
+
+        View::composer('*', static function ($view): void {
+            if (! app()->bound('request')) {
+                return;
+            }
+
+            $request = request();
+            $requestAttributeKey = HydratePublicAffiliateReferralContext::requestAttributeKey();
+            $publicReferralContext = $request->attributes->get($requestAttributeKey);
+
+            if (! $request->attributes->has($requestAttributeKey)) {
+                $publicReferralContext = app(ResolvePublicAffiliateReferralContext::class)->handle($request);
+                $request->attributes->set($requestAttributeKey, $publicReferralContext);
+            }
+
+            $view->with(
+                (string) config('affiliates.public_pages.view_data_key', 'affiliateReferral'),
+                $publicReferralContext
+            );
+        });
     }
 }

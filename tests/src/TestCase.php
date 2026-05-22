@@ -17,6 +17,7 @@ use AIArmada\CommerceSupport\SupportServiceProvider;
 use AIArmada\Customers\CustomersServiceProvider;
 use AIArmada\Docs\DocsServiceProvider;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
+use AIArmada\Events\EventsServiceProvider;
 use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkServiceProvider;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
@@ -27,6 +28,7 @@ use AIArmada\FilamentCart\FilamentCartServiceProvider;
 use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
 use AIArmada\FilamentChip\FilamentChipServiceProvider;
 use AIArmada\FilamentDocs\FilamentDocsServiceProvider;
+use AIArmada\FilamentEvents\FilamentEventsServiceProvider;
 use AIArmada\FilamentGrowth\FilamentGrowthServiceProvider;
 use AIArmada\FilamentShipping\FilamentShippingServiceProvider;
 use AIArmada\FilamentSignals\FilamentSignalsServiceProvider;
@@ -147,6 +149,8 @@ abstract class TestCase extends Orchestra
             ChipServiceProvider::class,
             JntServiceProvider::class,
             DocsServiceProvider::class,
+            EventsServiceProvider::class,
+            FilamentEventsServiceProvider::class,
             SignalsServiceProvider::class,
             GrowthServiceProvider::class,
             FilamentDocsServiceProvider::class,

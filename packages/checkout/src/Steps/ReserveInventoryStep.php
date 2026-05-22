@@ -74,8 +74,8 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
         $items = $cartSnapshot['items'] ?? [];
 
         foreach ($items as $item) {
-            $productId = $item['product_id'] ?? null;
-            $variantId = $item['variant_id'] ?? null;
+            $productId = $item['product_id'] ?? data_get($item, 'attributes.product_id');
+            $variantId = $item['variant_id'] ?? data_get($item, 'attributes.variant_id');
             $quantity = $item['quantity'] ?? 1;
 
             if ($productId === null) {
@@ -104,16 +104,19 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
 
         $reservations = [];
         $reservationTtl = config('checkout.integrations.inventory.reservation_ttl', 900);
+        $currentProductId = null;
 
         try {
             foreach ($items as $item) {
-                $productId = $item['product_id'] ?? null;
-                $variantId = $item['variant_id'] ?? null;
+                $productId = $item['product_id'] ?? data_get($item, 'attributes.product_id');
+                $variantId = $item['variant_id'] ?? data_get($item, 'attributes.variant_id');
                 $quantity = $item['quantity'] ?? 1;
 
                 if ($productId === null) {
                     continue;
                 }
+
+                $currentProductId = $productId;
 
                 $reservation = $this->inventoryAdapter->reserve(
                     productId: $productId,
@@ -151,7 +154,7 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
             }
 
             throw InventoryException::reservationFailed(
-                $item['product_id'] ?? 'unknown',
+                $currentProductId ?? 'unknown',
                 $e->getMessage()
             );
         }

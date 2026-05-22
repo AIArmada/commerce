@@ -144,6 +144,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Pages
+    |--------------------------------------------------------------------------
+    |
+    | Provide package-owned primitives for public referral entry routes,
+    | request-scoped referral context, and shared banner data on public pages.
+    |
+    */
+
+    'public_pages' => [
+        'enabled' => env('AFFILIATES_PUBLIC_PAGES_ENABLED', true),
+        'view_data_key' => env('AFFILIATES_PUBLIC_PAGES_VIEW_DATA_KEY', 'affiliateReferral'),
+        'auto_register_middleware' => env('AFFILIATES_PUBLIC_PAGES_AUTO_MIDDLEWARE', true),
+        'route' => [
+            'enabled' => env('AFFILIATES_PUBLIC_REFERRAL_ROUTE_ENABLED', true),
+            'path' => env('AFFILIATES_PUBLIC_REFERRAL_ROUTE_PATH', 'r/{affiliateCode}'),
+            'name' => env('AFFILIATES_PUBLIC_REFERRAL_ROUTE_NAME', 'affiliate.referral.entry'),
+            'middleware' => array_values(array_filter(array_map('trim', explode(',', (string) env('AFFILIATES_PUBLIC_REFERRAL_ROUTE_MIDDLEWARE', 'web'))))),
+            'destination_parameter' => env('AFFILIATES_PUBLIC_REFERRAL_DESTINATION_PARAMETER', 'to'),
+            'destinations' => [
+                'home' => env('AFFILIATES_PUBLIC_REFERRAL_HOME_PATH', '/'),
+                'checkout' => env('AFFILIATES_PUBLIC_REFERRAL_CHECKOUT_PATH', '/checkout'),
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Voucher Integration
     |--------------------------------------------------------------------------
     |

@@ -140,9 +140,18 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
             return ['applied' => [], 'discount' => 0];
         }
 
-        // Vouchers should be pre-selected/attached to session
         $discountData = $session->discount_data ?? [];
-        $voucherCodes = $discountData['voucher_codes'] ?? [];
+        $voucherCodes = $discountData['voucher_codes']
+            ?? data_get($session->cart_snapshot, 'metadata.voucher_codes', []);
+
+        if (! is_array($voucherCodes)) {
+            return ['applied' => [], 'discount' => 0];
+        }
+
+        $voucherCodes = array_values(array_filter(array_map(
+            static fn (mixed $code): ?string => is_string($code) && mb_trim($code) !== '' ? mb_trim($code) : null,
+            $voucherCodes,
+        )));
 
         if (empty($voucherCodes)) {
             return ['applied' => [], 'discount' => 0];

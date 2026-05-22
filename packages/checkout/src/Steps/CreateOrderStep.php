@@ -83,15 +83,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
             'tax_total' => $session->tax_total,
             'grand_total' => $session->grand_total,
             'currency' => $session->currency,
-            'metadata' => [
-                'checkout_session_id' => $session->id,
-                'cart_id' => $session->cart_id,
-                'payment_gateway' => $session->selected_payment_gateway,
-                'payment_id' => $session->payment_id,
-                'payment_data' => $paymentData,
-                'discount_data' => $session->discount_data,
-                'tax_data' => $session->tax_data,
-            ],
+            'metadata' => $this->buildOrderMetadata($session, $paymentData),
         ];
 
         $items = $this->buildOrderItems($session);
@@ -175,20 +167,30 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $finalUnitPrice = (int) ($pricingItem['unit_price'] ?? $cartItem['price'] ?? $cartItem['unit_price'] ?? $baseUnitPrice);
             $pricingDiscount = max(0, ($baseUnitPrice - $finalUnitPrice) * $quantity);
             $associatedModel = $cartItem['associated_model'] ?? null;
+            $attributes = is_array($cartItem['attributes'] ?? null) ? $cartItem['attributes'] : [];
+            $purchasableId = $cartItem['product_id']
+                ?? $cartItem['purchasable_id']
+                ?? $attributes['product_id']
+                ?? $attributes['purchasable_id']
+                ?? (is_array($associatedModel) ? $associatedModel['id'] ?? null : null);
+            $purchasableType = $cartItem['purchasable_type']
+                ?? $attributes['purchasable_type']
+                ?? (is_array($associatedModel) ? $associatedModel['class'] ?? null : null);
+            $sku = $cartItem['sku']
+                ?? $attributes['sku']
+                ?? (is_array($associatedModel) ? data_get($associatedModel, 'data.sku') : null);
+            $currency = $cartItem['currency'] ?? $attributes['currency'] ?? null;
 
             return [
-                'purchasable_id' => $cartItem['product_id']
-                    ?? $cartItem['purchasable_id']
-                    ?? (is_array($associatedModel) ? $associatedModel['id'] ?? null : null),
-                'purchasable_type' => $cartItem['purchasable_type']
-                    ?? (is_array($associatedModel) ? $associatedModel['class'] ?? null : null),
+                'purchasable_id' => $purchasableId,
+                'purchasable_type' => $purchasableType,
                 'name' => $cartItem['name'] ?? '',
-                'sku' => $cartItem['sku'] ?? null,
+                'sku' => $sku,
                 'quantity' => $quantity,
                 'unit_price' => $baseUnitPrice,
                 'discount_amount' => $pricingDiscount + ($checkoutDiscountAllocations[$index] ?? 0),
                 'tax_amount' => $taxAllocations[$index] ?? 0,
-                'currency' => $cartItem['currency'] ?? null,
+                'currency' => $currency,
                 'options' => $cartItem['attributes'] ?? $cartItem['options'] ?? null,
                 'metadata' => array_merge(
                     $cartItem['metadata'] ?? [],
@@ -196,6 +198,61 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 ),
             ];
         }, $cartItems, array_keys($cartItems));
+    }
+
+    /**
+     * @param  array<string, mixed>  $paymentData
+     * @return array<string, mixed>
+     */
+    private function buildOrderMetadata(CheckoutSession $session, array $paymentData): array
+    {
+        $metadata = [
+            'checkout_session_id' => $session->id,
+            'cart_id' => $session->cart_id,
+            'payment_gateway' => $session->selected_payment_gateway,
+            'payment_id' => $session->payment_id,
+            'payment_data' => $paymentData,
+            'discount_data' => $session->discount_data,
+            'tax_data' => $session->tax_data,
+        ];
+
+        $cartMetadata = data_get($session->cart_snapshot, 'metadata');
+
+        if (! is_array($cartMetadata)) {
+            return $metadata;
+        }
+
+        $affiliate = $cartMetadata['affiliate'] ?? null;
+
+        if (is_array($affiliate)) {
+            $affiliateId = $affiliate['affiliate_id'] ?? null;
+            $affiliateCode = $affiliate['affiliate_code'] ?? null;
+
+            if (is_scalar($affiliateId) && mb_trim((string) $affiliateId) !== '') {
+                $metadata['affiliate_id'] = (string) $affiliateId;
+            }
+
+            if (is_string($affiliateCode) && mb_trim($affiliateCode) !== '') {
+                $metadata['affiliate_code'] = mb_trim($affiliateCode);
+            }
+        }
+
+        $voucherCodes = array_values(array_filter(array_map(
+            static fn (mixed $code): ?string => is_string($code) && mb_trim($code) !== '' ? mb_trim($code) : null,
+            is_array($cartMetadata['voucher_codes'] ?? null) ? $cartMetadata['voucher_codes'] : [],
+        )));
+
+        if ($voucherCodes !== []) {
+            $metadata['voucher_codes'] = $voucherCodes;
+        }
+
+        $promoCode = $cartMetadata['promo_code'] ?? null;
+
+        if (is_string($promoCode) && mb_trim($promoCode) !== '') {
+            $metadata['promo_code'] = mb_trim($promoCode);
+        }
+
+        return $metadata;
     }
 
     private function commitInventoryReservations(CheckoutSession $session): void

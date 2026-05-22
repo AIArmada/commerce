@@ -170,7 +170,8 @@ final class CalculateShippingStep extends AbstractCheckoutStep
 
         // Check if all items are digital/non-physical
         foreach ($items as $item) {
-            $requiresShipping = $item['requires_shipping'] ?? true;
+            $requiresShipping = $item['requires_shipping'] ?? data_get($item, 'attributes.requires_shipping', true);
+
             if ($requiresShipping) {
                 return false;
             }

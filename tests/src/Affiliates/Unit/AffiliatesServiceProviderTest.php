@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
+use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
@@ -134,4 +135,22 @@ it('does not register the commission listener when commission tracking is disabl
 
     $provider = new AffiliatesServiceProvider(app());
     $provider->packageBooted();
+});
+
+it('registers public-page referral middleware when the feature is enabled', function (): void {
+    config()->set('affiliates.features.cart_integration.enabled', false);
+    config()->set('affiliates.features.voucher_integration.enabled', false);
+    config()->set('affiliates.features.commission_tracking.enabled', false);
+    config()->set('affiliates.cookies.enabled', false);
+    config()->set('affiliates.public_pages.enabled', true);
+    config()->set('affiliates.public_pages.auto_register_middleware', true);
+
+    $provider = new AffiliatesServiceProvider(app());
+    $provider->packageBooted();
+
+    $router = app('router');
+
+    expect($router->getMiddleware()['affiliates.public_context'] ?? null)
+        ->toBe(HydratePublicAffiliateReferralContext::class)
+        ->and($router->getMiddlewareGroups()['web'] ?? [])->toContain(HydratePublicAffiliateReferralContext::class);
 });

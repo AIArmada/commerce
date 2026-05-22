@@ -33,6 +33,8 @@ pest()->extend(TestCase::class)->in(
     'src/Checkout',
     'src/Chip',
     'src/Docs',
+    'src/Events',
+    'src/FilamentEvents',
     'src/Growth',
     'src/FilamentCart',
     'src/FilamentCashier',
