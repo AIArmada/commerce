@@ -1,0 +1,10 @@
+---
+openapi: _openapi-chip-collect POST /purchases/{id}/release/
+description:
+---
+
+Release funds reserved for a Purchase (`status == hold`). You can place a `hold` (authenticate the payment) using `skip_capture == true` when creating the Purchase and ensuring your client submits the payment form.
+
+If this operation takes too long to be processed on the acquirer side - you will get a response with status code 200 and a Purchase object having `status` = `pending_release` in body (you will receive a corresponding Webhook callback too for a `purchase.pending_release` event). To be notified of a successful operation completion, please subscribe to `purchase.released` callback event - it will deliver an updated Purchase with `status` = `released`.
+
+If fund release fails due to payment processing error, you will receive HTTP response code 400 with error code `purchase_release_error`. In this case, to get more details about the error, you should perform a `GET /purchase/` request for the Purchase you tried to release funds for. In `transaction_data.attempts[]` array (newest element first) you'll find the corresponding attempt with error code and description in `.error` parameter.

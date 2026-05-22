@@ -1,0 +1,168 @@
+---
+title: Subscriptions
+---
+
+## Example Use Cases
+
+|                                                    |
+|----------------------------------------------------|
+| Recurring Memberships                              |
+| SaaS (Software-as-a-Service) Products              |
+| Educational Content & Courses Subscription         |
+
+## API Required
+
+1) [Create Purchase API](/chip-collect/api-reference/purchases/create)
+2) [Charge Token API](/chip-collect/api-reference/purchases/charge)
+
+## Example Cases
+
+1) [Subscription With Free Trial](/chip-collect/overview/online-purchases/subscription#subscription-with-free-trial)
+2) [Subscription With Registration Fee](/chip-collect/overview/online-purchases/subscription#subscription-with-registration-fee)
+
+## 1) Subscription With Free Trial
+
+Alan subscribe to a gym memberhip with a free trial and monthly subscription of RM 5.00
+
+1) Create registration fee using [Purchases API](/chip-collect/api-reference/purchases/create)
+<br/> - get `checkout_url` from response body to be use as a payment link
+<br/> - get `id` from response body to be use as a token
+<br/> *Note: Alan 's card must be validated in order for the token to be usable*
+```js
+{
+  "client": {
+    "email": "test@test.com",
+    "full_name": "Alan"
+  },
+  "purchase": {
+    "products": [
+      {
+        "name": "Free Trial",
+        "price": 0
+      }
+    ]
+  },
+  "skip_capture" : true,
+  "brand_id": "<<Brand_id>>"
+}
+```
+
+2) Create monthly subscription using [Purchases API](/chip-collect/api-reference/purchases/create)
+<br/> - get `id` from response body to be use as a payment link
+```js
+{
+  "client": {
+    "email": "test@test.com",
+    "full_name": "Alan"
+  },
+  "purchase": {
+    "products": [
+      {
+        "name": "Subscription fee",
+        "price": 500
+      }
+    ]
+  },
+  "brand_id": "<<brand_id>>"
+}
+```
+
+3) Charge subscription fee id with registration fee id using [Charge token API](/chip-collect/api-reference/purchases/charge)
+<br/>Example API : .../purchases/`monthly_subscription_fee_id`/charge/
+```js
+{
+  "recurring_token" : "<<free_trial_id>>"
+}
+```
+
+## 2) Subscription With Registration Fee
+
+Alan subscribe to a gym memberhip with a registration fee of RM 20.00 and a monthly subscription of RM 5.00
+
+1) Create registration fee using [Purchases API](/chip-collect/api-reference/purchases/create)
+<br/> - get `checkout_url` from response body to be use as a payment link
+<br/> - get `id` from response body to be use as a token
+<br/> *Note: Alan 's registration fee must be paid in order for the token to be usable*
+```js
+{
+  "client": {
+    "email": "test@test.com",
+    "full_name": "Alan"
+  },
+  "purchase": {
+    "products": [
+      {
+        "name": "Registration Fee",
+        "price": 2000
+      }
+    ]
+  },
+  "payment_method_whitelist" : ["visa", "mastercard", "maestro"],
+  "force_recurring" : true,
+  "brand_id": "<<Brand_id>>"
+}
+```
+
+2) Create monthly subscription using [Purchases API](/chip-collect/api-reference/purchases/create)
+<br/> - get `id` from response body to be use as a payment link
+```js
+{
+  "client": {
+    "email": "test@test.com",
+    "full_name": "Alan"
+  },
+  "purchase": {
+    "products": [
+      {
+        "name": "Subscription fee",
+        "price": 500
+      }
+    ]
+  },
+  "brand_id": "<<brand_id>>"
+}
+```
+
+3) Charge subscription fee id with registration fee id using [Charge token API](/chip-collect/api-reference/purchases/charge)
+<br/>Example API : .../purchases/`monthly_subscription_fee_id`/charge/
+```js
+{
+  "recurring_token" : "<<registration_fee_id>>"
+}
+```
+
+## Testing Integration
+
+It’s possible to test-drive all checkouts using a test Purchase.
+
+To test a successful payment, you can use the following card numbers:
+
+*   4444 3333 2222 1111 - non-3D Secure card
+*   5555 5555 5555 4444 - 3D Secure card
+
+For both cards, please use:
+
+*   any cardholder name
+*   any expiry larger or equal to the current month/year
+*   CVC = 123
+
+To test a failed payment, please change the CVC or expiration date.
+
+When using a 3D Secure enrolled card in S2S checkout,  an incorrect CVC will trigger an authorization failure on the S2S callback step (after the customer returns from test ACS). Using a wrong expiry date emulates data validation failure and results in immediate error before that step.
+
+
+## FAQ
+
+Frequently asked questions regarding recurring token.
+
+1) What is the token tied to? <br/>
+The token is tied to `brand_id`
+
+2) How the token is referenced? <br/>
+The token use `customer_email` as a reference
+
+3) Where can I see my customers tokens? <br/>
+List of tokens per customer can be checked by using [List Token API](/chip-collect/api-reference/clients/list-recurring-tokens)
+
+4) How to delete the token? <br/>
+Token can be deleted by using [Delete Token API](/chip-collect/api-reference/purchases/delete-recurring-token)

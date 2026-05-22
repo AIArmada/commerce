@@ -1,0 +1,8 @@
+---
+openapi: _openapi-chip-collect POST /purchases/{id}/delete_recurring_token/
+description:
+---
+
+Will set `is_recurring_token` to `false`. You won't be able to use this Purchase's ID as a `recurring_token` anymore. The respective ClientRecurringToken, if any, will also be deleted.
+
+If this operation takes too long to be processed on the acquirer side - you will get a response with status code 200 a corresponding Webhook callback for a `purchase.pending_recurring_token_delete` event. To be notified of a successful operation completion, please subscribe to `purchase.recurring_token_deleted` callback event.

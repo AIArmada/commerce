@@ -1,0 +1,27 @@
+---
+title: E-Wallet
+description: "Bypass the payment page for an optimized user experience"
+---
+
+## Instruction
+
+Once a purchase is created, a checkout_url will be provided to redirect the buyer to the payment page. To automatically navigate the customer to a specific e-wallet, you should append the following parameters to the URL:
+
+`?preferred=<Wallet>&razer_bank_code=<Wallet Code>`
+
+## E-Wallet List
+
+For the `<Wallet>` and `<Wallet Code>`, the following values are available:
+
+| E-Wallet Name           | Value (Wallet)     | Value (Wallet Code)     |
+|-------------------------|--------------------|-------------------------|
+| GrabPay                 | razer_grabpay      | GrabPay                 |
+| Touch ‘n Go eWallet     | razer_tng          | TNG-EWALLET             |
+| ShopeePay               | razer_shopeepay    | ShopeePay               |
+| Maybank QR              | razer_maybankqr    | MB2U_QRPay-Push         |
+
+## Example
+
+<Card title="E-Wallet Grab Example" icon="wallet" href="https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/?preferred=razer&razer_bank_code=GrabPay">
+    https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/?preferred=razer&razer_bank_code=GrabPay
+</Card>

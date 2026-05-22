@@ -1,0 +1,89 @@
+---
+title: Pre-Authorization
+---
+
+## Example Use Cases
+
+|                                                    |
+|----------------------------------------------------|
+| Rooms Reservations                                 |
+| Rental Services                                    |
+| Pay-Per-Use Parking                                |
+
+## API Required
+
+1) [Create Purchase API](/chip-collect/api-reference/purchases/Create)
+2) [Capture Payment API](/chip-collect/api-reference/purchases/Capture)
+
+## Example JSON Payload
+
+Alan rent a hotel room that costs RM200.00, with an additional security deposit of RM100.00
+
+1) Create a reservation fee using [Purchases API](/chip-collect/api-reference/purchases/create)
+<br/> - get `checkout_url` from response body to be use as a payment link
+<br/> - get `id` from response body to be use as a token
+<br/> *Note: Alan 's reservation fee must be paid in order for the token to be useable*
+
+```js
+{
+  "client": {
+    "email": "test@test.com",
+    "full_name": "Alan"
+  },
+  "purchase": {
+    "products": [
+      {
+        "name": "Room fee",
+        "price": 20000
+      },
+      {
+        "name": "Security deposit",
+        "price": 10000
+      }
+    ]
+  },
+  "skip_capture" : true,
+  "brand_id": "<<Brand_id>>"
+}
+```
+
+2) Charge the funds using [Capture Payment API](/chip-collect/api-reference/purchases/Capture)
+
+- If the full security deposit is to be charged, capture the total amount:
+```js
+{
+  "amount" : 30000
+}
+```
+
+- If the security deposit is not being charged, capture only the room fee portion:
+
+```js
+{
+  "amount" : 20000
+}
+```
+
+<br/> *Note: Partial capture is possible as any remainder of uncharged funds will be released automatically*
+
+## Skip Capture Parameter
+When set to true, the `skip_capture` parameter authorizes the payment without capturing the funds, effectively holding the amount in the customer's account without withdrawing it.
+
+## Testing Integration
+
+It’s possible to test-drive all checkouts using a test Purchase.
+
+To test a successful payment, you can use the following card numbers:
+
+*   4444 3333 2222 1111 - non-3D Secure card
+*   5555 5555 5555 4444 - 3D Secure card
+
+For both cards, please use:
+
+*   any cardholder name
+*   any expiry larger or equal to the current month/year
+*   CVC = 123
+
+To test a failed payment, please change the CVC or expiration date.
+
+When using a 3D Secure enrolled card in S2S checkout,  an incorrect CVC will trigger an authorization failure on the S2S callback step (after the customer returns from test ACS). Using a wrong expiry date emulates data validation failure and results in immediate error before that step.

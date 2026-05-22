@@ -1,0 +1,30 @@
+---
+title: Callbacks
+---
+
+Two methods for defining asynchronous callbacks are supported - `Purchase` success callbacks and webhooks.
+
+## Purchase success callbacks
+
+`Purchase` success callbacks are defined by providing a target URL in the `success_callback` field on `Purchase` creation (see [POST /purchases/](/chip-collect/api-reference/purchases/create)). The system will generate a callback when:
+- a `Purchase` with `skip_capture=false` is successfully paid
+- a `Purchase` with `skip_capture=true` is successfully captured (see [POST /purchases/&#123;id&#125;/capture/](/chip-collect/api-reference/purchases/capture))
+- a `Purchase` is successfully paid using a recurring token (see [POST /purchases/&#123;id&#125;/charge/](/chip-collect/api-reference/purchases/charge))
+
+These callbacks pass a JSON-encoded `Purchase` as their payload. The payload represents a snapshot of the state of the `Purchase` when the event was created. The payload will include an `event_type` field to indicate which specific event (see [Event schema](/chip-collect/api-reference/webhooks/create)) triggered the callback.
+
+The payload is signed using a company-wide key pair. You can obtain the public key with `GET /public_key/`. See the `Authentication` section below for more details.
+
+## Webhooks
+
+For creating and modifying webhooks, see the Webhook [CRUD API specification](/chip-collect/api-reference/webhooks/create).
+
+`Webhook` callback payloads are signed using a dedicated key pair. You can obtain the public key from `Webhook.public_key`. See the [Authentication](/chip-collect/overview/authentication) section below for more details.
+
+## Delivery protocol
+
+When a callback is not successfully delivered (received by the target server and responded to with a 200 series HTTP response code), the system will make up to 8 additional attempts at exponentially increasing intervals between attempts. No further delivery attempts will be made if the callback is not successfully delivered 36 hours after triggering.
+
+Please note that due to the asynchronous nature of network requests, it is possible for a callback delivery confirmation (HTTP response with a 200 series status code) to not properly arrive from the callback's target server. Therefore it is possible in case of severe network faults for the target server to receive a callback, respond to it with a 200 series HTTP status code and then receive the same callback after an interval.
+
+Callback deliveries are guaranteed to be sequential to events triggered on their source objects. For example, when registering webhooks for both the `purchase.created` and `purchase.paid` events, there will be no `purchase.paid` callbacks for this `Purchase` until all `purchase.created` callbacks for this `Purchase` are successfully delivered.
