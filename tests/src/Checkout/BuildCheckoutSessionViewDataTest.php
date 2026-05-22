@@ -17,7 +17,9 @@ it('builds checkout session view data', function (): void {
     $order = new class extends Model
     {
         protected $guarded = [];
+
         public string $id;
+
         public string $order_number;
     };
     $order->id = 'order-1';

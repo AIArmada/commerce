@@ -119,7 +119,7 @@ final class ResolvePublicAffiliateReferralContext
     private function destinationUrl(string $destinationKey, string $affiliateCode): string
     {
         $destination = config(
-            'affiliates.public_pages.route.destinations.'.$destinationKey,
+            'affiliates.public_pages.route.destinations.' . $destinationKey,
             $destinationKey === 'checkout' ? '/checkout' : '/',
         );
 
@@ -151,6 +151,6 @@ final class ResolvePublicAffiliateReferralContext
             return $url;
         }
 
-        return $url.(str_contains($url, '?') ? '&' : '?').$queryString;
+        return $url . (str_contains($url, '?') ? '&' : '?') . $queryString;
     }
 }

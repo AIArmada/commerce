@@ -86,7 +86,7 @@ final class CapturePublicAffiliateReferral
         );
 
         $destination = config(
-            'affiliates.public_pages.route.destinations.'.$destinationKey,
+            'affiliates.public_pages.route.destinations.' . $destinationKey,
             config('affiliates.public_pages.route.destinations.home', '/'),
         );
 
