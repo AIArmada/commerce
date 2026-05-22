@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPricing\Pages;
 
 use AIArmada\Pricing\Settings\PricingSettings;
 use BackedEnum;
+use Error;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -180,7 +181,16 @@ final class ManagePricingSettings extends Page
     private function resolvePricingSettings(): PricingSettings
     {
         try {
-            return app(PricingSettings::class);
+            $settings = app(PricingSettings::class);
+
+            try {
+                $defaultCurrency = $settings->defaultCurrency;
+                unset($defaultCurrency);
+            } catch (Error) {
+                return $settings;
+            }
+
+            return $settings;
         } catch (MissingSettings) {
             $settings = new PricingSettings($this->defaultSettings());
             $settings->save();
