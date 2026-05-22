@@ -15,6 +15,7 @@ use BackedEnum;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 
 final class CustomerResource extends BaseCashierChipResource
@@ -56,9 +57,11 @@ final class CustomerResource extends BaseCashierChipResource
 
     public static function getRelations(): array
     {
-        $relations = [
-            SubscriptionsRelationManager::class,
-        ];
+        $relations = [];
+
+        if (self::supportsSubscriptionsRelation()) {
+            $relations[] = SubscriptionsRelationManager::class;
+        }
 
         if (config('filament-cashier-chip.features.payment_methods', true)) {
             $relations[] = PaymentMethodsRelationManager::class;
@@ -87,5 +90,16 @@ final class CustomerResource extends BaseCashierChipResource
     protected static function navigationSortKey(): string
     {
         return 'customers';
+    }
+
+    private static function supportsSubscriptionsRelation(): bool
+    {
+        $modelClass = static::getModel();
+
+        if (! is_string($modelClass) || ! is_subclass_of($modelClass, Model::class)) {
+            return false;
+        }
+
+        return method_exists($modelClass, 'subscriptions') || method_exists($modelClass, 'chipSubscriptions');
     }
 }

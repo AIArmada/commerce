@@ -6,8 +6,11 @@ use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentChip\Resources\PurchaseResource;
+use AIArmada\FilamentChip\Widgets\ChipStatsWidget;
 use AIArmada\FilamentChip\Widgets\PaymentMethodsWidget;
+use AIArmada\FilamentChip\Widgets\RecentTransactionsWidget;
 use AIArmada\FilamentChip\Widgets\RevenueChartWidget;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -391,4 +394,79 @@ it('widget metrics reject cross-tenant data', function (): void {
     // OwnerB should only see Card (10000)
     expect($breakdownB)->toHaveKey('Card');
     expect($breakdownB['Card']['amount'])->toBe(10000);
+});
+
+it('renders chip stats using explicit global context when no owner is resolved', function (): void {
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    OwnerContext::withOwner(null, static function (): void {
+        Purchase::create([
+            'status' => 'paid',
+            'is_test' => false,
+            'created_on' => now()->getTimestamp(),
+            'purchase' => ['amount' => 1000],
+            'payment' => ['payment_type' => 'fpx'],
+        ]);
+    });
+
+    $widget = app(ChipStatsWidget::class);
+    $method = new ReflectionMethod(ChipStatsWidget::class, 'getStats');
+
+    /** @var array<int, mixed> $stats */
+    $stats = $method->invoke($widget);
+
+    expect($stats)->toHaveCount(4);
+});
+
+it('renders revenue chart using explicit global context when no owner is resolved', function (): void {
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    OwnerContext::withOwner(null, static function (): void {
+        Purchase::create([
+            'status' => 'paid',
+            'is_test' => false,
+            'created_on' => now()->getTimestamp(),
+            'purchase' => ['amount' => 2000],
+        ]);
+    });
+
+    $widget = app(RevenueChartWidget::class);
+    $method = new ReflectionMethod(RevenueChartWidget::class, 'getData');
+
+    /** @var array{datasets: array<int, array{data: array<int>}>, labels: array<string>} $data */
+    $data = $method->invoke($widget);
+
+    expect($data['labels'])->toHaveCount(30)
+        ->and($data['datasets'])->toHaveCount(1)
+        ->and($data['datasets'][0]['data'])->toHaveCount(30)
+        ->and(max($data['datasets'][0]['data']))->toBeGreaterThanOrEqual(20);
+});
+
+it('builds recent transactions query using explicit global context when no owner is resolved', function (): void {
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    OwnerContext::withOwner(null, static function (): void {
+        Purchase::create([
+            'status' => 'paid',
+            'is_test' => false,
+            'created_on' => now()->getTimestamp(),
+            'purchase' => ['amount' => 1000],
+        ]);
+
+        Purchase::create([
+            'status' => 'paid',
+            'is_test' => true,
+            'created_on' => now()->getTimestamp(),
+            'purchase' => ['amount' => 9000],
+        ]);
+    });
+
+    $widget = app(RecentTransactionsWidget::class);
+    $method = new ReflectionMethod(RecentTransactionsWidget::class, 'getRecentTransactionsQuery');
+
+    /** @var Builder<Purchase> $query */
+    $query = $method->invoke($widget);
+
+    expect($query->count())->toBe(1)
+        ->and($query->first()?->is_test)->toBeFalse();
 });

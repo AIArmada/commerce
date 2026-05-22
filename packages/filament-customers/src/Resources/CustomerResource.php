@@ -204,11 +204,22 @@ class CustomerResource extends Resource
                     ->label('Accepts Marketing'),
 
                 Tables\Filters\SelectFilter::make('segments')
-                    ->relationship(
-                        name: 'segments',
-                        titleAttribute: 'name',
-                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
-                    )
+                    ->options(static fn (): array => OwnerUiScope::apply(Segment::query(), includeGlobal: false)
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->query(static function (Builder $query, array $data): Builder {
+                        $values = array_values(array_filter($data['values'] ?? []));
+
+                        if ($values === []) {
+                            return $query;
+                        }
+
+                        return $query->whereHas('segments', static function (Builder $segmentQuery) use ($values): void {
+                            OwnerUiScope::apply($segmentQuery, includeGlobal: false)
+                                ->whereKey($values);
+                        });
+                    })
                     ->multiple()
                     ->preload(),
 

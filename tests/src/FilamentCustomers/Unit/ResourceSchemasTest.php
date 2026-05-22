@@ -11,6 +11,7 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Livewire\Component as LivewireComponent;
 
@@ -61,6 +62,12 @@ it('builds CustomerResource form/table/infolist schemas', function (): void {
 
     expect($table->getColumns())->not()->toBeEmpty();
     expect($table->getRecordActions())->not()->toBeEmpty();
+
+    $segmentFilter = collect($table->getFilters())
+        ->first(fn ($filter): bool => $filter instanceof SelectFilter && $filter->getName() === 'segments');
+
+    expect($segmentFilter)->toBeInstanceOf(SelectFilter::class)
+        ->and($segmentFilter->queriesRelationships())->toBeFalse();
 });
 
 it('builds SegmentResource form/table schemas', function (): void {

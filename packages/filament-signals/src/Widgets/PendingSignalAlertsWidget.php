@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentSignals\Resources\SignalAlertLogResource;
 use AIArmada\Signals\Actions\MarkAllSignalAlertsAsRead;
 use AIArmada\Signals\Actions\MarkSignalAlertAsRead;
@@ -12,6 +13,7 @@ use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 final class PendingSignalAlertsWidget extends BaseWidget
@@ -28,13 +30,7 @@ final class PendingSignalAlertsWidget extends BaseWidget
     public function table(Table $table): Table
     {
         return $table
-            ->query(
-                SignalAlertLog::query()->forOwner()
-                    ->with(['alertRule', 'trackedProperty'])
-                    ->where('is_read', false)
-                    ->orderByRaw("CASE severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END")
-                    ->orderByDesc('created_at')
-            )
+            ->query($this->getPendingAlertsQuery())
             ->headerActions([
                 Actions\Action::make('viewAll')
                     ->label('View All')
@@ -75,5 +71,28 @@ final class PendingSignalAlertsWidget extends BaseWidget
             ->emptyStateDescription('All Signals alerts are currently acknowledged.')
             ->emptyStateIcon('heroicon-o-check-circle')
             ->paginated([5, 10, 25]);
+    }
+
+    /**
+     * @return Builder<SignalAlertLog>
+     */
+    protected function getPendingAlertsQuery(): Builder
+    {
+        $queryFactory = function (): Builder {
+            return SignalAlertLog::query()->forOwner()
+                ->with(['alertRule', 'trackedProperty'])
+                ->where('is_read', false)
+                ->orderByRaw("CASE severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END")
+                ->orderByDesc('created_at');
+        };
+
+        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
+            return $queryFactory();
+        }
+
+        /** @var Builder<SignalAlertLog> $query */
+        $query = OwnerContext::withOwner(null, $queryFactory);
+
+        return $query;
     }
 }

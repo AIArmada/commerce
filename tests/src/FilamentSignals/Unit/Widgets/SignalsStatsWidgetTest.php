@@ -18,6 +18,7 @@ use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 
 uses(FilamentSignalsTestCase::class);
 
@@ -262,4 +263,13 @@ it('can instantiate the pending alerts widget', function (): void {
     $widget = new PendingSignalAlertsWidget;
 
     expect($widget)->toBeInstanceOf(PendingSignalAlertsWidget::class);
+});
+
+it('builds pending alerts table when no owner is resolved', function (): void {
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    $widget = app(PendingSignalAlertsWidget::class);
+    $query = filamentSignals_invokeProtected($widget, 'getPendingAlertsQuery');
+
+    expect($query)->toBeInstanceOf(Builder::class);
 });

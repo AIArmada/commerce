@@ -14,6 +14,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class CustomerInfolist
 {
@@ -75,12 +76,17 @@ final class CustomerInfolist
                             TextEntry::make('subscriptions_count')
                                 ->label('Active Subscriptions')
                                 ->getStateUsing(function (Model $record): int {
-                                    if (! method_exists($record, 'subscriptions')) {
+                                    $relationName = self::resolveSubscriptionsRelationName($record);
+
+                                    if ($relationName === null) {
                                         return 0;
                                     }
 
+                                    /** @var Relation $relation */
+                                    $relation = $record->{$relationName}();
+
                                     /** @var Builder<Subscription> $query */
-                                    $query = CashierChipOwnerScope::apply($record->subscriptions()->getQuery());
+                                    $query = CashierChipOwnerScope::apply($relation->getQuery());
 
                                     return $query->whereActive()->count();
                                 })
@@ -131,5 +137,18 @@ final class CustomerInfolist
                 ->collapsible()
                 ->collapsed(),
         ]);
+    }
+
+    private static function resolveSubscriptionsRelationName(Model $model): ?string
+    {
+        if (method_exists($model, 'subscriptions')) {
+            return 'subscriptions';
+        }
+
+        if (method_exists($model, 'chipSubscriptions')) {
+            return 'chipSubscriptions';
+        }
+
+        return null;
     }
 }
