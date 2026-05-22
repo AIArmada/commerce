@@ -172,9 +172,13 @@ class FakeChipCollectService extends ChipCollectService
     /**
      * Delete a recurring token from a purchase.
      */
-    public function deleteRecurringToken(string $purchaseId): void
+    public function deleteRecurringToken(string $purchaseId): PurchaseData
     {
         $this->fakeClient->deleteRecurringToken($purchaseId);
+
+        $response = $this->fakeClient->getPurchase($purchaseId);
+
+        return PurchaseData::from($response ?? []);
     }
 
     /**

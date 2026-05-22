@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Events\PaymentRefunded;
-use AIArmada\Chip\Listeners\GenerateDocOnRefund;
 use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Listeners\GenerateDocOnRefund;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
