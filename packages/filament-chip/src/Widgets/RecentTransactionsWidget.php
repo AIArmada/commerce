@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Database\Eloquent\Builder;
 
 final class RecentTransactionsWidget extends BaseWidget
 {
@@ -22,16 +24,7 @@ final class RecentTransactionsWidget extends BaseWidget
     public function table(Table $table): Table
     {
         return $table
-            ->query(
-                tap(Purchase::query(), function ($query): void {
-                    if (method_exists($query->getModel(), 'scopeForOwner')) {
-                        $query->forOwner();
-                    }
-                })
-                    ->where('is_test', false)
-                    ->orderBy('created_on', 'desc')
-                    ->limit(10)
-            )
+            ->query($this->getRecentTransactionsQuery())
             ->columns([
                 TextColumn::make('reference')
                     ->label('Reference')
@@ -68,10 +61,39 @@ final class RecentTransactionsWidget extends BaseWidget
             ->paginated(false);
     }
 
+    /**
+     * @return Builder<Purchase>
+     */
+    protected function getRecentTransactionsQuery(): Builder
+    {
+        /** @var Builder<Purchase> $query */
+        $query = $this->withResolvedOwnerOrExplicitGlobal(function (): Builder {
+            return tap(Purchase::query(), function ($query): void {
+                if (method_exists($query->getModel(), 'scopeForOwner')) {
+                    $query->forOwner();
+                }
+            })
+                ->where('is_test', false)
+                ->orderBy('created_on', 'desc')
+                ->limit(10);
+        });
+
+        return $query;
+    }
+
     private function getResourceViewUrl(Purchase $record): string
     {
         $panelId = Filament::getCurrentPanel()?->getId() ?? 'admin';
 
         return route("filament.{$panelId}.resources.purchases.view", ['record' => $record]);
+    }
+
+    private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
+    {
+        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
+            return $callback();
+        }
+
+        return OwnerContext::withOwner(null, static fn (): mixed => $callback());
     }
 }

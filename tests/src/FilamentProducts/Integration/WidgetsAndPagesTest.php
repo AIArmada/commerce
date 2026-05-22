@@ -19,14 +19,17 @@ use AIArmada\FilamentProducts\Resources\ProductResource\Pages\ListProducts;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages\ViewProduct;
 use AIArmada\FilamentProducts\Widgets\CategoryDistributionChart;
 use AIArmada\FilamentProducts\Widgets\ProductStatsWidget;
+use AIArmada\FilamentProducts\Widgets\ProductTypeDistributionWidget;
 use AIArmada\FilamentProducts\Widgets\TopSellingProductsWidget;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Carbon;
@@ -189,4 +192,168 @@ it('covers basic table building on standalone pages', function (): void {
 
     $importPage = app(ImportExportProducts::class);
     expect($importPage->getImportFormProperty())->toBeInstanceOf(Schema::class);
+});
+
+it('renders product stats in explicit global context when no owner is resolved', function (): void {
+    Carbon::setTestNow(Carbon::parse('2025-01-10 10:00:00'));
+
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    OwnerContext::withOwner(null, static function (): void {
+        Product::query()->create([
+            'name' => 'Global Product',
+            'slug' => 'global-product',
+            'status' => ProductStatus::Active,
+            'type' => ProductType::Simple,
+            'price' => 1000,
+            'requires_shipping' => true,
+        ]);
+
+        Category::query()->create([
+            'name' => 'Global Category',
+            'slug' => 'global-category',
+        ]);
+    });
+
+    $statsWidget = app(ProductStatsWidget::class);
+    $statsMethod = new ReflectionMethod(ProductStatsWidget::class, 'getStats');
+    $stats = $statsMethod->invoke($statsWidget);
+
+    expect($stats)->toHaveCount(4)
+        ->and($stats[0]->getValue())->toBe('1');
+});
+
+it('renders product type distribution in explicit global context when no owner is resolved', function (): void {
+    Carbon::setTestNow(Carbon::parse('2025-01-10 10:00:00'));
+
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    OwnerContext::withOwner(null, static function (): void {
+        Product::query()->create([
+            'name' => 'Global Physical Product',
+            'slug' => 'global-physical-product',
+            'status' => ProductStatus::Active,
+            'type' => ProductType::Simple,
+            'price' => 1000,
+            'requires_shipping' => true,
+        ]);
+
+        Product::query()->create([
+            'name' => 'Global Digital Product',
+            'slug' => 'global-digital-product',
+            'status' => ProductStatus::Active,
+            'type' => ProductType::Digital,
+            'price' => 1000,
+            'requires_shipping' => false,
+        ]);
+    });
+
+    $widget = app(ProductTypeDistributionWidget::class);
+    $method = new ReflectionMethod(ProductTypeDistributionWidget::class, 'getStats');
+    $stats = $method->invoke($widget);
+
+    expect($stats)->toHaveCount(4)
+        ->and($stats[0]->getValue())->toBe(1)
+        ->and($stats[1]->getValue())->toBe(1)
+        ->and($stats[2]->getValue())->toBe(0)
+        ->and($stats[3]->getValue())->toBe(2);
+});
+
+it('builds top selling products query in explicit global context when no owner is resolved', function (): void {
+    Carbon::setTestNow(Carbon::parse('2025-01-10 10:00:00'));
+
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    OwnerContext::withOwner(null, static function (): void {
+        Product::query()->create([
+            'name' => 'Global Active Product',
+            'slug' => 'global-active-product',
+            'status' => ProductStatus::Active,
+            'type' => ProductType::Simple,
+            'price' => 1000,
+            'requires_shipping' => true,
+        ]);
+
+        Product::query()->create([
+            'name' => 'Global Draft Product',
+            'slug' => 'global-draft-product',
+            'status' => ProductStatus::Draft,
+            'type' => ProductType::Simple,
+            'price' => 1000,
+            'requires_shipping' => true,
+        ]);
+    });
+
+    $widget = app(TopSellingProductsWidget::class);
+    $method = new ReflectionMethod(TopSellingProductsWidget::class, 'getRecentProductsQuery');
+
+    /** @var Builder<Product> $query */
+    $query = $method->invoke($widget);
+
+    expect($query->count())->toBe(1)
+        ->and($query->first()?->name)->toBe('Global Active Product');
+});
+
+it('counts variants for top selling widget in explicit global context when no owner is resolved', function (): void {
+    Carbon::setTestNow(Carbon::parse('2025-01-10 10:00:00'));
+
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    $product = OwnerContext::withOwner(null, static function (): Product {
+        return Product::query()->create([
+            'name' => 'Global Variant Product',
+            'slug' => 'global-variant-product',
+            'status' => ProductStatus::Active,
+            'type' => ProductType::Simple,
+            'price' => 1000,
+            'requires_shipping' => true,
+        ]);
+    });
+
+    OwnerContext::withOwner(null, static function () use ($product): void {
+        Variant::query()->create([
+            'product_id' => $product->id,
+            'sku' => 'GVP-001',
+        ]);
+    });
+
+    $widget = app(TopSellingProductsWidget::class);
+    $method = new ReflectionMethod(TopSellingProductsWidget::class, 'getVariantsCount');
+
+    expect($method->invoke($widget, $product))->toBe(1);
+});
+
+it('renders category distribution chart in explicit global context when no owner is resolved', function (): void {
+    Carbon::setTestNow(Carbon::parse('2025-01-10 10:00:00'));
+
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    OwnerContext::withOwner(null, static function (): void {
+        $product = Product::query()->create([
+            'name' => 'Global Chart Product',
+            'slug' => 'global-chart-product',
+            'status' => ProductStatus::Active,
+            'type' => ProductType::Simple,
+            'price' => 1000,
+            'requires_shipping' => true,
+        ]);
+
+        $category = Category::query()->create([
+            'name' => 'Global Chart Category',
+            'slug' => 'global-chart-category',
+        ]);
+
+        $product->categories()->attach($category);
+    });
+
+    $widget = app(CategoryDistributionChart::class);
+    $method = new ReflectionMethod(CategoryDistributionChart::class, 'getData');
+
+    /** @var array{datasets: array<int, array{data: array<int|string>}>, labels: array<string>} $data */
+    $data = $method->invoke($widget);
+
+    expect($data['labels'])->toBe(['Global Chart Category'])
+        ->and($data['datasets'])->toHaveCount(1)
+        ->and($data['datasets'][0]['data'])->toHaveCount(1)
+        ->and((int) $data['datasets'][0]['data'][0])->toBe(1);
 });

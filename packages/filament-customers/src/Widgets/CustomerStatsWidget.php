@@ -30,7 +30,7 @@ class CustomerStatsWidget extends BaseWidget
             ->selectRaw('COUNT(*) as total_customers')
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_customers', [CustomerStatus::Active->value])
             ->selectRaw('SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as new_this_month', [$startOfMonth])
-            ->selectRaw('SUM(CASE WHEN accepts_marketing = 1 THEN 1 ELSE 0 END) as accepts_marketing')
+            ->selectRaw('SUM(CASE WHEN accepts_marketing = ? THEN 1 ELSE 0 END) as accepts_marketing', [true])
             ->selectRaw('SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as this_week', [$thisWeekStart])
             ->selectRaw('SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as last_week', [$lastWeekStart, $lastWeekEnd])
             ->first();

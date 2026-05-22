@@ -6,6 +6,7 @@ namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -18,32 +19,34 @@ final class ChipStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $todayRevenue = $this->getTodayRevenue();
-        $weekRevenue = $this->getWeekRevenue();
-        $monthRevenue = $this->getMonthRevenue();
-        $successRate = $this->getSuccessRate();
+        return $this->withResolvedOwnerOrExplicitGlobal(function (): array {
+            $todayRevenue = $this->getTodayRevenue();
+            $weekRevenue = $this->getWeekRevenue();
+            $monthRevenue = $this->getMonthRevenue();
+            $successRate = $this->getSuccessRate();
 
-        return [
-            Stat::make('Today\'s Revenue', $this->formatCurrency($todayRevenue))
-                ->description('Paid purchases today')
-                ->descriptionIcon(Heroicon::Banknotes)
-                ->color('success'),
+            return [
+                Stat::make('Today\'s Revenue', $this->formatCurrency($todayRevenue))
+                    ->description('Paid purchases today')
+                    ->descriptionIcon(Heroicon::Banknotes)
+                    ->color('success'),
 
-            Stat::make('This Week', $this->formatCurrency($weekRevenue))
-                ->description('Last 7 days')
-                ->descriptionIcon(Heroicon::CalendarDays)
-                ->color('primary'),
+                Stat::make('This Week', $this->formatCurrency($weekRevenue))
+                    ->description('Last 7 days')
+                    ->descriptionIcon(Heroicon::CalendarDays)
+                    ->color('primary'),
 
-            Stat::make('This Month', $this->formatCurrency($monthRevenue))
-                ->description('Current month')
-                ->descriptionIcon(Heroicon::Calendar)
-                ->color('info'),
+                Stat::make('This Month', $this->formatCurrency($monthRevenue))
+                    ->description('Current month')
+                    ->descriptionIcon(Heroicon::Calendar)
+                    ->color('info'),
 
-            Stat::make('Success Rate', "{$successRate}%")
-                ->description('Paid vs failed')
-                ->descriptionIcon(Heroicon::ChartBar)
-                ->color($successRate >= 90 ? 'success' : ($successRate >= 70 ? 'warning' : 'danger')),
-        ];
+                Stat::make('Success Rate', "{$successRate}%")
+                    ->description('Paid vs failed')
+                    ->descriptionIcon(Heroicon::ChartBar)
+                    ->color($successRate >= 90 ? 'success' : ($successRate >= 70 ? 'warning' : 'danger')),
+            ];
+        });
     }
 
     protected function getColumns(): int
@@ -128,5 +131,14 @@ final class ChipStatsWidget extends BaseWidget
     private function formatCurrency(int $amountInCents): string
     {
         return MoneyFormatter::formatMinor($amountInCents, config('filament-chip.default_currency', 'MYR'));
+    }
+
+    private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
+    {
+        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
+            return $callback();
+        }
+
+        return OwnerContext::withOwner(null, static fn (): mixed => $callback());
     }
 }

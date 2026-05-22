@@ -15,6 +15,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Arr;
+use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use UnitEnum;
 
 /**
@@ -44,18 +45,18 @@ final class ManagePricingSettings extends Page
 
     public function mount(): void
     {
-        $settings = app(PricingSettings::class);
+        $settings = $this->resolvePricingSettings();
 
         $this->data = [
-            'defaultCurrency' => isset($settings->defaultCurrency) ? $settings->defaultCurrency : 'MYR',
-            'decimalPlaces' => isset($settings->decimalPlaces) ? $settings->decimalPlaces : 2,
-            'roundingMode' => isset($settings->roundingMode) ? $settings->roundingMode : 'half_up',
-            'pricesIncludeTax' => isset($settings->pricesIncludeTax) ? $settings->pricesIncludeTax : false,
-            'minimumOrderValue' => isset($settings->minimumOrderValue) ? $settings->minimumOrderValue : 0,
-            'maximumOrderValue' => isset($settings->maximumOrderValue) ? $settings->maximumOrderValue : 0,
-            'promotionalPricingEnabled' => isset($settings->promotionalPricingEnabled) ? $settings->promotionalPricingEnabled : true,
-            'tieredPricingEnabled' => isset($settings->tieredPricingEnabled) ? $settings->tieredPricingEnabled : true,
-            'customerGroupPricingEnabled' => isset($settings->customerGroupPricingEnabled) ? $settings->customerGroupPricingEnabled : false,
+            'defaultCurrency' => $settings->defaultCurrency,
+            'decimalPlaces' => $settings->decimalPlaces,
+            'roundingMode' => $settings->roundingMode,
+            'pricesIncludeTax' => $settings->pricesIncludeTax,
+            'minimumOrderValue' => $settings->minimumOrderValue,
+            'maximumOrderValue' => $settings->maximumOrderValue,
+            'promotionalPricingEnabled' => $settings->promotionalPricingEnabled,
+            'tieredPricingEnabled' => $settings->tieredPricingEnabled,
+            'customerGroupPricingEnabled' => $settings->customerGroupPricingEnabled,
         ];
 
         $this->getSchema('form')?->fill($this->data);
@@ -145,7 +146,7 @@ final class ManagePricingSettings extends Page
         /** @var array<string, mixed> $state */
         $state = $this->data ?? [];
 
-        $settings = app(PricingSettings::class);
+        $settings = $this->resolvePricingSettings();
 
         $settings->defaultCurrency = (string) Arr::get($state, 'defaultCurrency', 'MYR');
         $settings->decimalPlaces = (int) Arr::get($state, 'decimalPlaces', 2);
@@ -173,6 +174,38 @@ final class ManagePricingSettings extends Page
                 ->icon('heroicon-o-check')
                 ->color('primary')
                 ->action('save'),
+        ];
+    }
+
+    private function resolvePricingSettings(): PricingSettings
+    {
+        try {
+            return app(PricingSettings::class);
+        } catch (MissingSettings) {
+            $settings = new PricingSettings($this->defaultSettings());
+            $settings->save();
+
+            app()->forgetInstance(PricingSettings::class);
+
+            return app(PricingSettings::class);
+        }
+    }
+
+    /**
+     * @return array<string, bool|int|string>
+     */
+    private function defaultSettings(): array
+    {
+        return [
+            'defaultCurrency' => 'MYR',
+            'decimalPlaces' => 2,
+            'pricesIncludeTax' => false,
+            'roundingMode' => 'half_up',
+            'minimumOrderValue' => 0,
+            'maximumOrderValue' => 100000_00,
+            'promotionalPricingEnabled' => true,
+            'tieredPricingEnabled' => true,
+            'customerGroupPricingEnabled' => false,
         ];
     }
 }

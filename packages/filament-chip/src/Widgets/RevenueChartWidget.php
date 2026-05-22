@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 
@@ -65,59 +66,70 @@ final class RevenueChartWidget extends ChartWidget
      */
     private function getRevenueData(): array
     {
-        $labels = [];
-        $amountsByDay = [];
+        return $this->withResolvedOwnerOrExplicitGlobal(function (): array {
+            $labels = [];
+            $amountsByDay = [];
 
-        $startDate = CarbonImmutable::now()->subDays(29)->startOfDay();
-        $endDate = CarbonImmutable::now()->endOfDay();
+            $startDate = CarbonImmutable::now()->subDays(29)->startOfDay();
+            $endDate = CarbonImmutable::now()->endOfDay();
 
-        for ($i = 29; $i >= 0; $i--) {
-            $date = CarbonImmutable::now()->subDays($i);
-            $label = $date->format('M d');
-            $labels[] = $label;
-            $amountsByDay[$label] = 0;
+            for ($i = 29; $i >= 0; $i--) {
+                $date = CarbonImmutable::now()->subDays($i);
+                $label = $date->format('M d');
+                $labels[] = $label;
+                $amountsByDay[$label] = 0;
+            }
+
+            $purchases = tap(Purchase::query(), function ($query): void {
+                if (method_exists($query->getModel(), 'scopeForOwner')) {
+                    $query->forOwner();
+                }
+            })
+                ->where('status', 'paid')
+                ->where('is_test', false)
+                ->whereBetween('created_on', [$startDate->getTimestamp(), $endDate->getTimestamp()])
+                ->get(['created_on', 'purchase']);
+
+            foreach ($purchases as $purchase) {
+                $createdOn = (int) ($purchase->getRawOriginal('created_on') ?? 0);
+
+                if ($createdOn <= 0) {
+                    continue;
+                }
+
+                $label = CarbonImmutable::createFromTimestamp($createdOn)->format('M d');
+
+                if (! array_key_exists($label, $amountsByDay)) {
+                    continue;
+                }
+
+                $total = $purchase->purchase['total'] ?? $purchase->purchase['amount'] ?? 0;
+
+                if (is_array($total)) {
+                    $amountsByDay[$label] += (int) ($total['amount'] ?? 0);
+                } else {
+                    $amountsByDay[$label] += (int) $total;
+                }
+            }
+
+            $amounts = array_map(
+                static fn (int $amountInCents): int => (int) ($amountInCents / 100),
+                array_values($amountsByDay)
+            );
+
+            return [
+                'labels' => $labels,
+                'amounts' => $amounts,
+            ];
+        });
+    }
+
+    private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
+    {
+        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
+            return $callback();
         }
 
-        $purchases = tap(Purchase::query(), function ($query): void {
-            if (method_exists($query->getModel(), 'scopeForOwner')) {
-                $query->forOwner();
-            }
-        })
-            ->where('status', 'paid')
-            ->where('is_test', false)
-            ->whereBetween('created_on', [$startDate->getTimestamp(), $endDate->getTimestamp()])
-            ->get(['created_on', 'purchase']);
-
-        foreach ($purchases as $purchase) {
-            $createdOn = (int) ($purchase->getRawOriginal('created_on') ?? 0);
-
-            if ($createdOn <= 0) {
-                continue;
-            }
-
-            $label = CarbonImmutable::createFromTimestamp($createdOn)->format('M d');
-
-            if (! array_key_exists($label, $amountsByDay)) {
-                continue;
-            }
-
-            $total = $purchase->purchase['total'] ?? $purchase->purchase['amount'] ?? 0;
-
-            if (is_array($total)) {
-                $amountsByDay[$label] += (int) ($total['amount'] ?? 0);
-            } else {
-                $amountsByDay[$label] += (int) $total;
-            }
-        }
-
-        $amounts = array_map(
-            static fn (int $amountInCents): int => (int) ($amountInCents / 100),
-            array_values($amountsByDay)
-        );
-
-        return [
-            'labels' => $labels,
-            'amounts' => $amounts,
-        ];
+        return OwnerContext::withOwner(null, static fn (): mixed => $callback());
     }
 }

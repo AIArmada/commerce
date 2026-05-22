@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
@@ -19,47 +20,57 @@ final class ProductTypeDistributionWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Count products by type for visibility into catalog composition
-        $physicalProducts = Product::query()->forOwner()
-            ->where('status', ProductStatus::Active)
-            ->whereIn('type', [ProductType::Simple, ProductType::Configurable, ProductType::Bundle])
-            ->where('requires_shipping', true)
-            ->count();
+        return $this->withResolvedOwnerOrExplicitGlobal(function (): array {
+            $physicalProducts = Product::query()->forOwner()
+                ->where('status', ProductStatus::Active)
+                ->whereIn('type', [ProductType::Simple, ProductType::Configurable, ProductType::Bundle])
+                ->where('requires_shipping', true)
+                ->count();
 
-        $digitalProducts = Product::query()->forOwner()
-            ->where('status', ProductStatus::Active)
-            ->where('type', ProductType::Digital)
-            ->count();
+            $digitalProducts = Product::query()->forOwner()
+                ->where('status', ProductStatus::Active)
+                ->where('type', ProductType::Digital)
+                ->count();
 
-        $subscriptionProducts = Product::query()->forOwner()
-            ->where('status', ProductStatus::Active)
-            ->where('type', ProductType::Subscription)
-            ->count();
+            $subscriptionProducts = Product::query()->forOwner()
+                ->where('status', ProductStatus::Active)
+                ->where('type', ProductType::Subscription)
+                ->count();
 
-        $totalActive = Product::query()->forOwner()
-            ->where('status', ProductStatus::Active)
-            ->count();
+            $totalActive = Product::query()->forOwner()
+                ->where('status', ProductStatus::Active)
+                ->count();
 
-        return [
-            Stat::make('Physical Products', $physicalProducts)
-                ->description('Require shipping')
-                ->descriptionIcon('heroicon-o-truck')
-                ->color('info'),
+            return [
+                Stat::make('Physical Products', $physicalProducts)
+                    ->description('Require shipping')
+                    ->descriptionIcon('heroicon-o-truck')
+                    ->color('info'),
 
-            Stat::make('Digital Products', $digitalProducts)
-                ->description('Downloadable')
-                ->descriptionIcon('heroicon-o-cloud-arrow-down')
-                ->color('success'),
+                Stat::make('Digital Products', $digitalProducts)
+                    ->description('Downloadable')
+                    ->descriptionIcon('heroicon-o-cloud-arrow-down')
+                    ->color('success'),
 
-            Stat::make('Subscriptions', $subscriptionProducts)
-                ->description('Recurring billing')
-                ->descriptionIcon('heroicon-o-arrow-path')
-                ->color('primary'),
+                Stat::make('Subscriptions', $subscriptionProducts)
+                    ->description('Recurring billing')
+                    ->descriptionIcon('heroicon-o-arrow-path')
+                    ->color('primary'),
 
-            Stat::make('Total Active', $totalActive)
-                ->description('Active in catalog')
-                ->descriptionIcon('heroicon-o-check-circle')
-                ->color('success'),
-        ];
+                Stat::make('Total Active', $totalActive)
+                    ->description('Active in catalog')
+                    ->descriptionIcon('heroicon-o-check-circle')
+                    ->color('success'),
+            ];
+        });
+    }
+
+    private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
+    {
+        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
+            return $callback();
+        }
+
+        return OwnerContext::withOwner(null, static fn (): mixed => $callback());
     }
 }

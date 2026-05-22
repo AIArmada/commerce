@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentPricing\Pages\ManagePricingSettings;
 use AIArmada\Pricing\Settings\PricingSettings;
+use Illuminate\Support\Facades\DB;
 
 uses(TestCase::class);
 
@@ -75,4 +76,37 @@ it('exposes a save header action', function (): void {
     $actions = $method->invoke($page);
 
     expect($actions)->toHaveCount(1);
+});
+
+it('seeds default pricing settings when settings payload is missing', function (): void {
+    DB::table((string) config('settings.stores.database.table', 'settings'))
+        ->where('group', 'pricing')
+        ->delete();
+
+    $page = app(ManagePricingSettings::class);
+
+    $page->mount();
+
+    expect($page->data['defaultCurrency'])->toBe('MYR')
+        ->and($page->data['decimalPlaces'])->toBe(2)
+        ->and($page->data['roundingMode'])->toBe('half_up')
+        ->and($page->data['pricesIncludeTax'])->toBeFalse()
+        ->and($page->data['maximumOrderValue'])->toBe(10000000);
+
+    $persistedSettingsKeys = DB::table((string) config('settings.stores.database.table', 'settings'))
+        ->where('group', 'pricing')
+        ->pluck('name')
+        ->all();
+
+    expect($persistedSettingsKeys)->toContain(
+        'defaultCurrency',
+        'decimalPlaces',
+        'pricesIncludeTax',
+        'roundingMode',
+        'minimumOrderValue',
+        'maximumOrderValue',
+        'promotionalPricingEnabled',
+        'tieredPricingEnabled',
+        'customerGroupPricingEnabled'
+    );
 });

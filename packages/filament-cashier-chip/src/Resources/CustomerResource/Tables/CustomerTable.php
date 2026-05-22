@@ -15,6 +15,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class CustomerTable
 {
@@ -64,12 +65,20 @@ final class CustomerTable
 
                 TextColumn::make('subscriptions_count')
                     ->label('Subscriptions')
-                    ->counts([
-                        'subscriptions' => fn (Builder $query): Builder => CashierChipOwnerScope::apply($query),
-                    ])
+                    ->getStateUsing(function (Model $record): int {
+                        $relationName = self::resolveSubscriptionsRelationName($record);
+
+                        if ($relationName === null) {
+                            return 0;
+                        }
+
+                        /** @var Relation $relation */
+                        $relation = $record->{$relationName}();
+
+                        return CashierChipOwnerScope::apply($relation->getQuery())->count();
+                    })
                     ->badge()
-                    ->color(fn (int $state): string => $state > 0 ? 'success' : 'gray')
-                    ->sortable(),
+                    ->color(fn (int $state): string => $state > 0 ? 'success' : 'gray'),
 
                 IconColumn::make('on_trial')
                     ->label('Trial')
@@ -117,10 +126,18 @@ final class CustomerTable
                 Filter::make('has_subscriptions')
                     ->label('Has Subscriptions')
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->whereHas(
-                        'subscriptions',
-                        fn (Builder $subscriptionsQuery): Builder => CashierChipOwnerScope::apply($subscriptionsQuery),
-                    )),
+                    ->query(function (Builder $query): Builder {
+                        $relationName = self::resolveSubscriptionsRelationName($query->getModel());
+
+                        if ($relationName === null) {
+                            return $query->whereRaw('1 = 0');
+                        }
+
+                        return $query->whereHas(
+                            $relationName,
+                            fn (Builder $subscriptionsQuery): Builder => CashierChipOwnerScope::apply($subscriptionsQuery),
+                        );
+                    }),
 
                 Filter::make('on_trial')
                     ->label('On Trial')
@@ -136,5 +153,18 @@ final class CustomerTable
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
             ->poll(config('filament-cashier-chip.tables.polling_interval', '45s'));
+    }
+
+    private static function resolveSubscriptionsRelationName(Model $model): ?string
+    {
+        if (method_exists($model, 'subscriptions')) {
+            return 'subscriptions';
+        }
+
+        if (method_exists($model, 'chipSubscriptions')) {
+            return 'chipSubscriptions';
+        }
+
+        return null;
     }
 }

@@ -25,24 +25,26 @@ final class CashierOwnerScope
     {
         $owner ??= self::resolveOwner();
 
+        $model = $query->getModel();
+        $modelSupportsOwnerScope = method_exists($model, 'scopeForOwner');
+
         $requiresOwnerContext = self::requiresOwnerContext();
 
         if ($owner === null) {
-            return $requiresOwnerContext ? self::empty($query) : $query;
-        }
-
-        // If the configured billable model does not support owner scoping, we cannot safely
-        // enforce tenant boundaries here. Treat as non-owner mode and leave the query unchanged.
-        if (! $requiresOwnerContext) {
-            return $query;
+            return ($requiresOwnerContext || $modelSupportsOwnerScope) ? self::empty($query) : $query;
         }
 
         $includeGlobal ??= false;
-        $model = $query->getModel();
 
-        if (method_exists($model, 'scopeForOwner')) {
+        if ($modelSupportsOwnerScope) {
             /** @phpstan-ignore-next-line dynamic local scope */
             return $query->forOwner($owner, $includeGlobal);
+        }
+
+        // If neither the model nor the configured billable model supports owner scoping,
+        // treat as non-owner mode and leave the query unchanged.
+        if (! $requiresOwnerContext) {
+            return $query;
         }
 
         if (self::modelHasColumn($model, 'user_id')) {
@@ -109,6 +111,13 @@ final class CashierOwnerScope
 
     private static function empty(Builder $query): Builder
     {
+        $model = $query->getModel();
+
+        if (method_exists($model, 'scopeWithoutOwnerScope')) {
+            /** @phpstan-ignore-next-line dynamic local scope */
+            return $query->withoutOwnerScope()->whereRaw('1 = 0');
+        }
+
         return $query->whereRaw('1 = 0');
     }
 }

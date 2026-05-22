@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Signals\Models\SignalAlertLog;
 use AIArmada\Signals\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalDailyMetric;
@@ -262,4 +263,55 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         ->and($trend[0]['events'])->toBe(2)
         ->and($trend[0]['conversions'])->toBe(1)
         ->and($trend[0]['revenue_minor'])->toBe(129900);
+});
+
+it('falls back to explicit global context when no owner can be resolved', function (): void {
+    app()->forgetInstance(OwnerResolverInterface::class);
+
+    $property = OwnerContext::withOwner(null, function (): TrackedProperty {
+        return TrackedProperty::query()->create([
+            'name' => 'Global Property',
+            'slug' => 'global-property',
+            'write_key' => 'global-key',
+            'domain' => 'global.test',
+        ]);
+    });
+
+    OwnerContext::withOwner(null, function () use ($property): void {
+        SignalDailyMetric::query()->create([
+            'tracked_property_id' => $property->id,
+            'date' => '2026-03-10',
+            'unique_identities' => 3,
+            'sessions' => 5,
+            'bounced_sessions' => 1,
+            'page_views' => 12,
+            'events' => 14,
+            'conversions' => 2,
+            'revenue_minor' => 2500,
+        ]);
+    });
+
+    $service = app(SignalsDashboardService::class);
+
+    $summary = $service->summary(
+        null,
+        CarbonImmutable::parse('2026-03-10 00:00:00'),
+        CarbonImmutable::parse('2026-03-10 23:59:59'),
+    );
+
+    $trend = $service->trend(
+        null,
+        CarbonImmutable::parse('2026-03-10 00:00:00'),
+        CarbonImmutable::parse('2026-03-10 23:59:59'),
+    );
+
+    expect($summary['tracked_properties'])->toBe(1)
+        ->and($summary['sessions'])->toBe(5)
+        ->and($summary['events'])->toBe(14)
+        ->and($summary['conversions'])->toBe(2)
+        ->and($summary['revenue_minor'])->toBe(2500)
+        ->and($trend)->toHaveCount(1)
+        ->and($trend[0]['events'])->toBe(14)
+        ->and($trend[0]['conversions'])->toBe(2)
+        ->and($trend[0]['revenue_minor'])->toBe(2500);
 });

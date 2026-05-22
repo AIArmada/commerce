@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use Filament\Tables;
@@ -24,11 +25,16 @@ final class TopSellingProductsWidget extends BaseWidget
      */
     protected function getRecentProductsQuery(): Builder
     {
-        return Product::query()
-            ->forOwner()
-            ->where('status', ProductStatus::Active)
-            ->latest()
-            ->limit(10);
+        /** @var Builder<Product> $query */
+        $query = $this->withResolvedOwnerOrExplicitGlobal(function (): Builder {
+            return Product::query()
+                ->forOwner()
+                ->where('status', ProductStatus::Active)
+                ->latest()
+                ->limit(10);
+        });
+
+        return $query;
     }
 
     public function table(Table $table): Table
@@ -63,7 +69,7 @@ final class TopSellingProductsWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('variants_count')
                     ->label('Variants')
-                    ->counts('variants'),
+                    ->getStateUsing(fn (Product $record): int => $this->getVariantsCount($record)),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Added')
@@ -71,5 +77,26 @@ final class TopSellingProductsWidget extends BaseWidget
                     ->sortable(),
             ])
             ->description('Recently added products in the catalog');
+    }
+
+    private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
+    {
+        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
+            return $callback();
+        }
+
+        return OwnerContext::withOwner(null, static fn (): mixed => $callback());
+    }
+
+    private function getVariantsCount(Product $record): int
+    {
+        if (! method_exists($record, 'variants')) {
+            return 0;
+        }
+
+        /** @var int $count */
+        $count = $this->withResolvedOwnerOrExplicitGlobal(static fn (): int => $record->variants()->count());
+
+        return $count;
     }
 }

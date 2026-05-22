@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
+use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
@@ -157,6 +158,94 @@ it('fails closed when billable supports owner scoping but no owner context exist
         ->all();
 
     expect($records)->toBe([]);
+});
+
+it('fails closed without throwing for owner-scoped models when no owner context exists', function (): void {
+    if (! Schema::hasTable('filament_cashier_tenant_billables')) {
+        Schema::create('filament_cashier_tenant_billables', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->nullableMorphs('owner');
+            $table->timestamps();
+        });
+    }
+
+    /** @var class-string<Model> $ownerModel */
+    $ownerModel = config('auth.providers.users.model');
+
+    $owner = $ownerModel::query()->create([
+        'name' => 'Owner Scoped Check',
+        'email' => 'owner-scoped-check@example.com',
+        'password' => bcrypt('secret'),
+    ]);
+
+    config()->set('cashier.models.billable', TenantBillableUser::class);
+
+    OwnerContext::withOwner($owner, function () use ($owner): void {
+        TenantBillableUser::query()->create([
+            'name' => 'Billable Scoped',
+            'email' => 'billable-scoped@example.com',
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => $owner->getKey(),
+        ]);
+    });
+
+    app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    $count = CashierOwnerScope::apply(TenantBillableUser::query())->count();
+
+    expect($count)->toBe(0);
+});
+
+it('fails closed for owner-scoped target models even when billable model is not owner-scoped', function (): void {
+    if (! Schema::hasTable('filament_cashier_tenant_billables')) {
+        Schema::create('filament_cashier_tenant_billables', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->nullableMorphs('owner');
+            $table->timestamps();
+        });
+    }
+
+    /** @var class-string<Model> $ownerModel */
+    $ownerModel = config('auth.providers.users.model');
+
+    $owner = $ownerModel::query()->create([
+        'name' => 'Owner Scoped Fallback',
+        'email' => 'owner-scoped-fallback@example.com',
+        'password' => bcrypt('secret'),
+    ]);
+
+    OwnerContext::withOwner($owner, function () use ($owner): void {
+        TenantBillableUser::query()->create([
+            'name' => 'Scoped Model Record',
+            'email' => 'scoped-model-record@example.com',
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => $owner->getKey(),
+        ]);
+    });
+
+    config()->set('cashier.models.billable', FixtureUser::class);
+
+    app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
+    $count = CashierOwnerScope::apply(TenantBillableUser::query())->count();
+
+    expect($count)->toBe(0);
 });
 
 it('blocks selecting a cross-tenant customer when an owner context exists', function (): void {
