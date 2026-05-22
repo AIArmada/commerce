@@ -40,7 +40,7 @@ final class ExperimentOwnerScopingContractTest extends TestCase
         });
     }
 
-    protected function createGlobalModel(): Model
+    protected function createGlobalModel(): Experiment
     {
         return OwnerContext::withOwner(null, function (): Experiment {
             $trackedProperty = $this->createTrackedProperty(null);

@@ -7,6 +7,8 @@ use AIArmada\Checkout\Steps\ResolveCustomerStep;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Customers\Models\Customer;
 
+use function Pest\Laravel\actingAs;
+
 describe('ResolveCustomerStep', function (): void {
     it('creates a guest customer from billing and shipping data', function (): void {
         $session = CheckoutSession::create([
@@ -85,7 +87,7 @@ describe('ResolveCustomerStep', function (): void {
             ],
         ]);
 
-        $this->actingAs($user);
+        actingAs($user);
 
         $step = app(ResolveCustomerStep::class);
         $step->handle($session);

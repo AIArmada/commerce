@@ -48,7 +48,7 @@ final class AssignmentOwnerScopingContractTest extends TestCase
         });
     }
 
-    protected function createGlobalModel(): Model
+    protected function createGlobalModel(): Assignment
     {
         return OwnerContext::withOwner(null, function (): Assignment {
             [$experiment, $variant] = $this->createExperimentAndVariant(null);

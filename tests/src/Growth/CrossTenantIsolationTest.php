@@ -79,10 +79,10 @@ it('does not return experiments across tenant boundaries', function (): void {
     $ownerAIds = OwnerContext::withOwner($ownerA, fn (): array => Experiment::query()->pluck('id')->all());
     $ownerBIds = OwnerContext::withOwner($ownerB, fn (): array => Experiment::query()->pluck('id')->all());
 
-    expect($ownerAIds)->toContain($experimentA->getKey())
-        ->not->toContain($experimentB->getKey())
-        ->and($ownerBIds)->toContain($experimentB->getKey())
-        ->not->toContain($experimentA->getKey());
+    expect($ownerAIds)->toContain($experimentA->getKey());
+    expect($ownerBIds)->toContain($experimentB->getKey());
+    expect(in_array($experimentB->getKey(), $ownerAIds, true))->toBeFalse();
+    expect(in_array($experimentA->getKey(), $ownerBIds, true))->toBeFalse();
 });
 
 it('prevents cross-tenant variant creation against another owners experiment', function (): void {
