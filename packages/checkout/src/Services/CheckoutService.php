@@ -603,10 +603,6 @@ final class CheckoutService implements CheckoutServiceInterface
      */
     private function withSessionOwnerContext(CheckoutSession $session, callable $callback): mixed
     {
-        if (! config('checkout.owner.enabled', false)) {
-            return $callback();
-        }
-
         /** @var Model|null $owner */
         $owner = $session->hasOwner() ? $session->owner : null;
 

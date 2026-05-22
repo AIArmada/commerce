@@ -109,7 +109,13 @@ final class CartManagerWithAffiliates implements CartManagerInterface
 
     public function getById(string $uuid): ?Cart
     {
-        return $this->manager->getById($uuid);
+        $cart = $this->manager->getById($uuid);
+
+        if ($cart === null) {
+            return null;
+        }
+
+        return (new CartWithAffiliates($cart))->getCart();
     }
 
     public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
