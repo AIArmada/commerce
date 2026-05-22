@@ -1,0 +1,43 @@
+{
+    "name": "aiarmada/events",
+    "description": "Event series, occurrences, venues, and attendee registrations for the AIArmada commerce ecosystem",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "commerce",
+        "events",
+        "registrations",
+        "venues",
+        "tickets"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "aiarmada/commerce-support": "self.version",
+        "aiarmada/customers": "self.version",
+        "aiarmada/orders": "self.version",
+        "aiarmada/products": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Events\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Events\\EventsServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
