@@ -45,12 +45,12 @@ class LocalAnalyticsService
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
-            ->selectRaw("
+            ->selectRaw('
                 SUM(CASE WHEN status IN (?, ?) THEN total_minor ELSE 0 END) as revenue,
                 SUM(CASE WHEN status IN (?, ?) THEN refund_amount_minor ELSE 0 END) as refunds,
                 COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as paid_count,
                 AVG(CASE WHEN status IN (?, ?) THEN total_minor END) as avg_transaction
-            ", [
+            ', [
                 ...self::SUCCESSFUL_REVENUE_STATUSES,
                 ...self::REFUND_STATUSES,
                 ...self::SUCCESSFUL_REVENUE_STATUSES,

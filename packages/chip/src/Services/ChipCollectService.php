@@ -63,7 +63,7 @@ class ChipCollectService
         return $this->purchases->cancel($purchaseId);
     }
 
-    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData|PaymentData
+    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData | PaymentData
     {
         return $this->purchases->refund($purchaseId, $amount);
     }

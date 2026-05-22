@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Gateways\ChipPaymentIntent;
 use AIArmada\Chip\Gateways\ChipWebhookHandler;
-use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
@@ -265,89 +265,89 @@ describe('ChipWebhookHandler getEventType', function (): void {
     });
 });
 
-    describe('ChipWebhookHandler parseWebhook status mapping', function (): void {
-        it('maps captured status to paid', function (): void {
-            $payload = [
-                'id' => 'purchase-captured-123',
-                'event_type' => 'purchase.captured',
-                'status' => 'captured',
-                'updated_on' => 1702819200,
-            ];
+describe('ChipWebhookHandler parseWebhook status mapping', function (): void {
+    it('maps captured status to paid', function (): void {
+        $payload = [
+            'id' => 'purchase-captured-123',
+            'event_type' => 'purchase.captured',
+            'status' => 'captured',
+            'updated_on' => 1702819200,
+        ];
 
-            $webhookService = Mockery::mock(WebhookService::class);
-            $webhookService->shouldReceive('parsePayload')
-                ->once()
-                ->andReturn((object) $payload);
+        $webhookService = Mockery::mock(WebhookService::class);
+        $webhookService->shouldReceive('parsePayload')
+            ->once()
+            ->andReturn((object) $payload);
 
-            $collectService = Mockery::mock(ChipCollectService::class);
-            $handler = new ChipWebhookHandler($webhookService, $collectService);
-            $result = $handler->parseWebhook(createWebhookRequest($payload));
+        $collectService = Mockery::mock(ChipCollectService::class);
+        $handler = new ChipWebhookHandler($webhookService, $collectService);
+        $result = $handler->parseWebhook(createWebhookRequest($payload));
 
-            expect($result->eventType)->toBe('purchase.captured')
-                ->and($result->status)->toBe(PaymentStatus::PAID);
-        });
-
-        it('maps released status to cancelled', function (): void {
-            $payload = [
-                'id' => 'purchase-released-123',
-                'event_type' => 'purchase.released',
-                'status' => 'released',
-                'updated_on' => 1702819200,
-            ];
-
-            $webhookService = Mockery::mock(WebhookService::class);
-            $webhookService->shouldReceive('parsePayload')
-                ->once()
-                ->andReturn((object) $payload);
-
-            $collectService = Mockery::mock(ChipCollectService::class);
-            $handler = new ChipWebhookHandler($webhookService, $collectService);
-            $result = $handler->parseWebhook(createWebhookRequest($payload));
-
-            expect($result->eventType)->toBe('purchase.released')
-                ->and($result->status)->toBe(PaymentStatus::CANCELLED);
-        });
-
-        it('maps settled status to paid', function (): void {
-            $payload = [
-                'id' => 'purchase-settled-123',
-                'status' => 'settled',
-                'updated_on' => 1702819200,
-            ];
-
-            $webhookService = Mockery::mock(WebhookService::class);
-            $webhookService->shouldReceive('parsePayload')
-                ->once()
-                ->andReturn((object) $payload);
-
-            $collectService = Mockery::mock(ChipCollectService::class);
-            $handler = new ChipWebhookHandler($webhookService, $collectService);
-            $result = $handler->parseWebhook(createWebhookRequest($payload));
-
-            expect($result->eventType)->toBe('payment.paid')
-                ->and($result->status)->toBe(PaymentStatus::PAID);
-        });
-
-        it('maps chargeback status to disputed', function (): void {
-            $payload = [
-                'id' => 'purchase-chargeback-123',
-                'status' => 'chargeback',
-                'updated_on' => 1702819200,
-            ];
-
-            $webhookService = Mockery::mock(WebhookService::class);
-            $webhookService->shouldReceive('parsePayload')
-                ->once()
-                ->andReturn((object) $payload);
-
-            $collectService = Mockery::mock(ChipCollectService::class);
-            $handler = new ChipWebhookHandler($webhookService, $collectService);
-            $result = $handler->parseWebhook(createWebhookRequest($payload));
-
-            expect($result->eventType)->toBe('payment.disputed')
-                ->and($result->status)->toBe(PaymentStatus::DISPUTED);
-        });
+        expect($result->eventType)->toBe('purchase.captured')
+            ->and($result->status)->toBe(PaymentStatus::PAID);
     });
+
+    it('maps released status to cancelled', function (): void {
+        $payload = [
+            'id' => 'purchase-released-123',
+            'event_type' => 'purchase.released',
+            'status' => 'released',
+            'updated_on' => 1702819200,
+        ];
+
+        $webhookService = Mockery::mock(WebhookService::class);
+        $webhookService->shouldReceive('parsePayload')
+            ->once()
+            ->andReturn((object) $payload);
+
+        $collectService = Mockery::mock(ChipCollectService::class);
+        $handler = new ChipWebhookHandler($webhookService, $collectService);
+        $result = $handler->parseWebhook(createWebhookRequest($payload));
+
+        expect($result->eventType)->toBe('purchase.released')
+            ->and($result->status)->toBe(PaymentStatus::CANCELLED);
+    });
+
+    it('maps settled status to paid', function (): void {
+        $payload = [
+            'id' => 'purchase-settled-123',
+            'status' => 'settled',
+            'updated_on' => 1702819200,
+        ];
+
+        $webhookService = Mockery::mock(WebhookService::class);
+        $webhookService->shouldReceive('parsePayload')
+            ->once()
+            ->andReturn((object) $payload);
+
+        $collectService = Mockery::mock(ChipCollectService::class);
+        $handler = new ChipWebhookHandler($webhookService, $collectService);
+        $result = $handler->parseWebhook(createWebhookRequest($payload));
+
+        expect($result->eventType)->toBe('payment.paid')
+            ->and($result->status)->toBe(PaymentStatus::PAID);
+    });
+
+    it('maps chargeback status to disputed', function (): void {
+        $payload = [
+            'id' => 'purchase-chargeback-123',
+            'status' => 'chargeback',
+            'updated_on' => 1702819200,
+        ];
+
+        $webhookService = Mockery::mock(WebhookService::class);
+        $webhookService->shouldReceive('parsePayload')
+            ->once()
+            ->andReturn((object) $payload);
+
+        $collectService = Mockery::mock(ChipCollectService::class);
+        $handler = new ChipWebhookHandler($webhookService, $collectService);
+        $result = $handler->parseWebhook(createWebhookRequest($payload));
+
+        expect($result->eventType)->toBe('payment.disputed')
+            ->and($result->status)->toBe(PaymentStatus::DISPUTED);
+    });
+});
 
 describe('ChipWebhookHandler isPaymentEvent', function (): void {
     it('always returns true for CHIP webhooks', function (): void {
