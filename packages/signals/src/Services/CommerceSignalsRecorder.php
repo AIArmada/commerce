@@ -20,6 +20,10 @@ final class CommerceSignalsRecorder
 
     public function recordCheckoutCompleted(Model $session): ?SignalEvent
     {
+        if (! $this->isEventRecordingEnabled('checkout.completed')) {
+            return null;
+        }
+
         $trackedProperty = $this->trackedPropertyResolver->resolveForModel($session);
 
         if ($trackedProperty === null) {
@@ -49,7 +53,7 @@ final class CommerceSignalsRecorder
 
     public function recordCheckoutStarted(Model $session): ?SignalEvent
     {
-        if ((bool) config('signals.record_checkout_started', true) === false) {
+        if (! $this->isEventRecordingEnabled('checkout.started')) {
             return null;
         }
 
@@ -82,6 +86,10 @@ final class CommerceSignalsRecorder
 
     public function recordOrderPaid(Model $order, ?string $transactionId = null, ?string $gateway = null): ?SignalEvent
     {
+        if (! $this->isEventRecordingEnabled('order.paid')) {
+            return null;
+        }
+
         $trackedProperty = $this->trackedPropertyResolver->resolveForModel($order);
 
         if ($trackedProperty === null) {
@@ -114,6 +122,10 @@ final class CommerceSignalsRecorder
 
     public function recordOrderRefunded(Model $order, int $amount, ?string $reason = null): ?SignalEvent
     {
+        if (! $this->isEventRecordingEnabled('order.refunded')) {
+            return null;
+        }
+
         $trackedProperty = $this->trackedPropertyResolver->resolveForModel($order);
 
         if ($trackedProperty === null) {
@@ -608,6 +620,17 @@ final class CommerceSignalsRecorder
     {
         return $this->orderMetadataValue($order, 'payment_data.growth_visitor_id')
             ?? $this->orderMetadataValue($order, 'growth_visitor_id');
+    }
+
+    private function isEventRecordingEnabled(string $eventName): bool
+    {
+        $value = config('signals.recording.events.'.$eventName);
+
+        if ($value === null) {
+            return true;
+        }
+
+        return (bool) $value;
     }
 
     private function attributeValue(Model $model, string $attribute): mixed
