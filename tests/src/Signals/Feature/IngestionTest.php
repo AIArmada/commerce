@@ -350,6 +350,62 @@ it('accepts pageview payloads and records a page_view event', function (): void 
         ->and($session?->is_bounce)->toBeTrue();
 });
 
+it('updates owner-scoped pageview sessions without an ambient owner context', function (): void {
+    /** @var User $owner */
+    $owner = User::query()->create([
+        'name' => 'Ownerless Pageview Owner',
+        'email' => 'ownerless-pageview-owner@signals.test',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Ownerless Pageview Property',
+        'slug' => 'ownerless-pageview-property',
+        'write_key' => 'ownerless-pageview-write-key',
+    ]);
+    $property->assignOwner($owner)->save();
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
+
+    $firstResponse = $this->postJson('/api/signals/collect/pageview', [
+        'write_key' => 'ownerless-pageview-write-key',
+        'anonymous_id' => 'anon-ownerless-page-1',
+        'session_identifier' => 'ownerless-page-sess-1',
+        'path' => '/login',
+        'url' => 'https://admin.example.test/login',
+        'title' => 'Login',
+    ]);
+
+    $secondResponse = $this->postJson('/api/signals/collect/pageview', [
+        'write_key' => 'ownerless-pageview-write-key',
+        'anonymous_id' => 'anon-ownerless-page-1',
+        'session_identifier' => 'ownerless-page-sess-1',
+        'path' => '/growth/results',
+        'url' => 'https://admin.example.test/growth/results',
+        'title' => 'Experiment Results',
+    ]);
+
+    $firstResponse->assertAccepted();
+    $secondResponse->assertAccepted();
+
+    $events = SignalEvent::query()
+        ->withoutOwnerScope()
+        ->where('tracked_property_id', $property->id)
+        ->orderBy('created_at')
+        ->get();
+    $session = SignalSession::query()->withoutOwnerScope()->where('tracked_property_id', $property->id)->first();
+
+    expect($events)->toHaveCount(2)
+        ->and($events->every(fn (SignalEvent $event): bool => $event->owner_type === $owner->getMorphClass() && (string) $event->owner_id === (string) $owner->getKey()))->toBeTrue()
+        ->and($session)->not()->toBeNull()
+        ->and($session?->owner_type)->toBe($owner->getMorphClass())
+        ->and((string) $session?->owner_id)->toBe((string) $owner->getKey())
+        ->and($session?->exit_path)->toBe('/growth/results')
+        ->and($session?->is_bounce)->toBeFalse();
+});
+
 it('rejects public ingestion when the tracked property domain does not match the request', function (): void {
     /** @var User $owner */
     $owner = User::query()->create([
