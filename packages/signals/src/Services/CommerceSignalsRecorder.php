@@ -624,7 +624,7 @@ final class CommerceSignalsRecorder
 
     private function isEventRecordingEnabled(string $eventName): bool
     {
-        $value = config('signals.recording.events.'.$eventName);
+        $value = config('signals.recording.events.' . $eventName);
 
         if ($value === null) {
             return true;
