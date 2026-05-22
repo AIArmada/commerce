@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Services\Collect;
 
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
@@ -63,7 +64,7 @@ final class PurchasesApi extends CollectApi
         return PurchaseData::from($response);
     }
 
-    public function refund(string $purchaseId, ?int $amount = null): PurchaseData
+    public function refund(string $purchaseId, ?int $amount = null): PurchaseData|PaymentData
     {
         $payload = [];
         if ($amount !== null) {
@@ -76,7 +77,11 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'amount' => $amount]
         );
 
-        return PurchaseData::from($response);
+        if (($response['type'] ?? null) === 'purchase' || isset($response['purchase'])) {
+            return PurchaseData::from($response);
+        }
+
+        return PaymentData::from($response);
     }
 
     public function charge(string $purchaseId, string $recurringToken): PurchaseData
@@ -146,13 +151,15 @@ final class PurchasesApi extends CollectApi
         return PurchaseData::from($response);
     }
 
-    public function deleteRecurringToken(string $purchaseId): void
+    public function deleteRecurringToken(string $purchaseId): PurchaseData
     {
-        $this->attempt(
-            fn () => $this->client->delete("purchases/{$purchaseId}/recurring_token/"),
+        $response = $this->attempt(
+            fn () => $this->client->post("purchases/{$purchaseId}/delete_recurring_token/"),
             'Failed to delete CHIP recurring token',
             ['purchase_id' => $purchaseId]
         );
+
+        return PurchaseData::from($response);
     }
 
     /**

@@ -112,12 +112,26 @@ $released = Chip::releasePurchase($purchase->id);
 ### Refunds
 
 ```php
+use AIArmada\Chip\Data\PaymentData;
+use AIArmada\Chip\Data\PurchaseData;
+
 // Full refund
-$purchase = Chip::refundPurchase($purchaseId);
+$refund = Chip::refundPurchase($purchaseId);
 
 // Partial refund (amount in cents)
-$purchase = Chip::refundPurchase($purchaseId, 5000); // RM 50.00
+$refund = Chip::refundPurchase($purchaseId, 5000); // RM 50.00
+
+if ($refund instanceof PaymentData) {
+    // Refund completed immediately.
+    $amount = $refund->getAmountInCents();
+}
+
+if ($refund instanceof PurchaseData && $refund->status === 'pending_refund') {
+    // Wait for the payment.refunded webhook.
+}
 ```
+
+CHIP returns a `PaymentData` object for completed refunds, but may return a `PurchaseData` object with `status = pending_refund` while the acquirer is still processing the refund.
 
 ### Client Management
 
@@ -129,8 +143,11 @@ $client = Chip::createClient([
     'phone' => '+60123456789',
 ]);
 
-// Get client's purchases
-$purchases = Chip::listClientPurchases($client->id);
+// Retrieve the client later
+$storedClient = Chip::getClient($client->id);
+
+// List the client's recurring tokens
+$recurringTokens = Chip::listClientRecurringTokens($client->id);
 ```
 
 ### Account Information
@@ -238,7 +255,7 @@ class CompleteOrder
         // Update order status
         $order->update([
             'status' => 'paid',
-            'paid_at' => $purchase->getCreatedAt(),
+            'paid_at' => $purchase->payment?->getPaidAt(),
             'chip_purchase_id' => $purchase->id,
         ]);
         

@@ -44,10 +44,11 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         $data = (array) $payload;
 
         $status = $this->mapChipStatus($data['status'] ?? 'unknown');
+        $paymentId = $this->resolvePurchaseIdFromWebhook($data) ?? ($data['id'] ?? '');
 
         return new WebhookPayload(
             eventType: $this->getEventType($request),
-            paymentId: $data['id'] ?? '',
+            paymentId: $paymentId,
             status: $status,
             reference: $data['reference'] ?? null,
             gatewayName: 'chip',
@@ -66,17 +67,27 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
             return 'unknown';
         }
 
+        $eventType = $payload['event_type'] ?? $payload['event'] ?? null;
+
+        if (is_string($eventType) && $eventType !== '') {
+            return $eventType;
+        }
+
         $status = $payload['status'] ?? 'unknown';
 
-        // CHIP doesn't have event types like Stripe, but we can infer from status
         return match ($status) {
             'paid' => 'payment.paid',
+            'captured', 'paid_authorized', 'recurring_successful', 'cleared', 'settled' => 'payment.paid',
             'refunded' => 'payment.refunded',
+            'partially_refunded' => 'payment.partially_refunded',
             'cancelled' => 'payment.cancelled',
+            'released' => 'payment.cancelled',
             'error', 'blocked' => 'payment.failed',
+            'chargeback' => 'payment.disputed',
             'hold', 'preauthorized' => 'payment.authorized',
-            'pending_execute', 'pending_charge' => 'payment.pending',
-            'pending_refund' => 'refund.pending',
+            'pending_execute', 'pending_charge', 'sent', 'viewed', 'attempted_capture', 'attempted_refund', 'attempted_recurring' => 'payment.pending',
+            'pending_refund' => 'purchase.pending_refund',
+            'expired', 'overdue' => 'payment.expired',
             default => "payment.{$status}",
         };
     }
@@ -96,6 +107,14 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         }
 
         try {
+            $purchaseId = $this->resolvePurchaseIdFromWebhook($payload);
+
+            if ($purchaseId !== null) {
+                $purchase = $this->collectService->getPurchase($purchaseId);
+
+                return new ChipPaymentIntent($purchase);
+            }
+
             // We can construct a Purchase directly from webhook data
             $purchase = PurchaseData::from($payload);
 
@@ -103,7 +122,8 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
         } catch (Throwable) {
             // If parsing fails, try fetching from API
             try {
-                $purchase = $this->collectService->getPurchase($payload['id']);
+                $purchaseId = $this->resolvePurchaseIdFromWebhook($payload) ?? $payload['id'];
+                $purchase = $this->collectService->getPurchase($purchaseId);
 
                 return new ChipPaymentIntent($purchase);
             } catch (Throwable) {
@@ -119,21 +139,35 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
     {
         return match ($chipStatus) {
             'created' => PaymentStatus::CREATED,
-            'pending_execute' => PaymentStatus::PENDING,
-            'pending_charge' => PaymentStatus::PENDING,
+            'sent', 'viewed', 'pending_execute', 'pending_charge' => PaymentStatus::PENDING,
+            'attempted_capture', 'attempted_refund', 'attempted_recurring', 'pending_refund' => PaymentStatus::PROCESSING,
             'pending_capture' => PaymentStatus::AUTHORIZED,
             'pending_release' => PaymentStatus::AUTHORIZED,
-            'pending_refund' => PaymentStatus::PROCESSING,
             'hold' => PaymentStatus::AUTHORIZED,
             'preauthorized' => PaymentStatus::AUTHORIZED,
-            'paid' => PaymentStatus::PAID,
+            'paid', 'captured', 'paid_authorized', 'recurring_successful', 'cleared', 'settled' => PaymentStatus::PAID,
             'refunded' => PaymentStatus::REFUNDED,
             'partially_refunded' => PaymentStatus::PARTIALLY_REFUNDED,
-            'cancelled' => PaymentStatus::CANCELLED,
-            'expired' => PaymentStatus::EXPIRED,
+            'cancelled', 'released' => PaymentStatus::CANCELLED,
+            'expired', 'overdue' => PaymentStatus::EXPIRED,
+            'chargeback' => PaymentStatus::DISPUTED,
             'error' => PaymentStatus::FAILED,
             'blocked' => PaymentStatus::FAILED,
             default => PaymentStatus::PENDING,
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function resolvePurchaseIdFromWebhook(array $payload): ?string
+    {
+        if (($payload['type'] ?? null) === 'payment' && data_get($payload, 'related_to.type') === 'purchase') {
+            $purchaseId = data_get($payload, 'related_to.id');
+
+            return is_string($purchaseId) && $purchaseId !== '' ? $purchaseId : null;
+        }
+
+        return null;
     }
 }

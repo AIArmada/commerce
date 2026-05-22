@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -38,6 +40,43 @@ function chipPurchaseResponse(array $overrides = []): array
         'refund_availability' => 'all',
         'refundable_amount' => 1000,
         'payment_method_whitelist' => [],
+    ];
+
+    return array_replace_recursive($base, $overrides);
+}
+
+function chipPaymentResponse(array $overrides = []): array
+{
+    $base = [
+        'id' => 'payment_123',
+        'type' => 'payment',
+        'created_on' => strtotime('2024-01-01T00:00:00Z'),
+        'updated_on' => strtotime('2024-01-01T01:00:00Z'),
+        'client' => ['email' => 'buyer@example.com'],
+        'payment' => [
+            'amount' => 500,
+            'currency' => 'MYR',
+            'net_amount' => 500,
+            'fee_amount' => 0,
+            'pending_amount' => 0,
+            'payment_type' => 'refund',
+            'is_outgoing' => true,
+            'paid_on' => strtotime('2024-01-01T00:30:00Z'),
+            'remote_paid_on' => strtotime('2024-01-01T00:30:00Z'),
+        ],
+        'transaction_data' => [],
+        'related_to' => [
+            'type' => 'purchase',
+            'id' => 'purchase_123',
+        ],
+        'reference_generated' => 'REFUND_123',
+        'reference' => 'REF_123',
+        'account_id' => 'account_123',
+        'company_id' => 'company_123',
+        'is_test' => true,
+        'user_id' => null,
+        'brand_id' => 'brand_123',
+        'status' => 'refunded',
     ];
 
     return array_replace_recursive($base, $overrides);
@@ -189,9 +228,9 @@ describe('Collect Purchases API', function (): void {
     it('logs failures when deleting recurring tokens', function (): void {
         Log::spy();
 
-        $this->client->shouldReceive('delete')
+        $this->client->shouldReceive('post')
             ->once()
-            ->with('purchases/purchase_999/recurring_token/')
+            ->with('purchases/purchase_999/delete_recurring_token/')
             ->andThrow(new RuntimeException('API failure'));
 
         expect(fn () => $this->apiWithoutCache->deleteRecurringToken('purchase_999'))
@@ -277,22 +316,47 @@ describe('Collect Purchases API', function (): void {
     });
 
     it('deletes a recurring token successfully', function (): void {
-        $this->client->shouldReceive('delete')
+        $this->client->shouldReceive('post')
             ->once()
-            ->with('purchases/purchase_token/recurring_token/')
-            ->andReturnNull();
+            ->with('purchases/purchase_token/delete_recurring_token/')
+            ->andReturn(chipPurchaseResponse([
+                'id' => 'purchase_token',
+                'is_recurring_token' => false,
+            ]));
 
-        expect(fn () => $this->apiWithoutCache->deleteRecurringToken('purchase_token'))
-            ->not->toThrow(Exception::class);
+        $purchase = $this->apiWithoutCache->deleteRecurringToken('purchase_token');
+
+        expect($purchase->id)->toBe('purchase_token');
+        expect($purchase->is_recurring_token)->toBeFalse();
     });
 
-    it('supports refunding and marking purchases as paid', function (): void {
+    it('returns PaymentData for completed refund responses', function (): void {
         $this->client->shouldReceive('post')
             ->once()
             ->with('purchases/purchase_123/refund/', ['amount' => 500])
-            ->andReturn(chipPurchaseResponse(['id' => 'purchase_123', 'refundable_amount' => 500]));
+            ->andReturn(chipPaymentResponse([
+                'id' => 'payment_refund_123',
+                'related_to' => ['type' => 'purchase', 'id' => 'purchase_123'],
+                'payment' => ['amount' => 500],
+            ]));
+
+        $refund = $this->apiWithoutCache->refund('purchase_123', 500);
+
+        expect($refund)->toBeInstanceOf(PaymentData::class);
+        expect($refund->getPaymentId())->toBe('payment_refund_123');
+        expect($refund->getRelatedPurchaseId())->toBe('purchase_123');
+        expect($refund->getAmountInCents())->toBe(500);
+    });
+
+    it('returns PurchaseData for pending refund responses and marks purchases as paid', function (): void {
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/purchase_123/refund/', ['amount' => 500])
+            ->andReturn(chipPurchaseResponse(['id' => 'purchase_123', 'status' => 'pending_refund', 'refundable_amount' => 500]));
 
         $purchase = $this->apiWithoutCache->refund('purchase_123', 500);
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
+        expect($purchase->status)->toBe('pending_refund');
         expect($purchase->getRefundableAmountInCents())->toBe(500);
 
         $this->client->shouldReceive('post')

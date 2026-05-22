@@ -5,19 +5,19 @@ declare(strict_types=1);
 use AIArmada\Chip\Enums\PurchaseStatus;
 
 describe('PurchaseStatus Enum', function (): void {
-    it('has all 26 official CHIP purchase statuses', function (): void {
+    it('has all CHIP and local derived purchase statuses', function (): void {
         $expectedStatuses = [
             'created', 'sent', 'viewed', 'pending_execute', 'pending_charge',
             'hold', 'pending_capture', 'pending_release', 'preauthorized',
             'paid', 'paid_authorized', 'recurring_successful', 'cleared', 'settled',
-            'pending_refund', 'refunded', 'error', 'blocked', 'cancelled',
+            'pending_refund', 'partially_refunded', 'refunded', 'error', 'blocked', 'cancelled',
             'overdue', 'expired', 'released', 'chargeback',
             'attempted_capture', 'attempted_refund', 'attempted_recurring',
         ];
 
         $actualStatuses = array_map(fn ($case) => $case->value, PurchaseStatus::cases());
 
-        expect($actualStatuses)->toHaveCount(26)
+        expect($actualStatuses)->toHaveCount(27)
             ->and($actualStatuses)->toBe($expectedStatuses);
     });
 
@@ -31,6 +31,7 @@ describe('PurchaseStatus Enum', function (): void {
     it('provides human-readable labels', function (): void {
         expect(PurchaseStatus::PAID->label())->toBe('Paid')
             ->and(PurchaseStatus::PENDING_CAPTURE->label())->toBe('Pending Capture')
+            ->and(PurchaseStatus::PARTIALLY_REFUNDED->label())->toBe('Partially Refunded')
             ->and(PurchaseStatus::RECURRING_SUCCESSFUL->label())->toBe('Recurring Successful');
     });
 
@@ -40,6 +41,7 @@ describe('PurchaseStatus Enum', function (): void {
             ->and(PurchaseStatus::RECURRING_SUCCESSFUL->isSuccessful())->toBeTrue()
             ->and(PurchaseStatus::CLEARED->isSuccessful())->toBeTrue()
             ->and(PurchaseStatus::SETTLED->isSuccessful())->toBeTrue()
+            ->and(PurchaseStatus::PARTIALLY_REFUNDED->isSuccessful())->toBeTrue()
             ->and(PurchaseStatus::CREATED->isSuccessful())->toBeFalse()
             ->and(PurchaseStatus::ERROR->isSuccessful())->toBeFalse();
     });
@@ -91,6 +93,7 @@ describe('PurchaseStatus Enum', function (): void {
         expect(PurchaseStatus::PAID->canBeRefunded())->toBeTrue()
             ->and(PurchaseStatus::CLEARED->canBeRefunded())->toBeTrue()
             ->and(PurchaseStatus::SETTLED->canBeRefunded())->toBeTrue()
+            ->and(PurchaseStatus::PARTIALLY_REFUNDED->canBeRefunded())->toBeTrue()
             ->and(PurchaseStatus::CREATED->canBeRefunded())->toBeFalse()
             ->and(PurchaseStatus::REFUNDED->canBeRefunded())->toBeFalse();
     });

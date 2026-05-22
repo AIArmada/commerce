@@ -58,6 +58,7 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
                     $dispatcher->extractPurchase($payload),
                     $dispatcher->extractPayout($payload),
                     $dispatcher->extractBillingTemplateClient($payload),
+                    $dispatcher->extractPayment($payload),
                 );
 
                 $dispatcher->dispatch($eventType, $payload);

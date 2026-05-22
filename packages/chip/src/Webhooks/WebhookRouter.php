@@ -6,10 +6,9 @@ namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Webhooks\Handlers\PaymentFailedHandler;
-use AIArmada\Chip\Webhooks\Handlers\PurchaseCancelledHandler;
-use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
-use AIArmada\Chip\Webhooks\Handlers\PurchaseRefundedHandler;
+use AIArmada\Chip\Enums\WebhookEventType;
+use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
 use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 use AIArmada\Chip\Webhooks\Handlers\WebhookHandler;
@@ -19,16 +18,14 @@ use AIArmada\Chip\Webhooks\Handlers\WebhookHandler;
  */
 class WebhookRouter
 {
+    public function __construct(
+        private readonly ?WebhookEventDispatcher $dispatcher = null,
+    ) {}
+
     /**
      * @var array<string, class-string<WebhookHandler>>
      */
     protected array $handlers = [
-        'purchase.paid' => PurchasePaidHandler::class,
-        'purchase.cancelled' => PurchaseCancelledHandler::class,
-        'purchase.refunded' => PurchaseRefundedHandler::class,
-        'payment.refunded' => PurchaseRefundedHandler::class,
-        'purchase.payment_failure' => PaymentFailedHandler::class,
-        'payment.failed' => PaymentFailedHandler::class,
         'send_instruction.completed' => SendCompletedHandler::class,
         'send_instruction.rejected' => SendRejectedHandler::class,
         'payout.success' => SendCompletedHandler::class,
@@ -42,14 +39,31 @@ class WebhookRouter
     {
         $handlerClass = $this->handlers[$event] ?? null;
 
-        if ($handlerClass === null) {
+        if ($handlerClass !== null) {
+            /** @var WebhookHandler $handler */
+            $handler = app($handlerClass);
+
+            return $handler->handle($payload);
+        }
+
+        if (WebhookEventType::fromString($event) === null) {
             return WebhookResult::skipped("No handler registered for event: {$event}");
         }
 
-        /** @var WebhookHandler $handler */
-        $handler = app($handlerClass);
+        $dispatcher = $this->dispatcher ?? app(WebhookEventDispatcher::class);
 
-        return $handler->handle($payload);
+        WebhookReceived::dispatch(
+            $event,
+            $payload->rawPayload,
+            $dispatcher->extractPurchase($payload->rawPayload),
+            $dispatcher->extractPayout($payload->rawPayload),
+            $dispatcher->extractBillingTemplateClient($payload->rawPayload),
+            $dispatcher->extractPayment($payload->rawPayload),
+        );
+
+        $dispatcher->dispatch($event, $payload->rawPayload);
+
+        return WebhookResult::handled("Webhook {$event} replayed through the dispatcher");
     }
 
     /**
@@ -69,11 +83,11 @@ class WebhookRouter
      */
     public function hasHandler(string $event): bool
     {
-        return isset($this->handlers[$event]);
+        return isset($this->handlers[$event]) || WebhookEventType::fromString($event) !== null;
     }
 
     /**
-     * Get all registered handlers.
+     * Get all explicitly registered handlers.
      *
      * @return array<string, class-string<WebhookHandler>>
      */

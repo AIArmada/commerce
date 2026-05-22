@@ -96,6 +96,22 @@ describe('WebhookFactory', function (): void {
             ->and($payload['status'])->toBe('released');
     });
 
+    it('creates purchase.pending_refund payload', function (): void {
+        $payload = WebhookFactory::purchasePendingRefund();
+
+        expect($payload['event_type'])->toBe('purchase.pending_refund')
+            ->and($payload['status'])->toBe('pending_refund')
+            ->and($payload['type'])->toBe('purchase');
+    });
+
+    it('creates purchase.recurring_token_deleted payload', function (): void {
+        $payload = WebhookFactory::purchaseRecurringTokenDeleted();
+
+        expect($payload['event_type'])->toBe('purchase.recurring_token_deleted')
+            ->and($payload['status'])->toBe('paid')
+            ->and($payload['is_recurring_token'])->toBeFalse();
+    });
+
     it('creates purchase.subscription_charge_failure payload', function (): void {
         $payload = WebhookFactory::purchaseSubscriptionChargeFailure();
 
@@ -107,7 +123,10 @@ describe('WebhookFactory', function (): void {
         $payload = WebhookFactory::paymentRefunded();
 
         expect($payload['event_type'])->toBe('payment.refunded')
-            ->and($payload['status'])->toBe('refunded');
+            ->and($payload['status'])->toBe('refunded')
+            ->and($payload['type'])->toBe('payment')
+            ->and(data_get($payload, 'related_to.type'))->toBe('purchase')
+            ->and(data_get($payload, 'payment.is_outgoing'))->toBeTrue();
     });
 
     it('creates billing_template_client.subscription_billing_cancelled payload', function (): void {
@@ -144,6 +163,16 @@ describe('WebhookFactory', function (): void {
         $payload = WebhookFactory::forEvent(WebhookEventType::PurchasePaid);
 
         expect($payload['event_type'])->toBe('purchase.paid');
+    });
+
+    it('creates realistic payloads for pending and recurring events via forEvent', function (): void {
+        $pendingRefund = WebhookFactory::forEvent(WebhookEventType::PurchasePendingRefund);
+        $tokenDeleted = WebhookFactory::forEvent(WebhookEventType::PurchaseRecurringTokenDeleted);
+
+        expect($pendingRefund['event_type'])->toBe('purchase.pending_refund')
+            ->and($pendingRefund['status'])->toBe('pending_refund')
+            ->and($tokenDeleted['event_type'])->toBe('purchase.recurring_token_deleted')
+            ->and($tokenDeleted['is_recurring_token'])->toBeFalse();
     });
 
     it('uses fluent builder pattern', function (): void {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Gateways\ChipPaymentIntent;
@@ -119,12 +120,12 @@ describe('ChipWebhookHandler', function (): void {
             expect($this->handler->getEventType($request))->toBe('payment.pending');
         });
 
-        it('returns refund.pending for pending_refund status', function (): void {
+        it('returns purchase.pending_refund for pending_refund status', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
                 'status' => 'pending_refund',
             ]));
 
-            expect($this->handler->getEventType($request))->toBe('refund.pending');
+            expect($this->handler->getEventType($request))->toBe('purchase.pending_refund');
         });
 
         it('returns unknown for invalid JSON', function (): void {
@@ -166,7 +167,7 @@ describe('ChipWebhookHandler', function (): void {
         });
 
         it('returns ChipPaymentIntent for valid purchase data', function (): void {
-            $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([
+            $payload = [
                 'id' => 'purchase-' . uniqid(),
                 'type' => 'purchase',
                 'status' => 'paid',
@@ -175,8 +176,18 @@ describe('ChipWebhookHandler', function (): void {
                 'created_on' => time(),
                 'updated_on' => time(),
                 'client' => ['email' => 'test@example.com'],
-                'purchase' => ['total' => 10000, 'currency' => 'MYR'],
-            ]));
+                'purchase' => [
+                    'total' => 10000,
+                    'currency' => 'MYR',
+                    'products' => [['name' => 'Test', 'price' => 10000, 'quantity' => 1]],
+                ],
+            ];
+
+            $this->collectService->shouldReceive('getPurchase')
+                ->with($payload['id'])
+                ->andReturn(PurchaseData::from($payload));
+
+            $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode($payload));
 
             $result = $this->handler->getPaymentFromWebhook($request);
 
@@ -484,6 +495,45 @@ describe('ChipGateway', function (): void {
         $intent = $this->gateway->refundPayment('purchase-123', $amount);
 
         expect($intent)->toBeInstanceOf(ChipPaymentIntent::class);
+    });
+
+    it('reloads the related purchase when refund returns a payment payload', function (): void {
+        $refund = PaymentData::from([
+            'type' => 'payment',
+            'id' => 'payment-refund-123',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purchase-123',
+            ],
+            'payment' => [
+                'amount' => 5000,
+                'currency' => 'MYR',
+                'net_amount' => 5000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+        ]);
+        $purchase = createTestPurchaseData(['id' => 'purchase-123', 'status' => 'refunded']);
+
+        $this->collectService->shouldReceive('refundPurchase')
+            ->once()
+            ->with('purchase-123', null)
+            ->andReturn($refund);
+
+        $this->collectService->shouldReceive('getPurchase')
+            ->once()
+            ->with('purchase-123')
+            ->andReturn($purchase);
+
+        $intent = $this->gateway->refundPayment('purchase-123');
+
+        expect($intent)->toBeInstanceOf(ChipPaymentIntent::class);
+        expect($intent->getPaymentId())->toBe('purchase-123');
+        expect($intent->getStatus())->toBe(PaymentStatus::REFUNDED);
     });
 
     it('throws exception when refund fails', function (): void {

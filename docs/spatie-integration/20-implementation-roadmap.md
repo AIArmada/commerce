@@ -4,7 +4,7 @@
 > **Version:** 1.1  
 > **Last Updated:** January 2025  
 > **Author:** Visionary Chief Architect  
-> **Status:** ✅ Validated against GitHub source code
+> **Status:** Historical planning document — see `PROGRESS.md` for the current implementation state
 
 ---
 
@@ -226,10 +226,10 @@ Migrate CHIP and J&T to unified webhook handling.
 
 ### Tasks
 
-#### 2.1 Create CHIP Webhook Handler
+#### 2.1 CHIP webhook implementation
 
-Files to create:
-- `chip/src/Webhooks/ChipSignatureValidator.php`
+Files delivered:
+- `chip/src/Webhooks/ChipSpatieSignatureValidator.php`
 - `chip/src/Webhooks/ChipWebhookProfile.php`
 - `chip/src/Webhooks/ProcessChipWebhook.php`
 
@@ -242,10 +242,12 @@ Files to create:
 #### 2.3 Configure Webhook Routes
 
 ```php
-// In both chip and jnt service providers
+// In chip/routes/webhooks.php and jnt package route files
 
-Route::webhooks('webhooks/chip', 'chip');
-Route::webhooks('webhooks/jnt', 'jnt');
+Route::post(config('chip.webhooks.route', '/chip/webhook'), [WebhookController::class, 'handle'])
+    ->name('chip.webhook');
+
+// J&T uses its own package-specific controller and route definition.
 ```
 
 #### 2.4 Update Config
@@ -256,9 +258,11 @@ Route::webhooks('webhooks/jnt', 'jnt');
 return [
     'configs' => [
         [
-            'name' => 'chip',
-            'signing_secret' => env('CHIP_WEBHOOK_SECRET'),
-            // ... full config
+            'name' => 'chip.webhook',
+            'signing_secret' => '', // CHIP verifies via public keys, not a shared secret.
+            'signature_header_name' => 'X-Signature',
+            // company key: CHIP_COMPANY_PUBLIC_KEY
+            // webhook key map: CHIP_WEBHOOK_PUBLIC_KEYS
         ],
         [
             'name' => 'jnt',
@@ -281,11 +285,13 @@ return [
 
 ```bash
 # Test webhook endpoints
-curl -X POST http://localhost/webhooks/chip \
+curl -X POST http://localhost/chip/webhook \
   -H "Content-Type: application/json" \
-  -H "X-Signature: test" \
-  -d '{"event": "payment.completed"}'
+    -H "X-Signature: <base64-rsa-signature>" \
+    -d '{"event_type": "purchase.paid", "type": "purchase", "id": "purchase-123"}'
 ```
+
+Use a real CHIP RSA signature in `X-Signature`, or disable verification only in a non-production verification environment.
 
 ---
 

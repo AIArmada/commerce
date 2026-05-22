@@ -9,6 +9,7 @@ use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\CompanyStatementData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\Collect\AccountApi;
@@ -62,7 +63,7 @@ class ChipCollectService
         return $this->purchases->cancel($purchaseId);
     }
 
-    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData
+    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData|PaymentData
     {
         return $this->purchases->refund($purchaseId, $amount);
     }
@@ -107,9 +108,9 @@ class ChipCollectService
         return $this->purchases->resendInvoice($purchaseId);
     }
 
-    public function deleteRecurringToken(string $purchaseId): void
+    public function deleteRecurringToken(string $purchaseId): PurchaseData
     {
-        $this->purchases->deleteRecurringToken($purchaseId);
+        return $this->purchases->deleteRecurringToken($purchaseId);
     }
 
     public function getBrandId(): string

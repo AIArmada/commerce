@@ -75,6 +75,30 @@ describe('Webhook data object', function (): void {
         expect($webhook->getPurchase())->toBeNull();
     });
 
+    it('keeps raw payment-shaped webhook deliveries as payloads', function (): void {
+        $payload = [
+            'id' => 'payment_refund_123',
+            'type' => 'payment',
+            'event_type' => 'payment.refunded',
+            'status' => 'refunded',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'amount' => 10000,
+            'currency' => 'MYR',
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purchase_123',
+            ],
+        ];
+
+        $webhook = WebhookData::from($payload);
+
+        expect($webhook->type)->toBe('webhook_event')
+            ->and($webhook->event_type)->toBe('payment.refunded')
+            ->and($webhook->payload)->toBe($payload)
+            ->and($webhook->getPurchase())->toBeNull();
+    });
+
     it('represents webhook configuration entries', function (): void {
         $webhook = WebhookData::from([
             'id' => 'wh_123',

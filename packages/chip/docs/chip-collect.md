@@ -63,6 +63,27 @@ Chip::purchase()
     ->create();
 ```
 
+### FPX Direct Post
+
+```php
+use AIArmada\Chip\Enums\FpxBank;
+use AIArmada\Chip\Enums\FpxType;
+
+$purchase = Chip::purchase()
+    ->customer('customer@example.com')
+    ->addProductCents('Product', 9900)
+    ->successUrl(route('success'))
+    ->create();
+
+$directPostUrl = ($purchase->direct_post_url ?? $purchase->checkout_url)
+    .'?preferred='.FpxType::B2B1->value
+    .'&fpx_bank_code='.FpxBank::PUBLIC_BANK_PB_ENTERPRISE->value;
+
+return redirect($directPostUrl);
+```
+
+Use `FpxType::B2C` with a B2C bank like `FpxBank::MAYBANK2U` for personal-banking flows, or `FpxType::B2B1` with corporate bank codes like `FpxBank::PUBLIC_BANK_PB_ENTERPRISE`, `FpxBank::AFFINMAX`, or `FpxBank::UOB_REGIONAL` for business-banking flows.
+
 ### From Checkoutable
 
 ```php
@@ -101,12 +122,25 @@ $purchase = Chip::cancelPurchase('pur_abc123');
 ### Refund
 
 ```php
+use AIArmada\Chip\Data\PaymentData;
+use AIArmada\Chip\Data\PurchaseData;
+
 // Full refund
-$purchase = Chip::refundPurchase('pur_abc123');
+$refund = Chip::refundPurchase('pur_abc123');
 
 // Partial refund (in cents)
-$purchase = Chip::refundPurchase('pur_abc123', 5000);
+$refund = Chip::refundPurchase('pur_abc123', 5000);
+
+if ($refund instanceof PaymentData) {
+    $refund->getAmountInCents();
+}
+
+if ($refund instanceof PurchaseData && $refund->status === 'pending_refund') {
+    // Wait for the payment.refunded webhook.
+}
 ```
+
+Completed refunds return a `PaymentData` object. If the acquirer is still processing the refund, CHIP returns a `PurchaseData` object with `status = pending_refund` until the later `payment.refunded` callback arrives.
 
 ### Capture (Pre-auth)
 

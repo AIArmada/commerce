@@ -1,7 +1,7 @@
 # Spatie Integration Tasks
 
 > **Created:** December 2024  
-> **Status:** Active  
+> **Status:** Historical task tracker — see `PROGRESS.md` for the current implementation state.  
 > **Reference:** [20-implementation-roadmap.md](20-implementation-roadmap.md) | [PROGRESS.md](PROGRESS.md)
 
 ---
@@ -169,11 +169,11 @@
 
 | Task ID | Task | File Path | Status | Assignee |
 |---------|------|-----------|--------|----------|
-| 2.1.1 | Create ChipSignatureValidator | `chip/src/Webhooks/ChipSignatureValidator.php` | ⏳ | - |
-| 2.1.2 | Create ChipWebhookProfile | `chip/src/Webhooks/ChipWebhookProfile.php` | ⏳ | - |
-| 2.1.3 | Create ProcessChipWebhook job | `chip/src/Webhooks/ProcessChipWebhook.php` | ⏳ | - |
-| 2.1.4 | Register webhook route | `chip/routes/webhooks.php` | ⏳ | - |
-| 2.1.5 | Update chip config for webhooks | `chip/config/chip.php` | ⏳ | - |
+| 2.1.1 | Create ChipSpatieSignatureValidator | `chip/src/Webhooks/ChipSpatieSignatureValidator.php` | ✅ | - |
+| 2.1.2 | Create ChipWebhookProfile | `chip/src/Webhooks/ChipWebhookProfile.php` | ✅ | - |
+| 2.1.3 | Create ProcessChipWebhook job | `chip/src/Webhooks/ProcessChipWebhook.php` | ✅ | - |
+| 2.1.4 | Register webhook route | `chip/routes/webhooks.php` | ✅ | - |
+| 2.1.5 | Update chip config for webhooks | `chip/config/chip.php` | ✅ | - |
 
 ### 2.2 J&T Webhook Handler
 

@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Webhooks\Handlers;
 
+use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
-use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookResult;
-use AIArmada\Chip\Enums\PurchaseStatus;
 use AIArmada\Chip\Events\PaymentRefunded;
 
 /**
- * Handles purchase.refunded and payment.refunded webhook events.
+ * Handles documented CHIP refund completion webhooks.
  */
 class PurchaseRefundedHandler implements WebhookHandler
 {
@@ -23,21 +22,34 @@ class PurchaseRefundedHandler implements WebhookHandler
             return WebhookResult::skipped('Purchase not found locally');
         }
 
-        // Update local status
-        $refundAmount = $payload->get('refund_amount') ?? $payload->get('refunded_amount');
+        if (! $this->hasRefundPaymentPayload($payload->rawPayload)) {
+            return WebhookResult::skipped('Refund payment payload is missing');
+        }
 
-        $localPurchase->update([
-            'status' => PurchaseStatus::REFUNDED,
-            'refund_amount_minor' => $refundAmount,
-            'refunded_at' => now(),
-        ]);
+        $paymentRefunded = PaymentRefunded::fromPayload($payload->rawPayload);
 
-        // Dispatch Laravel event
-        PaymentRefunded::dispatch(
-            PurchaseData::from($payload->rawPayload),
-            $payload->rawPayload,
-        );
+        if ($paymentRefunded->payment === null) {
+            return WebhookResult::skipped('Refund payment payload is missing');
+        }
 
-        return WebhookResult::handled("Purchase {$localPurchase->id} marked as refunded");
+        app(SyncPurchaseRefundState::class)->handle($paymentRefunded->payment, $localPurchase);
+
+        PaymentRefunded::dispatch($paymentRefunded->payment, $payload->rawPayload);
+
+        $localPurchase->refresh();
+
+        return WebhookResult::handled("Purchase {$localPurchase->id} refund state synchronized");
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function hasRefundPaymentPayload(array $payload): bool
+    {
+        if (isset($payload['payment']) && is_array($payload['payment'])) {
+            return isset($payload['payment']['amount'], $payload['payment']['currency']);
+        }
+
+        return isset($payload['amount'], $payload['currency']);
     }
 }

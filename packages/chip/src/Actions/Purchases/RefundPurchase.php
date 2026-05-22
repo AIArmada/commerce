@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Actions\Purchases;
 
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -24,7 +25,7 @@ final class RefundPurchase
      *
      * @param  int|null  $amount  The amount to refund in minor units, or null for full refund
      */
-    public function handle(string $purchaseId, ?int $amount = null): PurchaseData
+    public function handle(string $purchaseId, ?int $amount = null): PurchaseData|PaymentData
     {
         return $this->purchasesApi->refund($purchaseId, $amount);
     }

@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Events;
 
-use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Event fired when a payment is refunded.
- *
- * Note: The payment.refunded webhook actually returns a Purchase object
- * with updated status, not a separate Payment object.
+ * Event fired when a refund payment is completed.
  */
 final class PaymentRefunded
 {
@@ -26,7 +23,7 @@ final class PaymentRefunded
      * @param  array<string, mixed>  $payload
      */
     public function __construct(
-        public readonly ?PurchaseData $purchase,
+        public readonly ?PaymentData $payment,
         public readonly array $payload,
     ) {}
 
@@ -37,10 +34,10 @@ final class PaymentRefunded
      */
     public static function fromPayload(array $payload): self
     {
-        $purchase = PurchaseData::from($payload);
+        $payment = PaymentData::fromWebhookPayload($payload);
 
         return new self(
-            purchase: $purchase,
+            payment: $payment,
             payload: $payload,
         );
     }
@@ -55,7 +52,7 @@ final class PaymentRefunded
      */
     public function getAmount(): int
     {
-        return $this->purchase?->getAmountInCents() ?? 0;
+        return $this->payment?->getAmountInCents() ?? 0;
     }
 
     /**
@@ -63,7 +60,7 @@ final class PaymentRefunded
      */
     public function getCurrency(): string
     {
-        return $this->purchase?->getCurrency() ?? 'MYR';
+        return $this->payment?->getCurrency() ?? 'MYR';
     }
 
     /**
@@ -71,7 +68,7 @@ final class PaymentRefunded
      */
     public function getPurchaseId(): ?string
     {
-        return $this->purchase?->id;
+        return $this->payment?->getRelatedPurchaseId();
     }
 
     /**
@@ -79,7 +76,7 @@ final class PaymentRefunded
      */
     public function getReference(): ?string
     {
-        return $this->purchase?->reference;
+        return $this->payment?->getReference();
     }
 
     /**
@@ -87,6 +84,6 @@ final class PaymentRefunded
      */
     public function isTest(): bool
     {
-        return $this->purchase->is_test ?? true;
+        return $this->payment?->isTest() ?? true;
     }
 }

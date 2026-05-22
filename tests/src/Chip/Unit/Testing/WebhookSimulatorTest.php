@@ -5,9 +5,19 @@ declare(strict_types=1);
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookData;
 use AIArmada\Chip\Enums\WebhookEventType;
+use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Events\PurchasePaymentFailure;
+use AIArmada\Chip\Events\PurchasePendingRefund;
+use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
+use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Testing\WebhookSimulator;
+use AIArmada\Chip\Webhooks\ChipWebhookProfile;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 
 describe('WebhookSimulator', function (): void {
     it('can be instantiated via make', function (): void {
@@ -54,12 +64,29 @@ describe('WebhookSimulator', function (): void {
         $simulator = WebhookSimulator::failed();
         $payload = $simulator->getPayload();
 
-        expect($payload['status'])->toBe('error');
+        expect($payload['status'])->toBe('error')
+            ->and($payload['event_type'])->toBe('purchase.payment_failure');
     });
 
     it('can create simulator for specific event type', function (): void {
         $simulator = WebhookSimulator::forEvent(WebhookEventType::PurchasePaid);
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
+    });
+
+    it('creates realistic payloads for pending refund events', function (): void {
+        $payload = WebhookSimulator::forEvent(WebhookEventType::PurchasePendingRefund)->getPayload();
+
+        expect($payload['event_type'])->toBe('purchase.pending_refund')
+            ->and($payload['status'])->toBe('pending_refund')
+            ->and($payload['type'])->toBe('purchase');
+    });
+
+    it('creates payment-shaped payloads for refund completion events', function (): void {
+        $payload = WebhookSimulator::forEvent(WebhookEventType::PaymentRefunded)->getPayload();
+
+        expect($payload['event_type'])->toBe('payment.refunded')
+            ->and($payload['type'])->toBe('payment')
+            ->and(data_get($payload, 'related_to.type'))->toBe('purchase');
     });
 
     it('can set URL', function (): void {
@@ -194,6 +221,14 @@ describe('WebhookSimulator', function (): void {
             ->and($request->getMethod())->toBe('POST');
     });
 
+    it('creates JSON requests that the CHIP webhook profile can process', function (): void {
+        $request = WebhookSimulator::forEvent(WebhookEventType::PurchasePendingRefund)->toRequest('/chip/webhook');
+
+        expect($request->input('event_type'))->toBe('purchase.pending_refund')
+            ->and($request->getContentTypeFormat())->toBe('json')
+            ->and((new ChipWebhookProfile)->shouldProcess($request))->toBeTrue();
+    });
+
     it('can create purchase data object', function (): void {
         $simulator = WebhookSimulator::paid();
         $purchase = $simulator->toPurchase();
@@ -206,6 +241,115 @@ describe('WebhookSimulator', function (): void {
         $webhook = $simulator->toWebhook();
 
         expect($webhook)->toBeInstanceOf(WebhookData::class);
+    });
+
+    it('creates webhook data objects for payment-shaped refund payloads', function (): void {
+        $webhook = WebhookSimulator::refunded()->toWebhook();
+
+        expect($webhook)->toBeInstanceOf(WebhookData::class)
+            ->and($webhook->event_type)->toBe('payment.refunded')
+            ->and($webhook->payload)->not->toBeNull()
+            ->and(data_get($webhook->payload, 'type'))->toBe('payment');
+    });
+
+    it('dispatches generic refund webhooks with populated payment data', function (): void {
+        Event::fake([WebhookReceived::class, PaymentRefunded::class]);
+
+        WebhookSimulator::refunded()->dispatch();
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => $event->payment !== null
+            && $event->isRefunded());
+        Event::assertDispatched(PaymentRefunded::class);
+    });
+
+    it('includes the active owner tuple when dispatching directly in owner mode', function (): void {
+        config()->set('chip.owner.enabled', true);
+
+        $owner = User::query()->create([
+            'name' => 'Simulator Owner',
+            'email' => 'simulator-owner@example.com',
+            'password' => 'secret',
+        ]);
+
+        Event::fake([WebhookReceived::class, PaymentRefunded::class]);
+
+        OwnerContext::withOwner($owner, function (): void {
+            WebhookSimulator::refunded()->dispatch();
+        });
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => data_get($event->payload, '__owner_type') === $owner->getMorphClass()
+            && data_get($event->payload, '__owner_id') === (string) $owner->getKey());
+
+        Event::assertDispatched(PaymentRefunded::class, fn (PaymentRefunded $event): bool => data_get($event->payload, '__owner_type') === $owner->getMorphClass()
+            && data_get($event->payload, '__owner_id') === (string) $owner->getKey());
+    });
+
+    it('dispatches purchase payment failure for the failed helper', function (): void {
+        Event::fake([WebhookReceived::class, PurchasePaymentFailure::class]);
+
+        WebhookSimulator::failed()->dispatch();
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => $event->eventType === 'purchase.payment_failure');
+        Event::assertDispatched(PurchasePaymentFailure::class);
+    });
+
+    it('fakes pending and recurring webhook events by default', function (): void {
+        WebhookSimulator::fakeEvents();
+
+        event(PurchasePendingRefund::fromPayload(WebhookFactory::purchasePendingRefund()));
+        event(PurchaseRecurringTokenDeleted::fromPayload(WebhookFactory::purchaseRecurringTokenDeleted()));
+
+        WebhookSimulator::assertDispatched(PurchasePendingRefund::class);
+        WebhookSimulator::assertDispatched(PurchaseRecurringTokenDeleted::class);
+    });
+
+    it('dispatches refunded helper through the runtime dispatcher and syncs purchase state', function (): void {
+        Event::fake([WebhookReceived::class, PaymentRefunded::class]);
+
+        $purchase = Purchase::create([
+            'id' => 'purchase-simulator-refund-123',
+            'type' => 'purchase',
+            'status' => 'paid',
+            'brand_id' => 'brand-123',
+            'company_id' => 'company-123',
+            'client_id' => 'client-123',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'client' => ['email' => 'test@example.com'],
+            'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+            ],
+            'issuer_details' => [],
+            'transaction_data' => [],
+            'status_history' => [],
+            'refund_availability' => 'all',
+            'refundable_amount' => 10000,
+            'refund_amount_minor' => 0,
+            'platform' => 'test',
+            'product' => 'chip',
+            'send_receipt' => false,
+            'is_test' => true,
+            'is_recurring_token' => false,
+            'skip_capture' => false,
+            'force_recurring' => false,
+            'marked_as_paid' => false,
+        ]);
+
+        WebhookSimulator::refunded()
+            ->purchaseId($purchase->id)
+            ->amount(2500)
+            ->with(['id' => 'payment-refund-simulator-123'])
+            ->dispatch();
+
+        $purchase->refresh();
+
+        expect($purchase->status)->toBe('partially_refunded')
+            ->and($purchase->refund_amount_minor)->toBe(2500)
+            ->and($purchase->refundable_amount)->toBe(7500);
+
+        Event::assertDispatched(PaymentRefunded::class);
     });
 
     it('can set factory', function (): void {

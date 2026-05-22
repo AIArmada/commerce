@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Data\BillingTemplateClientData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
@@ -48,14 +50,13 @@ describe('WebhookEventDispatcher::extractPurchase', function (): void {
         expect($result)->toBeInstanceOf(PurchaseData::class);
     });
 
-    it('extracts PurchaseData for payment.* events', function (): void {
+    it('returns null for payment.* events', function (): void {
         $dispatcher = new WebhookEventDispatcher;
-        $payload = createMinimalPurchasePayload();
-        $payload['event_type'] = 'payment.refunded';
+        $payload = createMinimalPaymentPayload();
 
         $result = $dispatcher->extractPurchase($payload);
 
-        expect($result)->toBeInstanceOf(PurchaseData::class);
+        expect($result)->toBeNull();
     });
 
     it('returns null for non-purchase payloads', function (): void {
@@ -94,6 +95,53 @@ describe('WebhookEventDispatcher::extractPayout', function (): void {
         $payload = ['type' => 'purchase', 'event_type' => 'purchase.paid'];
 
         $result = $dispatcher->extractPayout($payload);
+
+        expect($result)->toBeNull();
+    });
+});
+
+describe('WebhookEventDispatcher::extractPayment', function (): void {
+    it('extracts PaymentData for payment type', function (): void {
+        $dispatcher = new WebhookEventDispatcher;
+        $payload = createMinimalPaymentPayload();
+
+        $result = $dispatcher->extractPayment($payload);
+
+        expect($result)->toBeInstanceOf(PaymentData::class);
+    });
+
+    it('extracts PaymentData for payment.* events', function (): void {
+        $dispatcher = new WebhookEventDispatcher;
+        $payload = createMinimalPaymentPayload();
+        unset($payload['type']);
+
+        $result = $dispatcher->extractPayment($payload);
+
+        expect($result)->toBeInstanceOf(PaymentData::class);
+    });
+
+    it('returns null for non-payment payloads', function (): void {
+        $dispatcher = new WebhookEventDispatcher;
+        $payload = ['type' => 'purchase', 'event_type' => 'purchase.paid'];
+
+        $result = $dispatcher->extractPayment($payload);
+
+        expect($result)->toBeNull();
+    });
+
+    it('returns null for malformed payment payloads without amount and currency', function (): void {
+        $dispatcher = new WebhookEventDispatcher;
+        $payload = [
+            'type' => 'payment',
+            'event_type' => 'payment.refunded',
+            'id' => 'payment-invalid-123',
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purchase-invalid-123',
+            ],
+        ];
+
+        $result = $dispatcher->extractPayment($payload);
 
         expect($result)->toBeNull();
     });
@@ -151,6 +199,25 @@ describe('WebhookEventDispatcher::dispatch', function (): void {
         $dispatcher->dispatch('purchase.paid', $payload);
 
         Event::assertDispatched(PurchasePaid::class);
+    });
+
+    it('dispatches PaymentRefunded event for payment.refunded', function (): void {
+        $dispatcher = new WebhookEventDispatcher;
+        $payload = createMinimalPaymentPayload();
+
+        $dispatcher->dispatch('payment.refunded', $payload);
+
+        Event::assertDispatched(PaymentRefunded::class, fn (PaymentRefunded $event): bool => $event->getPurchaseId() === 'purchase-123');
+    });
+
+    it('skips malformed payment.refunded payloads that have no payment details', function (): void {
+        $dispatcher = new WebhookEventDispatcher;
+        $payload = createMinimalPaymentPayload();
+        unset($payload['payment']);
+
+        $dispatcher->dispatch('payment.refunded', $payload);
+
+        Event::assertNotDispatched(PaymentRefunded::class);
     });
 
     it('logs warning for unknown event type', function (): void {
@@ -235,6 +302,44 @@ function createMinimalPurchasePayload(): array
         'retain_level_details' => null,
         'can_retrieve' => false,
         'can_chargeback' => false,
+    ];
+}
+
+/**
+ * Helper to create minimal valid payment payload.
+ *
+ * @return array<string, mixed>
+ */
+function createMinimalPaymentPayload(): array
+{
+    return [
+        'id' => 'payment-123',
+        'type' => 'payment',
+        'event_type' => 'payment.refunded',
+        'status' => 'refunded',
+        'created_on' => time(),
+        'updated_on' => time(),
+        'client' => [
+            'email' => 'test@example.com',
+        ],
+        'payment' => [
+            'amount' => 1000,
+            'currency' => 'MYR',
+            'net_amount' => 1000,
+            'fee_amount' => 0,
+            'pending_amount' => 0,
+            'payment_type' => 'refund',
+            'is_outgoing' => true,
+        ],
+        'related_to' => [
+            'type' => 'purchase',
+            'id' => 'purchase-123',
+        ],
+        'transaction_data' => [],
+        'brand_id' => '550e8400-e29b-41d4-a716-446655440001',
+        'company_id' => null,
+        'reference' => 'REF-REFUND-123',
+        'is_test' => true,
     ];
 }
 
