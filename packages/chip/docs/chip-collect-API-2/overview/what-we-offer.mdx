@@ -1,0 +1,41 @@
+---
+title: What We Offer
+description: "Easily access these features using simple API parameters."
+---
+
+### [Purchase Notifications](/chip-collect/api-reference/purchases/create#body-success-callback)
+
+Receive real-time notifications via system callback or email when a transaction is successfully completed.
+
+### [Send Receipts to Customers](/chip-collect/api-reference/purchases/create#body-send-receipt)
+
+Automatically send a standardized receipt to your customers on your behalf.
+
+### [Redirect Customer After Purchase](/chip-collect/api-reference/purchases/create#body-success-redirect)
+
+Automatically redirect customers to a designated webpage based on the outcome of the transaction—success, failure, or cancellation.
+
+### [Secure Customer Card Information](/chip-collect/api-reference/purchases/create#body-skip-capture)
+
+Tokenize and securely store your customers’ card details for future purchases or subscriptions by setting the parameter `skip_capture: true` and `price: 0`
+
+### [Pre-Authorize Payment](/chip-collect/api-reference/purchases/create#body-skip-capture)
+
+Withhold the amount in customer's account to be captured or released later by setting the parameter `skip_capture: true` and `price: <<amount higher than 0>>`
+
+### [Free Form API Field](/chip-collect/api-reference/purchases/create#body-reference)
+
+Allowing flexibility to store any custom value, such as an invoice number or other reference data, based on your business needs.
+
+### [Payment Method Whitelist](/chip-collect/api-reference/purchases/create#body-payment-method-whitelist)
+
+Enable or disable specific payment methods to suit your business needs.
+
+Payment Methods available :
+- FPX Online Banking
+- Local credit and debit cards
+- Foreign credit and debit cards
+- E-wallets
+- DuitNow QR (Online)
+- Buy Now, Pay Later
+- On-Premise POS Terminal

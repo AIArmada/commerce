@@ -1,0 +1,22 @@
+---
+openapi: _openapi-chip-collect POST /purchases/
+description:
+---
+
+To run payments in your application use `POST /purchases/`, request to register payments and receive the checkout link (`checkout_url`). After the payment is processed, gateway will redirect the client back to your website (take note of `success_redirect`, `failure_redirect`).
+
+To set the price to the smallest unit possible, the value of the `price` field is expected to be specified in cents. <br/>
+For example, `price: 100` is equivalent to `RM 1.00`
+
+You have three options to check payment status:
+1) use `success_callback` parameter of `Purchase` object.
+2) use `GET /purchases/<purchase_id>/` request.
+3) set up a Webhook using the UI or Webhook API to listen to `purchase.paid` or `purchase.payment_failure` event on your server.
+
+Using `skip_capture` flag allows you to separate the authentication and payment execution steps, allowing you to reserve funds on payer’s card account for some time. This flag can also enable preauthorization capability, allowing you to save the card without a financial transaction, if available.
+
+In case making a purchase client agrees to store his card for the upcoming purchases, next time he will be able to pay in a single click.
+
+Instead of a redirect you can also utilize Direct Post checkout: you can create an HTML `<form>` on your website with `method="POST"` and `action` pointing to `direct_post_url` of a created Purchase. You will also need to saturate form with `<input>`-s for card data fields. As a result, when a payer submits their card data, it will be posted straight to our system, allowing you to customize the checkout as you wish while your PCI DSS requirement is only raised to SAQ A-EP, as your system doesn't receive or process card data. For more details, see the documentation on Purchase's `direct_post_url` field.
+
+To pay for test Purchases, use `4444 3333 2222 1111` as the card number, `123` as CVC, any date/month greater than now as expiry and any (Latin) cardholder name. Any other card number/CVC/expiry not greater or equal than the current month will all fail a test payment.

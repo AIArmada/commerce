@@ -1,0 +1,59 @@
+---
+title: Payment Link
+---
+
+## Example Use Cases
+
+|                                                    |
+|----------------------------------------------------|
+| Selling online products through the web            |
+| Charging for freelance or consulting services      |
+| Accepting donations or one-time payments           |
+
+## API Required
+
+1) [Create Purchases API](/chip-collect/api-reference/purchases/create)
+
+## Example JSON Payload
+
+Alan buy a mug for RM 10.00
+
+1) Create a purchase using [Purchases API](/chip-collect/api-reference/purchases/create)
+<br/> - get `checkout_url` from response body to be use as a payment link
+
+```js
+{
+  "client": {
+    "email": "test@test.com",
+    "full_name": "Alan"
+  },
+  "purchase": {
+    "products": [
+      {
+        "name": "Mug",
+        "price": 1000
+      }
+    ]
+  },
+  "brand_id": "<<Brand_id>>"
+}
+```
+
+## Testing Integration
+
+It’s possible to test-drive all checkouts using a test Purchase.
+
+To test a successful payment, you can use the following card numbers:
+
+*   4444 3333 2222 1111 - non-3D Secure card
+*   5555 5555 5555 4444 - 3D Secure card
+
+For both cards, please use:
+
+*   any cardholder name
+*   any expiry larger or equal to the current month/year
+*   CVC = 123
+
+To test a failed payment, please change the CVC or expiration date.
+
+When using a 3D Secure enrolled card in S2S checkout,  an incorrect CVC will trigger an authorization failure on the S2S callback step (after the customer returns from test ACS). Using a wrong expiry date emulates data validation failure and results in immediate error before that step.

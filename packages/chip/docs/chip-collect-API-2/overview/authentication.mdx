@@ -1,0 +1,11 @@
+---
+title: Authentication
+---
+
+Payloads are signed using asymmetric A.K.A. public-key cryptography to guarantee the authenticity of delivered callbacks. Each callback delivery request includes an X-Signature header field. This field contains a base64-encoded RSA PKCS#1 v1.5 signature of the SHA256 digest of the request body buffer.
+
+You can obtain the public key for `Webhook` authentication from `Webhook.public_key` of the corresponding `Webhook`.
+
+You can obtain the public key for success callback authentication from [GET /public_key/](/chip-collect/api-reference/public-key/retrieve).
+
+Please note the provider is not responsible for any financial losses incurred due to not implementing payload signature verification.

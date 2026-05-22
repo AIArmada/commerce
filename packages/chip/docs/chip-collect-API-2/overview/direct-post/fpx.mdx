@@ -1,0 +1,99 @@
+---
+title: FPX
+description: "Bypass the payment page for an optimized user experience"
+---
+
+## Instruction
+
+When you create a purchase, you’ll be given a checkout_url to redirect the buyer to the payment page. To automatically redirect customers to a specific bank, you need to add the following parameters to the URL:
+
+`?preferred=<FPX>&fpx_bank_code=<Bank Code>`
+
+You will have to set two options. The first one is `<FPX>` and the second one is `<Bank Code>`.
+
+## FPX Type List
+
+For the `<FPX>` option, the available choices are:
+
+| Type     | Value                                         |
+| -------- | ----------------------------------------------|
+| FPX B2C  | (Standard FPX)	fpx                            |
+| FPX B2B1 | (FPX for Business/Corporate Account)	fpx_b2b1 |
+
+## Bank Code List
+
+As for the `<Bank Code>`, the following options are available:
+
+<Tabs>
+  <Tab title="FPX B2C">
+  | Bank Name                | Value (Bank Code)         |
+  |--------------------------|---------------------------|
+  | Affin Bank               | ABB0233                   |
+  | Alliance Bank (Personal) | ABMB0212                  |
+  | AGRONet                  | AGRO01                    |
+  | AmBank                   | AMBB0209                  |
+  | Bank Islam               | BIMB0340                  |
+  | Bank Muamalat            | BMMB0341                  |
+  | Bank Rakyat              | BKRM0602                  |
+  | Bank Of China            | BOCM01                    |
+  | BSN                      | BSN0601                   |
+  | CIMB Bank                | BCBB0235                  |
+  | Hong Leong Bank          | HLB0224                   |
+  | HSBC Bank                | HSBC0223                  |
+  | KFH                      | KFH0346                   |
+  | Maybank2E                | MBB0228                   |
+  | Maybank2u                | MB2U0227                  |
+  | OCBC Bank                | OCBC0229                  |
+  | Public Bank              | PBB0233                   |
+  | RHB Bank                 | RHB0218                   |
+  | Standard Chartered       | SCB0216                   |
+  | UOB Bank                 | UOB0226                   |
+  </Tab>
+  <Tab title="FPX B2B1">
+  | Bank Name                  | Value (Bank Code)         |
+  |----------------------------|---------------------------|
+  | AFFINMAX                   | ABB0235                   |
+  | Alliance Bank (Business)   | ABMB0213                  |
+  | AGRONetBIZ                 | AGRO02                    |
+  | AmBank                     | AMBB0208                  |
+  | Bank Islam                 | BIMB0340                  |
+  | Bank Muamalat              | BMMB0342                  |
+  | BNP Paribas                | BNP003                    |
+  | CIMB Bank                  | BCBB0235                  |
+  | Citibank Corporate Banking | CIT0218                   |
+  | Deutsche Bank              | DBB0199                   |
+  | Hong Leong Bank            | HLB0224                   |
+  | HSBC Bank                  | HSBC0223                  |
+  | Bank Rakyat                | BKRM0602                  |
+  | KFH                        | KFH0346                   |
+  | Maybank2E                  | MBB0228                   |
+  | OCBC Bank                  | OCBC0229                  |
+  | Public Bank                | PBB0233                   |
+  | Public Bank PB enterprise  | PBB0234                   |
+  | RHB Bank                   | RHB0218                   |
+  | Standard Chartered         | SCB0215                   |
+  | UOB Regional               | UOB0228                   |
+  </Tab>
+</Tabs>
+
+## Examples
+
+Here is a comprehensive example of a URL for the FPX payment option:
+
+<Card title="FPX B2C Example" icon="dollar-sign" href="https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/?preferred=fpx&fpx_bank_code=MB2U0227">
+    https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/?preferred=fpx&fpx_bank_code=MB2U0227
+</Card>
+
+<Card title="FPX B2B1 Example" icon="dollar-sign" href="https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/?preferred=fpx_b2b1&fpx_bank_code=MB2U0228">
+    https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/?preferred=fpx_b2b1&fpx_bank_code=MB2U0228
+</Card>
+
+## Real-World scenario
+
+This is how it appears in a real-world scenario:
+
+<img
+  src="/images/direct-post-fpx.gif"
+  title="FPX Direct Post"
+  className="w-full h-96 rounded-xl"
+/>

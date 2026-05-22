@@ -1,0 +1,30 @@
+---
+title: Card (VISA/Mastercard)
+description: "Bypass the payment page for an optimized user experience"
+---
+
+## Instruction
+
+Once you create a purchase, you will receive a direct_post_url. This URL is used to submit an HTML form POST with the necessary card data.
+
+## Example Code
+
+```HTML card-direct-post
+    <form method="POST" action="https://payments.chip-in.asia/p/3943e0d8-dfc0-4fb5-ae5f-4872f6d0990d/">
+        <input type="text" name="cardholder_name" value="">
+        <input type="text" name="card_number" value="">
+        <input type="text" name="expires" value="">
+        <input type="text" name="cvc" value="">
+        <input type="submit">
+    </form>
+```
+
+## Real-World scenario
+
+This is how it appears in a real-world scenario:
+
+<img
+  src="/images/direct-post-card.gif"
+  title="Card Direct Post"
+  className="w-full h-96 rounded-xl"
+/>

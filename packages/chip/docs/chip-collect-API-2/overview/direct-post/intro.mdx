@@ -1,0 +1,46 @@
+---
+title: Introduction
+description: "Bypass the payment page for an optimized user experience"
+---
+
+Integrating with a payment gateway can often pose challenges for user experience due to discrepancies in interface design. Typically, a payment page provided by the gateway is offered as a pre-designed, non-customizable format.
+
+This guide will steer you through the process of skipping the CHIP payment page for both FPX and Card payments.
+
+## Default Payment Page
+
+<img
+  src="/images/default-payment-page.png"
+  alt="Default payment page"
+  height="300"
+  className="rounded-lg"
+/>
+
+By default, clicking the `checkout-url` will redirect user to the page with bank list. However, CHIP provide flexibility to allow `checkout-url` redirect user directly to the bank page simply by appending query path to the `checkout-url`.
+
+## Direct Post
+
+This link will redirect user directly to FPX Maybank Page
+
+<Card title="FPX B2C Example" icon="dollar-sign" href="## Default Payment Page
+?preferred=fpx&fpx_bank_code=MB2U0227">
+    https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/?preferred=fpx&fpx_bank_code=MB2U0227
+</Card>
+
+## Difference between Checkout Url & Direct Post Url
+both use the same url except direct post append queries to convert checkout url into direct post
+
+<Card title="Different between checkout url & direct post url" icon="link">
+    Default Payment Page - https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/ <br/>
+    Direct Post - https://gate.chip-in.asia/p/93604710-4829-43cf-80bd-520c691e4bc2/?preferred=fpx&fpx_bank_code=MB2U0227
+</Card>
+
+
+## Payment Method List
+
+Payment method list available for direct post :
+
+- [FPX](/chip-collect/overview/direct-post/fpx)
+- [Card](/chip-collect/overview/direct-post/card)
+- [E-Wallet](/chip-collect/overview/direct-post/e-wallet)
+- [Duitnow QR](/chip-collect/overview/direct-post/duitnow-qr)
