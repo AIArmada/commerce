@@ -10,6 +10,7 @@ use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\VoucherStatus;
+use Mockery\Expectation;
 
 use function Pest\Laravel\mock;
 
@@ -59,11 +60,13 @@ it('normalizes voucher validation results', function (): void {
     );
 
     $service = mock(VoucherServiceInterface::class);
-    $service->shouldReceive('validate')
-        ->once()
+    /** @var Expectation $validateExpectation */
+    $validateExpectation = $service->shouldReceive('validate');
+    $validateExpectation->once()
         ->andReturn(VoucherValidationResult::valid());
-    $service->shouldReceive('find')
-        ->once()
+    /** @var Expectation $findExpectation */
+    $findExpectation = $service->shouldReceive('find');
+    $findExpectation->once()
         ->andReturn($voucherData);
 
     app()->instance(VoucherServiceInterface::class, $service);

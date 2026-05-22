@@ -7,6 +7,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\CalculateTaxStep;
 use AIArmada\Tax\Contracts\TaxCalculatorInterface;
 use AIArmada\Tax\Data\TaxResultData;
+use Mockery\Expectation;
 
 use function Pest\Laravel\mock;
 
@@ -14,8 +15,9 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
     config()->set('checkout.integrations.tax.enabled', true);
 
     $calculator = mock(TaxCalculatorInterface::class);
-    $calculator->shouldReceive('calculateTax')
-        ->once()
+    /** @var Expectation $expectation */
+    $expectation = $calculator->shouldReceive('calculateTax');
+    $expectation->once()
         ->withArgs(function (int $amount, string $taxClass, ?string $zoneId, array $context): bool {
             expect($amount)->toBe(900)
                 ->and($taxClass)->toBe('standard')
@@ -37,8 +39,9 @@ it('uses the tax calculator contract for item and shipping tax', function (): vo
             ],
         ));
 
-    $calculator->shouldReceive('calculateShippingTax')
-        ->once()
+    /** @var Expectation $shippingExpectation */
+    $shippingExpectation = $calculator->shouldReceive('calculateShippingTax');
+    $shippingExpectation->once()
         ->withArgs(function (int $amount, ?string $zoneId, array $context): bool {
             expect($amount)->toBe(200)
                 ->and($zoneId)->toBeNull()

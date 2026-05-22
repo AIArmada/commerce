@@ -148,14 +148,14 @@ describe('State transitions', function (): void {
 
     it('allows processing to payment failed transition', function (): void {
         $session = new CheckoutSession;
-        $session->status = Processing::class;
+        $session->status = new Processing($session);
 
         expect($session->status->canTransitionTo(PaymentFailed::class))->toBeTrue();
     });
 
     it('allows processing to completed transition', function (): void {
         $session = new CheckoutSession;
-        $session->status = Processing::class;
+        $session->status = new Processing($session);
 
         expect($session->status->canTransitionTo(Completed::class))->toBeTrue();
     });

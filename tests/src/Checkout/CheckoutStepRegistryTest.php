@@ -9,40 +9,41 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
 
 describe('CheckoutStepRegistry', function (): void {
-    beforeEach(function (): void {
-        $this->registry = new CheckoutStepRegistry;
-    });
-
     it('can register a step', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step = createMockStep('test_step', 'Test Step');
 
-        $this->registry->register('test_step', $step);
+        $registry->register('test_step', $step);
 
-        expect($this->registry->has('test_step'))->toBeTrue()
-            ->and($this->registry->get('test_step'))->toBe($step);
+        expect($registry->has('test_step'))->toBeTrue()
+            ->and($registry->get('test_step'))->toBe($step);
     });
 
     it('can check if step exists', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step = createMockStep('test_step', 'Test Step');
 
-        $this->registry->register('test_step', $step);
+        $registry->register('test_step', $step);
 
-        expect($this->registry->has('test_step'))->toBeTrue()
-            ->and($this->registry->has('nonexistent'))->toBeFalse();
+        expect($registry->has('test_step'))->toBeTrue()
+            ->and($registry->has('nonexistent'))->toBeFalse();
     });
 
     it('returns null for nonexistent step', function (): void {
-        expect($this->registry->get('nonexistent'))->toBeNull();
+        $registry = new CheckoutStepRegistry;
+
+        expect($registry->get('nonexistent'))->toBeNull();
     });
 
     it('can get all registered steps', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step2', 'Step 2');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->register('step2', $step2);
+        $registry->register('step1', $step1);
+        $registry->register('step2', $step2);
 
-        $all = $this->registry->all();
+        $all = $registry->all();
 
         expect($all)->toHaveCount(2)
             ->and($all)->toHaveKey('step1')
@@ -50,28 +51,30 @@ describe('CheckoutStepRegistry', function (): void {
     });
 
     it('can enable and disable steps', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step = createMockStep('test_step', 'Test Step');
-        $this->registry->register('test_step', $step);
+        $registry->register('test_step', $step);
 
-        expect($this->registry->isEnabled('test_step'))->toBeTrue();
+        expect($registry->isEnabled('test_step'))->toBeTrue();
 
-        $this->registry->disable('test_step');
-        expect($this->registry->isEnabled('test_step'))->toBeFalse();
+        $registry->disable('test_step');
+        expect($registry->isEnabled('test_step'))->toBeFalse();
 
-        $this->registry->enable('test_step');
-        expect($this->registry->isEnabled('test_step'))->toBeTrue();
+        $registry->enable('test_step');
+        expect($registry->isEnabled('test_step'))->toBeTrue();
     });
 
     it('returns ordered steps', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step2', 'Step 2');
         $step3 = createMockStep('step3', 'Step 3');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->register('step2', $step2);
-        $this->registry->register('step3', $step3);
+        $registry->register('step1', $step1);
+        $registry->register('step2', $step2);
+        $registry->register('step3', $step3);
 
-        $ordered = $this->registry->getOrderedSteps();
+        $ordered = $registry->getOrderedSteps();
 
         expect($ordered)->toHaveCount(3)
             ->and($ordered[0]->getIdentifier())->toBe('step1')
@@ -80,17 +83,18 @@ describe('CheckoutStepRegistry', function (): void {
     });
 
     it('excludes disabled steps from ordered list', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step2', 'Step 2');
         $step3 = createMockStep('step3', 'Step 3');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->register('step2', $step2);
-        $this->registry->register('step3', $step3);
+        $registry->register('step1', $step1);
+        $registry->register('step2', $step2);
+        $registry->register('step3', $step3);
 
-        $this->registry->disable('step2');
+        $registry->disable('step2');
 
-        $ordered = $this->registry->getOrderedSteps();
+        $ordered = $registry->getOrderedSteps();
 
         expect($ordered)->toHaveCount(2)
             ->and($ordered[0]->getIdentifier())->toBe('step1')
@@ -98,17 +102,18 @@ describe('CheckoutStepRegistry', function (): void {
     });
 
     it('can set custom order', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step2', 'Step 2');
         $step3 = createMockStep('step3', 'Step 3');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->register('step2', $step2);
-        $this->registry->register('step3', $step3);
+        $registry->register('step1', $step1);
+        $registry->register('step2', $step2);
+        $registry->register('step3', $step3);
 
-        $this->registry->setOrder(['step3', 'step1', 'step2']);
+        $registry->setOrder(['step3', 'step1', 'step2']);
 
-        $ordered = $this->registry->getOrderedSteps();
+        $ordered = $registry->getOrderedSteps();
 
         expect($ordered[0]->getIdentifier())->toBe('step3')
             ->and($ordered[1]->getIdentifier())->toBe('step1')
@@ -116,32 +121,35 @@ describe('CheckoutStepRegistry', function (): void {
     });
 
     it('can replace a step', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step1', 'Replacement Step');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->replace('step1', $step2);
+        $registry->register('step1', $step1);
+        $registry->replace('step1', $step2);
 
-        expect($this->registry->get('step1')->getName())->toBe('Replacement Step');
+        expect($registry->get('step1')->getName())->toBe('Replacement Step');
     });
 
     it('throws exception when replacing nonexistent step', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step = createMockStep('step1', 'Step 1');
 
-        expect(fn () => $this->registry->replace('nonexistent', $step))
+        expect(fn () => $registry->replace('nonexistent', $step))
             ->toThrow(CheckoutStepException::class);
     });
 
     it('can insert step before another', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step2', 'Step 2');
         $newStep = createMockStep('new_step', 'New Step');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->register('step2', $step2);
-        $this->registry->insertBefore('step2', 'new_step', $newStep);
+        $registry->register('step1', $step1);
+        $registry->register('step2', $step2);
+        $registry->insertBefore('step2', 'new_step', $newStep);
 
-        $ordered = $this->registry->getOrderedSteps();
+        $ordered = $registry->getOrderedSteps();
 
         expect($ordered)->toHaveCount(3)
             ->and($ordered[0]->getIdentifier())->toBe('step1')
@@ -150,15 +158,16 @@ describe('CheckoutStepRegistry', function (): void {
     });
 
     it('can insert step after another', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step2', 'Step 2');
         $newStep = createMockStep('new_step', 'New Step');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->register('step2', $step2);
-        $this->registry->insertAfter('step1', 'new_step', $newStep);
+        $registry->register('step1', $step1);
+        $registry->register('step2', $step2);
+        $registry->insertAfter('step1', 'new_step', $newStep);
 
-        $ordered = $this->registry->getOrderedSteps();
+        $ordered = $registry->getOrderedSteps();
 
         expect($ordered)->toHaveCount(3)
             ->and($ordered[0]->getIdentifier())->toBe('step1')
@@ -167,24 +176,26 @@ describe('CheckoutStepRegistry', function (): void {
     });
 
     it('throws exception when inserting before nonexistent step', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step = createMockStep('step1', 'Step 1');
 
-        expect(fn () => $this->registry->insertBefore('nonexistent', 'step1', $step))
+        expect(fn () => $registry->insertBefore('nonexistent', 'step1', $step))
             ->toThrow(CheckoutStepException::class);
     });
 
     it('can get enabled step identifiers', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step2', 'Step 2');
         $step3 = createMockStep('step3', 'Step 3');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->register('step2', $step2);
-        $this->registry->register('step3', $step3);
+        $registry->register('step1', $step1);
+        $registry->register('step2', $step2);
+        $registry->register('step3', $step3);
 
-        $this->registry->disable('step2');
+        $registry->disable('step2');
 
-        $identifiers = $this->registry->getEnabledStepIdentifiers();
+        $identifiers = $registry->getEnabledStepIdentifiers();
 
         expect($identifiers)->toContain('step1')
             ->and($identifiers)->not->toContain('step2')
@@ -192,13 +203,14 @@ describe('CheckoutStepRegistry', function (): void {
     });
 
     it('can get order', function (): void {
+        $registry = new CheckoutStepRegistry;
         $step1 = createMockStep('step1', 'Step 1');
         $step2 = createMockStep('step2', 'Step 2');
 
-        $this->registry->register('step1', $step1);
-        $this->registry->register('step2', $step2);
+        $registry->register('step1', $step1);
+        $registry->register('step2', $step2);
 
-        $order = $this->registry->getOrder();
+        $order = $registry->getOrder();
 
         expect($order)->toBe(['step1', 'step2']);
     });

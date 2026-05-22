@@ -27,45 +27,48 @@ use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Mockery\Expectation;
 
 use function Pest\Laravel\mock;
 
 describe('PaymentCallbackController', function (): void {
-    beforeEach(function (): void {
-        $this->controller = app(PaymentCallbackController::class);
-
+    $setConfig = function (): void {
         config()->set('checkout.redirects.success', '/orders/{order_id}');
         config()->set('checkout.redirects.failure', '/checkout/failed');
         config()->set('checkout.redirects.cancel', '/checkout/cancelled');
-    });
+    };
 
-    it('redirects to failure when session not found on success', function (): void {
+    it('redirects to failure when session not found on success', function () use ($setConfig): void {
+        $setConfig();
         $request = Request::create('/checkout/payment/success', 'GET', ['session' => 'nonexistent']);
 
-        $response = $this->controller->success($request);
+        $response = app(PaymentCallbackController::class)->success($request);
 
         expect($response->getTargetUrl())->toContain('/checkout/failed')
             ->and($response->getSession()->get('error'))->toBe('Checkout session not found');
     });
 
-    it('redirects to failure when session not found on failure callback', function (): void {
+    it('redirects to failure when session not found on failure callback', function () use ($setConfig): void {
+        $setConfig();
         $request = Request::create('/checkout/payment/failure', 'GET', ['session' => 'nonexistent']);
 
-        $response = $this->controller->failure($request);
+        $response = app(PaymentCallbackController::class)->failure($request);
 
         expect($response->getTargetUrl())->toContain('/checkout/failed')
             ->and($response->getSession()->get('error'))->toBe('Checkout session not found');
     });
 
-    it('redirects to cancel page when session not found on cancel', function (): void {
+    it('redirects to cancel page when session not found on cancel', function () use ($setConfig): void {
+        $setConfig();
         $request = Request::create('/checkout/payment/cancel', 'GET', ['session' => 'nonexistent']);
 
-        $response = $this->controller->cancel($request);
+        $response = app(PaymentCallbackController::class)->cancel($request);
 
         expect($response->getTargetUrl())->toContain('/checkout/failed');
     });
 
-    it('resolves session via session query parameter', function (): void {
+    it('resolves session via session query parameter', function () use ($setConfig): void {
+        $setConfig();
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-123',
             'selected_payment_gateway' => 'chip',
@@ -77,13 +80,14 @@ describe('PaymentCallbackController', function (): void {
             'checkout_callback_token' => 'valid-callback-token',
         ]);
 
-        $response = $this->controller->cancel($request);
+        $response = app(PaymentCallbackController::class)->cancel($request);
 
         // Should find session and redirect to cancel (not failure)
         expect($response->getTargetUrl())->toContain('/checkout/cancelled');
     });
 
-    it('resolves session via checkout_session_id query parameter', function (): void {
+    it('resolves session via checkout_session_id query parameter', function () use ($setConfig): void {
+        $setConfig();
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-alt',
             'selected_payment_gateway' => 'chip',
@@ -95,12 +99,13 @@ describe('PaymentCallbackController', function (): void {
             'checkout_callback_token' => 'valid-callback-token',
         ]);
 
-        $response = $this->controller->cancel($request);
+        $response = app(PaymentCallbackController::class)->cancel($request);
 
         expect($response->getTargetUrl())->toContain('/checkout/cancelled');
     });
 
-    it('includes session id in cancel redirect', function (): void {
+    it('includes session id in cancel redirect', function () use ($setConfig): void {
+        $setConfig();
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-cancel',
             'selected_payment_gateway' => 'chip',
@@ -112,13 +117,14 @@ describe('PaymentCallbackController', function (): void {
             'checkout_callback_token' => 'valid-callback-token',
         ]);
 
-        $response = $this->controller->cancel($request);
+        $response = app(PaymentCallbackController::class)->cancel($request);
 
         expect($response->getSession()->get('checkout_session_id'))->toBe($session->id)
             ->and($response->getSession()->get('message'))->toBe('Payment was cancelled');
     });
 
-    it('includes session id in failure redirect', function (): void {
+    it('includes session id in failure redirect', function () use ($setConfig): void {
+        $setConfig();
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-fail',
             'selected_payment_gateway' => 'chip',
@@ -130,13 +136,14 @@ describe('PaymentCallbackController', function (): void {
             'checkout_callback_token' => 'valid-callback-token',
         ]);
 
-        $response = $this->controller->failure($request);
+        $response = app(PaymentCallbackController::class)->failure($request);
 
         expect($response->getSession()->get('checkout_session_id'))->toBe($session->id)
             ->and($response->getSession()->get('error'))->toBe('Payment failed');
     });
 
-    it('rejects callbacks without a valid token', function (): void {
+    it('rejects callbacks without a valid token', function () use ($setConfig): void {
+        $setConfig();
         $session = CheckoutSession::create([
             'cart_id' => 'test-cart-invalid-token',
             'selected_payment_gateway' => 'chip',
@@ -148,13 +155,14 @@ describe('PaymentCallbackController', function (): void {
             'checkout_callback_token' => 'invalid-token',
         ]);
 
-        $response = $this->controller->cancel($request);
+        $response = app(PaymentCallbackController::class)->cancel($request);
 
         expect($response->getTargetUrl())->toContain('/checkout/failed')
             ->and($response->getSession()->get('error'))->toBe('Checkout session not found');
     });
 
-    it('does not verify payment via user-controlled query params (prevents forged status=paid)', function (): void {
+    it('does not verify payment via user-controlled query params (prevents forged status=paid)', function () use ($setConfig): void {
+        $setConfig();
         // Regression test for P0: callback controller must NOT pass $request->query() to
         // verifyAndCompletePayment, as attacker could append &status=paid to the success URL
         // (the callback_token is visible in their browser bar after the gateway redirect).
@@ -174,7 +182,7 @@ describe('PaymentCallbackController', function (): void {
             'id' => 'fake-payment-id', // attacker-controlled forged param
         ]);
 
-        $response = $this->controller->success($request);
+        $response = app(PaymentCallbackController::class)->success($request);
 
         // Must NOT redirect to success — payment should not be verifiable without gateway API
         expect($session->fresh()->status instanceof Completed)->toBeFalse();
@@ -294,8 +302,9 @@ describe('CreateOrderStep', function (): void {
             'order_number' => 'TEST-ORDER-PRICED',
         ]);
 
-        $orderService->shouldReceive('createOrder')
-            ->once()
+        /** @var Expectation $createOrder */
+        $createOrder = $orderService->shouldReceive('createOrder');
+        $createOrder->once()
             ->withArgs(function (array $orderData, array $items) use ($customer): bool {
                 expect($orderData['customer_id'])->toBe($customer->id)
                     ->and($orderData['customer_type'])->toBe($customer->getMorphClass())
@@ -360,13 +369,16 @@ describe('CreateOrderStep', function (): void {
             'order_number' => 'TEST-ORDER-VOUCHER',
         ]);
 
-        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+        /** @var Expectation $createOrderExpectation */
+        $createOrderExpectation = $orderService->shouldReceive('createOrder');
+        $createOrderExpectation->once()->andReturn($order);
 
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $voucherService = mock(VoucherServiceInterface::class);
-        $voucherService->shouldReceive('redeem')
-            ->once()
+        /** @var Expectation $redeemExpectation */
+        $redeemExpectation = $voucherService->shouldReceive('redeem');
+        $redeemExpectation->once()
             ->with('WELCOME10', $order->id);
 
         app()->instance(VoucherServiceInterface::class, $voucherService);

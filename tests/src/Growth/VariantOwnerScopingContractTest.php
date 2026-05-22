@@ -44,7 +44,7 @@ final class VariantOwnerScopingContractTest extends TestCase
         });
     }
 
-    protected function createGlobalModel(): Model
+    protected function createGlobalModel(): Variant
     {
         return OwnerContext::withOwner(null, function (): Variant {
             $experiment = $this->createExperiment(null);

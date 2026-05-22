@@ -7,24 +7,43 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Integrations\Payment\CashierProcessor;
+use Mockery\Expectation;
 
 use function Pest\Laravel\mock;
 
 it('resolves cashier payment status through the active gateway', function (): void {
     $payment = mock(PaymentContract::class);
-    $payment->shouldReceive('isSucceeded')->once()->andReturn(true);
-    $payment->shouldReceive('id')->once()->andReturn('pay_123');
-    $payment->shouldReceive('redirectUrl')->once()->andReturn(null);
-    $payment->shouldReceive('rawAmount')->once()->andReturn(2500);
-    $payment->shouldReceive('currency')->once()->andReturn('MYR');
-    $payment->shouldReceive('status')->once()->andReturn('succeeded');
-    $payment->shouldReceive('toArray')->once()->andReturn(['status' => 'succeeded']);
+    /** @var Expectation $isSucceeded */
+    $isSucceeded = $payment->shouldReceive('isSucceeded');
+    $isSucceeded->once()->andReturn(true);
+    /** @var Expectation $id */
+    $id = $payment->shouldReceive('id');
+    $id->once()->andReturn('pay_123');
+    /** @var Expectation $redirectUrl */
+    $redirectUrl = $payment->shouldReceive('redirectUrl');
+    $redirectUrl->once()->andReturn(null);
+    /** @var Expectation $rawAmount */
+    $rawAmount = $payment->shouldReceive('rawAmount');
+    $rawAmount->once()->andReturn(2500);
+    /** @var Expectation $currency */
+    $currency = $payment->shouldReceive('currency');
+    $currency->once()->andReturn('MYR');
+    /** @var Expectation $paymentStatus */
+    $paymentStatus = $payment->shouldReceive('status');
+    $paymentStatus->once()->andReturn('succeeded');
+    /** @var Expectation $toArray */
+    $toArray = $payment->shouldReceive('toArray');
+    $toArray->once()->andReturn(['status' => 'succeeded']);
 
     $gateway = mock(GatewayContract::class);
-    $gateway->shouldReceive('findPayment')->once()->with('pay_123')->andReturn($payment);
+    /** @var Expectation $findPayment */
+    $findPayment = $gateway->shouldReceive('findPayment');
+    $findPayment->once()->with('pay_123')->andReturn($payment);
 
     $gatewayManager = mock(GatewayManager::class);
-    $gatewayManager->shouldReceive('gateway')->once()->andReturn($gateway);
+    /** @var Expectation $gatewayExpectation */
+    $gatewayExpectation = $gatewayManager->shouldReceive('gateway');
+    $gatewayExpectation->once()->andReturn($gateway);
 
     app()->instance(GatewayManager::class, $gatewayManager);
 
