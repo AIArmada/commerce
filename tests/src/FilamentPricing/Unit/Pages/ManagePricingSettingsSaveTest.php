@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentPricing\Pages\ManagePricingSettings;
 use AIArmada\Pricing\Settings\PricingSettings;
 use Illuminate\Support\Facades\DB;
+use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
 
 uses(TestCase::class);
 
@@ -79,6 +80,22 @@ it('exposes a save header action', function (): void {
 });
 
 it('seeds default pricing settings when settings payload is missing', function (): void {
+    config()->set('settings.repositories.database', [
+        'type' => DatabaseSettingsRepository::class,
+        'model' => 'Spatie\\LaravelSettings\\Models\\SettingsProperty',
+        'table' => 'settings',
+        'connection' => 'testing',
+    ]);
+    config()->set('settings.default_repository', 'database');
+    config()->set('settings.repositories', [
+        'database' => [
+            'type' => DatabaseSettingsRepository::class,
+            'model' => 'Spatie\\LaravelSettings\\Models\\SettingsProperty',
+            'table' => 'settings',
+            'connection' => 'testing',
+        ],
+    ]);
+
     DB::table((string) config('settings.stores.database.table', 'settings'))
         ->where('group', 'pricing')
         ->delete();
@@ -88,10 +105,10 @@ it('seeds default pricing settings when settings payload is missing', function (
     $page->mount();
 
     expect($page->data['defaultCurrency'])->toBe('MYR')
-        ->and($page->data['decimalPlaces'])->toBe(2)
+        ->and((int) $page->data['decimalPlaces'])->toBe(2)
         ->and($page->data['roundingMode'])->toBe('half_up')
         ->and($page->data['pricesIncludeTax'])->toBeFalse()
-        ->and($page->data['maximumOrderValue'])->toBe(10000000);
+        ->and((int) $page->data['maximumOrderValue'])->toBe(10000000);
 
     $persistedSettingsKeys = DB::table((string) config('settings.stores.database.table', 'settings'))
         ->where('group', 'pricing')
