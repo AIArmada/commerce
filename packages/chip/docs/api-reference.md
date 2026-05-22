@@ -63,30 +63,31 @@ use AIArmada\Chip\Facades\Chip;
 
 // Purchases
 Chip::purchase(): PurchaseBuilder
-Chip::createPurchase(array $data): Purchase
-Chip::getPurchase(string $id): Purchase
-Chip::cancelPurchase(string $id): Purchase
-Chip::refundPurchase(string $id, ?int $amount = null): Purchase
-Chip::capturePurchase(string $id, ?int $amount = null): Purchase
-Chip::releasePurchase(string $id): Purchase
-Chip::markPurchaseAsPaid(string $id, ?int $paidOn = null): Purchase
-Chip::resendInvoice(string $id): Purchase
+Chip::createPurchase(array $data): PurchaseData
+Chip::getPurchase(string $id): PurchaseData
+Chip::cancelPurchase(string $id): PurchaseData
+Chip::refundPurchase(string $id, ?int $amount = null): PaymentData|PurchaseData
+Chip::capturePurchase(string $id, ?int $amount = null): PurchaseData
+Chip::releasePurchase(string $id): PurchaseData
+Chip::markPurchaseAsPaid(string $id, ?int $paidOn = null): PurchaseData
+Chip::resendInvoice(string $id): PurchaseData
+Chip::deleteRecurringToken(string $id): PurchaseData
 Chip::getPaymentMethods(array $filters = []): array
 
 // Clients
-Chip::createClient(array $data): Client
-Chip::getClient(string $id): Client
+Chip::createClient(array $data): ClientData
+Chip::getClient(string $id): ClientData
 Chip::listClients(array $filters = []): array
-Chip::updateClient(string $id, array $data): Client
-Chip::partialUpdateClient(string $id, array $data): Client
+Chip::updateClient(string $id, array $data): ClientData
+Chip::partialUpdateClient(string $id, array $data): ClientData
 Chip::deleteClient(string $id): void
 
 // Account
 Chip::getAccountBalance(): array
 Chip::getAccountTurnover(array $filters = []): array
 Chip::listCompanyStatements(array $filters = []): array
-Chip::getCompanyStatement(string $id): CompanyStatement
-Chip::cancelCompanyStatement(string $id): CompanyStatement
+Chip::getCompanyStatement(string $id): CompanyStatementData
+Chip::cancelCompanyStatement(string $id): CompanyStatementData
 
 // Webhooks
 Chip::createWebhook(array $data): array
@@ -113,11 +114,11 @@ ChipSend::createSendInstruction(
     string $description,
     string $reference,
     string $email
-): SendInstruction
+): SendInstructionData
 
-ChipSend::getSendInstruction(string $id): SendInstruction
+ChipSend::getSendInstruction(string $id): SendInstructionData
 ChipSend::listSendInstructions(array $filters = []): array
-ChipSend::cancelSendInstruction(string $id): SendInstruction
+ChipSend::cancelSendInstruction(string $id): SendInstructionData
 ChipSend::deleteSendInstruction(string $id): void
 ChipSend::resendSendInstructionWebhook(string $id): array
 
@@ -127,16 +128,16 @@ ChipSend::createBankAccount(
     string $accountNumber,
     string $accountHolderName,
     ?string $reference = null
-): BankAccount
+): BankAccountData
 
-ChipSend::getBankAccount(string $id): BankAccount
+ChipSend::getBankAccount(string $id): BankAccountData
 ChipSend::listBankAccounts(array $filters = []): array
-ChipSend::updateBankAccount(string $id, array $data): BankAccount
+ChipSend::updateBankAccount(string $id, array $data): BankAccountData
 ChipSend::deleteBankAccount(string $id): void
 ChipSend::resendBankAccountWebhook(string $id): array
 
 // Send Limits
-ChipSend::getSendLimit(int|string $id): SendLimit
+ChipSend::getSendLimit(int|string $id): SendLimitData
 
 // Groups
 ChipSend::createGroup(array $data): array
@@ -149,10 +150,10 @@ ChipSend::deleteGroup(string $id): void
 ChipSend::listAccounts(): array
 
 // Webhooks
-ChipSend::createSendWebhook(array $data): SendWebhook
-ChipSend::getSendWebhook(string $id): SendWebhook
+ChipSend::createSendWebhook(array $data): SendWebhookData
+ChipSend::getSendWebhook(string $id): SendWebhookData
 ChipSend::listSendWebhooks(array $filters = []): array
-ChipSend::updateSendWebhook(string $id, array $data): SendWebhook
+ChipSend::updateSendWebhook(string $id, array $data): SendWebhookData
 ChipSend::deleteSendWebhook(string $id): void
 ```
 
@@ -169,7 +170,7 @@ Chip::purchase()
     ->shippingAddress(string $street, string $city, string $zip, ?string $state, ?string $country): self
     ->addProductCents(string $name, int $price, int $quantity = 1, int $discount = 0, float $taxPercent = 0): self
     ->addProductMoney(string $name, Money $price, int $quantity = 1, ?Money $discount = null, float $taxPercent = 0): self
-    ->addProductObject(Product $product): self
+    ->addProductObject(ProductData $product): self
     ->addLineItem(LineItemInterface $item): self
     ->fromCheckoutable(CheckoutableInterface $checkoutable): self
     ->fromCustomer(CustomerInterface $customer): self
@@ -186,8 +187,8 @@ Chip::purchase()
     ->notes(string $notes): self
     ->metadata(array $metadata): self
     ->toArray(): array
-    ->create(): Purchase
-    ->save(): Purchase
+    ->create(): PurchaseData
+    ->save(): PurchaseData
 ```
 
 ## Data Objects
@@ -199,9 +200,9 @@ $purchase->id: string
 $purchase->status: string
 $purchase->checkout_url: ?string
 $purchase->reference: ?string
-$purchase->client: ClientDetails
-$purchase->purchase: PurchaseDetails
-$purchase->payment: ?Payment
+$purchase->client: ClientDetailsData
+$purchase->purchase: PurchaseDetailsData
+$purchase->payment: ?PaymentData
 
 $purchase->getAmount(): Money
 $purchase->getAmountInCents(): int
@@ -218,8 +219,8 @@ $purchase->isPending(): bool
 $purchase->hasError(): bool
 $purchase->canBeRefunded(): bool
 $purchase->getRefundableAmount(): Money
-$purchase->getCreatedAt(): Carbon
-$purchase->getUpdatedAt(): Carbon
+$purchase->getCreatedAt(): CarbonImmutable
+$purchase->getUpdatedAt(): CarbonImmutable
 ```
 
 ### Payment
@@ -237,8 +238,12 @@ $payment->getNetAmountInCents(): int
 $payment->getFeeAmountInCents(): int
 $payment->getCurrency(): string
 $payment->isPaid(): bool
-$payment->getPaidAt(): ?Carbon
+$payment->getPaidAt(): ?CarbonImmutable
+$payment->getRelatedPurchaseId(): ?string
+$payment->getReference(): ?string
 ```
+
+`Chip::refundPurchase()` returns a `PaymentData` for completed refunds. When CHIP is still processing the refund, it returns a `PurchaseData` with `status = pending_refund` until the later `payment.refunded` webhook arrives.
 
 ### SendInstruction
 

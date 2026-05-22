@@ -148,12 +148,13 @@ describe('GenerateDocOnRefund listener', function (): void {
 
     it('returns early when DocService class does not exist', function (): void {
         $payload = [
-            'id' => 'purch_refund123',
+            'id' => 'payment_refund123',
             'status' => 'refunded',
-            'type' => 'purchase',
+            'type' => 'payment',
             'created_on' => time(),
             'updated_on' => time(),
-            'purchase' => ['total' => 10000, 'currency' => 'MYR', 'products' => []],
+            'payment' => ['amount' => 10000, 'currency' => 'MYR', 'payment_type' => 'refund', 'is_outgoing' => true],
+            'related_to' => ['type' => 'purchase', 'id' => 'purch_refund123'],
             'is_test' => true,
         ];
 
@@ -169,12 +170,13 @@ describe('GenerateDocOnRefund listener', function (): void {
         config(['chip.integrations.docs.refund_doc_type' => null]);
 
         $payload = [
-            'id' => 'purch_refund123',
+            'id' => 'payment_refund123',
             'status' => 'refunded',
-            'type' => 'purchase',
+            'type' => 'payment',
             'created_on' => time(),
             'updated_on' => time(),
-            'purchase' => ['total' => 10000, 'currency' => 'MYR', 'products' => []],
+            'payment' => ['amount' => 10000, 'currency' => 'MYR', 'payment_type' => 'refund', 'is_outgoing' => true],
+            'related_to' => ['type' => 'purchase', 'id' => 'purch_refund123'],
             'is_test' => true,
         ];
 
@@ -200,12 +202,13 @@ describe('GenerateDocOnRefund listener', function (): void {
         config(['chip.owner.enabled' => true]);
 
         $payload = [
-            'id' => 'purch_refund123',
+            'id' => 'payment_refund123',
             'status' => 'refunded',
-            'type' => 'purchase',
+            'type' => 'payment',
             'created_on' => time(),
             'updated_on' => time(),
-            'purchase' => ['total' => 10000, 'currency' => 'MYR', 'products' => []],
+            'payment' => ['amount' => 10000, 'currency' => 'MYR', 'payment_type' => 'refund', 'is_outgoing' => true],
+            'related_to' => ['type' => 'purchase', 'id' => 'purch_refund123'],
             'is_test' => true,
         ];
 

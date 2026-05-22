@@ -10,6 +10,8 @@
 
 This file tracks the implementation progress of Spatie package integrations across the AIArmada Commerce ecosystem. See [20-implementation-roadmap.md](20-implementation-roadmap.md) for the full plan.
 
+This file is the current source of truth for implementation status; the roadmap and task files are retained as historical planning artifacts.
+
 ---
 
 ## Phase Summary
@@ -162,10 +164,10 @@ _None - All implementation complete!_
 **Completed:** December 12, 2025
 
 ### Tasks
-- [x] Create ChipSignatureValidator class
+- [x] Create ChipSpatieSignatureValidator class
 - [x] Create ChipWebhookProfile class
 - [x] Create ProcessChipWebhook job
-- [x] Create JntSignatureValidator class
+- [x] Create JntSpatieSignatureValidator class
 - [x] Create ProcessJntWebhook job
 - [ ] _(Optional)_ Configure webhook routes via spatie config - existing routes work
 - [ ] _(Optional)_ Write dedicated webhook tests - covered by integration tests
@@ -173,10 +175,10 @@ _None - All implementation complete!_
 ### Files Created
 | File | Package | Status |
 |------|---------|--------|
-| ChipSignatureValidator.php | chip | ✅ Created |
+| ChipSpatieSignatureValidator.php | chip | ✅ Created |
 | ChipWebhookProfile.php | chip | ✅ Created |
 | ProcessChipWebhook.php | chip | ✅ Created |
-| JntSignatureValidator.php | jnt | ✅ Created |
+| JntSpatieSignatureValidator.php | jnt | ✅ Created |
 | ProcessJntWebhook.php | jnt | ✅ Created |
 
 ---

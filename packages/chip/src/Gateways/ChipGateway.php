@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Gateways;
 
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
@@ -154,9 +155,15 @@ final class ChipGateway implements PaymentGatewayInterface
     {
         try {
             $amountInCents = $amount !== null ? (int) $amount->getAmount() : null;
-            $purchase = $this->service->refundPurchase($paymentId, $amountInCents);
+            $refund = $this->service->refundPurchase($paymentId, $amountInCents);
 
-            return new ChipPaymentIntent($purchase);
+            if ($refund instanceof PaymentData) {
+                $purchaseId = $refund->getRelatedPurchaseId() ?? $paymentId;
+
+                return new ChipPaymentIntent($this->service->getPurchase($purchaseId));
+            }
+
+            return new ChipPaymentIntent($refund);
         } catch (Throwable $e) {
             throw PaymentGatewayException::refundFailed(
                 gatewayName: $this->getName(),

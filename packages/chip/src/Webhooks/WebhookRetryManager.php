@@ -6,7 +6,9 @@ namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Models\Webhook;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Collection;
 use Throwable;
 
@@ -58,36 +60,48 @@ class WebhookRetryManager
      */
     public function retry(Webhook $webhook): WebhookResult
     {
-        $webhook->increment('retry_count');
-        $webhook->update(['last_retry_at' => now()]);
+        $retryOwner = $this->resolveRetryOwner($webhook);
 
-        try {
-            $payload = $webhook->payload;
-            $enriched = $this->enricher->enrich($webhook->event, $payload);
-            $result = $this->router->route($webhook->event, $enriched);
+        $executeRetry = function () use ($webhook): WebhookResult {
+            $webhook->increment('retry_count');
+            $webhook->update(['last_retry_at' => now()]);
 
-            if ($result->isSuccess()) {
+            try {
+                $payload = $webhook->payload;
+                $enriched = $this->enricher->enrich($webhook->event, $payload);
+                $owner = $enriched->owner;
+
+                $result = $owner instanceof Model
+                    ? OwnerContext::withOwner($owner, fn (): WebhookResult => $this->router->route($webhook->event, $enriched))
+                    : $this->router->route($webhook->event, $enriched);
+
+                if ($result->isSuccess()) {
+                    $webhook->update([
+                        'status' => 'processed',
+                        'processed' => true,
+                        'processed_at' => now(),
+                        'last_error' => null,
+                    ]);
+                } else {
+                    $webhook->update([
+                        'last_error' => $result->message,
+                    ]);
+                }
+
+                return $result;
+
+            } catch (Throwable $e) {
                 $webhook->update([
-                    'status' => 'processed',
-                    'processed' => true,
-                    'processed_at' => now(),
-                    'last_error' => null,
+                    'last_error' => $e->getMessage(),
                 ]);
-            } else {
-                $webhook->update([
-                    'last_error' => $result->message,
-                ]);
+
+                return WebhookResult::failed($e->getMessage());
             }
+        };
 
-            return $result;
-
-        } catch (Throwable $e) {
-            $webhook->update([
-                'last_error' => $e->getMessage(),
-            ]);
-
-            return WebhookResult::failed($e->getMessage());
-        }
+        return $retryOwner instanceof Model
+            ? OwnerContext::withOwner($retryOwner, $executeRetry)
+            : $executeRetry();
     }
 
     /**
@@ -130,5 +144,22 @@ class WebhookRetryManager
             ->addSeconds($this->getNextRetryDelay($webhook));
 
         return $nextEligibleAt->lessThanOrEqualTo($now);
+    }
+
+    private function resolveRetryOwner(Webhook $webhook): ?Model
+    {
+        if (is_string($webhook->owner_type ?? null) && $webhook->owner_type !== '' && (is_string($webhook->owner_id ?? null) || is_int($webhook->owner_id ?? null))) {
+            return OwnerContext::fromTypeAndId($webhook->owner_type, $webhook->owner_id);
+        }
+
+        $payload = is_array($webhook->payload) ? $webhook->payload : [];
+        $payloadOwnerType = $payload['__owner_type'] ?? null;
+        $payloadOwnerId = $payload['__owner_id'] ?? null;
+
+        if (! is_string($payloadOwnerType) || $payloadOwnerType === '' || (! is_string($payloadOwnerId) && ! is_int($payloadOwnerId))) {
+            return null;
+        }
+
+        return OwnerContext::fromTypeAndId($payloadOwnerType, $payloadOwnerId);
     }
 }

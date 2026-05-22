@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Testing;
 
-use AIArmada\Chip\Data\BillingTemplateClientData;
-use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookData;
 use AIArmada\Chip\Enums\WebhookEventType;
@@ -31,6 +29,8 @@ use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
 use AIArmada\Chip\Events\PurchaseReleased;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Services\WebhookEventDispatcher;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -70,7 +70,7 @@ final class WebhookSimulator
     public static function forEvent(WebhookEventType $eventType): self
     {
         return (new self)->factory(
-            WebhookFactory::make()->eventType($eventType->value)
+            WebhookFactory::fromPayload(WebhookFactory::forEvent($eventType))
         );
     }
 
@@ -135,10 +135,17 @@ final class WebhookSimulator
             PurchasePaid::class,
             PurchasePaymentFailure::class,
             PurchaseCancelled::class,
+            PurchasePendingExecute::class,
+            PurchasePendingCharge::class,
+            PurchasePendingCapture::class,
+            PurchasePendingRelease::class,
+            PurchasePendingRefund::class,
+            PurchasePendingRecurringTokenDelete::class,
             PurchasePreauthorized::class,
             PurchaseHold::class,
             PurchaseCaptured::class,
             PurchaseReleased::class,
+            PurchaseRecurringTokenDeleted::class,
             PurchaseSubscriptionChargeFailure::class,
             PaymentRefunded::class,
             BillingCancelled::class,
@@ -445,19 +452,22 @@ final class WebhookSimulator
      */
     public function dispatch(): void
     {
-        $payload = $this->factory->toArray();
+        $payload = $this->enrichPayloadForRuntime($this->factory->toArray());
         $eventTypeString = $payload['event_type'] ?? 'purchase.paid';
-        $eventType = WebhookEventType::fromString($eventTypeString);
 
-        if ($eventType === null) {
-            return;
-        }
+        /** @var WebhookEventDispatcher $dispatcher */
+        $dispatcher = app(WebhookEventDispatcher::class);
 
-        // Dispatch generic event
-        WebhookReceived::dispatch($eventTypeString, $payload);
+        WebhookReceived::dispatch(
+            $eventTypeString,
+            $payload,
+            $dispatcher->extractPurchase($payload),
+            $dispatcher->extractPayout($payload),
+            $dispatcher->extractBillingTemplateClient($payload),
+            $dispatcher->extractPayment($payload),
+        );
 
-        // Dispatch typed event
-        $this->dispatchTypedEvent($eventType, $payload);
+        $dispatcher->dispatch($eventTypeString, $payload);
     }
 
     /**
@@ -499,52 +509,6 @@ final class WebhookSimulator
     }
 
     /**
-     * Dispatch typed event based on event type.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    private function dispatchTypedEvent(WebhookEventType $eventType, array $payload): void
-    {
-        // Only create the DTO that's actually needed for the event type
-        if ($eventType->isPurchaseEvent() || $eventType->isPaymentEvent()) {
-            $purchase = PurchaseData::from($payload);
-
-            match ($eventType) {
-                WebhookEventType::PurchaseCreated => PurchaseCreated::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePaid => PurchasePaid::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePaymentFailure => PurchasePaymentFailure::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseCancelled => PurchaseCancelled::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingExecute => PurchasePendingExecute::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingCharge => PurchasePendingCharge::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingCapture => PurchasePendingCapture::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingRelease => PurchasePendingRelease::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingRefund => PurchasePendingRefund::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingRecurringTokenDelete => PurchasePendingRecurringTokenDelete::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseHold => PurchaseHold::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseCaptured => PurchaseCaptured::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseReleased => PurchaseReleased::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePreauthorized => PurchasePreauthorized::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseRecurringTokenDeleted => PurchaseRecurringTokenDeleted::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseSubscriptionChargeFailure => PurchaseSubscriptionChargeFailure::dispatch($purchase, $payload),
-                WebhookEventType::PaymentRefunded => PaymentRefunded::dispatch($purchase, $payload),
-                default => null,
-            };
-        } elseif ($eventType->isBillingEvent()) {
-            $billingClient = BillingTemplateClientData::from($payload);
-            BillingCancelled::dispatch($billingClient, $payload);
-        } elseif ($eventType->isPayoutEvent()) {
-            $payout = PayoutData::from($payload);
-
-            match ($eventType) {
-                WebhookEventType::PayoutPending => PayoutPending::dispatch($payout, $payload),
-                WebhookEventType::PayoutFailed => PayoutFailed::dispatch($payout, $payload),
-                WebhookEventType::PayoutSuccess => PayoutSuccess::dispatch($payout, $payload),
-                default => null,
-            };
-        }
-    }
-
-    /**
      * Format headers for the request server array.
      *
      * @param  array<string, string>  $headers
@@ -555,9 +519,43 @@ final class WebhookSimulator
         $formatted = [];
 
         foreach ($headers as $key => $value) {
-            $formatted['HTTP_' . mb_strtoupper(str_replace('-', '_', $key))] = $value;
+            $normalizedKey = mb_strtoupper(str_replace('-', '_', $key));
+
+            if (in_array($normalizedKey, ['CONTENT_TYPE', 'CONTENT_LENGTH'], true)) {
+                $formatted[$normalizedKey] = $value;
+
+                continue;
+            }
+
+            $formatted['HTTP_' . $normalizedKey] = $value;
         }
 
         return $formatted;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function enrichPayloadForRuntime(array $payload): array
+    {
+        if (! (bool) config('chip.owner.enabled', false)) {
+            return $payload;
+        }
+
+        if (isset($payload['__owner_type'], $payload['__owner_id'])) {
+            return $payload;
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            return $payload;
+        }
+
+        $payload['__owner_type'] = $owner->getMorphClass();
+        $payload['__owner_id'] = (string) $owner->getKey();
+
+        return $payload;
     }
 }

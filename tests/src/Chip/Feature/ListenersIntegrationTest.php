@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Listeners\GenerateDocOnRefund;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Client;
@@ -10,8 +12,10 @@ use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Models\Doc;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 describe('StoreWebhookData Listener', function (): void {
     beforeEach(function (): void {
@@ -157,6 +161,60 @@ describe('StoreWebhookData Listener', function (): void {
                 ->and($payments->sole()->amount)->toBe($payload['payment']['amount']);
         });
 
+        it('stores distinct completed refunds by remote payment id', function (): void {
+            $purchaseId = 'purchase-refund-repeat';
+            $firstPaymentId = (string) Str::uuid();
+            $secondPaymentId = (string) Str::uuid();
+
+            $firstPayload = WebhookFactory::make()
+                ->refunded()
+                ->with([
+                    'id' => $firstPaymentId,
+                    'related_to' => [
+                        'type' => 'purchase',
+                        'id' => $purchaseId,
+                    ],
+                    'payment' => [
+                        'amount' => 500,
+                        'currency' => 'MYR',
+                        'net_amount' => 500,
+                        'fee_amount' => 0,
+                        'pending_amount' => 0,
+                    ],
+                ])
+                ->toArray();
+
+            $secondPayload = WebhookFactory::make()
+                ->refunded()
+                ->with([
+                    'id' => $secondPaymentId,
+                    'related_to' => [
+                        'type' => 'purchase',
+                        'id' => $purchaseId,
+                    ],
+                    'payment' => [
+                        'amount' => 500,
+                        'currency' => 'MYR',
+                        'net_amount' => 500,
+                        'fee_amount' => 0,
+                        'pending_amount' => 0,
+                    ],
+                ])
+                ->toArray();
+
+            $this->listener->handle(WebhookReceived::fromPayload($firstPayload));
+            $this->listener->handle(WebhookReceived::fromPayload($secondPayload));
+
+            $payments = Payment::query()
+                ->where('purchase_id', $purchaseId)
+                ->orderBy('id')
+                ->get();
+
+            expect($payments)->toHaveCount(2)
+                ->and($payments->pluck('id')->all())
+                ->toBe(collect([$firstPaymentId, $secondPaymentId])->sort()->values()->all());
+        });
+
         it('allows the same client email to be stored for different owners', function (): void {
             config()->set('chip.owner.enabled', true);
 
@@ -228,5 +286,95 @@ describe('StoreWebhookData Listener', function (): void {
             expect($params)->toHaveCount(1);
             expect($params[0]->getType()?->getName())->toBe(WebhookReceived::class);
         });
+    });
+});
+
+describe('GenerateDocOnRefund Listener', function (): void {
+    beforeEach(function (): void {
+        config()->set('chip.integrations.docs.refund_doc_type', 'credit_note');
+        config()->set('chip.integrations.docs.generate_pdf', false);
+    });
+
+    it('creates one credit note per refund payment instead of one per purchase', function (): void {
+        $purchase = Purchase::create([
+            'id' => 'purchase-doc-refund-test',
+            'type' => 'purchase',
+            'status' => 'paid',
+            'brand_id' => 'brand-doc-refund-test',
+            'company_id' => 'company-doc-refund-test',
+            'client_id' => 'client-doc-refund-test',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'client' => ['email' => 'credit-note@example.com'],
+            'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+            ],
+            'issuer_details' => [],
+            'transaction_data' => [],
+            'status_history' => [],
+            'refund_availability' => 'all',
+            'refundable_amount' => 10000,
+            'refund_amount_minor' => 0,
+            'platform' => 'test',
+            'product' => 'chip',
+            'send_receipt' => false,
+            'is_test' => true,
+            'is_recurring_token' => false,
+            'skip_capture' => false,
+            'force_recurring' => false,
+            'marked_as_paid' => false,
+        ]);
+
+        $listener = new GenerateDocOnRefund;
+
+        $firstEvent = PaymentRefunded::fromPayload(WebhookFactory::paymentRefunded([
+            'id' => 'refund-payment-doc-1',
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => $purchase->id,
+            ],
+            'payment' => [
+                'amount' => 2500,
+                'currency' => 'MYR',
+                'net_amount' => 2500,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+        ]));
+
+        $secondEvent = PaymentRefunded::fromPayload(WebhookFactory::paymentRefunded([
+            'id' => 'refund-payment-doc-2',
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => $purchase->id,
+            ],
+            'payment' => [
+                'amount' => 1500,
+                'currency' => 'MYR',
+                'net_amount' => 1500,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+        ]));
+
+        $listener->handle($firstEvent);
+        $listener->handle($secondEvent);
+
+        $creditNotes = Doc::query()
+            ->where('docable_type', Purchase::class)
+            ->where('docable_id', $purchase->id)
+            ->where('doc_type', 'credit_note')
+            ->orderBy('doc_number')
+            ->get();
+
+        expect($creditNotes)->toHaveCount(2)
+            ->and($creditNotes->pluck('metadata.chip_payment_id')->sort()->values()->all())
+            ->toBe(collect(['refund-payment-doc-1', 'refund-payment-doc-2'])->sort()->values()->all());
     });
 });

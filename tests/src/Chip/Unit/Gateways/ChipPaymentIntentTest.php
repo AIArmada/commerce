@@ -159,6 +159,32 @@ describe('ChipPaymentIntent', function (): void {
             expect($intent->getStatus())->toBe(PaymentStatus::PARTIALLY_REFUNDED);
         });
 
+        it('maps settled status', function (): void {
+            $data = array_merge($this->purchaseData, ['status' => 'settled']);
+            $purchase = PurchaseData::from($data);
+            $intent = new ChipPaymentIntent($purchase);
+
+            expect($intent->getStatus())->toBe(PaymentStatus::PAID)
+                ->and($intent->isPaid())->toBeTrue();
+        });
+
+        it('maps released status', function (): void {
+            $data = array_merge($this->purchaseData, ['status' => 'released']);
+            $purchase = PurchaseData::from($data);
+            $intent = new ChipPaymentIntent($purchase);
+
+            expect($intent->getStatus())->toBe(PaymentStatus::CANCELLED)
+                ->and($intent->isCancelled())->toBeTrue();
+        });
+
+        it('maps chargeback status', function (): void {
+            $data = array_merge($this->purchaseData, ['status' => 'chargeback']);
+            $purchase = PurchaseData::from($data);
+            $intent = new ChipPaymentIntent($purchase);
+
+            expect($intent->getStatus())->toBe(PaymentStatus::DISPUTED);
+        });
+
         it('maps cancelled status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'cancelled']);
             $purchase = PurchaseData::from($data);
@@ -170,6 +196,14 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps expired status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'expired']);
+            $purchase = PurchaseData::from($data);
+            $intent = new ChipPaymentIntent($purchase);
+
+            expect($intent->getStatus())->toBe(PaymentStatus::EXPIRED);
+        });
+
+        it('maps overdue status', function (): void {
+            $data = array_merge($this->purchaseData, ['status' => 'overdue']);
             $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 

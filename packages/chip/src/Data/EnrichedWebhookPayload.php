@@ -35,7 +35,9 @@ final class EnrichedWebhookPayload extends Data
      */
     public static function fromPayload(string $event, array $payload): self
     {
-        $purchaseId = $payload['id'] ?? $payload['data']['id'] ?? null;
+        $purchaseId = data_get($payload, 'related_to.type') === 'purchase'
+            ? data_get($payload, 'related_to.id')
+            : ($payload['id'] ?? $payload['data']['id'] ?? null);
         $purchaseId = is_string($purchaseId) || is_int($purchaseId) ? (string) $purchaseId : null;
         $clientId = $payload['client_id'] ?? $payload['client']['id'] ?? $payload['data']['client_id'] ?? null;
         $clientId = is_string($clientId) || is_int($clientId) ? (string) $clientId : null;

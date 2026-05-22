@@ -36,6 +36,7 @@ enum PurchaseStatus: string
 
     // Refund states
     case PENDING_REFUND = 'pending_refund';
+    case PARTIALLY_REFUNDED = 'partially_refunded';
     case REFUNDED = 'refunded';
 
     // Failure states
@@ -74,6 +75,7 @@ enum PurchaseStatus: string
             self::CLEARED => 'Cleared',
             self::SETTLED => 'Settled',
             self::PENDING_REFUND => 'Pending Refund',
+            self::PARTIALLY_REFUNDED => 'Partially Refunded',
             self::REFUNDED => 'Refunded',
             self::ERROR => 'Error',
             self::BLOCKED => 'Blocked',
@@ -96,6 +98,7 @@ enum PurchaseStatus: string
             self::RECURRING_SUCCESSFUL,
             self::CLEARED,
             self::SETTLED,
+            self::PARTIALLY_REFUNDED,
         ]);
     }
 
@@ -155,6 +158,7 @@ enum PurchaseStatus: string
             self::PAID_AUTHORIZED,
             self::CLEARED,
             self::SETTLED,
+            self::PARTIALLY_REFUNDED,
         ]);
     }
 }

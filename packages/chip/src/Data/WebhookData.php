@@ -91,9 +91,12 @@ final class WebhookData extends ChipData
             );
         }
 
-        // Handle current CHIP webhook format where entire payload IS the purchase object
-        // (format: {id: "...", type: "purchase", event_type: "purchase.paid", client: {...}, payment: {...}, ...})
-        if (isset($data['event_type']) && isset($data['type']) && $data['type'] === 'purchase') {
+        // Handle current CHIP webhook delivery format where the entire payload is the
+        // delivered resource object (purchase/payment/payout/billing template client).
+        if (
+            isset($data['event_type'], $data['type'])
+            && in_array($data['type'], ['purchase', 'payment', 'payout', 'billing_template_client'], true)
+        ) {
             /** @var array<string> $events */
             $events = [(string) $data['event_type']];
             $events = array_combine(array_map('strval', array_keys($events)), array_values($events));
@@ -118,7 +121,7 @@ final class WebhookData extends ChipData
                 data: null,
                 timestamp: null,
                 event_type: $data['event_type'],
-                payload: $data, // Store entire payload as it IS the purchase object
+                payload: $data,
                 headers: $data['headers'] ?? null,
                 signature: $data['signature'] ?? null,
                 verified: (bool) ($data['verified'] ?? false),

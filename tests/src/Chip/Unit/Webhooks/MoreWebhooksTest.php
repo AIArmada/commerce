@@ -4,11 +4,24 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Data\WebhookResult;
+use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Events\PurchasePendingRefund;
+use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
 use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Support\Facades\Event;
+
+beforeEach(function (): void {
+    config()->set('chip.owner.enabled', false);
+});
 
 describe('WebhookRouter', function (): void {
     it('can be instantiated', function (): void {
@@ -16,19 +29,19 @@ describe('WebhookRouter', function (): void {
         expect($router)->toBeInstanceOf(WebhookRouter::class);
     });
 
-    it('routes purchase.paid to correct handler', function (): void {
+    it('replays purchase.paid through the dispatcher fallback', function (): void {
         $router = new WebhookRouter;
-        $payload = new EnrichedWebhookPayload(
-            event: 'purchase.paid',
-            rawPayload: ['id' => 'purch_123'],
-            localPurchase: null,
-        );
+        $payload = EnrichedWebhookPayload::fromPayload('purchase.paid', WebhookFactory::purchasePaid());
+
+        Event::fake([WebhookReceived::class, PurchasePaid::class]);
 
         $result = $router->route('purchase.paid', $payload);
 
-        // Handler skips because localPurchase is null
         expect($result)->toBeInstanceOf(WebhookResult::class)
-            ->and($result->isSkipped())->toBeTrue();
+            ->and($result->isHandled())->toBeTrue();
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => $event->eventType === 'purchase.paid');
+        Event::assertDispatched(PurchasePaid::class);
     });
 
     it('returns skipped for unknown events', function (): void {
@@ -48,7 +61,7 @@ describe('WebhookRouter', function (): void {
         $router = new WebhookRouter;
 
         expect($router->hasHandler('purchase.paid'))->toBeTrue()
-            ->and($router->hasHandler('purchase.cancelled'))->toBeTrue()
+            ->and($router->hasHandler('purchase.pending_refund'))->toBeTrue()
             ->and($router->hasHandler('unknown.event'))->toBeFalse();
     });
 
@@ -64,8 +77,36 @@ describe('WebhookRouter', function (): void {
         $handlers = $router->getHandlers();
 
         expect($handlers)->toBeArray()
-            ->and($handlers)->toHaveKey('purchase.paid')
-            ->and($handlers)->toHaveKey('purchase.cancelled');
+            ->and($handlers)->toHaveKey('payout.success')
+            ->and($handlers)->toHaveKey('send_instruction.completed');
+    });
+
+    it('replays pending refund events through the dispatcher fallback', function (): void {
+        $router = new WebhookRouter;
+        $payload = EnrichedWebhookPayload::fromPayload('purchase.pending_refund', WebhookFactory::purchasePendingRefund());
+
+        Event::fake([WebhookReceived::class, PurchasePendingRefund::class]);
+
+        $result = $router->route('purchase.pending_refund', $payload);
+
+        expect($result->isHandled())->toBeTrue();
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => $event->eventType === 'purchase.pending_refund');
+        Event::assertDispatched(PurchasePendingRefund::class);
+    });
+
+    it('replays payment.refunded through the dispatcher fallback', function (): void {
+        $router = new WebhookRouter;
+        $payload = EnrichedWebhookPayload::fromPayload('payment.refunded', WebhookFactory::paymentRefunded());
+
+        Event::fake([WebhookReceived::class, PaymentRefunded::class]);
+
+        $result = $router->route('payment.refunded', $payload);
+
+        expect($result->isHandled())->toBeTrue();
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => $event->eventType === 'payment.refunded');
+        Event::assertDispatched(PaymentRefunded::class, fn (PaymentRefunded $event): bool => $event->getPurchaseId() !== null);
     });
 });
 
@@ -135,5 +176,83 @@ describe('WebhookRetryManager', function (): void {
 
         // Should now use custom schedule
         expect($manager->getNextRetryDelay($webhook))->toBe(30);
+    });
+
+    it('retries supported dispatcher events without explicit handlers', function (): void {
+        Event::fake([WebhookReceived::class, PurchasePendingRefund::class]);
+
+        $manager = new WebhookRetryManager(new WebhookEnricher, new WebhookRouter);
+
+        $webhook = Webhook::create([
+            'title' => 'Pending refund webhook',
+            'event' => 'purchase.pending_refund',
+            'events' => ['purchase.pending_refund'],
+            'payload' => WebhookFactory::purchasePendingRefund([
+                'id' => 'purchase-pending-refund-123',
+            ]),
+            'status' => 'failed',
+            'retry_count' => 0,
+            'created_on' => time(),
+            'updated_on' => time(),
+            'callback' => 'http://example.com/webhook',
+        ]);
+
+        $result = $manager->retry($webhook);
+
+        expect($result->isHandled())->toBeTrue();
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => $event->eventType === 'purchase.pending_refund');
+        Event::assertDispatched(PurchasePendingRefund::class);
+
+        $webhook->refresh();
+
+        expect($webhook->status)->toBe('processed')
+            ->and($webhook->processed)->toBeTrue();
+    });
+
+    it('restores owner context when replaying dispatcher-backed events', function (): void {
+        config()->set('chip.owner.enabled', true);
+
+        $owner = User::query()->create([
+            'name' => 'Retry Owner',
+            'email' => 'retry-owner@example.com',
+            'password' => 'secret',
+        ]);
+
+        $purchaseId = 'purchase-retry-owner-123';
+
+        $manager = new WebhookRetryManager(new WebhookEnricher, new WebhookRouter);
+
+        $webhook = OwnerContext::withOwner($owner, function () use ($owner, $purchaseId): Webhook {
+            return Webhook::create([
+                'title' => 'Owned pending refund webhook',
+                'event' => 'purchase.pending_refund',
+                'events' => ['purchase.pending_refund'],
+                'payload' => WebhookFactory::purchasePendingRefund([
+                    'id' => $purchaseId,
+                    '__owner_type' => $owner->getMorphClass(),
+                    '__owner_id' => (string) $owner->getKey(),
+                ]),
+                'status' => 'failed',
+                'retry_count' => 0,
+                'created_on' => time(),
+                'updated_on' => time(),
+                'callback' => 'http://example.com/webhook',
+            ]);
+        });
+
+        OwnerContext::withOwner(null, function () use ($manager, $webhook): void {
+            $result = $manager->retry($webhook);
+
+            expect($result->isHandled())->toBeTrue();
+        });
+
+        $storedPurchase = Purchase::query()
+            ->withoutOwnerScope()
+            ->find($purchaseId);
+
+        expect($storedPurchase)->not->toBeNull()
+            ->and($storedPurchase?->owner_type)->toBe($owner->getMorphClass())
+            ->and($storedPurchase?->owner_id)->toBe((string) $owner->getKey());
     });
 });

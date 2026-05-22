@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services;
 
+use AIArmada\Chip\Actions\Purchases\SyncPurchaseRefundState;
 use AIArmada\Chip\Data\BillingTemplateClientData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
@@ -39,6 +41,13 @@ use Illuminate\Support\Facades\Log;
  */
 class WebhookEventDispatcher
 {
+    private readonly SyncPurchaseRefundState $syncPurchaseRefundState;
+
+    public function __construct(?SyncPurchaseRefundState $syncPurchaseRefundState = null)
+    {
+        $this->syncPurchaseRefundState = $syncPurchaseRefundState ?? app(SyncPurchaseRefundState::class);
+    }
+
     /**
      * Dispatch the appropriate typed event based on event type.
      *
@@ -85,7 +94,7 @@ class WebhookEventDispatcher
             WebhookEventType::PurchaseSubscriptionChargeFailure => PurchaseSubscriptionChargeFailure::dispatch($this->extractPurchase($payload), $payload),
 
             // Refund events
-            WebhookEventType::PaymentRefunded => PaymentRefunded::dispatch($this->extractPurchase($payload), $payload),
+            WebhookEventType::PaymentRefunded => $this->dispatchPaymentRefunded($payload),
 
             // Billing events
             WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled => BillingCancelled::dispatch($this->extractBillingTemplateClient($payload), $payload),
@@ -107,8 +116,25 @@ class WebhookEventDispatcher
         $type = $payload['type'] ?? '';
         $eventType = $payload['event_type'] ?? '';
 
-        if ($type === 'purchase' || str_starts_with($eventType, 'purchase.') || str_starts_with($eventType, 'payment.')) {
+        if ($type === 'purchase' || str_starts_with($eventType, 'purchase.')) {
             return PurchaseData::from($payload);
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract Payment data object from payload.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function extractPayment(array $payload): ?PaymentData
+    {
+        $type = $payload['type'] ?? '';
+        $eventType = $payload['event_type'] ?? '';
+
+        if ($type === 'payment' || str_starts_with($eventType, 'payment.')) {
+            return PaymentData::fromWebhookPayload($payload);
         }
 
         return null;
@@ -146,5 +172,27 @@ class WebhookEventDispatcher
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function dispatchPaymentRefunded(array $payload): void
+    {
+        $payment = $this->extractPayment($payload);
+
+        if ($payment === null) {
+            Log::channel(config('chip.logging.channel', 'stack'))
+                ->warning('Invalid CHIP refund payment payload', [
+                    'event_type' => $payload['event_type'] ?? 'payment.refunded',
+                    'id' => $payload['id'] ?? null,
+                ]);
+
+            return;
+        }
+
+        $this->syncPurchaseRefundState->handle($payment);
+
+        PaymentRefunded::dispatch($payment, $payload);
     }
 }

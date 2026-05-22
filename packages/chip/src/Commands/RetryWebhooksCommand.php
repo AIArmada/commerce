@@ -24,15 +24,19 @@ final class RetryWebhooksCommand extends Command
 
     public function handle(WebhookRetryManager $retryManager): int
     {
+        $limit = max(0, (int) $this->option('limit'));
+
         if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
             $owners = Webhook::query()
                 ->withoutOwnerScope()
                 ->select(['owner_type', 'owner_id'])
                 ->distinct()
+                ->orderBy('owner_type')
+                ->orderBy('owner_id')
                 ->get();
 
             if ($owners->isEmpty()) {
-                $result = $this->processRetries($retryManager);
+                $result = OwnerContext::withOwner(null, fn (): array => $this->processRetries($retryManager, $limit));
 
                 $this->info("Retry complete: {$result['succeeded']} succeeded, {$result['failed']} failed.");
 
@@ -46,9 +50,15 @@ final class RetryWebhooksCommand extends Command
             ];
 
             foreach ($owners as $row) {
+                $remainingLimit = $limit - $totals['processed'];
+
+                if ($remainingLimit <= 0) {
+                    break;
+                }
+
                 $owner = $this->resolveOwnerFromRow($row);
 
-                $result = OwnerContext::withOwner($owner, fn (): array => $this->processRetries($retryManager));
+                $result = OwnerContext::withOwner($owner, fn (): array => $this->processRetries($retryManager, $remainingLimit));
 
                 $totals['processed'] += $result['processed'];
                 $totals['succeeded'] += $result['succeeded'];
@@ -60,7 +70,7 @@ final class RetryWebhooksCommand extends Command
             return $totals['failed'] > 0 ? self::FAILURE : self::SUCCESS;
         }
 
-        $result = $this->processRetries($retryManager);
+        $result = $this->processRetries($retryManager, $limit);
 
         $this->info("Retry complete: {$result['succeeded']} succeeded, {$result['failed']} failed.");
 
@@ -70,10 +80,10 @@ final class RetryWebhooksCommand extends Command
     /**
      * @return array{processed: int, succeeded: int, failed: int}
      */
-    private function processRetries(WebhookRetryManager $retryManager): array
+    private function processRetries(WebhookRetryManager $retryManager, int $limit): array
     {
         $webhooks = $retryManager->getRetryableWebhooks()
-            ->take((int) $this->option('limit'));
+            ->take($limit);
 
         if ($webhooks->isEmpty()) {
             $this->info('No webhooks are eligible for retry.');

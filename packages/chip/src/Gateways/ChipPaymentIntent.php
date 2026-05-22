@@ -59,27 +59,34 @@ final readonly class ChipPaymentIntent implements PaymentIntentInterface
 
     public function isPaid(): bool
     {
-        return $this->purchase->isPaid() || $this->purchase->marked_as_paid;
+        return in_array($this->getStatus(), [
+            PaymentStatus::PAID,
+            PaymentStatus::PARTIALLY_REFUNDED,
+            PaymentStatus::REFUNDED,
+        ], true) || $this->purchase->marked_as_paid;
     }
 
     public function isPending(): bool
     {
-        return $this->purchase->isPending() || $this->purchase->status === 'created';
+        return $this->getStatus()->isPending();
     }
 
     public function isFailed(): bool
     {
-        return $this->purchase->hasError();
+        return $this->getStatus() === PaymentStatus::FAILED;
     }
 
     public function isCancelled(): bool
     {
-        return $this->purchase->isCancelled();
+        return $this->getStatus() === PaymentStatus::CANCELLED;
     }
 
     public function isRefunded(): bool
     {
-        return $this->purchase->isRefunded();
+        return in_array($this->getStatus(), [
+            PaymentStatus::PARTIALLY_REFUNDED,
+            PaymentStatus::REFUNDED,
+        ], true);
     }
 
     public function getRefundableAmount(): Money
@@ -143,18 +150,18 @@ final readonly class ChipPaymentIntent implements PaymentIntentInterface
     {
         return match ($chipStatus) {
             'created' => PaymentStatus::CREATED,
-            'pending_execute' => PaymentStatus::PENDING,
-            'pending_charge' => PaymentStatus::PENDING,
+            'sent', 'viewed', 'pending_execute', 'pending_charge' => PaymentStatus::PENDING,
+            'attempted_capture', 'attempted_refund', 'attempted_recurring', 'pending_refund' => PaymentStatus::PROCESSING,
             'pending_capture' => PaymentStatus::AUTHORIZED,
             'pending_release' => PaymentStatus::AUTHORIZED,
-            'pending_refund' => PaymentStatus::PROCESSING,
             'hold' => PaymentStatus::AUTHORIZED,
             'preauthorized' => PaymentStatus::AUTHORIZED,
-            'paid' => PaymentStatus::PAID,
+            'paid', 'captured', 'paid_authorized', 'recurring_successful', 'cleared', 'settled' => PaymentStatus::PAID,
             'refunded' => PaymentStatus::REFUNDED,
             'partially_refunded' => PaymentStatus::PARTIALLY_REFUNDED,
-            'cancelled' => PaymentStatus::CANCELLED,
-            'expired' => PaymentStatus::EXPIRED,
+            'cancelled', 'released' => PaymentStatus::CANCELLED,
+            'expired', 'overdue' => PaymentStatus::EXPIRED,
+            'chargeback' => PaymentStatus::DISPUTED,
             'error' => PaymentStatus::FAILED,
             'blocked' => PaymentStatus::FAILED,
             default => PaymentStatus::PENDING,

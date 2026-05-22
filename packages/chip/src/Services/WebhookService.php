@@ -43,34 +43,50 @@ class WebhookService
             return true;
         }
 
-        $publicKey = $publicKey ?? $this->getPublicKey();
-
         if (! $signature) {
             throw new WebhookVerificationException('Missing signature header');
         }
 
-        if (! $publicKey) {
-            throw new WebhookVerificationException('No public key configured');
-        }
-
         try {
-            $pemKey = str_contains($publicKey, 'BEGIN PUBLIC KEY')
-                ? $publicKey
-                : "-----BEGIN PUBLIC KEY-----\n" . chunk_split(str_replace(["\n", "\r", ' '], '', $publicKey), 64, "\n") . '-----END PUBLIC KEY-----';
-
-            $publicKeyResource = openssl_pkey_get_public($pemKey);
-            if (! $publicKeyResource) {
-                throw new WebhookVerificationException('Invalid public key format');
-            }
-
             $decodedSignature = base64_decode($signature, true);
             if ($decodedSignature === false) {
                 throw new WebhookVerificationException('Signature is not valid base64');
             }
 
-            $verified = openssl_verify($payload, $decodedSignature, $publicKeyResource, OPENSSL_ALGO_SHA256);
+            $publicKeys = $this->resolveVerificationPublicKeys($payloadOrRequest, $publicKey);
 
-            return $verified === 1;
+            if ($publicKeys === []) {
+                throw new WebhookVerificationException('No public key configured');
+            }
+
+            $attemptedVerification = false;
+            $lastException = null;
+
+            foreach ($publicKeys as $candidateKey) {
+                try {
+                    $publicKeyResource = openssl_pkey_get_public($this->normalizePublicKey($candidateKey));
+
+                    if (! $publicKeyResource) {
+                        throw new WebhookVerificationException('Invalid public key format');
+                    }
+
+                    $attemptedVerification = true;
+
+                    $verified = openssl_verify($payload, $decodedSignature, $publicKeyResource, OPENSSL_ALGO_SHA256);
+
+                    if ($verified === 1) {
+                        return true;
+                    }
+                } catch (WebhookVerificationException $exception) {
+                    $lastException = $exception;
+                }
+            }
+
+            if (! $attemptedVerification && $lastException instanceof WebhookVerificationException) {
+                throw $lastException;
+            }
+
+            return false;
         } catch (Throwable $e) {
             Log::channel(config('chip.logging.channel'))
                 ->error('Webhook signature verification failed', [
@@ -179,5 +195,75 @@ class WebhookService
         }
 
         return (object) $data;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function resolveVerificationPublicKeys(Request | string $payloadOrRequest, ?string $publicKey = null): array
+    {
+        if (is_string($publicKey) && $publicKey !== '') {
+            return [$publicKey];
+        }
+
+        if (! $payloadOrRequest instanceof Request) {
+            return [$this->getPublicKey()];
+        }
+
+        $candidateKeys = [];
+        $resolvedWebhookId = $this->resolveWebhookId($payloadOrRequest);
+
+        if ($resolvedWebhookId !== null) {
+            try {
+                $candidateKeys[] = $this->getPublicKey($resolvedWebhookId);
+            } catch (WebhookVerificationException) {
+            }
+        }
+
+        foreach ((array) config('chip.webhooks.webhook_keys', []) as $configuredKey) {
+            if (is_string($configuredKey) && $configuredKey !== '') {
+                $candidateKeys[] = $configuredKey;
+            }
+        }
+
+        try {
+            $candidateKeys[] = $this->getPublicKey();
+        } catch (WebhookVerificationException $exception) {
+            if ($candidateKeys === []) {
+                throw $exception;
+            }
+        }
+
+        return array_values(array_unique($candidateKeys));
+    }
+
+    protected function normalizePublicKey(string $publicKey): string
+    {
+        return str_contains($publicKey, 'BEGIN PUBLIC KEY')
+            ? $publicKey
+            : "-----BEGIN PUBLIC KEY-----\n" . chunk_split(str_replace(["\n", "\r", ' '], '', $publicKey), 64, "\n") . '-----END PUBLIC KEY-----';
+    }
+
+    protected function resolveWebhookId(Request $request): ?string
+    {
+        $headerCandidates = [
+            'X-Webhook-Id',
+            'X-Chip-Webhook-Id',
+            'Webhook-Id',
+        ];
+
+        foreach ($headerCandidates as $header) {
+            $value = $request->header($header);
+
+            if (is_string($value) && $value !== '') {
+                return $value;
+            }
+        }
+
+        $payloadWebhookId = $request->input('webhook_id');
+
+        return is_string($payloadWebhookId) && $payloadWebhookId !== ''
+            ? $payloadWebhookId
+            : null;
     }
 }

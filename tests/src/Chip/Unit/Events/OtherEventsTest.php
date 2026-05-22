@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Data\BillingTemplateClientData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
@@ -13,15 +14,23 @@ use AIArmada\Chip\Events\WebhookReceived;
 describe('PaymentRefunded event', function (): void {
     it('can create from payload', function (): void {
         $payload = [
-            'id' => 'purch_refund_123',
+            'id' => 'pay_refund_123',
             'status' => 'refunded',
-            'type' => 'purchase',
+            'type' => 'payment',
             'created_on' => time(),
             'updated_on' => time(),
-            'purchase' => [
-                'total' => 10000,
+            'payment' => [
+                'amount' => 10000,
                 'currency' => 'MYR',
-                'products' => [['name' => 'Test', 'price' => 10000, 'quantity' => 1]],
+                'net_amount' => 10000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purch_refund_123',
             ],
             'reference' => 'REF-REFUND-123',
             'is_test' => true,
@@ -50,15 +59,23 @@ describe('PaymentRefunded event', function (): void {
 
     it('returns false for isTest when explicitly set', function (): void {
         $payload = [
-            'id' => 'purch_live',
+            'id' => 'pay_live',
             'status' => 'refunded',
-            'type' => 'purchase',
+            'type' => 'payment',
             'created_on' => time(),
             'updated_on' => time(),
-            'purchase' => [
-                'total' => 5000,
+            'payment' => [
+                'amount' => 5000,
                 'currency' => 'USD',
-                'products' => [['name' => 'Test', 'price' => 5000, 'quantity' => 1]],
+                'net_amount' => 5000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purch_live',
             ],
             'is_test' => false,
         ];
@@ -67,6 +84,28 @@ describe('PaymentRefunded event', function (): void {
 
         expect($event->isTest())->toBeFalse()
             ->and($event->getCurrency())->toBe('USD');
+    });
+
+    it('fails closed for malformed refund payloads without payment details', function (): void {
+        $payload = [
+            'id' => 'pay_refund_invalid',
+            'status' => 'refunded',
+            'type' => 'payment',
+            'event_type' => 'payment.refunded',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purch_refund_invalid',
+            ],
+        ];
+
+        $event = PaymentRefunded::fromPayload($payload);
+
+        expect($event->payment)->toBeNull()
+            ->and($event->getAmount())->toBe(0)
+            ->and($event->getCurrency())->toBe('MYR')
+            ->and($event->getPurchaseId())->toBeNull();
     });
 });
 
@@ -156,6 +195,63 @@ describe('WebhookReceived event', function (): void {
         expect($event->payout)->toBeInstanceOf(PayoutData::class)
             ->and($event->purchase)->toBeNull()
             ->and($event->billingTemplateClient)->toBeNull();
+    });
+
+    it('can create from payment payload', function (): void {
+        $payload = [
+            'id' => 'pay_123',
+            'type' => 'payment',
+            'event_type' => 'payment.refunded',
+            'status' => 'refunded',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'net_amount' => 10000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purch_123',
+            ],
+            'reference' => 'REF-123',
+            'is_test' => true,
+        ];
+
+        $event = WebhookReceived::fromPayload($payload);
+
+        expect($event->payment)->toBeInstanceOf(PaymentData::class)
+            ->and($event->purchase)->toBeNull()
+            ->and($event->getAmount())->toBe(10000)
+            ->and($event->getCurrency())->toBe('MYR')
+            ->and($event->getPurchaseId())->toBe('purch_123');
+    });
+
+    it('fails closed for malformed payment payloads without money fields', function (): void {
+        $payload = [
+            'id' => 'pay_invalid_123',
+            'type' => 'payment',
+            'event_type' => 'payment.refunded',
+            'status' => 'refunded',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purch_invalid_123',
+            ],
+            'reference' => 'REF-INVALID-123',
+        ];
+
+        $event = WebhookReceived::fromPayload($payload);
+
+        expect($event->payment)->toBeNull()
+            ->and($event->getAmount())->toBe(0)
+            ->and($event->getCurrency())->toBe('MYR')
+            ->and($event->getPurchaseId())->toBe('purch_invalid_123');
     });
 
     it('can create from billing template client payload', function (): void {

@@ -17,6 +17,12 @@ use Carbon\CarbonImmutable;
  */
 class LocalAnalyticsService
 {
+    /** @var array<int, string> */
+    private const SUCCESSFUL_REVENUE_STATUSES = ['paid', 'partially_refunded'];
+
+    /** @var array<int, string> */
+    private const REFUND_STATUSES = ['refunded', 'partially_refunded'];
+
     /**
      * Get comprehensive dashboard metrics from LOCAL data.
      */
@@ -40,11 +46,16 @@ class LocalAnalyticsService
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
             ->selectRaw("
-                SUM(CASE WHEN status = 'paid' THEN total_minor ELSE 0 END) as revenue,
-                SUM(CASE WHEN status = 'refunded' THEN refund_amount_minor ELSE 0 END) as refunds,
-                COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid_count,
-                AVG(CASE WHEN status = 'paid' THEN total_minor END) as avg_transaction
-            ")
+                SUM(CASE WHEN status IN (?, ?) THEN total_minor ELSE 0 END) as revenue,
+                SUM(CASE WHEN status IN (?, ?) THEN refund_amount_minor ELSE 0 END) as refunds,
+                COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as paid_count,
+                AVG(CASE WHEN status IN (?, ?) THEN total_minor END) as avg_transaction
+            ", [
+                ...self::SUCCESSFUL_REVENUE_STATUSES,
+                ...self::REFUND_STATUSES,
+                ...self::SUCCESSFUL_REVENUE_STATUSES,
+                ...self::SUCCESSFUL_REVENUE_STATUSES,
+            ])
             ->first();
 
         // Get previous period for comparison
@@ -55,7 +66,7 @@ class LocalAnalyticsService
         $previous = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$previousStart, $previousEnd])
-            ->where('status', 'paid')
+            ->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
             ->sum('total_minor');
 
         $currentRevenue = $metrics->revenue ?? 0;
@@ -84,11 +95,14 @@ class LocalAnalyticsService
             ->toBase()
             ->selectRaw("
                 COUNT(*) as total,
-                SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as successful,
                 SUM(CASE WHEN status IN ('failed', 'error') THEN 1 ELSE 0 END) as failed,
                 SUM(CASE WHEN status IN ('pending', 'created') THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = 'refunded' THEN 1 ELSE 0 END) as refunded
-            ")
+                SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as refunded
+            ", [
+                ...self::SUCCESSFUL_REVENUE_STATUSES,
+                ...self::REFUND_STATUSES,
+            ])
             ->first();
 
         $total = $metrics->total ?? 0;
@@ -119,9 +133,12 @@ class LocalAnalyticsService
             ->selectRaw("
                 COALESCE(payment_method, 'unknown') as payment_method,
                 COUNT(*) as total_attempts,
-                SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as successful,
-                SUM(CASE WHEN status = 'paid' THEN total_minor ELSE 0 END) as revenue
-            ")
+                SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN status IN (?, ?) THEN total_minor ELSE 0 END) as revenue
+            ", [
+                ...self::SUCCESSFUL_REVENUE_STATUSES,
+                ...self::SUCCESSFUL_REVENUE_STATUSES,
+            ])
             ->groupBy('payment_method')
             ->get()
             ->map(fn (object $row): array => [
@@ -179,7 +196,7 @@ class LocalAnalyticsService
         $purchases = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->where('status', 'paid')
+            ->whereIn('status', self::SUCCESSFUL_REVENUE_STATUSES)
             ->select(['created_at', 'total_minor'])
             ->get();
 

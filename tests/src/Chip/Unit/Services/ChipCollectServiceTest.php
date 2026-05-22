@@ -7,6 +7,7 @@ use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\CompanyStatementData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
@@ -71,6 +72,45 @@ function chipCollectPurchaseResponse(array $overrides = []): array
         'direct_post_url' => null,
         'marked_as_paid' => false,
         'order_id' => null,
+    ];
+
+    return array_replace_recursive($base, $overrides);
+}
+
+function chipCollectPaymentResponse(array $overrides = []): array
+{
+    $base = [
+        'id' => 'payment_123',
+        'type' => 'payment',
+        'created_on' => strtotime('2024-01-01T00:00:00Z'),
+        'updated_on' => strtotime('2024-01-01T00:05:00Z'),
+        'client' => [
+            'email' => 'buyer@example.com',
+        ],
+        'payment' => [
+            'amount' => 500,
+            'currency' => 'MYR',
+            'net_amount' => 500,
+            'fee_amount' => 0,
+            'pending_amount' => 0,
+            'payment_type' => 'refund',
+            'is_outgoing' => true,
+            'paid_on' => strtotime('2024-01-01T00:05:00Z'),
+            'remote_paid_on' => strtotime('2024-01-01T00:05:00Z'),
+        ],
+        'transaction_data' => [],
+        'related_to' => [
+            'type' => 'purchase',
+            'id' => 'purchase_123',
+        ],
+        'reference_generated' => 'REFUND_123',
+        'reference' => 'REF_123',
+        'account_id' => 'account_123',
+        'company_id' => 'company_123',
+        'is_test' => true,
+        'user_id' => null,
+        'brand_id' => 'brand_123',
+        'status' => 'refunded',
     ];
 
     return array_replace_recursive($base, $overrides);
@@ -569,14 +609,34 @@ describe('ChipCollectService Client Management', function (): void {
 });
 
 describe('ChipCollectService Purchase Actions', function (): void {
-    it('can refund a purchase with a specific amount', function (): void {
+    it('returns PaymentData for a completed refund', function (): void {
         $this->client->shouldReceive('post')
             ->once()
             ->with('purchases/purchase_123/refund/', ['amount' => 500])
-            ->andReturn(chipCollectPurchaseResponse(['refundable_amount' => 500]));
+            ->andReturn(chipCollectPaymentResponse([
+                'id' => 'payment_refund_123',
+                'related_to' => ['type' => 'purchase', 'id' => 'purchase_123'],
+                'payment' => ['amount' => 500],
+            ]));
+
+        $refund = $this->service->refundPurchase('purchase_123', 500);
+
+        expect($refund)->toBeInstanceOf(PaymentData::class);
+        expect($refund->getPaymentId())->toBe('payment_refund_123');
+        expect($refund->getRelatedPurchaseId())->toBe('purchase_123');
+        expect($refund->getAmountInCents())->toBe(500);
+    });
+
+    it('returns PurchaseData for a pending refund', function (): void {
+        $this->client->shouldReceive('post')
+            ->once()
+            ->with('purchases/purchase_123/refund/', ['amount' => 500])
+            ->andReturn(chipCollectPurchaseResponse(['status' => 'pending_refund', 'refundable_amount' => 500]));
 
         $purchase = $this->service->refundPurchase('purchase_123', 500);
 
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
+        expect($purchase->status)->toBe('pending_refund');
         expect($purchase->getRefundableAmountInCents())->toBe(500);
     });
 
@@ -638,14 +698,18 @@ describe('ChipCollectService Purchase Actions', function (): void {
     });
 
     it('can delete a recurring token for a purchase', function (): void {
-        $this->client->shouldReceive('delete')
+        $this->client->shouldReceive('post')
             ->once()
-            ->with('purchases/purchase_123/recurring_token/')
-            ->andReturn([]);
+            ->with('purchases/purchase_123/delete_recurring_token/')
+            ->andReturn(chipCollectPurchaseResponse([
+                'id' => 'purchase_123',
+                'is_recurring_token' => false,
+            ]));
 
-        $this->service->deleteRecurringToken('purchase_123');
+        $purchase = $this->service->deleteRecurringToken('purchase_123');
 
-        expect(true)->toBeTrue();
+        expect($purchase->id)->toBe('purchase_123');
+        expect($purchase->is_recurring_token)->toBeFalse();
     });
 });
 

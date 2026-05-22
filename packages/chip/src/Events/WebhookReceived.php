@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Events;
 
 use AIArmada\Chip\Data\BillingTemplateClientData;
+use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
@@ -33,6 +34,7 @@ class WebhookReceived
         public readonly ?PurchaseData $purchase = null,
         public readonly ?PayoutData $payout = null,
         public readonly ?BillingTemplateClientData $billingTemplateClient = null,
+        public readonly ?PaymentData $payment = null,
     ) {}
 
     /**
@@ -46,10 +48,13 @@ class WebhookReceived
         $purchase = null;
         $payout = null;
         $billingTemplateClient = null;
+        $payment = null;
 
         $type = $payload['type'] ?? '';
 
-        if ($type === 'purchase' || str_starts_with($eventType, 'purchase.')) {
+        if ($type === 'payment' || str_starts_with($eventType, 'payment.')) {
+            $payment = PaymentData::fromWebhookPayload($payload);
+        } elseif ($type === 'purchase' || str_starts_with($eventType, 'purchase.')) {
             $purchase = PurchaseData::from($payload);
         } elseif ($type === 'payout' || str_starts_with($eventType, 'payout.')) {
             $payout = PayoutData::from($payload);
@@ -63,6 +68,7 @@ class WebhookReceived
             purchase: $purchase,
             payout: $payout,
             billingTemplateClient: $billingTemplateClient,
+            payment: $payment,
         );
     }
 
@@ -246,12 +252,30 @@ class WebhookReceived
 
     public function getReference(): ?string
     {
-        return $this->payload['reference'] ?? null;
+        return $this->payment?->getReference() ?? $this->payload['reference'] ?? null;
     }
 
     public function getPurchaseId(): ?string
     {
-        return $this->payload['id'] ?? null;
+        if ($this->payment !== null) {
+            return $this->payment->getRelatedPurchaseId();
+        }
+
+        if ($this->isPaymentEvent()) {
+            $relatedPurchaseId = data_get($this->payload, 'related_to.type') === 'purchase'
+                ? data_get($this->payload, 'related_to.id')
+                : null;
+
+            return is_string($relatedPurchaseId) && $relatedPurchaseId !== ''
+                ? $relatedPurchaseId
+                : null;
+        }
+
+        $purchaseId = $this->payload['id'] ?? null;
+
+        return is_string($purchaseId) && $purchaseId !== ''
+            ? $purchaseId
+            : null;
     }
 
     public function getClientId(): ?string
@@ -264,12 +288,18 @@ class WebhookReceived
      */
     public function getAmount(): int
     {
-        return $this->payload['purchase']['total'] ?? $this->payload['amount'] ?? 0;
+        return $this->payment?->getAmountInCents()
+            ?? $this->payload['purchase']['total']
+            ?? $this->payload['amount']
+            ?? 0;
     }
 
     public function getCurrency(): string
     {
-        return $this->payload['purchase']['currency'] ?? $this->payload['currency'] ?? 'MYR';
+        return $this->payment?->getCurrency()
+            ?? $this->payload['purchase']['currency']
+            ?? $this->payload['currency']
+            ?? 'MYR';
     }
 
     /**

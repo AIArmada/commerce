@@ -6,6 +6,8 @@ use AIArmada\Chip\Commands\CleanWebhooksCommand;
 use AIArmada\Chip\Commands\RetryWebhooksCommand;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 describe('CleanWebhooksCommand', function (): void {
@@ -131,6 +133,14 @@ describe('CleanWebhooksCommand', function (): void {
 });
 
 describe('RetryWebhooksCommand', function (): void {
+    it('shows message when no webhooks are eligible in owner mode without stored owners', function (): void {
+        config()->set('chip.owner.enabled', true);
+
+        $this->artisan(RetryWebhooksCommand::class)
+            ->expectsOutput('No webhooks are eligible for retry.')
+            ->assertSuccessful();
+    });
+
     it('shows message when no webhooks are eligible', function (): void {
         $retryManager = Mockery::mock(WebhookRetryManager::class);
         $retryManager->shouldReceive('getRetryableWebhooks')
@@ -186,6 +196,68 @@ describe('RetryWebhooksCommand', function (): void {
         $this->app->instance(WebhookRetryManager::class, $retryManager);
 
         // With limit 2, should only show 2
+        $this->artisan(RetryWebhooksCommand::class, ['--limit' => 2, '--dry-run' => true])
+            ->expectsOutputToContain('Found 2 webhook(s) eligible for retry')
+            ->assertSuccessful();
+    });
+
+    it('treats limit as a global cap across owners', function (): void {
+        config()->set('chip.owner.enabled', true);
+
+        $ownerA = User::query()->create([
+            'name' => 'Retry Owner A',
+            'email' => 'retry-owner-a@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerB = User::query()->create([
+            'name' => 'Retry Owner B',
+            'email' => 'retry-owner-b@example.com',
+            'password' => 'secret',
+        ]);
+
+        OwnerContext::withOwner($ownerA, function (): void {
+            Webhook::create([
+                'title' => 'Owner A webhook',
+                'event' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['test' => 'owner-a'],
+                'status' => 'failed',
+                'created_on' => time(),
+                'updated_on' => time(),
+                'callback' => 'http://example.com/webhook',
+            ]);
+        });
+
+        OwnerContext::withOwner($ownerB, function (): void {
+            Webhook::create([
+                'title' => 'Owner B webhook',
+                'event' => 'purchase.paid',
+                'events' => ['purchase.paid'],
+                'payload' => ['test' => 'owner-b'],
+                'status' => 'failed',
+                'created_on' => time(),
+                'updated_on' => time(),
+                'callback' => 'http://example.com/webhook',
+            ]);
+        });
+
+        $retryManager = Mockery::mock(WebhookRetryManager::class);
+        $retryManager->shouldReceive('getRetryableWebhooks')
+            ->once()
+            ->andReturnUsing(function (): EloquentCollection {
+                $owner = OwnerContext::resolve();
+
+                expect($owner)->not->toBeNull();
+
+                return new EloquentCollection([
+                    new Webhook(['id' => 'w-owner-1', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
+                    new Webhook(['id' => 'w-owner-2', 'title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'retry_count' => 1, 'payload' => [], 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']),
+                ]);
+            });
+
+        $this->app->instance(WebhookRetryManager::class, $retryManager);
+
         $this->artisan(RetryWebhooksCommand::class, ['--limit' => 2, '--dry-run' => true])
             ->expectsOutputToContain('Found 2 webhook(s) eligible for retry')
             ->assertSuccessful();

@@ -47,8 +47,7 @@ final class GenerateDocOnRefund implements ShouldQueue
                 return;
             }
 
-            // Skip if credit note already exists for this purchase
-            if ($this->creditNoteExistsForPurchase($purchase)) {
+            if ($this->creditNoteExistsForRefund($purchase, $event, (string) $docType)) {
                 return;
             }
 
@@ -111,13 +110,14 @@ final class GenerateDocOnRefund implements ShouldQueue
         $currency = $event->getCurrency();
 
         $customerData = [
-            'name' => $event->purchase?->client->full_name ?? null,
-            'email' => $event->purchase?->client->email ?? null,
+            'name' => $event->payment?->getClientName(),
+            'email' => $event->payment?->getClientEmail(),
         ];
 
         // Credit note uses negative amounts or references original
         $metadata = [
             'chip_purchase_id' => $event->getPurchaseId(),
+            'chip_payment_id' => $event->payment?->getPaymentId(),
             'chip_reference' => $event->getReference(),
             'is_test' => $event->isTest(),
             'refund' => true,
@@ -185,16 +185,25 @@ final class GenerateDocOnRefund implements ShouldQueue
             ->first();
     }
 
-    private function creditNoteExistsForPurchase(Purchase $purchase): bool
+    private function creditNoteExistsForRefund(Purchase $purchase, PaymentRefunded $event, string $docType): bool
     {
         if (! class_exists(Doc::class)) {
             return false;
         }
 
-        return Doc::query()
+        $query = Doc::query()
             ->where('docable_type', Purchase::class)
             ->where('docable_id', $purchase->id)
-            ->where('doc_type', config('chip.integrations.docs.refund_doc_type', 'credit_note'))
-            ->exists();
+            ->where('doc_type', $docType);
+
+        $paymentId = $event->payment?->getPaymentId();
+
+        if ($paymentId !== null && $paymentId !== '') {
+            return $query
+                ->where('metadata->chip_payment_id', $paymentId)
+                ->exists();
+        }
+
+        return $query->exists();
     }
 }

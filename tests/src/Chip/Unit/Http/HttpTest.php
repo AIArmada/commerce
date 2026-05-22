@@ -140,6 +140,59 @@ describe('WebhookController', function (): void {
             ->and($response->getData()->status)->toBe('accepted');
     });
 
+    it('accepts signed webhooks using configured webhook public keys', function (): void {
+        $controller = new WebhookController;
+
+        $key = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => 2048,
+        ]);
+
+        openssl_pkey_export($key, $privateKey);
+        $details = openssl_pkey_get_details($key);
+
+        config([
+            'chip.webhooks.verify_signature' => true,
+            'chip.webhooks.company_public_key' => null,
+            'chip.webhooks.webhook_keys' => [
+                'wh_123' => $details['key'],
+            ],
+        ]);
+
+        $payload = json_encode([
+            'id' => 'purch_signed_123',
+            'type' => 'purchase',
+            'event_type' => 'purchase.paid',
+            'status' => 'paid',
+            'brand_id' => 'brand_123',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'purchase' => [
+                'total' => 10000,
+                'currency' => 'MYR',
+                'products' => [['name' => 'Test', 'price' => 10000, 'quantity' => 1]],
+            ],
+            'is_test' => true,
+        ], JSON_THROW_ON_ERROR);
+
+        openssl_sign($payload, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+
+        $request = Request::create(
+            uri: '/webhook',
+            method: 'POST',
+            server: [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_SIGNATURE' => base64_encode($signature),
+            ],
+            content: $payload,
+        );
+
+        $response = $controller->handle($request);
+
+        expect($response->getStatusCode())->toBe(200)
+            ->and($response->getData()->status)->toBe('accepted');
+    });
+
     it('ignores duplicate webhook payloads after the first successful processing', function (): void {
         config([
             'chip.webhooks.store_webhooks' => true,

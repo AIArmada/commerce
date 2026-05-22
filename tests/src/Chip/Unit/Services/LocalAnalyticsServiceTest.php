@@ -47,6 +47,14 @@ it('calculates revenue metrics', function (): void {
         'created_at' => $now,
     ]);
 
+    // Current period partially refunded
+    createPurchase([
+        'status' => 'partially_refunded',
+        'total_minor' => 7000,
+        'refund_amount_minor' => 2000, // 20.00
+        'created_at' => $now,
+    ]);
+
     // Previous period purchase (to test growth rate)
     createPurchase([
         'status' => 'paid',
@@ -56,11 +64,11 @@ it('calculates revenue metrics', function (): void {
 
     $metrics = $this->service->getRevenueMetrics($now->copy()->subDays(5), $now->copy()->addDay());
 
-    expect($metrics->grossRevenue)->toBe(10000);
-    expect($metrics->refunds)->toBe(5000);
-    expect($metrics->netRevenue)->toBe(5000);
-    expect($metrics->transactionCount)->toBe(1);
-    expect($metrics->averageTransaction)->toBe(10000.0);
+    expect($metrics->grossRevenue)->toBe(17000);
+    expect($metrics->refunds)->toBe(7000);
+    expect($metrics->netRevenue)->toBe(10000);
+    expect($metrics->transactionCount)->toBe(2);
+    expect($metrics->averageTransaction)->toBe(8500.0);
 });
 
 it('calculates transaction metrics', function (): void {
@@ -70,15 +78,16 @@ it('calculates transaction metrics', function (): void {
     createPurchase(['status' => 'failed', 'created_at' => $now]);
     createPurchase(['status' => 'pending', 'created_at' => $now]);
     createPurchase(['status' => 'refunded', 'created_at' => $now]);
+    createPurchase(['status' => 'partially_refunded', 'created_at' => $now]);
 
     $metrics = $this->service->getTransactionMetrics($now->copy()->subDay(), $now->copy()->addDay());
 
-    expect($metrics->total)->toBe(4);
-    expect($metrics->successful)->toBe(1);
+    expect($metrics->total)->toBe(5);
+    expect($metrics->successful)->toBe(2);
     expect($metrics->failed)->toBe(1);
     expect($metrics->pending)->toBe(1);
-    expect($metrics->refunded)->toBe(1);
-    expect($metrics->successRate)->toBe(25.0);
+    expect($metrics->refunded)->toBe(2);
+    expect($metrics->successRate)->toBe(40.0);
 });
 
 it('calculates payment method breakdown', function (): void {
@@ -87,6 +96,7 @@ it('calculates payment method breakdown', function (): void {
     createPurchase(['status' => 'paid', 'payment_method' => 'card', 'total_minor' => 1000, 'created_at' => $now]);
     createPurchase(['status' => 'paid', 'payment_method' => 'card', 'total_minor' => 2000, 'created_at' => $now]);
     createPurchase(['status' => 'paid', 'payment_method' => 'fpx', 'total_minor' => 1500, 'created_at' => $now]);
+    createPurchase(['status' => 'partially_refunded', 'payment_method' => 'fpx', 'total_minor' => 2500, 'refund_amount_minor' => 500, 'created_at' => $now]);
     createPurchase(['status' => 'failed', 'payment_method' => 'card', 'total_minor' => 1000, 'created_at' => $now]);
 
     $breakdown = $this->service->getPaymentMethodBreakdown($now->copy()->subDay(), $now->copy()->addDay());
@@ -102,10 +112,33 @@ it('calculates payment method breakdown', function (): void {
 
     // FPX (1 attempt, 1 success)
     $fpx = collect($breakdown)->firstWhere('method', 'fpx');
-    expect($fpx['attempts'])->toBe(1);
-    expect($fpx['successful'])->toBe(1);
-    expect($fpx['revenue'])->toBe(1500);
+    expect($fpx['attempts'])->toBe(2);
+    expect($fpx['successful'])->toBe(2);
+    expect($fpx['revenue'])->toBe(4000);
     expect($fpx['success_rate'])->toBe(100.0);
+});
+
+it('includes partially refunded purchases in revenue trends', function (): void {
+    $now = CarbonImmutable::now();
+
+    createPurchase([
+        'status' => 'paid',
+        'total_minor' => 1000,
+        'created_at' => $now,
+    ]);
+
+    createPurchase([
+        'status' => 'partially_refunded',
+        'total_minor' => 2500,
+        'refund_amount_minor' => 500,
+        'created_at' => $now,
+    ]);
+
+    $trend = $this->service->getRevenueTrend($now->copy()->subDay(), $now->copy()->addDay());
+
+    expect($trend)->toHaveCount(1)
+        ->and($trend[0]['count'])->toBe(2)
+        ->and($trend[0]['revenue'])->toBe(3500);
 });
 
 it('calculates failure analysis', function (): void {

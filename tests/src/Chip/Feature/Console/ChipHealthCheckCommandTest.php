@@ -18,7 +18,7 @@ describe('ChipHealthCheckCommand', function (): void {
             'chip.send.api_secret' => 'test-send-api-secret',
             'chip.logging.enabled' => true,
             'chip.logging.log_requests' => true,
-            'chip.webhooks.events' => ['purchase.paid', 'purchase.refunded'],
+            'chip.webhooks.events' => ['purchase.paid', 'payment.refunded'],
         ]);
     });
 

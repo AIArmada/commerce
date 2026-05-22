@@ -4,9 +4,11 @@
 > **Status:** Built (Enhanceable)  
 > **Role:** Extension Layer - Payments
 
+> **Historical note:** The baseline analysis below describes the pre-unification state that motivated this blueprint. CHIP webhook storage, retry handling, and audit coverage are now implemented; use this document as an architectural pattern for remaining payment packages, and check `docs/spatie-integration/PROGRESS.md` for current rollout status.
+
 ---
 
-## 📋 Current State Analysis
+## 📋 Historical Baseline Analysis
 
 ### Cashier Package
 
@@ -33,16 +35,16 @@
 
 ## 🎯 Critical Integration: laravel-webhook-client
 
-### Why This is the #1 Priority
+### Why This was the #1 Priority
 
-All payment packages handle webhooks. Currently:
-- Each package has custom webhook handling
-- Signature verification is duplicated
-- No centralized webhook storage
-- No retry mechanism
-- No audit trail
+When this blueprint was written, payment packages handled webhooks separately:
+- Each package had custom webhook handling
+- Signature verification was duplicated
+- Centralized webhook storage was missing
+- Retry mechanisms were inconsistent or missing
+- Audit coverage was incomplete
 
-**Solution:** Unified webhook handling via `spatie/laravel-webhook-client`
+**Current direction:** CHIP already uses unified webhook handling via `spatie/laravel-webhook-client`, and the blueprint below remains the recommended pattern for the rest of the payment stack.
 
 ---
 
@@ -56,49 +58,53 @@ All payment packages handle webhooks. Currently:
 return [
     'configs' => [
         [
-            'name' => 'chip',
-            'signing_secret' => env('CHIP_WEBHOOK_SECRET'),
+            'name' => 'chip.webhook',
+            'signing_secret' => '', // CHIP uses public-key verification in the validator.
             'signature_header_name' => 'X-Signature',
-            'signature_validator' => \AIArmada\Chip\Webhooks\ChipSignatureValidator::class,
+            'signature_validator' => \AIArmada\Chip\Webhooks\ChipSpatieSignatureValidator::class,
             'webhook_profile' => \AIArmada\Chip\Webhooks\ChipWebhookProfile::class,
-            'webhook_response' => \Spatie\WebhookClient\WebhookResponse\DefaultRespondsTo::class,
+            'webhook_response' => \AIArmada\Chip\Webhooks\ChipWebhookResponse::class,
             'webhook_model' => \Spatie\WebhookClient\Models\WebhookCall::class,
             'process_webhook_job' => \AIArmada\Chip\Webhooks\ProcessChipWebhook::class,
-            'store_headers' => ['X-Event-Type', 'X-Webhook-ID'],
+            'store_headers' => ['x-signature'],
         ],
     ],
     'delete_after_days' => 90,
 ];
 ```
 
+**Webhook Endpoint:** `POST /chip/webhook`
+
 #### Step 2: Custom Signature Validator
 
 ```php
-// chip/src/Webhooks/ChipSignatureValidator.php
+// chip/src/Webhooks/ChipSpatieSignatureValidator.php
 
 namespace AIArmada\Chip\Webhooks;
 
+use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Spatie\WebhookClient\SignatureValidator\SignatureValidator;
 use Spatie\WebhookClient\WebhookConfig;
+use Throwable;
 
-class ChipSignatureValidator implements SignatureValidator
+final class ChipSpatieSignatureValidator implements SignatureValidator
 {
     public function isValid(Request $request, WebhookConfig $config): bool
     {
-        $signature = $request->header($config->signatureHeaderName);
-        
-        if (empty($signature)) {
+        /** @var WebhookService $webhookService */
+        $webhookService = app(WebhookService::class);
+
+        try {
+            return $webhookService->verifySignature($request);
+        } catch (Throwable $exception) {
+            Log::warning('CHIP webhook signature validation failed', [
+                'error' => $exception->getMessage(),
+            ]);
+
             return false;
         }
-
-        $payload = $request->getContent();
-        $secret = $config->signingSecret;
-
-        // CHIP uses HMAC-SHA256
-        $computedSignature = hash_hmac('sha256', $payload, $secret);
-
-        return hash_equals($computedSignature, $signature);
     }
 }
 ```
@@ -115,23 +121,28 @@ use Spatie\WebhookClient\WebhookProfile\WebhookProfile;
 
 class ChipWebhookProfile implements WebhookProfile
 {
-    protected array $supportedEvents = [
-        'payment.completed',
-        'payment.failed',
-        'payment.pending',
-        'refund.completed',
-        'refund.failed',
-        'subscription.created',
-        'subscription.canceled',
-        'subscription.renewed',
-        'payout.completed',
-    ];
-
     public function shouldProcess(Request $request): bool
     {
-        $eventType = $request->input('event') ?? $request->header('X-Event-Type');
-        
-        return in_array($eventType, $this->supportedEvents);
+        $eventType = $request->input('event_type');
+
+        if (empty($eventType)) {
+            return false;
+        }
+
+        $validPrefixes = [
+            'purchase.',
+            'payment.',
+            'payout.',
+            'billing_template_client.',
+        ];
+
+        foreach ($validPrefixes as $prefix) {
+            if (str_starts_with($eventType, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 ```
@@ -143,114 +154,26 @@ class ChipWebhookProfile implements WebhookProfile
 
 namespace AIArmada\Chip\Webhooks;
 
-use Spatie\WebhookClient\Jobs\ProcessWebhookJob;
-use AIArmada\Chip\Events\PaymentCompleted;
-use AIArmada\Chip\Events\PaymentFailed;
-use AIArmada\Chip\Events\RefundCompleted;
+use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Services\WebhookEventDispatcher;
+use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 
-class ProcessChipWebhook extends ProcessWebhookJob
+class ProcessChipWebhook extends CommerceWebhookProcessor
 {
-    public function handle(): void
+    protected function processEvent(string $eventType, array $payload): void
     {
-        $payload = $this->webhookCall->payload;
-        $eventType = $payload['event'] ?? 'unknown';
+        $dispatcher = app(WebhookEventDispatcher::class);
 
-        // Log the webhook processing
-        activity('webhooks')
-            ->performedOn($this->webhookCall)
-            ->withProperties([
-                'event' => $eventType,
-                'gateway' => 'chip',
-            ])
-            ->log("Processing CHIP webhook: {$eventType}");
+        WebhookReceived::dispatch(
+            $eventType,
+            $payload,
+            $dispatcher->extractPurchase($payload),
+            $dispatcher->extractPayout($payload),
+            $dispatcher->extractBillingTemplateClient($payload),
+            $dispatcher->extractPayment($payload),
+        );
 
-        match($eventType) {
-            'payment.completed' => $this->handlePaymentCompleted($payload),
-            'payment.failed' => $this->handlePaymentFailed($payload),
-            'payment.pending' => $this->handlePaymentPending($payload),
-            'refund.completed' => $this->handleRefundCompleted($payload),
-            'refund.failed' => $this->handleRefundFailed($payload),
-            'subscription.created' => $this->handleSubscriptionCreated($payload),
-            'subscription.canceled' => $this->handleSubscriptionCanceled($payload),
-            'subscription.renewed' => $this->handleSubscriptionRenewed($payload),
-            'payout.completed' => $this->handlePayoutCompleted($payload),
-            default => $this->handleUnknownEvent($eventType, $payload),
-        };
-
-        // Mark as processed
-        $this->webhookCall->update([
-            'processed_at' => now(),
-        ]);
-    }
-
-    protected function handlePaymentCompleted(array $payload): void
-    {
-        $purchaseId = $payload['data']['id'];
-        $amount = $payload['data']['amount'];
-        $reference = $payload['data']['reference'];
-
-        // Find the related order/payment
-        $payment = Payment::where('gateway_reference', $purchaseId)->first();
-
-        if ($payment) {
-            $payment->update([
-                'status' => 'completed',
-                'confirmed_at' => now(),
-            ]);
-
-            // Trigger order state transition
-            if ($payment->order) {
-                $payment->order->confirmPayment(
-                    transactionId: $purchaseId,
-                    gateway: 'chip',
-                    metadata: $payload['data'],
-                );
-            }
-
-            event(new PaymentCompleted($payment, $payload));
-        }
-    }
-
-    protected function handlePaymentFailed(array $payload): void
-    {
-        $purchaseId = $payload['data']['id'];
-        $reason = $payload['data']['failure_reason'] ?? 'Unknown';
-
-        $payment = Payment::where('gateway_reference', $purchaseId)->first();
-
-        if ($payment) {
-            $payment->update([
-                'status' => 'failed',
-                'failure_reason' => $reason,
-            ]);
-
-            event(new PaymentFailed($payment, $reason, $payload));
-        }
-    }
-
-    protected function handleRefundCompleted(array $payload): void
-    {
-        $refundId = $payload['data']['id'];
-        $originalPurchaseId = $payload['data']['purchase_id'];
-
-        $refund = Refund::where('gateway_reference', $refundId)->first();
-
-        if ($refund) {
-            $refund->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-            ]);
-
-            event(new RefundCompleted($refund, $payload));
-        }
-    }
-
-    protected function handleUnknownEvent(string $eventType, array $payload): void
-    {
-        activity('webhooks')
-            ->performedOn($this->webhookCall)
-            ->withProperties(['event' => $eventType, 'payload' => $payload])
-            ->log("Unknown CHIP webhook event: {$eventType}");
+        $dispatcher->dispatch($eventType, $payload);
     }
 }
 ```
@@ -261,8 +184,10 @@ class ProcessChipWebhook extends ProcessWebhookJob
 // chip/routes/webhooks.php
 
 use Illuminate\Support\Facades\Route;
+use AIArmada\Chip\Http\Controllers\WebhookController;
 
-Route::webhooks('webhooks/chip', 'chip');
+Route::post(config('chip.webhooks.route', '/chip/webhook'), [WebhookController::class, 'handle'])
+    ->name('chip.webhook');
 ```
 
 ---
@@ -433,7 +358,7 @@ Health::checks([
 │   CHIP                        Stripe                      Other Gateway     │
 │     │                           │                              │            │
 │     ▼                           ▼                              ▼            │
-│   POST /webhooks/chip    POST /webhooks/stripe    POST /webhooks/{name}     │
+│   POST /chip/webhook     POST /webhooks/stripe    POST /webhooks/{name}     │
 │     │                           │                              │            │
 │     └───────────────────────────┼──────────────────────────────┘            │
 │                                 │                                            │
@@ -514,11 +439,11 @@ Note: `spatie/laravel-webhook-client` is in `commerce-support`, so chip inherits
 
 ### Phase 1: Migrate CHIP Webhooks
 
-- [ ] Create ChipSignatureValidator
-- [ ] Create ChipWebhookProfile
-- [ ] Create ProcessChipWebhook job
-- [ ] Configure webhook-client for CHIP
-- [ ] Add webhook routes
+- [x] Adopt ChipSpatieSignatureValidator
+- [x] Create ChipWebhookProfile
+- [x] Create ProcessChipWebhook job
+- [x] Configure webhook-client for CHIP
+- [x] Add webhook routes
 - [ ] Test signature verification
 - [ ] Test event processing
 - [ ] Remove old webhook code
@@ -556,26 +481,8 @@ Note: `spatie/laravel-webhook-client` is in `commerce-support`, so chip inherits
 5. **IP Allowlisting**: Consider restricting webhook IPs in production
 
 ```php
-// Example: Enhanced signature validator with timing check
-
-class ChipSignatureValidator implements SignatureValidator
-{
-    public function isValid(Request $request, WebhookConfig $config): bool
-    {
-        $signature = $request->header($config->signatureHeaderName);
-        $timestamp = $request->header('X-Timestamp');
-        
-        // Reject webhooks older than 5 minutes
-        if ($timestamp && abs(time() - (int)$timestamp) > 300) {
-            return false;
-        }
-
-        $payload = $request->getContent();
-        $computedSignature = hash_hmac('sha256', $payload, $config->signingSecret);
-
-        return hash_equals($computedSignature, $signature);
-    }
-}
+// CHIP Collect uses RSA public-key verification, not shared-secret HMAC.
+// Signature verification should delegate to the package WebhookService.
 ```
 
 ---

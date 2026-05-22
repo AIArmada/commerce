@@ -38,21 +38,26 @@ final class StoreWebhookData
         }
 
         $payload = $event->payload;
+        $payloadType = $payload['type'] ?? null;
 
         // Only process purchase-related webhooks
-        if (($payload['type'] ?? null) !== 'purchase') {
+        if ($payloadType === 'purchase') {
+            if (empty($payload['id'])) {
+                Log::warning('CHIP: No purchase ID in webhook payload');
+
+                return;
+            }
+
+            $this->storePurchase($payload);
+            $this->storeClient($payload);
+            $this->storePayment($payload);
+
             return;
         }
 
-        if (empty($payload['id'])) {
-            Log::warning('CHIP: No purchase ID in webhook payload');
-
-            return;
+        if ($payloadType === 'payment' && data_get($payload, 'related_to.type') === 'purchase') {
+            $this->storePayment($payload);
         }
-
-        $this->storePurchase($payload);
-        $this->storeClient($payload);
-        $this->storePayment($payload);
     }
 
     /**
@@ -204,29 +209,41 @@ final class StoreWebhookData
     {
         $owner = $this->resolveOwner();
 
+        $purchaseId = $payload['id'] ?? null;
         $paymentData = $payload['payment'] ?? null;
+        $paymentId = null;
 
-        if (! is_array($paymentData) || ! isset($paymentData['amount'])) {
+        if (($payload['type'] ?? null) === 'payment') {
+            $purchaseId = data_get($payload, 'related_to.id');
+            $paymentData = isset($payload['payment']) && is_array($payload['payment']) ? $payload['payment'] : $payload;
+            $paymentId = is_string($payload['id'] ?? null) && $payload['id'] !== '' ? $payload['id'] : null;
+        } elseif (is_string($paymentData['id'] ?? null) && $paymentData['id'] !== '') {
+            $paymentId = $paymentData['id'];
+        }
+
+        if (! is_string($purchaseId) || $purchaseId === '' || ! is_array($paymentData) || ! isset($paymentData['amount'])) {
             return;
         }
 
-        $paymentMatch = [
-            'purchase_id' => $payload['id'],
-            'payment_type' => $paymentData['payment_type'] ?? 'purchase',
-            'amount' => $paymentData['amount'],
-            'currency' => $paymentData['currency'],
-            'is_outgoing' => $paymentData['is_outgoing'] ?? false,
-        ];
+        $paymentMatch = $paymentId !== null
+            ? ['id' => $paymentId]
+            : [
+                'purchase_id' => $purchaseId,
+                'payment_type' => $paymentData['payment_type'] ?? 'purchase',
+                'amount' => $paymentData['amount'],
+                'currency' => $paymentData['currency'],
+                'is_outgoing' => $paymentData['is_outgoing'] ?? false,
+            ];
 
-        if ($owner !== null) {
+        if ($owner !== null && $paymentId === null) {
             $paymentMatch['owner_type'] = $owner->getMorphClass();
             $paymentMatch['owner_id'] = (string) $owner->getKey();
         }
 
         $payment = Payment::updateOrCreate(
             $paymentMatch,
-            [
-                'purchase_id' => $payload['id'],
+            array_merge($paymentId !== null ? ['id' => $paymentId] : [], [
+                'purchase_id' => $purchaseId,
                 'payment_type' => $paymentData['payment_type'] ?? null,
                 'is_outgoing' => $paymentData['is_outgoing'] ?? false,
                 'amount' => $paymentData['amount'],
@@ -238,9 +255,9 @@ final class StoreWebhookData
                 'description' => $paymentData['description'] ?? null,
                 'paid_on' => $paymentData['paid_on'] ?? null,
                 'remote_paid_on' => $paymentData['remote_paid_on'] ?? null,
-                'created_on' => $payload['created_on'],
-                'updated_on' => $payload['updated_on'],
-            ]
+                'created_on' => $payload['created_on'] ?? null,
+                'updated_on' => $payload['updated_on'] ?? null,
+            ])
         );
 
         if ($owner !== null && ! $payment->hasOwner()) {

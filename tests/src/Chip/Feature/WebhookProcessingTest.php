@@ -18,6 +18,8 @@ use AIArmada\Chip\Events\PurchasePendingExecute;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
 use AIArmada\Chip\Events\PurchaseReleased;
+use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
@@ -329,13 +331,24 @@ describe('ProcessChipWebhook', function (): void {
     it('dispatches PaymentRefunded event', function (): void {
         $payload = [
             'event_type' => 'payment.refunded',
-            'type' => 'purchase',
-            'id' => 'purchase-123',
+            'type' => 'payment',
+            'id' => 'payment-refund-123',
             'brand_id' => 'brand-123',
             'status' => 'refunded',
             'is_test' => true,
-            'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+            'created_on' => time(),
+            'updated_on' => time(),
             'client' => ['email' => 'test@example.com'],
+            'related_to' => ['type' => 'purchase', 'id' => 'purchase-123'],
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'net_amount' => 10000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
         ];
 
         $webhookCall = WebhookCall::create([
@@ -346,7 +359,178 @@ describe('ProcessChipWebhook', function (): void {
         $processor = new ProcessChipWebhook($webhookCall);
         $processor->handle();
 
-        Event::assertDispatched(PaymentRefunded::class);
+        Event::assertDispatched(PaymentRefunded::class, fn (PaymentRefunded $event): bool => $event->getPurchaseId() === 'purchase-123'
+            && $event->getAmount() === 10000);
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $event): bool => $event->payment !== null
+            && $event->payment->getPaymentId() === 'payment-refund-123'
+            && $event->getPurchaseId() === 'purchase-123');
+    });
+
+    it('synchronizes a local purchase for completed refund webhooks', function (): void {
+        $purchase = Purchase::create([
+            'id' => 'purchase-123',
+            'type' => 'purchase',
+            'status' => 'paid',
+            'brand_id' => 'brand-123',
+            'company_id' => 'company-123',
+            'client_id' => 'client-123',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'client' => ['email' => 'test@example.com'],
+            'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+            ],
+            'issuer_details' => [],
+            'transaction_data' => [],
+            'status_history' => [],
+            'refund_availability' => 'all',
+            'refundable_amount' => 10000,
+            'refund_amount_minor' => 0,
+            'platform' => 'test',
+            'product' => 'chip',
+            'send_receipt' => false,
+            'is_test' => true,
+            'is_recurring_token' => false,
+            'skip_capture' => false,
+            'force_recurring' => false,
+            'marked_as_paid' => false,
+        ]);
+
+        $payload = [
+            'event_type' => 'payment.refunded',
+            'type' => 'payment',
+            'id' => 'payment-refund-partial-123',
+            'brand_id' => 'brand-123',
+            'status' => 'refunded',
+            'is_test' => true,
+            'created_on' => time(),
+            'updated_on' => time(),
+            'client' => ['email' => 'test@example.com'],
+            'related_to' => ['type' => 'purchase', 'id' => 'purchase-123'],
+            'payment' => [
+                'amount' => 3000,
+                'currency' => 'MYR',
+                'net_amount' => 3000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+        ];
+
+        $webhookCall = WebhookCall::create([
+            'name' => 'chip',
+            'payload' => $payload,
+        ]);
+
+        $processor = new ProcessChipWebhook($webhookCall);
+        $processor->handle();
+
+        $purchase->refresh();
+
+        expect($purchase->status)->toBe('partially_refunded')
+            ->and($purchase->refund_amount_minor)->toBe(3000)
+            ->and($purchase->refundable_amount)->toBe(7000)
+            ->and($purchase->refunded_at)->not->toBeNull();
+    });
+
+    it('accumulates refund totals when webhook payload storage is disabled', function (): void {
+        config(['chip.webhooks.store_webhooks' => false]);
+
+        $purchase = Purchase::create([
+            'id' => 'purchase-storeless-refund-123',
+            'type' => 'purchase',
+            'status' => 'paid',
+            'brand_id' => 'brand-123',
+            'company_id' => 'company-123',
+            'client_id' => 'client-123',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'client' => ['email' => 'test@example.com'],
+            'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+            ],
+            'issuer_details' => [],
+            'transaction_data' => [],
+            'status_history' => [],
+            'refund_availability' => 'all',
+            'refundable_amount' => 10000,
+            'refund_amount_minor' => 0,
+            'platform' => 'test',
+            'product' => 'chip',
+            'send_receipt' => false,
+            'is_test' => true,
+            'is_recurring_token' => false,
+            'skip_capture' => false,
+            'force_recurring' => false,
+            'marked_as_paid' => false,
+        ]);
+
+        $firstWebhookCall = WebhookCall::create([
+            'name' => 'chip',
+            'payload' => [
+                'event_type' => 'payment.refunded',
+                'type' => 'payment',
+                'id' => 'payment-refund-storeless-1',
+                'brand_id' => 'brand-123',
+                'status' => 'refunded',
+                'is_test' => true,
+                'created_on' => time(),
+                'updated_on' => time(),
+                'client' => ['email' => 'test@example.com'],
+                'related_to' => ['type' => 'purchase', 'id' => $purchase->id],
+                'payment' => [
+                    'amount' => 4000,
+                    'currency' => 'MYR',
+                    'net_amount' => 4000,
+                    'fee_amount' => 0,
+                    'pending_amount' => 0,
+                    'payment_type' => 'refund',
+                    'is_outgoing' => true,
+                ],
+            ],
+        ]);
+
+        (new ProcessChipWebhook($firstWebhookCall))->handle();
+
+        $secondWebhookCall = WebhookCall::create([
+            'name' => 'chip',
+            'payload' => [
+                'event_type' => 'payment.refunded',
+                'type' => 'payment',
+                'id' => 'payment-refund-storeless-2',
+                'brand_id' => 'brand-123',
+                'status' => 'refunded',
+                'is_test' => true,
+                'created_on' => time(),
+                'updated_on' => time(),
+                'client' => ['email' => 'test@example.com'],
+                'related_to' => ['type' => 'purchase', 'id' => $purchase->id],
+                'payment' => [
+                    'amount' => 6000,
+                    'currency' => 'MYR',
+                    'net_amount' => 6000,
+                    'fee_amount' => 0,
+                    'pending_amount' => 0,
+                    'payment_type' => 'refund',
+                    'is_outgoing' => true,
+                ],
+            ],
+        ]);
+
+        (new ProcessChipWebhook($secondWebhookCall))->handle();
+
+        $purchase->refresh();
+
+        expect($purchase->status)->toBe('refunded')
+            ->and($purchase->refund_amount_minor)->toBe(10000)
+            ->and($purchase->refundable_amount)->toBe(0)
+            ->and($purchase->refunded_at)->not->toBeNull();
     });
 
     it('dispatches PurchasePendingExecute event', function (): void {

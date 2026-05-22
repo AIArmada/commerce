@@ -100,6 +100,28 @@ final class WebhookFactory
     }
 
     /**
+     * Create a purchase.pending_execute payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function purchasePendingExecute(array $overrides = []): array
+    {
+        return self::make()->eventType('purchase.pending_execute')->status('pending_execute')->with($overrides)->toArray();
+    }
+
+    /**
+     * Create a purchase.pending_charge payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function purchasePendingCharge(array $overrides = []): array
+    {
+        return self::make()->eventType('purchase.pending_charge')->status('pending_charge')->with($overrides)->toArray();
+    }
+
+    /**
      * Create a purchase.preauthorized payload.
      *
      * @param  array<string, mixed>  $overrides
@@ -138,6 +160,17 @@ final class WebhookFactory
     }
 
     /**
+     * Create a purchase.pending_capture payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function purchasePendingCapture(array $overrides = []): array
+    {
+        return self::make()->eventType('purchase.pending_capture')->status('pending_capture')->with($overrides)->toArray();
+    }
+
+    /**
      * Create a purchase.released payload.
      *
      * @param  array<string, mixed>  $overrides
@@ -146,6 +179,66 @@ final class WebhookFactory
     public static function purchaseReleased(array $overrides = []): array
     {
         return self::make()->eventType('purchase.released')->status('released')->with($overrides)->toArray();
+    }
+
+    /**
+     * Create a purchase.pending_release payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function purchasePendingRelease(array $overrides = []): array
+    {
+        return self::make()->eventType('purchase.pending_release')->status('pending_release')->with($overrides)->toArray();
+    }
+
+    /**
+     * Create a purchase.pending_refund payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function purchasePendingRefund(array $overrides = []): array
+    {
+        return self::make()->eventType('purchase.pending_refund')->status('pending_refund')->with($overrides)->toArray();
+    }
+
+    /**
+     * Create a purchase.pending_recurring_token_delete payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function purchasePendingRecurringTokenDelete(array $overrides = []): array
+    {
+        return self::make()
+            ->eventType('purchase.pending_recurring_token_delete')
+            ->status('paid')
+            ->with([
+                'is_recurring_token' => $overrides['is_recurring_token'] ?? true,
+                'recurring_token' => $overrides['recurring_token'] ?? Str::uuid()->toString(),
+            ])
+            ->with($overrides)
+            ->toArray();
+    }
+
+    /**
+     * Create a purchase.recurring_token_deleted payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    public static function purchaseRecurringTokenDeleted(array $overrides = []): array
+    {
+        return self::make()
+            ->eventType('purchase.recurring_token_deleted')
+            ->status(is_string($overrides['status'] ?? null) ? $overrides['status'] : 'paid')
+            ->with([
+                'is_recurring_token' => $overrides['is_recurring_token'] ?? false,
+                'recurring_token' => $overrides['recurring_token'] ?? null,
+            ])
+            ->with($overrides)
+            ->toArray();
     }
 
     /**
@@ -172,7 +265,7 @@ final class WebhookFactory
      */
     public static function paymentRefunded(array $overrides = []): array
     {
-        return self::make()->refunded()->eventType('payment.refunded')->with($overrides)->toArray();
+        return self::make()->refunded()->with($overrides)->toArray();
     }
 
     /**
@@ -246,10 +339,17 @@ final class WebhookFactory
             WebhookEventType::PurchasePaid => self::purchasePaid($overrides),
             WebhookEventType::PurchasePaymentFailure => self::purchasePaymentFailure($overrides),
             WebhookEventType::PurchaseCancelled => self::purchaseCancelled($overrides),
+            WebhookEventType::PurchasePendingExecute => self::purchasePendingExecute($overrides),
+            WebhookEventType::PurchasePendingCharge => self::purchasePendingCharge($overrides),
             WebhookEventType::PurchasePreauthorized => self::purchasePreauthorized($overrides),
             WebhookEventType::PurchaseHold => self::purchaseHold($overrides),
             WebhookEventType::PurchaseCaptured => self::purchaseCaptured($overrides),
+            WebhookEventType::PurchasePendingCapture => self::purchasePendingCapture($overrides),
             WebhookEventType::PurchaseReleased => self::purchaseReleased($overrides),
+            WebhookEventType::PurchasePendingRelease => self::purchasePendingRelease($overrides),
+            WebhookEventType::PurchasePendingRefund => self::purchasePendingRefund($overrides),
+            WebhookEventType::PurchasePendingRecurringTokenDelete => self::purchasePendingRecurringTokenDelete($overrides),
+            WebhookEventType::PurchaseRecurringTokenDeleted => self::purchaseRecurringTokenDeleted($overrides),
             WebhookEventType::PurchaseSubscriptionChargeFailure => self::purchaseSubscriptionChargeFailure($overrides),
             WebhookEventType::PaymentRefunded => self::paymentRefunded($overrides),
             WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled => self::billingCancelled($overrides),
@@ -258,6 +358,28 @@ final class WebhookFactory
             WebhookEventType::PayoutFailed => self::payoutFailed($overrides),
             default => self::make()->eventType($eventType->value)->with($overrides)->toArray(),
         };
+    }
+
+    /**
+     * Recreate a fluent factory from a generated payload.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public static function fromPayload(array $payload): self
+    {
+        $eventType = is_string($payload['event_type'] ?? null) ? $payload['event_type'] : 'purchase.paid';
+        $status = is_string($payload['status'] ?? null) ? $payload['status'] : 'paid';
+
+        $factory = match ($eventType) {
+            'purchase.paid' => self::make()->paid(),
+            'purchase.created' => self::make()->created(),
+            'purchase.cancelled' => self::make()->cancelled(),
+            'purchase.payment_failure' => self::make()->failed(),
+            'payment.refunded' => self::make()->refunded(),
+            default => self::make()->eventType($eventType)->status($status),
+        };
+
+        return $factory->with($payload);
     }
 
     // Fluent builder methods
@@ -288,7 +410,7 @@ final class WebhookFactory
 
     public function refunded(): self
     {
-        $this->eventType = 'purchase.refunded';
+        $this->eventType = 'payment.refunded';
         $this->status = 'refunded';
 
         return $this;
@@ -304,7 +426,7 @@ final class WebhookFactory
 
     public function failed(): self
     {
-        $this->eventType = 'purchase.error';
+        $this->eventType = 'purchase.payment_failure';
         $this->status = 'error';
 
         return $this;
@@ -494,6 +616,76 @@ final class WebhookFactory
         ));
 
         $statusHistory = $this->buildStatusHistory($now);
+
+        if ($this->eventType === 'payment.refunded') {
+            $paymentId = $this->overrides['id'] ?? (string) Str::uuid();
+
+            return array_replace_recursive([
+                'id' => $paymentId,
+                'type' => 'payment',
+                'event_type' => 'payment.refunded',
+                'status' => $this->status,
+                'created_on' => $now,
+                'updated_on' => $now,
+                'client' => [
+                    'cc' => [],
+                    'bcc' => [],
+                    'city' => '',
+                    'email' => $this->customerEmail,
+                    'phone' => $this->customerPhone,
+                    'state' => '',
+                    'country' => 'MY',
+                    'zip_code' => '',
+                    'bank_code' => '',
+                    'full_name' => $this->customerName,
+                    'brand_name' => '',
+                    'legal_name' => '',
+                    'tax_number' => '',
+                    'bank_account' => '',
+                    'personal_code' => '',
+                    'shipping_city' => '',
+                    'shipping_state' => '',
+                    'street_address' => '',
+                    'shipping_country' => 'MY',
+                    'shipping_zip_code' => '',
+                    'registration_number' => '',
+                    'shipping_street_address' => '',
+                ],
+                'payment' => [
+                    'amount' => $total,
+                    'paid_on' => $now,
+                    'currency' => $this->currency,
+                    'fee_amount' => (int) round($total * 0.01),
+                    'net_amount' => $total - (int) round($total * 0.01),
+                    'description' => 'Refund',
+                    'is_outgoing' => true,
+                    'payment_type' => 'refund',
+                    'pending_amount' => 0,
+                    'remote_paid_on' => $now,
+                    'pending_unfreeze_on' => null,
+                ],
+                'transaction_data' => [
+                    'flow' => 'payform',
+                    'extra' => [],
+                    'country' => 'MY',
+                    'attempts' => [],
+                    'payment_method' => $this->paymentMethod,
+                    'processing_tx_id' => $paymentId,
+                ],
+                'related_to' => [
+                    'type' => 'purchase',
+                    'id' => $purchaseId,
+                ],
+                'reference_generated' => 'TEST' . random_int(100, 999),
+                'reference' => $reference,
+                'account_id' => (string) Str::uuid(),
+                'company_id' => $companyId,
+                'is_test' => $this->isTest,
+                'user_id' => null,
+                'brand_id' => $brandId,
+                'client_id' => $clientId,
+            ], $this->overrides);
+        }
 
         $payload = [
             'id' => $purchaseId,
@@ -697,10 +889,10 @@ final class WebhookFactory
 
         if ($this->status !== 'created') {
             $history[] = ['status' => 'viewed', 'timestamp' => $now - 5];
-        }
 
-        if (in_array($this->status, ['paid', 'refunded', 'cancelled', 'expired', 'error'])) {
-            $history[] = ['status' => $this->status, 'timestamp' => $now];
+            if ($this->status !== 'viewed') {
+                $history[] = ['status' => $this->status, 'timestamp' => $now];
+            }
         }
 
         return $history;

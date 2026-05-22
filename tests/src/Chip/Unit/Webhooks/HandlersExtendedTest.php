@@ -16,9 +16,30 @@ use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
  */
 function createTestEnrichedPayload(string $event, array $rawPayload = []): EnrichedWebhookPayload
 {
-    return new EnrichedWebhookPayload(
-        event: $event,
-        rawPayload: array_merge([
+    $defaultPayload = $event === 'payment.refunded'
+        ? [
+            'id' => 'payment-' . uniqid(),
+            'type' => 'payment',
+            'status' => 'refunded',
+            'is_test' => true,
+            'client_id' => 'client-123',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+                'net_amount' => 10000,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => 'purchase-123',
+            ],
+        ]
+        : [
             'id' => 'purchase-' . uniqid(),
             'type' => 'purchase',
             'status' => 'paid',
@@ -26,12 +47,18 @@ function createTestEnrichedPayload(string $event, array $rawPayload = []): Enric
             'client_id' => 'client-123',
             'created_on' => time(),
             'updated_on' => time(),
-        ], $rawPayload),
+        ];
+
+    $payload = array_merge($defaultPayload, $rawPayload);
+
+    return new EnrichedWebhookPayload(
+        event: $event,
+        rawPayload: $payload,
         localPurchase: null,
         owner: null,
         receivedAt: now(),
-        purchaseId: $rawPayload['id'] ?? 'purchase-123',
-        clientId: $rawPayload['client_id'] ?? 'client-123',
+        purchaseId: data_get($payload, 'related_to.id') ?? ($payload['id'] ?? 'purchase-123'),
+        clientId: $payload['client_id'] ?? 'client-123',
     );
 }
 
