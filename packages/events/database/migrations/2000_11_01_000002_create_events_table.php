@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        $databaseConfig = (array) config('events.database', []);
+        $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('events', 'json'));
+
+        Schema::create(config('events.database.tables.events', 'events'), function (Blueprint $table) use ($jsonType): void {
+            $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
+            $table->uuid('event_series_id')->nullable()->index();
+            $table->uuid('product_id')->nullable()->index();
+            $table->string('name');
+            $table->string('slug');
+            $table->string('status', 32)->default('draft')->index();
+            $table->string('default_timezone', 64)->nullable();
+            $table->unsignedInteger('default_duration_minutes')->nullable();
+            $table->text('summary')->nullable();
+            $table->longText('description')->nullable();
+            $table->{$jsonType}('metadata')->nullable();
+            $table->timestamps();
+
+            $table->index(['owner_type', 'owner_id', 'status']);
+            $table->index(['event_series_id', 'status']);
+            $table->unique(['owner_type', 'owner_id', 'slug']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('events.database.tables.events', 'events'));
+    }
+};
