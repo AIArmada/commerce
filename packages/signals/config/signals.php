@@ -50,6 +50,9 @@ return [
         'session_duration_seconds' => 1800,
     ],
 
+    /* Recording toggles */
+    'record_checkout_started' => env('SIGNALS_RECORD_CHECKOUT_STARTED', true),
+
     /* Owner */
     'owner' => [
         'enabled' => true,
