@@ -68,6 +68,16 @@ protected function getFooterWidgets(): array
 }
 ```
 
+The timeline now enriches each event with:
+
+- affiliate label
+- source / medium
+- campaign
+- resolved order number
+- stored order totals from voucher usage metadata when available
+
+That makes the widget useful for support/audit workflows, not just raw redemption history.
+
 ### VoucherWalletStatsWidget
 
 Statistics for wallet-based voucher entries:

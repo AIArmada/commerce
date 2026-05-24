@@ -52,6 +52,7 @@ When the inventory package isn't installed:
 - The `ReserveInventoryStep` automatically skips
 - All stock checks return unlimited availability
 - No reservations are created
+- `EnsureCheckoutOfferProduct` also skips inventory seeding unless inventory integration is enabled **and** the inventory tables are present
 
 This allows checkout to work standalone without inventory management.
 
@@ -186,6 +187,20 @@ When the `aiarmada/promotions` package is installed, checkout can apply promotio
 
 3. **Stacking**: Multiple promotions can stack based on promotion configuration.
 
+### Recorded Promotion Payloads
+
+When promotions are applied during checkout, the checkout session stores `discount_data.promotions` and the created order keeps that payload in `order.metadata.discount_data.promotions`.
+
+Each entry contains:
+
+- `promotion_id`
+- `name`
+- `code`
+- `type`
+- `discount`
+
+The stored `discount` is the **actual sequential discount applied at checkout time**, not a recalculation against the original subtotal. This keeps stacked-promotion analytics and downstream reporting accurate.
+
 ## Vouchers Integration
 
 When the `aiarmada/vouchers` package is installed, checkout can redeem voucher codes.
@@ -208,6 +223,19 @@ When the `aiarmada/vouchers` package is installed, checkout can redeem voucher c
 2. **Redemption**: Valid vouchers are applied to the order total.
 
 3. **Recording**: Voucher usage is recorded after successful checkout.
+
+### Recorded Voucher Usage Metadata
+
+Checkout redemptions call the vouchers service after order creation. When the Orders package is installed, voucher usage records now carry richer order linkage:
+
+- `redeemedBy` points at the order model
+- `metadata.order_id`
+- `metadata.order_number`
+- `metadata.subtotal`
+- `metadata.discount_total`
+- `metadata.grand_total`
+
+That metadata powers downstream voucher reporting, exports, and affiliate-source attribution in Filament.
 
 ## Checking Package Availability
 

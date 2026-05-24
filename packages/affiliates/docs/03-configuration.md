@@ -124,6 +124,39 @@ The package is configured via `config/affiliates.php`. This document covers all 
 | `require_consent` | Require explicit consent before tracking |
 | `consent_cookie` | Cookie name for consent flag |
 
+## Public Pages
+
+```php
+'public_pages' => [
+    'enabled' => env('AFFILIATES_PUBLIC_PAGES_ENABLED', true),
+    'view_data_key' => env('AFFILIATES_PUBLIC_PAGES_VIEW_DATA_KEY', 'affiliateReferral'),
+    'auto_register_middleware' => env('AFFILIATES_PUBLIC_PAGES_AUTO_MIDDLEWARE', true),
+    'route' => [
+        'enabled' => env('AFFILIATES_PUBLIC_REFERRAL_ROUTE_ENABLED', true),
+        'path' => env('AFFILIATES_PUBLIC_REFERRAL_ROUTE_PATH', 'r/{affiliateCode}'),
+        'name' => env('AFFILIATES_PUBLIC_REFERRAL_ROUTE_NAME', 'affiliate.referral.entry'),
+        'middleware' => ['web'],
+        'destination_parameter' => env('AFFILIATES_PUBLIC_REFERRAL_DESTINATION_PARAMETER', 'to'),
+        'destinations' => [
+            'home' => env('AFFILIATES_PUBLIC_REFERRAL_HOME_PATH', '/'),
+            'checkout' => env('AFFILIATES_PUBLIC_REFERRAL_CHECKOUT_PATH', '/checkout'),
+        ],
+    ],
+],
+```
+
+| Key | Description |
+|-----|-------------|
+| `enabled` | Enable package-owned public referral helpers and shared view data |
+| `view_data_key` | View variable populated by the public referral middleware / view composer |
+| `auto_register_middleware` | Push `HydratePublicAffiliateReferralContext` into the `web` middleware group |
+| `route.enabled` | Enable the package-owned referral entry route |
+| `route.path` | Referral landing path, default `r/{affiliateCode}` |
+| `route.name` | Route name used when generating entry URLs |
+| `route.middleware` | Middleware stack applied to the entry route |
+| `route.destination_parameter` | Query-string key used to choose a configured destination |
+| `route.destinations` | Allowed redirect destinations, keyed by public destination name |
+
 ## Voucher Integration
 
 ```php

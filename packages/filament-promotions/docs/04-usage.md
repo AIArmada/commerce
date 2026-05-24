@@ -36,6 +36,11 @@ The promotions table displays:
 - Delete promotion
 - Bulk delete
 
+The list page also includes analytics widgets so admins can see performance without leaving the resource:
+
+- `PromotionStatsWidget`
+- `TopPromotionsUsageChart`
+
 ### Create View
 
 The create form includes sections:
@@ -100,10 +105,13 @@ public function panel(Panel $panel): Panel
 ```
 
 The widget displays:
-- **Total Promotions** — All promotion count
-- **Active** — Currently active promotions
-- **Promo Codes** — Code-based promotions
-- **Automatic** — Auto-applying active promotions
+- **Total Promotions** — All configured promotions
+- **Active Promotions** — Active promotion count with code/automatic breakdown
+- **Orders Influenced** — Orders whose `discount_data.promotions` payload includes a promotion
+- **Influenced Revenue** — Revenue from influenced orders when a single reporting currency is available
+- **Discount Attributed** — Summed applied promotion discounts from order metadata
+
+When the Orders package is installed, these widgets use `order.metadata.discount_data.promotions` as the source of truth. The chart prefers top promotions by influenced orders and falls back to usage counts only when order-backed analytics are unavailable.
 
 ## Customizing the Resource
 

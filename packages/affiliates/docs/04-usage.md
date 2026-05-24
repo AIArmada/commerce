@@ -84,6 +84,54 @@ Set the consent cookie when user accepts:
 Cookie::queue('affiliate_consent', '1', 60 * 24 * 365);
 ```
 
+## Public Referral Entry Routes
+
+When `affiliates.public_pages.enabled` and `affiliates.public_pages.route.enabled` are both `true`, the package registers a public referral entry route.
+
+Default behavior:
+
+- route path: `r/{affiliateCode}`
+- route name: `affiliate.referral.entry`
+- controller: `PublicAffiliateReferralController`
+- action: `CapturePublicAffiliateReferral`
+
+Examples:
+
+```php
+route('affiliate.referral.entry', ['affiliateCode' => 'PARTNER42']);
+
+route('affiliate.referral.entry', [
+    'affiliateCode' => 'PARTNER42',
+    'to' => 'checkout',
+]);
+```
+
+The entry action resolves the affiliate, records the visit context, persists the affiliate cookie/session metadata, and then redirects to one of the configured public destinations. By default the package recognizes `home` and `checkout`, but you can add your own destination keys under `affiliates.public_pages.route.destinations`.
+
+## Public Page Referral Context
+
+`HydratePublicAffiliateReferralContext` is the request middleware that turns the stored referral into a small public-page payload for banners, hero copy, and checkout entry points.
+
+When `affiliates.public_pages.auto_register_middleware` is enabled, the middleware is pushed into the `web` group automatically. You can also attach it manually with the alias:
+
+```php
+Route::middleware('affiliates.public_context')->group(function (): void {
+    Route::view('/landing', 'landing.show');
+});
+```
+
+The package also shares the resolved context with all views using the configured `affiliates.public_pages.view_data_key` (default: `affiliateReferral`).
+
+Typical payload fields include:
+
+- `code`
+- `name`
+- `default_voucher_code`
+- `entry_url`
+- `checkout_url`
+
+The package ships a ready-made banner view at `affiliates::components.public-referral-banner` that expects this payload shape, so applications can reuse or adapt it for public landing pages and checkout surfaces.
+
 ## Recording Conversions
 
 ### From Cart
