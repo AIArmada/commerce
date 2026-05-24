@@ -1,3 +1,7 @@
+---
+title: Configuration
+---
+
 # Configuration
 
 Environment and configuration options for AIArmada Commerce.

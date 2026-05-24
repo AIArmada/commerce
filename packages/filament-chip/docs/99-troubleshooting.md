@@ -240,7 +240,7 @@ dd($resources);
 
 ## Getting Help
 
-1. Check [CHIP Package Troubleshooting](../../chip/docs/99-trouble.md)
+1. Check [CHIP Package Troubleshooting](../../chip/docs/99-troubleshooting.md)
 2. Run `php artisan chip:health` to verify API connectivity
 3. Enable debug logging to capture detailed errors
 4. Review browser console for frontend issues

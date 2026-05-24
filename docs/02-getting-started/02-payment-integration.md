@@ -1,3 +1,8 @@
+---
+title: Payment Integration
+status: current
+---
+
 # Getting Started: Payment Integration
 
 Learn how to accept payments using CHIP payment gateway.
@@ -24,15 +29,18 @@ Sign up at [CHIP](https://www.chip-in.asia/) and obtain:
 ```env
 CHIP_COLLECT_API_KEY=your-collect-api-key
 CHIP_COLLECT_BRAND_ID=your-brand-id
-CHIP_COLLECT_ENVIRONMENT=sandbox
-CHIP_WEBHOOKS_PUBLIC_KEY=your-public-key
+CHIP_ENVIRONMENT=sandbox
+CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+CHIP_WEBHOOK_ROUTE=/chip/webhook
 ```
+
+If you register multiple CHIP webhook IDs, use `CHIP_WEBHOOK_PUBLIC_KEYS` as documented in the canonical CHIP configuration guide.
 
 ### 3. Register Webhook
 
-In CHIP dashboard, register webhook URL:
+In CHIP dashboard, register the webhook route from `config('chip.webhooks.route', '/chip/webhook')`, typically:
 ```
-https://your-app.com/webhooks/chip/{webhook_id}
+https://your-app.com/chip/webhook
 ```
 
 Package automatically handles webhook routes.
@@ -183,15 +191,15 @@ class ChipPurchasePaidListener
 
 ```php
 // app/Providers/EventServiceProvider.php
-use AIArmada\Chip\Events\{PurchasePaid, PurchaseFailed};
-use App\Listeners\{ChipPurchasePaidListener, ChipPurchaseFailedListener};
+use AIArmada\Chip\Events\{PurchasePaid, PurchasePaymentFailure};
+use App\Listeners\{ChipPurchasePaidListener, ChipPurchasePaymentFailureListener};
 
 protected $listen = [
     PurchasePaid::class => [
         ChipPurchasePaidListener::class,
     ],
-    PurchaseFailed::class => [
-        ChipPurchaseFailedListener::class,
+    PurchasePaymentFailure::class => [
+        ChipPurchasePaymentFailureListener::class,
     ],
 ];
 ```
@@ -200,7 +208,7 @@ protected $listen = [
 
 - `PurchaseCreated`: Purchase created
 - `PurchasePaid`: Payment successful
-- `PurchaseFailed`: Payment failed
+- `PurchasePaymentFailure`: Payment failed during the purchase flow
 - `PurchaseRefunded`: Purchase refunded
 - `PurchaseCancelled`: Purchase cancelled
 
@@ -313,7 +321,7 @@ Chip::deleteRecurringToken('purchase-id');
 Use sandbox for development:
 
 ```env
-CHIP_COLLECT_ENVIRONMENT=sandbox
+CHIP_ENVIRONMENT=sandbox
 ```
 
 ### Test Cards
@@ -432,6 +440,7 @@ Route::get('/checkout/success', function () {
 
 ## Next Steps
 
-- **[Voucher System](03-voucher-system.md)**: Add discount codes to checkout
-- **[CHIP Package Reference](../03-packages/02-chip.md)**: Complete API documentation
-- **[Filament CHIP Plugin](../03-packages/08-filament-chip.md)**: Admin panel for managing purchases
+- **[CHIP Package Overview](../../packages/chip/docs/01-overview.md)**: Read the canonical CHIP package docs
+- **[CHIP Usage Guide](../../packages/chip/docs/04-usage.md)**: Move from getting-started examples to production flows
+- **[Filament CHIP Overview](../../packages/filament-chip/docs/01-overview.md)**: Admin panel for purchases and analytics
+- **[Checkout Overview](../../packages/checkout/docs/01-overview.md)**: Connect payment results to your checkout orchestration

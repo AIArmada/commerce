@@ -4,6 +4,41 @@ title: Filament Cashier Overview
 
 # Filament Cashier
 
+## Purpose
+
+The `aiarmada/filament-cashier` package is the Filament admin adapter for `aiarmada/cashier`.
+
+## What this package owns
+
+- Unified Filament resources for subscriptions and invoices across installed gateways
+- Billing dashboard and gateway comparison widgets
+- Gateway-agnostic billing administration and optional gateway-management UI
+
+## What this package does not own
+
+- Gateway API integrations or billing persistence; those stay in `aiarmada/cashier`, `aiarmada/cashier-chip`, and `laravel/cashier`
+- CHIP-specific billing portal flows owned by `aiarmada/filament-cashier-chip`
+- Tenant resolution itself; it consumes the owner context from the host app and `commerce-support`
+
+## Related packages
+
+- [`aiarmada/cashier`](../../cashier/docs/01-overview.md) — unified multi-gateway billing abstraction
+- [`aiarmada/cashier-chip`](../../cashier-chip/docs/01-overview.md) — CHIP billing driver
+- [`aiarmada/filament-cashier-chip`](../../filament-cashier-chip/docs/01-overview.md) — CHIP-specific billing portal and analytics
+- `laravel/cashier` — Stripe gateway support
+
+## Main models services or surfaces
+
+- **Resources** — unified subscriptions and unified invoices
+- **Pages** — billing dashboard, gateway setup, and optional gateway management
+- **Widgets** — total MRR, subscribers, gateway breakdown/comparison, and unified churn
+- **Support** — gateway detector, normalized DTOs, and owner-scope helpers
+
+## Owner scoping and security notes
+
+- The plugin should mirror the owner-scoping behavior defined by `aiarmada/cashier` and the installed gateway packages
+- Unified admin views are not authorization; write operations still rely on the backing gateway package to validate owner-safe billing actions
+
 Unified Filament admin interface for multi-gateway billing management with Stripe and CHIP support.
 
 ## Overview
@@ -70,7 +105,7 @@ The package automatically detects installed gateways and enables features accord
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.4+
 - Laravel 13.0+
 - Filament 5.0+
 - `aiarmada/cashier` (required)
@@ -125,3 +160,11 @@ public function panel(Panel $panel): Panel
 | `aiarmada/cashier-chip` | CHIP payment gateway integration |
 | `aiarmada/filament-cashier-chip` | Enhanced CHIP-specific Filament UI |
 | `laravel/cashier` | Stripe integration (official Laravel package) |
+
+## Read next
+
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Troubleshooting](99-troubleshooting.md)
+- [Core Cashier overview](../../cashier/docs/01-overview.md)

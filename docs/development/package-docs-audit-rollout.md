@@ -17,7 +17,7 @@ Success means:
 - package boundaries are explicit,
 - security and owner-scoping rules are stated correctly,
 - related package docs cross-link cleanly,
-- the repo is ready for later AI manifests, package maps, and custom skills.
+- the repo is ready for the current AI retrieval layer and future AI docs expansion.
 
 ## Working rules
 
@@ -26,6 +26,7 @@ Success means:
 3. Root `docs/*.md` files explain cross-package behavior, onboarding, and ecosystem context. They should not replace package docs.
 4. If docs conflict with code, config, or tests, update the docs in the same pass.
 5. Normalize structure during package audits. Do not do a repo-wide rename-only sweep.
+6. Default progress cadence is one 10-package checkpoint within a wave before pausing for status, unless a blocker-level truth issue forces an earlier stop.
 
 ## Standard package docs template
 
@@ -152,16 +153,15 @@ Each troubleshooting entry should follow this pattern:
 
 Avoid vague FAQ filler. Troubleshooting should reflect real failure modes seen in code, tests, or support/audit work.
 
-## Known naming and structure drift to normalize
+## Known cleanup patterns to normalize
 
-These are good early examples of the drift this rollout should fix:
+The most common legacy patterns in this repo are:
 
-- `packages/docs/docs/00-overview.md` should converge on `01-overview.md`
-- `packages/cashier/docs/01-getting-started.md` should converge on the standard overview plus installation split
-- `packages/filament-cart/docs/02-resources.md`, `03-installation.md`, and `04-configuration.md` should converge on the common ordering
-- `packages/chip/docs/99-trouble.md` should converge on `99-troubleshooting.md`
+- combined “getting started” pages that need to converge on a separate overview and installation split,
+- Filament package docs that need to converge on `02-installation.md`, `03-configuration.md`, and `04-usage.md`,
+- duplicate legacy filenames like `00-overview.md` or `99-trouble.md` that should be retired only after the canonical replacement exists.
 
-Fix these during the relevant package waves rather than in a standalone rename-only PR.
+Fix these during the relevant package pass rather than in a standalone rename-only PR.
 
 ## Practical audit checklist
 
@@ -260,7 +260,9 @@ Use the same sequence every time.
 Keep PRs reviewable:
 
 - prefer one seam or one wave slice per PR,
+- prefer 10-package execution checkpoints when the packages share a wave and review context,
 - pair a domain package with its Filament package when the docs cross-reference each other heavily,
+- split the actual PR if reviewability suffers even when the working checkpoint stays at 10 packages,
 - avoid giant repo-wide doc sweeps.
 
 ## Rollout order for Commerce
@@ -383,12 +385,11 @@ Finish with the bundle package after the underlying package docs are truthful.
 
 ## Practical outcome of this rollout
 
-Once the waves above are complete, Commerce should be ready for the next documentation layer:
+Commerce now has the first AI-oriented documentation layer in place:
 
-- AI-oriented package manifests,
-- ecosystem navigation docs,
-- package-selection and owner-safety skills,
-- cross-package task maps,
-- safer retrieval for automated coding assistants.
+- `CONTEXT.md`,
+- `docs/ai/01-overview.md`,
+- `docs/ai/package-manifests.json`,
+- Commerce-specific package-routing, owner-audit, Filament-adapter, and docs-truth skills.
 
-That later AI layer should be generated from truthful package docs, not used as a substitute for them.
+Future AI docs should continue to be generated from truthful package docs, not used as a substitute for them.

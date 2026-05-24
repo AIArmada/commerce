@@ -4,6 +4,43 @@ title: Overview
 
 # Affiliates Package
 
+## Purpose
+
+The `aiarmada/affiliates` package owns affiliate attribution, referral programs, commission calculation, payout workflows, fraud signals, and affiliate analytics for the Commerce ecosystem.
+
+## What this package owns
+
+- Affiliate programs, memberships, conversions, commissions, payout records, and fraud signals
+- Attribution capture, tracking cookies, UTM and fingerprint data, and conversion recording flows
+- Commission tiers, maturity periods, payout batching, and fraud-detection rules
+- Affiliate-facing events, services, commands, and optional API surfaces
+
+## What this package does not own
+
+- Multi-merchant marketplace offers and site publishing; those belong to `aiarmada/affiliate-network`
+- Filament admin or affiliate portal surfaces; those belong to `aiarmada/filament-affiliates`
+- Cart, voucher, or checkout persistence; integrations enrich those packages rather than owning them
+
+## Related packages
+
+- [`aiarmada/filament-affiliates`](../../filament-affiliates/docs/01-overview.md) — Filament admin UI and affiliate portal surfaces
+- [`aiarmada/affiliate-network`](../../affiliate-network/docs/01-overview.md) — marketplace/network extension on top of core affiliates
+- [`aiarmada/cart`](../../cart/docs/01-overview.md) — automatic attribution metadata and cart helpers
+- [`aiarmada/vouchers`](../../vouchers/docs/01-overview.md) — optional voucher-to-affiliate metadata bridge
+- [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and shared infrastructure
+
+## Main models services or surfaces
+
+- **Models** — affiliates, programs, tiers, conversions, payouts, fraud signals, creatives, and related tracking records
+- **Services and actions** — attribution, commission calculation, payout processing, fraud scoring, reporting, and program workflows
+- **Interfaces** — optional API, commands, and event surfaces documented in the deeper package pages
+
+## Owner scoping and security notes
+
+- Owner enforcement follows `affiliates.owner.enabled` and the broader `commerce-support` owner contract
+- Child or derived models use relationship-based scoping; non-request surfaces still need explicit owner context
+- Consuming applications should validate affiliate, program, payout, and conversion identifiers server-side rather than trusting filtered UI options
+
 The `aiarmada/affiliates` package provides a complete affiliate marketing and referral tracking system for Laravel applications. Built for commerce platforms, it handles attribution, commission calculations, payouts, fraud detection, and multi-level network management.
 
 ## Key Features
@@ -101,3 +138,19 @@ All integrations are detected via `class_exists()` and enabled automatically.
 - PHP 8.4+
 - Laravel 11+
 - `aiarmada/commerce-support` (for multi-tenancy primitives)
+
+## Read next
+
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Models](05-models.md)
+- [Services](06-services.md)
+- [Programs](07-programs.md)
+- [Payouts](08-payouts.md)
+- [Fraud detection](09-fraud-detection.md)
+- [Multitenancy](10-multi-tenancy.md)
+- [Commands](11-commands.md)
+- [Events](12-events.md)
+- [API](13-api.md)
+- [Filament Affiliates overview](../../filament-affiliates/docs/01-overview.md)

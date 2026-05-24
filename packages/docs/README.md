@@ -112,11 +112,12 @@ Important keys in `config/docs.php`:
 
 See the package docs in `packages/docs/docs/`:
 
-- `00-overview.md`
-- `01-installation.md`
-- `02-usage.md`
-- `03-pdf-generation.md`
-- `04-status-management.md`
-- `05-templates.md`
-- `06-tailwind-usage.md`
+- `01-overview.md`
+- `02-installation.md`
+- `03-configuration.md`
+- `04-usage.md`
+- `05-pdf-generation.md`
+- `06-status-management.md`
+- `07-templates.md`
+- `08-tailwind-usage.md`
 - `99-troubleshooting.md`

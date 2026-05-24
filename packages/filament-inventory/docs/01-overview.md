@@ -4,7 +4,40 @@ title: Overview
 
 # Filament Inventory
 
-A comprehensive Filament admin panel plugin for inventory and warehouse management. This package provides full CRUD resources, dashboard widgets, and operational actions for managing inventory across multiple locations.
+## Purpose
+
+The `aiarmada/filament-inventory` package is the Filament admin adapter for `aiarmada/inventory`. It exposes inventory operations through resources, widgets, and action workflows.
+
+## What this package owns
+
+- Filament resources for locations, stock levels, movements, allocations, and optional batch or serial management
+- Inventory dashboard widgets, charts, and KPI surfaces
+- Admin actions for receive, ship, transfer, adjust, cycle count, reorder approval, and allocation release workflows
+- Filament-side owner-aware query helpers and dashboard aggregation surfaces
+
+## What this package does not own
+
+- Inventory persistence, stock calculation, costing, forecasting, or allocation rules; those stay in `aiarmada/inventory`
+- Product catalog, checkout, or order domain behavior
+- Tenant resolution itself; it consumes the owner context provided by the host app and `commerce-support`
+
+## Related packages
+
+- [`aiarmada/inventory`](../../inventory/docs/01-overview.md) — core inventory models, actions, and services
+- [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner-context primitives used by admin queries
+- [`aiarmada/filament-authz`](../../filament-authz/docs/01-overview.md) — optional admin authorization layer when installed
+
+## Main models services or surfaces
+
+- **Resources** — `InventoryLocationResource`, `InventoryLevelResource`, `InventoryMovementResource`, `InventoryAllocationResource`, plus optional `InventoryBatchResource` and `InventorySerialResource`
+- **Widgets** — stats, low inventory alerts, expiring batches, reorder suggestions, backorders, valuation, KPIs, movement trends, and ABC analysis
+- **Actions and services** — receive, ship, transfer, adjust, cycle count, reorder approval, allocation release, and `InventoryStatsAggregator`
+
+## Owner scoping and security notes
+
+- The package uses `InventoryOwnerScope` to keep resources, widgets, and action lookups aligned with the current owner context
+- Relationship options and action forms are owner-scoped for usability, but actions also revalidate submitted location and record IDs server-side before mutating inventory
+- Global or cross-owner operations should only happen through explicit core-package flows, not by bypassing Filament filtering
 
 ## Features
 
@@ -75,3 +108,12 @@ public function panel(Panel $panel): Panel
 ## Multitenancy
 
 The package fully supports owner-scoped multitenancy through the `InventoryOwnerScope` helper. When owner mode is enabled in the core inventory package, all resources automatically filter data to the current tenant context.
+
+## Read next
+
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Widgets](05-widgets.md)
+- [Actions](06-actions.md)
+- [Core inventory overview](../../inventory/docs/01-overview.md)

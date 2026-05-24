@@ -89,10 +89,10 @@ When `docs.owner.enabled` is on, the package applies owner checks to:
 
 See `packages/filament-docs/docs/` for package docs:
 
-- `00-overview.md`
-- `01-installation.md`
-- `02-resources.md`
+- `01-overview.md`
+- `02-installation.md`
+- `04-usage.md`
 - `03-configuration.md`
-- `04-pages-widgets.md`
-- `05-customization.md`
+- `05-pages-widgets.md`
+- `06-customization.md`
 - `99-troubleshooting.md`

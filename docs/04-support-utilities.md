@@ -1,551 +1,111 @@
-# Support Utilities Reference
+---
+title: Support Utilities
+status: current
+---
 
-The **aiarmada/commerce-support** package provides shared utilities, exceptions, HTTP client, and helpers used across all Commerce packages.
+# Support Utilities
 
-## Overview
+This guide explains how the shared `aiarmada/commerce-support` package fits into the wider Commerce ecosystem.
 
-Support package contains:
-- **Exception Hierarchy**: Structured exceptions for consistent error handling
-- **BaseApiClient**: Abstract HTTP client with retry logic and logging
-- **MoneyHelper**: Currency utilities for safe money operations
-- **Enum Concerns**: Traits for enhanced Laravel enums
+Use this page when you need to understand **which shared foundation surface to reach for**. For API details, configuration, and implementation examples, prefer the canonical package docs in `packages/commerce-support/docs/*.md`.
 
-Tip: Configure database JSON type via `php artisan commerce:configure-database` to set `COMMERCE_JSON_COLUMN_TYPE` or per-package overrides before running migrations.
+## What belongs in `commerce-support`
 
-## Exception Hierarchy
+`aiarmada/commerce-support` owns the cross-package seams that the rest of the monorepo builds on:
 
-### CommerceException
+- owner scoping primitives and explicit global-context semantics,
+- payment gateway and checkout contracts,
+- money normalization and formatting helpers,
+- webhook validation and processing foundations,
+- health-check abstractions,
+- targeting and eligibility evaluation infrastructure,
+- owner-scoped cache, filesystem, route-binding, and write-guard helpers,
+- shared actions, testing traits, and support utilities.
 
-Base exception for all Commerce packages.
+## What does not belong here
 
-```php
-use AIArmada\Support\Exceptions\CommerceException;
+`commerce-support` is not the place for:
 
-throw new CommerceException(
-    message: 'Invalid cart operation',
-    code: 'CART_INVALID',
-    errorCode: 'cart.invalid',
-    errorData: ['cart_id' => $cartId]
-);
-```
+- cart, checkout, order, pricing, or voucher business rules,
+- Filament resources, pages, widgets, or panel-specific behavior,
+- gateway-specific implementation details for `chip`, `cashier`, or `cashier-chip`,
+- package-local models, migrations, or config beyond the shared primitives it exposes.
 
-**Methods:**
-- `getErrorCode()`: string - Machine-readable error code
-- `getErrorData()`: array - Additional error context
-- `getContext()`: array - Full error context for logging
+When a task is package-specific, start with that package’s `01-overview.md` and only drop into `commerce-support` when the work crosses package boundaries.
 
-### CommerceApiException
+## Common reasons to read the support docs
 
-For external API failures.
+### Owner safety and multitenancy
 
-```php
-use AIArmada\Support\Exceptions\CommerceApiException;
+Start here when a change touches tenant/owner boundaries, global records, route model binding, background jobs, exports, or webhook handling.
 
-throw CommerceApiException::fromResponse(
-    response: $response,
-    message: 'CHIP API request failed',
-    errorCode: 'chip.api_error'
-);
-```
+Canonical docs:
 
-**Factory Methods:**
-- `fromResponse(Response $response, string $message, string $errorCode)`: Create from HTTP response
+- [`Commerce Support overview`](../packages/commerce-support/docs/01-overview.md)
+- [`Usage`](../packages/commerce-support/docs/04-usage.md)
+- [`Multi-tenancy`](../packages/commerce-support/docs/04-multi-tenancy.md)
+- [`Isolation Primitives`](../packages/commerce-support/docs/11-isolation-primitives.md)
+- [`Actions`](../packages/commerce-support/docs/12-actions.md)
 
-**Properties:**
-- `statusCode`: int - HTTP status code
-- `responseBody`: array - Decoded response body
-
-### CommerceValidationException
-
-For validation failures.
+Representative helpers:
 
 ```php
-use AIArmada\Support\Exceptions\CommerceValidationException;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 
-throw CommerceValidationException::forField(
-    field: 'quantity',
-    message: 'Quantity must be at least 1',
-    value: $quantity
-);
+OwnerContext::withOwner($owner, function () use ($payload): void {
+    OwnerWriteGuard::findOrFailForOwner(Location::class, $payload['location_id']);
+});
 ```
 
-**Factory Methods:**
-- `forField(string $field, string $message, mixed $value)`: Single field error
+### Payment contracts and money handling
 
-**Properties:**
-- `field`: string - Field name
-- `value`: mixed - Invalid value
+Read these when you are wiring a gateway, normalizing amounts, or working on payment abstractions shared by `chip`, `cashier`, or `checkout`.
 
-### CommerceConfigurationException
+Canonical docs:
 
-For configuration issues.
+- [`Payment Contracts`](../packages/commerce-support/docs/05-payment-contracts.md)
+- [`Traits & Utilities`](../packages/commerce-support/docs/10-traits-utilities.md)
+
+Representative helpers:
 
 ```php
-use AIArmada\Support\Exceptions\CommerceConfigurationException;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
+use AIArmada\CommerceSupport\Support\MoneyNormalizer;
 
-throw CommerceConfigurationException::missing(
-    key: 'chip.collect.api_key',
-    context: ['environment' => app()->environment()]
-);
-
-throw CommerceConfigurationException::invalid(
-    key: 'cart.storage_driver',
-    value: $driver,
-    expectedValues: ['session', 'cache', 'database']
-);
+$amount = MoneyNormalizer::toMinorUnits('99.90', 'MYR');
+$gateway = app(PaymentGatewayInterface::class);
 ```
 
-**Factory Methods:**
-- `missing(string $key, array $context)`: Missing configuration
-- `invalid(string $key, mixed $value, array $expectedValues)`: Invalid value
+### Targeting and eligibility rules
 
-## HTTP Client (BaseApiClient)
+Use the targeting docs when you need shared rule evaluation across promotions, vouchers, growth, or other eligibility-sensitive features.
 
-Abstract HTTP client for external APIs with retry logic, logging, and error handling.
+Canonical docs:
 
-### Creating API Client
+- [`Targeting Engine`](../packages/commerce-support/docs/06-targeting-engine.md)
 
-```php
-namespace App\Services;
+### Webhooks and health checks
 
-use AIArmada\Support\Http\BaseApiClient;
-use Illuminate\Http\Client\Response;
+Use these docs for shared webhook validation patterns, event ingestion safety, and health-reporting foundations used by gateway and operational packages.
 
-class MyApiClient extends BaseApiClient
-{
-    protected function getBaseUrl(): string
-    {
-        return config('myapi.base_url');
-    }
-    
-    protected function getDefaultHeaders(): array
-    {
-        return [
-            'Authorization' => 'Bearer ' . config('myapi.api_key'),
-            'Accept' => 'application/json',
-        ];
-    }
-    
-    protected function shouldRetry(Response $response): bool
-    {
-        // Retry on 5xx errors or connection issues
-        return $response->status() >= 500;
-    }
-    
-    protected function handleError(Response $response): void
-    {
-        throw CommerceApiException::fromResponse(
-            $response,
-            'My API request failed',
-            'myapi.error'
-        );
-    }
-}
-```
+Canonical docs:
 
-### Using API Client
+- [`Webhooks`](../packages/commerce-support/docs/08-webhooks.md)
+- [`Health Checks`](../packages/commerce-support/docs/09-health-checks.md)
 
-```php
-$client = new MyApiClient();
+## How this root guide should be used
 
-// GET request
-$response = $client->get('/users');
+This file is intentionally short. It exists to help humans and AI assistants decide **where to go next**.
 
-// POST request
-$response = $client->post('/users', [
-    'name' => 'John Doe',
-    'email' => 'john@example.com',
-]);
+For detailed examples, current namespaces, config keys, and extension points, prefer the package docs under `packages/commerce-support/docs/`.
 
-// PUT request
-$response = $client->put('/users/123', [
-    'name' => 'Jane Doe',
-]);
+## Read next
 
-// DELETE request
-$response = $client->delete('/users/123');
-```
-
-### Configuration
-
-```php
-// Constructor options
-$client = new MyApiClient(
-    timeout: 30,           // Request timeout (seconds)
-    retryTimes: 3,         // Retry attempts
-    retryDelay: 100,       // Initial delay (ms)
-    retryMultiplier: 2.0,  // Exponential backoff
-    logRequests: true,     // Log all requests
-    maskSensitiveData: true // Mask API keys in logs
-);
-```
-
-### Logging
-
-Requests are automatically logged when `logRequests` is enabled:
-
-```php
-// Log format
-[2025-11-01 10:30:45] production.INFO: API Request {
-    "method": "POST",
-    "url": "https://api.example.com/users",
-    "headers": {
-        "Authorization": "Bearer ***MASKED***",
-        "Content-Type": "application/json"
-    },
-    "body": { "name": "John Doe" },
-    "response_status": 200,
-    "response_time_ms": 245
-}
-```
-
-Sensitive fields are automatically masked: `api_key`, `secret`, `token`, `password`, `authorization`.
-
-## MoneyHelper
-
-Utilities for safe money operations with Akaunting Money.
-
-### Creating Money Instances
-
-```php
-use AIArmada\Support\Utilities\MoneyHelper;
-
-// From cents
-$money = MoneyHelper::make(2999, 'MYR'); // RM 29.99
-
-// From formatted string
-$money = MoneyHelper::sanitizePrice('RM 29.99', 'MYR');
-$money = MoneyHelper::sanitizePrice('29.99', 'MYR');
-$money = MoneyHelper::sanitizePrice('2,999.00', 'MYR');
-
-// Zero amount
-$zero = MoneyHelper::zero('MYR');
-```
-
-### Converting Amounts
-
-```php
-// To cents
-$cents = MoneyHelper::toCents($money); // 2999
-
-// From cents
-$money = MoneyHelper::fromCents(2999, 'MYR');
-
-// Parse string amount
-$amount = MoneyHelper::parseAmount('29.99'); // 2999
-$amount = MoneyHelper::parseAmount('29,99'); // 2999
-```
-
-### Formatting for Display
-
-```php
-$money = MoneyHelper::make(2999, 'MYR');
-
-// Format with symbol
-echo MoneyHelper::formatForDisplay($money); // "RM29.99"
-
-// Format without symbol
-echo MoneyHelper::formatForDisplay($money, includeSymbol: false); // "29.99"
-```
-
-### Currency Operations
-
-```php
-// Get default currency
-$currency = MoneyHelper::getDefaultCurrency(); // "MYR"
-
-// Validate currency code
-MoneyHelper::validateCurrency('MYR'); // true
-MoneyHelper::validateCurrency('INVALID'); // throws exception
-
-// Get currency symbol
-$symbol = MoneyHelper::getCurrencySymbol('MYR'); // "RM"
-$symbol = MoneyHelper::getCurrencySymbol('USD'); // "$"
-```
-
-### Money Calculations
-
-```php
-$price1 = MoneyHelper::make(2999, 'MYR');
-$price2 = MoneyHelper::make(1999, 'MYR');
-
-// Check equality
-MoneyHelper::equals($price1, $price2); // false
-
-// Sum multiple amounts
-$total = MoneyHelper::sum([$price1, $price2]); // RM 49.98
-
-// Calculate percentage
-$discount = MoneyHelper::percentage($price1, 10); // RM 2.999 (10%)
-
-// Currency conversion (requires exchange rate)
-$usd = MoneyHelper::convertCurrency(
-    $price1,
-    'USD',
-    exchangeRate: 4.5
-); // Converts RM to USD
-```
-
-## Enum Concerns
-
-Traits for enhanced Laravel 8.1+ enums.
-
-### HasLabels
-
-Add human-readable labels to enums.
-
-```php
-use AIArmada\Support\Concerns\HasLabels;
-
-enum OrderStatus: string
-{
-    use HasLabels;
-    
-    case PENDING = 'pending';
-    case PAID = 'paid';
-    case SHIPPED = 'shipped';
-    case DELIVERED = 'delivered';
-    
-    public function getLabel(): string
-    {
-        return match($this) {
-            self::PENDING => 'Pending Payment',
-            self::PAID => 'Paid',
-            self::SHIPPED => 'Shipped',
-            self::DELIVERED => 'Delivered',
-        };
-    }
-}
-
-// Usage
-echo OrderStatus::PAID->getLabel(); // "Paid"
-
-// Get all labels
-$labels = OrderStatus::labels();
-// ['pending' => 'Pending Payment', 'paid' => 'Paid', ...]
-
-// Select options for forms
-$options = OrderStatus::toSelectOptions();
-// ['pending' => 'Pending Payment', 'paid' => 'Paid', ...]
-
-// Get label by value
-$label = OrderStatus::getLabelByValue('paid'); // "Paid"
-
-// Get enum from label
-$status = OrderStatus::fromLabel('Paid'); // OrderStatus::PAID
-```
-
-### HasColors
-
-Add colors for UI display.
-
-```php
-use AIArmada\Support\Concerns\HasColors;
-
-enum OrderStatus: string
-{
-    use HasColors;
-    
-    case PENDING = 'pending';
-    case PAID = 'paid';
-    case CANCELLED = 'cancelled';
-    
-    public function getColor(): string
-    {
-        return match($this) {
-            self::PENDING => 'warning',
-            self::PAID => 'success',
-            self::CANCELLED => 'danger',
-        };
-    }
-}
-
-// Usage
-echo OrderStatus::PAID->getColor(); // "success"
-
-// Get all colors
-$colors = OrderStatus::colors();
-// ['pending' => 'warning', 'paid' => 'success', ...]
-
-// Get color by value
-$color = OrderStatus::getColorByValue('paid'); // "success"
-
-// Get Filament badge color
-$badgeColor = OrderStatus::PAID->getBadgeColor(); // "success"
-```
-
-### HasIcons
-
-Add icons for UI display.
-
-```php
-use AIArmada\Support\Concerns\HasIcons;
-
-enum OrderStatus: string
-{
-    use HasIcons;
-    
-    case PENDING = 'pending';
-    case PAID = 'paid';
-    case SHIPPED = 'shipped';
-    
-    public function getIcon(): string
-    {
-        return match($this) {
-            self::PENDING => 'heroicon-o-clock',
-            self::PAID => 'heroicon-o-check-circle',
-            self::SHIPPED => 'heroicon-o-truck',
-        };
-    }
-}
-
-// Usage
-echo OrderStatus::PAID->getIcon(); // "heroicon-o-check-circle"
-
-// Get all icons
-$icons = OrderStatus::icons();
-
-// Get icon by value
-$icon = OrderStatus::getIconByValue('paid');
-
-// Get Filament icon
-$filamentIcon = OrderStatus::PAID->getFilamentIcon();
-```
-
-### HasDescriptions
-
-Add descriptions for enums.
-
-```php
-use AIArmada\Support\Concerns\HasDescriptions;
-
-enum PaymentMethod: string
-{
-    use HasDescriptions;
-    
-    case FPX = 'fpx';
-    case CARD = 'card';
-    
-    public function getDescription(): string
-    {
-        return match($this) {
-            self::FPX => 'Online banking via FPX',
-            self::CARD => 'Credit/debit card payment',
-        };
-    }
-}
-
-// Usage
-echo PaymentMethod::FPX->getDescription();
-// "Online banking via FPX"
-
-// Get all descriptions
-$descriptions = PaymentMethod::descriptions();
-
-// Get description by value
-$desc = PaymentMethod::getDescriptionByValue('fpx');
-
-// Check if has description
-PaymentMethod::FPX->hasDescription(); // true
-```
-
-### Combining Multiple Concerns
-
-```php
-enum VoucherType: string
-{
-    use HasLabels, HasColors, HasIcons, HasDescriptions;
-    
-    case FIXED = 'fixed';
-    case PERCENTAGE = 'percentage';
-    case FREE_SHIPPING = 'free_shipping';
-    
-    public function getLabel(): string
-    {
-        return match($this) {
-            self::FIXED => 'Fixed Amount',
-            self::PERCENTAGE => 'Percentage',
-            self::FREE_SHIPPING => 'Free Shipping',
-        };
-    }
-    
-    public function getColor(): string
-    {
-        return match($this) {
-            self::FIXED => 'success',
-            self::PERCENTAGE => 'primary',
-            self::FREE_SHIPPING => 'warning',
-        };
-    }
-    
-    public function getIcon(): string
-    {
-        return match($this) {
-            self::FIXED => 'heroicon-o-currency-dollar',
-            self::PERCENTAGE => 'heroicon-o-percent-badge',
-            self::FREE_SHIPPING => 'heroicon-o-truck',
-        };
-    }
-    
-    public function getDescription(): string
-    {
-        return match($this) {
-            self::FIXED => 'Discount by fixed amount',
-            self::PERCENTAGE => 'Discount by percentage',
-            self::FREE_SHIPPING => 'Free shipping on order',
-        };
-    }
-}
-```
-
-## Best Practices
-
-### Exception Handling
-
-Always use specific Commerce exceptions:
-
-```php
-// ❌ Bad
-throw new \Exception('Cart not found');
-
-// ✅ Good
-throw new CommerceException(
-    'Cart not found',
-    'CART_NOT_FOUND',
-    errorCode: 'cart.not_found',
-    errorData: ['cart_id' => $cartId]
-);
-```
-
-### Money Operations
-
-Always use MoneyHelper for currency:
-
-```php
-// ❌ Bad
-$total = $price * $quantity; // Loses precision
-
-// ✅ Good
-$price = MoneyHelper::make(2999, 'MYR');
-$total = $price->multiply($quantity);
-```
-
-### API Clients
-
-Extend BaseApiClient for external APIs:
-
-```php
-// ❌ Bad
-Http::get('https://api.example.com/users');
-
-// ✅ Good
-class MyApiClient extends BaseApiClient {
-    // Structured, logged, retried, error-handled
-}
-```
-
-## Next Steps
-
-- **[Cart Package](03-packages/01-cart.md)**: Uses MoneyHelper and exceptions
-- **[CHIP Package](03-packages/02-chip.md)**: Uses BaseApiClient
-- **[Vouchers Package](03-packages/03-vouchers.md)**: Uses enum concerns
+- [`Commerce Support overview`](../packages/commerce-support/docs/01-overview.md)
+- [`Usage`](../packages/commerce-support/docs/04-usage.md)
+- [`Multi-tenancy`](../packages/commerce-support/docs/04-multi-tenancy.md)
+- [`Payment Contracts`](../packages/commerce-support/docs/05-payment-contracts.md)
+- [`Traits & Utilities`](../packages/commerce-support/docs/10-traits-utilities.md)
+- [`Isolation Primitives`](../packages/commerce-support/docs/11-isolation-primitives.md)
+- [`AI Context`](../CONTEXT.md)

@@ -14,7 +14,7 @@ For detailed behavior, configuration keys, and API surface, prefer the package d
 - [Affiliates package](../packages/affiliates/docs/01-overview.md)
 - [Filament Affiliates package](../packages/filament-affiliates/docs/01-overview.md)
 - [Checkout package](../packages/checkout/docs/01-overview.md)
-- [Vouchers package](../packages/vouchers/docs/01-installation.md)
+- [Vouchers package](../packages/vouchers/docs/01-overview.md)
 - [Filament Vouchers package](../packages/filament-vouchers/docs/01-overview.md)
 - [Commerce Support package](../packages/commerce-support/docs/01-overview.md)
 
@@ -29,7 +29,7 @@ If you need exact config keys, model fields, events, or extension points, jump t
 | Task | Read first |
 | --- | --- |
 | Public referral entry routes and cookies | `packages/affiliates/docs/03-configuration.md`, `packages/affiliates/docs/04-usage.md` |
-| Voucher-driven affiliate attribution | `packages/affiliates/docs/04-usage.md`, `packages/vouchers/docs/07-usage-tracking.md` |
+| Voucher-driven affiliate attribution | `packages/affiliates/docs/04-usage.md`, `packages/vouchers/docs/09-usage-tracking.md` |
 | Checkout carry-through and conversion behavior | `packages/checkout/docs/08-integrations.md`, `packages/affiliates/docs/04-usage.md` |
 | Admin operations and payout workflows | `packages/filament-affiliates/docs/04-usage.md`, `packages/affiliates/docs/08-payouts.md` |
 | Affiliate-aware voucher reporting and exports | `packages/filament-vouchers/docs/04-usage.md`, `packages/filament-vouchers/docs/05-widgets.md` |

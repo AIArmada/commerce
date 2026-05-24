@@ -4,6 +4,44 @@ title: Overview
 
 # CHIP Payment Gateway Package
 
+## Purpose
+
+The `aiarmada/chip` package is the direct CHIP gateway integration for Commerce. It owns CHIP Collect payments, CHIP Send payouts, webhook processing, and CHIP-specific payment data.
+
+## What this package owns
+
+- CHIP Collect purchases, payments, clients, and refunds
+- CHIP Send bank accounts, payout instructions, payout limits, and payout webhooks
+- CHIP webhook routing, signature verification, and webhook storage
+- CHIP health checks, analytics, gateway registration, and docs integration hooks
+
+## What this package does not own
+
+- Unified multi-gateway billing abstractions; those belong to `aiarmada/cashier`
+- Cashier-style CHIP subscriptions; those belong to `aiarmada/cashier-chip`
+- Filament admin surfaces; those belong to `aiarmada/filament-chip`
+- Checkout orchestration; that belongs to `aiarmada/checkout`
+
+## Related packages
+
+- [`aiarmada/filament-chip`](../../filament-chip/docs/01-overview.md) — Filament admin resources and analytics for CHIP data
+- [`aiarmada/cashier-chip`](../../cashier-chip/docs/01-overview.md) — Cashier-style subscription billing on top of CHIP
+- [`aiarmada/checkout`](../../checkout/docs/01-overview.md) — checkout orchestration that may use CHIP for payment collection
+- [`aiarmada/docs`](../../docs/docs/01-overview.md) — optional document integration hooks registered by the package
+- [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and payment gateway contracts
+
+## Main models services or surfaces
+
+- **Models** — CHIP purchases, payments, webhooks, bank accounts, clients, send instructions, send limits, send webhooks, and company statements
+- **Services** — collect, send, analytics, webhook, and gateway registration services
+- **Infrastructure** — webhook middleware, health-check commands, and payment gateway integration
+
+## Owner scoping and security notes
+
+- CHIP data is owner-aware and should follow the `commerce-support` owner-boundary rules
+- Webhook routes and manual sync flows should resolve owner context safely before mutating purchases or payouts
+- Explicit global or cross-owner access should remain a conscious opt-out, not an accidental side effect of missing owner context
+
 A comprehensive Laravel integration for the [CHIP](https://chip-in.asia) payment gateway, providing both **Collect** (payment collection) and **Send** (payout) functionality for Malaysian businesses.
 
 ## What is CHIP?
@@ -80,7 +118,7 @@ return redirect($purchase->checkout_url);
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12.x
+- Laravel 13+
 - CHIP merchant account with API credentials
 - `aiarmada/commerce-support` package
 
@@ -106,4 +144,10 @@ Full multi-tenancy support via `commerce-support`:
 - [Installation](02-installation.md)
 - [Configuration](03-configuration.md)
 - [Usage Guide](04-usage.md)
+- [Multitenancy](05-multitenancy.md)
+- [CHIP Collect](chip-collect.md)
+- [CHIP Send](chip-send.md)
+- [Payment gateway](payment-gateway.md)
+- [Webhooks](webhooks.md)
+- [API reference](api-reference.md)
 - [Troubleshooting](99-troubleshooting.md)

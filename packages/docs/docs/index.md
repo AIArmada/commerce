@@ -19,14 +19,15 @@ AIArmada Docs includes:
 
 ## Table of Contents
 
-1. [Overview](00-overview.md) - Architecture and core concepts
-2. [Installation](01-installation.md) - Setup and configuration
-3. [Usage](02-usage.md) - Creating and managing documents
-4. [PDF Generation](03-pdf-generation.md) - Generating PDF documents
-5. [Status Management](04-status-management.md) - Status transitions and history
-6. [Templates](05-templates.md) - Document templates
-7. [Tailwind Usage](06-tailwind-usage.md) - Styling PDF templates with Tailwind
-8. [Troubleshooting](99-troubleshooting.md) - Common issues and solutions
+1. [Overview](01-overview.md) - Architecture and core concepts
+2. [Installation](02-installation.md) - Setup and configuration
+3. [Configuration](03-configuration.md) - Runtime defaults and document behavior
+4. [Usage](04-usage.md) - Creating and managing documents
+5. [PDF Generation](05-pdf-generation.md) - Generating PDF documents
+6. [Status Management](06-status-management.md) - Status transitions and history
+7. [Templates](07-templates.md) - Document templates
+8. [Tailwind Usage](08-tailwind-usage.md) - Styling PDF templates with Tailwind
+9. [Troubleshooting](99-troubleshooting.md) - Common issues and solutions
 
 ## Quick Start
 

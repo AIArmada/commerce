@@ -4,7 +4,40 @@ title: Overview
 
 # Filament Tax Plugin
 
-The Filament Tax plugin provides a complete admin interface for managing tax configuration in Laravel applications using [Filament](https://filamentphp.com).
+## Purpose
+
+The `aiarmada/filament-tax` package is the Filament admin adapter for `aiarmada/tax`. It exposes tax configuration, exemption workflows, widgets, and settings through Filament resources and pages.
+
+## What this package owns
+
+- Filament resources for tax zones, classes, rates, and exemptions
+- Tax settings page, dashboard widgets, and certificate download actions
+- Filament-side authorization integration when `aiarmada/filament-authz` is installed
+
+## What this package does not own
+
+- Tax calculation, persistence, or result contracts; those stay in `aiarmada/tax`
+- Checkout or order total orchestration
+- Tenant resolution itself; it consumes owner context from the host app and `commerce-support`
+
+## Related packages
+
+- [`aiarmada/tax`](../../tax/docs/01-overview.md) — core tax engine and data model
+- [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner-context and shared infrastructure
+- [`aiarmada/filament-authz`](../../filament-authz/docs/01-overview.md) — optional policy and permission integration
+
+## Main models services or surfaces
+
+- **Resources** — `TaxZoneResource`, `TaxClassResource`, `TaxRateResource`, `TaxExemptionResource`
+- **Pages** — `ManageTaxSettings`
+- **Widgets** — `TaxStatsWidget`, `ExpiringExemptionsWidget`, `ZoneCoverageWidget`
+- **Actions and support** — `DownloadTaxExemptionCertificateAction`, `FilamentTaxAuthz`
+
+## Owner scoping and security notes
+
+- The package should mirror the owner-scoping rules defined by `aiarmada/tax` and `commerce-support`
+- Filtered option lists are not authorization; action handlers and resource queries still need owner-safe reads and writes underneath
+- Settings-page access should be treated as a privileged surface, especially in multi-panel installations
 
 ## Features
 
@@ -112,7 +145,7 @@ FilamentTaxPlugin::make()
     ->rates(true)       // Enable rate management
     ->exemptions(true)  // Enable exemption management
     ->widgets(true)     // Enable dashboard widgets
-    ->settings(true);   // Enable settings page
+    ->settingsPage(true); // Enable settings page
 ```
 
 ## Filament Version
@@ -121,6 +154,16 @@ This plugin is built for **Filament 5.0** which uses Livewire 4. The API is comp
 
 ## Related Packages
 
-- [`aiarmada/tax`](../tax/01-overview.md) — Core tax calculation engine (required)
-- [`aiarmada/commerce-support`](../commerce-support/01-overview.md) — Shared utilities for multi-tenancy
-- [`aiarmada/filament-authz`](../filament-authz/01-overview.md) — Authorization layer (optional)
+- [`aiarmada/tax`](../../tax/docs/01-overview.md) — Core tax calculation engine (required)
+- [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — Shared utilities for multi-tenancy
+- [`aiarmada/filament-authz`](../../filament-authz/docs/01-overview.md) — Authorization layer (optional)
+
+## Read next
+
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Widgets](05-widgets.md)
+- [Settings](06-settings.md)
+- [Customization](07-customization.md)
+- [Core tax overview](../../tax/docs/01-overview.md)

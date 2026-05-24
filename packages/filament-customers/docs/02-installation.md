@@ -7,8 +7,7 @@ title: Installation
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
-- Filament 5+
+- Filament 5.6+
 - aiarmada/customers package
 
 ## Composer Installation
@@ -19,7 +18,7 @@ Install the plugin via Composer:
 composer require aiarmada/filament-customers
 ```
 
-The plugin will auto-register via Laravel's package discovery.
+The package service provider auto-registers via Laravel package discovery, but you still need to register the Filament plugin in each panel that should expose the resources and widgets.
 
 ## Register Plugin
 
@@ -61,6 +60,14 @@ Visit your Filament admin panel. You should see:
 - **Segments** resource in the CRM navigation group
 - **Customer Stats** widget on the dashboard (if enabled)
 - **Recent Customers** widget on the dashboard (if enabled)
+
+## Configuration surface
+
+`filament-customers` does not publish its own config file. Configuration happens through:
+
+- panel plugin registration with `FilamentCustomersPlugin::make()`,
+- extending or replacing the package resources/widgets in your application,
+- core package settings in `config/customers.php`.
 
 ## Default Configuration
 
@@ -116,22 +123,11 @@ Policies are automatically registered:
 
 ## Multi-Tenancy Setup
 
-If using multi-tenancy, ensure owner context is available:
+If using multi-tenancy, ensure your application resolves owner context before these resources run. This package consumes the shared owner context; it does not resolve tenancy itself.
 
 ```php
-// In HTTP middleware / request lifecycle integration
-
-use AIArmada\CommerceSupport\Support\OwnerContext;
-
-// Set tenant context for the current request
-OwnerContext::setForRequest($tenant);
-
-// Or in Filament middleware
-protected function provideTenantContext(): void
-{
-    $tenant = Filament::getTenant();
-    OwnerContext::setForRequest($tenant);
-}
+// Example: use your app's owner-identification middleware / Filament tenancy integration
+// so OwnerContext is resolved before the resource queries run.
 ```
 
 ## Testing
@@ -194,6 +190,7 @@ public function viewAny(User $user): bool
 
 ## Next Steps
 
-- [Resources](04-resources.md) - Learn about resources
+- [Configuration](03-configuration.md) - Understand the package configuration surface
+- [Usage](04-usage.md) - Learn about resources and common admin flows
 - [Widgets](05-widgets.md) - Review dashboard widgets
 - [Troubleshooting](99-troubleshooting.md) - Debug common issues

@@ -24,6 +24,9 @@ This index intentionally points only to **current** documentation.
 
 ## Current root-level guides
 
+- [AI Context](../CONTEXT.md)
+- [AI Retrieval Layer](ai/01-overview.md)
+- [AI Package Manifests](ai/package-manifests.json)
 - [Support Utilities](04-support-utilities.md)
 - [Deployment Guide](06-deployment.md)
 - [Affiliates Integration Map](affiliates.md)
@@ -38,13 +41,14 @@ This index intentionally points only to **current** documentation.
 - [Affiliate Network](../packages/affiliate-network/docs/01-overview.md)
 - [Affiliates](../packages/affiliates/docs/01-overview.md)
 - [Cart](../packages/cart/docs/01-overview.md)
-- [Cashier](../packages/cashier/docs/01-getting-started.md)
+- [Cashier](../packages/cashier/docs/01-overview.md)
 - [Cashier CHIP](../packages/cashier-chip/docs/01-overview.md)
 - [Checkout](../packages/checkout/docs/01-overview.md)
 - [CHIP](../packages/chip/docs/01-overview.md)
 - [Commerce Support](../packages/commerce-support/docs/01-overview.md)
+- [CSuite](../packages/csuite/docs/01-overview.md)
 - [Customers](../packages/customers/docs/01-overview.md)
-- [Docs](../packages/docs/docs/00-overview.md)
+- [Docs](../packages/docs/docs/01-overview.md)
 - [Events](../packages/events/docs/01-overview.md)
 - [Growth](../packages/growth/docs/01-overview.md)
 - [Inventory](../packages/inventory/docs/01-overview.md)
@@ -56,7 +60,7 @@ This index intentionally points only to **current** documentation.
 - [Shipping](../packages/shipping/docs/01-overview.md)
 - [Signals](../packages/signals/docs/01-overview.md)
 - [Tax](../packages/tax/docs/01-overview.md)
-- [Vouchers](../packages/vouchers/docs/01-installation.md)
+- [Vouchers](../packages/vouchers/docs/01-overview.md)
 
 ### Filament and admin packages
 
@@ -68,7 +72,7 @@ This index intentionally points only to **current** documentation.
 - [Filament Cashier CHIP](../packages/filament-cashier-chip/docs/01-overview.md)
 - [Filament CHIP](../packages/filament-chip/docs/01-overview.md)
 - [Filament Customers](../packages/filament-customers/docs/01-overview.md)
-- [Filament Docs](../packages/filament-docs/docs/00-overview.md)
+- [Filament Docs](../packages/filament-docs/docs/01-overview.md)
 - [Filament Events](../packages/filament-events/docs/01-overview.md)
 - [Filament Growth](../packages/filament-growth/docs/01-overview.md)
 - [Filament Inventory](../packages/filament-inventory/docs/01-overview.md)

@@ -365,5 +365,5 @@ it('displays MRR widget', function () {
 
 ## Next Steps
 
-- [Resources](04-resources.md) – Admin panel resources
+- [Usage](04-usage.md) – Admin panel resources
 - [Billing Portal](05-billing-portal.md) – Customer self-service

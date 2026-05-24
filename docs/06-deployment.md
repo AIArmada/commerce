@@ -1,3 +1,8 @@
+---
+title: Deployment Guide
+status: current
+---
+
 # Production Deployment Guide
 
 Comprehensive guide for deploying AIArmada Commerce packages to production.
@@ -28,11 +33,12 @@ CART_DEFAULT_CURRENCY=MYR
 # CHIP Payment Gateway
 CHIP_COLLECT_API_KEY=your-production-api-key
 CHIP_COLLECT_BRAND_ID=your-brand-id
-CHIP_COLLECT_ENVIRONMENT=production
+CHIP_ENVIRONMENT=production
 CHIP_SEND_API_KEY=your-send-api-key
 CHIP_SEND_API_SECRET=your-send-secret
 CHIP_SEND_ENVIRONMENT=production
-CHIP_WEBHOOKS_PUBLIC_KEY=your-public-key
+CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+CHIP_WEBHOOK_ROUTE=/chip/webhook
 
 # J&T Express
 JNT_API_KEY=your-production-api-key
@@ -88,7 +94,7 @@ server {
 // config/chip.php
 'webhooks' => [
     'verify_signature' => true, // MUST be true in production
-    'public_key' => env('CHIP_WEBHOOKS_PUBLIC_KEY'),
+    'company_public_key' => env('CHIP_COMPANY_PUBLIC_KEY'),
 ],
 ```
 
@@ -564,5 +570,7 @@ sudo supervisorctl restart laravel-worker:*
 
 ## Next Steps
 
-- **[Support Utilities](04-support-utilities.md)**: Understand shared tools
-- **[Package Reference](03-packages/)**: Package-specific production tips
+- **[Support Utilities](04-support-utilities.md)**: Understand the shared Commerce foundation
+- **[Documentation Index](index.md)**: Start from the current root and package docs
+- **[CHIP Overview](../packages/chip/docs/01-overview.md)**: Production payment gateway guidance
+- **[Docs Overview](../packages/docs/docs/01-overview.md)**: Document and invoice package deployment context
