@@ -50,6 +50,7 @@ final class JourneyReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/journeys';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.journey-report';
 
     public function mount(): void

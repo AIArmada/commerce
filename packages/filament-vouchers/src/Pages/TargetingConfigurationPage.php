@@ -18,6 +18,9 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
+/**
+ * @property-read Schema $form
+ */
 final class TargetingConfigurationPage extends Page implements HasForms
 {
     use InteractsWithForms;
@@ -29,6 +32,7 @@ final class TargetingConfigurationPage extends Page implements HasForms
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedFunnel;
 
+    /** @var view-string */
     protected string $view = 'filament-vouchers::pages.targeting-configuration';
 
     protected static ?string $navigationLabel = 'Targeting Rules';

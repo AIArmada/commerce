@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -138,7 +139,7 @@ return new class extends Migration
         // Optional: create GIN index for metadata when using jsonb on PostgreSQL
         if (
             commerce_json_column_type('chip', 'json') === 'jsonb'
-            && Schema::getConnection()->getDriverName() === 'pgsql'
+            && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             $tableName = $tablePrefix . 'purchases';
             DB::statement("CREATE INDEX IF NOT EXISTS chip_purchases_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");

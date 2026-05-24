@@ -153,4 +153,4 @@ $eligible = $engine->evaluate($targeting, $context);
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+

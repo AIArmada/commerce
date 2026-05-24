@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use Carbon\CarbonImmutable;
@@ -90,7 +91,7 @@ final class RedemptionTrendChart extends ChartWidget
 
         /** @var Connection $connection */
         $connection = $usageQuery->getConnection();
-        $driver = $connection->getDriverName();
+        $driver = ConnectionDriver::name($connection);
         $dateExpression = match ($driver) {
             'sqlite' => 'date(used_at)',
             default => 'DATE(used_at)',

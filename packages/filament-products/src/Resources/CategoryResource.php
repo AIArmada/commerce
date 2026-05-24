@@ -258,15 +258,21 @@ final class CategoryResource extends Resource
                     BulkAction::make('show')
                         ->label('Make Visible')
                         ->icon('heroicon-o-eye')
-                        ->action(
-                            fn (Collection $records) => $records->each->update(['is_visible' => true])
-                        ),
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int, Category> $records */
+                            $records->each(function (Category $record): void {
+                                $record->update(['is_visible' => true]);
+                            });
+                        }),
                     BulkAction::make('hide')
                         ->label('Make Hidden')
                         ->icon('heroicon-o-eye-slash')
-                        ->action(
-                            fn (Collection $records) => $records->each->update(['is_visible' => false])
-                        ),
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int, Category> $records */
+                            $records->each(function (Category $record): void {
+                                $record->update(['is_visible' => false]);
+                            });
+                        }),
                 ]),
             ]);
     }

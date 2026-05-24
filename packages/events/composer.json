@@ -21,7 +21,8 @@
         "aiarmada/commerce-support": "self.version",
         "aiarmada/customers": "self.version",
         "aiarmada/orders": "self.version",
-        "aiarmada/products": "self.version"
+        "aiarmada/products": "self.version",
+        "php": "^8.4"
     },
     "autoload": {
         "psr-4": {

@@ -43,6 +43,7 @@ final class LiveActivityReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/live-activity';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.live-activity-report';
 
     public function mount(): void

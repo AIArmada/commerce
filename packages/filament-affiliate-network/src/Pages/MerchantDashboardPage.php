@@ -28,6 +28,7 @@ final class MerchantDashboardPage extends Page
 
     protected static ?string $slug = 'affiliate-network/merchant-dashboard';
 
+    /** @var view-string */
     protected string $view = 'filament-affiliate-network::pages.merchant-dashboard';
 
     public static function getNavigationGroup(): string | UnitEnum | null

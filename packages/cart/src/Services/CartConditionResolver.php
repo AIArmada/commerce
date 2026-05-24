@@ -18,7 +18,7 @@ final class CartConditionResolver
     /**
      * Register a resolver callback.
      *
-     * @param  callable(mixed):(?CartCondition)  $resolver
+     * @param  callable(mixed): ?CartCondition  $resolver
      */
     public function register(callable $resolver, int $priority = 0): void
     {

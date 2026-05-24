@@ -9,7 +9,7 @@ import RadioGroupOption from "@components/RadioGroupOption.astro"
 AIArmada Commerce requires the following to run:
 
 - PHP 8.4+
-- Laravel v12.0+
+- Laravel v13.0+
 - Composer v2.7+
 
 Installation comes in two flavors, depending on whether you want to bootstrap the entire commerce suite or pull in individual packages for custom flows:

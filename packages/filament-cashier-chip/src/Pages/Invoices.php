@@ -20,6 +20,7 @@ class Invoices extends Page
 
     protected static ?int $navigationSort = 30;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier-chip::pages.invoices';
 
     protected static ?string $slug = 'billing/invoices';

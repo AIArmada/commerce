@@ -12,6 +12,7 @@ use AIArmada\Products\Models\Variant;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -47,7 +48,7 @@ final class PricesRelationManager extends RelationManager
                     ->label('Product/Variant')
                     ->searchable()
                     ->required()
-                    ->getSearchResultsUsing(function (string $search, Forms\Get $get): array {
+                    ->getSearchResultsUsing(function (string $search, Get $get): array {
                         $type = $get('priceable_type');
 
                         $owner = $this->resolveOwner();
@@ -88,7 +89,7 @@ final class PricesRelationManager extends RelationManager
 
                         return [];
                     })
-                    ->getOptionLabelUsing(function ($value, Forms\Get $get): ?string {
+                    ->getOptionLabelUsing(function ($value, Get $get): ?string {
                         if ($value === null) {
                             return null;
                         }

@@ -20,6 +20,7 @@ final class BillingDashboard extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBarSquare;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier-chip::pages.billing-dashboard';
 
     protected static ?string $slug = 'cashier-chip-dashboard';

@@ -7,7 +7,7 @@ title: Installation
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+
 - One of: MySQL 8+, PostgreSQL 13+, SQLite 3.38+
 
 ## Composer Installation

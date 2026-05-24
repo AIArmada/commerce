@@ -16,6 +16,7 @@ use Laravel\Cashier\Subscription;
 
 final class ActiveSubscriptionsWidget extends Widget
 {
+    /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.widgets.active-subscriptions';
 
     protected int | string | array $columnSpan = 'full';

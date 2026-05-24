@@ -19,6 +19,7 @@ final class QuickActionsWidget extends Widget implements HasActions, HasForms
     use InteractsWithActions;
     use InteractsWithForms;
 
+    /** @var view-string */
     protected string $view = 'filament-docs::widgets.quick-actions';
 
     protected static ?int $sort = 1;

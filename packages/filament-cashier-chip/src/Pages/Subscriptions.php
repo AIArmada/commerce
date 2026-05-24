@@ -23,6 +23,7 @@ class Subscriptions extends Page
 
     protected static ?int $navigationSort = 10;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier-chip::pages.subscriptions';
 
     protected static ?string $slug = 'billing/subscriptions';

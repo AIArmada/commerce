@@ -69,7 +69,7 @@ Additional resources and widgets are available in the package but not registered
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+
 - Filament 5.0+
 - `aiarmada/chip` (core package)
 

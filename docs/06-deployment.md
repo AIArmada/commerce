@@ -564,6 +564,5 @@ sudo supervisorctl restart laravel-worker:*
 
 ## Next Steps
 
-- **[Upgrade Guide](05-upgrade-guide.md)**: Plan future upgrades
 - **[Support Utilities](04-support-utilities.md)**: Understand shared tools
 - **[Package Reference](03-packages/)**: Package-specific production tips

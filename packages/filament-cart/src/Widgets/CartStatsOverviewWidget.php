@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCart\Models\Cart;
 use Filament\Support\Icons\Heroicon;
@@ -160,7 +161,7 @@ final class CartStatsOverviewWidget extends BaseWidget
      */
     private function whereHasItems(Builder | \Illuminate\Database\Eloquent\Builder $query): void
     {
-        $driver = DB::getDriverName();
+        $driver = ConnectionDriver::name(DB::connection());
 
         $query->whereNotNull('items');
 

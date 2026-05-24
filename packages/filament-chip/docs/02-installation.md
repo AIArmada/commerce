@@ -7,7 +7,7 @@ title: Installation
 ## Requirements
 
 - PHP ^8.4
-- Laravel ^12.0
+- Laravel ^13.0
 - Filament ^5.0
 - [aiarmada/chip](../../chip) (automatically installed as dependency)
 
@@ -99,7 +99,7 @@ composer require aiarmada/cashier-chip
 Register the billing panel provider:
 
 ```php
-// bootstrap/providers.php (Laravel 12)
+// bootstrap/providers.php (Laravel 13)
 return [
     // ...
     AIArmada\FilamentChip\BillingPanelProvider::class,

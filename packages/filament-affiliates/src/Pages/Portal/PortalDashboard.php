@@ -18,6 +18,7 @@ class PortalDashboard extends Page
 
     protected static ?int $navigationSort = -2;
 
+    /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.dashboard';
 
     public static function getNavigationLabel(): string

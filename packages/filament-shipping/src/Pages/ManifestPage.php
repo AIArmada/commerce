@@ -38,6 +38,7 @@ class ManifestPage extends Page implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
+    /** @var view-string */
     protected string $view = 'filament-shipping::pages.manifest';
 
     protected static ?string $slug = 'shipping-manifests';

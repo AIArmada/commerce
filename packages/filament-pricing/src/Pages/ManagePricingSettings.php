@@ -32,6 +32,7 @@ final class ManagePricingSettings extends Page
 
     protected static ?int $navigationSort = 10;
 
+    /** @var view-string */
     protected string $view = 'filament-pricing::pages.manage-pricing-settings';
 
     public static function getNavigationLabel(): string

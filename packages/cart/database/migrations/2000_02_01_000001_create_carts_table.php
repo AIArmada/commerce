@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,7 @@ return new class extends Migration
         $tableName = config('cart.database.table', 'carts');
         if (
             commerce_json_column_type('cart', 'json') === 'jsonb'
-            && Schema::getConnection()->getDriverName() === 'pgsql'
+            && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             DB::statement("CREATE INDEX IF NOT EXISTS carts_items_gin_index ON \"{$tableName}\" USING GIN (\"items\")");
             DB::statement("CREATE INDEX IF NOT EXISTS carts_conditions_gin_index ON \"{$tableName}\" USING GIN (\"conditions\")");

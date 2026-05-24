@@ -21,6 +21,7 @@ class LiveDashboardPage extends Page
 
     protected static ?int $navigationSort = 5;
 
+    /** @var view-string */
     protected string $view = 'filament-cart::pages.live-dashboard';
 
     public static function getNavigationGroup(): ?string

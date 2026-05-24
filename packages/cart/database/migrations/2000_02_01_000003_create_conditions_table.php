@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -68,7 +69,7 @@ return new class extends Migration
 
         if (
             $jsonType === 'jsonb'
-            && Schema::getConnection()->getDriverName() === 'pgsql'
+            && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             DB::statement("CREATE INDEX {$tableName}_attributes_gin_index ON \"{$tableName}\" USING GIN (\"attributes\")");
             DB::statement("CREATE INDEX {$tableName}_rules_gin_index ON \"{$tableName}\" USING GIN (\"rules\")");

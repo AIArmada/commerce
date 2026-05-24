@@ -8,6 +8,8 @@ use AIArmada\FilamentAuthz\Console\GeneratePoliciesCommand;
 use AIArmada\FilamentAuthz\Console\SeederCommand;
 use AIArmada\FilamentAuthz\Console\SuperAdminCommand;
 use AIArmada\FilamentAuthz\Console\SyncAuthzCommand;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 describe('GeneratePoliciesCommand', function (): void {
     it('exists', function (): void {
@@ -48,6 +50,40 @@ describe('SeederCommand', function (): void {
         $property = $reflection->getProperty('signature');
 
         expect($property->getValue($command))->toContain('authz:seeder');
+    });
+
+    it('formats permissions by guard name', function (): void {
+        $permission = new Permission;
+        $permission->name = 'docs.view';
+        $permission->guard_name = 'api';
+
+        $command = app(SeederCommand::class);
+        $method = new ReflectionMethod($command, 'formatPermissionsArray');
+
+        expect($method->invoke($command, collect([$permission])))
+            ->toBe(['api' => ['docs.view']]);
+    });
+
+    it('formats roles by guard name', function (): void {
+        $permission = new Permission;
+        $permission->name = 'docs.view';
+        $permission->guard_name = 'api';
+
+        $role = new Role;
+        $role->name = 'manager';
+        $role->guard_name = 'api';
+        $role->setRelation('permissions', collect([$permission]));
+
+        $command = app(SeederCommand::class);
+        $method = new ReflectionMethod($command, 'formatRolesArray');
+
+        expect($method->invoke($command, collect([$role])))
+            ->toBe([
+                'manager' => [
+                    'guard' => 'api',
+                    'permissions' => ['docs.view'],
+                ],
+            ]);
     });
 });
 

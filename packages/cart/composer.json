@@ -1,38 +1,39 @@
 {
-  "name": "aiarmada/cart",
-  "description": "A comprehensive commerce ecosystem for Laravel with cart, payments, vouchers, shipping, and inventory management.",
-  "license": "MIT",
-  "homepage": "https://github.com/aiarmada/commerce",
-  "support": {
-    "issues": "https://github.com/aiarmada/commerce/issues",
-    "source": "https://github.com/aiarmada/commerce"
-  },
-  "require": {
-    "aiarmada/commerce-support": "self.version"
-  },
-  "suggest": {
-    "aiarmada/cart-graphql": "GraphQL API layer with queries, mutations, and subscriptions",
-    "aiarmada/signals": "Optional cart analytics and alerting through the Signals package"
-  },
-  "autoload": {
-    "psr-4": {
-      "AIArmada\\Cart\\": "src",
-      "AIArmada\\Cart\\Database\\Factories\\": "database/factories"
-    }
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "AIArmada\\Cart\\CartServiceProvider"
-      ],
-      "aliases": {
-        "Cart": "AIArmada\\Cart\\Facades\\Cart"
-      }
-    }
-  },
-  "config": {
-    "sort-packages": true
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "name": "aiarmada/cart",
+    "description": "A comprehensive commerce ecosystem for Laravel with cart, payments, vouchers, shipping, and inventory management.",
+    "license": "MIT",
+    "homepage": "https://github.com/aiarmada/commerce",
+    "support": {
+        "issues": "https://github.com/aiarmada/commerce/issues",
+        "source": "https://github.com/aiarmada/commerce"
+    },
+    "require": {
+        "aiarmada/commerce-support": "self.version",
+        "php": "^8.4"
+    },
+    "suggest": {
+        "aiarmada/cart-graphql": "GraphQL API layer with queries, mutations, and subscriptions",
+        "aiarmada/signals": "Optional cart analytics and alerting through the Signals package"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Cart\\": "src",
+            "AIArmada\\Cart\\Database\\Factories\\": "database/factories"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Cart\\CartServiceProvider"
+            ],
+            "aliases": {
+                "Cart": "AIArmada\\Cart\\Facades\\Cart"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

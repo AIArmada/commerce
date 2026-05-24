@@ -8,6 +8,7 @@ use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Models\Concerns\HasCartOwner;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -253,7 +254,7 @@ class CartModel extends Model
         // DB-agnostic approach: check for non-empty JSON array
         $query->whereNotNull('items');
 
-        $driver = $query->getConnection()->getDriverName();
+        $driver = ConnectionDriver::name($query->getConnection());
         if ($driver === 'pgsql') {
             $query->whereRaw("items::text != '[]'")
                 ->whereRaw("items::text != '{}'");

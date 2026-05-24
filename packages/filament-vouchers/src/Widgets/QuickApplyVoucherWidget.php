@@ -24,6 +24,8 @@ use Throwable;
 
 /**
  * Quick voucher apply widget with inline input field
+ *
+ * @property-read Schema $form
  */
 #[Lazy]
 final class QuickApplyVoucherWidget extends Widget implements HasForms

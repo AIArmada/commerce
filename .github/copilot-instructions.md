@@ -308,7 +308,7 @@ Run the following command to verify:
 
 ## Configuration
 
-The project's `phpstan.neon` configures the baseline. Ensure no errors at level 6 before merging changes.
+The project's `phpstan.neon` is the source of truth. Ensure no errors at level 6 before merging changes.
 ```
 ## Test
 ```
@@ -615,7 +615,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - **Level**: 6
 - **Scope**: per package (e.g. `packages/<pkg>/src`), not repo-wide.
 - **Rules**:
-  - Respect `phpstan.neon` / `phpstan-baseline.neon`.
+  - Respect `phpstan.neon`.
   - Do not add new `ignoreErrors` unless root-cause fixes are exhausted.
   - Prefer real fixes over suppression.
 

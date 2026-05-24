@@ -14,6 +14,7 @@ use Throwable;
 
 final class RecentInvoicesWidget extends Widget
 {
+    /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.widgets.recent-invoices';
 
     protected int | string | array $columnSpan = 1;

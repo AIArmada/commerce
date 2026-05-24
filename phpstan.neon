@@ -1,6 +1,3 @@
-includes:
-    - phpstan-baseline.neon
-
 parameters:
     paths:
         - packages
@@ -43,18 +40,6 @@ parameters:
         - message: '#Call to an undefined method.*Filament.*carded\(\)\.#'
         - message: '#Call to an undefined method.*Filament.*softShadow\(\)\.#'
         - message: '#Call to an undefined method.*Filament.*inlineLabelled\(\)\.#'
-        # Filament v5 beta namespace reorganization - Tables\Actions moved to Actions namespace
-        - message: '#Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\.*#'
-        - message: '#Call to static method make\(\) on an unknown class Filament\\Notifications\\Actions\\.*#'
-        - message: '#Parameter .* has invalid type Filament\\Forms\\Get\.#'
-        - message: '#Parameter .* has invalid type Filament\\Forms\\Set\.#'
-        - message: '#Invoking callable on an unknown class Filament\\Forms\\(Get|Set)\.#'
-        - message: '#Method .* has invalid return type Filament\\Forms\\Form\.#'
-        - message: '#Parameter .* has invalid type Filament\\Forms\\Form\.#'
-        - message: '#Call to method .* on an unknown class Filament\\Forms\\Form\.#'
-        - message: '#Access to an undefined property .*::\$form\.#'
-        # Filament v5 Forms\Components not found (larastan resolution issue)
-        - message: '#Call to static method make\(\) on an unknown class Filament\\Forms\\Components\\.*#'
         # Ignore property override issues in widgets
         # Ignore external cart model references
         - message: '#PHPDoc tag @var for variable.*contains unknown class.*Cart\.#'
@@ -62,16 +47,15 @@ parameters:
         - message: '#Access to property.*on an unknown class.*Cart\.#'
         # Ignore Voucher model method calls (methods exist but PHPStan can't resolve them)
         # Ignore view function type issues
-        - message: '#Parameter .* \$view of function view expects view-string\|null, string given\.#'
         # Ignore filament-permissions external dependencies
-        - message: '#Call to an undefined method Illuminate\\Foundation\\Auth\\User::hasRole\(\)\.#'
-        - message: '#Call to an undefined method Illuminate\\Foundation\\Auth\\User::hasAnyRole\(\)\.#'
-        - message: '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$guard_name\.#'
         - message: '#Property .*\$view \(view-string\) does not accept default value of type string\.#'
+          paths:
+              - packages/filament-affiliate-network/src/Pages/*
+              - packages/filament-growth/src/Pages/ExperimentResultsPage.php
+              - packages/filament-growth/src/Widgets/ExperimentWinnersWidget.php
+              - packages/filament-signals/src/Pages/*
         # Ignore unused traits in filament-authz (they're part of the public API)
         - message: '#Trait AIArmada\\FilamentAuthz\\Concerns\\.*is used zero times and is not analysed\.#'
-        # Filament-authz Spatie Permission integration (methods come from HasRoles trait at runtime)
-        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::syncPermissions\(\)\.#'
         # Note: method.unused kept REMOVED - we want to catch dead code
         # Ignore nullsafe.neverNull for defensive patterns:
         # - request()?-> is correct (request() returns null outside HTTP context: console, queue, tests)
@@ -89,14 +73,7 @@ parameters:
         - message: '#Method AIArmada\\Inventory\\Models\\.*::scope.*should return Illuminate\\Database\\Eloquent\\Builder.*but returns Illuminate\\Database\\Eloquent\\Builder.*#'
         # Ignore mapWithKeys collection operation type issues
         # Ignore undefined scope method calls (scopes are dynamically resolved)
-        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder.*::open\(\)\.#'
-        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder.*::notExpiringSoon\(\)\.#'
-        # Ignore Livewire v3 getLivewire() method (exists at runtime)
-        - message: '#Call to an undefined method AIArmada\\FilamentCart\\Widgets\\.*::getLivewire\(\)\.#'
         # Ignore LengthAwarePaginator generic type issues
-        - message: '#Generic type Illuminate\\Contracts\\Pagination\\LengthAwarePaginator.*does not specify all template types.*#'
-        - message: '#Type.*in generic type Illuminate\\Contracts\\Pagination\\LengthAwarePaginator.*is not subtype of template type.*#'
-        - message: '#Method AIArmada\\Inventory\\Services\\SerialLookupService::search\(\) should return.*LengthAwarePaginator.*but returns.*#'
         # Ignore hasMany/belongsTo template type resolution with external models
         # Ignore identical return type covariance warnings (PHPStan bug with array shape types)
         - message: '#Method.*should return.*Collection.*array\{.*\}.*but returns.*Collection.*array\{.*\}.*#'
@@ -107,8 +84,6 @@ parameters:
         - message: '#Call to an undefined method Faker\\Generator::.*#'
         # Ignore unused traits in customers (public API for consumers)
         - message: '#Trait AIArmada\\Customers\\Concerns\\.*is used zero times and is not analysed\.#'
-         # Ignore collection proxy method calls
-        - message: '#Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy.*::markAsRedeemed\(\)\.#'
         # Ignore return type covariance issues with Eloquent relations (PHPStan template variance)
         - message: '#Method.*should return.*Relations\\(HasMany|BelongsTo|MorphTo).*but returns.*Relations\\(HasMany|BelongsTo|MorphTo).*#'
         # Ignore unused traits (public API)
@@ -117,19 +92,10 @@ parameters:
         - message: '#Trait AIArmada\\CommerceSupport\\Traits\\.*is used zero times and is not analysed\.#'
         # Ignore relation existence errors (Larastan false positives)
         # Ignore cast.string for enums
-        - message: '#Cannot cast AIArmada\\Affiliates\\Enums\\.*to string\.#'
-        # Ignore argument.type for Filament closures
-        - message: '#Parameter.*of method Illuminate\\Support\\Collection.*::each\(\) expects callable.*given\.#'
-        # Ignore getDriverName method (exists in concrete implementation)
-        - message: '#Call to an undefined method Illuminate\\Database\\ConnectionInterface::getDriverName\(\)\.#'
         # Ignore arguments.count for context methods
         # Ignore CompoundVoucherCondition rules parameter type
-        - message: '#Parameter \$rules of class AIArmada\\Cart\\Conditions\\CartCondition constructor expects.*#'
         # Ignore FilamentChip Jetstream/Cashier integration issues
-        - message: '#Access to an undefined property Illuminate\\Foundation\\Auth\\User::\$currentTeam\.#'
-        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::(updateDefaultPaymentMethod|deletePaymentMethod)\(\)\.#'
         # Ignore PHPDoc type issues in Cart traits
-        - message: '#PHPDoc tag @param for parameter \$resolver with type.*is not subtype of native type callable\.#'
         # Ignore Cart integration classes when Cart package is not installed (suggested dependency)
         - message: '#.*unknown class AIArmada\\Cart\\Contracts\\Cart(ValidatorInterface|ValidationResult|ManagerInterface).*#'
         - message: '#.*unknown interface AIArmada\\Cart\\Contracts\\Cart(ValidatorInterface|ManagerInterface).*#'
@@ -163,13 +129,8 @@ parameters:
         - identifier: 'throws.notThrowable'
 
         # Return type issues with external package methods
-        - message: '#Method .* should return Symfony\\Component\\HttpFoundation\\StreamedResponse but returns Spatie\\LaravelPdf\\PdfBuilder#'
-
         # Template type resolution issues in owner scope helpers
         - identifier: 'argument.templateType'
-
-        # Filament action getReasonOptions return type array shape mismatch
-        - message: '#Method .* should return array<string, string> but returns array<string, array<string, string>>#'
 
         # Note: return.type identifier removed - too dangerous, hides real bugs
 

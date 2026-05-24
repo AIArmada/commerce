@@ -593,17 +593,23 @@ final class ProductResource extends Resource
                         ->icon('heroicon-o-check-circle')
                         ->requiresConfirmation()
                         ->authorize(fn (): bool => auth()->user()?->can('updateAny', Product::class) ?? false)
-                        ->action(
-                            fn (Collection $records) => $records->each->update(['status' => ProductStatus::Active])
-                        ),
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int, Product> $records */
+                            $records->each(function (Product $record): void {
+                                $record->update(['status' => ProductStatus::Active]);
+                            });
+                        }),
                     BulkAction::make('draft')
                         ->label('Set to Draft')
                         ->icon('heroicon-o-pencil')
                         ->requiresConfirmation()
                         ->authorize(fn (): bool => auth()->user()?->can('updateAny', Product::class) ?? false)
-                        ->action(
-                            fn (Collection $records) => $records->each->update(['status' => ProductStatus::Draft])
-                        ),
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int, Product> $records */
+                            $records->each(function (Product $record): void {
+                                $record->update(['status' => ProductStatus::Draft]);
+                            });
+                        }),
                 ]),
             ]);
     }

@@ -35,6 +35,7 @@ final class AgingReportPage extends Page implements HasTable
 
     protected static ?string $navigationLabel = 'Aging Report';
 
+    /** @var view-string */
     protected string $view = 'filament-docs::pages.aging-report';
 
     public static function canAccess(): bool

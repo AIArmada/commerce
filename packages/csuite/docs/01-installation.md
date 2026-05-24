@@ -7,7 +7,7 @@ Complete installation guide for AIArmada Commerce.
 | Requirement | Version |
 |-------------|---------|
 | PHP | 8.4+ |
-| Laravel | 12.0+ |
+| Laravel | 13.0+ |
 | Filament | 5.0+ (for admin panels) |
 | PostgreSQL or MySQL | 8.0+ |
 

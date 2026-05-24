@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Resources\PurchaseResource\Tables;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
@@ -120,7 +121,7 @@ final class PurchaseTable
                 Filter::make('high_value')
                     ->label('High Value (≥ 5,000)')
                     ->query(function (Builder $query): Builder {
-                        $driver = $query->getConnection()->getDriverName();
+                        $driver = ConnectionDriver::name($query->getConnection());
                         $amount = 500000; // amounts are stored in cents
 
                         // Build DB-specific JSON extraction for purchase total with fallbacks

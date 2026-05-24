@@ -34,6 +34,7 @@ final class PageViewsReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/page-views';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.page-views-report';
 
     public static function getNavigationGroup(): ?string

@@ -1,0 +1,3 @@
+- VS Code Insiders user settings now set `terminal.integrated.env.osx.BASH_ENV` to `/Users/saiffil/.bashrc`, and bash config adds Herd PHP to PATH.
+- Sandboxed terminal commands may still fail to execute Herd PHP with `Operation not permitted`; rerun PHP commands unsandboxed when that happens.
+- Common local PHP checks are auto-approved in user settings for `vendor/bin/pest`, `vendor/bin/phpstan`, and `vendor/bin/pint`.

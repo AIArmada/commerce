@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use Filament\Support\Icons\Heroicon;
@@ -29,7 +30,7 @@ final class VoucherWalletStatsWidget extends BaseWidget
         // Calculate unique holders (users/stores/teams) who have vouchers in their wallets
         /** @var Connection $connection */
         $connection = VoucherWallet::query()->getConnection();
-        $driver = $connection->getDriverName();
+        $driver = ConnectionDriver::name($connection);
         $concat = $driver === 'pgsql' || $driver === 'sqlite'
             ? "holder_type || '-' || holder_id"
             : "CONCAT(holder_type, '-', holder_id)";

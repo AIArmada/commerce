@@ -34,7 +34,7 @@ if (! function_exists('commerce_json_column_type')) {
 
 if (! function_exists('commerce_csrf_middleware')) {
     /**
-     * Resolve the framework CSRF middleware across Laravel 12 and 13.
+     * Resolve the framework CSRF middleware across the supported framework variants.
      *
      * @return class-string
      */

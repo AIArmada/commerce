@@ -1,38 +1,39 @@
 {
-  "name": "aiarmada/chip",
-  "description": "Modern Laravel integration for CHIP payment gateway - Collect & Send APIs",
-  "license": "MIT",
-  "homepage": "https://github.com/aiarmada/commerce",
-  "support": {
-    "issues": "https://github.com/aiarmada/commerce/issues",
-    "source": "https://github.com/aiarmada/commerce"
-  },
-  "require": {
-    "ext-curl": "*",
-    "aiarmada/commerce-support": "self.version",
-    "illuminate/http": "^13.6",
-    "illuminate/queue": "^13.6",
-    "illuminate/validation": "^13.6"
-  },
-  "autoload": {
-    "psr-4": {
-      "AIArmada\\Chip\\": "src/"
-    }
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "AIArmada\\Chip\\ChipServiceProvider"
-      ],
-      "aliases": {
-        "Chip": "AIArmada\\Chip\\Facades\\Chip",
-        "ChipSend": "AIArmada\\Chip\\Facades\\ChipSend"
-      }
-    }
-  },
-  "config": {
-    "sort-packages": true
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "name": "aiarmada/chip",
+    "description": "Modern Laravel integration for CHIP payment gateway - Collect & Send APIs",
+    "license": "MIT",
+    "homepage": "https://github.com/aiarmada/commerce",
+    "support": {
+        "issues": "https://github.com/aiarmada/commerce/issues",
+        "source": "https://github.com/aiarmada/commerce"
+    },
+    "require": {
+        "ext-curl": "*",
+        "aiarmada/commerce-support": "self.version",
+        "illuminate/http": "^13.11.2",
+        "illuminate/queue": "^13.11.2",
+        "illuminate/validation": "^13.11.2",
+        "php": "^8.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Chip\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Chip\\ChipServiceProvider"
+            ],
+            "aliases": {
+                "Chip": "AIArmada\\Chip\\Facades\\Chip",
+                "ChipSend": "AIArmada\\Chip\\Facades\\ChipSend"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

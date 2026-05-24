@@ -53,7 +53,11 @@ final class BulkFraudReviewAction extends BulkAction
             $reviewNotes = $data['review_notes'] ?? null;
             $reviewNotes = is_string($reviewNotes) && $reviewNotes !== '' ? $reviewNotes : null;
 
-            $records->each(function (AffiliateFraudSignal $record) use ($status, $reviewedBy, $reviewNotes): void {
+            $records->each(function ($record) use ($status, $reviewedBy, $reviewNotes): void {
+                if (! $record instanceof AffiliateFraudSignal) {
+                    return;
+                }
+
                 Gate::authorize('update', $record);
 
                 /** @var AffiliateFraudSignal $signal */

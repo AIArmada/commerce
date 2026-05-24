@@ -9,7 +9,7 @@ import Aside from "@components/Aside.astro"
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12.0+
+- Laravel 13.0+
 - A working Browsershot / Chromium environment for PDF generation
 
 ## Install via Composer

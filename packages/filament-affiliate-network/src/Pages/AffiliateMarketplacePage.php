@@ -34,6 +34,7 @@ final class AffiliateMarketplacePage extends Page
 
     protected static ?string $slug = 'affiliate-network/marketplace';
 
+    /** @var view-string */
     protected string $view = 'filament-affiliate-network::pages.affiliate-marketplace';
 
     public ?string $search = '';

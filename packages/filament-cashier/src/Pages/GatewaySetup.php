@@ -14,6 +14,7 @@ final class GatewaySetup extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier::pages.gateway-setup';
 
     protected static ?int $navigationSort = 100;

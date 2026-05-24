@@ -31,6 +31,7 @@ class AnalyticsDashboardPage extends Page
 
     protected static ?int $navigationSort = 99;
 
+    /** @var view-string */
     protected string $view = 'filament-chip::pages.analytics-dashboard';
 
     public static function getNavigationGroup(): ?string

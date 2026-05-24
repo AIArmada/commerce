@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Products\Models\Variant;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -187,15 +188,21 @@ final class VariantsRelationManager extends RelationManager
                     BulkAction::make('enable')
                         ->label('Enable')
                         ->icon('heroicon-o-check-circle')
-                        ->action(
-                            fn (Collection $records) => $records->each->update(['is_enabled' => true])
-                        ),
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int, Variant> $records */
+                            $records->each(function (Variant $record): void {
+                                $record->update(['is_enabled' => true]);
+                            });
+                        }),
                     BulkAction::make('disable')
                         ->label('Disable')
                         ->icon('heroicon-o-x-circle')
-                        ->action(
-                            fn (Collection $records) => $records->each->update(['is_enabled' => false])
-                        ),
+                        ->action(function (Collection $records): void {
+                            /** @var Collection<int, Variant> $records */
+                            $records->each(function (Variant $record): void {
+                                $record->update(['is_enabled' => false]);
+                            });
+                        }),
                 ]),
             ]);
     }

@@ -22,6 +22,7 @@ class CartDashboard extends Page
 
     protected static ?int $navigationSort = 1;
 
+    /** @var view-string */
     protected string $view = 'filament-cart::pages.cart-dashboard';
 
     protected static ?string $title = 'Cart Analytics';

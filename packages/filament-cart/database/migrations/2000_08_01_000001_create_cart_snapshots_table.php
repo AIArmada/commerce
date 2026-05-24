@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +56,7 @@ return new class extends Migration
 
         if (
             ($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'json')) === 'jsonb'
-            && Schema::getConnection()->getDriverName() === 'pgsql'
+            && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
                 DB::statement("CREATE INDEX {$tableName}_items_gin_index ON {$tableName} USING GIN (items)");

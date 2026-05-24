@@ -11,11 +11,15 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Schema;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Throwable;
 
+/**
+ * @property-read Schema $form
+ */
 final class OrderTimelineWidget extends Widget implements HasForms
 {
     use InteractsWithForms;
@@ -31,6 +35,7 @@ final class OrderTimelineWidget extends Widget implements HasForms
 
     public ?array $noteData = [];
 
+    /** @var view-string */
     protected string $view = 'filament-orders::widgets.order-timeline';
 
     protected int | string | array $columnSpan = 'full';
@@ -128,9 +133,9 @@ final class OrderTimelineWidget extends Widget implements HasForms
         return $events->sortByDesc('timestamp')->values();
     }
 
-    public function form(Forms\Form $form): Forms\Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Textarea::make('content')
                     ->label('Note')

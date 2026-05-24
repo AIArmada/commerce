@@ -162,7 +162,7 @@ trait ManagesBuyables
      *
      * This is useful when prices may have changed (e.g., flash sale started).
      *
-     * @param  callable(BuyableInterface): BuyableInterface|null  $resolver  Resolves cart item to fresh Buyable
+     * @param  callable(BuyableInterface): ?BuyableInterface  $resolver  Resolves cart item to fresh Buyable
      * @return array<string, array{old: int, new: int}> Price changes by item ID
      */
     public function refreshBuyablePrices(callable $resolver): array
@@ -198,7 +198,7 @@ trait ManagesBuyables
     /**
      * Validate all Buyable items in the cart are still purchasable.
      *
-     * @param  callable(BuyableInterface): BuyableInterface|null  $resolver  Resolves cart item to fresh Buyable
+     * @param  callable(BuyableInterface): ?BuyableInterface  $resolver  Resolves cart item to fresh Buyable
      * @return array<string, ProductNotPurchasableException> Validation errors by item ID
      */
     public function validateAllBuyables(callable $resolver): array

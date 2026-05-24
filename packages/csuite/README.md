@@ -14,7 +14,7 @@ AIArmada Commerce is a modular e-commerce toolkit for Laravel applications. Inst
 | Requirement | Version |
 |-------------|---------|
 | PHP | 8.4+ |
-| Laravel | 12.0+ |
+| Laravel | 13.0+ |
 | Filament | 5.0+ |
 
 ## Installation

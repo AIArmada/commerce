@@ -37,6 +37,7 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-pencil-square';
 
+    /** @var view-string */
     protected string $view = 'filament-products::pages.bulk-edit-products';
 
     protected static string | UnitEnum | null $navigationGroup = 'Products';

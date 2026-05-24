@@ -17,6 +17,7 @@ final class BillingOverview extends Page
 
     protected static ?int $navigationSort = 0;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.billing-overview';
 
     public static function getNavigationLabel(): string
