@@ -1,0 +1,2 @@
+- Repo migrations commonly guard PostgreSQL-specific JSONB behavior with `AIArmada\CommerceSupport\Support\ConnectionDriver::name(Schema::getConnection())`.
+- Tests should verify the presence of a PostgreSQL driver guard semantically, not hardcode only `Schema::getConnection()->getDriverName()`.
