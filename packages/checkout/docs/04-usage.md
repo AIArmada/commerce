@@ -36,6 +36,38 @@ if ($result->requiresRedirect()) {
 return back()->withErrors($result->errors);
 ```
 
+## Bootstrapping a Checkout Offer Product
+
+For single-offer or landing-page checkouts, `EnsureCheckoutOfferProduct` can create or refresh the backing product, price list, and price row from one DTO.
+
+```php
+use AIArmada\Checkout\Actions\EnsureCheckoutOfferProduct;
+use AIArmada\Checkout\Data\CheckoutOfferProductData;
+
+$product = app(EnsureCheckoutOfferProduct::class)->handle(
+    new CheckoutOfferProductData(
+        productSlug: 'founders-pass',
+        priceListSlug: 'public-offers',
+        name: 'Founders Pass',
+        description: 'One-time public checkout offer.',
+        sku: 'FOUNDERS-PASS',
+        priceAmount: 9900,
+        currency: 'MYR',
+        priceListName: 'Public Offers',
+        compareAmount: 12900,
+        minimumOnHand: 25,
+    ),
+);
+```
+
+The action:
+
+- runs inside explicit global owner context so public offers stay ownerless unless your app wraps it differently
+- creates or updates the `Product`, `PriceList`, and `Price` rows by slug
+- seeds inventory only when inventory integration is enabled **and** the inventory package/tables are actually available
+
+`CheckoutOfferProductData` also lets you control metadata, SEO copy, visibility, product type, taxability, shipping requirements, and optional inventory notes from one place.
+
 ### Step-by-Step Processing
 
 Process individual steps for more control:

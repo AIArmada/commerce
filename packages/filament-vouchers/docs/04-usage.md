@@ -34,12 +34,24 @@ The main resource for managing vouchers.
 Read-only resource for viewing voucher redemption history.
 
 **Columns:**
-- Voucher code and name
-- Order reference (if linked)
-- Discount amount
-- Channel (web, API, POS, etc.)
-- Used at timestamp
 - User identifier
+- Voucher code
+- Affiliate label with source / medium description (when affiliates are installed)
+- Affiliate campaign
+- Discount amount
+- Channel
+- Resolved order number (from the linked order or usage metadata)
+- Used at timestamp
+
+**Filters:**
+- Channel
+- Affiliate
+- Source
+- Medium
+- Campaign
+
+**Header actions:**
+- Export voucher usage data with affiliate and order columns via `VoucherUsageExporter`
 
 ### VoucherWalletResource
 
