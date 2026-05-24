@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -122,7 +124,16 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
 
     it('creates voucher with correct metadata for affiliate', function (): void {
         $affiliateCode = 'PARTNER' . uniqid();
-        $affiliateId = 'affiliate-' . uniqid();
+
+        $affiliate = Affiliate::create([
+            'code' => $affiliateCode,
+            'name' => 'Partner Referral Affiliate',
+            'status' => AffiliateActive::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 1000,
+            'currency' => 'MYR',
+        ]);
+        $affiliateId = $affiliate->getKey();
 
         $voucher = Voucher::create([
             'code' => 'REF' . $affiliateCode,
@@ -134,7 +145,7 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
             'status' => 'active',
             'affiliate_id' => $affiliateId,
             'metadata' => [
-                'affiliate_code' => $affiliateCode,
+                'affiliate_code' => $affiliate->code,
                 'affiliate_id' => $affiliateId,
                 'auto_generated' => true,
             ],
@@ -145,10 +156,11 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
             ->and($voucher->value)->toBe(1000)
             ->and($voucher->affiliate_id)->toBe($affiliateId)
             ->and($voucher->metadata['auto_generated'])->toBeTrue()
-            ->and($voucher->metadata['affiliate_code'])->toBe($affiliateCode);
+            ->and($voucher->metadata['affiliate_code'])->toBe($affiliate->code);
 
         // Clean up
         $voucher->delete();
+        $affiliate->delete();
     });
 
     it('generates code with prefix_code format', function (): void {
