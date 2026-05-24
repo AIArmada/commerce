@@ -42,12 +42,14 @@ trait HasCartEventData
      */
     public function getEventMetadata(): array
     {
+        $request = request();
+
         return [
             'event_id' => $this->getEventId(),
             'occurred_at' => $this->getOccurredAt()->format('c'),
-            'user_agent' => request()?->userAgent(),
-            'ip_address' => request()?->ip(),
-            'correlation_id' => request()?->header('X-Correlation-ID'),
+            'user_agent' => $request->userAgent(),
+            'ip_address' => $request->ip(),
+            'correlation_id' => $request->header('X-Correlation-ID'),
         ];
     }
 

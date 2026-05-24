@@ -100,11 +100,19 @@ final class ViewInvoices extends Page
             ->sortByDesc('sort_timestamp')
             ->values()
             ->map(function (array $invoice): array {
-                unset($invoice['sort_timestamp']);
+                return [
+                    'id' => (string) $invoice['id'],
+                    'gateway' => (string) $invoice['gateway'],
+                    'number' => (string) $invoice['number'],
+                    'amount' => (string) $invoice['amount'],
+                    'date' => (string) $invoice['date'],
+                    'status' => (string) $invoice['status'],
+                    'download_url' => is_string($invoice['download_url'] ?? null) ? $invoice['download_url'] : null,
+                ];
+            })
+            ->values();
 
-                return $invoice;
-            });
-
+        // @phpstan-ignore-next-line Collection covariance false positive with exact array shape.
         return $result;
     }
 }

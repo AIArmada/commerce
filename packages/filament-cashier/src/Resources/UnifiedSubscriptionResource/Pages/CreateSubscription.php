@@ -282,6 +282,11 @@ final class CreateSubscription extends CreateRecord
             try {
                 $methods = $user->paymentMethods();
 
+                if (! is_iterable($methods)) {
+                    return false;
+                }
+
+                /** @var iterable<int, mixed> $methods */
                 return collect($methods)->contains(
                     fn (mixed $paymentMethod): bool => (string) data_get($paymentMethod, 'id') === $paymentMethodId
                 );
@@ -298,6 +303,11 @@ final class CreateSubscription extends CreateRecord
             try {
                 $methods = $user->chipPaymentMethods();
 
+                if (! is_iterable($methods)) {
+                    return false;
+                }
+
+                /** @var iterable<int, mixed> $methods */
                 return collect($methods)->contains(
                     fn (mixed $paymentMethod): bool => (string) data_get($paymentMethod, 'id') === $paymentMethodId
                 );

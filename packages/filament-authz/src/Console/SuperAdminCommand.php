@@ -122,7 +122,7 @@ class SuperAdminCommand extends Command
             placeholder: 'Type to search...',
         );
 
-        if ($userId === null || $userId === '') {
+        if ($userId === '') {
             warning('No user selected.');
 
             return null;

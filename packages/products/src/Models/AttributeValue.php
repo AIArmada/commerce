@@ -184,7 +184,7 @@ class AttributeValue extends Model
                 throw new InvalidArgumentException('Invalid attributable: unable to resolve attributable model for attribute value.');
             }
 
-            if ($attributable instanceof Model && method_exists($attributable, 'belongsToOwner') && method_exists($attributable, 'isGlobal')) {
+            if (method_exists($attributable, 'belongsToOwner') && method_exists($attributable, 'isGlobal')) {
                 if ($currentOwner !== null) {
                     /** @var bool $belongs */
                     $belongs = $attributable->belongsToOwner($currentOwner);

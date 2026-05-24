@@ -62,7 +62,7 @@ final class PurchaseInfolist
 
             Section::make('Client')
                 ->schema([
-                    Fieldset::make('Billing')->inlineLabelled() // @phpstan-ignore method.notFound
+                    self::inlineLabelledFieldset('Billing')
                         ->schema([
                             TextEntry::make('client.full_name')
                                 ->label('Name')
@@ -88,7 +88,7 @@ final class PurchaseInfolist
                                 ->badge()
                                 ->placeholder('—'),
                         ]),
-                    Fieldset::make('Shipping')->inlineLabelled() // @phpstan-ignore method.notFound
+                    self::inlineLabelledFieldset('Shipping')
                         ->schema([
                             TextEntry::make('client.shipping_street_address')
                                 ->label('Address')
@@ -216,6 +216,15 @@ final class PurchaseInfolist
                 ->collapsible()
                 ->collapsed(),
         ]);
+    }
+
+    private static function inlineLabelledFieldset(string $label): Fieldset
+    {
+        return Fieldset::make($label)
+            ->columns(2)
+            ->extraAttributes([
+                'class' => 'gap-x-8',
+            ]);
     }
 
     private static function formatAmount(?int $amount, ?string $currency): ?string

@@ -17,10 +17,10 @@ abstract class BaseChipResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
+        $model = $query->getModel();
 
-        if (method_exists($query->getModel(), 'scopeForOwner')) {
-            /** @var Builder $query */
-            $query = $query->forOwner(); // @phpstan-ignore method.notFound
+        if (method_exists($model, 'scopeForOwner')) {
+            return $model->scopeForOwner($query);
         }
 
         return $query;

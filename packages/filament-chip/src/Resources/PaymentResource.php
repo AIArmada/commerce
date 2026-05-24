@@ -13,7 +13,10 @@ use Filament\Actions\ViewAction;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\Column;
+use Filament\Tables\Columns\ColumnGroup;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\Layout\Component;
 use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
@@ -43,8 +46,8 @@ final class PaymentResource extends BaseChipResource
         return $table
             ->striped()
             ->columns([
-                Split::make([
-                    Stack::make([
+                self::glowingSplit([
+                    self::cardedStack([
                         TextColumn::make('id')
                             ->label('Payment #')
                             ->copyable()
@@ -62,9 +65,9 @@ final class PaymentResource extends BaseChipResource
                                 'payout' => 'info',
                                 default => 'primary',
                             }),
-                    ])->carded(),
-                    Panel::make([
-                        Stack::make([
+                    ]),
+                    self::softShadowPanel([
+                        self::cardedStack([
                             TextColumn::make('formatted_amount')
                                 ->label('Amount')
                                 ->badge()
@@ -79,9 +82,9 @@ final class PaymentResource extends BaseChipResource
                                 ->icon('heroicon-o-receipt-percent')
                                 ->color('warning')
                                 ->placeholder('—'),
-                        ])->carded(),
-                    ])->softShadow(),
-                    Stack::make([
+                        ]),
+                    ]),
+                    self::cardedStack([
                         TextColumn::make('currency')
                             ->label('Currency')
                             ->badge(),
@@ -99,8 +102,8 @@ final class PaymentResource extends BaseChipResource
                             ->boolean()
                             ->trueColor('info')
                             ->falseColor('success'),
-                    ])->carded(),
-                ])->glow(),
+                    ]),
+                ]),
             ])
             ->filters([
                 SelectFilter::make('payment_type')
@@ -162,5 +165,35 @@ final class PaymentResource extends BaseChipResource
     protected static function navigationSortKey(): string
     {
         return 'payments';
+    }
+
+    /**
+     * @param  array<int, Column|ColumnGroup|Component>  $components
+     */
+    private static function glowingSplit(array $components): Split
+    {
+        return Split::make($components)->extraAttributes([
+            'class' => 'after:absolute after:inset-0 after:-z-10 after:rounded-2xl after:bg-gradient-to-r after:from-primary-500/20 after:to-transparent',
+        ]);
+    }
+
+    /**
+     * @param  array<int, Column|ColumnGroup|Component>  $components
+     */
+    private static function softShadowPanel(array $components): Panel
+    {
+        return Panel::make($components)->extraAttributes([
+            'class' => 'shadow-lg shadow-gray-200/40 ring-1 ring-black/5',
+        ]);
+    }
+
+    /**
+     * @param  array<int, Column|ColumnGroup|Component>  $components
+     */
+    private static function cardedStack(array $components): Stack
+    {
+        return Stack::make($components)->extraAttributes([
+            'class' => 'rounded-2xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5',
+        ]);
     }
 }

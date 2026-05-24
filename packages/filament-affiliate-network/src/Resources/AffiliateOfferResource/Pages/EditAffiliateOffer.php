@@ -30,11 +30,13 @@ final class EditAffiliateOffer extends EditRecord
 
         $data['site_id'] = (string) $site->getKey();
 
-        if (isset($data['category_id']) && $data['category_id'] !== null && $data['category_id'] !== '') {
+        $categoryId = $data['category_id'] ?? null;
+
+        if (is_scalar($categoryId) && (string) $categoryId !== '') {
             /** @var AffiliateOfferCategory $category */
             $category = OwnerContext::withOwner(null, fn (): AffiliateOfferCategory => AffiliateOfferCategory::query()
                 ->withoutOwnerScope()
-                ->whereKey((string) $data['category_id'])
+                ->whereKey((string) $categoryId)
                 ->firstOrFail());
 
             $data['category_id'] = (string) $category->getKey();

@@ -38,7 +38,6 @@ final class GoalsReport extends Page
 
     protected static ?string $slug = 'signals/goals';
 
-    /** @var view-string */
     protected string $view = 'filament-signals::pages.goals-report';
 
     public function mount(): void
@@ -51,7 +50,7 @@ final class GoalsReport extends Page
         return config('filament-signals.navigation_group', 'Insights');
     }
 
-    public static function getNavigationSort(): ?int
+    public static function getNavigationSort(): int
     {
         return (int) config('filament-signals.resources.navigation_sort.goals_report', 22);
     }

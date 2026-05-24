@@ -53,7 +53,6 @@ final class CashierProcessor implements PaymentProcessorInterface
 
             $gateway = app(GatewayManager::class)->gateway();
 
-            /** @phpstan-ignore method.notFound */
             $payment = $customer->charge($request->amount, [
                 'description' => $request->description,
                 'redirect_urls' => [

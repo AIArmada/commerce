@@ -45,7 +45,6 @@ final class ConversionFunnelReport extends Page
 
     protected static ?string $slug = 'signals/conversion-funnel';
 
-    /** @var view-string */
     protected string $view = 'filament-signals::pages.conversion-funnel-report';
 
     public function mount(): void
@@ -64,7 +63,7 @@ final class ConversionFunnelReport extends Page
         return config('filament-signals.navigation_group', 'Insights');
     }
 
-    public static function getNavigationSort(): ?int
+    public static function getNavigationSort(): int
     {
         return (int) config('filament-signals.resources.navigation_sort.conversion_funnel', 16);
     }

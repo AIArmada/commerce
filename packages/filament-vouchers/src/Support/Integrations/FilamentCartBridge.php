@@ -214,9 +214,13 @@ final class FilamentCartBridge
         }
 
         try {
-            /** @phpstan-ignore-next-line - getAppliedVouchers added dynamically */
             $vouchers = $instance->getAppliedVouchers();
 
+            if (! is_iterable($vouchers)) {
+                return collect();
+            }
+
+            /** @var iterable<int, object> $vouchers */
             return collect($vouchers);
         } catch (Throwable $exception) {
             Log::debug('FilamentCartBridge: Failed to get applied vouchers', [
@@ -245,7 +249,6 @@ final class FilamentCartBridge
             throw new VoucherException('Cart integration is not available');
         }
 
-        /** @phpstan-ignore-next-line - applyVoucher added dynamically */
         $instance->applyVoucher($code);
 
         return true;
@@ -268,7 +271,6 @@ final class FilamentCartBridge
             throw new VoucherException('Cart integration is not available');
         }
 
-        /** @phpstan-ignore-next-line - removeVoucher added dynamically */
         $instance->removeVoucher($code);
 
         return true;

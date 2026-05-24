@@ -34,7 +34,6 @@ final class PageViewsReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/page-views';
 
-    /** @var view-string */
     protected string $view = 'filament-signals::pages.page-views-report';
 
     public static function getNavigationGroup(): ?string
@@ -42,7 +41,7 @@ final class PageViewsReport extends Page implements HasTable
         return config('filament-signals.navigation_group', 'Insights');
     }
 
-    public static function getNavigationSort(): ?int
+    public static function getNavigationSort(): int
     {
         return (int) config('filament-signals.resources.navigation_sort.page_views', 15);
     }

@@ -183,7 +183,7 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
      */
     public function anchorBillingCycleOn(DateTimeInterface | CarbonInterface $date): self
     {
-        if ($date instanceof DateTimeInterface && ! $date instanceof CarbonInterface) {
+        if (! $date instanceof CarbonInterface) {
             $date = Carbon::instance($date);
         }
 

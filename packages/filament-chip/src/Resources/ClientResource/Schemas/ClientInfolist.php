@@ -59,7 +59,7 @@ final class ClientInfolist
 
             Section::make('Addresses')
                 ->schema([
-                    Fieldset::make('Billing')->inlineLabelled() // @phpstan-ignore method.notFound
+                    self::inlineLabelledFieldset('Billing')
                         ->schema([
                             TextEntry::make('street_address')
                                 ->label('Street')
@@ -79,7 +79,7 @@ final class ClientInfolist
                                 ->formatStateUsing(fn (?string $state): ?string => $state !== null && $state !== '' && $state !== '0' ? mb_strtoupper($state) : null)
                                 ->placeholder('—'),
                         ]),
-                    Fieldset::make('Shipping')->inlineLabelled() // @phpstan-ignore method.notFound
+                    self::inlineLabelledFieldset('Shipping')
                         ->schema([
                             TextEntry::make('shipping_street_address')
                                 ->label('Street')
@@ -110,7 +110,7 @@ final class ClientInfolist
 
             Section::make('Company & Banking')
                 ->schema([
-                    Fieldset::make('Company Profile')->inlineLabelled() // @phpstan-ignore method.notFound
+                    self::inlineLabelledFieldset('Company Profile')
                         ->schema([
                             TextEntry::make('legal_name')
                                 ->label('Legal Name')
@@ -131,7 +131,7 @@ final class ClientInfolist
                             $record->registration_number,
                             $record->tax_number,
                         ]))),
-                    Fieldset::make('Banking')->inlineLabelled() // @phpstan-ignore method.notFound
+                    self::inlineLabelledFieldset('Banking')
                         ->schema([
                             TextEntry::make('bank_account')
                                 ->label('Bank Account')
@@ -193,5 +193,14 @@ final class ClientInfolist
             ->filter(fn (?string $email): bool => filled($email))
             ->map(fn (string $email): string => mb_trim($email))
             ->implode(', ');
+    }
+
+    private static function inlineLabelledFieldset(string $label): Fieldset
+    {
+        return Fieldset::make($label)
+            ->columns(2)
+            ->extraAttributes([
+                'class' => 'gap-x-8',
+            ]);
     }
 }

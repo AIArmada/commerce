@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentGrowth\Resources;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
 use AIArmada\FilamentGrowth\Pages\ExperimentResultsPage;
@@ -341,11 +342,11 @@ final class ExperimentResource extends Resource
         $childQuery = $childModelClass::query();
 
         if (method_exists($childModelClass, 'scopeWithoutOwnerScope')) {
-            /** @phpstan-ignore-next-line dynamic Eloquent scope */
-            $childQuery = $childQuery->withoutOwnerScope();
+            /** @var Builder<TChildModel> $childQuery */
+            $childQuery = $childQuery->withoutGlobalScope(OwnerScope::class);
         }
 
-        return $childQuery
+        $childQuery = $childQuery
             ->selectRaw('count(*)')
             ->whereColumn($childTable . '.experiment_id', $experimentTable . '.id')
             ->where(function (Builder $query) use ($childOwnerColumns, $childTable, $experimentOwnerColumns, $experimentTable): void {
@@ -369,6 +370,9 @@ final class ExperimentResource extends Resource
                             ->whereNull($experimentTable . '.' . $experimentOwnerColumns->ownerIdColumn);
                     });
             });
+
+        /** @var Builder<TChildModel> $childQuery */
+        return $childQuery;
     }
 
     private static function ownerScopeKey(): string
@@ -453,8 +457,7 @@ final class ExperimentResource extends Resource
         $trackedPropertyQuery = TrackedProperty::query();
 
         if (method_exists(TrackedProperty::class, 'scopeWithoutOwnerScope')) {
-            /** @phpstan-ignore-next-line dynamic Eloquent scope */
-            $trackedPropertyQuery = $trackedPropertyQuery->withoutOwnerScope();
+            $trackedPropertyQuery = $trackedPropertyQuery->withoutGlobalScope(OwnerScope::class);
         }
 
         $trackedPropertyQuery = $trackedPropertyQuery

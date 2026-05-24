@@ -33,7 +33,11 @@ class FilamentShippingPlugin implements Plugin
 
     public static function get(): static
     {
-        return filament(app(static::class)->getId());
+        $plugin = filament(app(static::class)->getId());
+
+        assert($plugin instanceof static);
+
+        return $plugin;
     }
 
     public function getId(): string

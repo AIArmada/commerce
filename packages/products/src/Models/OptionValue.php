@@ -197,16 +197,13 @@ class OptionValue extends Model
                 throw new InvalidArgumentException('Invalid option_id: option not found.');
             }
 
-            $product = null;
-            if ($option !== null) {
-                $product = Product::query()->withoutOwnerScope()->whereKey($option->product_id)->first();
-            }
+            $product = Product::query()->withoutOwnerScope()->whereKey($option->product_id)->first();
 
             if ($product === null) {
                 throw new InvalidArgumentException('Invalid product_id: option product not found.');
             }
 
-            if ($product !== null && $currentOwner !== null) {
+            if ($currentOwner !== null) {
                 $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
                 if (! $product->belongsToOwner($currentOwner) && ! ($includeGlobal && $product->isGlobal())) {

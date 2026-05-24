@@ -113,7 +113,11 @@ class PriceList extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         $now = now();
 
@@ -126,7 +130,11 @@ class PriceList extends Model
             });
     }
 
-    public function scopeDefault($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
     }

@@ -189,7 +189,11 @@ class PriceTier extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeForQuantity($query, int $quantity)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeForQuantity(Builder $query, int $quantity): Builder
     {
         return $query
             ->where('min_quantity', '<=', $quantity)
@@ -199,7 +203,11 @@ class PriceTier extends Model
             });
     }
 
-    public function scopeOrdered($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('min_quantity', 'asc');
     }

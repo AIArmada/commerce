@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Facade;
  * @method static string instance()
  * @method static \AIArmada\Cart\Storage\StorageInterface storage()
  * @method static \AIArmada\Cart\Cart getCartInstance(string $name, ?string $identifier = null)
- * @method static \AIArmada\Cart\Storage\StorageInterface session(?string $sessionKey = null)
  * @method static self formatted()
  * @method static self raw()
  * @method static self currency(?string $currency = null)

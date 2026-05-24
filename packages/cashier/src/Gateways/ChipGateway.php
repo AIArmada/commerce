@@ -253,7 +253,14 @@ class ChipGateway extends AbstractGateway
      */
     public function invoices(BillableContract $billable, bool | array $parameters = false): Collection
     {
-        $invoices = collect($this->callBillableMethod($billable, 'invoices'))
+        $rawInvoices = $this->callBillableMethod($billable, 'invoices');
+
+        if (! is_iterable($rawInvoices)) {
+            return collect();
+        }
+
+        /** @var iterable<int, mixed> $rawInvoices */
+        $invoices = collect($rawInvoices)
             ->map(fn ($invoice) => new Chip\ChipInvoice($invoice))
             ->values();
 
@@ -269,7 +276,14 @@ class ChipGateway extends AbstractGateway
      */
     public function paymentMethods(BillableContract $billable, ?string $type = null): Collection
     {
-        $paymentMethods = collect($this->callBillableMethod($billable, 'paymentMethods'))
+        $rawPaymentMethods = $this->callBillableMethod($billable, 'paymentMethods');
+
+        if (! is_iterable($rawPaymentMethods)) {
+            return collect();
+        }
+
+        /** @var iterable<int, mixed> $rawPaymentMethods */
+        $paymentMethods = collect($rawPaymentMethods)
             ->map(fn ($paymentMethod) => new ChipPaymentMethod($paymentMethod, $billable))
             ->values();
 
