@@ -481,3 +481,71 @@ it('enriches signals from global tracked properties when include_global is enabl
         ->and($enrichedProperties['assignment_id'])->toBeString()
         ->and($enrichedProperties['experiment_contexts'])->toHaveCount(1);
 });
+
+it('replays explicit experiment contexts that were already persisted on the source metadata', function (): void {
+    $owner = growthProjectionOwner();
+    $trackedProperty = growthProjectionTrackedProperty($owner);
+
+    $order = OwnerContext::withOwner($owner, fn (): Order => Order::query()->create([
+        'customer_id' => 'customer-replay-explicit',
+        'grand_total' => 29900,
+        'currency' => 'MYR',
+        'metadata' => [
+            'experiment_contexts' => [[
+                'experiment_id' => 'exp-replay-explicit',
+                'variant_id' => 'var-replay-explicit',
+                'experiment_slug' => 'homepage-hero',
+                'variant_code' => 'B',
+            ]],
+        ],
+    ]));
+
+    $properties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($order, $trackedProperty, [
+        'order_id' => $order->getKey(),
+    ]));
+
+    expect($properties['experiment_id'])->toBe('exp-replay-explicit')
+        ->and($properties['variant_id'])->toBe('var-replay-explicit')
+        ->and($properties['variant_code'])->toBe('B')
+        ->and($properties['experiment_contexts'])->toHaveCount(1)
+        ->and(data_get($properties, 'experiment_contexts.0.experiment_slug'))->toBe('homepage-hero');
+});
+
+it('merges explicit experiment contexts from payment and billing payloads without dropping existing null properties', function (): void {
+    $owner = growthProjectionOwner();
+    $trackedProperty = growthProjectionTrackedProperty($owner);
+
+    $checkoutSession = OwnerContext::withOwner($owner, fn (): CheckoutSession => CheckoutSession::query()->create([
+        'cart_id' => 'cart-replay-nested',
+        'customer_id' => 'customer-replay-nested',
+        'grand_total' => 39900,
+        'currency' => 'MYR',
+        'billing_data' => [
+            'metadata' => [
+                'experiment_contexts' => [[
+                    'experiment_id' => 'exp-billing-context',
+                    'variant_id' => 'var-billing-context',
+                    'variant_code' => 'BILLING',
+                ]],
+            ],
+        ],
+        'payment_data' => [
+            'experiment_contexts' => [[
+                'experiment_id' => 'exp-payment-context',
+                'variant_id' => 'var-payment-context',
+                'variant_code' => 'PAYMENT',
+            ]],
+        ],
+    ]));
+
+    $properties = OwnerContext::withOwner($owner, fn (): array => app(ProjectExperimentContextIntoSignalProperties::class)->handle($checkoutSession, $trackedProperty, [
+        'checkout_session_id' => $checkoutSession->getKey(),
+        'coupon_code' => null,
+    ]));
+
+    expect($properties)->toHaveKey('coupon_code')
+        ->and($properties['coupon_code'])->toBeNull()
+        ->and($properties['experiment_contexts'])->toHaveCount(2)
+        ->and(collect($properties['experiment_contexts'])->pluck('experiment_id')->all())
+        ->toEqualCanonicalizing(['exp-billing-context', 'exp-payment-context']);
+});

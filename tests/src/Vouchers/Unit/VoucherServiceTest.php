@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher;
@@ -230,15 +231,31 @@ test('voucher service redeem records fixed discount amount', function (): void {
 
     $service = app(VoucherService::class);
 
-    $service->redeem('redeemfixed', 'order-123');
+    $order = Order::factory()->create([
+        'order_number' => 'ORD-REDEEM-123',
+        'subtotal' => 10000,
+        'discount_total' => 500,
+        'grand_total' => 9500,
+        'currency' => 'MYR',
+    ]);
 
-    $usage = VoucherUsage::where('voucher_id', $voucher->id)->first();
+    $service->redeem('redeemfixed', (string) $order->id);
+
+    $usage = VoucherUsage::where('voucher_id', $voucher->id)->first()?->load('redeemedBy');
 
     expect($usage)->not->toBeNull()
         ->and($usage?->discount_amount)->toBe(500)
         ->and($usage?->currency)->toBe('MYR')
         ->and($usage?->channel)->toBe('checkout')
-        ->and($usage?->metadata)->toMatchArray(['order_id' => 'order-123']);
+        ->and($usage?->redeemed_by_id)->toBe((string) $order->id)
+        ->and($usage?->metadata)->toMatchArray([
+            'order_id' => (string) $order->id,
+            'order_number' => 'ORD-REDEEM-123',
+            'subtotal' => 10000,
+            'discount_total' => 500,
+            'grand_total' => 9500,
+        ])
+        ->and($usage?->redeemedBy?->is($order))->toBeTrue();
 });
 
 test('voucher service can be used by returns false for non-existent', function (): void {
