@@ -25,7 +25,7 @@ This package is a **wrapper/adapter layer** that delegates to underlying gateway
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.4+
 - Laravel 13.0+
 - At least one gateway package installed:
   - `laravel/cashier` for Stripe
@@ -87,12 +87,14 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 
 # CHIP Configuration (if using cashier-chip)
 CHIP_BRAND_ID=your_brand_id
-CHIP_API_KEY=your_api_key
-CHIP_WEBHOOK_KEY=your_webhook_key
+CHIP_COLLECT_API_KEY=your_collect_api_key
+CHIP_WEBHOOK_SECRET=your_webhook_secret
 
 # Currency Settings
 CASHIER_CURRENCY=USD
 CASHIER_CURRENCY_LOCALE=en_US
+CASHIER_STRIPE_CURRENCY_LOCALE=en_US
+CASHIER_CHIP_CURRENCY_LOCALE=ms_MY
 ```
 
 ## Usage

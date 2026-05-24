@@ -1,3 +1,8 @@
+---
+title: Cart Basics
+status: current
+---
+
 # Getting Started: Cart Basics
 
 Learn how to build a shopping cart in 10 minutes using AIArmada Cart.
@@ -326,42 +331,32 @@ Cart::erase(Auth::id());
 ### Complete Checkout Flow
 
 ```php
+use AIArmada\Cart\Conditions\TargetPresets;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Support\Facades\Auth;
 
 // 1. Add products
 Cart::add('prod-001', 'T-Shirt', 2999, 2);
 Cart::add('prod-002', 'Jeans', 7999, 1);
 
-// 2. Apply voucher
-$voucher = Voucher::findByCode('SAVE10');
-if ($voucher && $voucher->canBeRedeemed()) {
-    Cart::applyCondition([
-        'name' => $voucher->name,
-        'type' => 'discount',
-        'target' => 'cart@cart_subtotal/aggregate',
-        'value' => -$voucher->discount_amount,
-        'is_percentage' => $voucher->type === 'percentage',
-    ]);
-}
+// 2. Apply voucher (when aiarmada/vouchers is installed)
+Cart::applyVoucher('SAVE10');
 
-// 3. Calculate shipping
+// 3. Calculate shipping (returns minor units / cents)
 $shipping = calculateShipping(Auth::user()->address);
-Cart::applyCondition([
+Cart::addCondition([
     'name' => 'Shipping',
     'type' => 'shipping',
-    'target' => 'cart@grand_total/aggregate',
-    'value' => $shipping,
-    'is_percentage' => false,
+    'target_definition' => TargetPresets::cartShipping()->toArray(),
+    'value' => '+' . number_format($shipping / 100, 2, '.', ''),
 ]);
 
 // 4. Add tax
-Cart::applyCondition([
+Cart::addCondition([
     'name' => 'SST',
     'type' => 'tax',
-    'target' => 'cart@grand_total/aggregate',
-    'value' => 6,
+    'target_definition' => TargetPresets::cartGrandTotal()->toArray(),
+    'value' => '6%',
 ]);
 
 // 5. Get final total
@@ -435,5 +430,6 @@ Route::post('/cart/update/{id}', function (Request $request, string $id) {
 ## Next Steps
 
 - **[Payment Integration](02-payment-integration.md)**: Accept payments with CHIP
-- **[Voucher System](03-voucher-system.md)**: Add discount codes
-- **[Cart Package Reference](../03-packages/01-cart.md)**: Complete API documentation
+- **[Cart Package Overview](../../packages/cart/docs/01-overview.md)**: Read the canonical cart docs
+- **[Vouchers Overview](../../packages/vouchers/docs/01-overview.md)**: Add discount codes and voucher flows
+- **[Checkout Overview](../../packages/checkout/docs/01-overview.md)**: Move from cart state to order creation

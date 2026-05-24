@@ -2,152 +2,45 @@
 title: Overview
 ---
 
-# Filament JNT
+# Filament J&T Express
 
-Filament admin panel integration for the JNT package. Provides resources, actions, and widgets for managing J&T Express shipping orders in your Filament panels.
+## Purpose
 
----
+The `aiarmada/filament-jnt` package is the Filament admin adapter for `aiarmada/jnt`.
 
-## Features
+## What this package owns
 
-- **Order Management Resource** - View and manage shipping orders
-- **Tracking Events Resource** - View tracking history and events
-- **Webhook Logs Resource** - Monitor webhook activity
-- **Cancel Order Action** - Cancel orders with reason selection
-- **Sync Tracking Action** - Manually sync tracking information
-- **Dashboard Widget** - Stats overview with caching
+- Filament resources for J&T orders, tracking events, and webhook logs
+- Filament actions for canceling orders, syncing tracking, and related admin workflows
+- J&T-focused dashboard widgets and admin resource screens
 
----
+## What this package does not own
 
-## Resources
+- J&T API communication, order creation, or webhook processing; those stay in `aiarmada/jnt`
+- Generic shipping abstractions; those stay in `aiarmada/shipping`
+- Tenant resolution itself; it consumes owner context from the host app and `commerce-support`
 
-### JntOrderResource
+## Related packages
 
-Full-featured resource for shipping orders:
+- [`aiarmada/jnt`](../../jnt/docs/01-overview.md) — core J&T adapter package
+- [`aiarmada/shipping`](../../shipping/docs/01-overview.md) — shipping abstraction layer J&T plugs into
+- [`aiarmada/filament-shipping`](../../filament-shipping/docs/01-overview.md) — carrier-agnostic shipping admin package
 
-| Feature | Description |
-|---------|-------------|
-| List View | Paginated table with filters and search |
-| View Page | Detailed order information |
-| Columns | Order ID, tracking, status, weight, value, dates |
-| Filters | Status, express type, service type, problems, delivery |
-| Actions | View, cancel order, sync tracking |
-| Search | Order ID, tracking number, customer code |
+## Main resources actions or surfaces
 
-### JntTrackingEventResource
+- **Resources** — `JntOrderResource`, `JntTrackingEventResource`, and `JntWebhookLogResource`
+- **Actions** — cancel order and sync tracking
+- **Widgets** — `JntStatsWidget`
 
-View tracking history:
+## Owner scoping and security notes
 
-| Feature | Description |
-|---------|-------------|
-| List View | All tracking events with timestamps |
-| Columns | Tracking number, scan type, location, time |
-| Filters | By order, by status, by date |
+- The plugin should mirror the owner-scoping behavior defined by `aiarmada/jnt`
+- Resource filtering is not authorization; actions and lookups still rely on the core J&T package to enforce owner-safe reads and writes
 
-### JntWebhookLogResource
+## Read next
 
-Monitor webhook activity:
-
-| Feature | Description |
-|---------|-------------|
-| List View | Webhook payloads and processing status |
-| Columns | Bill code, processed status, exceptions |
-| Filters | By status, by date |
-
----
-
-## Actions
-
-### CancelOrderAction
-
-Cancel shipping orders with reason selection:
-
-- Grouped cancellation reasons (customer, merchant, delivery, payment)
-- Custom reason support for "Other"
-- Confirmation modal with form
-- Owner-scoped authorization
-- Automatic status update
-
-### SyncTrackingAction
-
-Manually sync tracking information:
-
-- Fetch latest tracking from J&T API
-- Update order status
-- Create new tracking events
-- Confirmation modal
-- Error handling with notifications
-
----
-
-## Widget
-
-### JntStatsWidget
-
-Dashboard statistics widget:
-
-| Stat | Description |
-|------|-------------|
-| Total Orders | All shipping orders |
-| Delivered | Orders with delivery date |
-| In Transit | Orders being delivered |
-| Pending | Awaiting pickup |
-| Returns | Orders being returned |
-| Problems | Orders requiring attention |
-
-Features:
-- 30-second cache for performance
-- Owner-scoped when enabled
-- 6-column layout
-- Color-coded status indicators
-
----
-
-## Architecture
-
-```
-filament-jnt/
-├── src/
-│   ├── FilamentJntPlugin.php        # Plugin registration
-│   ├── FilamentJntServiceProvider.php
-│   ├── Actions/
-│   │   ├── CancelOrderAction.php
-│   │   └── SyncTrackingAction.php
-│   ├── Resources/
-│   │   ├── BaseJntResource.php      # Shared resource logic
-│   │   ├── JntOrderResource.php
-│   │   ├── JntTrackingEventResource.php
-│   │   └── JntWebhookLogResource.php
-│   └── Widgets/
-│       └── JntStatsWidget.php
-└── config/
-    └── filament-jnt.php
-```
-
----
-
-## Requirements
-
-- PHP 8.4+
-- Filament v5
-- `aiarmada/jnt` package (core package)
-- `aiarmada/commerce-support` (for multi-tenancy)
-
----
-
-## Quick Start
-
-```php
-// In your Filament panel provider
-use AIArmada\FilamentJnt\FilamentJntPlugin;
-
-public function panel(Panel $panel): Panel
-{
-    return $panel
-        ->plugins([
-            FilamentJntPlugin::make(),
-        ]);
-}
-```
-
-See [Installation](02-installation.md) for detailed setup instructions.
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Troubleshooting](99-troubleshooting.md)
+- [Core JNT overview](../../jnt/docs/01-overview.md)

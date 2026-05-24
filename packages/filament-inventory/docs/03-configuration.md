@@ -160,31 +160,13 @@ Lower numbers appear first in navigation.
 
 Dashboard stats are cached for this many seconds. Set to `0` to disable caching.
 
-## Customizing Resources
+## Resource overrides
 
-To extend or customize a resource, you can create your own that extends the base:
+The plugin registers its resource list internally. It does **not** currently expose a public `->resources([...])` override API on `FilamentInventoryPlugin`.
 
-```php
-<?php
+Use config for the supported package-level toggles:
 
-namespace App\Filament\Resources;
+- `features.batch_resource`
+- `features.serial_resource`
 
-use AIArmada\FilamentInventory\Resources\InventoryLocationResource as BaseResource;
-
-class InventoryLocationResource extends BaseResource
-{
-    public static function getNavigationGroup(): ?string
-    {
-        return 'Warehouse';
-    }
-}
-```
-
-Then register your custom resource in the plugin:
-
-```php
-FilamentInventoryPlugin::make()
-    ->resources([
-        CustomInventoryLocationResource::class,
-    ]);
-```
+If you need deeper resource customization, register your own Filament resources directly on the panel and avoid duplicate navigation, or maintain a targeted extension of the package classes in your app.

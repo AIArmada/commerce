@@ -4,6 +4,41 @@ title: Overview
 
 # Filament Affiliates Plugin
 
+## Purpose
+
+The `aiarmada/filament-affiliates` package is the Filament admin and affiliate-portal adapter for `aiarmada/affiliates`.
+
+## What this package owns
+
+- Filament resources for affiliates, conversions, payouts, programs, and fraud signals
+- Admin pages for fraud review, payout batching, and affiliate reporting
+- Affiliate self-service portal pages for dashboards, conversions, payouts, links, and registration
+- Affiliate-focused widgets and UI-specific services
+
+## What this package does not own
+
+- Attribution, commission calculation, payout bookkeeping, or fraud-detection rules; those stay in `aiarmada/affiliates`
+- Marketplace offer publishing and network-specific admin surfaces; those belong to `aiarmada/affiliate-network` and `aiarmada/filament-affiliate-network`
+- Tenant resolution itself; it consumes the owner context supplied by the host app and `commerce-support`
+
+## Related packages
+
+- [`aiarmada/affiliates`](../../affiliates/docs/01-overview.md) — core affiliate domain package
+- [`aiarmada/affiliate-network`](../../affiliate-network/docs/01-overview.md) — optional marketplace/network extension
+- [`aiarmada/filament-affiliate-network`](../../filament-affiliate-network/docs/01-overview.md) — network marketplace admin plugin
+- [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and shared primitives
+
+## Main models services or surfaces
+
+- **Resources** — affiliates, conversions, payouts, programs, and fraud signals
+- **Pages** — fraud review, payout batches, reports, and the affiliate portal pages
+- **Widgets** — affiliate stats, performance overview, fraud alerts, payout queue, activity feed, and network visualization
+
+## Owner scoping and security notes
+
+- The plugin should mirror the owner-scoping behavior defined by `aiarmada/affiliates` and `commerce-support`
+- Portal and admin UI filters are not authorization; the backing domain package must still validate submitted IDs, ownership, and payout eligibility on write paths
+
 The `aiarmada/filament-affiliates` package provides a complete Filament v5 admin interface for managing affiliates, conversions, payouts, programs, and fraud detection.
 
 ## Features
@@ -72,3 +107,13 @@ src/
 - Laravel 11+
 - Filament v5
 - `aiarmada/affiliates` (core package)
+
+## Read next
+
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Widgets](05-widgets.md)
+- [Portal](06-portal.md)
+- [Troubleshooting](99-troubleshooting.md)
+- [Core affiliates overview](../../affiliates/docs/01-overview.md)

@@ -7,7 +7,7 @@ title: Installation
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11.0+
+- Laravel 13+
 - At least one payment gateway package installed (chip, cashier-chip, or cashier)
 
 ## Installation via Composer
@@ -38,15 +38,22 @@ The checkout package requires these ecosystem packages:
 # Required packages
 composer require aiarmada/commerce-support
 composer require aiarmada/cart
+composer require aiarmada/customers
+composer require aiarmada/docs
 composer require aiarmada/orders
+composer require aiarmada/pricing
+composer require aiarmada/products
+composer require aiarmada/shipping
 
-# At least one payment gateway (pick one or more)
+# Runtime payment integration (install one or more)
 composer require aiarmada/chip
 # or
 composer require aiarmada/cashier-chip
 # or
 composer require aiarmada/cashier
 ```
+
+These required package dependencies are reflected in `aiarmada/checkout`'s Composer manifest. Payment packages are optional at Composer level but required for a production checkout that can actually collect payment.
 
 ## Optional Dependencies
 
@@ -55,6 +62,9 @@ For enhanced functionality, install these optional packages:
 ```bash
 # Inventory management
 composer require aiarmada/inventory
+
+# J&T shipping integration (via shipping adapter)
+composer require aiarmada/jnt
 
 # Tax calculation
 composer require aiarmada/tax

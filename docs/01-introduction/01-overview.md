@@ -1,8 +1,13 @@
+---
+title: Overview
+status: current
+---
+
 # AIArmada Commerce - Overview
 
 ## Introduction
 
-AIArmada Commerce is a comprehensive **Laravel e-commerce monorepo** providing production-ready packages for shopping carts, payment processing, vouchers, shipping, and stock management. Built with **modern Laravel 13**, **Filament 5**, and **PHP 8.4**, it offers both headless APIs and beautiful admin panels.
+AIArmada Commerce is a comprehensive **Laravel e-commerce monorepo** providing production-ready packages for shopping carts, checkout orchestration, payment processing, vouchers, shipping, documents, and inventory workflows. Built with **modern Laravel 13**, **Filament 5**, and **PHP 8.4**, it offers both headless APIs and beautiful admin panels.
 
 ## Philosophy
 
@@ -19,20 +24,20 @@ AIArmada Commerce is a comprehensive **Laravel e-commerce monorepo** providing p
 ### Package Structure
 
 ```
-aiarmada/commerce (meta-package)
-├── Core Packages
-│   ├── cart          - Shopping cart with multiple storage drivers
-│   ├── chip          - CHIP payment gateway integration
-│   ├── vouchers      - Flexible voucher/coupon system
-│   ├── jnt           - J&T Express shipping integration
-│   └── stock         - Inventory management
-├── Infrastructure
-│   ├── support       - Shared utilities, exceptions, HTTP client
-│   └── docs          - Documentation package
-└── Filament Plugins
-    ├── filament-cart     - Cart admin panel
-    ├── filament-chip     - Payment admin panel
-    └── filament-vouchers - Voucher admin panel
+aiarmada/commerce (metapackage)
+├── Foundation
+│   ├── commerce-support - Shared contracts, owner scoping, targeting, webhooks
+│   └── filament-authz   - Filament authorization and impersonation helpers
+├── Core Domains
+│   ├── cart, checkout, orders
+│   ├── products, customers, inventory, pricing, tax
+│   ├── promotions, vouchers, affiliates, affiliate-network, growth
+│   └── docs, events, signals
+├── Gateways & Billing
+│   ├── chip, cashier, cashier-chip
+│   └── jnt
+└── Filament Adapters
+    └── filament-* packages paired with the relevant domain packages
 ```
 
 ### Design Principles
@@ -177,9 +182,10 @@ Cart::add('digital-001', 'E-Book', 1999, 1, [
 ## What's Next?
 
 - **[Installation Guide](02-installation.md)**: Get started in 5 minutes
-- **[Getting Started](../02-getting-started/)**: Build your first cart
-- **[Package Reference](../03-packages/)**: Deep dive into each package
-- **[Support Utilities](../04-support-utilities.md)**: Shared tools and helpers
+- **[Cart Basics](../02-getting-started/01-cart-basics.md)**: Build your first cart flow
+- **[Documentation Index](../index.md)**: Browse the current root and package docs
+- **[AI Context](../../CONTEXT.md)**: Use the repo architecture map for package routing
+- **[Support Utilities](../04-support-utilities.md)**: Learn how `commerce-support` fits the ecosystem
 
 ## Community & Support
 

@@ -159,7 +159,7 @@ FilamentTaxPlugin::make()
     ->rates(true)
     ->exemptions(true)
     ->widgets(true)
-    ->settings(true);
+    ->settingsPage(true);
 
 // StaffPanelProvider - read-only access
 FilamentTaxPlugin::make()
@@ -168,7 +168,7 @@ FilamentTaxPlugin::make()
     ->rates(true)
     ->exemptions(true)
     ->widgets(true)
-    ->settings(false); // No settings access
+    ->settingsPage(false); // No settings access
 ```
 
 ## Authorization Setup
@@ -252,7 +252,7 @@ class TaxZonePolicy
 
 ### Settings Page Missing
 
-1. Enable via `settings(true)` on plugin
+1. Enable via `settingsPage(true)` on plugin
 2. Ensure TaxSettings class is migrated:
    ```bash
    php artisan vendor:publish --tag=tax-settings

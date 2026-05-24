@@ -6,8 +6,8 @@ title: Installation
 
 ## Requirements
 
-- PHP 8.2+
-- Laravel 11+
+- PHP 8.4+
+- Laravel 13+
 - CHIP Account with API credentials
 
 ## Installing the Package
@@ -178,6 +178,8 @@ Exclude the webhook route from CSRF verification in `bootstrap/app.php`:
 
 ## Next Steps
 
-- [Customer Management](customers.md) - Create and manage CHIP customers
-- [One-off Charges](charges.md) - Process single payments
-- [Checkout Sessions](checkout.md) - Redirect to hosted checkout
+- [Configuration](03-configuration.md) - Review package defaults, owner-scoping, and webhook settings
+- [Usage](04-usage.md) - Start with the canonical billing entry point
+- [Customer Management](05-customers.md) - Create and manage CHIP customers
+- [One-off Charges](06-charges.md) - Process single payments
+- [Checkout Sessions](07-checkout.md) - Redirect to hosted checkout

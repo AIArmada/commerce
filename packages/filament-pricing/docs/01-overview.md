@@ -4,7 +4,42 @@ title: Overview
 
 # Filament Pricing Package
 
-The `aiarmada/filament-pricing` package provides a Filament v5 admin panel for managing price lists, pricing settings, simulator workflows, and an optional fallback promotions resource in the AIArmada Commerce ecosystem.
+## Purpose
+
+The `aiarmada/filament-pricing` package is the Filament admin adapter for `aiarmada/pricing`. It exposes pricing management, settings, and simulator workflows through Filament resources and pages.
+
+## What this package owns
+
+- Filament resources for price lists and their related prices or tiers
+- Pricing settings and simulator pages
+- Pricing dashboard widgets and admin navigation
+- The fallback promotions admin resource when `aiarmada/promotions` is installed without `aiarmada/filament-promotions`
+
+## What this package does not own
+
+- Price calculation rules, persistence, or pricing settings storage; those stay in `aiarmada/pricing`
+- Dedicated promotions admin when `aiarmada/filament-promotions` is installed
+- Product or customer domain records
+
+## Related packages
+
+- [`aiarmada/pricing`](../../pricing/docs/01-overview.md) — core pricing engine and data model
+- [`aiarmada/promotions`](../../promotions/docs/01-overview.md) — promotion rules used by pricing
+- [`aiarmada/filament-promotions`](../../filament-promotions/docs/01-overview.md) — dedicated promotions admin, when installed
+- [`aiarmada/products`](../../products/docs/01-overview.md) and [`aiarmada/customers`](../../customers/docs/01-overview.md) — simulator context records
+
+## Main models services or surfaces
+
+- **Resources** — `PriceListResource`, plus fallback `PromotionResource` only when the dedicated promotions UI is absent
+- **Pages** — `ManagePricingSettings`, `PriceSimulator`
+- **Widgets** — `PricingStatsWidget`
+- **Relation managers** — `PricesRelationManager`, `TiersRelationManager`
+
+## Owner scoping and security notes
+
+- The package should follow the owner-scoping behavior defined by `aiarmada/pricing` and `commerce-support`
+- Filament option lists improve usability, but submitted IDs in simulator or admin actions still need the backing domain package to enforce owner-safe reads and writes
+- Promotions UI ownership is explicit: fallback mode belongs to this package only until `aiarmada/filament-promotions` is present
 
 ## Features
 
@@ -76,3 +111,13 @@ if (class_exists('\\AIArmada\\Products\\Models\\Product')) {
     $pages[] = Pages\PriceSimulator::class;
 }
 ```
+
+## Read next
+
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Resources](05-resources.md)
+- [Pages and widgets](06-pages-widgets.md)
+- [Multitenancy](07-multitenancy.md)
+- [Core pricing overview](../../pricing/docs/01-overview.md)

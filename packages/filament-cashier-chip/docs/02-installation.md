@@ -151,5 +151,5 @@ FilamentCashierChipPlugin::make()
 ## Next Steps
 
 - [Configuration](03-configuration.md) – Customize settings
-- [Resources](04-resources.md) – Learn about admin resources
+- [Usage](04-usage.md) – Learn about admin resources
 - [Billing Portal](05-billing-portal.md) – Customer self-service setup

@@ -6,6 +6,41 @@ title: Overview
 
 `aiarmada/products` provides the catalog foundation for Commerce applications: products, variants, categories, collections, and extensible custom attributes.
 
+## Purpose
+
+Use this package when you need the source-of-truth catalog domain: products, variants, category and collection taxonomy, attribute structures, and owner-aware product storage.
+
+## What this package owns
+
+- Product, variant, option, and option-value models
+- Category, collection, attribute, attribute group, and attribute set models
+- Catalog-domain enums, helpers, slugging, and money-aware product behavior
+- Owner-aware catalog persistence through `commerce-support`
+- Config-driven table names and catalog feature flags
+
+## What this package does not own
+
+- Filament catalog resources, bulk-edit pages, import/export pages, or widgets
+- Pricing, promotions, tax, inventory, checkout, or order orchestration
+- Application storefront UI or search/indexing infrastructure outside the package model layer
+
+## Related packages
+
+- `aiarmada/commerce-support` provides owner-scoping and shared money/helper primitives
+- `aiarmada/filament-products` provides the Filament admin surface for this catalog domain
+- `pricing`, `inventory`, `promotions`, and `orders` consume product data but do not replace this package as the catalog source of truth
+
+## Main models or surfaces
+
+- `Product`
+- `Variant`
+- `Category`
+- `Collection`
+- `Attribute`
+- `AttributeGroup`
+- `AttributeSet`
+- Product, status, visibility, and attribute-type enums
+
 ## Highlights
 
 - Owner-aware models powered by `commerce-support`
@@ -71,6 +106,14 @@ When `products.features.owner.enabled` is on, tenant-owned reads and writes foll
 - owned writes require the current owner context to match
 - global record writes require explicit global context via `OwnerContext::withOwner(null, ...)`
 - `include_global` defaults to `false`
+
+## Read next
+
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Models Reference](05-models-reference.md)
+- [Troubleshooting](99-troubleshooting.md)
 
 ## Requirements
 

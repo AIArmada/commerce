@@ -19,12 +19,12 @@ This package provides a complete Filament admin interface for managing documents
 
 ## Table of Contents
 
-1. [Overview](00-overview.md) - Architecture and core concepts
-2. [Installation](01-installation.md) - Setup and panel registration
-3. [Resources](02-resources.md) - All resources in detail
-4. [Configuration](03-configuration.md) - Plugin configuration
-5. [Pages & Widgets](04-pages-widgets.md) - Reports and dashboard widgets
-6. [Customization](05-customization.md) - Extending and customizing
+1. [Overview](01-overview.md) - Architecture and core concepts
+2. [Installation](02-installation.md) - Setup and panel registration
+3. [Configuration](03-configuration.md) - Plugin configuration
+4. [Usage](04-usage.md) - Resources, actions, and extension points
+5. [Pages & Widgets](05-pages-widgets.md) - Reports and dashboard widgets
+6. [Customization](06-customization.md) - Extending and customizing
 7. [Troubleshooting](99-troubleshooting.md) - Common issues and solutions
 
 ## Quick Start

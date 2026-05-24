@@ -4,6 +4,40 @@ title: Overview
 
 # Filament Affiliate Network Plugin
 
+## Purpose
+
+The `aiarmada/filament-affiliate-network` package is the Filament admin and marketplace adapter for `aiarmada/affiliate-network`.
+
+## What this package owns
+
+- Filament resources for sites, offers, categories, and applications
+- Merchant-facing dashboard and affiliate marketplace pages
+- Network stats and top-offers widgets
+- Filament action workflows for verification, application review, and offer state changes
+
+## What this package does not own
+
+- Site verification logic, link tracking, or offer persistence rules; those stay in `aiarmada/affiliate-network`
+- Core affiliate attribution or payout logic; those stay in `aiarmada/affiliates`
+- Tenant resolution itself; it consumes the owner context supplied by the host app and `commerce-support`
+
+## Related packages
+
+- [`aiarmada/affiliate-network`](../../affiliate-network/docs/01-overview.md) — core marketplace and tracking package
+- [`aiarmada/affiliates`](../../affiliates/docs/01-overview.md) — affiliate identities and commission domain layer
+- [`aiarmada/filament-affiliates`](../../filament-affiliates/docs/01-overview.md) — complementary affiliate admin and portal UI
+
+## Main models services or surfaces
+
+- **Resources** — sites, offers, offer categories, and offer applications
+- **Pages** — merchant dashboard and affiliate marketplace
+- **Widgets** — network stats and top offers
+
+## Owner scoping and security notes
+
+- The plugin should mirror the owner and relationship-scoping rules defined by `aiarmada/affiliate-network`
+- Marketplace and admin filters are not authorization; action handlers still need the backing domain package to validate application, offer, and site ownership before mutating records
+
 The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5 admin interface for managing the affiliate network marketplace.
 
 ## Features
@@ -129,3 +163,15 @@ The marketplace page provides:
 - Filament v5
 - `aiarmada/affiliate-network` package
 - `aiarmada/filament-affiliates` package (recommended)
+
+## Read next
+
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Pages and widgets](05-pages-widgets.md)
+- [Customization](06-customization.md)
+- [Actions reference](07-actions-reference.md)
+- [Testing](08-testing.md)
+- [Troubleshooting](99-troubleshooting.md)
+- [Core affiliate-network overview](../../affiliate-network/docs/01-overview.md)

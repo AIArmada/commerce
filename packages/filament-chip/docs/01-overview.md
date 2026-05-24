@@ -4,6 +4,40 @@ title: Overview
 
 # Filament CHIP
 
+## Purpose
+
+The `aiarmada/filament-chip` package is the Filament admin adapter for `aiarmada/chip`.
+
+## What this package owns
+
+- Filament resources and pages for CHIP purchases and clients
+- CHIP analytics dashboard and essential transaction widgets
+- CHIP-focused admin visibility into transaction and client data
+
+## What this package does not own
+
+- CHIP API integration, purchase creation, payouts, or webhook processing; those stay in `aiarmada/chip`
+- Cashier-style subscription billing or customer self-service billing portal flows; those belong to `aiarmada/cashier-chip` and `aiarmada/filament-cashier-chip`
+- Checkout orchestration
+
+## Related packages
+
+- [`aiarmada/chip`](../../chip/docs/01-overview.md) — core CHIP gateway package
+- [`aiarmada/cashier-chip`](../../cashier-chip/docs/01-overview.md) — CHIP subscription billing layer
+- [`aiarmada/filament-cashier-chip`](../../filament-cashier-chip/docs/01-overview.md) — CHIP billing portal and subscription UI
+
+## Main models services or surfaces
+
+- **Resources** — purchase and client administration by default
+- **Pages** — analytics dashboard
+- **Widgets** — stats, revenue chart, and recent transactions
+- **Optional surfaces** — payment, bank account, payout, and statement resources available outside the default registration set
+
+## Owner scoping and security notes
+
+- The plugin should mirror the owner-scoping behavior defined by `aiarmada/chip`
+- Admin filtering is not authorization; actions and detail lookups still rely on the core CHIP package to enforce owner-safe reads and writes
+
 A Filament admin panel plugin for managing CHIP payment gateway data. Provides essential visualization, analytics, and management interfaces for purchases and clients.
 
 ## Key Features
@@ -108,6 +142,7 @@ public function panel(Panel $panel): Panel
 
 - [Installation](02-installation.md) - Setup and configuration
 - [Configuration](03-configuration.md) - Full config reference  
-- [Resources](04-resources.md) - Resource customization
+- [Usage](04-usage.md) - Resource customization and admin workflows
 - [Pages & Widgets](05-pages-widgets.md) - Dashboard components
 - [Troubleshooting](99-troubleshooting.md) - Common issues
+- [Core CHIP overview](../../chip/docs/01-overview.md)

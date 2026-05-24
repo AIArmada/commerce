@@ -1,88 +1,67 @@
 ---
-title: Cashier CHIP Documentation
+title: Overview
 ---
 
-# Cashier CHIP Documentation
+# Cashier CHIP
 
-Laravel Cashier-style billing for CHIP payment platform.
+## Purpose
 
-## Architecture
+The `aiarmada/cashier-chip` package provides Cashier-style recurring billing and billable-model
+patterns on top of `aiarmada/chip`.
 
-Cashier CHIP provides **Laravel Cashier patterns** adapted for the CHIP payment gateway:
+## What this package owns
 
-- **Stripe-like API** – Familiar Cashier methods and patterns
-- **Local Subscriptions** – Subscription management without native CHIP support
-- **Recurring Tokens** – CHIP's equivalent of Stripe payment methods
-- **Type-safe** – Uses CHIP package's Data for type safety
+- CHIP-specific billable columns and subscription tables
+- Cashier-style customer, charge, checkout, payment method, and subscription APIs for CHIP
+- Application-managed subscription renewals and recurring-token billing flows
+- CHIP billing webhooks and test utilities for the Cashier-style layer
 
-## Key Differences from Stripe Cashier
+## What this package does not own
+
+- Direct CHIP gateway APIs and purchase models; those stay in `aiarmada/chip`
+- Unified multi-gateway billing abstraction; that belongs to `aiarmada/cashier`
+- Filament admin or customer-facing billing portal surfaces; those belong to `aiarmada/filament-cashier-chip`
+
+## Related packages
+
+- [`aiarmada/chip`](../../chip/docs/01-overview.md) — core CHIP gateway integration
+- [`aiarmada/cashier`](../../cashier/docs/01-overview.md) — unified multi-gateway wrapper
+- [`aiarmada/filament-cashier-chip`](../../filament-cashier-chip/docs/01-overview.md) — Filament admin and billing portal UI
+- [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and shared primitives
+
+## Main models services or surfaces
+
+- **Billable surface** — trait-based customer, payment method, checkout, charge, and subscription APIs
+- **Persistence** — `cashier_chip_*` subscription tables plus CHIP billable columns
+- **Runtime behavior** — application-managed renewals, webhook processing, and local billing workflows
+- **Testing surface** — helpers and patterns for billing flows, recurring tokens, and webhook handling
+
+## Owner scoping and security notes
+
+- Cashier CHIP should mirror the owner-scoping behavior of `aiarmada/chip` and `commerce-support`
+- Renewals, webhook callbacks, and customer lookups should re-enter the correct owner context before mutating subscriptions or payment methods
+
+## Key CHIP differences
 
 | Feature | Stripe | CHIP |
-|---------|--------|------|
-| Subscription Management | Stripe-managed | Application-managed |
-| Payment Methods | PaymentMethods | Recurring Tokens |
-| Webhooks | Stripe Events | CHIP Purchase Events |
-| Billing Portal | Hosted by Stripe | Self-hosted (via filament-chip) |
-| Preauthorization | SetupIntents | Zero-amount purchases |
+| --- | --- | --- |
+| Subscription management | Gateway-managed | Application-managed |
+| Saved payment methods | Payment methods | Recurring tokens |
+| Billing portal | Hosted by Stripe | Self-hosted via Filament |
+| Setup flow | Setup intents | Zero-amount purchases |
 
-## Quick Links
+## Read next
 
-| Guide | Description |
-|-------|-------------|
-| [Installation](02-installation.md) | Setup and configuration |
-| [Customers](03-customers.md) | Customer management |
-| [Charges](04-charges.md) | One-off payments |
-| [Checkout](05-checkout.md) | Hosted payment pages |
-| [Payment Methods](06-payment-methods.md) | Recurring tokens |
-| [Subscriptions](07-subscriptions.md) | Recurring billing |
-| [Webhooks](08-webhooks.md) | Event handling |
-| [Testing](09-testing.md) | Testing patterns |
-| [API Reference](10-api-reference.md) | Complete method reference |
-
-## Quick Start
-
-```php
-use AIArmada\CashierChip\Billable;
-
-class User extends Authenticatable
-{
-    use Billable;
-}
-```
-
-```php
-// Create a checkout
-$checkout = $user->checkout(10000, [
-    'reference' => 'Premium Plan',
-]);
-
-return $checkout->redirect();
-```
-
-## Installation
-
-```bash
-composer require aiarmada/cashier-chip
-php artisan vendor:publish --tag=cashier-chip-config
-php artisan migrate
-```
-
-Cashier CHIP auto-discovers its package migrations. Publish `cashier-chip-migrations` only when
-you need to customize the migration files in your own app.
-
-It always owns `chip_id`, `default_pm_id`, and the `cashier_chip_*` subscription tables. When
-`laravel/cashier` is absent it also provisions shared standalone columns such as `pm_type`,
-`pm_last_four`, and `trial_ends_at`; when Laravel Cashier is present, those shared columns remain
-owned by Laravel Cashier.
-
-## Configuration
-
-```env
-CHIP_BRAND_ID=your-brand-id
-CHIP_COLLECT_API_KEY=your-collect-api-key
-CHIP_WEBHOOK_SECRET=your-webhook-secret
-```
-
----
-
-**Ready?** Start with [Installation](02-installation.md) →
+- [Installation](02-installation.md)
+- [Configuration](03-configuration.md)
+- [Usage](04-usage.md)
+- [Customers](05-customers.md)
+- [Charges](06-charges.md)
+- [Checkout](07-checkout.md)
+- [Payment methods](08-payment-methods.md)
+- [Subscriptions](09-subscriptions.md)
+- [Webhooks](10-webhooks.md)
+- [Testing](11-testing.md)
+- [API reference](12-api-reference.md)
+- [Troubleshooting](99-troubleshooting.md)
+- [Filament Cashier CHIP overview](../../filament-cashier-chip/docs/01-overview.md)

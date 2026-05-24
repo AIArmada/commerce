@@ -22,7 +22,7 @@ Add the following to your `.env` file:
 
 ```env
 CHIP_BRAND_ID=your-brand-id
-CHIP_SECRET_KEY=your-secret-key
+CHIP_COLLECT_API_KEY=your-collect-api-key
 CHIP_WEBHOOK_SECRET=your-webhook-secret
 ```
 
@@ -191,7 +191,7 @@ $url = Gateway::driver('chip')->customerPortalUrl(
 return redirect($url);
 ```
 
-See the [filament-chip documentation](../filament-chip/README.md) for full billing portal setup.
+See the [Filament CHIP overview](../filament-chip/docs/01-overview.md) for the billing portal and admin UI layer.
 
 ## Subscriptions
 

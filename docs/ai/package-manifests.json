@@ -1,0 +1,909 @@
+{
+  "schema_version": 1,
+  "repo": "AIArmada Commerce",
+  "context_file": "CONTEXT.md",
+  "documentation_index": "docs/index.md",
+  "families": {
+    "foundation": [
+      "commerce-support",
+      "filament-authz"
+    ],
+    "catalog-and-identity": [
+      "customers",
+      "filament-customers",
+      "products",
+      "filament-products",
+      "inventory",
+      "filament-inventory",
+      "pricing",
+      "filament-pricing",
+      "tax",
+      "filament-tax"
+    ],
+    "growth-and-incentives": [
+      "promotions",
+      "filament-promotions",
+      "vouchers",
+      "filament-vouchers",
+      "affiliates",
+      "filament-affiliates",
+      "affiliate-network",
+      "filament-affiliate-network",
+      "growth",
+      "filament-growth"
+    ],
+    "checkout-flow": [
+      "cart",
+      "filament-cart",
+      "checkout",
+      "orders",
+      "filament-orders",
+      "shipping",
+      "filament-shipping",
+      "jnt",
+      "filament-jnt"
+    ],
+    "payments-and-documents": [
+      "chip",
+      "filament-chip",
+      "cashier",
+      "filament-cashier",
+      "cashier-chip",
+      "filament-cashier-chip",
+      "docs",
+      "filament-docs"
+    ],
+    "analytics-and-events": [
+      "events",
+      "filament-events",
+      "signals",
+      "filament-signals"
+    ],
+    "bundle": [
+      "csuite"
+    ]
+  },
+  "packages": {
+    "commerce-support": {
+      "composer": "aiarmada/commerce-support",
+      "surface": "foundation",
+      "family": "foundation",
+      "paired_package": null,
+      "summary": "Owner scoping, shared contracts, targeting, webhooks, health checks, and common commerce primitives.",
+      "canonical_docs": {
+        "overview": "packages/commerce-support/docs/01-overview.md",
+        "installation": "packages/commerce-support/docs/02-installation.md",
+        "configuration": "packages/commerce-support/docs/03-configuration.md",
+        "usage": "packages/commerce-support/docs/04-usage.md",
+        "troubleshooting": "packages/commerce-support/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-authz"
+      ]
+    },
+    "filament-authz": {
+      "composer": "aiarmada/filament-authz",
+      "surface": "filament",
+      "family": "foundation",
+      "paired_package": null,
+      "summary": "Filament authorization scopes, impersonation, and panel/page/widget authz surfaces.",
+      "canonical_docs": {
+        "overview": "packages/filament-authz/docs/01-overview.md",
+        "installation": "packages/filament-authz/docs/02-installation.md",
+        "configuration": "packages/filament-authz/docs/03-configuration.md",
+        "usage": "packages/filament-authz/docs/04-usage.md",
+        "troubleshooting": "packages/filament-authz/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support"
+      ]
+    },
+    "customers": {
+      "composer": "aiarmada/customers",
+      "surface": "domain",
+      "family": "catalog-and-identity",
+      "paired_package": "filament-customers",
+      "summary": "Customer records and customer-domain primitives.",
+      "canonical_docs": {
+        "overview": "packages/customers/docs/01-overview.md",
+        "installation": "packages/customers/docs/02-installation.md",
+        "configuration": "packages/customers/docs/03-configuration.md",
+        "usage": "packages/customers/docs/04-usage.md",
+        "troubleshooting": "packages/customers/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-customers",
+        "pricing",
+        "checkout"
+      ]
+    },
+    "filament-customers": {
+      "composer": "aiarmada/filament-customers",
+      "surface": "filament",
+      "family": "catalog-and-identity",
+      "paired_package": "customers",
+      "summary": "Filament admin UI for customers.",
+      "canonical_docs": {
+        "overview": "packages/filament-customers/docs/01-overview.md",
+        "installation": "packages/filament-customers/docs/02-installation.md",
+        "configuration": "packages/filament-customers/docs/03-configuration.md",
+        "usage": "packages/filament-customers/docs/04-usage.md",
+        "troubleshooting": "packages/filament-customers/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "customers",
+        "filament-authz"
+      ]
+    },
+    "products": {
+      "composer": "aiarmada/products",
+      "surface": "domain",
+      "family": "catalog-and-identity",
+      "paired_package": "filament-products",
+      "summary": "Catalog products, variants, and product-domain behavior.",
+      "canonical_docs": {
+        "overview": "packages/products/docs/01-overview.md",
+        "installation": "packages/products/docs/02-installation.md",
+        "configuration": "packages/products/docs/03-configuration.md",
+        "usage": "packages/products/docs/04-usage.md",
+        "troubleshooting": "packages/products/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-products",
+        "pricing",
+        "inventory"
+      ]
+    },
+    "filament-products": {
+      "composer": "aiarmada/filament-products",
+      "surface": "filament",
+      "family": "catalog-and-identity",
+      "paired_package": "products",
+      "summary": "Filament admin UI for product and variant management.",
+      "canonical_docs": {
+        "overview": "packages/filament-products/docs/01-overview.md",
+        "installation": "packages/filament-products/docs/02-installation.md",
+        "configuration": "packages/filament-products/docs/03-configuration.md",
+        "usage": "packages/filament-products/docs/04-usage.md",
+        "troubleshooting": "packages/filament-products/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "products",
+        "filament-authz"
+      ]
+    },
+    "inventory": {
+      "composer": "aiarmada/inventory",
+      "surface": "domain",
+      "family": "catalog-and-identity",
+      "paired_package": "filament-inventory",
+      "summary": "Stock, warehouses, allocations, costing, forecasting, and replenishment workflows.",
+      "canonical_docs": {
+        "overview": "packages/inventory/docs/01-overview.md",
+        "installation": "packages/inventory/docs/02-installation.md",
+        "configuration": "packages/inventory/docs/03-configuration.md",
+        "usage": "packages/inventory/docs/04-usage.md",
+        "troubleshooting": "packages/inventory/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-inventory",
+        "cart",
+        "orders",
+        "shipping"
+      ]
+    },
+    "filament-inventory": {
+      "composer": "aiarmada/filament-inventory",
+      "surface": "filament",
+      "family": "catalog-and-identity",
+      "paired_package": "inventory",
+      "summary": "Filament admin UI for inventory resources, widgets, and operational actions.",
+      "canonical_docs": {
+        "overview": "packages/filament-inventory/docs/01-overview.md",
+        "installation": "packages/filament-inventory/docs/02-installation.md",
+        "configuration": "packages/filament-inventory/docs/03-configuration.md",
+        "usage": "packages/filament-inventory/docs/04-usage.md",
+        "troubleshooting": "packages/filament-inventory/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "inventory",
+        "filament-authz"
+      ]
+    },
+    "pricing": {
+      "composer": "aiarmada/pricing",
+      "surface": "domain",
+      "family": "catalog-and-identity",
+      "paired_package": "filament-pricing",
+      "summary": "Price lists, tiers, pricing settings, and price-resolution rules.",
+      "canonical_docs": {
+        "overview": "packages/pricing/docs/01-overview.md",
+        "installation": "packages/pricing/docs/02-installation.md",
+        "configuration": "packages/pricing/docs/03-configuration.md",
+        "usage": "packages/pricing/docs/04-usage.md",
+        "troubleshooting": "packages/pricing/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-pricing",
+        "products",
+        "promotions",
+        "customers"
+      ]
+    },
+    "filament-pricing": {
+      "composer": "aiarmada/filament-pricing",
+      "surface": "filament",
+      "family": "catalog-and-identity",
+      "paired_package": "pricing",
+      "summary": "Filament admin UI for pricing, settings, and simulation.",
+      "canonical_docs": {
+        "overview": "packages/filament-pricing/docs/01-overview.md",
+        "installation": "packages/filament-pricing/docs/02-installation.md",
+        "configuration": "packages/filament-pricing/docs/03-configuration.md",
+        "usage": "packages/filament-pricing/docs/04-usage.md",
+        "troubleshooting": "packages/filament-pricing/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "pricing",
+        "promotions",
+        "filament-promotions"
+      ]
+    },
+    "tax": {
+      "composer": "aiarmada/tax",
+      "surface": "domain",
+      "family": "catalog-and-identity",
+      "paired_package": "filament-tax",
+      "summary": "Tax zones, rates, exemptions, and tax-calculation configuration.",
+      "canonical_docs": {
+        "overview": "packages/tax/docs/01-overview.md",
+        "installation": "packages/tax/docs/02-installation.md",
+        "configuration": "packages/tax/docs/03-configuration.md",
+        "usage": "packages/tax/docs/04-usage.md",
+        "troubleshooting": "packages/tax/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-tax",
+        "checkout",
+        "orders"
+      ]
+    },
+    "filament-tax": {
+      "composer": "aiarmada/filament-tax",
+      "surface": "filament",
+      "family": "catalog-and-identity",
+      "paired_package": "tax",
+      "summary": "Filament admin UI for tax zones, classes, rates, exemptions, and settings.",
+      "canonical_docs": {
+        "overview": "packages/filament-tax/docs/01-overview.md",
+        "installation": "packages/filament-tax/docs/02-installation.md",
+        "configuration": "packages/filament-tax/docs/03-configuration.md",
+        "usage": "packages/filament-tax/docs/04-usage.md",
+        "troubleshooting": "packages/filament-tax/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "tax",
+        "filament-authz"
+      ]
+    },
+    "promotions": {
+      "composer": "aiarmada/promotions",
+      "surface": "domain",
+      "family": "growth-and-incentives",
+      "paired_package": "filament-promotions",
+      "summary": "Automatic and code-based discount campaigns with targeting.",
+      "canonical_docs": {
+        "overview": "packages/promotions/docs/01-overview.md",
+        "installation": "packages/promotions/docs/02-installation.md",
+        "configuration": "packages/promotions/docs/03-configuration.md",
+        "usage": "packages/promotions/docs/04-usage.md",
+        "troubleshooting": "packages/promotions/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-promotions",
+        "pricing",
+        "products"
+      ]
+    },
+    "filament-promotions": {
+      "composer": "aiarmada/filament-promotions",
+      "surface": "filament",
+      "family": "growth-and-incentives",
+      "paired_package": "promotions",
+      "summary": "Filament admin UI for promotion management.",
+      "canonical_docs": {
+        "overview": "packages/filament-promotions/docs/01-overview.md",
+        "installation": "packages/filament-promotions/docs/02-installation.md",
+        "configuration": "packages/filament-promotions/docs/03-configuration.md",
+        "usage": "packages/filament-promotions/docs/04-usage.md",
+        "troubleshooting": "packages/filament-promotions/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "promotions",
+        "filament-pricing"
+      ]
+    },
+    "vouchers": {
+      "composer": "aiarmada/vouchers",
+      "surface": "domain",
+      "family": "growth-and-incentives",
+      "paired_package": "filament-vouchers",
+      "summary": "Voucher issuance, redemption, wallets, assignments, and usage tracking.",
+      "canonical_docs": {
+        "overview": "packages/vouchers/docs/01-overview.md",
+        "installation": "packages/vouchers/docs/02-installation.md",
+        "configuration": "packages/vouchers/docs/03-configuration.md",
+        "usage": "packages/vouchers/docs/04-usage.md",
+        "troubleshooting": "packages/vouchers/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-vouchers",
+        "cart",
+        "checkout",
+        "affiliates"
+      ]
+    },
+    "filament-vouchers": {
+      "composer": "aiarmada/filament-vouchers",
+      "surface": "filament",
+      "family": "growth-and-incentives",
+      "paired_package": "vouchers",
+      "summary": "Filament admin UI for vouchers, usage, wallets, and voucher settings.",
+      "canonical_docs": {
+        "overview": "packages/filament-vouchers/docs/01-overview.md",
+        "installation": "packages/filament-vouchers/docs/02-installation.md",
+        "configuration": "packages/filament-vouchers/docs/03-configuration.md",
+        "usage": "packages/filament-vouchers/docs/04-usage.md",
+        "troubleshooting": "packages/filament-vouchers/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "vouchers",
+        "filament-cart"
+      ]
+    },
+    "affiliates": {
+      "composer": "aiarmada/affiliates",
+      "surface": "domain",
+      "family": "growth-and-incentives",
+      "paired_package": "filament-affiliates",
+      "summary": "Affiliate attribution, commissions, payouts, fraud detection, and analytics.",
+      "canonical_docs": {
+        "overview": "packages/affiliates/docs/01-overview.md",
+        "installation": "packages/affiliates/docs/02-installation.md",
+        "configuration": "packages/affiliates/docs/03-configuration.md",
+        "usage": "packages/affiliates/docs/04-usage.md",
+        "troubleshooting": "packages/affiliates/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-affiliates",
+        "affiliate-network",
+        "vouchers",
+        "cart"
+      ]
+    },
+    "filament-affiliates": {
+      "composer": "aiarmada/filament-affiliates",
+      "surface": "filament",
+      "family": "growth-and-incentives",
+      "paired_package": "affiliates",
+      "summary": "Filament admin UI and affiliate portal for affiliates.",
+      "canonical_docs": {
+        "overview": "packages/filament-affiliates/docs/01-overview.md",
+        "installation": "packages/filament-affiliates/docs/02-installation.md",
+        "configuration": "packages/filament-affiliates/docs/03-configuration.md",
+        "usage": "packages/filament-affiliates/docs/04-usage.md",
+        "troubleshooting": "packages/filament-affiliates/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "affiliates",
+        "affiliate-network",
+        "filament-affiliate-network"
+      ]
+    },
+    "affiliate-network": {
+      "composer": "aiarmada/affiliate-network",
+      "surface": "marketplace",
+      "family": "growth-and-incentives",
+      "paired_package": "filament-affiliate-network",
+      "summary": "Multi-merchant affiliate marketplace with sites, offers, applications, and tracking links.",
+      "canonical_docs": {
+        "overview": "packages/affiliate-network/docs/01-overview.md",
+        "installation": "packages/affiliate-network/docs/02-installation.md",
+        "configuration": "packages/affiliate-network/docs/03-configuration.md",
+        "usage": "packages/affiliate-network/docs/04-usage.md",
+        "troubleshooting": "packages/affiliate-network/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-affiliate-network",
+        "affiliates",
+        "checkout"
+      ]
+    },
+    "filament-affiliate-network": {
+      "composer": "aiarmada/filament-affiliate-network",
+      "surface": "filament",
+      "family": "growth-and-incentives",
+      "paired_package": "affiliate-network",
+      "summary": "Filament admin UI and marketplace pages for the affiliate network.",
+      "canonical_docs": {
+        "overview": "packages/filament-affiliate-network/docs/01-overview.md",
+        "installation": "packages/filament-affiliate-network/docs/02-installation.md",
+        "configuration": "packages/filament-affiliate-network/docs/03-configuration.md",
+        "usage": "packages/filament-affiliate-network/docs/04-usage.md",
+        "troubleshooting": "packages/filament-affiliate-network/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "affiliate-network",
+        "filament-affiliates"
+      ]
+    },
+    "growth": {
+      "composer": "aiarmada/growth",
+      "surface": "analytics",
+      "family": "growth-and-incentives",
+      "paired_package": "filament-growth",
+      "summary": "Experimentation primitives, sticky assignments, and winner metrics.",
+      "canonical_docs": {
+        "overview": "packages/growth/docs/01-overview.md",
+        "installation": "packages/growth/docs/02-installation.md",
+        "configuration": "packages/growth/docs/03-configuration.md",
+        "usage": "packages/growth/docs/04-usage.md",
+        "troubleshooting": "packages/growth/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-growth",
+        "signals"
+      ]
+    },
+    "filament-growth": {
+      "composer": "aiarmada/filament-growth",
+      "surface": "filament",
+      "family": "growth-and-incentives",
+      "paired_package": "growth",
+      "summary": "Filament admin UI for experiments, variants, dashboards, and results.",
+      "canonical_docs": {
+        "overview": "packages/filament-growth/docs/01-overview.md",
+        "installation": "packages/filament-growth/docs/02-installation.md",
+        "configuration": "packages/filament-growth/docs/03-configuration.md",
+        "usage": "packages/filament-growth/docs/04-usage.md",
+        "troubleshooting": "packages/filament-growth/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "growth",
+        "signals",
+        "filament-signals"
+      ]
+    },
+    "cart": {
+      "composer": "aiarmada/cart",
+      "surface": "domain",
+      "family": "checkout-flow",
+      "paired_package": "filament-cart",
+      "summary": "Cart storage, cart items, conditions, metadata, and owner-aware persistence.",
+      "canonical_docs": {
+        "overview": "packages/cart/docs/01-overview.md",
+        "installation": "packages/cart/docs/02-installation.md",
+        "configuration": "packages/cart/docs/03-configuration.md",
+        "usage": "packages/cart/docs/04-usage.md",
+        "troubleshooting": "packages/cart/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-cart",
+        "checkout",
+        "signals",
+        "vouchers"
+      ]
+    },
+    "filament-cart": {
+      "composer": "aiarmada/filament-cart",
+      "surface": "filament",
+      "family": "checkout-flow",
+      "paired_package": "cart",
+      "summary": "Filament admin UI for cart snapshots, conditions, monitoring, and abandonment workflows.",
+      "canonical_docs": {
+        "overview": "packages/filament-cart/docs/01-overview.md",
+        "installation": "packages/filament-cart/docs/02-installation.md",
+        "configuration": "packages/filament-cart/docs/03-configuration.md",
+        "usage": "packages/filament-cart/docs/04-usage.md",
+        "troubleshooting": "packages/filament-cart/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "cart",
+        "signals",
+        "filament-signals"
+      ]
+    },
+    "checkout": {
+      "composer": "aiarmada/checkout",
+      "surface": "orchestrator",
+      "family": "checkout-flow",
+      "paired_package": null,
+      "summary": "Checkout session orchestration across cart, pricing, shipping, payments, docs, and orders.",
+      "canonical_docs": {
+        "overview": "packages/checkout/docs/01-overview.md",
+        "installation": "packages/checkout/docs/02-installation.md",
+        "configuration": "packages/checkout/docs/03-configuration.md",
+        "usage": "packages/checkout/docs/04-usage.md",
+        "troubleshooting": "packages/checkout/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "cart",
+        "orders",
+        "shipping",
+        "chip",
+        "cashier",
+        "docs"
+      ]
+    },
+    "orders": {
+      "composer": "aiarmada/orders",
+      "surface": "domain",
+      "family": "checkout-flow",
+      "paired_package": "filament-orders",
+      "summary": "Order records, payments, refunds, notes, invoices, and order state transitions.",
+      "canonical_docs": {
+        "overview": "packages/orders/docs/01-overview.md",
+        "installation": "packages/orders/docs/02-installation.md",
+        "configuration": "packages/orders/docs/03-configuration.md",
+        "usage": "packages/orders/docs/04-usage.md",
+        "troubleshooting": "packages/orders/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-orders",
+        "checkout",
+        "shipping",
+        "docs"
+      ]
+    },
+    "filament-orders": {
+      "composer": "aiarmada/filament-orders",
+      "surface": "filament",
+      "family": "checkout-flow",
+      "paired_package": "orders",
+      "summary": "Filament admin UI for orders, timelines, widgets, and invoice downloads.",
+      "canonical_docs": {
+        "overview": "packages/filament-orders/docs/01-overview.md",
+        "installation": "packages/filament-orders/docs/02-installation.md",
+        "configuration": "packages/filament-orders/docs/03-configuration.md",
+        "usage": "packages/filament-orders/docs/04-usage.md",
+        "troubleshooting": "packages/filament-orders/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "orders",
+        "checkout"
+      ]
+    },
+    "shipping": {
+      "composer": "aiarmada/shipping",
+      "surface": "domain",
+      "family": "checkout-flow",
+      "paired_package": "filament-shipping",
+      "summary": "Carrier-agnostic shipping abstraction, shipments, zones, rates, and returns.",
+      "canonical_docs": {
+        "overview": "packages/shipping/docs/01-overview.md",
+        "installation": "packages/shipping/docs/02-installation.md",
+        "configuration": "packages/shipping/docs/03-configuration.md",
+        "usage": "packages/shipping/docs/04-usage.md",
+        "troubleshooting": "packages/shipping/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-shipping",
+        "jnt",
+        "orders",
+        "cart"
+      ]
+    },
+    "filament-shipping": {
+      "composer": "aiarmada/filament-shipping",
+      "surface": "filament",
+      "family": "checkout-flow",
+      "paired_package": "shipping",
+      "summary": "Filament admin UI for shipments, returns, zones, and shipping dashboards.",
+      "canonical_docs": {
+        "overview": "packages/filament-shipping/docs/01-overview.md",
+        "installation": "packages/filament-shipping/docs/02-installation.md",
+        "configuration": "packages/filament-shipping/docs/03-configuration.md",
+        "usage": "packages/filament-shipping/docs/04-usage.md",
+        "troubleshooting": "packages/filament-shipping/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "shipping",
+        "jnt",
+        "filament-jnt"
+      ]
+    },
+    "jnt": {
+      "composer": "aiarmada/jnt",
+      "surface": "gateway",
+      "family": "checkout-flow",
+      "paired_package": "filament-jnt",
+      "summary": "J&T Express Malaysia carrier adapter, orders, tracking, commands, and webhooks.",
+      "canonical_docs": {
+        "overview": "packages/jnt/docs/01-overview.md",
+        "installation": "packages/jnt/docs/02-installation.md",
+        "configuration": "packages/jnt/docs/03-configuration.md",
+        "usage": "packages/jnt/docs/04-usage.md",
+        "troubleshooting": "packages/jnt/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-jnt",
+        "shipping",
+        "checkout"
+      ]
+    },
+    "filament-jnt": {
+      "composer": "aiarmada/filament-jnt",
+      "surface": "filament",
+      "family": "checkout-flow",
+      "paired_package": "jnt",
+      "summary": "Filament admin UI for J&T orders, tracking events, webhook logs, and sync actions.",
+      "canonical_docs": {
+        "overview": "packages/filament-jnt/docs/01-overview.md",
+        "installation": "packages/filament-jnt/docs/02-installation.md",
+        "configuration": "packages/filament-jnt/docs/03-configuration.md",
+        "usage": "packages/filament-jnt/docs/04-usage.md",
+        "troubleshooting": "packages/filament-jnt/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "jnt",
+        "shipping",
+        "filament-shipping"
+      ]
+    },
+    "chip": {
+      "composer": "aiarmada/chip",
+      "surface": "gateway",
+      "family": "payments-and-documents",
+      "paired_package": "filament-chip",
+      "summary": "Direct CHIP Collect and Send gateway integration, webhooks, and payment data.",
+      "canonical_docs": {
+        "overview": "packages/chip/docs/01-overview.md",
+        "installation": "packages/chip/docs/02-installation.md",
+        "configuration": "packages/chip/docs/03-configuration.md",
+        "usage": "packages/chip/docs/04-usage.md",
+        "troubleshooting": "packages/chip/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-chip",
+        "cashier-chip",
+        "checkout",
+        "docs"
+      ]
+    },
+    "filament-chip": {
+      "composer": "aiarmada/filament-chip",
+      "surface": "filament",
+      "family": "payments-and-documents",
+      "paired_package": "chip",
+      "summary": "Filament admin UI for CHIP purchases, clients, analytics, and transaction visibility.",
+      "canonical_docs": {
+        "overview": "packages/filament-chip/docs/01-overview.md",
+        "installation": "packages/filament-chip/docs/02-installation.md",
+        "configuration": "packages/filament-chip/docs/03-configuration.md",
+        "usage": "packages/filament-chip/docs/04-usage.md",
+        "troubleshooting": "packages/filament-chip/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "chip",
+        "cashier-chip",
+        "filament-cashier-chip"
+      ]
+    },
+    "cashier": {
+      "composer": "aiarmada/cashier",
+      "surface": "billing-abstraction",
+      "family": "payments-and-documents",
+      "paired_package": "filament-cashier",
+      "summary": "Unified multi-gateway billing abstraction across Stripe and CHIP-style providers.",
+      "canonical_docs": {
+        "overview": "packages/cashier/docs/01-overview.md",
+        "installation": "packages/cashier/docs/02-installation.md",
+        "configuration": "packages/cashier/docs/03-configuration.md",
+        "usage": "packages/cashier/docs/04-usage.md",
+        "troubleshooting": "packages/cashier/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-cashier",
+        "cashier-chip",
+        "chip"
+      ]
+    },
+    "filament-cashier": {
+      "composer": "aiarmada/filament-cashier",
+      "surface": "filament",
+      "family": "payments-and-documents",
+      "paired_package": "cashier",
+      "summary": "Unified Filament billing UI for subscriptions, invoices, dashboards, and gateway comparisons.",
+      "canonical_docs": {
+        "overview": "packages/filament-cashier/docs/01-overview.md",
+        "installation": "packages/filament-cashier/docs/02-installation.md",
+        "configuration": "packages/filament-cashier/docs/03-configuration.md",
+        "usage": "packages/filament-cashier/docs/04-usage.md",
+        "troubleshooting": "packages/filament-cashier/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "cashier",
+        "cashier-chip",
+        "filament-cashier-chip"
+      ]
+    },
+    "cashier-chip": {
+      "composer": "aiarmada/cashier-chip",
+      "surface": "gateway-billing",
+      "family": "payments-and-documents",
+      "paired_package": "filament-cashier-chip",
+      "summary": "Cashier-style recurring billing and billable-model support on top of CHIP.",
+      "canonical_docs": {
+        "overview": "packages/cashier-chip/docs/01-overview.md",
+        "installation": "packages/cashier-chip/docs/02-installation.md",
+        "configuration": "packages/cashier-chip/docs/03-configuration.md",
+        "usage": "packages/cashier-chip/docs/04-usage.md",
+        "troubleshooting": "packages/cashier-chip/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-cashier-chip",
+        "cashier",
+        "chip"
+      ]
+    },
+    "filament-cashier-chip": {
+      "composer": "aiarmada/filament-cashier-chip",
+      "surface": "filament",
+      "family": "payments-and-documents",
+      "paired_package": "cashier-chip",
+      "summary": "Filament admin UI and billing portal for CHIP subscription billing.",
+      "canonical_docs": {
+        "overview": "packages/filament-cashier-chip/docs/01-overview.md",
+        "installation": "packages/filament-cashier-chip/docs/02-installation.md",
+        "configuration": "packages/filament-cashier-chip/docs/03-configuration.md",
+        "usage": "packages/filament-cashier-chip/docs/04-usage.md",
+        "troubleshooting": "packages/filament-cashier-chip/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "cashier-chip",
+        "filament-cashier",
+        "chip"
+      ]
+    },
+    "docs": {
+      "composer": "aiarmada/docs",
+      "surface": "output",
+      "family": "payments-and-documents",
+      "paired_package": "filament-docs",
+      "summary": "Business document generation, numbering, PDFs, emails, approvals, and e-invoice tracking.",
+      "canonical_docs": {
+        "overview": "packages/docs/docs/01-overview.md",
+        "installation": "packages/docs/docs/02-installation.md",
+        "configuration": "packages/docs/docs/03-configuration.md",
+        "usage": "packages/docs/docs/04-usage.md",
+        "troubleshooting": "packages/docs/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-docs",
+        "orders",
+        "checkout",
+        "chip"
+      ]
+    },
+    "filament-docs": {
+      "composer": "aiarmada/filament-docs",
+      "surface": "filament",
+      "family": "payments-and-documents",
+      "paired_package": "docs",
+      "summary": "Filament admin UI for documents, templates, sequences, reports, and secure downloads.",
+      "canonical_docs": {
+        "overview": "packages/filament-docs/docs/01-overview.md",
+        "installation": "packages/filament-docs/docs/02-installation.md",
+        "configuration": "packages/filament-docs/docs/03-configuration.md",
+        "usage": "packages/filament-docs/docs/04-usage.md",
+        "troubleshooting": "packages/filament-docs/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "docs",
+        "orders",
+        "checkout"
+      ]
+    },
+    "events": {
+      "composer": "aiarmada/events",
+      "surface": "domain",
+      "family": "analytics-and-events",
+      "paired_package": "filament-events",
+      "summary": "Event series, venues, occurrences, attendee registrations, and registration lifecycle rules.",
+      "canonical_docs": {
+        "overview": "packages/events/docs/01-overview.md",
+        "installation": "packages/events/docs/02-installation.md",
+        "configuration": "packages/events/docs/03-configuration.md",
+        "usage": "packages/events/docs/04-usage.md",
+        "troubleshooting": "packages/events/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-events",
+        "products",
+        "customers",
+        "orders"
+      ]
+    },
+    "filament-events": {
+      "composer": "aiarmada/filament-events",
+      "surface": "filament",
+      "family": "analytics-and-events",
+      "paired_package": "events",
+      "summary": "Filament admin UI for event series, events, occurrences, venues, and registrations.",
+      "canonical_docs": {
+        "overview": "packages/filament-events/docs/01-overview.md",
+        "installation": "packages/filament-events/docs/02-installation.md",
+        "configuration": "packages/filament-events/docs/03-configuration.md",
+        "usage": "packages/filament-events/docs/04-usage.md",
+        "troubleshooting": "packages/filament-events/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "events",
+        "filament-authz"
+      ]
+    },
+    "signals": {
+      "composer": "aiarmada/signals",
+      "surface": "analytics",
+      "family": "analytics-and-events",
+      "paired_package": "filament-signals",
+      "summary": "Behavioral analytics foundation with ingestion, sessions, rollups, alerts, and reports.",
+      "canonical_docs": {
+        "overview": "packages/signals/docs/01-overview.md",
+        "installation": "packages/signals/docs/02-installation.md",
+        "configuration": "packages/signals/docs/03-configuration.md",
+        "usage": "packages/signals/docs/04-usage.md",
+        "troubleshooting": "packages/signals/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-signals",
+        "growth",
+        "cart",
+        "checkout",
+        "orders",
+        "affiliates"
+      ]
+    },
+    "filament-signals": {
+      "composer": "aiarmada/filament-signals",
+      "surface": "filament",
+      "family": "analytics-and-events",
+      "paired_package": "signals",
+      "summary": "Filament analytics UI for signals dashboards, reports, tracked properties, and alert management.",
+      "canonical_docs": {
+        "overview": "packages/filament-signals/docs/01-overview.md",
+        "installation": "packages/filament-signals/docs/02-installation.md",
+        "configuration": "packages/filament-signals/docs/03-configuration.md",
+        "usage": "packages/filament-signals/docs/04-usage.md",
+        "troubleshooting": "packages/filament-signals/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "signals",
+        "growth",
+        "filament-growth"
+      ]
+    },
+    "csuite": {
+      "composer": "aiarmada/commerce",
+      "surface": "bundle",
+      "family": "bundle",
+      "paired_package": null,
+      "summary": "Metapackage bundle that installs a curated Commerce package set with one dependency.",
+      "canonical_docs": {
+        "overview": "packages/csuite/docs/01-overview.md",
+        "installation": "packages/csuite/docs/02-installation.md",
+        "configuration": "packages/csuite/docs/03-configuration.md",
+        "usage": "packages/csuite/docs/04-usage.md",
+        "troubleshooting": "packages/csuite/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "cart",
+        "inventory",
+        "vouchers",
+        "chip",
+        "docs",
+        "jnt"
+      ]
+    }
+  }
+}

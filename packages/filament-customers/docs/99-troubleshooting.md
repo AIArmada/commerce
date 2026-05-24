@@ -392,6 +392,6 @@ When reporting issues, include:
 
 ## Next Steps
 
-- [Resources](04-resources.md) - Review resource documentation
+- [Usage](04-usage.md) - Review resource documentation
 - [Widgets](05-widgets.md) - Review widget documentation
 - [Installation](02-installation.md) - Verify setup and registration
