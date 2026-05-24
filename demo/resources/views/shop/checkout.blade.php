@@ -20,6 +20,8 @@
         ];
         $selectedPaymentMethod = old('payment_method', 'fpx');
         $chipConfigured = filled(config('chip.collect.api_key')) && filled(config('chip.collect.brand_id'));
+        $checkoutExperiment = experiment();
+        $usesConversionSummary = $checkoutExperiment?->isVariant('B') ?? false;
     @endphp
 
     <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -210,6 +212,24 @@
                 <!-- Order Summary -->
                 <div class="lg:col-span-1">
                     <div class="bg-white rounded-xl shadow p-6 sticky top-24">
+                        @if($checkoutExperiment)
+                            <div
+                                class="mb-4 rounded-xl border p-4 {{ $usesConversionSummary ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50' }}"
+                                data-checkout-experiment="{{ $checkoutExperiment->experimentSlug() }}"
+                                data-checkout-variant="{{ $checkoutExperiment->variantCode() }}"
+                            >
+                                <p class="text-xs font-semibold uppercase tracking-wide {{ $usesConversionSummary ? 'text-emerald-700' : 'text-slate-600' }}">Growth experiment live</p>
+                                <h3 class="mt-1 text-sm font-semibold text-gray-900">
+                                    {{ $usesConversionSummary ? 'Conversion summary variant' : 'Compact summary variant' }}
+                                </h3>
+                                <p class="mt-1 text-sm {{ $usesConversionSummary ? 'text-emerald-900/80' : 'text-slate-600' }}">
+                                    {{ $usesConversionSummary
+                                        ? 'This checkout variant adds delivery clarity and trust cues before the payment redirect.'
+                                        : 'This control keeps the recap intentionally lightweight so the buyer can move straight to payment.' }}
+                                </p>
+                            </div>
+                        @endif
+
                         <h2 class="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
 
                         <!-- Cart Items -->
@@ -276,6 +296,36 @@
                                 <span id="order-total">RM {{ number_format($estimatedGrandTotal / 100, 2) }}</span>
                             </div>
                         </div>
+
+                        @if($usesConversionSummary)
+                            <div class="mt-6 space-y-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
+                                <div class="flex items-start gap-3">
+                                    <span class="text-lg">🚚</span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-emerald-900">Shipping clarity</p>
+                                        <p class="text-sm text-emerald-800/80">J&amp;T Standard arrives in 3–5 business days, and free shipping unlocks once the order passes RM 100.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="text-lg">🔒</span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-emerald-900">Secure checkout</p>
+                                        <p class="text-sm text-emerald-800/80">Payments are redirected through the active gateway, so the order summary stays transparent before hand-off.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="text-lg">📈</span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-emerald-900">Experiment note</p>
+                                        <p class="text-sm text-emerald-800/80">This demo variant is designed to showcase how Growth changes the storefront presentation without touching the checkout backend flow.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif($checkoutExperiment)
+                            <div class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                                Streamlined recap active — just the essentials before the payment redirect.
+                            </div>
+                        @endif
 
                         <!-- Applied Voucher -->
                         @if(session('applied_voucher'))
