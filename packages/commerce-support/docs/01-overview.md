@@ -32,7 +32,7 @@ Commerce Support serves as the **single source of truth** for the cross-package 
 - Every Commerce domain package depends on `commerce-support` directly or indirectly for shared primitives
 - `filament-*` packages consume its owner-scoping and helper conventions, but do not replace them
 - Payment packages such as `chip`, `cashier`, and `cashier-chip` build on its contracts and money helpers
-- Root guides like `docs/tenancy-evaluation-report.md` explain how its tenancy model fits the wider ecosystem
+- Root guides and AI retrieval docs explain how its tenancy model fits the wider ecosystem
 
 ## Main contracts services or surfaces
 
