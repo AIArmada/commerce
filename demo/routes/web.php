@@ -49,8 +49,12 @@ Route::post('/cart/voucher', [ShopController::class, 'applyVoucher'])->name('sho
 Route::post('/cart/voucher/remove', [ShopController::class, 'removeVoucher'])->name('shop.cart.voucher.remove');
 
 // Checkout
-Route::get('/checkout', [ShopController::class, 'checkout'])->name('shop.checkout');
-Route::post('/checkout', [ShopController::class, 'processCheckout'])->name('shop.checkout.process');
+Route::get('/checkout', [ShopController::class, 'checkout'])
+    ->middleware('growth.experiment:storefront-checkout-layout-test')
+    ->name('shop.checkout');
+Route::post('/checkout', [ShopController::class, 'processCheckout'])
+    ->middleware('growth.experiment:storefront-checkout-layout-test')
+    ->name('shop.checkout.process');
 Route::post('/checkout/buy-now', [ShopController::class, 'buyNow'])->name('shop.checkout.buy-now');
 
 // Local demo gateway fallback (only used when live CHIP is unavailable)
