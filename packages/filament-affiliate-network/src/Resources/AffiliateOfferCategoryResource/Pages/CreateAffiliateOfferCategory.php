@@ -19,11 +19,13 @@ final class CreateAffiliateOfferCategory extends CreateRecord
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        if (isset($data['parent_id']) && $data['parent_id'] !== null && $data['parent_id'] !== '') {
+        $parentId = $data['parent_id'] ?? null;
+
+        if (is_scalar($parentId) && (string) $parentId !== '') {
             /** @var AffiliateOfferCategory $parent */
             $parent = OwnerContext::withOwner(null, fn (): AffiliateOfferCategory => AffiliateOfferCategory::query()
                 ->withoutOwnerScope()
-                ->whereKey((string) $data['parent_id'])
+                ->whereKey((string) $parentId)
                 ->firstOrFail());
 
             $data['parent_id'] = (string) $parent->getKey();

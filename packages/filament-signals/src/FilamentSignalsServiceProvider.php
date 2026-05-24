@@ -21,4 +21,9 @@ final class FilamentSignalsServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(FilamentSignalsPlugin::class);
     }
+
+    public function packageBooted(): void
+    {
+        //
+    }
 }

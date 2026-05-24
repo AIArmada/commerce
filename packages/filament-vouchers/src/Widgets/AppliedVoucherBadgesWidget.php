@@ -61,6 +61,10 @@ final class AppliedVoucherBadgesWidget extends Widget
             /** @phpstan-ignore-next-line - getAppliedVouchers method added via proxy */
             $vouchers = $cartInstance->getAppliedVouchers();
 
+            if (! is_iterable($vouchers)) {
+                return [];
+            }
+
             /** @var Collection<int, mixed> $voucherCollection */
             $voucherCollection = collect($vouchers);
 

@@ -188,7 +188,11 @@ class Price extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         $now = now();
 
@@ -201,7 +205,11 @@ class Price extends Model
             });
     }
 
-    public function scopeForQuantity($query, int $quantity)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeForQuantity(Builder $query, int $quantity): Builder
     {
         return $query->where('min_quantity', '<=', $quantity);
     }

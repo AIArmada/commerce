@@ -43,7 +43,6 @@ final class RetentionReport extends Page
 
     protected static ?string $slug = 'signals/retention';
 
-    /** @var view-string */
     protected string $view = 'filament-signals::pages.retention-report';
 
     public function mount(): void
@@ -62,7 +61,7 @@ final class RetentionReport extends Page
         return config('filament-signals.navigation_group', 'Insights');
     }
 
-    public static function getNavigationSort(): ?int
+    public static function getNavigationSort(): int
     {
         return (int) config('filament-signals.resources.navigation_sort.retention', 19);
     }

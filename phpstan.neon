@@ -1,10 +1,11 @@
 parameters:
     paths:
         - packages
+        - stubs/phpstan/trait_usage_harness.php
 
     level: 6
 
-    reportUnmatchedIgnoredErrors: false
+    reportUnmatchedIgnoredErrors: true
 
     treatPhpDocTypesAsCertain: false
 
@@ -17,45 +18,20 @@ parameters:
     scanFiles:
         - stubs/phpstan/stripe.stub.php
         - stubs/phpstan/laravel-cashier.stub.php
+        - stubs/phpstan/faker.stub.php
+        - stubs/phpstan/trait_usage_harness.php
 
     stubFiles:
         - stubs/phpstan/stripe.stub.php
         - stubs/phpstan/laravel-cashier.stub.php
+        - stubs/phpstan/faker.stub.php
 
     ignoreErrors:
         - identifier: 'missingType.generics'
         - identifier: 'larastan.noEnvCallsOutsideOfConfig'
-        # Spatie packages are installed via require-dev; do not ignore missing class/trait errors
-        # Missing type specifications in scope methods (legacy code)
-        - identifier: 'missingType.return'
           paths:
-              - packages/*/src/Models/*
-        - identifier: 'missingType.parameter'
-          paths:
-              - packages/*/src/Models/*
+              - packages/*/config/*
 
-        # Ignore example files that reference external dependencies
-        # Ignore Filament v5 beta compatibility issues
-        - message: '#Call to an undefined method.*Filament.*glow\(\)\.#'
-        - message: '#Call to an undefined method.*Filament.*carded\(\)\.#'
-        - message: '#Call to an undefined method.*Filament.*softShadow\(\)\.#'
-        - message: '#Call to an undefined method.*Filament.*inlineLabelled\(\)\.#'
-        # Ignore property override issues in widgets
-        # Ignore external cart model references
-        - message: '#PHPDoc tag @var for variable.*contains unknown class.*Cart\.#'
-        - message: '#PHPDoc tag @var with type.*Cart.*is not subtype of native type.*Model.*#'
-        - message: '#Access to property.*on an unknown class.*Cart\.#'
-        # Ignore Voucher model method calls (methods exist but PHPStan can't resolve them)
-        # Ignore view function type issues
-        # Ignore filament-permissions external dependencies
-        - message: '#Property .*\$view \(view-string\) does not accept default value of type string\.#'
-          paths:
-              - packages/filament-affiliate-network/src/Pages/*
-              - packages/filament-growth/src/Pages/ExperimentResultsPage.php
-              - packages/filament-growth/src/Widgets/ExperimentWinnersWidget.php
-              - packages/filament-signals/src/Pages/*
-        # Ignore unused traits in filament-authz (they're part of the public API)
-        - message: '#Trait AIArmada\\FilamentAuthz\\Concerns\\.*is used zero times and is not analysed\.#'
         # Note: method.unused kept REMOVED - we want to catch dead code
         # Ignore nullsafe.neverNull for defensive patterns:
         # - request()?-> is correct (request() returns null outside HTTP context: console, queue, tests)
@@ -70,26 +46,14 @@ parameters:
         # Common pattern: interface returns ?T (some implementations need null), implementation always returns T
         - identifier: 'return.unusedType'
         # Ignore scope return type issues (scopes return Builder<static> but PHPStan sees Builder<Model>)
-        - message: '#Method AIArmada\\Inventory\\Models\\.*::scope.*should return Illuminate\\Database\\Eloquent\\Builder.*but returns Illuminate\\Database\\Eloquent\\Builder.*#'
         # Ignore mapWithKeys collection operation type issues
         # Ignore undefined scope method calls (scopes are dynamically resolved)
         # Ignore LengthAwarePaginator generic type issues
         # Ignore hasMany/belongsTo template type resolution with external models
         # Ignore identical return type covariance warnings (PHPStan bug with array shape types)
-        - message: '#Method.*should return.*Collection.*array\{.*\}.*but returns.*Collection.*array\{.*\}.*#'
-        - message: '#Anonymous function should return.*Collection.*array\{.*\}.*but returns.*Collection.*array\{.*\}.*#'
-        - message: '#Parameter.*\$callback of method.*Collection.*map\(\) expects callable.*#'
         # Ignore test-specific issues
-        # Ignore Faker method calls (methods exist but PHPStan can't resolve them)
-        - message: '#Call to an undefined method Faker\\Generator::.*#'
-        # Ignore unused traits in customers (public API for consumers)
-        - message: '#Trait AIArmada\\Customers\\Concerns\\.*is used zero times and is not analysed\.#'
         # Ignore return type covariance issues with Eloquent relations (PHPStan template variance)
         - message: '#Method.*should return.*Relations\\(HasMany|BelongsTo|MorphTo).*but returns.*Relations\\(HasMany|BelongsTo|MorphTo).*#'
-        # Ignore unused traits (public API)
-        - message: '#Trait AIArmada\\Vouchers\\Traits\\.*is used zero times and is not analysed\.#'
-        - message: '#Trait AIArmada\\Vouchers\\GiftCards\\Traits\\.*is used zero times and is not analysed\.#'
-        - message: '#Trait AIArmada\\CommerceSupport\\Traits\\.*is used zero times and is not analysed\.#'
         # Ignore relation existence errors (Larastan false positives)
         # Ignore cast.string for enums
         # Ignore arguments.count for context methods
@@ -97,21 +61,11 @@ parameters:
         # Ignore FilamentChip Jetstream/Cashier integration issues
         # Ignore PHPDoc type issues in Cart traits
         # Ignore Cart integration classes when Cart package is not installed (suggested dependency)
-        - message: '#.*unknown class AIArmada\\Cart\\Contracts\\Cart(ValidatorInterface|ValidationResult|ManagerInterface).*#'
-        - message: '#.*unknown interface AIArmada\\Cart\\Contracts\\Cart(ValidatorInterface|ManagerInterface).*#'
-        - message: '#.*invalid (return )?type AIArmada\\Cart\\Contracts\\Cart(ValidationResult|ManagerInterface).*#'
-        - message: '#Call to an undefined method AIArmada\\Cart\\Contracts\\CartManagerInterface::session\(\)\.#'
         # Ignore nullCoalesce in exception classes
         # (no ignore) surface strict/dead-code issues
-        # Ignore unused Buyable trait (it's part of the public API)
-        - message: '#Trait AIArmada\\Cart\\Concerns\\Buyable is used zero times and is not analysed\.#'
-
         # Defensive programming patterns - method_exists/instanceof checks on types that are guaranteed
         # These are intentional for forward/backward compatibility and defensive coding
         - identifier: 'function.alreadyNarrowedType'
-        - identifier: 'instanceof.alwaysTrue'
-        - identifier: 'notIdentical.alwaysTrue'
-        - identifier: 'identical.alwaysFalse'
         # REMOVED: - identifier: 'function.impossibleType' - we want to catch dead code
 
         # Return type covariance issues with static/self in scope methods and relations
@@ -119,18 +73,7 @@ parameters:
         - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Builder<static\(.*\)> but returns Illuminate\\Database\\Eloquent\\Builder<.*>#'
         - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Relations\\.*<.*> but returns Illuminate\\Database\\Eloquent\\Relations\\.*<.*\$this.*>#'
 
-        # Filament plugin get() method return type
-        - message: '#Method .* should return static\(.*\) but returns Filament\\Contracts\\Plugin\|Filament\\FilamentManager#'
-
-        # Collection covariance issues
-        - message: '#Method .* should return Illuminate\\Support\\Collection<int, array<string, mixed>> but returns Illuminate\\Support\\Collection<int, array\{.*\}>#'
-
-        # PHPDoc @throws not subtype of Throwable (external package types)
-        - identifier: 'throws.notThrowable'
-
         # Return type issues with external package methods
-        # Template type resolution issues in owner scope helpers
-        - identifier: 'argument.templateType'
 
         # Note: return.type identifier removed - too dangerous, hides real bugs
 

@@ -51,7 +51,6 @@ final class ContentPerformanceReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/content-performance';
 
-    /** @var view-string */
     protected string $view = 'filament-signals::pages.content-performance-report';
 
     public function mount(): void
@@ -70,7 +69,7 @@ final class ContentPerformanceReport extends Page implements HasTable
         return config('filament-signals.navigation_group', 'Insights');
     }
 
-    public static function getNavigationSort(): ?int
+    public static function getNavigationSort(): int
     {
         return (int) config('filament-signals.resources.navigation_sort.content_performance', 20);
     }

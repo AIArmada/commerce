@@ -409,7 +409,7 @@ class Variant extends Model implements HasMedia, Priceable, PricingPriceable
                 throw new InvalidArgumentException('Invalid product_id: product not found.');
             }
 
-            if ($product !== null && $currentOwner !== null) {
+            if ($currentOwner !== null) {
                 $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
                 if (! $product->belongsToOwner($currentOwner) && ! ($includeGlobal && $product->isGlobal())) {

@@ -51,12 +51,9 @@ final class ProjectExperimentContextIntoSignalProperties
         /** @var array<string, string> $primaryContext */
         $primaryContext = $contexts[0];
 
-        $enrichedContext = array_filter(
-            array_merge($primaryContext, [
-                'experiment_contexts' => $contexts,
-            ]),
-            static fn (mixed $value): bool => $value !== null,
-        );
+        $enrichedContext = array_merge($primaryContext, [
+            'experiment_contexts' => $contexts,
+        ]);
 
         return $this->mergeExperimentContexts($source, array_merge($properties, $enrichedContext));
     }
@@ -81,9 +78,9 @@ final class ProjectExperimentContextIntoSignalProperties
 
         return array_merge(
             $properties,
-            array_filter(array_merge($primaryContext, [
+            array_merge($primaryContext, [
                 'experiment_contexts' => $contexts,
-            ]), static fn (mixed $value): bool => $value !== null),
+            ]),
         );
     }
 

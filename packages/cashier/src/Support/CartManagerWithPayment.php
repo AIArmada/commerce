@@ -6,7 +6,6 @@ namespace AIArmada\Cashier\Support;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
-use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cashier\Checkout\CartCheckoutBuilder;
 use AIArmada\Cashier\GatewayManager;
 use Illuminate\Database\Eloquent\Model;
@@ -124,11 +123,6 @@ final class CartManagerWithPayment implements CartManagerInterface
     public function getOwnerId(): string | int | null
     {
         return $this->cart->getOwnerId();
-    }
-
-    public function session(?string $sessionKey = null): StorageInterface
-    {
-        return $this->cart->session($sessionKey);
     }
 
     public function getById(string $uuid): ?Cart

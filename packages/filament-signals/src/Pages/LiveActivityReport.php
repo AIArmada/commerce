@@ -43,7 +43,6 @@ final class LiveActivityReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/live-activity';
 
-    /** @var view-string */
     protected string $view = 'filament-signals::pages.live-activity-report';
 
     public function mount(): void
@@ -56,7 +55,7 @@ final class LiveActivityReport extends Page implements HasTable
         return config('filament-signals.navigation_group', 'Insights');
     }
 
-    public static function getNavigationSort(): ?int
+    public static function getNavigationSort(): int
     {
         return (int) config('filament-signals.resources.navigation_sort.live_activity', 21);
     }

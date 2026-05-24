@@ -14,7 +14,6 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
 
 class ItemsRelationManager extends RelationManager
 {
@@ -68,9 +67,6 @@ class ItemsRelationManager extends RelationManager
             }
 
             $owner = $this->getOwnerRecord();
-            if (! $owner instanceof Model) {
-                return false;
-            }
 
             return $user->can('update', $owner);
         };

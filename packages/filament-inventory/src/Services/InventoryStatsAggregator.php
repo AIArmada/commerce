@@ -9,6 +9,7 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
@@ -210,10 +211,10 @@ final class InventoryStatsAggregator
      *
      * @template T
      *
-     * @param  callable(): T  $callback
+     * @param  Closure(): T  $callback
      * @return T
      */
-    private function cached(string $key, callable $callback): mixed
+    private function cached(string $key, Closure $callback): mixed
     {
         $ttl = config('filament-inventory.cache.stats_ttl', self::CACHE_TTL_SECONDS);
 
@@ -221,10 +222,13 @@ final class InventoryStatsAggregator
             return $callback();
         }
 
-        return Cache::remember(
+        /** @var T $cached */
+        $cached = Cache::remember(
             self::CACHE_PREFIX . $key . '|' . InventoryOwnerScope::cacheKeySuffix(),
             $ttl,
             $callback
         );
+
+        return $cached;
     }
 }

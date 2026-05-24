@@ -112,13 +112,15 @@ class SubscriptionItem extends Model
             }
 
             // If the relation is loaded, copy owner from subscription
-            if ($item->relationLoaded('subscription') && $item->subscription !== null && $item->subscription->hasOwner()) {
-                if ($currentOwner !== null && ! $item->subscription->belongsToOwner($currentOwner)) {
+            $subscription = $item->subscription;
+
+            if ($item->relationLoaded('subscription') && $subscription?->hasOwner()) {
+                if (! $subscription->belongsToOwner($currentOwner)) {
                     throw new AuthorizationException('Cross-tenant subscription item write blocked.');
                 }
 
-                $item->owner_type = $item->subscription->owner_type;
-                $item->owner_id = $item->subscription->owner_id;
+                $item->owner_type = $subscription->owner_type;
+                $item->owner_id = $subscription->owner_id;
 
                 return;
             }

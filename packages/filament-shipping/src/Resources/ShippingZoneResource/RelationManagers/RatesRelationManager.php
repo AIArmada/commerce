@@ -19,7 +19,6 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
 
 class RatesRelationManager extends RelationManager
 {
@@ -190,9 +189,6 @@ class RatesRelationManager extends RelationManager
             }
 
             $owner = $this->getOwnerRecord();
-            if (! $owner instanceof Model) {
-                return false;
-            }
 
             return $user->can('manageRates', $owner);
         };

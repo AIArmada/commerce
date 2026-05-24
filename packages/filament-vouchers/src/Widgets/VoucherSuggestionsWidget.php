@@ -97,7 +97,7 @@ final class VoucherSuggestionsWidget extends Widget
 
                     // Check if already applied
                     try {
-                        /** @var \AIArmada\Cart\Models\Cart $cartRecord */
+                        /** @var Cart $cartRecord */
                         $cartRecord = $this->record;
                         $cartInstance = app(CartInstanceManager::class)->resolve(
                             $cartRecord->instance,
@@ -106,6 +106,11 @@ final class VoucherSuggestionsWidget extends Widget
 
                         /** @phpstan-ignore-next-line */
                         $appliedVouchers = $cartInstance->getAppliedVouchers();
+
+                        if (! is_iterable($appliedVouchers)) {
+                            return false;
+                        }
+
                         /** @var Collection<int, mixed> $appliedCollection */
                         $appliedCollection = collect($appliedVouchers);
                         $appliedCodes = $appliedCollection->pluck('code')->toArray();

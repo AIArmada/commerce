@@ -98,8 +98,10 @@ final class BankAccountStatusWidget extends ChartWidget
      */
     private function scopedQuery(Builder $query): Builder
     {
-        if (method_exists($query->getModel(), 'scopeForOwner')) {
-            return $query->forOwner(); // @phpstan-ignore method.notFound
+        $model = $query->getModel();
+
+        if (method_exists($model, 'scopeForOwner')) {
+            return $model->scopeForOwner($query);
         }
 
         return $query;

@@ -50,7 +50,6 @@ final class JourneyReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/journeys';
 
-    /** @var view-string */
     protected string $view = 'filament-signals::pages.journey-report';
 
     public function mount(): void
@@ -69,7 +68,7 @@ final class JourneyReport extends Page implements HasTable
         return config('filament-signals.navigation_group', 'Insights');
     }
 
-    public static function getNavigationSort(): ?int
+    public static function getNavigationSort(): int
     {
         return (int) config('filament-signals.resources.navigation_sort.journeys', 18);
     }

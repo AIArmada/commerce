@@ -12,10 +12,6 @@ trait InteractsWithSavedSignalReportState
 
     protected function sanitizeSavedReportState(): void
     {
-        if (! property_exists($this, 'savedReportId')) {
-            return;
-        }
-
         /** @var string $savedReportId */
         $savedReportId = $this->savedReportId;
 

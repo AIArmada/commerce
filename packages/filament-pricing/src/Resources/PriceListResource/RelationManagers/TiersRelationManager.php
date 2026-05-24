@@ -112,7 +112,7 @@ final class TiersRelationManager extends RelationManager
                                 $query = $type::query();
 
                                 $model = new $type;
-                                if ($model instanceof Model && method_exists($model, 'scopeForOwner')) {
+                                if (method_exists($model, 'scopeForOwner')) {
                                     $query = $model->scopeForOwner($query, $owner);
                                 }
 

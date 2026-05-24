@@ -8,8 +8,6 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
-use Laravel\Cashier\Exceptions\PaymentActionRequired;
-use Laravel\Cashier\Exceptions\PaymentFailure;
 use Laravel\Cashier\Payment;
 use Stripe\StripeClient;
 
@@ -246,9 +244,6 @@ class StripePayment implements PaymentContract
 
     /**
      * Validate the payment and throw exception if failed.
-     *
-     * @throws PaymentActionRequired
-     * @throws PaymentFailure
      */
     public function validate(): static
     {

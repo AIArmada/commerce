@@ -180,9 +180,9 @@ final class PerformanceBonusService
             ->map(function ($row, $index) {
                 return [
                     'rank' => $index + 1,
-                    'affiliate_id' => $row->affiliate_id,
-                    'affiliate_name' => $row->affiliate_name,
-                    'affiliate_code' => $row->affiliate_code,
+                    'affiliate_id' => (string) $row->affiliate_id,
+                    'affiliate_name' => (string) $row->affiliate_name,
+                    'affiliate_code' => (string) $row->affiliate_code,
                     'total_revenue' => (int) $row->total_revenue,
                     'total_conversions' => (int) $row->total_conversions,
                     'total_commissions' => (int) $row->total_commissions,

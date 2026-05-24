@@ -97,11 +97,25 @@ final class RecentInvoicesWidget extends Widget
                     $first->getName() === 'options'
                     || ($type instanceof ReflectionNamedType && $type->getName() === 'array')
                 ) {
-                    return collect($user->invoices(['limit' => 3]))->take(3);
+                    $invoices = $user->invoices(['limit' => 3]);
+
+                    if (! is_iterable($invoices)) {
+                        return collect();
+                    }
+
+                    /** @var iterable<int, mixed> $invoices */
+                    return collect($invoices)->take(3);
                 }
             }
 
-            return collect($user->invoices(false, 'stripe'))->take(3);
+            $invoices = $user->invoices(false, 'stripe');
+
+            if (! is_iterable($invoices)) {
+                return collect();
+            }
+
+            /** @var iterable<int, mixed> $invoices */
+            return collect($invoices)->take(3);
         } catch (Throwable) {
             return collect();
         }

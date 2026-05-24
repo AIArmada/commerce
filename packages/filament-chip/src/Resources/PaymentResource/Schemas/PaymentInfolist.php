@@ -70,8 +70,7 @@ final class PaymentInfolist
                                     ->placeholder('—'),
                             ]),
                     ]),
-                Fieldset::make('Purchase Reference')
-                    ->inlineLabelled()
+                self::inlineLabelledFieldset('Purchase Reference')
                     ->schema([
                         TextEntry::make('purchase_id')
                             ->label('Purchase ID')
@@ -102,6 +101,15 @@ final class PaymentInfolist
                                     ->placeholder('—'),
                             ]),
                     ]),
+            ]);
+    }
+
+    private static function inlineLabelledFieldset(string $label): Fieldset
+    {
+        return Fieldset::make($label)
+            ->columns(2)
+            ->extraAttributes([
+                'class' => 'gap-x-8',
             ]);
     }
 }

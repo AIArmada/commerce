@@ -468,7 +468,7 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
 
     public function getProfitMargin(): ?float
     {
-        if (! $this->cost || $this->cost === 0) {
+        if (! $this->cost) {
             return null;
         }
 

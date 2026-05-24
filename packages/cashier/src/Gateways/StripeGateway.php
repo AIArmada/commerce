@@ -236,7 +236,14 @@ class StripeGateway extends AbstractGateway
     {
         $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
 
-        $invoices = collect($this->callBillableMethod($billable, 'invoices', [$includePending]))
+        $rawInvoices = $this->callBillableMethod($billable, 'invoices', [$includePending]);
+
+        if (! is_iterable($rawInvoices)) {
+            return collect();
+        }
+
+        /** @var iterable<int, mixed> $rawInvoices */
+        $invoices = collect($rawInvoices)
             ->map(fn ($invoice) => new StripeInvoice($invoice->asStripeInvoice()))
             ->values();
 
@@ -254,7 +261,14 @@ class StripeGateway extends AbstractGateway
     {
         $arguments = $type === null ? [] : [$type];
 
-        $paymentMethods = collect($this->callBillableMethod($billable, 'paymentMethods', $arguments))
+        $rawPaymentMethods = $this->callBillableMethod($billable, 'paymentMethods', $arguments);
+
+        if (! is_iterable($rawPaymentMethods)) {
+            return collect();
+        }
+
+        /** @var iterable<int, mixed> $rawPaymentMethods */
+        $paymentMethods = collect($rawPaymentMethods)
             ->map(fn ($paymentMethod) => new StripePaymentMethod($paymentMethod, $billable))
             ->values();
 
