@@ -30,9 +30,6 @@ This index intentionally points only to **current** documentation.
 - [Support Utilities](04-support-utilities.md)
 - [Deployment Guide](06-deployment.md)
 - [Affiliates Integration Map](affiliates.md)
-- [Tenancy Strategy Evaluation](tenancy-evaluation-report.md)
-- [Package Docs Audit & AI Rollout](development/package-docs-audit-rollout.md)
-- [Signals Manual Migrations](development/signals-manual-migrations.md)
 
 ## Canonical package documentation
 

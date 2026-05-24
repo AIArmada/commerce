@@ -108,5 +108,4 @@ When filename conventions disagree with expectations, trust:
 
 ## Related guides
 
-- [`../development/package-docs-audit-rollout.md`](../development/package-docs-audit-rollout.md)
 - [`../index.md`](../index.md)

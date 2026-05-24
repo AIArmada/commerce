@@ -21,7 +21,7 @@ Activate this skill when:
 
 ## Read First
 
-1. `docs/development/package-docs-audit-rollout.md`
+1. `docs/index.md`
 2. `CONTEXT.md`
 3. `docs/ai/package-manifests.json`
 4. the target package docs
