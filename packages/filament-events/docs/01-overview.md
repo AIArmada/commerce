@@ -47,7 +47,7 @@ You can customize the group label and sort order through `config/filament-events
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+
 - Filament 5.6+
 - `aiarmada/events`
 - `aiarmada/commerce-support`

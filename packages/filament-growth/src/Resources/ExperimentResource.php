@@ -18,6 +18,7 @@ use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\TrackedProperty;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
@@ -250,7 +251,7 @@ final class ExperimentResource extends Resource
             ])
             ->actions(array_values(array_filter([
                 config('filament-growth.features.results', true)
-                    ? Tables\Actions\Action::make('results')
+                    ? Action::make('results')
                         ->label('Results')
                         ->icon('heroicon-o-chart-bar')
                         ->visible(fn (): bool => ExperimentResultsPage::canAccess())

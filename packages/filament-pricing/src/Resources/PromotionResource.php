@@ -14,6 +14,7 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -111,7 +112,7 @@ final class PromotionResource extends Resource
                                     ->live(),
 
                                 Forms\Components\TextInput::make('discount_value')
-                                    ->label(fn (Forms\Get $get) => match ($get('type')) {
+                                    ->label(fn (Get $get) => match ($get('type')) {
                                         'percentage' => 'Discount Percentage (%)',
                                         'fixed' => 'Discount Amount (cents)',
                                         default => 'Value',

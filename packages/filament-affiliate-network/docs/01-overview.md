@@ -125,7 +125,7 @@ The marketplace page provides:
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+
 - Filament v5
 - `aiarmada/affiliate-network` package
 - `aiarmada/filament-affiliates` package (recommended)

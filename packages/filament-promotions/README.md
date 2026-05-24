@@ -14,7 +14,7 @@ A Filament v5 plugin for managing promotional discounts in your admin panel.
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+
 - Filament 5.0+
 - aiarmada/promotions package
 

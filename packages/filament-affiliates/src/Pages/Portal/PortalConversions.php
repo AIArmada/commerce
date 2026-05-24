@@ -25,6 +25,7 @@ class PortalConversions extends Page implements HasTable
 
     protected static ?int $navigationSort = 2;
 
+    /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.conversions';
 
     public static function getNavigationLabel(): string

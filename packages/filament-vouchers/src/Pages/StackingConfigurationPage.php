@@ -21,6 +21,9 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Config;
 use UnitEnum;
 
+/**
+ * @property-read Schema $form
+ */
 final class StackingConfigurationPage extends Page implements HasForms
 {
     use InteractsWithForms;
@@ -32,6 +35,7 @@ final class StackingConfigurationPage extends Page implements HasForms
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedSquare3Stack3d;
 
+    /** @var view-string */
     protected string $view = 'filament-vouchers::pages.stacking-configuration';
 
     protected static ?string $navigationLabel = 'Stacking Rules';

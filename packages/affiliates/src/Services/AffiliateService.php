@@ -22,6 +22,7 @@ use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
@@ -67,7 +68,7 @@ final class AffiliateService
         $query = $this->query();
         /** @var Connection $connection */
         $connection = $query->getConnection();
-        $driver = $connection->getDriverName();
+        $driver = ConnectionDriver::name($connection);
 
         /** @var Affiliate|null */
         return $query
@@ -86,7 +87,7 @@ final class AffiliateService
 
         /** @var Connection $connection */
         $connection = $query->getConnection();
-        $driver = $connection->getDriverName();
+        $driver = ConnectionDriver::name($connection);
 
         /** @var Affiliate|null */
         return $query
@@ -104,7 +105,7 @@ final class AffiliateService
         $query = $this->query();
         /** @var Connection $connection */
         $connection = $query->getConnection();
-        $driver = $connection->getDriverName();
+        $driver = ConnectionDriver::name($connection);
 
         /** @var Affiliate|null */
         return $query

@@ -5,7 +5,7 @@ Complete guide for installing AIArmada Commerce packages in your Laravel applica
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12.0+
+- Laravel 13.0+
 - Composer
 
 ## Installation Options

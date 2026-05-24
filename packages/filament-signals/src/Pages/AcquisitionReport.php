@@ -56,6 +56,7 @@ final class AcquisitionReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/acquisition';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.acquisition-report';
 
     public function mount(): void

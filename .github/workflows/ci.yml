@@ -37,7 +37,6 @@ jobs:
               - 'pint.json'
               - 'rector.php'
               - 'phpstan.neon'
-              - 'phpstan-baseline.neon'
             tests:
               - '**/*.php'
               - 'composer.json'

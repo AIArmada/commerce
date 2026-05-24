@@ -38,6 +38,7 @@ final class GoalsReport extends Page
 
     protected static ?string $slug = 'signals/goals';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.goals-report';
 
     public function mount(): void

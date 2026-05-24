@@ -32,6 +32,7 @@ final class ManageSubscriptions extends Page
 
     private const int DEFAULT_LOAD_MORE_INCREMENT = 50;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.manage-subscriptions';
 
     public static function getNavigationLabel(): string

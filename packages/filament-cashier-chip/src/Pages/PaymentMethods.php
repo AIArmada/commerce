@@ -21,6 +21,7 @@ class PaymentMethods extends Page
 
     protected static ?int $navigationSort = 20;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier-chip::pages.payment-methods';
 
     protected static ?string $slug = 'billing/payment-methods';
@@ -86,6 +87,15 @@ class PaymentMethods extends Page
             return;
         }
 
+        if (! method_exists($billable, 'updateDefaultPaymentMethod')) {
+            Notification::make()
+                ->title(__('Unable to update payment method'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         try {
             $billable->updateDefaultPaymentMethod($paymentMethodId);
 
@@ -107,6 +117,15 @@ class PaymentMethods extends Page
         $billable = $this->getBillable();
 
         if (! $billable) {
+            Notification::make()
+                ->title(__('Unable to delete payment method'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if (! method_exists($billable, 'deletePaymentMethod')) {
             Notification::make()
                 ->title(__('Unable to delete payment method'))
                 ->danger()

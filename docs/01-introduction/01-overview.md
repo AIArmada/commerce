@@ -2,7 +2,7 @@
 
 ## Introduction
 
-AIArmada Commerce is a comprehensive **Laravel e-commerce monorepo** providing production-ready packages for shopping carts, payment processing, vouchers, shipping, and stock management. Built with **modern Laravel 12**, **Filament 5**, and **PHP 8.4**, it offers both headless APIs and beautiful admin panels.
+AIArmada Commerce is a comprehensive **Laravel e-commerce monorepo** providing production-ready packages for shopping carts, payment processing, vouchers, shipping, and stock management. Built with **modern Laravel 13**, **Filament 5**, and **PHP 8.4**, it offers both headless APIs and beautiful admin panels.
 
 ## Philosophy
 
@@ -88,7 +88,7 @@ aiarmada/commerce (meta-package)
 ### Core Dependencies
 
 - **PHP**: ^8.4 (constructor promotion, typed properties, enums)
-- **Laravel**: ^12.0 (modern routing, eloquent, events)
+- **Laravel**: ^13.0 (modern routing, eloquent, events)
 - **Filament**: ^5.0 (admin panels, forms, tables)
 - **Livewire**: ^3.0 (reactive components)
 - **Pest**: ^4.0 (testing with browser support)

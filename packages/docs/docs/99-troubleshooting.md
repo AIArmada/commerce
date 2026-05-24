@@ -303,4 +303,4 @@ use AIArmada\Docs\DataObjects\DocData; // Correct
 ## Getting Help
 
 1. Check the [GitHub Issues](https://github.com/aiarmada/commerce/issues)
-3. Ensure you're using compatible versions (PHP 8.4+, Laravel 12+)
+3. Ensure you're using compatible versions (PHP 8.4+, Laravel 13+)

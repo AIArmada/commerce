@@ -45,6 +45,7 @@ final class ConversionFunnelReport extends Page
 
     protected static ?string $slug = 'signals/conversion-funnel';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.conversion-funnel-report';
 
     public function mount(): void

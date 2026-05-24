@@ -17,6 +17,7 @@ class ShippingDashboard extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
 
+    /** @var view-string */
     protected string $view = 'filament-shipping::pages.shipping-dashboard';
 
     protected static ?string $slug = 'shipping-dashboard';

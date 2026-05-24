@@ -182,7 +182,7 @@ final class CancelOrderAction
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, array<string, string>>
      */
     private static function getReasonOptions(): array
     {

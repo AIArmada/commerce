@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -23,7 +24,7 @@ return new class extends Migration
     public function up(): void
     {
         $tableName = config('cart.database.table', 'carts');
-        $driver = Schema::getConnection()->getDriverName();
+        $driver = ConnectionDriver::name(Schema::getConnection());
 
         if ($driver === 'pgsql') {
             $this->addPostgreSQLIndexes($tableName);
@@ -38,7 +39,7 @@ return new class extends Migration
     public function down(): void
     {
         $tableName = config('cart.database.table', 'carts');
-        $driver = Schema::getConnection()->getDriverName();
+        $driver = ConnectionDriver::name(Schema::getConnection());
 
         if ($driver === 'pgsql') {
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_lookup_covering');

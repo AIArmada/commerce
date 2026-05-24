@@ -11,6 +11,7 @@ use Throwable;
 
 final class PaymentMethodsPreviewWidget extends Widget
 {
+    /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.widgets.payment-methods-preview';
 
     protected int | string | array $columnSpan = 1;

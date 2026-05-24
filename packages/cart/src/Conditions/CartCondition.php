@@ -21,8 +21,13 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     private string | int $value;
 
     /**
+     * @var list<callable(Cart, CartItem|null): bool>|null
+     */
+    private ?array $rules = null;
+
+    /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<string, mixed>|null  $rules
+     * @param  list<callable(Cart, CartItem|null): bool>|null  $rules
      * @param  ConditionTarget|string|array<string, mixed>  $target
      */
     public function __construct(
@@ -32,11 +37,12 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
         string | int | float $value,
         private array $attributes = [],
         private int $order = 0,
-        private ?array $rules = null,
+        ?array $rules = null,
         private ?self $staticConditionCache = null
     ) {
         $this->target = ConditionTarget::from($target);
         $this->value = $this->normalizeValue($value);
+        $this->rules = $rules;
         $this->validateCondition();
     }
 
@@ -250,7 +256,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get the rules for this condition
      *
-     * @return ?array<callable>
+     * @return list<callable(Cart, CartItem|null): bool>|null
      */
     public function getRules(): ?array
     {

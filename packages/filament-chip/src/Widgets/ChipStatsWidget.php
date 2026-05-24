@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use DateTimeInterface;
@@ -72,7 +73,7 @@ final class ChipStatsWidget extends BaseWidget
     private function getRevenueForPeriod(DateTimeInterface $since): int
     {
         $sinceTimestamp = $since->getTimestamp();
-        $driver = DB::connection()->getDriverName();
+        $driver = ConnectionDriver::name(DB::connection());
 
         $query = tap(Purchase::query(), function ($query): void {
             if (method_exists($query->getModel(), 'scopeForOwner')) {

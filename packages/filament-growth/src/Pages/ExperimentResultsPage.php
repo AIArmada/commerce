@@ -26,6 +26,9 @@ use Livewire\Attributes\Computed;
 use Throwable;
 use UnitEnum;
 
+/**
+ * @property-read Schema $form
+ */
 final class ExperimentResultsPage extends Page implements HasForms
 {
     use FormatsMoney {

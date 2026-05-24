@@ -26,7 +26,7 @@ This package is a **wrapper/adapter layer** that delegates to underlying gateway
 ## Requirements
 
 - PHP 8.2+
-- Laravel 12.0+
+- Laravel 13.0+
 - At least one gateway package installed:
   - `laravel/cashier` for Stripe
   - `aiarmada/cashier-chip` for CHIP

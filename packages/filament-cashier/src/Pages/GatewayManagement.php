@@ -28,6 +28,7 @@ final class GatewayManagement extends Page
 
     protected static ?int $navigationSort = 50;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier::pages.gateway-management';
 
     public static function getNavigationLabel(): string

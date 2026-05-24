@@ -200,7 +200,10 @@ final class WalletEntriesTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(function (Collection $records): void {
-                        $records->each->markAsRedeemed();
+                        /** @var Collection<int, VoucherWallet> $records */
+                        $records->each(function (VoucherWallet $record): void {
+                            $record->markAsRedeemed();
+                        });
                     }),
 
                 DeleteBulkAction::make()

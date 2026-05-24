@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Services;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Query\Builder;
@@ -286,7 +287,7 @@ final class CohortAnalyzer
 
         $affiliatesTable = (new Affiliate)->getTable();
         $conversionsTable = (new AffiliateConversion)->getTable();
-        $driver = DB::connection()->getDriverName();
+        $driver = ConnectionDriver::name(DB::connection());
 
         $sourceExpression = $driver === 'sqlite'
             ? "COALESCE(json_extract(a.metadata, '$.source'), 'direct')"
@@ -338,7 +339,7 @@ final class CohortAnalyzer
     private function getCohorts(Carbon $from, Carbon $to): Collection
     {
         $affiliatesTable = (new Affiliate)->getTable();
-        $driver = DB::connection()->getDriverName();
+        $driver = ConnectionDriver::name(DB::connection());
 
         $dateFormat = $driver === 'sqlite'
             ? "strftime('%Y-%m', created_at)"

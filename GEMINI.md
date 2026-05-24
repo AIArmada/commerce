@@ -215,7 +215,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - **Level**: 6
 - **Scope**: per package (e.g. `packages/<pkg>/src`), not repo-wide.
 - **Rules**:
-  - Respect `phpstan.neon` / `phpstan-baseline.neon`.
+  - Respect `phpstan.neon`.
   - Do not add new `ignoreErrors` unless root-cause fixes are exhausted.
   - Prefer real fixes over suppression.
 

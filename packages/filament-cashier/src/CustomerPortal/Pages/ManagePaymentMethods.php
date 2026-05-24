@@ -19,6 +19,7 @@ final class ManagePaymentMethods extends Page
 
     protected static ?int $navigationSort = 2;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.manage-payment-methods';
 
     public static function getNavigationLabel(): string

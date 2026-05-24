@@ -40,6 +40,7 @@ class FulfillmentQueue extends Page implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-cube';
 
+    /** @var view-string */
     protected string $view = 'filament-shipping::pages.fulfillment-queue';
 
     protected static string | UnitEnum | null $navigationGroup = 'Shipping';

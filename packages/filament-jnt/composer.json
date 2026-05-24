@@ -1,32 +1,33 @@
 {
-  "name": "aiarmada/filament-jnt",
-  "description": "A Filament admin plugin to manage J&T Express shipping orders and tracking.",
-  "license": "MIT",
-  "homepage": "https://github.com/aiarmada/commerce",
-  "support": {
-    "issues": "https://github.com/aiarmada/commerce/issues",
-    "source": "https://github.com/aiarmada/commerce"
-  },
-  "require": {
-    "aiarmada/commerce-support": "self.version",
-    "aiarmada/jnt": "self.version",
-    "filament/filament": "^5.6"
-  },
-  "autoload": {
-    "psr-4": {
-      "AIArmada\\FilamentJnt\\": "src/"
-    }
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "AIArmada\\FilamentJnt\\FilamentJntServiceProvider"
-      ]
-    }
-  },
-  "config": {
-    "sort-packages": true
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "name": "aiarmada/filament-jnt",
+    "description": "A Filament admin plugin to manage J&T Express shipping orders and tracking.",
+    "license": "MIT",
+    "homepage": "https://github.com/aiarmada/commerce",
+    "support": {
+        "issues": "https://github.com/aiarmada/commerce/issues",
+        "source": "https://github.com/aiarmada/commerce"
+    },
+    "require": {
+        "aiarmada/commerce-support": "self.version",
+        "aiarmada/jnt": "self.version",
+        "filament/filament": "^5.6.5",
+        "php": "^8.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\FilamentJnt\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\FilamentJnt\\FilamentJntServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

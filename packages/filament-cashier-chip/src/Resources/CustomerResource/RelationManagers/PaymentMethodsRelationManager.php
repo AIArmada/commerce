@@ -65,7 +65,7 @@ final class PaymentMethodsRelationManager extends RelationManager
                                     ->body('Checkout URL generated. Redirect customer to complete setup.')
                                     ->info()
                                     ->actions([
-                                        \Filament\Notifications\Actions\Action::make('copy')
+                                        Action::make('copy')
                                             ->label('Copy URL')
                                             ->url($url)
                                             ->openUrlInNewTab(),

@@ -37,6 +37,7 @@ final class PriceSimulator extends Page
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-calculator';
 
+    /** @var view-string */
     protected string $view = 'filament-pricing::pages.price-simulator';
 
     protected static string | UnitEnum | null $navigationGroup = 'Pricing';

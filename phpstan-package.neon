@@ -1,6 +1,0 @@
-includes:
-  - phpstan.neon
-
-parameters:
-  # Local/dev convenience: scoped analysis will otherwise fail due to unrelated ignore patterns.
-  reportUnmatchedIgnoredErrors: false

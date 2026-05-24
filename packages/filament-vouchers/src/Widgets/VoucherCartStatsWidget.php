@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\Voucher;
@@ -82,7 +83,7 @@ final class VoucherCartStatsWidget extends BaseWidget
             $escapedCode = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $voucher->code);
             /** @var Connection $connection */
             $connection = $cartModel::query()->getConnection();
-            $driver = $connection->getDriverName();
+            $driver = ConnectionDriver::name($connection);
 
             $cartQuery = $cartModel::query();
 

@@ -163,6 +163,6 @@ Instead, it keeps its own offer-level tracking boundary:
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+
 - `aiarmada/affiliates` package
 - `aiarmada/commerce-support` package (for owner traits)

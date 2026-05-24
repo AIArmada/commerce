@@ -88,7 +88,11 @@ packages/shipping/
 │   ├── ShippingManager.php    # Main manager class
 │   └── ShippingServiceProvider.php
 └── docs/
-    └── vision/                # Architecture vision documents
+    ├── 01-overview.md         # Package overview
+    ├── 02-installation.md     # Installation and setup
+    ├── 03-configuration.md    # Configuration reference
+    ├── 04-usage.md            # Core usage patterns
+    └── 99-troubleshooting.md  # Troubleshooting guide
 ```
 
 ## Models

@@ -34,6 +34,7 @@ final class PendingApprovalsPage extends Page implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
+    /** @var view-string */
     protected string $view = 'filament-docs::pages.pending-approvals';
 
     public static function getNavigationLabel(): string

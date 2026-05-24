@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 
 final class ZoneCoverageWidget extends Widget
 {
+    /** @var view-string */
     protected string $view = 'filament-tax::widgets.zone-coverage';
 
     protected int | string | array $columnSpan = 'full';

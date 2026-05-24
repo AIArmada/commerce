@@ -51,6 +51,7 @@ final class ContentPerformanceReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/content-performance';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.content-performance-report';
 
     public function mount(): void

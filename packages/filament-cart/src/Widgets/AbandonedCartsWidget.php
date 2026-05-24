@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
@@ -96,7 +97,7 @@ final class AbandonedCartsWidget extends BaseWidget
     private function applyMetadataSearch(Builder $query, string $search): Builder
     {
         $needle = "%{$search}%";
-        $driver = $query->getModel()->getConnection()->getDriverName();
+        $driver = ConnectionDriver::name($query->getModel()->getConnection());
 
         if ($driver === 'pgsql') {
             return $query->whereRaw('CAST(metadata AS TEXT) ILIKE ?', [$needle]);

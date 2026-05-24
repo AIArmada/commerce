@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Tables;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
@@ -119,7 +120,7 @@ final class InvoiceTable
                     ->label('High Value (≥ 1,000)')
                     ->toggle()
                     ->query(function (Builder $query): Builder {
-                        $driver = $query->getConnection()->getDriverName();
+                        $driver = ConnectionDriver::name($query->getConnection());
                         $amount = 100000; // 1000 in cents
 
                         return match ($driver) {

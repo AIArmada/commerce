@@ -77,7 +77,7 @@ packages/orders/
 ## Requirements
 
 - PHP 8.4+
-- Laravel 12+
+- Laravel 13+
 - `spatie/laravel-model-states` ^2.0
 - `spatie/laravel-pdf` ^1.0 (for invoices)
 - `aiarmada/commerce-support` (for multi-tenancy)

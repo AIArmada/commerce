@@ -4,12 +4,12 @@
 
 <p align="center">
     <a href="https://github.com/aiarmada/commerce/actions"><img alt="Tests passing" src="https://img.shields.io/badge/Tests-passing-34d399?style=for-the-badge&logo=github"></a>
-    <a href="https://laravel.com"><img alt="Laravel v12%20%7C%20v13" src="https://img.shields.io/badge/Laravel-v12%20%7C%20v13-FF2D20?style=for-the-badge&logo=laravel"></a>
+    <a href="https://laravel.com"><img alt="Laravel v13" src="https://img.shields.io/badge/Laravel-v13-FF2D20?style=for-the-badge&logo=laravel"></a>
     <a href="https://livewire.laravel.com"><img alt="Livewire v3" src="https://img.shields.io/badge/Livewire-v3-FB70A9?style=for-the-badge"></a>
     <a href="https://php.net"><img alt="PHP 8.4" src="https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php"></a>
 </p>
 
-**AIArmada Commerce is a modular e-commerce stack for Laravel 12 and 13 — carts, payments, vouchers, shipping, inventory, and Filament admin panels in one cohesive toolkit.**
+**AIArmada Commerce is a modular e-commerce stack for Laravel 13 — carts, payments, vouchers, shipping, inventory, and Filament admin panels in one cohesive toolkit.**
 
 Stay focused on product logic while Commerce handles pricing rules, concurrency, webhooks, and polished back-office tooling.
 
@@ -25,7 +25,7 @@ php artisan migrate
 
 ## Packages in this release
 
-- `aiarmada/affiliates` – Affiliate attribution + commission tracking with optional auto-integration into carts and vouchers. [Learn more](docs/affiliates.md).
+- `aiarmada/affiliates` – Affiliate attribution + commission tracking with optional auto-integration into carts and vouchers. [Learn more](packages/affiliates/docs/01-overview.md).
 - `aiarmada/filament-affiliates` – Filament v5 plugin that exposes affiliate programs, attributions, conversions, and analytics alongside existing cart/voucher resources.
 
 ## Contributing
@@ -34,7 +34,7 @@ Please read our [contributing guide](CONTRIBUTING.md) before submitting a pull r
 
 ## Security
 
-If you discover a security vulnerability, please review our [security policy](SECURITY.md).
+If you discover a security vulnerability, please review our [security policy](https://github.com/AIArmada/commerce/security/policy).
 
 ## License
 

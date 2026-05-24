@@ -29,7 +29,7 @@ final class BackordersWidget extends TableWidget
     public function table(Table $table): Table
     {
         $query = InventoryBackorder::query()
-            ->open()
+            ->whereIn('status', InventoryBackorder::openStatuses())
             ->byPriority()
             ->with(['location'])
             ->limit(10);

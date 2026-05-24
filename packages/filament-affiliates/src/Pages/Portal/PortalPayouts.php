@@ -27,6 +27,7 @@ class PortalPayouts extends Page implements HasTable
 
     protected static ?int $navigationSort = 3;
 
+    /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.payouts';
 
     public static function getNavigationLabel(): string

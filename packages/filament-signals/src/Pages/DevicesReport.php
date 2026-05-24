@@ -50,6 +50,7 @@ final class DevicesReport extends Page implements HasTable
 
     protected static ?string $slug = 'signals/devices';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.devices-report';
 
     public function mount(): void

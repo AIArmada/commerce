@@ -19,6 +19,7 @@ final class ViewInvoices extends Page
 
     protected static ?int $navigationSort = 3;
 
+    /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.view-invoices';
 
     public static function getNavigationLabel(): string

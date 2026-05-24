@@ -38,7 +38,7 @@ trait InteractsWithBillable
         }
 
         if (method_exists($user, 'currentTeam')) {
-            $team = $user->currentTeam;
+            $team = $user->getAttribute('currentTeam');
 
             return $team instanceof Model ? $team : $user;
         }

@@ -43,6 +43,7 @@ final class RetentionReport extends Page
 
     protected static ?string $slug = 'signals/retention';
 
+    /** @var view-string */
     protected string $view = 'filament-signals::pages.retention-report';
 
     public function mount(): void

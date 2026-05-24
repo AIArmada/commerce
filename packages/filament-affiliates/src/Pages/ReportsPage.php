@@ -16,6 +16,9 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use UnitEnum;
 
+/**
+ * @property-read Schema $form
+ */
 final class ReportsPage extends Page implements HasForms
 {
     use InteractsWithForms;

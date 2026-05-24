@@ -1,352 +1,89 @@
+---
+title: AIArmada Commerce Documentation Index
+status: current
+---
+
 # AIArmada Commerce Documentation
 
-**Version**: 0.1.0  
-**Laravel**: ^12.0 | **PHP**: ^8.4 | **Filament**: ^5.0
-
----
-
-## Welcome 👋
-
-AIArmada Commerce is a comprehensive Laravel e-commerce monorepo providing production-ready packages for shopping carts, payment processing, vouchers, shipping, and inventory management.
-
-**Key Features:**
-- 🛒 **Shopping Cart** with session/cache/database storage
-- 💳 **CHIP Payment Gateway** with webhook support
-- 🏷️ **Pricing & Promotions** with price lists, tiers, and campaign management
-- 🎟️ **Voucher System** with flexible conditions
-- 🧾 **Billing Documents** with templates, PDFs, approvals, and Filament admin tools
-- 📦 **J&T Shipping** integration
-- 🏬 **Inventory Management** with multi-location allocations
-- 🎨 **Filament Admin Panels** for all packages
-- 🧪 **Comprehensive Testing** with Pest v4
-- 📚 **Extensive Documentation** with code examples
-
----
-
-## Quick Start
-
-### Installation
-
-```bash
-# Install complete ecosystem
-composer require aiarmada/commerce
-
-# Or install individual packages
-composer require aiarmada/cart
-composer require aiarmada/chip
-composer require aiarmada/vouchers
-```
-
-### Configuration
-
-```bash
-# Publish configs
-php artisan vendor:publish --tag=commerce-config
-
-# Run migrations
-php artisan migrate
-
-# Create admin user (for Filament)
-php artisan make:filament-user
-```
-
-### First Cart
-
-```php
-use AIArmada\Cart\Conditions\TargetPresets;
-use AIArmada\Cart\Facades\Cart;
-
-// Add item
-Cart::add('prod-001', 'T-Shirt', 2999, 2);
-
-// Apply discount
-Cart::applyCondition([
-    'name' => 'Holiday Sale',
-    'type' => 'discount',
-    'target_definition' => TargetPresets::cartSubtotal()->toArray(),
-    'value' => '-10%', // strings keep operator intent
-]);
-
-// Get total
-$total = Cart::total(); // Money instance
-echo $total->format(); // "RM53.98"
-```
-
----
-
-## Documentation Structure
-
-### 📖 Introduction
-
-Get started with AIArmada Commerce:
-
-- **[Overview](01-introduction/01-overview.md)** - Architecture, philosophy, use cases
-- **[Installation](01-introduction/02-installation.md)** - Setup guide, configuration, verification
-
-### 🚀 Getting Started
-
-Build your first e-commerce features:
-
-- **[Cart Basics](02-getting-started/01-cart-basics.md)** - Add items, apply conditions, calculate totals
-- **[Payment Integration](02-getting-started/02-payment-integration.md)** - Accept payments with CHIP
-- **[Voucher System](02-getting-started/03-voucher-system.md)** - Create and validate discount codes
-- **[Shipping Integration](02-getting-started/04-shipping-integration.md)** - J&T Express shipments
-- **[Stock Management](02-getting-started/05-stock-management.md)** - Track inventory and reservations
-
-### 📦 Package Reference
-
-Deep dive into each package:
-
-| Package | Description | Documentation |
-|---------|-------------|---------------|
-| **aiarmada/cart** | Shopping cart system | [Cart Docs](03-packages/01-cart.md) |
-| **aiarmada/chip** | CHIP payment gateway | [CHIP Docs](03-packages/02-chip.md) |
-| **aiarmada/vouchers** | Voucher/coupon system | [Vouchers Docs](03-packages/03-vouchers.md) |
-| **aiarmada/jnt** | J&T Express shipping | [JNT Docs](03-packages/04-jnt.md) |
-| **aiarmada/inventory** | Multi-location inventory | [Inventory README](../packages/inventory/README.md) |
-| **aiarmada/promotions** | Promotion rules and campaigns | [Promotions Docs](../packages/promotions/docs/01-overview.md) |
-| **aiarmada/docs** | Document generation, templates, PDFs, and approvals | [Docs Docs](../packages/docs/docs/00-overview.md) |
-| **aiarmada/filament-cart** | Cart admin panel | [Filament Cart Docs](03-packages/07-filament-cart.md) |
-| **aiarmada/filament-chip** | Payment admin panel | [Filament CHIP Docs](03-packages/08-filament-chip.md) |
-| **aiarmada/filament-docs** | Billing documents admin panel | [Filament Docs Docs](../packages/filament-docs/docs/00-overview.md) |
-| **aiarmada/filament-promotions** | Promotions admin panel | [Filament Promotions Docs](../packages/filament-promotions/docs/01-overview.md) |
-| **aiarmada/filament-vouchers** | Voucher admin panel | [Filament Vouchers Docs](03-packages/09-filament-vouchers.md) |
-| **aiarmada/commerce-support** | Shared utilities | [Support Docs](03-packages/10-support.md) |
-
-### 🛠️ Support Utilities
-
-Shared tools across packages:
-
-- **[Support Utilities](04-support-utilities.md)** - Exceptions, HTTP client, MoneyHelper, enum concerns
-
-### 📈 Guides
-
-Advanced topics and maintenance:
-
-- **[Upgrade Guide](05-upgrade-guide.md)** - Migrate between versions
-- **[Deployment Guide](06-deployment.md)** - Production deployment checklist
-
----
-
-## Package Matrix
-
-### Core Packages
-
-| Package | Cart | Payments | Vouchers | Shipping | Inventory |
-|---------|:----:|:--------:|:--------:|:--------:|:---------:|
-| **aiarmada/cart** | ✅ | | | | |
-| **aiarmada/chip** | | ✅ | | | |
-| **aiarmada/vouchers** | | | ✅ | | |
-| **aiarmada/jnt** | | | | ✅ | |
-| **aiarmada/inventory** | | | | | ✅ |
-
-### Filament Plugins
-
-| Package | Purpose | Dependencies |
-|---------|---------|--------------|
-| **aiarmada/filament-cart** | Cart admin panel | cart, filament ^5.0 |
-| **aiarmada/filament-chip** | Payment admin panel | chip, filament ^5.0 |
-| **aiarmada/filament-docs** | Billing documents admin panel | docs, filament ^5.0 |
-| **aiarmada/filament-promotions** | Promotions admin panel | promotions, filament ^5.0 |
-| **aiarmada/filament-vouchers** | Voucher admin panel | vouchers, filament ^5.0 |
-
-### Infrastructure
-
-| Package | Purpose |
-|---------|---------|
-| **aiarmada/commerce-support** | Shared utilities (exceptions, HTTP client, helpers) |
-| **aiarmada/docs** | Document generation, templates, PDFs, and approvals |
-| **aiarmada/commerce** | Meta-package (installs all packages) |
-
----
-
-## Key Features by Package
-
-### 🛒 Cart (`aiarmada/cart`)
-
-- Multiple storage drivers (session, cache, database)
-- Dynamic conditions (discounts, taxes, shipping)
-- Cart instances (cart, wishlist, saved-for-later)
-- Money handling with Akaunting Money
-- Optimistic locking for database storage
-
-### 💳 CHIP (`aiarmada/chip`)
-
-- CHIP Collect & Send integration
-- Webhook signature verification
-- Recurring payment tokens
-- Client management
-- Refunds and captures
-
-### 🎟️ Vouchers (`aiarmada/vouchers`)
-
-- Fixed, percentage, free shipping types
-- Usage limits (per user, total)
-- Date range restrictions
-- Minimum purchase requirements
-- Multi-staff support with store assignments
-
-### 📦 J&T Express (`aiarmada/jnt`)
-
-- Shipment creation and tracking
-- Rate calculation
-- Label generation
-- Webhook support
-- Multi-origin support
-
-### 🏬 Inventory (`aiarmada/inventory`)
-
-- Multi-location inventory tracking
-- Cart allocations/reservations with TTL
-- Low/out-of-inventory alerts
-- Movement history and cost layers
-- Batch/serial/backorder support
-
----
-
-## Common Workflows
-
-### E-Commerce Checkout
-
-```php
-// 1. Add items to cart
-Cart::add('prod-001', 'Product', 2999, 2);
-
-// 2. Apply voucher
-$voucher = Voucher::findByCode('SAVE10');
-Cart::applyVoucher($voucher);
-
-// 3. Calculate shipping
-$shipping = JNT::calculateRate($address);
-Cart::applyCondition([
-    'name' => 'Shipping',
-    'type' => 'shipping',
-    'target' => 'cart@grand_total/aggregate',
-    'value' => $shipping,
-    'is_percentage' => false,
-]);
-
-// 4. Create payment
-$purchase = Chip::createPurchase([
-    'amount' => Cart::total()->getAmount(),
-    'reference' => Cart::identifier(),
-]);
-
-// 5. Redirect to checkout
-return redirect($purchase->checkout_url);
-```
-
-### Admin Panel Access
-
-After installation:
-
-1. Create admin user: `php artisan make:filament-user`
-2. Navigate to: `https://your-app.test/admin`
-3. Manage:
-   - **Commerce > Carts**: View shopping carts
-   - **Payments > Purchases**: Manage CHIP purchases
-   - **Vouchers > Vouchers**: Create discount codes
-   - **Shipping > Shipments**: Track J&T shipments
-   - **Inventory > Stock**: Monitor stock levels
-
----
-
-## Testing
-
-All packages include comprehensive Pest v4 tests:
-
-```bash
-# Run all tests
-composer test
-
-# Test specific package
-vendor/bin/pest packages/cart/tests
-
-# Browser tests (Filament plugins)
-vendor/bin/pest packages/filament-cart/tests
-```
-
----
-
-## Version Information
-
-**Current Version**: 0.1.0 (Initial Release)
-
-**Requirements**:
-- PHP: ^8.4
-- Laravel: ^12.0
-- Filament: ^5.0 (for admin panels)
-- PostgreSQL: 14+ (recommended)
-
-**Release Date**: November 2025
-
----
-
-## Getting Help
-
-### Documentation
-
-- **GitHub**: [github.com/aiarmada/commerce](https://github.com/aiarmada/commerce)
-- **Issues**: [github.com/aiarmada/commerce/issues](https://github.com/aiarmada/commerce/issues)
-- **Discussions**: [github.com/aiarmada/commerce/discussions](https://github.com/aiarmada/commerce/discussions)
-
-### Support Channels
-
-- **Bug Reports**: Use GitHub Issues with bug report template
-- **Feature Requests**: Use GitHub Issues with feature request template
-- **Documentation Issues**: Use GitHub Issues with documentation template
-- **Questions**: Use GitHub Discussions
-- **Commercial Support**: info@aiarmada.com
-- **Security Issues**: security@aiarmada.com (private disclosure)
-
-### Contributing
-
-We welcome contributions! See:
-- **CONTRIBUTING.md**: Contribution guidelines
-- **CODE_OF_CONDUCT.md**: Community standards
-- **SECURITY.md**: Security policy
-
----
-
-## Quick Links
-
-### Popular Pages
-
-- [Installation Guide](01-introduction/02-installation.md)
-- [Cart Basics Tutorial](02-getting-started/01-cart-basics.md)
-- [Payment Integration Tutorial](02-getting-started/02-payment-integration.md)
-- [Support Utilities Reference](04-support-utilities.md)
-- [Upgrade Guide](05-upgrade-guide.md)
-
-### Package Documentation
-
-- [Cart Package](03-packages/01-cart.md)
-- [CHIP Package](03-packages/02-chip.md)
-- [Vouchers Package](03-packages/03-vouchers.md)
-
-### External Resources
-
-- [Laravel Documentation](https://laravel.com/docs/12.x)
-- [Filament Documentation](https://filamentphp.com/docs/5.x)
-- [CHIP API Documentation](https://developer.chip-in.asia/)
-- [J&T Express API](https://developer.jet.co.id/)
-
----
-
-## License
-
-AIArmada Commerce is open-sourced software licensed under the [MIT license](LICENSE.md).
-
-## Credits
-
-Built with ❤️ by [AIArmada](https://aiarmada.com)
-
-Powered by:
-- [Laravel](https://laravel.com)
-- [Filament](https://filamentphp.com)
-- [Livewire](https://livewire.laravel.com)
-- [Pest](https://pestphp.com)
-
----
-
-**Ready to build?** Start with the [Installation Guide](01-introduction/02-installation.md) →
+This index intentionally points only to **current** documentation.
+
+## Source-of-truth rules
+
+1. `packages/*/docs/*.md` are the canonical source for package behavior, configuration, extension points, and admin UI.
+2. `docs/*.md` and active subfolders under `docs/` are ecosystem guides, onboarding, operations, and cross-package context.
+3. `docs/archive/**/*` is historical material only. Use it only when you explicitly need implementation history, past audits, or archived test artifacts.
+4. `memories/**/*` is assistant working memory, not product documentation.
+5. `stubs/**/*` contains static-analysis support files, not runtime implementation.
+
+## Start here
+
+- [Overview](01-introduction/01-overview.md)
+- [Installation](01-introduction/02-installation.md)
+- [Cart Basics](02-getting-started/01-cart-basics.md)
+- [Payment Integration](02-getting-started/02-payment-integration.md)
+
+## Current root-level guides
+
+- [Support Utilities](04-support-utilities.md)
+- [Deployment Guide](06-deployment.md)
+- [Affiliates Integration Map](affiliates.md)
+- [Tenancy Strategy Evaluation](tenancy-evaluation-report.md)
+- [Package Docs Audit & AI Rollout](development/package-docs-audit-rollout.md)
+- [Signals Manual Migrations](development/signals-manual-migrations.md)
+
+## Canonical package documentation
+
+### Core and domain packages
+
+- [Affiliate Network](../packages/affiliate-network/docs/01-overview.md)
+- [Affiliates](../packages/affiliates/docs/01-overview.md)
+- [Cart](../packages/cart/docs/01-overview.md)
+- [Cashier](../packages/cashier/docs/01-getting-started.md)
+- [Cashier CHIP](../packages/cashier-chip/docs/01-overview.md)
+- [Checkout](../packages/checkout/docs/01-overview.md)
+- [CHIP](../packages/chip/docs/01-overview.md)
+- [Commerce Support](../packages/commerce-support/docs/01-overview.md)
+- [Customers](../packages/customers/docs/01-overview.md)
+- [Docs](../packages/docs/docs/00-overview.md)
+- [Events](../packages/events/docs/01-overview.md)
+- [Growth](../packages/growth/docs/01-overview.md)
+- [Inventory](../packages/inventory/docs/01-overview.md)
+- [J&T](../packages/jnt/docs/01-overview.md)
+- [Orders](../packages/orders/docs/01-overview.md)
+- [Pricing](../packages/pricing/docs/01-overview.md)
+- [Products](../packages/products/docs/01-overview.md)
+- [Promotions](../packages/promotions/docs/01-overview.md)
+- [Shipping](../packages/shipping/docs/01-overview.md)
+- [Signals](../packages/signals/docs/01-overview.md)
+- [Tax](../packages/tax/docs/01-overview.md)
+- [Vouchers](../packages/vouchers/docs/01-installation.md)
+
+### Filament and admin packages
+
+- [Filament Affiliate Network](../packages/filament-affiliate-network/docs/01-overview.md)
+- [Filament Affiliates](../packages/filament-affiliates/docs/01-overview.md)
+- [Filament Authz](../packages/filament-authz/docs/01-overview.md)
+- [Filament Cart](../packages/filament-cart/docs/01-overview.md)
+- [Filament Cashier](../packages/filament-cashier/docs/01-overview.md)
+- [Filament Cashier CHIP](../packages/filament-cashier-chip/docs/01-overview.md)
+- [Filament CHIP](../packages/filament-chip/docs/01-overview.md)
+- [Filament Customers](../packages/filament-customers/docs/01-overview.md)
+- [Filament Docs](../packages/filament-docs/docs/00-overview.md)
+- [Filament Events](../packages/filament-events/docs/01-overview.md)
+- [Filament Growth](../packages/filament-growth/docs/01-overview.md)
+- [Filament Inventory](../packages/filament-inventory/docs/01-overview.md)
+- [Filament J&T](../packages/filament-jnt/docs/01-overview.md)
+- [Filament Orders](../packages/filament-orders/docs/01-overview.md)
+- [Filament Pricing](../packages/filament-pricing/docs/01-overview.md)
+- [Filament Products](../packages/filament-products/docs/01-overview.md)
+- [Filament Promotions](../packages/filament-promotions/docs/01-overview.md)
+- [Filament Shipping](../packages/filament-shipping/docs/01-overview.md)
+- [Filament Signals](../packages/filament-signals/docs/01-overview.md)
+- [Filament Tax](../packages/filament-tax/docs/01-overview.md)
+- [Filament Vouchers](../packages/filament-vouchers/docs/01-overview.md)
+
+## Historical material
+
+Historical planning documents, completed implementation trackers, archived audits, and raw test captures now live under [archive/](archive/README.md).
+
+Do not treat archived files as the current implementation reference unless you are explicitly researching history.
