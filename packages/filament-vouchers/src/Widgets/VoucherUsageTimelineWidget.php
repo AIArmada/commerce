@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\FilamentVouchers\Support\AffiliateReportingContextResolver;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\Voucher;
@@ -59,19 +60,17 @@ final class VoucherUsageTimelineWidget extends Widget
             }
         }
 
-        // Get all usage records for this voucher
+        $affiliateReporting = app(AffiliateReportingContextResolver::class);
+
         $usages = VoucherUsage::query()
             ->where('voucher_id', $this->record->id)
-            ->with('redeemedBy') // Load the polymorphic relation (User, Order, etc.)
+            ->with(['voucher', 'redeemedBy'])
             ->orderBy('used_at', 'desc')
             ->get();
 
-        // Transform usage records into timeline events
-        return $usages->map(function (VoucherUsage $usage) {
-            $event = $this->buildTimelineEvent($usage);
-
-            return $event;
-        });
+        return $usages->map(
+            fn (VoucherUsage $usage): array => $this->buildTimelineEvent($usage, $affiliateReporting)
+        );
     }
 
     /**
@@ -133,29 +132,44 @@ final class VoucherUsageTimelineWidget extends Widget
      *     details: array<string, mixed>
      * }
      */
-    protected function buildTimelineEvent(VoucherUsage $usage): array
+    protected function buildTimelineEvent(VoucherUsage $usage, AffiliateReportingContextResolver $affiliateReporting): array
     {
         $savings = MoneyHelper::formatMoney($usage->discount_amount, (string) $usage->currency);
 
-        // Determine event type based on channel and redemption
         $isManual = $usage->channel === VoucherUsage::CHANNEL_MANUAL;
         $hasOrder = $usage->isOrderRedemption();
 
-        // Build title
         $title = $hasOrder
             ? 'Redeemed in Order'
             : ($isManual ? 'Manual Redemption' : 'Redeemed');
 
-        // Build description - include order number if available
         $description = "Discount applied: {$savings}";
+        $orderNumber = $affiliateReporting->orderNumber($usage);
+        $orderId = $affiliateReporting->orderId($usage);
 
-        if ($hasOrder && $usage->redeemedBy && isset($usage->redeemedBy->order_number)) {
-            $description .= " • Order: {$usage->redeemedBy->order_number}";
+        if ($hasOrder && $orderNumber !== null) {
+            $description .= " • Order: {$orderNumber}";
         } elseif ($usage->redeemedBy) {
             $description .= " • Customer: {$this->getCustomerName($usage)}";
         }
 
-        // Build details array
+        $affiliateContext = $affiliateReporting->resolve($usage);
+        $affiliateLabel = $affiliateReporting->affiliateLabel($affiliateContext);
+        $sourceMediumLabel = $affiliateReporting->sourceMediumLabel($affiliateContext);
+        $campaign = $affiliateContext['campaign'];
+
+        if ($affiliateLabel !== null) {
+            $description .= " • Affiliate: {$affiliateLabel}";
+        }
+
+        if ($sourceMediumLabel !== null) {
+            $description .= " • Source: {$sourceMediumLabel}";
+        }
+
+        if ($campaign !== null) {
+            $description .= " • Campaign: {$campaign}";
+        }
+
         $details = [
             'savings' => $savings,
             'currency' => $usage->currency,
@@ -163,22 +177,27 @@ final class VoucherUsageTimelineWidget extends Widget
             'user_identifier' => $usage->user_identifier,
             'channel' => $usage->channel,
             'notes' => $usage->notes,
-            'order_id' => $hasOrder ? $usage->redeemed_by_id : null,
-            'order_number' => $hasOrder && $usage->redeemedBy ? ($usage->redeemedBy->order_number ?? null) : null,
+            'order_id' => $orderId,
+            'order_number' => $orderNumber,
             'cart_snapshot' => $usage->cart_snapshot,
             'metadata' => $usage->metadata,
+            'affiliate_code' => $affiliateContext['affiliate_code'],
+            'affiliate_name' => $affiliateContext['affiliate_name'],
+            'affiliate_source' => $affiliateContext['source'],
+            'affiliate_medium' => $affiliateContext['medium'],
+            'affiliate_campaign' => $campaign,
+            'affiliate_label' => $affiliateLabel,
+            'affiliate_source_medium' => $sourceMediumLabel,
         ];
 
-        // Add cart details if available
         if ($usage->cart_snapshot) {
             $details['cart_items_count'] = $usage->cart_snapshot['items_count'] ?? null;
             $details['cart_total'] = $usage->cart_snapshot['total'] ?? null;
         }
 
-        // Add metadata details if available
         if ($usage->metadata) {
-            $details['order_number'] = $details['order_number'] ?? ($usage->metadata['order_number'] ?? null);
             $details['subtotal'] = $usage->metadata['subtotal'] ?? null;
+            $details['discount_total'] = $usage->metadata['discount_total'] ?? null;
             $details['grand_total'] = $usage->metadata['grand_total'] ?? null;
         }
 

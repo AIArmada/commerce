@@ -48,7 +48,7 @@ final class PromotionsAdapter
         $result = $this->calculateDiscounts($promotions, $subtotal);
 
         return [
-            'applied' => $this->formatAppliedPromotions($result['applied'], $subtotal),
+            'applied' => $this->formatAppliedPromotions($result['applied']),
             'discount' => $result['discount'],
         ];
     }
@@ -77,7 +77,7 @@ final class PromotionsAdapter
 
     /**
      * @param  Collection<int, Promotion>  $promotions
-     * @return array{discount: int, applied: Collection<int, Promotion>}
+     * @return array{discount: int, applied: Collection<int, array{promotion: Promotion, discount: int}>}
      */
     private function calculateDiscounts(Collection $promotions, int $subtotal): array
     {
@@ -104,7 +104,10 @@ final class PromotionsAdapter
                 if ($discount > 0) {
                     $totalDiscount += $discount;
                     $remainingAmount -= $discount;
-                    $appliedPromotions->push($promotion);
+                    $appliedPromotions->push([
+                        'promotion' => $promotion,
+                        'discount' => $discount,
+                    ]);
 
                     if (! $promotion->is_stackable) {
                         $hasAppliedNonStackable = true;
@@ -120,20 +123,22 @@ final class PromotionsAdapter
     }
 
     /**
-     * @param  Collection<int, Promotion>  $promotions
+     * @param  Collection<int, array{promotion: Promotion, discount: int}>  $promotions
      * @return array<int, array<string, mixed>>
      */
-    private function formatAppliedPromotions(Collection $promotions, int $subtotal): array
+    private function formatAppliedPromotions(Collection $promotions): array
     {
         $applied = [];
 
-        foreach ($promotions as $promotion) {
+        foreach ($promotions as $appliedPromotion) {
+            $promotion = $appliedPromotion['promotion'];
+
             $applied[] = [
                 'promotion_id' => $promotion->id,
                 'name' => $promotion->name,
                 'code' => $promotion->code ?? null,
                 'type' => $promotion->type->value,
-                'discount' => $promotion->calculateDiscount($subtotal),
+                'discount' => $appliedPromotion['discount'],
             ];
         }
 

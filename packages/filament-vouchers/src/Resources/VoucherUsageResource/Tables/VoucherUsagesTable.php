@@ -4,22 +4,63 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Tables;
 
+use AIArmada\FilamentVouchers\Exports\VoucherUsageExporter;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
+use AIArmada\FilamentVouchers\Support\AffiliateReportingContextResolver;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use Filament\Actions\ExportAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class VoucherUsagesTable
 {
     public static function configure(Table $table): Table
     {
+        $affiliateReporting = app(AffiliateReportingContextResolver::class);
+        $filters = [];
+
+        if ($affiliateReporting->supportsAffiliateReporting()) {
+            $filters[] = SelectFilter::make('affiliate_code')
+                ->label('Affiliate')
+                ->options($affiliateReporting->affiliateOptions())
+                ->searchable()
+                ->query(fn (Builder $query, array $data): Builder => $affiliateReporting->applyUsageFilters($query, ['affiliate_code' => $data['value'] ?? null]));
+
+            $filters[] = SelectFilter::make('affiliate_source')
+                ->label('Source')
+                ->options($affiliateReporting->sourceOptions())
+                ->searchable()
+                ->query(fn (Builder $query, array $data): Builder => $affiliateReporting->applyUsageFilters($query, ['source' => $data['value'] ?? null]));
+
+            $filters[] = SelectFilter::make('affiliate_medium')
+                ->label('Medium')
+                ->options($affiliateReporting->mediumOptions())
+                ->searchable()
+                ->query(fn (Builder $query, array $data): Builder => $affiliateReporting->applyUsageFilters($query, ['medium' => $data['value'] ?? null]));
+
+            $filters[] = SelectFilter::make('affiliate_campaign')
+                ->label('Campaign')
+                ->options($affiliateReporting->campaignOptions())
+                ->searchable()
+                ->query(fn (Builder $query, array $data): Builder => $affiliateReporting->applyUsageFilters($query, ['campaign' => $data['value'] ?? null]));
+        }
+
+        $filters[] = SelectFilter::make('channel')
+            ->label('Channel')
+            ->options([
+                VoucherUsage::CHANNEL_AUTOMATIC => 'Automatic',
+                VoucherUsage::CHANNEL_MANUAL => 'Manual',
+                VoucherUsage::CHANNEL_API => 'API',
+            ]);
+
         return $table
             ->defaultSort('used_at', 'desc')
-            ->modifyQueryUsing(fn ($query) => $query->with(['voucher', 'redeemedBy']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['voucher', 'redeemedBy']))
             ->columns([
                 TextColumn::make('user_identifier')
                     ->label('User')
@@ -30,8 +71,26 @@ final class VoucherUsagesTable
                 TextColumn::make('voucher.code')
                     ->label('Voucher')
                     ->searchable()
-                    ->url(fn (VoucherUsage $record): string => $record->voucher ? VoucherResource::getUrl('view', ['record' => $record->voucher]) : null)
+                    ->url(fn (VoucherUsage $record): ?string => $record->voucher ? VoucherResource::getUrl('view', ['record' => $record->voucher]) : null)
                     ->placeholder('N/A'),
+
+                TextColumn::make('affiliate_reporting')
+                    ->label('Affiliate')
+                    ->state(static fn (VoucherUsage $record): ?string => $affiliateReporting->affiliateLabel(
+                        $affiliateReporting->resolve($record)
+                    ))
+                    ->description(static fn (VoucherUsage $record): ?string => $affiliateReporting->sourceMediumLabel(
+                        $affiliateReporting->resolve($record)
+                    ))
+                    ->wrap()
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                TextColumn::make('affiliate_campaign')
+                    ->label('Campaign')
+                    ->state(static fn (VoucherUsage $record): ?string => $affiliateReporting->resolve($record)['campaign'])
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('channel')
                     ->label('Channel')
@@ -54,14 +113,14 @@ final class VoucherUsagesTable
                     })
                     ->alignEnd(),
 
-                TextColumn::make('redeemedBy.order_number')
+                TextColumn::make('resolved_order_number')
                     ->label('Order Number')
                     ->toggleable()
-                    ->formatStateUsing(
-                        fn ($state, VoucherUsage $record) => $record->isOrderRedemption() ? $state : null
-                    )
-                    ->url(function (VoucherUsage $record): ?string {
-                        if (! $record->isOrderRedemption() || ! $record->redeemedBy) {
+                    ->state(fn (VoucherUsage $record): ?string => $affiliateReporting->orderNumber($record))
+                    ->url(function (VoucherUsage $record) use ($affiliateReporting): ?string {
+                        $orderId = $affiliateReporting->orderId($record);
+
+                        if ($orderId === null) {
                             return null;
                         }
 
@@ -72,7 +131,7 @@ final class VoucherUsagesTable
                             return null;
                         }
 
-                        return $orderResourceClass::getUrl('view', ['record' => $record->redeemedBy]);
+                        return $orderResourceClass::getUrl('view', ['record' => $orderId]);
                     })
                     ->placeholder('N/A'),
 
@@ -88,16 +147,12 @@ final class VoucherUsagesTable
                     ->state(static fn (VoucherUsage $record): bool => ! empty($record->metadata) || ! empty($record->notes))
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                SelectFilter::make('channel')
-                    ->label('Channel')
-                    ->options([
-                        VoucherUsage::CHANNEL_AUTOMATIC => 'Automatic',
-                        VoucherUsage::CHANNEL_MANUAL => 'Manual',
-                        VoucherUsage::CHANNEL_API => 'API',
-                    ]),
-
-                // Additional filters can be added once voucher usage gains soft deletes or status metadata.
+            ->filters($filters)
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(VoucherUsageExporter::class)
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->label('Export'),
             ])
             ->recordUrl(null);
     }
