@@ -36,8 +36,10 @@ it('guards jsonb GIN indexes behind PostgreSQL driver checks', function (): void
 
         $content = file_get_contents($path);
 
-        expect($content)
-            ->toBeString()
-            ->toContain("Schema::getConnection()->getDriverName() === 'pgsql'");
+        $hasPostgreSqlDriverGuard = str_contains((string) $content, "ConnectionDriver::name(Schema::getConnection()) === 'pgsql'")
+            || str_contains((string) $content, "Schema::getConnection()->getDriverName() === 'pgsql'");
+
+        expect($content)->toBeString();
+        expect($hasPostgreSqlDriverGuard)->toBeTrue();
     }
 });
