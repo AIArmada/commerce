@@ -423,7 +423,7 @@ final class ProductResource extends Resource
                                         'name',
                                         modifyQueryUsing: function (Builder $query): Builder {
                                             /** @var Builder<Category> $query */
-                                            return $query->forOwner();
+                                            return $query->select(['id', 'name'])->forOwner();
                                         }
                                     )
                                     ->multiple()
