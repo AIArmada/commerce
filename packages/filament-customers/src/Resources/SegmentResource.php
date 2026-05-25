@@ -322,7 +322,7 @@ class SegmentResource extends Resource
             ->pluck('id')
             ->all();
 
-            abort_unless(array_diff($ids, $allowedIds) === [], 403);
+        abort_unless(array_diff($ids, $allowedIds) === [], 403);
 
         $record->customers()->sync($allowedIds);
     }
