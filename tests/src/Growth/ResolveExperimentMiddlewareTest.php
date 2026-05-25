@@ -7,6 +7,7 @@ require_once __DIR__ . '/PresentationTestSupport.php';
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
 use AIArmada\Growth\Actions\ResolveReadableExperimentBySlug;
+use AIArmada\Growth\Enums\ExperimentStatus;
 use AIArmada\Growth\Http\Middleware\ResolveExperiment;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
@@ -16,6 +17,26 @@ use AIArmada\Signals\Support\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+
+it('skips experiment resolution when the middleware is globally disabled', function (): void {
+    config()->set('growth.features.experiment_middleware.enabled', false);
+
+    $request = Request::create('/sales-page', 'GET');
+
+    $response = app(ResolveExperiment::class)->handle(
+        $request,
+        static function (Request $request): Response {
+            expect($request->attributes->has(ExperimentContextManager::EXPERIMENT_ATTRIBUTE))->toBeFalse()
+                ->and(experiment())->toBeNull();
+
+            return response('ok');
+        },
+        'missing-slug',
+    );
+
+    expect($response->getStatusCode())->toBe(200)
+        ->and($response->getContent())->toBe('ok');
+});
 
 it('stores experiment assignment context on the request from middleware', function (): void {
     config()->set('growth.features.experiment_middleware.enabled', true);
@@ -59,6 +80,32 @@ it('stores experiment assignment context on the request from middleware', functi
         ->and($response->getContent())->toContain($experiment->slug)
         ->and($cookieNames)->toContain('sig_vid')
         ->and($cookieNames)->toContain('sig_sid');
+});
+
+it('soft-bypasses paused experiments without storing assignment context', function (): void {
+    config()->set('growth.features.experiment_middleware.enabled', true);
+
+    $owner = growthPresentationCreateOwner();
+    $experiment = growthPresentationCreateExperiment($owner, ExperimentStatus::Paused);
+    $request = Request::create('/sales-page', 'GET');
+
+    growthPresentationBindRequest($request, $owner);
+
+    $response = app(ResolveExperiment::class)->handle(
+        $request,
+        static function (Request $request): Response {
+            expect($request->attributes->has(ExperimentContextManager::EXPERIMENT_ATTRIBUTE))->toBeFalse()
+                ->and($request->attributes->has(ExperimentContextManager::VARIANT_ATTRIBUTE))->toBeFalse()
+                ->and($request->attributes->has(ExperimentContextManager::ASSIGNMENT_ATTRIBUTE))->toBeFalse()
+                ->and(experiment())->toBeNull();
+
+            return response('ok');
+        },
+        $experiment->slug,
+    );
+
+    expect($response->getStatusCode())->toBe(200)
+        ->and($response->getContent())->toBe('ok');
 });
 
 it('reuses an existing assignment when request subjects resolve through Signals browser context and auth', function (): void {
