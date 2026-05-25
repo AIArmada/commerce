@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction;
@@ -24,6 +27,7 @@ use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Created;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Event;
 
 it('ensures an occurrence from structured event data', function (): void {
@@ -52,6 +56,7 @@ it('ensures an occurrence from structured event data', function (): void {
         ],
         occurrence: [
             'name' => 'AI Awakening — 5 June 2026',
+            'capacity' => 120,
             'starts_at' => '2026-06-05 08:45:00',
             'timezone' => 'Asia/Kuala_Lumpur',
             'metadata' => [
@@ -63,6 +68,7 @@ it('ensures an occurrence from structured event data', function (): void {
     OwnerContext::withOwner(null, static fn (): mixed => $occurrence->load(['event.series', 'venue']));
 
     expect($occurrence->name)->toBe('AI Awakening — 5 June 2026')
+        ->and($occurrence->capacity)->toBe(120)
         ->and($occurrence->ends_at)->not->toBeNull()
         ->and($occurrence->event->name)->toBe('AI Awakening')
         ->and($occurrence->event->series->name)->toBe('Unfair Advantage')
@@ -175,6 +181,47 @@ it('creates one confirmed registration per purchased seat for an order item', fu
     Event::assertDispatched(RegistrationCreated::class, 2);
 });
 
+it('creates direct registrations using the occurrence owner even when the ambient owner differs', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Event Owner A',
+        'email' => 'event-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Event Owner B',
+        'email' => 'event-owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
+
+    $event = OwnerContext::withOwner($ownerA, fn (): EventModel => EventModel::create([
+        'name' => 'Scoped Direct Registration Event',
+        'slug' => 'scoped-direct-registration-event',
+        'status' => EventStatus::Active,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]));
+
+    $occurrence = OwnerContext::withOwner($ownerA, fn (): Occurrence => Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'starts_at' => now()->addWeek(),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]));
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
+
+    $registration = app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Scoped Guest',
+        'email' => 'scoped-guest@example.com',
+    ]);
+
+    expect($registration->owner_type)->toBe($ownerA->getMorphClass())
+        ->and($registration->owner_id)->toBe((string) $ownerA->getKey())
+        ->and($registration->occurrence_id)->toBe($occurrence->id);
+});
+
 it('idempotently creates registrations for an order item', function (): void {
     $event = EventModel::create([
         'name' => 'Prompting for Teams',
@@ -223,6 +270,146 @@ it('idempotently creates registrations for an order item', function (): void {
     expect($registrations)->toHaveCount(2)
         ->and($sameRegistrations->pluck('id')->all())->toBe($registrations->pluck('id')->all())
         ->and(Registration::query()->where('order_item_id', $orderItem->id)->count())->toBe(2);
+});
+
+it('blocks registrations that would exceed an occurrence capacity', function (): void {
+    $event = EventModel::create([
+        'name' => 'Capacity Event',
+        'slug' => 'capacity-event',
+        'status' => EventStatus::Active,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'capacity' => 1,
+        'starts_at' => now()->addDays(12),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    Registration::create([
+        'occurrence_id' => $occurrence->id,
+        'status' => RegistrationStatus::Confirmed,
+        'first_name' => 'Existing',
+        'last_name' => 'Guest',
+        'email' => 'existing@example.com',
+    ]);
+
+    $order = Order::create([
+        'order_number' => 'ORD-EVT-' . uniqid(),
+        'status' => Created::class,
+        'currency' => 'MYR',
+        'subtotal' => 9700,
+        'grand_total' => 9700,
+    ]);
+
+    $orderItem = OrderItem::create([
+        'order_id' => $order->id,
+        'name' => 'AI Awakening Seat',
+        'quantity' => 1,
+        'unit_price' => 9700,
+        'total' => 9700,
+    ]);
+
+    expect(fn (): Collection => app(RegistrationService::class)->createBatchForOrderItem(
+        $occurrence,
+        $orderItem,
+        [
+            [
+                'name' => 'Waiting Guest',
+                'email' => 'waiting@example.com',
+            ],
+        ],
+    ))->toThrow(InvalidArgumentException::class, 'sold out');
+
+    expect(Registration::query()->where('occurrence_id', $occurrence->id)->count())->toBe(1);
+});
+
+it('blocks direct registrations that would exceed an occurrence capacity', function (): void {
+    $event = EventModel::create([
+        'name' => 'Direct Capacity Event',
+        'slug' => 'direct-capacity-event',
+        'status' => EventStatus::Active,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'capacity' => 1,
+        'starts_at' => now()->addDays(7),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    Registration::create([
+        'occurrence_id' => $occurrence->id,
+        'status' => RegistrationStatus::Confirmed,
+        'first_name' => 'Booked',
+        'last_name' => 'Guest',
+        'email' => 'booked@example.com',
+    ]);
+
+    expect(fn (): Registration => app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Overflow Guest',
+        'email' => 'overflow@example.com',
+    ]))->toThrow(InvalidArgumentException::class, 'sold out');
+
+    expect(Registration::query()->where('occurrence_id', $occurrence->id)->count())->toBe(1);
+});
+
+it('blocks direct registrations when the occurrence is no longer accepting registrations', function (): void {
+    $event = EventModel::create([
+        'name' => 'Closed Registration Event',
+        'slug' => 'closed-registration-event',
+        'status' => EventStatus::Active,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'starts_at' => now()->addDays(2),
+        'registration_closes_at' => now()->subMinute(),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    expect(fn (): Registration => app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Late Guest',
+        'email' => 'late-guest@example.com',
+    ]))->toThrow(InvalidArgumentException::class, 'not accepting registrations');
+
+    expect(Registration::query()->where('occurrence_id', $occurrence->id)->count())->toBe(0);
+});
+
+it('requires explicit global owner context for registrations against global occurrences', function (): void {
+    [$event, $occurrence] = OwnerContext::withOwner(null, function (): array {
+        $event = EventModel::create([
+            'name' => 'Global Registration Event',
+            'slug' => 'global-registration-event',
+            'status' => EventStatus::Active,
+            'default_timezone' => 'Asia/Kuala_Lumpur',
+        ]);
+
+        $occurrence = Occurrence::create([
+            'event_id' => $event->id,
+            'status' => OccurrenceStatus::Scheduled,
+            'starts_at' => now()->addDay(),
+            'timezone' => 'Asia/Kuala_Lumpur',
+        ]);
+
+        return [$event, $occurrence];
+    });
+
+    expect($event->isGlobal())->toBeTrue()
+        ->and($occurrence->isGlobal())->toBeTrue();
+
+    expect(fn (): Registration => app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Global Guest',
+        'email' => 'global-guest@example.com',
+    ]))->toThrow(RuntimeException::class, 'Explicit global owner context is required');
+
+    expect(OwnerContext::withOwner(null, fn (): int => Registration::query()->globalOnly()->count()))->toBe(0);
 });
 
 it('fulfills event registrations for matching order items through a resolver', function (): void {
@@ -349,6 +536,35 @@ it('checks in and cancels registrations through the registration service', funct
 
     Event::assertDispatched(RegistrationCheckedIn::class);
     Event::assertDispatched(RegistrationCancelled::class);
+});
+
+it('blocks check-in when the occurrence is outside its configured check-in window', function (): void {
+    $event = EventModel::create([
+        'name' => 'Windowed Check-In Event',
+        'slug' => 'windowed-check-in-event',
+        'status' => EventStatus::Active,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'starts_at' => now()->addDay(),
+        'check_in_opens_at' => now()->addHour(),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $registration = app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Too Early Guest',
+        'email' => 'too-early@example.com',
+    ], [
+        'status' => RegistrationStatus::Confirmed,
+    ]);
+
+    expect(fn (): Registration => app(RegistrationService::class)->checkIn($registration, ['source' => 'frontdesk']))
+        ->toThrow(InvalidArgumentException::class, 'not currently open for check-in');
+
+    expect($registration->fresh()?->checked_in_at)->toBeNull();
 });
 
 it('rolls back batch registrations when one participant payload is invalid', function (): void {

@@ -45,6 +45,19 @@ enum RegistrationStatus: string
         return $this === self::Confirmed;
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function capacityBlockingValues(): array
+    {
+        return [
+            self::Pending->value,
+            self::Confirmed->value,
+            self::CheckedIn->value,
+            self::NoShow->value,
+        ];
+    }
+
     public function isTerminal(): bool
     {
         return in_array($this, [self::CheckedIn, self::Cancelled, self::Refunded, self::NoShow], true);

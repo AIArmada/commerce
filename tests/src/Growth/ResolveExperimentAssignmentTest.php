@@ -234,6 +234,48 @@ it('reuses a session assignment when the identity becomes known later', function
         ->and($identityAssignment->signal_identity_id)->toBe((string) $identity->getKey());
 });
 
+it('prefers anonymous visitor subject keys over session subject keys when both are available', function (): void {
+    $owner = growthCreateOwner();
+    $experiment = growthCreateExperiment($owner);
+    $trackedProperty = $experiment->trackedProperty;
+    $session = growthCreateSession($trackedProperty, $owner);
+    $action = app(ResolveExperimentAssignment::class);
+
+    $assignment = OwnerContext::withOwner($owner, fn (): Assignment => $action->handle(
+        $experiment,
+        session: $session,
+        anonymousId: 'visitor-preferred-subject',
+    ));
+
+    expect($assignment->subject_key)->toBe('anonymous:visitor-preferred-subject')
+        ->and($assignment->signal_session_id)->toBe((string) $session->getKey());
+});
+
+it('reuses the same assignment across browser sessions when the visitor id stays stable', function (): void {
+    $owner = growthCreateOwner();
+    $experiment = growthCreateExperiment($owner);
+    $trackedProperty = $experiment->trackedProperty;
+    $action = app(ResolveExperimentAssignment::class);
+    $firstSession = growthCreateSession($trackedProperty, $owner);
+    $secondSession = growthCreateSession($trackedProperty, $owner);
+
+    $firstAssignment = OwnerContext::withOwner($owner, fn (): Assignment => $action->handle(
+        $experiment,
+        session: $firstSession,
+        anonymousId: 'stable-visitor-id',
+    ));
+
+    $secondAssignment = OwnerContext::withOwner($owner, fn (): Assignment => $action->handle(
+        $experiment,
+        session: $secondSession,
+        anonymousId: 'stable-visitor-id',
+    ));
+
+    expect($secondAssignment->getKey())->toBe($firstAssignment->getKey())
+        ->and($secondAssignment->subject_key)->toBe('anonymous:stable-visitor-id')
+        ->and($secondAssignment->signal_session_id)->toBe((string) $firstSession->getKey());
+});
+
 it('rejects assignment resolution for non-active experiments', function (): void {
     $owner = growthCreateOwner();
     $experiment = growthCreateExperiment($owner, ExperimentStatus::Draft);

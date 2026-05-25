@@ -12,51 +12,65 @@ use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Support\ExperimentContextManager;
+use AIArmada\Signals\Support\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 it('stores experiment assignment context on the request from middleware', function (): void {
     config()->set('growth.features.experiment_middleware.enabled', true);
+    config()->set('signals.integrations.browser.enabled', true);
 
     $owner = growthPresentationCreateOwner();
     $experiment = growthPresentationCreateExperiment($owner);
     $request = Request::create('/sales-page', 'GET');
-    $request->cookies->set('visitor_id', 'visitor-' . Str::lower(Str::random(8)));
 
     growthPresentationBindRequest($request, $owner);
 
-    $response = app(ResolveExperiment::class)->handle(
+    $response = app(BootstrapSignalsBrowserContext::class)->handle(
         $request,
-        function (Request $request): Response {
-            $context = experiment();
+        function (Request $request) use ($experiment): Response {
+            return app(ResolveExperiment::class)->handle(
+                $request,
+                function (Request $request): Response {
+                    $context = experiment();
 
-            expect($request->attributes->get(ExperimentContextManager::EXPERIMENT_ATTRIBUTE))->toBeInstanceOf(Experiment::class)
-                ->and($request->attributes->get(ExperimentContextManager::VARIANT_ATTRIBUTE))->toBeInstanceOf(Variant::class)
-                ->and($request->attributes->get(ExperimentContextManager::ASSIGNMENT_ATTRIBUTE))->toBeInstanceOf(Assignment::class)
-                ->and($context)->not->toBeNull();
+                    expect($request->attributes->get(ExperimentContextManager::EXPERIMENT_ATTRIBUTE))->toBeInstanceOf(Experiment::class)
+                        ->and($request->attributes->get(ExperimentContextManager::VARIANT_ATTRIBUTE))->toBeInstanceOf(Variant::class)
+                        ->and($request->attributes->get(ExperimentContextManager::ASSIGNMENT_ATTRIBUTE))->toBeInstanceOf(Assignment::class)
+                        ->and($context)->not->toBeNull();
 
-            return response()->json([
-                'variant_code' => $context?->variantCode(),
-                'experiment_slug' => $context?->experimentSlug(),
-            ]);
+                    return response()->json([
+                        'variant_code' => $context?->variantCode(),
+                        'experiment_slug' => $context?->experimentSlug(),
+                    ]);
+                },
+                $experiment->slug,
+            );
         },
-        $experiment->slug,
+    );
+
+    $cookieNames = array_map(
+        static fn ($cookie): string => $cookie->getName(),
+        $response->headers->getCookies(),
     );
 
     expect($response->getStatusCode())->toBe(200)
-        ->and($response->getContent())->toContain($experiment->slug);
+        ->and($response->getContent())->toContain($experiment->slug)
+        ->and($cookieNames)->toContain('sig_vid')
+        ->and($cookieNames)->toContain('sig_sid');
 });
 
-it('reuses an existing assignment when identity and session resolve from the request', function (): void {
+it('reuses an existing assignment when request subjects resolve through Signals browser context and auth', function (): void {
     config()->set('growth.features.experiment_middleware.enabled', true);
+    config()->set('signals.integrations.browser.enabled', true);
 
     $owner = growthPresentationCreateOwner();
     $experiment = growthPresentationCreateExperiment($owner);
     $request = Request::create('/sales-page', 'GET');
     $request->setUserResolver(fn () => $owner);
     $sessionIdentifier = growthPresentationAttachStartedSession($request);
+    $request->cookies->set('sig_sid', $sessionIdentifier);
 
     growthPresentationBindRequest($request, $owner);
 
@@ -71,15 +85,18 @@ it('reuses an existing assignment when identity and session resolve from the req
     expect($identity)->not->toBeNull()
         ->and($session)->not->toBeNull();
 
-    $response = app(ResolveExperiment::class)->handle(
+    $response = app(BootstrapSignalsBrowserContext::class)->handle(
         $request,
-        static function (): Response {
-            return response()->json([
-                'assignment_id' => experiment()?->assignmentId(),
-                'variant_code' => experiment()?->variantCode(),
-            ]);
-        },
-        $experiment->slug,
+        fn (Request $request): Response => app(ResolveExperiment::class)->handle(
+            $request,
+            static function (): Response {
+                return response()->json([
+                    'assignment_id' => experiment()?->assignmentId(),
+                    'variant_code' => experiment()?->variantCode(),
+                ]);
+            },
+            $experiment->slug,
+        ),
     );
 
     expect($response->getStatusCode())->toBe(200)
@@ -93,7 +110,6 @@ it('rejects experiment middleware resolution outside the current owner scope', f
     $otherOwner = growthPresentationCreateOwner();
     $experiment = growthPresentationCreateExperiment($owner);
     $request = Request::create('/sales-page', 'GET');
-    $request->cookies->set('visitor_id', 'outsider-' . Str::lower(Str::random(8)));
 
     growthPresentationBindRequest($request, $otherOwner);
 

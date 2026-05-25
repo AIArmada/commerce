@@ -22,6 +22,7 @@ return new class extends Migration
             $table->uuid('variant_id')->nullable()->index();
             $table->string('name')->nullable();
             $table->string('status', 32)->default('draft')->index();
+            $table->unsignedInteger('capacity')->nullable();
             $table->timestamp('starts_at')->index();
             $table->timestamp('ends_at')->nullable();
             $table->string('timezone', 64);
