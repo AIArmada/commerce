@@ -112,10 +112,6 @@ final class DocService implements DocServiceInterface
             $status = $status::class;
         }
 
-        if (! is_string($status)) {
-            $status = Draft::class;
-        }
-
         $statusClass = DocStatus::resolveStateClassFor($status);
 
         // Only set due_date for payable statuses (not for PAID, CANCELLED, REFUNDED)

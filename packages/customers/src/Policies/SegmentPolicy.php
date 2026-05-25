@@ -40,11 +40,11 @@ final class SegmentPolicy
             return $segment->owner_type === null && $segment->owner_id === null;
         }
 
-            if ($includeGlobal && $segment->isGlobal()) {
+        if ($includeGlobal && $segment->isGlobal()) {
             return true;
         }
 
-            return $segment->belongsToOwner($owner);
+        return $segment->belongsToOwner($owner);
     }
 
     public function viewAny(mixed $user): bool

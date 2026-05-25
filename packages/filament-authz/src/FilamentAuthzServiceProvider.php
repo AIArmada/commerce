@@ -249,17 +249,9 @@ class FilamentAuthzServiceProvider extends ServiceProvider
                 $app['request'] ?? null
             );
 
-            if (method_exists($guard, 'setCookieJar')) {
-                $guard->setCookieJar($app['cookie']);
-            }
-
-            if (method_exists($guard, 'setDispatcher')) {
-                $guard->setDispatcher($app['events']);
-            }
-
-            if (method_exists($guard, 'setRequest')) {
-                $guard->setRequest($app->refresh('request', $guard, 'setRequest'));
-            }
+            $guard->setCookieJar($app['cookie']);
+            $guard->setDispatcher($app['events']);
+            $guard->setRequest($app->refresh('request', $guard, 'setRequest'));
 
             if (isset($config['remember'])) {
                 $guard->setRememberDuration($config['remember']);

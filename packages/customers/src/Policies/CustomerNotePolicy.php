@@ -40,11 +40,11 @@ final class CustomerNotePolicy
             return $note->owner_type === null && $note->owner_id === null;
         }
 
-            if ($includeGlobal && $note->isGlobal()) {
+        if ($includeGlobal && $note->isGlobal()) {
             return true;
         }
 
-            return $note->belongsToOwner($owner);
+        return $note->belongsToOwner($owner);
     }
 
     public function viewAny(mixed $user): bool
