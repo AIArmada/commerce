@@ -44,6 +44,7 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use App\Checkout\DemoPaymentProcessor;
+use App\Checkout\DemoRequestExperimentSubjectResolver;
 use App\Listeners\HandleChipPaymentSuccess;
 use App\Models\User;
 use Filament\Support\Facades\FilamentTimezone;
@@ -70,6 +71,12 @@ final class AppServiceProvider extends ServiceProvider
         config()->set('checkout.redirects.cancel', '/checkout?checkout_result=cancelled&checkout_session_id={session_id}');
         config()->set('customers.features.owner.enabled', true);
         config()->set('growth.features.owner.enabled', true);
+        config()->set('growth.features.experiment_middleware.enabled', true);
+        config()->set('growth.http.experiment_middleware.subject_resolver', DemoRequestExperimentSubjectResolver::class);
+        config()->set('growth.http.experiment_middleware.anonymous_id_source', 'cookie');
+        config()->set('growth.http.experiment_middleware.anonymous_id_key', 'mi_signals_anonymous_id');
+        config()->set('growth.http.experiment_middleware.session_identifier_source', 'cookie');
+        config()->set('growth.http.experiment_middleware.session_identifier_key', 'mi_signals_session_id');
         config()->set('inventory.owner.enabled', true);
         config()->set('orders.owner.enabled', true);
         config()->set('products.features.owner.enabled', true);
@@ -185,7 +192,6 @@ final class AppServiceProvider extends ServiceProvider
         Event::listen(PurchasePaid::class, HandleChipPaymentSuccess::class);
 
         FilamentTimezone::set('Asia/Kuala_Lumpur');
-
     }
 
     private function defaultCheckoutGateway(): string
