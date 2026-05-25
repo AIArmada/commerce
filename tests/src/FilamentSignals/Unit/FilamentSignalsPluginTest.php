@@ -18,6 +18,7 @@ use AIArmada\FilamentSignals\Resources\SavedSignalReportResource;
 use AIArmada\FilamentSignals\Resources\SignalAlertLogResource;
 use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource;
 use AIArmada\FilamentSignals\Resources\SignalGoalResource;
+use AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Resources\SignalSegmentResource;
 use AIArmada\FilamentSignals\Resources\TrackedPropertyResource;
 use Filament\Panel;
@@ -38,7 +39,7 @@ it('registers the dashboard, report pages, and tracked property resource', funct
         ->andReturnSelf();
     $panel->shouldReceive('resources')
         ->once()
-        ->with([TrackedPropertyResource::class, SignalGoalResource::class, SignalSegmentResource::class, SavedSignalReportResource::class, SignalAlertRuleResource::class, SignalAlertLogResource::class])
+        ->with([TrackedPropertyResource::class, SignalGoalResource::class, SignalSegmentResource::class, SavedSignalReportResource::class, SignalAlertRuleResource::class, SignalAlertLogResource::class, SignalInteractionRuleResource::class])
         ->andReturnSelf();
 
     app(FilamentSignalsPlugin::class)->register($panel);
