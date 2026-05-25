@@ -76,7 +76,7 @@ final class BulkEditProducts extends Page implements HasForms, HasTable
     {
         $owner = OwnerContext::resolve();
 
-        return $query->forOwner($owner, false);
+        return $query->select(['id', 'name'])->forOwner($owner, false);
     }
 
     public function table(Table $table): Table
