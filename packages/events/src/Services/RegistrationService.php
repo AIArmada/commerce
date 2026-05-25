@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Enums\RegistrationStatus;
 use AIArmada\Events\Events\RegistrationCancelled;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 
 final class RegistrationService
 {
@@ -25,6 +27,121 @@ final class RegistrationService
      * @param  array<string, mixed>  $links
      */
     public function createForOccurrence(Occurrence $occurrence, array $participant, array $links = []): Registration
+    {
+        return $this->withRecordOwnerContext($occurrence, function () use ($occurrence, $participant, $links): Registration {
+            return DB::transaction(function () use ($occurrence, $participant, $links): Registration {
+                $lockedOccurrence = $this->lockOccurrence($occurrence);
+
+                $this->ensureOccurrenceCanAcceptRegistrations($lockedOccurrence, 1);
+
+                return $this->createRegistration($lockedOccurrence, $participant, $links);
+            });
+        });
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $participants
+     * @return Collection<int, Registration>
+     */
+    public function createBatchForOrderItem(
+        Occurrence $occurrence,
+        OrderItem $orderItem,
+        array $participants,
+        ?Customer $purchaser = null,
+    ): Collection {
+        $expectedCount = max(1, (int) $orderItem->quantity);
+
+        if (count($participants) !== $expectedCount) {
+            throw new InvalidArgumentException(sprintf(
+                'Expected %d participant payloads for order item %s, received %d.',
+                $expectedCount,
+                (string) $orderItem->id,
+                count($participants),
+            ));
+        }
+
+        return $this->withRecordOwnerContext($occurrence, function () use ($occurrence, $expectedCount, $orderItem, $participants, $purchaser): Collection {
+            return DB::transaction(function () use ($occurrence, $expectedCount, $orderItem, $participants, $purchaser): Collection {
+                $lockedOccurrence = $this->lockOccurrence($occurrence);
+
+                $this->ensureOccurrenceCanAcceptRegistrations($lockedOccurrence, $expectedCount);
+
+                return new Collection(array_map(function (array $participant) use ($lockedOccurrence, $orderItem, $purchaser): Registration {
+                    return $this->createRegistration($lockedOccurrence, $participant, [
+                        'order_id' => $orderItem->order_id,
+                        'order_item_id' => $orderItem->id,
+                        'purchaser_customer_id' => $purchaser?->id,
+                        'status' => RegistrationStatus::Confirmed,
+                    ]);
+                }, $participants));
+            });
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function checkIn(Registration $registration, array $context = []): Registration
+    {
+        return $this->withRecordOwnerContext($registration, function () use ($registration, $context): Registration {
+            if (! $registration->status->canCheckIn()) {
+                throw new InvalidArgumentException(sprintf(
+                    'Registration %s cannot be checked in from status %s.',
+                    $registration->id,
+                    $registration->status->value,
+                ));
+            }
+
+            $occurrence = $this->occurrenceForRegistration($registration);
+
+            if (! $occurrence->acceptsCheckIn()) {
+                throw new InvalidArgumentException('This event date is not currently open for check-in.');
+            }
+
+            $metadata = array_merge(Arr::wrap($registration->metadata), [
+                'check_in_context' => $context,
+            ]);
+
+            $registration->update([
+                'status' => RegistrationStatus::CheckedIn,
+                'checked_in_at' => now(),
+                'metadata' => $metadata,
+            ]);
+
+            event(new RegistrationCheckedIn($registration->refresh(), $context));
+
+            return $registration->refresh();
+        });
+    }
+
+    public function cancel(Registration $registration, ?string $reason = null): Registration
+    {
+        return $this->withRecordOwnerContext($registration, function () use ($registration, $reason): Registration {
+            if ($registration->status === RegistrationStatus::Cancelled) {
+                return $registration;
+            }
+
+            $metadata = array_merge(Arr::wrap($registration->metadata), array_filter([
+                'cancellation_reason' => $reason,
+            ], static fn (mixed $value): bool => $value !== null && $value !== ''));
+
+            $registration->update([
+                'status' => RegistrationStatus::Cancelled,
+                'cancelled_at' => now(),
+                'metadata' => $metadata,
+            ]);
+
+            event(new RegistrationCancelled($registration->refresh(), $reason));
+
+            return $registration->refresh();
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $participant
+     * @param  array<string, mixed>  $links
+     */
+    private function createRegistration(Occurrence $occurrence, array $participant, array $links = []): Registration
     {
         [$firstName, $lastName] = $this->resolveParticipantName($participant);
         $email = $this->requireString($participant, 'email');
@@ -53,88 +170,6 @@ final class RegistrationService
         event(new RegistrationCreated($registration));
 
         return $registration;
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $participants
-     * @return Collection<int, Registration>
-     */
-    public function createBatchForOrderItem(
-        Occurrence $occurrence,
-        OrderItem $orderItem,
-        array $participants,
-        ?Customer $purchaser = null,
-    ): Collection {
-        $expectedCount = max(1, (int) $orderItem->quantity);
-
-        if (count($participants) !== $expectedCount) {
-            throw new InvalidArgumentException(sprintf(
-                'Expected %d participant payloads for order item %s, received %d.',
-                $expectedCount,
-                (string) $orderItem->id,
-                count($participants),
-            ));
-        }
-
-        return DB::transaction(function () use ($occurrence, $orderItem, $participants, $purchaser): Collection {
-            return new Collection(array_map(function (array $participant) use ($occurrence, $orderItem, $purchaser): Registration {
-                return $this->createForOccurrence($occurrence, $participant, [
-                    'order_id' => $orderItem->order_id,
-                    'order_item_id' => $orderItem->id,
-                    'purchaser_customer_id' => $purchaser?->id,
-                    'status' => RegistrationStatus::Confirmed,
-                ]);
-            }, $participants));
-        });
-    }
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function checkIn(Registration $registration, array $context = []): Registration
-    {
-        if (! $registration->status->canCheckIn()) {
-            throw new InvalidArgumentException(sprintf(
-                'Registration %s cannot be checked in from status %s.',
-                $registration->id,
-                $registration->status->value,
-            ));
-        }
-
-        $metadata = array_merge(Arr::wrap($registration->metadata), [
-            'check_in_context' => $context,
-        ]);
-
-        $registration->update([
-            'status' => RegistrationStatus::CheckedIn,
-            'checked_in_at' => now(),
-            'metadata' => $metadata,
-        ]);
-
-        event(new RegistrationCheckedIn($registration->refresh(), $context));
-
-        return $registration->refresh();
-    }
-
-    public function cancel(Registration $registration, ?string $reason = null): Registration
-    {
-        if ($registration->status === RegistrationStatus::Cancelled) {
-            return $registration;
-        }
-
-        $metadata = array_merge(Arr::wrap($registration->metadata), array_filter([
-            'cancellation_reason' => $reason,
-        ], static fn (mixed $value): bool => $value !== null && $value !== ''));
-
-        $registration->update([
-            'status' => RegistrationStatus::Cancelled,
-            'cancelled_at' => now(),
-            'metadata' => $metadata,
-        ]);
-
-        event(new RegistrationCancelled($registration->refresh(), $reason));
-
-        return $registration->refresh();
     }
 
     /**
@@ -181,6 +216,61 @@ final class RegistrationService
         return RegistrationStatus::Pending;
     }
 
+    private function lockOccurrence(Occurrence $occurrence): Occurrence
+    {
+        $lockedOccurrence = Occurrence::query()
+            ->whereKey($occurrence->getKey())
+            ->lockForUpdate()
+            ->first();
+
+        if ($lockedOccurrence instanceof Occurrence) {
+            return $lockedOccurrence;
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Occurrence %s could not be found.',
+            (string) $occurrence->getKey(),
+        ));
+    }
+
+    private function ensureOccurrenceCanAcceptRegistrations(Occurrence $occurrence, int $requestedSeats): void
+    {
+        if (! $occurrence->acceptsRegistrations()) {
+            throw new InvalidArgumentException('This event date is not accepting registrations.');
+        }
+
+        $this->ensureOccurrenceHasCapacity($occurrence, $requestedSeats);
+    }
+
+    private function ensureOccurrenceHasCapacity(Occurrence $occurrence, int $requestedSeats): void
+    {
+        $capacity = is_int($occurrence->capacity) ? $occurrence->capacity : null;
+
+        if ($capacity === null) {
+            return;
+        }
+
+        $reservedSeats = Registration::query()
+            ->where('occurrence_id', $occurrence->id)
+            ->whereIn('status', RegistrationStatus::capacityBlockingValues())
+            ->count();
+
+        if (($reservedSeats + $requestedSeats) <= $capacity) {
+            return;
+        }
+
+        $remainingSeats = max(0, $capacity - $reservedSeats);
+
+        if ($remainingSeats === 0) {
+            throw new InvalidArgumentException('This event date is sold out.');
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Only %d seat(s) remain for this event date.',
+            $remainingSeats,
+        ));
+    }
+
     private function resolveModelKey(mixed $value): ?string
     {
         if ($value instanceof Model) {
@@ -194,6 +284,65 @@ final class RegistrationService
         }
 
         return null;
+    }
+
+    private function occurrenceForRegistration(Registration $registration): Occurrence
+    {
+        $occurrence = $registration->getRelationValue('occurrence');
+
+        if ($occurrence instanceof Occurrence) {
+            return $occurrence;
+        }
+
+        $occurrence = $registration->occurrence()->first();
+
+        if ($occurrence instanceof Occurrence) {
+            return $occurrence;
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Occurrence for registration %s could not be found.',
+            (string) $registration->getKey(),
+        ));
+    }
+
+    /**
+     * @template TReturn
+     *
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     */
+    private function withRecordOwnerContext(Model $record, callable $callback): mixed
+    {
+        if (! (bool) config('events.features.owner.enabled', true)) {
+            return $callback();
+        }
+
+        $owner = $this->ownerFromModel($record);
+
+        if ($owner instanceof Model) {
+            return OwnerContext::withOwner($owner, $callback);
+        }
+
+        if (! OwnerContext::isExplicitGlobal()) {
+            throw new RuntimeException(sprintf(
+                'Explicit global owner context is required to operate on global %s records. Use OwnerContext::withOwner(null, ...).',
+                $record::class,
+            ));
+        }
+
+        return OwnerContext::withOwner(null, $callback);
+    }
+
+    private function ownerFromModel(Model $model): ?Model
+    {
+        $ownerType = $model->getAttribute('owner_type');
+        $ownerId = $model->getAttribute('owner_id');
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_scalar($ownerId) ? (string) $ownerId : null,
+        );
     }
 
     /**

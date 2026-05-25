@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $variant_id
  * @property string|null $name
  * @property OccurrenceStatus $status
+ * @property int|null $capacity
  * @property Carbon $starts_at
  * @property Carbon|null $ends_at
  * @property string $timezone
@@ -53,6 +54,7 @@ class Occurrence extends Model
         'variant_id',
         'name',
         'status',
+        'capacity',
         'starts_at',
         'ends_at',
         'timezone',
@@ -67,6 +69,7 @@ class Occurrence extends Model
     {
         return [
             'status' => OccurrenceStatus::class,
+            'capacity' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'registration_opens_at' => 'datetime',
@@ -169,6 +172,25 @@ class Occurrence extends Model
         }
 
         if ($this->registration_closes_at !== null && $this->registration_closes_at->lt($now)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function acceptsCheckIn(): bool
+    {
+        if (! $this->status->acceptsRegistrations()) {
+            return false;
+        }
+
+        $now = now();
+
+        if ($this->check_in_opens_at !== null && $this->check_in_opens_at->isFuture()) {
+            return false;
+        }
+
+        if ($this->check_in_closes_at !== null && $this->check_in_closes_at->lt($now)) {
             return false;
         }
 

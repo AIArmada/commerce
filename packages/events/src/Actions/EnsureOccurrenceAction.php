@@ -136,6 +136,7 @@ final class EnsureOccurrenceAction
                     'variant_id' => $this->stringOrNull($occurrence['variant_id'] ?? null),
                     'name' => $this->stringOrNull($occurrence['name'] ?? null),
                     'status' => $this->resolveOccurrenceStatus($occurrence['status'] ?? null),
+                    'capacity' => $this->intOrNull($occurrence['capacity'] ?? null),
                     'ends_at' => $endsAt,
                     'timezone' => $timezone,
                     'registration_opens_at' => $this->dateTimeOrNull($occurrence['registration_opens_at'] ?? null, $timezone),
