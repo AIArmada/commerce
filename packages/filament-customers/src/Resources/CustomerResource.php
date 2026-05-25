@@ -353,7 +353,7 @@ class CustomerResource extends Resource
             ->pluck('id')
             ->all();
 
-            abort_unless(array_diff($ids, $allowedManualSegmentIds) === [], 403);
+        abort_unless(array_diff($ids, $allowedManualSegmentIds) === [], 403);
 
         $automaticSegmentIds = $record->segments()
             ->where('is_automatic', true)
