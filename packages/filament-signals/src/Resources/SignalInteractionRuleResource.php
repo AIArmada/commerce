@@ -219,6 +219,7 @@ final class SignalInteractionRuleResource extends Resource
                     ->toggleable(),
             ])
             ->defaultSort('sort_order')
+            ->paginated([10])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active'),
