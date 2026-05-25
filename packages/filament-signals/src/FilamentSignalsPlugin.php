@@ -18,6 +18,7 @@ use AIArmada\FilamentSignals\Resources\SavedSignalReportResource;
 use AIArmada\FilamentSignals\Resources\SignalAlertLogResource;
 use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource;
 use AIArmada\FilamentSignals\Resources\SignalGoalResource;
+use AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Resources\SignalSegmentResource;
 use AIArmada\FilamentSignals\Resources\TrackedPropertyResource;
 use Filament\Contracts\Plugin;
@@ -110,6 +111,10 @@ final class FilamentSignalsPlugin implements Plugin
 
         if (config('filament-signals.features.alert_logs', true)) {
             $resources[] = SignalAlertLogResource::class;
+        }
+
+        if (config('filament-signals.features.interaction_rules', true)) {
+            $resources[] = SignalInteractionRuleResource::class;
         }
 
         $panel

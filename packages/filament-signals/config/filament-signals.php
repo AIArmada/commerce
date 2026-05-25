@@ -23,6 +23,7 @@ return [
         'saved_reports' => true,
         'alert_rules' => true,
         'alert_logs' => true,
+        'interaction_rules' => true,
         'devices_report' => true,
         'widgets' => true,
         'trend_chart' => true,
@@ -52,6 +53,7 @@ return [
             'saved_reports' => 32,
             'alert_rules' => 33,
             'alert_logs' => 34,
+            'interaction_rules' => 35,
         ],
     ],
 ];
