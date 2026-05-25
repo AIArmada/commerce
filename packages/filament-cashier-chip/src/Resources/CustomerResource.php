@@ -96,7 +96,7 @@ final class CustomerResource extends BaseCashierChipResource
     {
         $modelClass = static::getModel();
 
-        if (! is_string($modelClass) || ! is_subclass_of($modelClass, Model::class)) {
+        if (! is_subclass_of($modelClass, Model::class)) {
             return false;
         }
 

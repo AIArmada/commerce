@@ -58,25 +58,14 @@ final class ValidateCartStep extends AbstractCheckoutStep
             return $this->failed('Cart is empty', ['cart' => 'Cart is empty']);
         }
 
-        $snapshot = method_exists($cart, 'content')
-            ? (array) $cart->content()
-            : [
-                'items' => $cart->getItems()->toArray(),
-                'subtotal' => $cart->subtotal()->getAmount(),
-                'total' => $cart->total()->getAmount(),
-                'count' => $cart->countItems(),
-                'metadata' => [],
-                'conditions' => [],
-            ];
+        $snapshot = (array) $cart->content();
 
         $totals = [
             'subtotal' => (int) ($snapshot['subtotal'] ?? $cart->subtotal()->getAmount()),
             'total' => (int) ($snapshot['total'] ?? $cart->total()->getAmount()),
         ];
 
-        if (method_exists($cart, 'getRawSubtotalWithoutConditions')) {
-            $totals['subtotal_without_conditions'] = (int) $cart->getRawSubtotalWithoutConditions();
-        }
+        $totals['subtotal_without_conditions'] = (int) $cart->getRawSubtotalWithoutConditions();
 
         $snapshot['item_count'] = $snapshot['item_count'] ?? $snapshot['count'] ?? $cart->countItems();
         $snapshot['totals'] = $totals;

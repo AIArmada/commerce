@@ -35,7 +35,7 @@ final class UnifiedSubscriptionResource extends Resource
             return Subscription::class;
         }
 
-        if (class_exists(CashierChip::class) && is_string(CashierChip::$subscriptionModel)) {
+        if (class_exists(CashierChip::class)) {
             return CashierChip::$subscriptionModel;
         }
 
