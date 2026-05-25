@@ -25,6 +25,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\Alignment;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -227,10 +228,32 @@ final class ExperimentResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => ExperimentModuleType::labelFor($state))
                     ->sortable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->badge()
-                    ->formatStateUsing(fn (ExperimentStatus $state): string => $state->label())
-                    ->color(fn (ExperimentStatus $state): string => $state->color()),
+                Tables\Columns\ColumnGroup::make('Lifecycle', [
+                    Tables\Columns\TextColumn::make('status')
+                        ->badge()
+                        ->formatStateUsing(fn (ExperimentStatus $state): string => $state->label())
+                        ->color(fn (ExperimentStatus $state): string => $state->color()),
+                    Tables\Columns\ToggleColumn::make('is_running')
+                        ->label('Running')
+                        ->state(fn (Experiment $record): bool => $record->status === ExperimentStatus::Active)
+                        ->disabled(fn (Experiment $record): bool => ! static::canEdit($record) || $record->status === ExperimentStatus::Concluded)
+                        ->onColor('success')
+                        ->offColor('warning')
+                        ->updateStateUsing(function (Experiment $record, bool $state): bool {
+                            if (! static::canEdit($record) || $record->status === ExperimentStatus::Concluded) {
+                                return $record->status === ExperimentStatus::Active;
+                            }
+
+                            static::setExperimentStatus(
+                                $record,
+                                $state ? ExperimentStatus::Active : ExperimentStatus::Paused,
+                            );
+
+                            return $state;
+                        }),
+                ])
+                    ->alignCenter()
+                    ->wrapHeader(),
                 Tables\Columns\TextColumn::make('goal_event_name')
                     ->label('Goal')
                     ->badge(),
@@ -251,6 +274,20 @@ final class ExperimentResource extends Resource
                     ->options(collect(ExperimentStatus::cases())->mapWithKeys(fn (ExperimentStatus $status): array => [$status->value => $status->label()])),
             ])
             ->actions(array_values(array_filter([
+                Action::make('activate')
+                    ->label('Activate')
+                    ->icon('heroicon-o-play')
+                    ->color('success')
+                    ->visible(fn (Experiment $record): bool => static::canEdit($record) && in_array($record->status, [ExperimentStatus::Draft, ExperimentStatus::Paused], true))
+                    ->requiresConfirmation()
+                    ->action(fn (Experiment $record): bool => static::setExperimentStatus($record, ExperimentStatus::Active)),
+                Action::make('pause')
+                    ->label('Pause')
+                    ->icon('heroicon-o-pause')
+                    ->color('warning')
+                    ->visible(fn (Experiment $record): bool => static::canEdit($record) && $record->status === ExperimentStatus::Active)
+                    ->requiresConfirmation()
+                    ->action(fn (Experiment $record): bool => static::setExperimentStatus($record, ExperimentStatus::Paused)),
                 config('filament-growth.features.results', true)
                     ? Action::make('results')
                         ->label('Results')
@@ -525,6 +562,13 @@ final class ExperimentResource extends Resource
     private static function findTrackedPropertyForExperiment(Experiment $record): ?TrackedProperty
     {
         return app(AccessibleGrowthRecords::class)->findTrackedPropertyForExperiment($record);
+    }
+
+    private static function setExperimentStatus(Experiment $record, ExperimentStatus $status): bool
+    {
+        return $record->update([
+            'status' => $status->value,
+        ]);
     }
 
     /**
