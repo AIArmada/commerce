@@ -6,17 +6,18 @@ title: Overview
 
 ## Purpose
 
-The `aiarmada/events` package owns the event-domain layer for Commerce applications: series, events, venues, occurrences, attendee registrations, and registration lifecycle operations.
+`aiarmada/events` owns the event-domain layer for Commerce applications: series, reusable event definitions, venues, scheduled occurrences, and attendee registrations.
 
 ## What this package owns
 
 - Event series, event definitions, venues, occurrences, and registrations
-- Registration creation, check-in, cancellation, and attendee lifecycle rules
-- Event-specific status enums and event-domain relationships
+- Registration creation, batch fulfillment, check-in, cancellation, and attendee lifecycle rules
+- Occurrence capacity plus registration and check-in opening / closing windows
+- Event-domain actions such as `EnsureOccurrenceAction` for idempotent series / event / venue / occurrence upserts
 
 ## What this package does not own
 
-- Product, variant, pricing, inventory, customer, order, or payment domain logic, even when events reference those records
+- Product, variant, pricing, inventory, customer, order, or payment domain logic, even when events link to those records
 - Filament admin surfaces; those belong to `aiarmada/filament-events`
 
 ## Related packages
@@ -28,23 +29,25 @@ The `aiarmada/events` package owns the event-domain layer for Commerce applicati
 ## Main models services or surfaces
 
 - **Models** — `EventSeries`, `Event`, `Venue`, `Occurrence`, `Registration`
-- **Enums** — event, occurrence, and registration status enums
-- **Domain surface** — registration service, check-in lifecycle, and commerce integration hooks
+- **Enums** — `EventStatus`, `OccurrenceStatus`, `RegistrationStatus`
+- **Actions** — `EnsureOccurrenceAction` plus order-fulfillment helpers for creating registrations from commerce orders
+- **Services** — `RegistrationService` for single create, batch create, check-in, and cancellation
 
 ## Owner scoping and security notes
 
-- Event models are owner-aware and should follow the `commerce-support` owner-boundary rules
-- Registration and occurrence mutations should resolve their target records in the current owner scope before writes occur
-
-`aiarmada/events` provides the event-domain layer for Commerce applications: series, events, venues, occurrences, and attendee registrations.
+- Event models are owner-aware and follow the `commerce-support` owner-boundary rules
+- Public registration mutations derive owner context from the occurrence or registration they act on
+- Persisted global occurrences and registrations still require explicit global context before mutation
+- Capacity and availability checks live in the service layer, not only in UI forms
 
 ## Highlights
 
 - Owner-aware event models powered by `commerce-support`
 - Event series and reusable event topics
 - Venue and scheduled occurrence modeling
-- Registration records separated from generic customers
-- Registration service for attendee creation, check-in, and cancellation
+- Capacity-aware occurrences with registration and check-in windows
+- Registration service that enforces sold-out, availability, and lifecycle rules
+- Idempotent upsert flow for syncing series, events, venues, and occurrences
 - Native integration points for products, variants, orders, and customers
 
 ## Core models
@@ -54,7 +57,7 @@ The `aiarmada/events` package owns the event-domain layer for Commerce applicati
 | `EventSeries` | Groups related topics under one program or brand |
 | `Event` | Reusable event definition |
 | `Venue` | Physical location details |
-| `Occurrence` | A scheduled run of an event |
+| `Occurrence` | A scheduled run of an event with capacity and registration / check-in windows |
 | `Registration` | One attendee entitlement for one occurrence |
 
 ## Core enums
@@ -88,25 +91,6 @@ The `aiarmada/events` package owns the event-domain layer for Commerce applicati
 | `Refunded` | `refunded` |
 | `NoShow` | `no_show` |
 | `Waitlisted` | `waitlisted` |
-
-## Boundary
-
-The events package owns:
-
-- occurrences
-- venues
-- attendee registrations
-- check-in lifecycle
-
-The commerce packages continue to own:
-
-- products
-- variants
-- pricing
-- inventory
-- customers
-- orders
-- payments
 
 ## Read next
 

@@ -6,7 +6,23 @@ title: Customization
 
 ## Feature-Gated Rollout
 
-Use `filament-signals.features.*` flags to progressively enable analytics surfaces by environment or tenant.
+Use `filament-signals.features.*` flags to progressively enable dashboard pages, report pages, resources, and widgets by environment or tenant.
+
+## Dashboard Widgets
+
+Use these flags to tailor the dashboard surface:
+
+- `filament-signals.features.widgets`
+- `filament-signals.features.trend_chart`
+- `filament-signals.features.pending_alerts_widget`
+
+This lets you keep the dashboard page while trimming individual widgets.
+
+## Saved Reports
+
+Use `filament-signals.features.saved_reports` if you want operators to create reusable report states.
+
+Supported report pages automatically ignore saved reports that are inactive, inaccessible in the current owner scope, or created for a different report type.
 
 ## Navigation Order
 

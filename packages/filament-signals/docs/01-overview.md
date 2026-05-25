@@ -10,9 +10,9 @@ The `aiarmada/filament-signals` package is the Filament analytics UI for `aiarma
 
 ## What this package owns
 
-- Filament dashboard and report pages for analytics workflows
+- Filament dashboard, report pages, and dashboard widgets for analytics workflows
 - Management resources for tracked properties, goals, segments, saved reports, alert rules, and alert logs
-- Signals feature toggles, navigation ordering, and monetary-aware analytics UI behavior
+- Signals feature toggles, navigation ordering, saved-report-aware report flows, and monetary-aware analytics UI behavior
 
 ## What this package does not own
 
@@ -28,9 +28,10 @@ The `aiarmada/filament-signals` package is the Filament analytics UI for `aiarma
 
 ## Main models services or surfaces
 
-- **Pages** — dashboard and report pages for page views, funnels, acquisition, journeys, retention, content performance, live activity, and goals
+- **Pages** — dashboard and report pages for page views, funnels, acquisition, journeys, retention, content performance, live activity, goals, and devices
 - **Resources** — tracked properties, goals, segments, saved reports, alert rules, and alert logs
-- **UI behaviors** — feature-flagged resources/widgets and monetary-aware UI suppression when revenue analytics are disabled
+- **Widgets** — summary stats, event trends, and pending alerts
+- **UI behaviors** — feature-flagged resources/widgets, saved-report state sanitization, and monetary-aware UI suppression when revenue analytics are disabled
 
 ## Owner scoping and security notes
 
@@ -43,7 +44,9 @@ The `aiarmada/filament-signals` package provides a Filament v5 analytics UI on t
 
 - Dashboard and report pages for page views, funnels, acquisition, journeys, retention, content performance, live activity, and goals
 - Dedicated devices and technology report for device type, browser, OS, and brand analysis
+- Dashboard widgets for summary stats, event trends, and unread alerts
 - Resource management for tracked properties, goals, segments, saved reports, alert rules, and alert logs
+- Saved-report-aware report pages that reject inaccessible, inactive, or wrong-type saved reports safely
 - Feature flags to enable/disable individual pages/resources/widgets
 - Navigation ordering and label customization via config
 - Bot-aware reporting surfaces for page views and acquisition analysis

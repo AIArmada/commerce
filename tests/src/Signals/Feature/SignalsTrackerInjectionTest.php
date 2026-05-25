@@ -44,6 +44,39 @@ it('renders the explicit signals tracker directive into html responses', functio
         ->assertSee('data-session-id="sigs_', false);
 });
 
+it('uses the authenticated model email when auth tracking is enabled', function (): void {
+    config()->set('signals.integrations.browser.auto_inject', false);
+    config()->set('signals.features.auth_tracking.enabled', true);
+
+    $owner = User::query()->firstOrFail();
+    $this->actingAs($owner);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Signals Auth Tracking Property',
+        'slug' => 'signals-auth-tracking-property',
+        'write_key' => 'auth-tracking-write-key-000000000000000',
+        'type' => 'website',
+        'timezone' => 'UTC',
+        'currency' => 'MYR',
+        'is_active' => true,
+    ]);
+    $property->assignOwner($owner)->save();
+
+    $path = '/signals-auth-tracking-' . Str::lower(Str::random(8));
+
+    $this->app['router']->middleware('web')->get($path, static function () {
+        return response(Blade::render('<!doctype html><html><body>@signalsTracker</body></html>'));
+    });
+
+    $response = $this->get($path);
+
+    $response->assertOk()
+        ->assertSee('data-external-id="' . $owner->getAuthIdentifier() . '"', false)
+        ->assertSee('data-email="signals-owner@example.com"', false);
+});
+
 it('auto injects the tracker into eligible html responses', function (): void {
     config()->set('signals.integrations.browser.auto_inject', true);
 

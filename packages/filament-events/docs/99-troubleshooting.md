@@ -59,8 +59,23 @@ The Filament actions delegate to the core `RegistrationService`, so failures usu
 Check:
 
 - the registration status
+- the occurrence check-in window
+- the occurrence capacity / registration window for creation flows
 - whether the occurrence is valid for the requested transition
 - any owner-scoping mismatch between the current admin context and the registration record
+
+## Occurrence scheduling fields look correct, but registration or check-in is still blocked
+
+Review the linked occurrence's:
+
+- `status`
+- `capacity`
+- `registration_opens_at`
+- `registration_closes_at`
+- `check_in_opens_at`
+- `check_in_closes_at`
+
+The admin UI only edits those values. The core events package still enforces them during registration creation and check-in.
 
 ## Need deeper domain examples?
 
