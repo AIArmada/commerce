@@ -144,6 +144,18 @@ Use this file for cross-cutting guidance that is **not already covered** in othe
 - If new evidence invalidates the plan, stop and re-plan.
 - Verify behavior before declaring done.
 
+### Codebase-aware vs architecture-first
+
+- Start **codebase-aware** by default: inspect sibling files, follow established conventions, and prefer the smallest change that fits the current package and boundary.
+- Steer **architecture-first** when copying the existing pattern would spread a known design problem, duplicate shared logic across packages, or force a fix that is locally correct but systemically wrong.
+- Common escalation signals:
+  - the root cause lives in a shared primitive, package boundary, owner-scoping rule, or cross-cutting contract;
+  - the same workaround would need to be repeated in multiple files or packages;
+  - the local pattern conflicts with hard rules such as security, multitenancy, Octane safety, or package independence;
+  - the right fix likely belongs in `commerce-support` or another shared foundation, not in one package-specific patch.
+- When you switch, say so explicitly: name the local pattern you are not copying, explain why, propose the smallest architecture change that fixes the root cause, and list the surfaces that need verification.
+- Stay architecture-first in scope, not in blast radius: prefer one well-placed shared primitive or boundary correction over a broad rewrite.
+
 ## 2) Runtime-Extension Safety
 
 Before removing a method that static analysis reports as undefined, verify runtime extension sources first:

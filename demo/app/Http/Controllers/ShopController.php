@@ -21,6 +21,7 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Shipping\Cart\ShippingCondition;
+use AIArmada\Signals\Support\Browser\SignalsBrowserContextManager;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
@@ -130,9 +131,9 @@ final class ShopController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%'.$request->search.'%')
-                    ->orWhere('description', 'like', '%'.$request->search.'%')
-                    ->orWhere('sku', 'like', '%'.$request->search.'%');
+                $q->where('name', 'like', '%' . $request->search . '%')
+                    ->orWhere('description', 'like', '%' . $request->search . '%')
+                    ->orWhere('sku', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -380,7 +381,7 @@ final class ShopController extends Controller
             Cart::applyVoucher($request->voucher_code);
             session(['applied_voucher' => mb_strtoupper($request->voucher_code)]);
 
-            return back()->with('success', 'Voucher '.mb_strtoupper($request->voucher_code).' applied!');
+            return back()->with('success', 'Voucher ' . mb_strtoupper($request->voucher_code) . ' applied!');
         } catch (InvalidVoucherException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -402,7 +403,7 @@ final class ShopController extends Controller
                 session()->forget('applied_voucher');
             }
 
-            return back()->with('success', 'Voucher '.mb_strtoupper((string) $voucherCode).' removed.');
+            return back()->with('success', 'Voucher ' . mb_strtoupper((string) $voucherCode) . ' removed.');
         }
 
         // Fallback for when no code provided (shouldn't happen with new UI)
@@ -420,7 +421,7 @@ final class ShopController extends Controller
     /**
      * Checkout page.
      */
-    public function checkout(): View|RedirectResponse
+    public function checkout(): View | RedirectResponse
     {
         if (Cart::isEmpty()) {
             return redirect()->route('shop.cart')->with('error', 'Your cart is empty.');
@@ -582,7 +583,7 @@ final class ShopController extends Controller
             ]);
 
             return redirect()->route('shop.checkout')
-                ->with('error', 'Checkout failed: '.$exception->getMessage())
+                ->with('error', 'Checkout failed: ' . $exception->getMessage())
                 ->withInput();
         }
     }
@@ -752,7 +753,7 @@ final class ShopController extends Controller
     /**
      * Account page.
      */
-    public function account(): View|RedirectResponse
+    public function account(): View | RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('shop.home')->with('error', 'Please sign in to view your account.');
@@ -783,7 +784,7 @@ final class ShopController extends Controller
         return [
             'first_name' => (string) $request->first_name,
             'last_name' => (string) $request->last_name,
-            'name' => mb_trim((string) $request->first_name.' '.(string) $request->last_name),
+            'name' => mb_trim((string) $request->first_name . ' ' . (string) $request->last_name),
             'email' => (string) $request->email,
             'phone' => (string) $request->phone,
             'line1' => (string) $request->line1,
@@ -817,13 +818,20 @@ final class ShopController extends Controller
             }
         }
 
-        $source = mb_strtolower(mb_trim((string) config('growth.http.experiment_middleware.anonymous_id_source', 'cookie')));
-        $key = mb_trim((string) config('growth.http.experiment_middleware.anonymous_id_key', 'mi_signals_anonymous_id'));
+        try {
+            /** @var SignalsBrowserContextManager $browserContextManager */
+            $browserContextManager = app(SignalsBrowserContextManager::class);
+            $browserContext = $browserContextManager->current($request) ?? $browserContextManager->resolveOrCreate($request);
 
-        $configuredVisitorId = match ($source) {
-            'header' => $request->headers->get($key),
-            default => $request->cookie($key),
-        };
+            if ($browserContext->visitorId !== '') {
+                return $browserContext->visitorId;
+            }
+        } catch (Throwable) {
+        }
+
+        $configuredVisitorId = $request->cookie(
+            (string) config('signals.integrations.browser.identifiers.visitor_cookie_name', 'sig_vid'),
+        );
 
         if (is_scalar($configuredVisitorId)) {
             $normalizedConfiguredVisitorId = mb_trim((string) $configuredVisitorId);
@@ -1073,7 +1081,7 @@ final class ShopController extends Controller
                             ->values()
                             ->all(),
                         ...($order->shipping_total > 0 ? [[
-                            'name' => 'Shipping ('.$this->shippingMethodLabel((string) ($order->metadata['shipping_method'] ?? 'jnt_standard')).')',
+                            'name' => 'Shipping (' . $this->shippingMethodLabel((string) ($order->metadata['shipping_method'] ?? 'jnt_standard')) . ')',
                             'price' => $order->shipping_total,
                             'quantity' => '1',
                             'category' => 'shipping',

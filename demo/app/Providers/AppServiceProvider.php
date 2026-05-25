@@ -73,14 +73,11 @@ final class AppServiceProvider extends ServiceProvider
         config()->set('growth.features.owner.enabled', true);
         config()->set('growth.features.experiment_middleware.enabled', true);
         config()->set('growth.http.experiment_middleware.subject_resolver', DemoRequestExperimentSubjectResolver::class);
-        config()->set('growth.http.experiment_middleware.anonymous_id_source', 'cookie');
-        config()->set('growth.http.experiment_middleware.anonymous_id_key', 'mi_signals_anonymous_id');
-        config()->set('growth.http.experiment_middleware.session_identifier_source', 'cookie');
-        config()->set('growth.http.experiment_middleware.session_identifier_key', 'mi_signals_session_id');
         config()->set('inventory.owner.enabled', true);
         config()->set('orders.owner.enabled', true);
         config()->set('products.features.owner.enabled', true);
         config()->set('signals.owner.enabled', true);
+        config()->set('signals.integrations.browser.enabled', true);
         config()->set('signals.integrations.cart.enabled', true);
         config()->set('signals.integrations.filament_cart.enabled', true);
         config()->set('filament-growth.features.dashboard', false);
