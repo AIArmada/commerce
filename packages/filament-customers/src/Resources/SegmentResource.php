@@ -322,7 +322,7 @@ class SegmentResource extends Resource
             ->pluck('id')
             ->all();
 
-        abort_unless(count($allowedIds) === count($ids), 403);
+        abort_unless(array_diff($ids, $allowedIds) === [], 403);
 
         $record->customers()->sync($allowedIds);
     }
@@ -337,17 +337,7 @@ class SegmentResource extends Resource
             return null;
         }
 
-        if (method_exists($record, 'belongsToOwner')) {
-            abort_unless($record->belongsToOwner($owner), 403);
-
-            return $owner;
-        }
-
-        abort_unless(
-            $record->owner_type === $owner->getMorphClass()
-                && (string) $record->owner_id === (string) $owner->getKey(),
-            403
-        );
+        abort_unless($record->belongsToOwner($owner), 403);
 
         return $owner;
     }

@@ -8,6 +8,7 @@ use AIArmada\FilamentAuthz\Console\Concerns\Prohibitable;
 use AIArmada\FilamentAuthz\Models\Role;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 
@@ -219,7 +220,7 @@ class SuperAdminCommand extends Command
      */
     protected function getUserIdentifier(Authenticatable $user): string
     {
-        if (method_exists($user, 'getEmailForVerification')) {
+        if ($user instanceof MustVerifyEmail) {
             return $user->getEmailForVerification();
         }
 

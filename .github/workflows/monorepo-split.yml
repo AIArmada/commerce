@@ -3,7 +3,7 @@ name: Monorepo Split + Instant Packagist
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'         # allows v1.0.0 and v1.0.0-rc1
+      - 'v*.*.*'         # allows v1.0.0 and v1.0.0-rc1
 
 jobs:
   split-and-publish:
@@ -23,6 +23,7 @@ jobs:
           - csuite
           - customers
           - docs
+          - events
           - filament-affiliate-network
           - filament-affiliates
           - filament-authz
@@ -32,6 +33,7 @@ jobs:
           - filament-chip
           - filament-customers
           - filament-docs
+          - filament-events
           - filament-growth
           - filament-inventory
           - filament-jnt

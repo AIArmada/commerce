@@ -66,7 +66,6 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
             'status' => PendingPayout::class,
             'total_minor' => 5000,
             'currency' => 'USD',
-            'affiliate_id' => $affiliate->getKey(),
             'payee_type' => $affiliate->getMorphClass(),
             'payee_id' => $affiliate->getKey(),
         ]);
@@ -99,7 +98,6 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
             'status' => PendingPayout::class,
             'total_minor' => 7000,
             'currency' => 'USD',
-            'affiliate_id' => $affiliate->getKey(),
             'payee_type' => $affiliate->getMorphClass(),
             'payee_id' => $affiliate->getKey(),
         ]);

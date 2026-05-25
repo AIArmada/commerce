@@ -9,6 +9,7 @@ use AIArmada\Shipping\Models\ShippingZone;
 use AIArmada\Shipping\Policies\ReturnAuthorizationPolicy;
 use AIArmada\Shipping\Policies\ShipmentPolicy;
 use AIArmada\Shipping\Policies\ShippingZonePolicy;
+use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -101,7 +102,7 @@ function createUserWithoutPermissions(): Authenticatable
 // Helper: Create user with can() method (Laravel Gate fallback)
 function createUserWithCan(array $abilities): Authenticatable
 {
-    return new class($abilities) implements Authenticatable
+    return new class($abilities) implements Authenticatable, Authorizable
     {
         public function __construct(private array $abilities) {}
 
@@ -137,9 +138,11 @@ function createUserWithCan(array $abilities): Authenticatable
             return '';
         }
 
-        public function can(string $ability): bool
+        public function can($abilities, $arguments = []): bool
         {
-            return in_array($ability, $this->abilities, true);
+            $abilities = is_array($abilities) ? $abilities : [$abilities];
+
+            return array_intersect($abilities, $this->abilities) !== [];
         }
     };
 }
