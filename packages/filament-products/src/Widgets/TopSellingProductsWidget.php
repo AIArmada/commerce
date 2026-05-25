@@ -90,10 +90,6 @@ final class TopSellingProductsWidget extends BaseWidget
 
     private function getVariantsCount(Product $record): int
     {
-        if (! method_exists($record, 'variants')) {
-            return 0;
-        }
-
         /** @var int $count */
         $count = $this->withResolvedOwnerOrExplicitGlobal(static fn (): int => $record->variants()->count());
 

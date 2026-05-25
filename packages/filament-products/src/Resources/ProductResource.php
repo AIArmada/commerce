@@ -303,9 +303,7 @@ final class ProductResource extends Resource
                                         $owner = OwnerContext::resolve();
                                         $query = Customer::query();
 
-                                        if (method_exists(Customer::class, 'scopeForOwner')) {
-                                            $query->forOwner($owner);
-                                        }
+                                        $query->forOwner($owner);
 
                                         return $query
                                             ->where(function (Builder $query) use ($search): void {
@@ -333,9 +331,7 @@ final class ProductResource extends Resource
                                         $owner = OwnerContext::resolve();
                                         $query = Customer::query();
 
-                                        if (method_exists(Customer::class, 'scopeForOwner')) {
-                                            $query->forOwner($owner);
-                                        }
+                                        $query->forOwner($owner);
 
                                         $customer = $query
                                             ->whereKey($value)
