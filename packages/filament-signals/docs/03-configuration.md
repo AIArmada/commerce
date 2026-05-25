@@ -42,6 +42,14 @@ Each feature flag controls whether corresponding pages/resources/widgets are reg
 
 `devices_report` controls registration of the Devices & Technology page.
 
+Dashboard widget flags are split out so you can roll them out independently:
+
+- `widgets` — summary stats cards
+- `trend_chart` — event/outcome line chart widget
+- `pending_alerts_widget` — unread alerts table widget
+
+`saved_reports` controls registration of the `SavedSignalReportResource`, which supported report pages can reuse to preload filter state.
+
 Feature flags in this plugin only control whether the Filament UI is registered. Some data surfaces still depend on upstream Signals package settings such as `signals.features.ua_parsing.enabled`, `signals.features.ip_tracking.enabled`, and `signals.features.monetary.enabled`.
 
 ## Resources

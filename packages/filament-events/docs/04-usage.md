@@ -37,8 +37,10 @@ Features:
 Features:
 
 - linked event and venue
+- capacity management
 - starts/ends scheduling
 - registration open/close windows
+- check-in open/close windows
 - optional product + variant links
 - registrations relation manager on occurrence pages
 - filters for status, event, venue, and date range
@@ -74,9 +76,13 @@ Features:
 
 The registration table and record pages expose a `Check In` action that calls the core `RegistrationService` with Filament as the source.
 
+That action only succeeds when the registration is currently `confirmed` and the linked occurrence is inside its configured check-in window.
+
 ### Registration cancellation
 
 The registration table and record pages expose a `Cancel` action with a reason field, which delegates to the core `RegistrationService`.
+
+The cancellation reason is stored in the registration metadata by the core package.
 
 ## Owner-aware admin queries
 

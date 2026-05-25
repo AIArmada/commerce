@@ -9,6 +9,7 @@ use AIArmada\Growth\Support\ExperimentContextManager;
 use AIArmada\Signals\Models\TrackedProperty;
 use AIArmada\Signals\Services\TrackedPropertyResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Throwable;
@@ -193,10 +194,8 @@ final class SignalsTrackerRenderer
             return null;
         }
 
-        if (method_exists($user, 'getEmailForVerification')) {
-            $email = $user->getEmailForVerification();
-
-            return is_string($email) && $email !== '' ? $email : null;
+        if ($user instanceof MustVerifyEmail) {
+            return $this->normalizeString($user->getEmailForVerification());
         }
 
         if ($user instanceof Model) {

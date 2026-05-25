@@ -4,13 +4,14 @@ title: Configuration
 
 # Configuration
 
-The package exposes a single `events.php` config file.
+All package options live in `config/events.php`.
 
-## Database tables
+## Database
 
 ```php
 'database' => [
     'table_prefix' => 'event_',
+    'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
     'tables' => [
         'series' => 'event_series',
         'events' => 'events',
@@ -21,7 +22,25 @@ The package exposes a single `events.php` config file.
 ],
 ```
 
-## Owner scoping
+### `database.table_prefix`
+
+The fallback prefix used when a table name is not overridden in `database.tables`.
+
+### `database.json_column_type`
+
+Controls the JSON column type used by package migrations.
+
+### `database.tables`
+
+Override individual table names for:
+
+- `series`
+- `events`
+- `venues`
+- `occurrences`
+- `registrations`
+
+## Features
 
 ```php
 'features' => [
@@ -33,7 +52,15 @@ The package exposes a single `events.php` config file.
 ],
 ```
 
-## Registration codes
+### `features.owner`
+
+Owner scoping controls for all event-domain models.
+
+- `enabled`: apply owner scoping to series, events, venues, occurrences, and registrations
+- `include_global`: allow readable owner-scoped queries to include global rows
+- `auto_assign_on_create`: stamp the current owner on new rows when owner columns are omitted
+
+## Codes
 
 ```php
 'codes' => [
@@ -42,7 +69,15 @@ The package exposes a single `events.php` config file.
 ],
 ```
 
-## Commerce integrations
+### `codes.registration_prefix`
+
+Prefix used when generating registration codes.
+
+### `codes.registration_length`
+
+Total registration-code length, including the prefix.
+
+## Integrations
 
 The package resolves related models from config so registrations can link back to the commerce layer:
 
@@ -55,3 +90,17 @@ The package resolves related models from config so registrations can link back t
     'order_item_model' => \AIArmada\Orders\Models\OrderItem::class,
 ],
 ```
+
+These integrations are read by occurrence and registration relationships plus the order-fulfillment flows.
+
+## Record-level occurrence settings
+
+Occurrence availability is controlled by model fields instead of package-wide config:
+
+- `capacity`
+- `registration_opens_at`
+- `registration_closes_at`
+- `check_in_opens_at`
+- `check_in_closes_at`
+
+`RegistrationService` enforces those values during create and check-in operations.
