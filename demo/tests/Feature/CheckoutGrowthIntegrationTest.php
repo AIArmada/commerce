@@ -42,7 +42,6 @@ test('checkout renders growth experiment messaging without a tracker cookie', fu
     ])->assertRedirect();
 
     $this->withSession($session)
-        ->withCookie('mi_signals_anonymous_id', 'tracker-anonymous-demo')
         ->get(route('shop.checkout'))
         ->assertOk()
         ->assertSee('Growth experiment live')
@@ -89,7 +88,7 @@ test('checkout stores growth visitor and experiment context in the checkout sess
     ])->assertRedirect();
 
     $response = $this->withSession($session)
-        ->withCookie('mi_signals_anonymous_id', $anonymousId)
+        ->withCookie('sig_vid', $anonymousId)
         ->post(route('shop.checkout.process'), [
             'email' => 'growth-checkout@example.com',
             'phone' => '+60123456789',
