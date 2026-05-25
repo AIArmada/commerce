@@ -456,9 +456,7 @@ final class ExperimentResource extends Resource
         /** @var Builder<TrackedProperty> $trackedPropertyQuery */
         $trackedPropertyQuery = TrackedProperty::query();
 
-        if (method_exists(TrackedProperty::class, 'scopeWithoutOwnerScope')) {
-            $trackedPropertyQuery = $trackedPropertyQuery->withoutGlobalScope(OwnerScope::class);
-        }
+        $trackedPropertyQuery = $trackedPropertyQuery->withoutGlobalScope(OwnerScope::class);
 
         $trackedPropertyQuery = $trackedPropertyQuery
             ->selectRaw('1')

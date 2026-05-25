@@ -353,7 +353,7 @@ class CustomerResource extends Resource
             ->pluck('id')
             ->all();
 
-        abort_unless(count($allowedManualSegmentIds) === count($ids), 403);
+        abort_unless(array_diff($ids, $allowedManualSegmentIds) === [], 403);
 
         $automaticSegmentIds = $record->segments()
             ->where('is_automatic', true)
@@ -376,17 +376,7 @@ class CustomerResource extends Resource
             return null;
         }
 
-        if (method_exists($record, 'belongsToOwner')) {
-            abort_unless($record->belongsToOwner($owner), 403);
-
-            return $owner;
-        }
-
-        abort_unless(
-            $record->owner_type === $owner->getMorphClass()
-                && (string) $record->owner_id === (string) $owner->getKey(),
-            403
-        );
+        abort_unless($record->belongsToOwner($owner), 403);
 
         return $owner;
     }

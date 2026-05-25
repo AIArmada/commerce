@@ -116,8 +116,7 @@ final class GatewayDetector
 
         $subscriptionModel = \AIArmada\CashierChip\Cashier::$subscriptionModel;
 
-        return is_string($subscriptionModel)
-            && class_exists($subscriptionModel)
+        return class_exists($subscriptionModel)
             && is_a($subscriptionModel, Model::class, true);
     }
 }

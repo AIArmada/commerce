@@ -14,7 +14,6 @@ parameters:
 
     tmpDir: var/cache/phpstan
 
-    # Ignore specific errors
     scanFiles:
         - stubs/phpstan/stripe.stub.php
         - stubs/phpstan/laravel-cashier.stub.php
@@ -32,55 +31,16 @@ parameters:
           paths:
               - packages/*/config/*
 
-        # Note: method.unused kept REMOVED - we want to catch dead code
-        # Ignore nullsafe.neverNull for defensive patterns:
-        # - request()?-> is correct (request() returns null outside HTTP context: console, queue, tests)
-        # - first()?-> is correct (first() can return null but PHPStan sees it as narrowed)
-        # - $model->relation?-> is defensive for eager-loaded relations
         - identifier: 'nullsafe.neverNull'
-        # Temporarily ignore missingType.iterableValue (214 errors)
-        # TODO: Gradually fix these by adding proper array type hints to parameters and returns
         - identifier: 'missingType.iterableValue'
-        # Ignore return.unusedType for interface implementations that guarantee non-null returns
-        # These are informational - implementations satisfy contracts while providing stricter guarantees
-        # Common pattern: interface returns ?T (some implementations need null), implementation always returns T
         - identifier: 'return.unusedType'
-        # Ignore scope return type issues (scopes return Builder<static> but PHPStan sees Builder<Model>)
-        # Ignore mapWithKeys collection operation type issues
-        # Ignore undefined scope method calls (scopes are dynamically resolved)
-        # Ignore LengthAwarePaginator generic type issues
-        # Ignore hasMany/belongsTo template type resolution with external models
-        # Ignore identical return type covariance warnings (PHPStan bug with array shape types)
-        # Ignore test-specific issues
-        # Ignore return type covariance issues with Eloquent relations (PHPStan template variance)
         - message: '#Method.*should return.*Relations\\(HasMany|BelongsTo|MorphTo).*but returns.*Relations\\(HasMany|BelongsTo|MorphTo).*#'
-        # Ignore relation existence errors (Larastan false positives)
-        # Ignore cast.string for enums
-        # Ignore arguments.count for context methods
-        # Ignore CompoundVoucherCondition rules parameter type
-        # Ignore FilamentChip Jetstream/Cashier integration issues
-        # Ignore PHPDoc type issues in Cart traits
-        # Ignore Cart integration classes when Cart package is not installed (suggested dependency)
-        # Ignore nullCoalesce in exception classes
-        # (no ignore) surface strict/dead-code issues
-        # Defensive programming patterns - method_exists/instanceof checks on types that are guaranteed
-        # These are intentional for forward/backward compatibility and defensive coding
-        - identifier: 'function.alreadyNarrowedType'
-        # REMOVED: - identifier: 'function.impossibleType' - we want to catch dead code
-
-        # Return type covariance issues with static/self in scope methods and relations
         - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Builder<.*> but returns Illuminate\\Database\\Eloquent\\Builder<static\(.*\)>#'
         - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Builder<static\(.*\)> but returns Illuminate\\Database\\Eloquent\\Builder<.*>#'
         - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Relations\\.*<.*> but returns Illuminate\\Database\\Eloquent\\Relations\\.*<.*\$this.*>#'
 
-        # Return type issues with external package methods
-
-        # Note: return.type identifier removed - too dangerous, hides real bugs
-
-    # Exclude patterns
     excludePaths:
         analyseAndScan:
             - vendor
             - '*/Testing/*'
-            # Exclude Cart integration files when Cart package is not installed (suggested dependency)
             - packages/inventory/src/Cart/

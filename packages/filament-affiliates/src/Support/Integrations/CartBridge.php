@@ -74,8 +74,7 @@ final class CartBridge
             return null;
         }
 
-        /** @phpstan-ignore function.alreadyNarrowedType */
-        if (method_exists(CartResource::class, 'canView') && ! CartResource::canView($cart)) {
+        if (! CartResource::canView($cart)) {
             return null;
         }
 

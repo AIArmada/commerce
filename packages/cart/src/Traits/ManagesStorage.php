@@ -18,9 +18,7 @@ trait ManagesStorage
     {
         // Ensure dynamic conditions are evaluated before returning items
         // This is necessary for item-level dynamic conditions to be applied
-        if (method_exists($this, 'evaluateDynamicConditionsIfDirty')) {
-            $this->evaluateDynamicConditionsIfDirty();
-        }
+        $this->evaluateDynamicConditionsIfDirty();
 
         return $this->getItemsFromStorage();
     }
@@ -34,10 +32,6 @@ trait ManagesStorage
     protected function getItemsFromStorage(): CartCollection
     {
         $items = $this->storage->getItems($this->getIdentifier(), $this->instance());
-
-        if (! $items || ! is_array($items)) { // @phpstan-ignore function.alreadyNarrowedType
-            return new CartCollection;
-        }
 
         // Convert array back to CartCollection
         $collection = new CartCollection;

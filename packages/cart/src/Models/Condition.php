@@ -119,10 +119,13 @@ class Condition extends Model
 
         $factoryKeys = [];
         if (isset($rules['factory_keys']) && is_array($rules['factory_keys'])) {
-            $factoryKeys = array_values(array_filter(
-                $rules['factory_keys'],
-                static fn (mixed $key): bool => is_string($key) && $key !== '' // @phpstan-ignore function.alreadyNarrowedType
-            ));
+            foreach ($rules['factory_keys'] as $key) {
+                if (! is_string($key) || $key === '') {
+                    continue;
+                }
+
+                $factoryKeys[] = $key;
+            }
         }
 
         if ($factoryKeys === []) {
