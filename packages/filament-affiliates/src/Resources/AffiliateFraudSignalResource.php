@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
@@ -50,19 +51,14 @@ final class AffiliateFraudSignalResource extends Resource
         return $schema->schema([
             Section::make('Signal Details')
                 ->schema([
-                    Forms\Components\Select::make('affiliate_id')
-                        ->relationship('affiliate', 'name', modifyQueryUsing: function (Builder $affiliateQuery): Builder {
-                            if (! (bool) config('affiliates.owner.enabled', false)) {
-                                return $affiliateQuery;
+                    Forms\Components\TextInput::make('affiliate_id')
+                        ->label('Affiliate')
+                        ->formatStateUsing(static function (?string $state): string {
+                            if ($state === null) {
+                                return '';
                             }
 
-                            /** @var Model|null $owner */
-                            $owner = OwnerContext::resolve();
-                            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-                            $scoped = $affiliateQuery->withoutGlobalScope(OwnerScope::class);
-
-                            return OwnerQuery::applyToEloquentBuilder($scoped, $owner, $includeGlobal);
+                            return Affiliate::query()->find($state)?->name ?? $state;
                         })
                         ->disabled(),
 

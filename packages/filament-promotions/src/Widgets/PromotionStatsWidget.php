@@ -36,6 +36,11 @@ final class PromotionStatsWidget extends StatsOverviewWidget
                 ->color('success')
                 ->icon('heroicon-o-check-circle'),
 
+            Stat::make('Campaign Vouchers', (string) $overview['issued_vouchers'])
+                ->description($overview['redeemed_promotion_vouchers'] . ' redeemed • ' . $overview['active_promotion_vouchers'] . ' active')
+                ->color('info')
+                ->icon('heroicon-o-ticket'),
+
             Stat::make('Orders Influenced', (string) $overview['influenced_orders'])
                 ->description($overview['total_orders'] > 0
                     ? number_format($overview['influenced_order_rate'], 1) . '% of ' . number_format($overview['total_orders']) . ' orders'

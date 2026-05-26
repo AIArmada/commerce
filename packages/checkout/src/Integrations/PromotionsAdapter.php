@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Integrations;
 
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Promotions\Contracts\PromotionServiceInterface;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
-use AIArmada\Vouchers\Data\VoucherValidationResult;
 use Illuminate\Support\Collection;
 
 final class PromotionsAdapter
 {
     public function __construct(
-        private readonly ?TargetingEngineInterface $targetingEngine = null,
+        private readonly ?DiscountCodeResolver $discountCodeResolver = null,
     ) {}
 
     /**
@@ -35,9 +32,10 @@ final class PromotionsAdapter
         $promotionService = app(PromotionServiceInterface::class);
         $context = $this->makeContext($session);
         $promotions = $promotionService->getApplicablePromotions($context);
-        $codePromotion = $this->resolveCodePromotion($session, $context);
+        $resolvedDiscountCode = $this->discountCodeResolver()->resolve($session, $context);
+        $codePromotion = $resolvedDiscountCode->promotion;
 
-        if ($codePromotion !== null) {
+        if ($resolvedDiscountCode->isPromotion() && $codePromotion instanceof Promotion) {
             $promotions = $promotions
                 ->push($codePromotion)
                 ->sortByDesc('priority')
@@ -145,77 +143,8 @@ final class PromotionsAdapter
         return $applied;
     }
 
-    private function resolveCodePromotion(CheckoutSession $session, TargetingContext $context): ?Promotion
+    private function discountCodeResolver(): DiscountCodeResolver
     {
-        $promoCode = $this->resolvePromoCode($session);
-
-        if ($promoCode === null || $this->promoCodeResolvesToVoucher($promoCode, $session)) {
-            return null;
-        }
-
-        /** @var Collection<int, Promotion> $promotions */
-        $promotions = Promotion::query()
-            ->active()
-            ->withCode()
-            ->forOwner()
-            ->whereRaw('LOWER(code) = LOWER(?)', [$promoCode])
-            ->orderByDesc('priority')
-            ->get();
-
-        return $promotions->first(fn (Promotion $promotion): bool => $this->matchesContext($promotion, $context));
-    }
-
-    private function promoCodeResolvesToVoucher(string $promoCode, CheckoutSession $session): bool
-    {
-        if (! interface_exists(VoucherServiceInterface::class)) {
-            return false;
-        }
-
-        $voucherService = app(VoucherServiceInterface::class);
-
-        $validation = $voucherService->validate($promoCode, [
-            'customer_id' => $session->customer_id,
-            'subtotal' => $session->subtotal,
-            'currency' => $session->currency,
-        ]);
-
-        if ($validation instanceof VoucherValidationResult) {
-            return $validation->isValid;
-        }
-
-        return (bool) ($validation['valid'] ?? false);
-    }
-
-    private function resolvePromoCode(CheckoutSession $session): ?string
-    {
-        $promoCode = data_get($session->billing_data, 'metadata.promo_code')
-            ?? data_get($session->cart_snapshot, 'metadata.promo_code');
-
-        if (! is_string($promoCode)) {
-            return null;
-        }
-
-        $resolved = mb_trim($promoCode);
-
-        return $resolved !== '' ? $resolved : null;
-    }
-
-    private function matchesContext(Promotion $promotion, TargetingContext $context): bool
-    {
-        if (! $promotion->isActive()) {
-            return false;
-        }
-
-        $conditions = $promotion->conditions;
-
-        if ($conditions === null || $conditions === []) {
-            return true;
-        }
-
-        if (! is_array($conditions) || $this->targetingEngine === null) {
-            return false;
-        }
-
-        return $this->targetingEngine->evaluate($conditions, $context);
+        return $this->discountCodeResolver ?? app(DiscountCodeResolver::class);
     }
 }

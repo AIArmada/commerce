@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Pages;
 
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
+use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
+use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
@@ -46,10 +48,16 @@ final class EditPromotion extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            ViewAction::make(),
-            DeleteAction::make(),
-        ];
+        $actions = [];
+
+        if (Promotion::supportsIssuedVoucherTracking()) {
+            $actions[] = IssuePromotionVouchersAction::make();
+        }
+
+        $actions[] = ViewAction::make();
+        $actions[] = DeleteAction::make();
+
+        return $actions;
     }
 
     protected function getRedirectUrl(): string

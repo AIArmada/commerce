@@ -7,7 +7,10 @@ namespace AIArmada\FilamentPromotions\Support;
 use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Support\PromotionsOwnerScope;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
@@ -44,6 +47,9 @@ final class PromotionPerformanceInsights
      *     code_redemptions: int,
      *     automatic_redemptions: int,
      *     active_redemptions: int,
+     *     issued_vouchers: int,
+     *     redeemed_promotion_vouchers: int,
+     *     active_promotion_vouchers: int,
      *     total_orders: int,
      *     influenced_orders: int,
      *     code_influenced_orders: int,
@@ -68,7 +74,7 @@ final class PromotionPerformanceInsights
             'code_redemptions' => $this->sumUsageCount((clone $baseQuery)->whereNotNull('code')),
             'automatic_redemptions' => $this->sumUsageCount((clone $baseQuery)->whereNull('code')),
             'active_redemptions' => $this->sumUsageCount((clone $baseQuery)->where('is_active', true)),
-        ], $this->orderOverview());
+        ], $this->issuedVoucherOverview(clone $baseQuery), $this->orderOverview());
     }
 
     /**
@@ -123,6 +129,43 @@ final class PromotionPerformanceInsights
     private function sumUsageCount(Builder $query): int
     {
         return (int) $query->sum('usage_count');
+    }
+
+    /**
+     * @param  Builder<Promotion>  $query
+     * @return array{issued_vouchers: int, redeemed_promotion_vouchers: int, active_promotion_vouchers: int}
+     */
+    private function issuedVoucherOverview(Builder $query): array
+    {
+        if (! Promotion::supportsIssuedVoucherTracking()) {
+            return $this->emptyIssuedVoucherOverview();
+        }
+
+        $voucherModelClass = $this->issuedVoucherModelClass();
+
+        if ($voucherModelClass === null) {
+            return $this->emptyIssuedVoucherOverview();
+        }
+
+        $promotionIds = (clone $query)->pluck('id')->all();
+
+        if ($promotionIds === []) {
+            return $this->emptyIssuedVoucherOverview();
+        }
+
+        /** @var Model $voucherModel */
+        $voucherModel = new $voucherModelClass;
+
+        /** @var Builder<Model> $voucherQuery */
+        $voucherQuery = $voucherModel->newQuery()->whereIn('promotion_id', $promotionIds);
+
+        return [
+            'issued_vouchers' => (int) (clone $voucherQuery)->count(),
+            'redeemed_promotion_vouchers' => (int) (clone $voucherQuery)->whereHas('usages')->count(),
+            'active_promotion_vouchers' => (int) (clone $voucherQuery)
+                ->where('status', VoucherStatus::normalize(Active::class))
+                ->count(),
+        ];
     }
 
     /**
@@ -297,6 +340,18 @@ final class PromotionPerformanceInsights
         ];
     }
 
+    /**
+     * @return array{issued_vouchers: int, redeemed_promotion_vouchers: int, active_promotion_vouchers: int}
+     */
+    private function emptyIssuedVoucherOverview(): array
+    {
+        return [
+            'issued_vouchers' => 0,
+            'redeemed_promotion_vouchers' => 0,
+            'active_promotion_vouchers' => 0,
+        ];
+    }
+
     private function ordersAvailable(): bool
     {
         if (! class_exists(Order::class)) {
@@ -357,5 +412,24 @@ final class PromotionPerformanceInsights
         $normalized = mb_trim($value);
 
         return $normalized !== '' ? $normalized : null;
+    }
+
+    /**
+     * @return class-string<Model>|null
+     */
+    private function issuedVoucherModelClass(): ?string
+    {
+        foreach ([
+            '\\AIArmada\\FilamentVouchers\\Models\\Voucher',
+            '\\AIArmada\\Vouchers\\Models\\Voucher',
+        ] as $voucherModelClass) {
+            if (class_exists($voucherModelClass)) {
+                /** @var class-string<Model> $voucherModelClass */
+
+                return $voucherModelClass;
+            }
+        }
+
+        return null;
     }
 }

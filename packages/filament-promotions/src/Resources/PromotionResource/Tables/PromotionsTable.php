@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Tables;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
 use AIArmada\FilamentPromotions\Enums\PromotionType;
 use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\Promotions\Support\PromotionsOwnerScope;
@@ -115,6 +116,7 @@ final class PromotionsTable
                     ),
             ])
             ->actions([
+                ...(Promotion::supportsIssuedVoucherTracking() ? [IssuePromotionVouchersAction::make()] : []),
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make()

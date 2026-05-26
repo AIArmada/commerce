@@ -33,7 +33,7 @@ final class VouchersTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->withCount('usages'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->withCount('usages')->with('promotion'))
             ->columns([
                 TextColumn::make('code')
                     ->label('Code')
@@ -46,6 +46,12 @@ final class VouchersTable
                     ->label('Name')
                     ->searchable()
                     ->sortable(),
+
+                TextColumn::make('promotion_source_label')
+                    ->label('Source Promotion')
+                    ->placeholder('—')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('type')
                     ->label('Type')

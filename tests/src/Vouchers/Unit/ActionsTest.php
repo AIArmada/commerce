@@ -95,6 +95,25 @@ describe('CreateVoucher Action', function (): void {
             ->and($voucher->code)->toBe('ACTION-TEST');
     });
 
+    it('persists promotion traceability and compound configuration', function (): void {
+        $voucher = CreateVoucher::run([
+            'code' => 'ACTION-PROMOTION-LINK',
+            'type' => VoucherType::BuyXGetY,
+            'value' => 0,
+            'promotion_id' => 'promotion-trace-1',
+            'value_config' => [
+                'buy' => ['quantity' => 2],
+                'get' => ['quantity' => 1, 'discount' => '100%'],
+            ],
+        ]);
+
+        expect($voucher->promotion_id)->toBe('promotion-trace-1')
+            ->and($voucher->value_config)->toBe([
+                'buy' => ['quantity' => 2],
+                'get' => ['quantity' => 1, 'discount' => '100%'],
+            ]);
+    });
+
     it('overrides forged owner payload when owner context is resolved', function (): void {
         config()->set('vouchers.owner.enabled', true);
         config()->set('vouchers.owner.auto_assign_on_create', true);
