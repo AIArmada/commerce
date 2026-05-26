@@ -13,6 +13,7 @@ final class DocData
      * @param  array<int, array<string, mixed>>  $items
      * @param  array<string, mixed>|null  $customerData
      * @param  array<string, mixed>|null  $companyData
+     * @param  array<string, mixed>|null  $body
      * @param  array<string, mixed>|null  $metadata
      * @param  array<string, mixed>|null  $pdfOptions
      */
@@ -35,6 +36,7 @@ final class DocData
         public readonly ?string $currency = null,
         public readonly ?string $notes = null,
         public readonly ?string $terms = null,
+        public readonly ?array $body = null,
         public readonly ?array $customerData = null,
         public readonly ?array $companyData = null,
         public readonly ?array $metadata = null,
@@ -66,6 +68,7 @@ final class DocData
             currency: $data['currency'] ?? null,
             notes: $data['notes'] ?? null,
             terms: $data['terms'] ?? null,
+            body: $data['body'] ?? null,
             customerData: $data['customer_data'] ?? null,
             companyData: $data['company_data'] ?? null,
             metadata: $data['metadata'] ?? null,

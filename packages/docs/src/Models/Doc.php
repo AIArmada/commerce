@@ -42,6 +42,7 @@ use Spatie\ModelStates\HasStates;
  * @property string $discount_amount
  * @property string $total
  * @property string $currency
+ * @property array<string, mixed>|null $body
  * @property string|null $notes
  * @property string|null $terms
  * @property array<string, mixed>|null $customer_data
@@ -57,6 +58,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, DocVersion> $versions
  * @property-read Collection<int, DocEmail> $emails
  * @property-read Collection<int, DocApproval> $approvals
+ * @property-read Collection<int, DocShareLink> $shareLinks
  * @property-read DocEInvoiceSubmission|null $eInvoiceSubmission
  * @property-read Model|null $docable
  */
@@ -85,6 +87,7 @@ final class Doc extends Model
         'discount_amount',
         'total',
         'currency',
+        'body',
         'notes',
         'terms',
         'customer_data',
@@ -153,6 +156,14 @@ final class Doc extends Model
     public function approvals(): HasMany
     {
         return $this->hasMany(DocApproval::class);
+    }
+
+    /**
+     * @return HasMany<DocShareLink, $this>
+     */
+    public function shareLinks(): HasMany
+    {
+        return $this->hasMany(DocShareLink::class);
     }
 
     /**
@@ -282,6 +293,7 @@ final class Doc extends Model
             $doc->versions()->delete();
             $doc->emails()->delete();
             $doc->approvals()->delete();
+            $doc->shareLinks()->delete();
             $doc->eInvoiceSubmission?->delete();
         });
     }
@@ -300,6 +312,7 @@ final class Doc extends Model
             'tax_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total' => 'decimal:2',
+            'body' => 'array',
             'customer_data' => 'array',
             'company_data' => 'array',
             'items' => 'array',

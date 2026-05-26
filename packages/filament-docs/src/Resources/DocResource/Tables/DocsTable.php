@@ -143,6 +143,12 @@ final class DocsTable
                 ViewAction::make()
                     ->icon(Heroicon::OutlinedEye),
 
+                Action::make('preview_online')
+                    ->label('Preview')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->url(fn (Doc $record): string => route('filament-docs.documents.view', ['doc' => $record->getKey()]))
+                    ->openUrlInNewTab(),
+
                 EditAction::make()
                     ->icon(Heroicon::OutlinedPencil),
 

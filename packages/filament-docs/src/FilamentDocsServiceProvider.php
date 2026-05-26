@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs;
 
+use AIArmada\Docs\Contracts\RichContentRendererInterface;
+use AIArmada\FilamentDocs\Rendering\FilamentRichContentRenderer;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -21,6 +23,7 @@ final class FilamentDocsServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->singleton(FilamentDocsPlugin::class);
+        $this->app->singleton(RichContentRendererInterface::class, FilamentRichContentRenderer::class);
     }
 
     /**
@@ -30,6 +33,7 @@ final class FilamentDocsServiceProvider extends PackageServiceProvider
     {
         return [
             FilamentDocsPlugin::class,
+            RichContentRendererInterface::class,
         ];
     }
 }

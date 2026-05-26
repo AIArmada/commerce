@@ -39,6 +39,7 @@ abstract class CashierChipTestCase extends Orchestra
         Cashier::useCustomerModel(User::class);
         Cashier::useSubscriptionModel(Subscription::class);
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);
+        Cashier::rememberOctaneDefaults();
 
         // Manually require factories due to autoload issues in test environment
         if (file_exists(__DIR__ . '/../../../../packages/cashier-chip/database/factories/SubscriptionFactory.php')) {
@@ -54,8 +55,7 @@ abstract class CashierChipTestCase extends Orchestra
 
     protected function tearDown(): void
     {
-        // Reset and disable fake after each test
-        Cashier::unfake();
+        Cashier::restoreOctaneDefaults();
 
         parent::tearDown();
     }

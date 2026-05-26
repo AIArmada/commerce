@@ -16,6 +16,7 @@ return new class extends Migration
 
         $templatesTable = $tables['doc_templates'] ?? $tablePrefix . 'doc_templates';
         $docsTable = $tables['docs'] ?? $tablePrefix . 'docs';
+        $shareLinksTable = $tables['doc_share_links'] ?? $tablePrefix . 'doc_share_links';
         $statusTable = $tables['doc_status_histories'] ?? $tablePrefix . 'doc_status_histories';
 
         Schema::create($templatesTable, function (Blueprint $table) use ($templatesTable): void {
@@ -25,9 +26,9 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug');
             $table->text('description')->nullable();
-            $table->string('view_name');
             $table->string('doc_type')->default('invoice');
             $table->boolean('is_default')->default(false);
+            $table->{$jsonType}('layout');
             $table->{$jsonType}('settings')->nullable();
             $table->timestamps();
 
@@ -53,6 +54,7 @@ return new class extends Migration
             $table->decimal('discount_amount', 15, 2)->default(0);
             $table->decimal('total', 15, 2)->default(0);
             $table->string('currency', 3)->default('MYR');
+            $table->{$jsonType}('body')->nullable();
             $table->text('notes')->nullable();
             $table->text('terms')->nullable();
             $table->{$jsonType}('customer_data')->nullable();
@@ -66,6 +68,24 @@ return new class extends Migration
             $table->index('status', $docsTable . '_status_index');
             $table->index('issue_date', $docsTable . '_issue_date_index');
             $table->index('due_date', $docsTable . '_due_date_index');
+        });
+
+        Schema::create($shareLinksTable, function (Blueprint $table) use ($shareLinksTable): void {
+            $jsonType = (string) commerce_json_column_type('docs', 'json');
+            $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
+            $table->foreignUuid('doc_id');
+            $table->string('token_hash', 64)->unique($shareLinksTable . '_token_hash_unique');
+            $table->{$jsonType}('allowed_actions');
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamp('revoked_at')->nullable();
+            $table->unsignedInteger('access_count')->default(0);
+            $table->timestamp('last_accessed_at')->nullable();
+            $table->timestamps();
+
+            $table->index('doc_id', $shareLinksTable . '_doc_id_index');
+            $table->index('expires_at', $shareLinksTable . '_expires_at_index');
+            $table->index('revoked_at', $shareLinksTable . '_revoked_at_index');
         });
 
         Schema::create($statusTable, function (Blueprint $table) use ($statusTable): void {
@@ -90,9 +110,11 @@ return new class extends Migration
 
         $templatesTable = $tables['doc_templates'] ?? $tablePrefix . 'doc_templates';
         $docsTable = $tables['docs'] ?? $tablePrefix . 'docs';
+        $shareLinksTable = $tables['doc_share_links'] ?? $tablePrefix . 'doc_share_links';
         $statusTable = $tables['doc_status_histories'] ?? $tablePrefix . 'doc_status_histories';
 
         Schema::dropIfExists($statusTable);
+        Schema::dropIfExists($shareLinksTable);
         Schema::dropIfExists($docsTable);
         Schema::dropIfExists($templatesTable);
     }

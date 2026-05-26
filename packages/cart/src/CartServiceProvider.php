@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Conditions\ConditionPresets;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
@@ -19,6 +20,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\ConnectionResolverInterface;
+use Laravel\Octane\Events\RequestReceived;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -60,6 +62,11 @@ final class CartServiceProvider extends PackageServiceProvider
 
         $this->validateOwnerConfiguration();
         $this->registerEventListeners();
+        $this->registerOctaneListeners();
+
+        $this->app->booted(static function (): void {
+            ConditionPresets::rememberOctaneDefaults();
+        });
     }
 
     /**
@@ -159,5 +166,16 @@ final class CartServiceProvider extends PackageServiceProvider
         $dispatcher = $this->app->make(Dispatcher::class);
         $dispatcher->listen(Attempting::class, HandleUserLoginAttempt::class);
         $dispatcher->listen(Login::class, HandleUserLogin::class);
+    }
+
+    private function registerOctaneListeners(): void
+    {
+        if (! class_exists(RequestReceived::class)) {
+            return;
+        }
+
+        $this->app['events']->listen(RequestReceived::class, static function (): void {
+            ConditionPresets::restoreOctaneDefaults();
+        });
     }
 }

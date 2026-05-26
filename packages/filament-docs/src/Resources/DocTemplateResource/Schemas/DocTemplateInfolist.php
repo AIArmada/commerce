@@ -10,6 +10,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 final class DocTemplateInfolist
 {
@@ -36,9 +37,9 @@ final class DocTemplateInfolist
 
                         Grid::make(2)
                             ->schema([
-                                TextEntry::make('view_name')
-                                    ->label('View Name')
-                                    ->copyable(),
+                                TextEntry::make('layout_blocks_count')
+                                    ->label('Layout Blocks')
+                                    ->getStateUsing(fn ($record): int => count($record->layout ?? [])),
 
                                 IconEntry::make('is_default')
                                     ->label('Default Template')
@@ -84,6 +85,30 @@ final class DocTemplateInfolist
                                         );
                                     }),
                             ]),
+                    ])
+                    ->collapsible(),
+
+                Section::make('Layout')
+                    ->schema([
+                        TextEntry::make('layout_summary')
+                            ->label('Blocks')
+                            ->getStateUsing(function ($record): string {
+                                $blockTypes = array_filter(
+                                    array_map(
+                                        fn (mixed $block): ?string => is_array($block) && is_string($block['type'] ?? null)
+                                            ? $block['type']
+                                            : null,
+                                        $record->layout ?? []
+                                    )
+                                );
+
+                                return implode(', ', array_map(
+                                    fn (string $type): string => Str::headline(str_replace('_', ' ', $type)),
+                                    $blockTypes
+                                ));
+                            })
+                            ->placeholder('No blocks configured')
+                            ->columnSpanFull(),
                     ])
                     ->collapsible(),
 
