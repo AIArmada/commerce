@@ -24,7 +24,7 @@ return [
 
     'features' => [
         'owner' => [
-            'enabled' => env('EVENTS_OWNER_ENABLED', true),
+            'enabled' => env('EVENTS_OWNER_ENABLED', false),
             'include_global' => env('EVENTS_OWNER_INCLUDE_GLOBAL', false),
             'auto_assign_on_create' => env('EVENTS_OWNER_AUTO_ASSIGN', true),
         ],

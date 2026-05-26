@@ -16,7 +16,6 @@ use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookService;
-use AIArmada\Chip\Support\DocsIntegrationRegistrar;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -149,11 +148,7 @@ final class ChipServiceProvider extends PackageServiceProvider
         ];
     }
 
-    protected function bootDocsIntegration(): void
-    {
-        $registrar = new DocsIntegrationRegistrar;
-        $registrar->register();
-    }
+    protected function bootDocsIntegration(): void {}
 
     protected function registerMiddleware(): void
     {
