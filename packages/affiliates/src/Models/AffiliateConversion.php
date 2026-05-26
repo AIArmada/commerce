@@ -121,7 +121,7 @@ class AffiliateConversion extends Model
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');
     }
 
-    public function scopeForOwner(Builder $query, Model|string|null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
     {
         if (! config('affiliates.owner.enabled', false)) {
             return $query;
