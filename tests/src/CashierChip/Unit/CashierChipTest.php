@@ -88,3 +88,27 @@ it('can ignore routes', function (): void {
     // Reset
     Cashier::$registersRoutes = true;
 });
+
+it('restores boot-time static configuration between requests', function (): void {
+    expect(Cashier::isFake())->toBeTrue();
+
+    Cashier::ignoreRoutes();
+    Cashier::keepPastDueSubscriptionsActive();
+    Cashier::keepIncompleteSubscriptionsActive();
+    Cashier::useCustomerModel(Subscription::class);
+    Cashier::useSubscriptionModel(User::class);
+    Cashier::useSubscriptionItemModel(User::class);
+    Cashier::formatCurrencyUsing(fn ($amount, $currency, $locale, $options) => 'mutated');
+
+    Cashier::restoreOctaneDefaults();
+
+    expect(Cashier::$registersRoutes)->toBeTrue()
+        ->and(Cashier::$deactivatePastDue)->toBeTrue()
+        ->and(Cashier::$deactivateIncomplete)->toBeTrue()
+        ->and(Cashier::$customerModel)->toBe(User::class)
+        ->and(Cashier::$subscriptionModel)->toBe(Subscription::class)
+        ->and(Cashier::$subscriptionItemModel)->toBe(SubscriptionItem::class)
+        ->and(Cashier::isFake())->toBeFalse()
+        ->and(Cashier::getFake())->toBeNull()
+        ->and(Cashier::formatAmount(1000, 'MYR'))->not->toBe('mutated');
+});

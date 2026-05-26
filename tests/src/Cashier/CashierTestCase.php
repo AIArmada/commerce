@@ -34,6 +34,7 @@ abstract class CashierTestCase extends Orchestra
         $this->setUpDatabase();
 
         Cashier::useCustomerModel(User::class);
+        Cashier::rememberOctaneDefaults();
 
         if ($this->app->bound(GatewayManager::class)) {
             $this->gatewayManager = $this->app->make(GatewayManager::class);

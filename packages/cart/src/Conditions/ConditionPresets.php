@@ -29,6 +29,10 @@ final class ConditionPresets
 {
     private static ?RulesFactoryInterface $rulesFactory = null;
 
+    private static bool $hasRememberedOctaneDefaults = false;
+
+    private static ?RulesFactoryInterface $octaneRulesFactory = null;
+
     // =========================================================================
     // CART-LEVEL DISCOUNTS
     // =========================================================================
@@ -658,6 +662,27 @@ final class ConditionPresets
     public static function setRulesFactory(RulesFactoryInterface $factory): void
     {
         self::$rulesFactory = $factory;
+    }
+
+    /**
+     * Snapshot boot-time defaults so Octane can restore them on each request.
+     */
+    public static function rememberOctaneDefaults(): void
+    {
+        self::$hasRememberedOctaneDefaults = true;
+        self::$octaneRulesFactory = self::$rulesFactory;
+    }
+
+    /**
+     * Restore boot-time defaults before handling the next Octane request.
+     */
+    public static function restoreOctaneDefaults(): void
+    {
+        if (! self::$hasRememberedOctaneDefaults) {
+            return;
+        }
+
+        self::$rulesFactory = self::$octaneRulesFactory;
     }
 
     /**

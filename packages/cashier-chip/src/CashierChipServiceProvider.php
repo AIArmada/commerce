@@ -20,6 +20,7 @@ use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Support\Facades\Event;
+use Laravel\Octane\Events\RequestReceived;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -48,6 +49,11 @@ final class CashierChipServiceProvider extends PackageServiceProvider
     public function bootingPackage(): void
     {
         $this->registerEventListeners();
+        $this->registerOctaneListeners();
+
+        $this->app->booted(static function (): void {
+            Cashier::rememberOctaneDefaults();
+        });
     }
 
     /**
@@ -89,5 +95,16 @@ final class CashierChipServiceProvider extends PackageServiceProvider
         Event::listen(PurchasePreauthorized::class, HandlePurchasePreauthorized::class);
         Event::listen(PurchaseSubscriptionChargeFailure::class, HandleSubscriptionChargeFailure::class);
         Event::listen(BillingCancelled::class, HandleBillingCancelled::class);
+    }
+
+    private function registerOctaneListeners(): void
+    {
+        if (! class_exists(RequestReceived::class)) {
+            return;
+        }
+
+        $this->app['events']->listen(RequestReceived::class, static function (): void {
+            Cashier::restoreOctaneDefaults();
+        });
     }
 }

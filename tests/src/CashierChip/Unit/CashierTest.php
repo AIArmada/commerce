@@ -15,11 +15,7 @@ class CashierTest extends CashierChipTestCase
 {
     protected function tearDown(): void
     {
-        // Reset static properties
-        Cashier::$registersRoutes = true;
-        Cashier::$deactivatePastDue = true;
-        Cashier::$deactivateIncomplete = true;
-        Cashier::formatCurrencyUsing(null);
+        Cashier::restoreOctaneDefaults();
 
         parent::tearDown();
     }
