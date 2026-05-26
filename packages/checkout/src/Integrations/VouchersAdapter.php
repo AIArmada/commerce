@@ -156,7 +156,7 @@ final class VouchersAdapter
      * @return array{valid: bool, message: string|null, voucher: array<string, mixed>|null}
      */
     private function normalizeValidationResult(
-        array|VoucherValidationResult $validation,
+        array | VoucherValidationResult $validation,
         VoucherServiceInterface $voucherService,
         string $code
     ): array {
