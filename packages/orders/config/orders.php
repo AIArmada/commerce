@@ -24,7 +24,7 @@ return [
 
     /* Features */
     'owner' => [
-        'enabled' => env('ORDERS_OWNER_ENABLED', true),
+        'enabled' => env('ORDERS_OWNER_ENABLED', false),
         'include_global' => env('ORDERS_OWNER_INCLUDE_GLOBAL', false),
         'auto_assign_on_create' => env('ORDERS_OWNER_AUTO_ASSIGN_ON_CREATE', true),
     ],
@@ -57,13 +57,13 @@ return [
     /* Integrations */
     'integrations' => [
         'inventory' => [
-            'enabled' => env('ORDERS_INTEGRATIONS_INVENTORY_ENABLED', true),
+            'enabled' => env('ORDERS_INTEGRATIONS_INVENTORY_ENABLED', false),
         ],
         'affiliates' => [
-            'enabled' => env('ORDERS_INTEGRATIONS_AFFILIATES_ENABLED', true),
+            'enabled' => env('ORDERS_INTEGRATIONS_AFFILIATES_ENABLED', false),
         ],
         'docs' => [
-            'enabled' => env('ORDERS_INTEGRATIONS_DOCS_ENABLED', true),
+            'enabled' => env('ORDERS_INTEGRATIONS_DOCS_ENABLED', false),
             'generate_pdf' => env('ORDERS_INTEGRATIONS_DOCS_GENERATE_PDF', false),
         ],
     ],
