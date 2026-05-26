@@ -30,7 +30,7 @@ class WebhookController extends Controller
 
             if ($owner === null) {
                 Log::channel(config('chip.logging.channel', 'stack'))
-                    ->error('CHIP webhook received but no owner could be resolved for brand_id', [
+                    ->warning('CHIP webhook received but no owner could be resolved for brand_id', [
                         'event_type' => $eventType,
                         'brand_id' => $payload['brand_id'] ?? null,
                     ]);
