@@ -14,6 +14,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Assets\Css;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -61,6 +62,9 @@ class AffiliatePanelProvider extends PanelProvider
             ->colors([
                 'primary' => $config['primary_color'],
             ])
+            ->assets([
+                Css::make('affiliate-portal', __DIR__ . '/../resources/css/affiliate-portal.css'),
+            ], 'aiarmada/filament-affiliates')
             ->pages($this->getPages())
             ->middleware($this->getMiddleware())
             ->authMiddleware($this->getAuthMiddleware());

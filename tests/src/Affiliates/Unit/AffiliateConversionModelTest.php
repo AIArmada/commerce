@@ -46,6 +46,87 @@ describe('AffiliateConversion Model', function (): void {
         expect($conversion->commission_minor)->toBe(5500);
     });
 
+    test('records pending commissions in holding balance by default', function (): void {
+        config(['affiliates.commissions.auto_approve' => false]);
+
+        AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'order_reference' => 'ORD-BAL-' . uniqid(),
+            'subtotal_minor' => 10000,
+            'total_minor' => 10000,
+            'commission_minor' => 1000,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        $balance = $this->affiliate->fresh()->balance;
+
+        expect($balance)->not->toBeNull()
+            ->and($balance?->holding_minor)->toBe(1000)
+            ->and($balance?->available_minor)->toBe(0)
+            ->and($balance?->lifetime_earnings_minor)->toBe(1000);
+    });
+
+    test('auto approved conversions become available immediately', function (): void {
+        config(['affiliates.commissions.auto_approve' => true]);
+
+        $conversion = AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'order_reference' => 'ORD-AUTO-' . uniqid(),
+            'subtotal_minor' => 10000,
+            'total_minor' => 10000,
+            'commission_minor' => 1000,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'occurred_at' => now(),
+        ])->fresh();
+
+        $balance = $this->affiliate->fresh()->balance;
+
+        expect($conversion?->status->equals(ApprovedConversion::class))->toBeTrue()
+            ->and($conversion?->approved_at)->not->toBeNull()
+            ->and($balance)->not->toBeNull()
+            ->and($balance?->holding_minor)->toBe(0)
+            ->and($balance?->available_minor)->toBe(1000)
+            ->and($balance?->lifetime_earnings_minor)->toBe(1000);
+    });
+
+    test('approved and paid transitions update affiliate balances', function (): void {
+        config(['affiliates.commissions.auto_approve' => false]);
+
+        $conversion = AffiliateConversion::create([
+            'affiliate_id' => $this->affiliate->id,
+            'affiliate_code' => $this->affiliate->code,
+            'order_reference' => 'ORD-TRANS-' . uniqid(),
+            'subtotal_minor' => 10000,
+            'total_minor' => 10000,
+            'commission_minor' => 1000,
+            'commission_currency' => 'USD',
+            'status' => PendingConversion::class,
+            'occurred_at' => now(),
+        ]);
+
+        $conversion->update(['status' => ApprovedConversion::class]);
+
+        $conversion = $conversion->fresh();
+        $balance = $this->affiliate->fresh()->balance;
+
+        expect($conversion?->approved_at)->not->toBeNull()
+            ->and($balance)->not->toBeNull()
+            ->and($balance?->holding_minor)->toBe(0)
+            ->and($balance?->available_minor)->toBe(1000);
+
+        $conversion?->update(['status' => PaidConversion::class]);
+
+        $balance = $this->affiliate->fresh()->balance;
+
+        expect($balance?->available_minor)->toBe(0)
+            ->and($balance?->lifetime_earnings_minor)->toBe(1000);
+    });
+
     test('belongs to affiliate', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,

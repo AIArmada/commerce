@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -123,8 +124,19 @@ trait InteractsWithAffiliate
         }
 
         return (int) $affiliate->conversions()
-            ->where('status', ApprovedConversion::value())
+            ->whereIn('status', [ApprovedConversion::value(), PaidConversion::value()])
             ->sum('commission_minor');
+    }
+
+    public function getAvailableEarnings(): int
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return 0;
+        }
+
+        return (int) ($affiliate->balance?->available_minor ?? 0);
     }
 
     /**
@@ -186,6 +198,6 @@ trait InteractsWithAffiliate
         $zeroDecimalCurrencies = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'RWF'];
         $decimals = in_array(mb_strtoupper($currency), $zeroDecimalCurrencies, true) ? 0 : 2;
 
-        return mb_strtoupper($currency) . ' ' . MoneyFormatter::decimalFromMinor($amount, $currency, $decimals);
+        return mb_strtoupper($currency).' '.MoneyFormatter::decimalFromMinor($amount, $currency, $decimals);
     }
 }

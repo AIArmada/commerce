@@ -152,6 +152,33 @@ it('affiliate portal views and schemas use state helpers instead of enum value p
         ->toContain('AffiliateStatus::colorFor($state)');
 });
 
+it('affiliate portal ships package-owned styling hooks instead of relying on app themes', function (): void {
+    $repositoryRoot = dirname(__DIR__, 4);
+
+    $dashboardSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/resources/views/pages/portal/dashboard.blade.php');
+    $linksSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/resources/views/pages/portal/links.blade.php');
+    $conversionsSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/resources/views/pages/portal/conversions.blade.php');
+    $payoutsSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/resources/views/pages/portal/payouts.blade.php');
+    $stylesheetSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/resources/css/affiliate-portal.css');
+
+    expect($dashboardSource)
+        ->toContain('fia-portal-hero')
+        ->toContain('fia-portal-stats')
+        ->toContain('fia-portal-status')
+        ->not->toContain('bg-gradient-to-r')
+        ->not->toContain('!p-4')
+        ->and($linksSource)
+        ->toContain('fia-portal-inline-code')
+        ->and($conversionsSource)
+        ->toContain('fia-portal-summary-grid')
+        ->and($payoutsSource)
+        ->toContain('fia-portal-summary-grid')
+        ->and($stylesheetSource)
+        ->toContain('.fia-portal-hero')
+        ->toContain('.fia-portal-status .fi-badge')
+        ->toContain('.fia-portal-stats');
+});
+
 it('AffiliatePayoutsTable configures table', function (): void {
     $table = Mockery::mock(Table::class);
     $table->shouldReceive('columns')->once()->andReturnSelf();

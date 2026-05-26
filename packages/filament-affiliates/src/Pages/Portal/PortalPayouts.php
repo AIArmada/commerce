@@ -100,6 +100,7 @@ class PortalPayouts extends Page implements HasTable
         return [
             'hasAffiliate' => $this->hasAffiliate(),
             'totalPaid' => $totalPaid,
+            'availableEarnings' => $this->getAvailableEarnings(),
             'pendingEarnings' => $this->getPendingEarnings(),
         ];
     }

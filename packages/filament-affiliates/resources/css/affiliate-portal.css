@@ -1,0 +1,519 @@
+.fia-portal-stack {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.fia-portal-empty {
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+.fia-portal-empty-icon {
+    width: 3rem;
+    height: 3rem;
+    color: var(--gray-400);
+}
+
+.fia-portal-empty-title {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    color: var(--gray-950);
+}
+
+.fia-portal-empty-copy {
+    max-width: 28rem;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    color: var(--gray-500);
+}
+
+.fia-portal-hero {
+    display: grid;
+    gap: 1rem;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+    color: var(--color-white);
+    box-shadow: 0 20px 45px -30px color-mix(in oklab, var(--primary-700) 70%, transparent);
+}
+
+.fia-portal-hero-copy {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.fia-portal-hero-eyebrow {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    color: color-mix(in oklab, var(--color-white) 78%, transparent);
+}
+
+.fia-portal-hero-amount {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.fia-portal-hero-subtext {
+    font-size: 0.9375rem;
+    line-height: 1.5rem;
+    color: color-mix(in oklab, var(--color-white) 72%, transparent);
+}
+
+.fia-portal-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.fia-portal-hero-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.875rem;
+    background: color-mix(in oklab, var(--color-white) 18%, transparent);
+    color: var(--color-white);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.fia-portal-hero-link:hover,
+.fia-portal-hero-link:focus-visible {
+    background: color-mix(in oklab, var(--color-white) 28%, transparent);
+}
+
+.fia-portal-inline-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.fia-portal-stats {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fia-portal-stat-card > .fi-section-content-ctn > .fi-section-content {
+    padding: 1rem;
+}
+
+.fia-portal-stat {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.fia-portal-stat-icon {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.875rem;
+    flex-shrink: 0;
+}
+
+.fia-portal-stat-icon .fi-icon,
+.fia-portal-stat-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.fia-portal-stat-icon--success {
+    background: color-mix(in oklab, var(--success-100) 88%, transparent);
+    color: var(--success-600);
+}
+
+.fia-portal-stat-icon--primary {
+    background: color-mix(in oklab, var(--primary-100) 88%, transparent);
+    color: var(--primary-600);
+}
+
+.fia-portal-stat-icon--warning {
+    background: color-mix(in oklab, var(--warning-100) 88%, transparent);
+    color: var(--warning-600);
+}
+
+.fia-portal-stat-icon--indigo {
+    background: color-mix(in oklab, var(--info-100) 80%, transparent);
+    color: var(--info-700);
+}
+
+.fia-portal-stat-icon--info {
+    background: color-mix(in oklab, var(--info-100) 88%, transparent);
+    color: var(--info-600);
+}
+
+.fia-portal-stat-copy {
+    min-width: 0;
+}
+
+.fia-portal-stat-label {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    color: var(--gray-500);
+}
+
+.fia-portal-stat-value {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+    color: var(--gray-950);
+}
+
+.fia-portal-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.fia-portal-detail-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.fia-portal-detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.875rem;
+    background: var(--gray-50);
+}
+
+.fia-portal-detail-label {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    color: var(--gray-500);
+}
+
+.fia-portal-detail-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    text-align: end;
+    color: var(--gray-950);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+}
+
+.fia-portal-code {
+    color: var(--primary-600);
+    font-family: var(--default-mono-font-family);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 700;
+}
+
+.fia-portal-table-wrap {
+    overflow-x: auto;
+    margin-inline: calc(var(--spacing) * -4);
+    padding-inline: calc(var(--spacing) * 4);
+}
+
+.fia-portal-table {
+    width: 100%;
+    min-width: 40rem;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+}
+
+.fia-portal-table th,
+.fia-portal-table td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.fia-portal-table thead th {
+    border-bottom: 1px solid var(--gray-200);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.fia-portal-table tbody td {
+    border-bottom: 1px solid color-mix(in oklab, var(--gray-200) 75%, transparent);
+}
+
+.fia-portal-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.fia-portal-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+.fia-portal-order {
+    display: block;
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--default-mono-font-family);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    color: var(--gray-950);
+}
+
+.fia-portal-date {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: var(--gray-500);
+    white-space: nowrap;
+}
+
+.fia-portal-amount-cell,
+.fia-portal-status {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.fia-portal-amount {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    color: var(--success-600);
+}
+
+.fia-portal-status .fi-badge {
+    overflow: visible;
+    width: max-content;
+    max-width: none;
+}
+
+.fia-portal-field-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.fia-portal-field {
+    display: grid;
+    gap: 0.375rem;
+}
+
+.fia-portal-label {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.fia-portal-helper {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: var(--gray-500);
+}
+
+.fia-portal-inline-code {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.fia-portal-code-box {
+    flex: 1;
+    min-width: 0;
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.875rem;
+    background: var(--gray-100);
+    font-family: var(--default-mono-font-family);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--gray-950);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fia-portal-code-box--success {
+    background: color-mix(in oklab, var(--success-50) 92%, transparent);
+    border: 1px solid color-mix(in oklab, var(--success-200) 90%, transparent);
+}
+
+.fia-portal-summary-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.fia-portal-summary-grid--two {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.fia-portal-summary-grid--three {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.fia-portal-summary-card > .fi-section-content-ctn > .fi-section-content {
+    padding: 1.25rem;
+}
+
+.fia-portal-summary {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+.fia-portal-summary-icon {
+    width: 2rem;
+    height: 2rem;
+}
+
+.fia-portal-summary-icon--primary {
+    color: var(--primary-500);
+}
+
+.fia-portal-summary-icon--success {
+    color: var(--success-500);
+}
+
+.fia-portal-summary-icon--warning {
+    color: var(--warning-500);
+}
+
+.fia-portal-summary-value {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    color: var(--gray-950);
+}
+
+.fia-portal-summary-label {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--gray-500);
+}
+
+.fia-portal-tips {
+    margin: 0;
+    padding-inline-start: 1.25rem;
+    display: grid;
+    gap: 0.75rem;
+    color: var(--gray-700);
+    font-size: 0.9375rem;
+    line-height: 1.625rem;
+}
+
+@media (min-width: 40rem) {
+    .fia-portal-hero {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+    }
+
+    .fia-portal-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 48rem) {
+    .fia-portal-summary-grid--two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fia-portal-summary-grid--three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 64rem) {
+    .fia-portal-stats {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .fia-portal-grid {
+        grid-template-columns: minmax(0, 0.95fr) minmax(0, 2.05fr);
+    }
+}
+
+:where(.dark, .dark *) .fia-portal-empty-title,
+:where(.dark, .dark *) .fia-portal-stat-value,
+:where(.dark, .dark *) .fia-portal-detail-value,
+:where(.dark, .dark *) .fia-portal-order,
+:where(.dark, .dark *) .fia-portal-code-box,
+:where(.dark, .dark *) .fia-portal-summary-value {
+    color: var(--color-white);
+}
+
+:where(.dark, .dark *) .fia-portal-empty-copy,
+:where(.dark, .dark *) .fia-portal-stat-label,
+:where(.dark, .dark *) .fia-portal-detail-label,
+:where(.dark, .dark *) .fia-portal-date,
+:where(.dark, .dark *) .fia-portal-helper,
+:where(.dark, .dark *) .fia-portal-summary-label {
+    color: var(--gray-400);
+}
+
+:where(.dark, .dark *) .fia-portal-detail-row {
+    background: color-mix(in oklab, var(--color-white) 6%, transparent);
+}
+
+:where(.dark, .dark *) .fia-portal-table thead th {
+    border-bottom-color: color-mix(in oklab, var(--color-white) 12%, transparent);
+}
+
+:where(.dark, .dark *) .fia-portal-table tbody td {
+    border-bottom-color: color-mix(in oklab, var(--color-white) 10%, transparent);
+}
+
+:where(.dark, .dark *) .fia-portal-table tbody tr:hover {
+    background: color-mix(in oklab, var(--color-white) 5%, transparent);
+}
+
+:where(.dark, .dark *) .fia-portal-code-box {
+    background: color-mix(in oklab, var(--color-white) 7%, transparent);
+}
+
+:where(.dark, .dark *) .fia-portal-code-box--success {
+    background: color-mix(in oklab, var(--success-500) 10%, transparent);
+    border-color: color-mix(in oklab, var(--success-400) 25%, transparent);
+}
+
+:where(.dark, .dark *) .fia-portal-stat-icon--success {
+    background: color-mix(in oklab, var(--success-500) 15%, transparent);
+    color: var(--success-400);
+}
+
+:where(.dark, .dark *) .fia-portal-stat-icon--primary {
+    background: color-mix(in oklab, var(--primary-500) 15%, transparent);
+    color: var(--primary-400);
+}
+
+:where(.dark, .dark *) .fia-portal-stat-icon--warning {
+    background: color-mix(in oklab, var(--warning-500) 15%, transparent);
+    color: var(--warning-400);
+}
+
+:where(.dark, .dark *) .fia-portal-stat-icon--indigo,
+:where(.dark, .dark *) .fia-portal-stat-icon--info {
+    background: color-mix(in oklab, var(--info-500) 15%, transparent);
+    color: var(--info-400);
+}
+
+:where(.dark, .dark *) .fia-portal-label,
+:where(.dark, .dark *) .fia-portal-tips {
+    color: var(--gray-300);
+}
