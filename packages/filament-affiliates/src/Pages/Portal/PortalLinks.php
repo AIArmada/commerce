@@ -24,7 +24,7 @@ class PortalLinks extends Page
 
     public ?string $generatedLink = null;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedLink;
 
     protected static ?int $navigationSort = 1;
 
@@ -36,7 +36,7 @@ class PortalLinks extends Page
         return __('Links');
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return __('Affiliate Links');
     }
@@ -77,7 +77,7 @@ class PortalLinks extends Page
         } catch (InvalidArgumentException) {
             $param = config('affiliates.links.parameter', 'aff');
 
-            return $publicUrl.'?'.$param.'='.$affiliate->code;
+            return $publicUrl . '?' . $param . '=' . $affiliate->code;
         }
     }
 
@@ -139,6 +139,6 @@ class PortalLinks extends Page
 
     private function resolvePublicUrl(): string
     {
-        return rtrim((string) config('app.url'), '/').'/';
+        return mb_rtrim((string) config('app.url'), '/') . '/';
     }
 }
