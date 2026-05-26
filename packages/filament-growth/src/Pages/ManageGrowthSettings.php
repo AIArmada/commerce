@@ -30,7 +30,6 @@ final class ManageGrowthSettings extends Page
 
     protected static ?string $slug = 'growth/settings';
 
-    /** @var view-string */
     protected string $view = 'filament-growth::pages.manage-growth-settings';
 
     public static function getNavigationGroup(): string | UnitEnum | null
@@ -119,8 +118,11 @@ final class ManageGrowthSettings extends Page
     {
         try {
             $settings = app(GrowthSettings::class);
+            $experimentMiddlewareEnabled = $settings->experimentMiddlewareEnabled;
 
-            $settings->experimentMiddlewareEnabled;
+            if (is_bool($experimentMiddlewareEnabled)) {
+                return $settings;
+            }
 
             return $settings;
         } catch (MissingSettings) {
