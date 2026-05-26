@@ -8,6 +8,8 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
 use Filament\Panel;
+use Filament\Support\Assets\Css;
+use Filament\Support\Facades\FilamentAsset;
 
 it('AffiliatePanelProvider can be instantiated', function (): void {
     $provider = new AffiliatePanelProvider(app());
@@ -57,4 +59,22 @@ it('AffiliatePanelProvider omits the payouts page when commission tracking is di
         PortalLinks::class,
         PortalConversions::class,
     ])->not->toContain(PortalPayouts::class);
+});
+
+it('AffiliatePanelProvider registers the affiliate portal stylesheet as a package asset', function (): void {
+    $provider = new AffiliatePanelProvider(app());
+    $panel = $provider->panel(Panel::make());
+
+    $panel->registerAssets();
+
+    $styles = FilamentAsset::getStyles(['aiarmada/filament-affiliates']);
+
+    expect($styles)
+        ->toBeArray()
+        ->not->toBeEmpty()
+        ->and(collect($styles)->every(fn (Css $style): bool => $style instanceof Css))->toBeTrue()
+        ->and(collect($styles)->map(fn (Css $style): string => $style->getId())->all())
+        ->toContain('affiliate-portal')
+        ->and(FilamentAsset::getStyleHref('affiliate-portal', 'aiarmada/filament-affiliates'))
+        ->toContain('/css/aiarmada/filament-affiliates/affiliate-portal.css');
 });

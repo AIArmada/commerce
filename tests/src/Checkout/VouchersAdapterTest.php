@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -9,8 +10,10 @@ use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\VoucherStatus;
+use Illuminate\Support\Facades\Event;
 use Mockery\Expectation;
 
 use function Pest\Laravel\mock;
@@ -168,4 +171,51 @@ it('calculates buy x get y voucher discounts against the live cart', function ()
             'type' => 'buy_x_get_y',
             'discount' => 2000,
         ]);
+});
+
+it('dispatches voucher applied events for live cart checkout voucher applications', function (): void {
+    Cart::clear();
+    Cart::clearConditions();
+    Cart::clearMetadata();
+    Cart::clearVouchers();
+
+    Cart::add('sku-event-voucher', 'Event Voucher Product', 10000, 1, ['sku' => 'EVENT-001']);
+
+    Voucher::query()->create([
+        'code' => 'EVENT10',
+        'name' => 'Event Voucher',
+        'type' => VoucherType::Percentage,
+        'value' => 1000,
+        'currency' => 'USD',
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'expires_at' => now()->addDay(),
+    ]);
+
+    $session = new CheckoutSession;
+    $session->id = 'session-event-voucher';
+    $session->cart_id = 'cart-live-event-voucher';
+    $session->subtotal = 10000;
+    $session->currency = 'USD';
+    $session->billing_data = [];
+    $session->cart_snapshot = ['metadata' => []];
+
+    $liveCart = app('cart')->getCurrentCart();
+    $cartManager = mock(CartManagerInterface::class);
+    $cartManager->shouldReceive('getById')
+        ->once()
+        ->with('cart-live-event-voucher')
+        ->andReturn($liveCart);
+
+    Event::fake([VoucherApplied::class]);
+
+    $result = (new VouchersAdapter)->applyVouchers($session, ['EVENT10']);
+
+    expect($result['discount'])->toBe(1000);
+
+    Event::assertDispatched(
+        VoucherApplied::class,
+        fn (VoucherApplied $event): bool => $event->cart->getIdentifier() === $liveCart->getIdentifier()
+            && $event->voucher->code === 'EVENT10',
+    );
 });

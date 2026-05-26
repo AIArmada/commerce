@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -121,7 +123,7 @@ class AffiliateConversion extends Model
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');
     }
 
-    public function scopeForOwner(Builder $query, Model|string|null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
     {
         if (! config('affiliates.owner.enabled', false)) {
             return $query;
@@ -159,13 +161,13 @@ class AffiliateConversion extends Model
         });
 
         static::created(function (self $conversion): void {
-            $affiliate = $conversion->affiliate;
+            $affiliate = $conversion->affiliate()->first();
 
             if (! $affiliate) {
                 return;
             }
 
-            $balance = $affiliate->balance ?? AffiliateBalance::create([
+            $balance = $affiliate->balance()->first() ?? AffiliateBalance::create([
                 'affiliate_id' => $affiliate->id,
                 'available_minor' => 0,
                 'holding_minor' => 0,
@@ -199,7 +201,8 @@ class AffiliateConversion extends Model
             if ($newStatus->equals(ApprovedConversion::class) && $conversion->approved_at === null) {
                 $conversion->updateQuietly(['approved_at' => now()]);
 
-                $balance = $conversion->affiliate?->balance;
+                $affiliate = $conversion->affiliate()->first();
+                $balance = $affiliate?->balance()->first();
 
                 if ($balance) {
                     $balance->releaseFromHolding($conversion->commission_minor);
@@ -207,7 +210,8 @@ class AffiliateConversion extends Model
             }
 
             if ($newStatus->equals(PaidConversion::class)) {
-                $balance = $conversion->affiliate?->balance;
+                $affiliate = $conversion->affiliate()->first();
+                $balance = $affiliate?->balance()->first();
 
                 if ($balance) {
                     $balance->deductFromAvailable($conversion->commission_minor);

@@ -32,9 +32,11 @@ it('PortalDashboard returns view data with hasAffiliate', function (): void {
         ->toBeArray()
         ->toHaveKey('hasAffiliate')
         ->toHaveKey('totalEarnings')
+        ->toHaveKey('availableEarnings')
         ->toHaveKey('pendingEarnings')
         ->toHaveKey('totalClicks')
-        ->toHaveKey('totalConversions');
+        ->toHaveKey('totalConversions')
+        ->toHaveKey('conversionRate');
 });
 
 // PortalLinks Tests
@@ -58,7 +60,7 @@ it('PortalLinks mount initializes targetUrl', function (): void {
     $page = new PortalLinks;
     $page->mount();
 
-    expect($page->targetUrl)->toBe(url('/'));
+    expect($page->targetUrl)->toBe(mb_rtrim(url('/'), '/') . '/');
 });
 
 it('PortalLinks returns view data', function (): void {
@@ -125,5 +127,6 @@ it('PortalPayouts returns view data', function (): void {
         ->toBeArray()
         ->toHaveKey('hasAffiliate')
         ->toHaveKey('totalPaid')
+        ->toHaveKey('availableEarnings')
         ->toHaveKey('pendingEarnings');
 });

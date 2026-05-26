@@ -14,7 +14,7 @@ class PortalDashboard extends Page
 {
     use InteractsWithAffiliate;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedHome;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHome;
 
     protected static ?int $navigationSort = -2;
 
@@ -26,7 +26,7 @@ class PortalDashboard extends Page
         return __('Dashboard');
     }
 
-    public function getTitle(): string | Htmlable
+    public function getTitle(): string|Htmlable
     {
         return __('Affiliate Dashboard');
     }
@@ -37,14 +37,18 @@ class PortalDashboard extends Page
     public function getViewData(): array
     {
         $affiliate = $this->getAffiliate();
+        $clicks = $this->getTotalClicks();
+        $conversions = $this->getTotalConversions();
 
         return [
             'affiliate' => $affiliate,
             'hasAffiliate' => $this->hasAffiliate(),
             'totalEarnings' => $this->getTotalEarnings(),
             'pendingEarnings' => $this->getPendingEarnings(),
-            'totalClicks' => $this->getTotalClicks(),
-            'totalConversions' => $this->getTotalConversions(),
+            'availableEarnings' => $this->getAvailableEarnings(),
+            'totalClicks' => $clicks,
+            'totalConversions' => $conversions,
+            'conversionRate' => $clicks > 0 ? round(($conversions / $clicks) * 100, 1) : 0,
             'recentConversions' => $this->getConversions(5),
             'recentPayouts' => $this->getPayouts(3),
         ];

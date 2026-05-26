@@ -10,7 +10,9 @@ use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
+use Illuminate\Support\Facades\Event;
 
 final class VouchersAdapter
 {
@@ -156,7 +158,7 @@ final class VouchersAdapter
      * @return array{valid: bool, message: string|null, voucher: array<string, mixed>|null}
      */
     private function normalizeValidationResult(
-        array|VoucherValidationResult $validation,
+        array | VoucherValidationResult $validation,
         VoucherServiceInterface $voucherService,
         string $code
     ): array {
