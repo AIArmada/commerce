@@ -162,6 +162,48 @@ it('falls back to voucher attribution when no conversion match exists', function
     ]);
 });
 
+it('resolves affiliate reporting safely when voucher usage has relationship autoloading enabled', function (): void {
+    $affiliate = filamentVouchers_makeAffiliate([
+        'code' => 'AFF-AUTOLOAD',
+        'name' => 'Autoload Partner',
+    ]);
+
+    AffiliateAttribution::query()->create([
+        'affiliate_id' => $affiliate->id,
+        'affiliate_code' => $affiliate->code,
+        'voucher_code' => 'AUTOLOAD-TRACK',
+        'cart_instance' => 'default',
+        'source' => 'search',
+        'medium' => 'organic',
+        'campaign' => 'autoload-safe',
+    ]);
+
+    $voucher = filamentVouchers_makeVoucher('AUTOLOAD-TRACK');
+
+    $usage = VoucherUsage::query()->create([
+        'voucher_id' => $voucher->id,
+        'discount_amount' => 600,
+        'currency' => 'USD',
+        'channel' => VoucherUsage::CHANNEL_AUTOMATIC,
+        'used_at' => now(),
+    ]);
+
+    $usage->setRelation('voucher', $voucher);
+    $usage->autoloadRelationsUsing(static function (array $tuples): void {});
+
+    $resolver = app(AffiliateReportingContextResolver::class);
+    $first = $resolver->resolve($usage);
+    $second = $resolver->resolve($usage);
+
+    expect($first)->toMatchArray([
+        'affiliate_code' => 'AFF-AUTOLOAD',
+        'affiliate_name' => 'Autoload Partner',
+        'source' => 'search',
+        'medium' => 'organic',
+        'campaign' => 'autoload-safe',
+    ])->and($second)->toBe($first);
+});
+
 it('resolves order references from metadata order ids when the order relation is not loaded', function (): void {
     $affiliate = filamentVouchers_makeAffiliate([
         'code' => 'AFF-ORDER-ID',
