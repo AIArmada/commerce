@@ -14,6 +14,8 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
+use AIArmada\Docs\Support\TemplateBlockRegistry;
+use Illuminate\Validation\ValidationException;
 
 test('it can generate doc numbers', function (): void {
     $service = app(DocService::class);
@@ -155,9 +157,9 @@ test('it uses default template when none specified', function (): void {
     DocTemplate::create([
         'name' => 'Test Default',
         'slug' => 'test-default',
-        'view_name' => 'test-default',
         'doc_type' => 'invoice',
         'is_default' => true,
+        'layout' => TemplateBlockRegistry::defaultLayout(),
     ]);
 
     $service = app(DocService::class);
@@ -174,9 +176,9 @@ test('it can use custom template', function (): void {
     $template = DocTemplate::create([
         'name' => 'Custom Template',
         'slug' => 'custom',
-        'view_name' => 'custom',
         'doc_type' => 'invoice',
         'is_default' => false,
+        'layout' => TemplateBlockRegistry::defaultLayout(),
     ]);
 
     $service = app(DocService::class);
@@ -188,6 +190,22 @@ test('it can use custom template', function (): void {
 
     expect($doc->template)->not->toBeNull()
         ->and($doc->template->slug)->toBe('custom');
+});
+
+test('it rejects templates from a different document type', function (): void {
+    $template = DocTemplate::create([
+        'name' => 'Quotation Template',
+        'slug' => 'quotation-template',
+        'doc_type' => 'quotation',
+        'is_default' => false,
+        'layout' => TemplateBlockRegistry::defaultLayout(),
+    ]);
+
+    expect(fn (): Doc => app(DocService::class)->create(DocData::from([
+        'doc_type' => 'invoice',
+        'doc_template_id' => $template->id,
+        'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
+    ])))->toThrow(ValidationException::class);
 });
 
 test('doc status has correct labels', function (): void {

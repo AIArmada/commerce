@@ -5,19 +5,26 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Docs\Enums\DocMergeTag;
+use AIArmada\Docs\Enums\DocTemplateBlockType;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\Support\DocRichContentStorage;
+use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 
@@ -54,7 +61,10 @@ final class DocForm
                                     ->options($docTypeOptions)
                                     ->default($defaultDocType)
                                     ->required()
-                                    ->live(),
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('doc_template_id', null);
+                                    }),
 
                                 Select::make('doc_template_id')
                                     ->label('Template')
@@ -78,6 +88,7 @@ final class DocForm
 
                                         return $options;
                                     })
+                                    ->live()
                                     ->searchable()
                                     ->helperText('Optional: Select a template'),
                             ]),
@@ -157,6 +168,29 @@ final class DocForm
                     ])
                     ->collapsible(),
 
+                Section::make('Document Body')
+                    ->schema([
+                        RichEditor::make('body')
+                            ->label('Body')
+                            ->json()
+                            ->mergeTags(DocMergeTag::labels())
+                            ->toolbarButtons([
+                                ['bold', 'italic', 'underline', 'strike', 'link'],
+                                ['h2', 'h3'],
+                                ['blockquote', 'bulletList', 'orderedList'],
+                                ['table', 'attachFiles'],
+                                ['mergeTags'],
+                                ['undo', 'redo'],
+                            ])
+                            ->fileAttachmentsDisk((string) config('docs.storage.disk', 'local'))
+                            ->fileAttachmentsDirectory(fn (): string => DocRichContentStorage::directory())
+                            ->fileAttachmentsVisibility((string) config('docs.storage.rich_content_visibility', 'private'))
+                            ->preventFileAttachmentPathTampering(fn (?Doc $record): bool => $record instanceof Doc && $record->exists)
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible()
+                    ->visible(fn (Get $get, ?Doc $record): bool => self::selectedTemplateUses($get, $record, DocTemplateBlockType::RichBody)),
+
                 Section::make('Line Items')
                     ->schema([
                         Repeater::make('items')
@@ -194,8 +228,9 @@ final class DocForm
                             ->itemLabel(fn (array $state, Get $get): string => ($state['name'] ?? 'New Item') .
                                 (isset($state['quantity'], $state['price']) ? ' - ' . $state['quantity'] . ' × ' . ($get('currency') ?? config('docs.defaults.currency', 'MYR')) . ' ' . number_format((float) $state['price'], 2) : ''))
                             ->columnSpanFull()
-                            ->defaultItems(1),
-                    ]),
+                            ->defaultItems(0),
+                    ])
+                    ->visible(fn (Get $get, ?Doc $record): bool => self::selectedTemplateUses($get, $record, DocTemplateBlockType::LineItems)),
 
                 Section::make('Amounts')
                     ->schema([
@@ -226,7 +261,8 @@ final class DocForm
                                     ->helperText('Auto-calculated if empty'),
                             ]),
                     ])
-                    ->collapsible(),
+                    ->collapsible()
+                    ->visible(fn (Get $get, ?Doc $record): bool => self::selectedTemplateUses($get, $record, DocTemplateBlockType::Totals)),
 
                 Section::make('Notes & Terms')
                     ->schema([
@@ -240,7 +276,8 @@ final class DocForm
                             ->rows(3)
                             ->columnSpanFull(),
                     ])
-                    ->collapsible(),
+                    ->collapsible()
+                    ->visible(fn (Get $get, ?Doc $record): bool => self::selectedTemplateUses($get, $record, DocTemplateBlockType::NotesTerms)),
 
                 Section::make('Metadata')
                     ->schema([
@@ -254,5 +291,53 @@ final class DocForm
                     ->collapsible()
                     ->collapsed(),
             ]);
+    }
+
+    private static function selectedTemplateUses(Get $get, ?Doc $record, DocTemplateBlockType $blockType): bool
+    {
+        $template = self::resolveSelectedTemplate($get, $record);
+
+        if (! $template instanceof DocTemplate) {
+            return TemplateBlockRegistry::hasBlock(TemplateBlockRegistry::defaultLayout(), $blockType);
+        }
+
+        return TemplateBlockRegistry::hasBlock($template->layout, $blockType);
+    }
+
+    private static function resolveSelectedTemplate(Get $get, ?Doc $record): ?DocTemplate
+    {
+        $templateId = $get('doc_template_id');
+        $docType = $get('doc_type') ?: $record?->doc_type;
+
+        if (is_string($templateId) && $templateId !== '') {
+            $query = DocTemplate::query();
+
+            if (is_string($docType) && $docType !== '') {
+                $query->where('doc_type', $docType);
+            }
+
+            return $query->find($templateId);
+        }
+
+        if ($record?->template instanceof DocTemplate) {
+            return $record->template;
+        }
+
+        if (! is_string($docType) || $docType === '') {
+            return null;
+        }
+
+        $query = DocTemplate::query()
+            ->where('doc_type', $docType)
+            ->where('is_default', true);
+
+        if (config('docs.owner.enabled', false)) {
+            $includeGlobal = (bool) config('docs.owner.include_global', false);
+            $owner = OwnerContext::resolve();
+
+            $query->forOwner($owner, $includeGlobal);
+        }
+
+        return $query->first();
     }
 }

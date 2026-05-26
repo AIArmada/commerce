@@ -53,9 +53,10 @@ final class DocTemplatesTable
                     ->formatStateUsing(fn (string $state): string => ucfirst($state))
                     ->sortable(),
 
-                TextColumn::make('view_name')
-                    ->label('View')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('layout_blocks_count')
+                    ->label('Blocks')
+                    ->getStateUsing(fn (DocTemplate $record): int => count($record->layout ?? []))
+                    ->alignCenter(),
 
                 IconColumn::make('is_default')
                     ->label('Default')

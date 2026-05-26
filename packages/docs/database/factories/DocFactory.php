@@ -53,6 +53,7 @@ final class DocFactory extends Factory
             'discount_amount' => 0,
             'total' => $total,
             'currency' => 'MYR',
+            'body' => null,
             'items' => $items,
             'customer_data' => [
                 'name' => $this->faker->company(),

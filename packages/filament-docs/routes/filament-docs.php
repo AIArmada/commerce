@@ -7,6 +7,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerRouteBinding;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\FilamentDocs\Http\Controllers\DocDownloadController;
+use AIArmada\FilamentDocs\Http\Controllers\DocPreviewController;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -37,6 +38,9 @@ Route::middleware($middleware)
     ->prefix('filament-docs')
     ->name('filament-docs.')
     ->group(function (): void {
+        Route::get('/documents/{doc}/view', DocPreviewController::class)
+            ->name('documents.view');
+
         Route::get('/download/{doc}', DocDownloadController::class)
             ->name('download');
     });

@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -19,11 +20,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property string $slug
  * @property string|null $description
- * @property string $view_name
  * @property string $doc_type
  * @property bool $is_default
  * @property string|null $owner_type
  * @property string|null $owner_id
+ * @property array<int, array<string, mixed>> $layout
  * @property array<string, mixed>|null $settings
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
@@ -42,9 +43,9 @@ final class DocTemplate extends Model
         'name',
         'slug',
         'description',
-        'view_name',
         'doc_type',
         'is_default',
+        'layout',
         'settings',
     ];
 
@@ -98,6 +99,10 @@ final class DocTemplate extends Model
 
     protected static function booted(): void
     {
+        self::saving(function (DocTemplate $template): void {
+            TemplateBlockRegistry::assertValid($template->layout);
+        });
+
         self::deleting(function (DocTemplate $template): void {
             // Nullify the template reference on associated docs rather than deleting them
             $template->docs()->update(['doc_template_id' => null]);
@@ -111,6 +116,7 @@ final class DocTemplate extends Model
     {
         return [
             'is_default' => 'boolean',
+            'layout' => 'array',
             'settings' => 'array',
         ];
     }
