@@ -81,9 +81,9 @@ trait ManagesDynamicConditions
      * @throws InvalidArgumentException When invalid parameters are provided
      */
     public function registerDynamicCondition(
-        CartCondition|array $condition,
-        array|string|Closure|null $rules = null,
-        string|array|null $ruleFactoryKey = null,
+        CartCondition | array $condition,
+        array | string | Closure | null $rules = null,
+        string | array | null $ruleFactoryKey = null,
         array $metadata = []
     ): static {
         // Handle smart condition creation
@@ -226,14 +226,15 @@ trait ManagesDynamicConditions
             'dynamic_conditions'
         );
 
-        Log::debug('Restoring dynamic conditions', [
-            'count' => is_array($metadata) ? count($metadata) : 0,
-            'identifier' => $this->getIdentifier(),
-        ]);
-
-        if (empty($metadata) || ! is_array($metadata)) {
+        if (! is_array($metadata) || $metadata === []) {
             return $this; // No conditions to restore
         }
+
+        Log::debug('Restoring persisted dynamic conditions from cart metadata', [
+            'condition_count' => count($metadata),
+            'identifier' => $this->getIdentifier(),
+            'instance' => $this->instance(),
+        ]);
 
         foreach ($metadata as $name => $conditionData) {
             if (! isset($conditionData['rule_factory_key'])) {
@@ -325,7 +326,7 @@ trait ManagesDynamicConditions
      * @param  array<mixed>  $metadata  Additional metadata for rule evaluation
      * @return array<callable>
      */
-    protected function evaluateMixedRules(array $rules, string|array|null &$ruleFactoryKey, array $metadata = []): array
+    protected function evaluateMixedRules(array $rules, string | array | null &$ruleFactoryKey, array $metadata = []): array
     {
         if ($this->rulesFactory === null) {
             throw new InvalidArgumentException(
@@ -367,7 +368,7 @@ trait ManagesDynamicConditions
      * @param  array<string, mixed>  $metadata  Condition metadata
      * @return array<callable>
      */
-    protected function restoreRulesFromFactoryKey(string|array $ruleFactoryKey, array $metadata): array
+    protected function restoreRulesFromFactoryKey(string | array $ruleFactoryKey, array $metadata): array
     {
         // Single factory key
         if (is_string($ruleFactoryKey)) {
@@ -405,8 +406,8 @@ trait ManagesDynamicConditions
      */
     protected function createConditionFromArray(
         array $data,
-        array|string|Closure|null $rules,
-        string|array|null &$ruleFactoryKey,
+        array | string | Closure | null $rules,
+        string | array | null &$ruleFactoryKey,
         array $metadata = []
     ): CartCondition {
         // Smart rule evaluation (Filament-style)
@@ -445,8 +446,8 @@ trait ManagesDynamicConditions
      * @return array<callable> Evaluated rules
      */
     protected function evaluateRules(
-        array|string|Closure|null $rules,
-        string|array|null &$ruleFactoryKey,
+        array | string | Closure | null $rules,
+        string | array | null &$ruleFactoryKey,
         array $metadata = []
     ): array {
         $factoryMetadata = array_key_exists('context', $metadata)
@@ -508,7 +509,7 @@ trait ManagesDynamicConditions
      * @param  array<mixed>  $metadata  Additional metadata for rule evaluation
      * @return array<callable>
      */
-    protected function evaluateFactoryKey(string $factoryKey, string|array|null &$ruleFactoryKey, array $metadata = []): array
+    protected function evaluateFactoryKey(string $factoryKey, string | array | null &$ruleFactoryKey, array $metadata = []): array
     {
         if ($this->rulesFactory === null) {
             throw new InvalidArgumentException(
@@ -536,7 +537,7 @@ trait ManagesDynamicConditions
      * @param  array<mixed>  $metadata  Additional metadata for rule evaluation
      * @return array<callable>
      */
-    protected function evaluateFactoryKeyArray(array $factoryKeys, string|array|null &$ruleFactoryKey, array $metadata = []): array
+    protected function evaluateFactoryKeyArray(array $factoryKeys, string | array | null &$ruleFactoryKey, array $metadata = []): array
     {
         if ($this->rulesFactory === null) {
             throw new InvalidArgumentException(
@@ -578,7 +579,7 @@ trait ManagesDynamicConditions
      * @param  string|array<string>  $ruleFactoryKey  Key(s) for rule recreation
      * @param  array<string, mixed>  $context  Additional metadata context for factories
      */
-    protected function persistDynamicConditionMetadata(CartCondition $condition, string|array $ruleFactoryKey, array $context = []): void
+    protected function persistDynamicConditionMetadata(CartCondition $condition, string | array $ruleFactoryKey, array $context = []): void
     {
         $existingMetadata = $this->getDynamicConditionMetadata();
 
@@ -712,7 +713,7 @@ trait ManagesDynamicConditions
      * @param  array<string, mixed>  $conditionData
      * @return ConditionTarget|string|array<string, mixed>
      */
-    private function resolveDynamicConditionTarget(array $conditionData): ConditionTarget|string|array
+    private function resolveDynamicConditionTarget(array $conditionData): ConditionTarget | string | array
     {
         if (isset($conditionData['target_definition']) && is_array($conditionData['target_definition'])) {
             return ConditionTarget::from($conditionData['target_definition']);
