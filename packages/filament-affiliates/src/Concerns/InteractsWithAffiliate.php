@@ -198,6 +198,6 @@ trait InteractsWithAffiliate
         $zeroDecimalCurrencies = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'RWF'];
         $decimals = in_array(mb_strtoupper($currency), $zeroDecimalCurrencies, true) ? 0 : 2;
 
-        return mb_strtoupper($currency).' '.MoneyFormatter::decimalFromMinor($amount, $currency, $decimals);
+        return mb_strtoupper($currency) . ' ' . MoneyFormatter::decimalFromMinor($amount, $currency, $decimals);
     }
 }
