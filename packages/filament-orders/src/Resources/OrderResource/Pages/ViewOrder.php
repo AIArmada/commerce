@@ -9,6 +9,7 @@ use AIArmada\Jnt\Shipping\JntShippingDriver;
 use AIArmada\Orders\Contracts\FulfillmentHandler;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\States\Delivered;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Shipped;
@@ -220,6 +221,58 @@ class ViewOrder extends ViewRecord
                     }
                 })
                 ->visible(fn (Order $record) => $record->status instanceof Shipped),
+
+            Actions\Action::make('complete_order')
+                ->label('Complete Order')
+                ->icon('heroicon-o-check-badge')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Complete Order')
+                ->modalDescription('Use this when the order has been fully fulfilled and no further shipping or delivery steps are needed.')
+                ->authorize(function (Order $record): bool {
+                    $user = Filament::auth()->user();
+
+                    return $user ? Gate::forUser($user)->allows('update', $record) : false;
+                })
+                ->form([
+                    Textarea::make('note')
+                        ->label('Completion Note')
+                        ->helperText('Optional note for why the order was completed manually.')
+                        ->rows(3)
+                        ->maxLength(1000),
+                ])
+                ->action(function (Order $record, array $data): void {
+                    try {
+                        $service = app(OrderService::class);
+                        $metadata = [
+                            'source' => 'filament_manual',
+                        ];
+
+                        $note = $data['note'] ?? null;
+
+                        if (is_string($note) && $note !== '') {
+                            $metadata['note'] = $note;
+                        }
+
+                        $service->complete($record, $metadata);
+
+                        Notification::make()
+                            ->title('Order completed')
+                            ->success()
+                            ->send();
+
+                        $this->refreshFormData(['status']);
+                    } catch (Throwable $exception) {
+                        report($exception);
+
+                        Notification::make()
+                            ->title('Unable to complete order')
+                            ->body($exception->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                })
+                ->visible(fn (Order $record) => $record->status instanceof Processing || $record->status instanceof Delivered),
 
             Actions\Action::make('cancel_order')
                 ->label('Cancel Order')

@@ -10,6 +10,7 @@ use AIArmada\Events\Enums\RegistrationStatus;
 use AIArmada\Events\Events\RegistrationCancelled;
 use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Events\RegistrationCreated;
+use AIArmada\Events\Events\RegistrationMarkedNoShow;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 use AIArmada\Orders\Models\OrderItem;
@@ -132,6 +133,45 @@ final class RegistrationService
             ]);
 
             event(new RegistrationCancelled($registration->refresh(), $reason));
+
+            return $registration->refresh();
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function markNoShow(Registration $registration, array $context = []): Registration
+    {
+        return $this->withRecordOwnerContext($registration, function () use ($registration, $context): Registration {
+            if ($registration->status === RegistrationStatus::NoShow) {
+                return $registration;
+            }
+
+            if ($registration->status !== RegistrationStatus::Confirmed) {
+                throw new InvalidArgumentException(sprintf(
+                    'Registration %s cannot be marked as no-show from status %s.',
+                    $registration->id,
+                    $registration->status->value,
+                ));
+            }
+
+            $occurrence = $this->occurrenceForRegistration($registration);
+
+            if (! $this->occurrenceHasEnded($occurrence)) {
+                throw new InvalidArgumentException('This event date has not ended yet.');
+            }
+
+            $metadata = array_merge(Arr::wrap($registration->metadata), [
+                'no_show_context' => $context,
+            ]);
+
+            $registration->update([
+                'status' => RegistrationStatus::NoShow,
+                'metadata' => $metadata,
+            ]);
+
+            event(new RegistrationMarkedNoShow($registration->refresh(), $context));
 
             return $registration->refresh();
         });
@@ -304,6 +344,21 @@ final class RegistrationService
             'Occurrence for registration %s could not be found.',
             (string) $registration->getKey(),
         ));
+    }
+
+    private function occurrenceHasEnded(Occurrence $occurrence): bool
+    {
+        $now = now();
+
+        if ($occurrence->ends_at !== null) {
+            return $occurrence->ends_at->lte($now);
+        }
+
+        if ($occurrence->check_in_closes_at !== null) {
+            return $occurrence->check_in_closes_at->lte($now);
+        }
+
+        return false;
     }
 
     /**
