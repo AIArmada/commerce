@@ -8,7 +8,9 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Contracts\OwnerScopedJob;
 use AIArmada\CommerceSupport\Support\OwnerJobContext;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
-use AIArmada\Docs\Contracts\DocumentServiceInterface;
+use AIArmada\Orders\Actions\CreateOrderInvoiceDoc;
+use AIArmada\Orders\Actions\CreateOrderReceiptDoc;
+use AIArmada\Orders\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -44,60 +46,69 @@ final class GenerateCheckoutDocumentsJob implements OwnerScopedJob, ShouldQueue
 
     protected function performJob(): void
     {
-        if (! interface_exists(DocumentServiceInterface::class)) {
-            return;
-        }
-
-        $documentService = app(DocumentServiceInterface::class);
-
         $session = CheckoutSession::find($this->sessionId);
 
         if ($session === null) {
             return;
         }
 
+        $order = $this->resolveOrder($session);
+
+        if (! $order instanceof Order) {
+            return;
+        }
+
+        $transactionId = $this->resolveTransactionId($session);
+        $gateway = $this->resolveGateway($session);
+
         foreach ($this->documentTypes as $type) {
-            $this->generateDocument($documentService, $session, $type);
+            $this->generateDocument($order, $type, $transactionId, $gateway);
         }
     }
 
-    private function generateDocument(mixed $documentService, CheckoutSession $session, string $type): void
+    private function resolveOrder(CheckoutSession $session): ?Order
     {
-        $data = $this->buildDocumentData($session, $type);
+        $order = $session->order()
+            ->with(['items', 'billingAddress'])
+            ->whereKey($this->orderId)
+            ->first();
 
+        if (! $order instanceof Order) {
+            return null;
+        }
+
+        return $order;
+    }
+
+    private function generateDocument(Order $order, string $type, string $transactionId, string $gateway): void
+    {
         match ($type) {
-            'invoice' => $documentService->generateInvoice($this->orderId, $data),
-            'receipt' => $documentService->generateReceipt($this->orderId, $data),
+            'invoice' => app(CreateOrderInvoiceDoc::class)->execute($order, $transactionId, $gateway),
+            'receipt' => app(CreateOrderReceiptDoc::class)->execute($order, $transactionId, $gateway),
             default => null,
         };
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildDocumentData(CheckoutSession $session, string $type): array
+    private function resolveTransactionId(CheckoutSession $session): string
     {
-        $cartSnapshot = $session->cart_snapshot ?? [];
-        $billingData = $session->billing_data ?? [];
-        $shippingData = $session->shipping_data ?? [];
+        $paymentData = $session->payment_data ?? [];
 
-        return [
-            'type' => $type,
-            'order_id' => $this->orderId,
-            'checkout_session_id' => $this->sessionId,
-            'customer_id' => $session->customer_id,
-            'items' => $cartSnapshot['items'] ?? [],
-            'billing' => $billingData,
-            'shipping' => $shippingData,
-            'subtotal' => $session->subtotal,
-            'discount_total' => $session->discount_total,
-            'shipping_total' => $session->shipping_total,
-            'tax_total' => $session->tax_total,
-            'grand_total' => $session->grand_total,
-            'currency' => $session->currency,
-            'payment_method' => $session->selected_payment_gateway,
-            'payment_id' => $session->payment_id,
-            'issued_at' => now()->toIso8601String(),
-        ];
+        $transactionId = $paymentData['transaction_id']
+            ?? $paymentData['payment_id']
+            ?? $session->payment_id
+            ?? 'unknown';
+
+        return (string) $transactionId;
+    }
+
+    private function resolveGateway(CheckoutSession $session): string
+    {
+        $paymentData = $session->payment_data ?? [];
+
+        $gateway = $paymentData['gateway']
+            ?? $session->selected_payment_gateway
+            ?? 'unknown';
+
+        return (string) $gateway;
     }
 }
