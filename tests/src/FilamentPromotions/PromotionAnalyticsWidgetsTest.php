@@ -11,6 +11,10 @@ use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ListPromotions
 use AIArmada\FilamentPromotions\Widgets\PromotionStatsWidget;
 use AIArmada\FilamentPromotions\Widgets\TopPromotionsUsageChart;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\States\Active;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 function filamentPromotions_invokeProtected(object $instance, string $methodName, array $arguments = []): mixed
@@ -69,10 +73,49 @@ function filamentPromotions_createOrderWithPromotions(array $promotions, int $gr
     ]);
 }
 
+function filamentPromotions_createIssuedVoucher(Promotion $promotion, string $code, bool $redeemed = false): Voucher
+{
+    /** @var Voucher $voucher */
+    $voucher = Voucher::query()->create([
+        'code' => $code,
+        'name' => $promotion->name . ' Voucher ' . $code,
+        'type' => VoucherType::Fixed,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => Active::class,
+        'usage_limit' => 1,
+        'applied_count' => $redeemed ? 1 : 0,
+        'starts_at' => now()->subDay(),
+        'promotion_id' => $promotion->id,
+        'owner_type' => $promotion->owner_type,
+        'owner_id' => $promotion->owner_id,
+        'metadata' => [
+            'source_promotion_id' => $promotion->id,
+            'source_promotion_name' => $promotion->name,
+            'source_promotion_code' => $promotion->code,
+        ],
+    ]);
+
+    if ($redeemed) {
+        VoucherUsage::query()->create([
+            'voucher_id' => $voucher->id,
+            'discount_amount' => 1000,
+            'currency' => 'MYR',
+            'channel' => VoucherUsage::CHANNEL_API,
+            'used_at' => now()->subMinute(),
+        ]);
+    }
+
+    return $voucher->fresh();
+}
+
 it('builds promotion stats widget with performance metrics', function (): void {
     $launchPromotion = filamentPromotions_createPromotion('Launch Code', 7, 'LAUNCH7');
     $alwaysOnPromotion = filamentPromotions_createPromotion('Always On', 5, null);
     filamentPromotions_createPromotion('Expired Code', 2, 'OLD2', false);
+    filamentPromotions_createIssuedVoucher($launchPromotion, 'LAUNCH-V1', true);
+    filamentPromotions_createIssuedVoucher($launchPromotion, 'LAUNCH-V2');
+    filamentPromotions_createIssuedVoucher($alwaysOnPromotion, 'AUTO-V1');
 
     filamentPromotions_createOrderWithPromotions([
         filamentPromotions_payload($launchPromotion, 1200),
@@ -98,9 +141,11 @@ it('builds promotion stats widget with performance metrics', function (): void {
         static fn (Stat $stat): array => [$stat->getLabel() => $stat]
     );
 
-    expect($stats)->toHaveCount(5)
+    expect($stats)->toHaveCount(6)
         ->and($statsByLabel['Total Promotions']->getValue())->toBe('3')
         ->and($statsByLabel['Active Promotions']->getValue())->toBe('2')
+        ->and($statsByLabel['Campaign Vouchers']->getValue())->toBe('3')
+        ->and($statsByLabel['Campaign Vouchers']->getDescription())->toBe('1 redeemed • 3 active')
         ->and($statsByLabel['Orders Influenced']->getValue())->toBe('3')
         ->and($statsByLabel['Influenced Revenue']->getValue())->toBe('300.00 MYR')
         ->and($statsByLabel['Discount Attributed']->getValue())->toBe('31.00 MYR');
@@ -166,6 +211,10 @@ it('keeps promotion analytics owner scoped', function (): void {
 
     $ownerAPromotion = OwnerContext::withOwner($ownerA, static fn (): Promotion => filamentPromotions_createPromotion('Owner A Code', 7, 'A7'));
     $ownerAAutomaticPromotion = OwnerContext::withOwner($ownerA, static fn (): Promotion => filamentPromotions_createPromotion('Owner A Auto', 3));
+    OwnerContext::withOwner($ownerA, static function () use ($ownerAPromotion, $ownerAAutomaticPromotion): void {
+        filamentPromotions_createIssuedVoucher($ownerAPromotion, 'A7-V1', true);
+        filamentPromotions_createIssuedVoucher($ownerAAutomaticPromotion, 'AA-V1');
+    });
 
     OwnerContext::withOwner($ownerA, static function () use ($ownerAPromotion, $ownerAAutomaticPromotion): void {
         filamentPromotions_createOrderWithPromotions([
@@ -178,6 +227,9 @@ it('keeps promotion analytics owner scoped', function (): void {
     });
 
     $ownerBPromotion = OwnerContext::withOwner($ownerB, static fn (): Promotion => filamentPromotions_createPromotion('Owner B Promo', 99, 'B99'));
+    OwnerContext::withOwner($ownerB, static function () use ($ownerBPromotion): void {
+        filamentPromotions_createIssuedVoucher($ownerBPromotion, 'B99-V1', true);
+    });
 
     OwnerContext::withOwner($ownerB, static function () use ($ownerBPromotion): void {
         filamentPromotions_createOrderWithPromotions([
@@ -195,6 +247,8 @@ it('keeps promotion analytics owner scoped', function (): void {
     );
 
     expect($statsByLabel['Total Promotions']->getValue())->toBe('2')
+        ->and($statsByLabel['Campaign Vouchers']->getValue())->toBe('2')
+        ->and($statsByLabel['Campaign Vouchers']->getDescription())->toBe('1 redeemed • 2 active')
         ->and($statsByLabel['Orders Influenced']->getValue())->toBe('2')
         ->and($statsByLabel['Influenced Revenue']->getValue())->toBe('160.00 MYR')
         ->and($statsByLabel['Discount Attributed']->getValue())->toBe('10.00 MYR');

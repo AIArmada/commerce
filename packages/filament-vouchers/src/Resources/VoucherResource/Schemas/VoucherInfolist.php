@@ -137,6 +137,31 @@ final class VoucherInfolist
                 ])
                 ->collapsible(),
 
+            Section::make('Promotion Source')
+                ->schema([
+                    Grid::make(3)
+                        ->schema([
+                            TextEntry::make('promotion_source_name')
+                                ->label('Promotion'),
+
+                            TextEntry::make('promotion_source_code')
+                                ->label('Promotion Code')
+                                ->badge()
+                                ->placeholder('—'),
+
+                            TextEntry::make('promotion_source_id')
+                                ->label('Promotion ID')
+                                ->copyable(),
+                        ]),
+                ])
+                ->visible(static function ($record = null): bool {
+                    if ($record === null) {
+                        return true;
+                    }
+
+                    return $record->promotion_source_label !== null || $record->promotion_source_id !== null;
+                }),
+
             Section::make('Usage Metrics')
                 ->schema([
                     Grid::make(4)

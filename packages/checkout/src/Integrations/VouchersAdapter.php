@@ -4,12 +4,21 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Integrations;
 
+use AIArmada\Cart\Cart;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\CheckoutCartResolver;
 use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Services\VoucherDiscountCalculator;
 
 final class VouchersAdapter
 {
+    public function __construct(
+        private readonly ?CheckoutCartResolver $cartResolver = null,
+        private readonly ?DiscountCodeResolver $discountCodeResolver = null,
+    ) {}
+
     /**
      * Apply vouchers to the checkout session.
      *
@@ -23,6 +32,9 @@ final class VouchersAdapter
         }
 
         $voucherService = app(VoucherServiceInterface::class);
+        $validationContext = $this->cartResolver()->resolveVoucherValidationContext($session);
+        $liveCart = $validationContext instanceof Cart ? $validationContext : null;
+        $codes = $this->mergeUnifiedVoucherCodes($session, $codes);
 
         $applied = [];
         $totalDiscount = 0;
@@ -30,11 +42,11 @@ final class VouchersAdapter
 
         foreach ($codes as $code) {
             // Validate voucher
-            $validation = $this->normalizeValidationResult($voucherService->validate($code, [
-                'customer_id' => $session->customer_id,
-                'subtotal' => $session->subtotal,
-                'currency' => $session->currency,
-            ]), $voucherService, $code);
+            $validation = $this->normalizeValidationResult(
+                $voucherService->validate($code, $validationContext),
+                $voucherService,
+                $code,
+            );
 
             if (! $validation['valid']) {
                 continue;
@@ -42,7 +54,7 @@ final class VouchersAdapter
 
             // Calculate discount
             $voucher = $validation['voucher'];
-            $discount = $this->calculateVoucherDiscount($voucher, $session);
+            $discount = $this->calculateVoucherDiscount($voucher, (int) $session->subtotal, $liveCart);
 
             if ($discount > 0) {
                 // Reserve the voucher
@@ -53,6 +65,7 @@ final class VouchersAdapter
                     'code' => $code,
                     'type' => $voucher['type'],
                     'discount' => $discount,
+                    'promotion_id' => $voucher['promotion_id'] ?? null,
                 ];
 
                 $totalDiscount += $discount;
@@ -80,11 +93,11 @@ final class VouchersAdapter
 
         $voucherService = app(VoucherServiceInterface::class);
 
-        return $this->normalizeValidationResult($voucherService->validate($code, [
-            'customer_id' => $session->customer_id,
-            'subtotal' => $session->subtotal,
-            'currency' => $session->currency,
-        ]), $voucherService, $code);
+        return $this->normalizeValidationResult(
+            $voucherService->validate($code, $this->cartResolver()->resolveVoucherValidationContext($session)),
+            $voucherService,
+            $code,
+        );
     }
 
     /**
@@ -121,25 +134,16 @@ final class VouchersAdapter
     /**
      * @param  array<string, mixed>  $voucher
      */
-    private function calculateVoucherDiscount(array $voucher, CheckoutSession $session): int
+    private function calculateVoucherDiscount(array $voucher, int $subtotal, ?Cart $cart): int
     {
-        $type = $voucher['type'] ?? 'fixed';
-        $value = $voucher['value'] ?? 0;
-        $maxDiscount = $voucher['max_discount'] ?? null;
-        $subtotal = $session->subtotal;
-
-        $discount = match ($type) {
-            'percentage' => (int) round($subtotal * ($value / 100)),
-            'fixed' => min($value, $subtotal),
-            default => 0,
-        };
-
-        // Apply max discount cap if set
-        if ($maxDiscount !== null && $discount > $maxDiscount) {
-            $discount = $maxDiscount;
+        if (! class_exists(VoucherDiscountCalculator::class)) {
+            return 0;
         }
 
-        return $discount;
+        $voucherData = VoucherData::fromArray($voucher);
+        $discountCalculator = app(VoucherDiscountCalculator::class);
+
+        return $discountCalculator->calculate($voucherData, $subtotal, $cart);
     }
 
     /**
@@ -172,5 +176,35 @@ final class VouchersAdapter
             'message' => $validation->reason,
             'voucher' => $voucher,
         ];
+    }
+
+    /**
+     * @param  array<string>  $codes
+     * @return array<string>
+     */
+    private function mergeUnifiedVoucherCodes(CheckoutSession $session, array $codes): array
+    {
+        $resolvedDiscountCode = $this->discountCodeResolver()->resolve($session);
+
+        if ($resolvedDiscountCode->isVoucher()) {
+            array_unshift($codes, $resolvedDiscountCode->code);
+        }
+
+        $normalized = array_filter(array_map(
+            static fn (mixed $code): ?string => is_string($code) && mb_trim($code) !== '' ? mb_trim($code) : null,
+            $codes,
+        ));
+
+        return array_values(array_unique($normalized));
+    }
+
+    private function cartResolver(): CheckoutCartResolver
+    {
+        return $this->cartResolver ?? app(CheckoutCartResolver::class);
+    }
+
+    private function discountCodeResolver(): DiscountCodeResolver
+    {
+        return $this->discountCodeResolver ?? app(DiscountCodeResolver::class);
     }
 }

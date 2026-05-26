@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\FilamentPromotions\Models\Promotion;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -88,6 +91,51 @@ final class PromotionInfolist
                                     ->color('gray'),
                             ]),
                     ]),
+
+                Section::make('Issued Vouchers')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('issued_vouchers_count')
+                                    ->label('Issued')
+                                    ->state(static function ($record): int {
+                                        if (! $record instanceof Promotion || ! $record::supportsIssuedVoucherTracking()) {
+                                            return 0;
+                                        }
+
+                                        return $record->issuedVouchers()->count();
+                                    })
+                                    ->badge()
+                                    ->color('primary'),
+
+                                TextEntry::make('redeemed_issued_vouchers_count')
+                                    ->label('Redeemed')
+                                    ->state(static function ($record): int {
+                                        if (! $record instanceof Promotion || ! $record::supportsIssuedVoucherTracking()) {
+                                            return 0;
+                                        }
+
+                                        return $record->issuedVouchers()->whereHas('usages')->count();
+                                    })
+                                    ->badge()
+                                    ->color('success'),
+
+                                TextEntry::make('active_issued_vouchers_count')
+                                    ->label('Active')
+                                    ->state(static function ($record): int {
+                                        if (! $record instanceof Promotion || ! $record::supportsIssuedVoucherTracking()) {
+                                            return 0;
+                                        }
+
+                                        return $record->issuedVouchers()
+                                            ->where('status', VoucherStatus::normalize(Active::class))
+                                            ->count();
+                                    })
+                                    ->badge()
+                                    ->color('warning'),
+                            ]),
+                    ])
+                    ->visible(static fn (): bool => Promotion::supportsIssuedVoucherTracking()),
 
                 Section::make('Schedule')
                     ->schema([

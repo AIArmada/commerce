@@ -10,6 +10,7 @@ use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\CreatePromotio
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\EditPromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ListPromotions;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ViewPromotion;
+use AIArmada\FilamentPromotions\Resources\PromotionResource\RelationManagers\IssuedVouchersRelationManager;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionForm;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionInfolist;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Tables\PromotionsTable;
@@ -87,7 +88,13 @@ final class PromotionResource extends Resource
      */
     public static function getRelations(): array
     {
-        return [];
+        if (! Promotion::supportsIssuedVoucherTracking()) {
+            return [];
+        }
+
+        return [
+            IssuedVouchersRelationManager::class,
+        ];
     }
 
     /**

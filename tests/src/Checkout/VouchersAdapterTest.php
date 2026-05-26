@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
@@ -78,4 +79,93 @@ it('normalizes voucher validation results', function (): void {
         ->and($result['voucher'])->toBeArray()
         ->and($result['voucher']['code'])->toBe('CODE')
         ->and($result['voucher']['type'])->toBe('fixed');
+});
+
+it('applies a promo_code when it resolves to a voucher', function (): void {
+    Cart::clear();
+    Cart::clearConditions();
+    Cart::clearMetadata();
+    Cart::clearVouchers();
+
+    Cart::add('sku-unified-voucher', 'Unified Voucher Product', 10000, 1, ['sku' => 'UNIFIED-001']);
+
+    Voucher::query()->create([
+        'code' => 'PROMO10',
+        'name' => 'Promo Voucher',
+        'type' => VoucherType::Percentage,
+        'value' => 1000,
+        'currency' => 'USD',
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'expires_at' => now()->addDay(),
+    ]);
+
+    $session = new CheckoutSession;
+    $session->id = 'session-unified-voucher';
+    $session->cart_id = (string) Cart::getId();
+    $session->subtotal = 10000;
+    $session->currency = 'USD';
+    $session->billing_data = ['metadata' => ['promo_code' => 'PROMO10']];
+    $session->cart_snapshot = ['metadata' => []];
+
+    $result = (new VouchersAdapter)->applyVouchers($session, []);
+
+    expect($result['discount'])->toBe(1000)
+        ->and($result['applied'])->toHaveCount(1)
+        ->and($result['applied'][0])->toMatchArray([
+            'code' => 'PROMO10',
+            'type' => 'percentage',
+            'discount' => 1000,
+            'promotion_id' => null,
+        ]);
+});
+
+it('calculates buy x get y voucher discounts against the live cart', function (): void {
+    Cart::clear();
+    Cart::clearConditions();
+    Cart::clearMetadata();
+    Cart::clearVouchers();
+
+    Cart::add('SHIRT-001', 'Shirt', 2000, 3, ['sku' => 'SHIRT-001']);
+
+    Voucher::query()->create([
+        'code' => 'BOGO2GET1',
+        'name' => 'Buy 2 Get 1 Free',
+        'type' => VoucherType::BuyXGetY,
+        'value' => 0,
+        'value_config' => [
+            'buy' => [
+                'quantity' => 2,
+                'product_matcher' => ['type' => 'sku', 'skus' => ['SHIRT-001']],
+            ],
+            'get' => [
+                'quantity' => 1,
+                'discount' => '100%',
+                'selection' => 'cheapest',
+                'product_matcher' => ['type' => 'same_as_buy'],
+            ],
+        ],
+        'currency' => 'USD',
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'expires_at' => now()->addDay(),
+    ]);
+
+    $session = new CheckoutSession;
+    $session->id = 'session-bogo-voucher';
+    $session->cart_id = (string) Cart::getId();
+    $session->subtotal = 6000;
+    $session->currency = 'USD';
+    $session->billing_data = [];
+    $session->cart_snapshot = ['metadata' => []];
+
+    $result = (new VouchersAdapter)->applyVouchers($session, ['BOGO2GET1']);
+
+    expect($result['discount'])->toBe(2000)
+        ->and($result['applied'])->toHaveCount(1)
+        ->and($result['applied'][0])->toMatchArray([
+            'code' => 'BOGO2GET1',
+            'type' => 'buy_x_get_y',
+            'discount' => 2000,
+        ]);
 });
