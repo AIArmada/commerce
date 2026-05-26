@@ -121,7 +121,7 @@ class AffiliateConversion extends Model
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');
     }
 
-    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
+    public function scopeForOwner(Builder $query, Model|string|null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
     {
         if (! config('affiliates.owner.enabled', false)) {
             return $query;
@@ -155,6 +155,63 @@ class AffiliateConversion extends Model
             if ($owner) {
                 $conversion->owner_type = $owner->getMorphClass();
                 $conversion->owner_id = $owner->getKey();
+            }
+        });
+
+        static::created(function (self $conversion): void {
+            $affiliate = $conversion->affiliate;
+
+            if (! $affiliate) {
+                return;
+            }
+
+            $balance = $affiliate->balance ?? AffiliateBalance::create([
+                'affiliate_id' => $affiliate->id,
+                'available_minor' => 0,
+                'holding_minor' => 0,
+                'lifetime_earnings_minor' => 0,
+                'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
+                'currency' => $conversion->commission_currency,
+            ]);
+
+            if (config('affiliates.commissions.auto_approve', false)) {
+                $conversion->updateQuietly([
+                    'status' => ApprovedConversion::class,
+                    'approved_at' => now(),
+                ]);
+
+                $balance->available_minor += $conversion->commission_minor;
+                $balance->lifetime_earnings_minor += $conversion->commission_minor;
+            } else {
+                $balance->addToHolding($conversion->commission_minor);
+            }
+
+            $balance->save();
+        });
+
+        static::updated(function (self $conversion): void {
+            if (! $conversion->wasChanged('status')) {
+                return;
+            }
+
+            $newStatus = $conversion->fresh()->status;
+
+            if ($newStatus->equals(ApprovedConversion::class) && $conversion->approved_at === null) {
+                $conversion->updateQuietly(['approved_at' => now()]);
+
+                $balance = $conversion->affiliate?->balance;
+
+                if ($balance) {
+                    $balance->releaseFromHolding($conversion->commission_minor);
+                }
+            }
+
+            if ($newStatus->equals(PaidConversion::class)) {
+                $balance = $conversion->affiliate?->balance;
+
+                if ($balance) {
+                    $balance->deductFromAvailable($conversion->commission_minor);
+                }
             }
         });
     }

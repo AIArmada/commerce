@@ -60,6 +60,11 @@ final class VouchersAdapter
                 // Reserve the voucher
                 $voucherService->reserve($code, $session->id);
 
+                // Dispatch VoucherApplied to trigger AttachAffiliateFromVoucher listener
+                if ($liveCart !== null && class_exists(VoucherApplied::class)) {
+                    Event::dispatch(new VoucherApplied($liveCart, VoucherData::fromArray($voucher)));
+                }
+
                 $applied[] = [
                     'voucher_id' => $voucher['id'],
                     'code' => $code,
@@ -151,7 +156,7 @@ final class VouchersAdapter
      * @return array{valid: bool, message: string|null, voucher: array<string, mixed>|null}
      */
     private function normalizeValidationResult(
-        array | VoucherValidationResult $validation,
+        array|VoucherValidationResult $validation,
         VoucherServiceInterface $voucherService,
         string $code
     ): array {
