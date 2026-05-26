@@ -24,7 +24,7 @@ class PortalLinks extends Page
 
     public ?string $generatedLink = null;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedLink;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
     protected static ?int $navigationSort = 1;
 
@@ -36,19 +36,16 @@ class PortalLinks extends Page
         return __('Links');
     }
 
-    public function getTitle(): string | Htmlable
+    public function getTitle(): string|Htmlable
     {
         return __('Affiliate Links');
     }
 
     public function mount(): void
     {
-        $this->targetUrl = url('/');
+        $this->targetUrl = $this->resolvePublicUrl();
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     public function getViewData(): array
     {
         $affiliate = $this->getAffiliate();
@@ -70,16 +67,17 @@ class PortalLinks extends Page
             return null;
         }
 
+        $publicUrl = $this->resolvePublicUrl();
+
         try {
             return app(AffiliateLinkGenerator::class)->generate(
                 $affiliate->code,
-                url('/')
+                $publicUrl,
             );
         } catch (InvalidArgumentException) {
-            // Fallback to simple URL parameter if link generator fails validation
             $param = config('affiliates.links.parameter', 'aff');
 
-            return url('/') . '?' . $param . '=' . $affiliate->code;
+            return $publicUrl.'?'.$param.'='.$affiliate->code;
         }
     }
 
@@ -96,14 +94,14 @@ class PortalLinks extends Page
             return;
         }
 
-        if (empty($this->targetUrl)) {
-            $this->targetUrl = url('/');
+        if ($this->targetUrl === '') {
+            $this->targetUrl = $this->resolvePublicUrl();
         }
 
         try {
             $this->generatedLink = app(AffiliateLinkGenerator::class)->generate(
                 $affiliate->code,
-                $this->targetUrl
+                $this->targetUrl,
             );
 
             Notification::make()
@@ -129,7 +127,7 @@ class PortalLinks extends Page
                         ->label(__('Target URL'))
                         ->url()
                         ->required()
-                        ->default(url('/'))
+                        ->default($this->resolvePublicUrl())
                         ->placeholder('https://example.com/product'),
                 ])
                 ->action(function (array $data): void {
@@ -137,5 +135,10 @@ class PortalLinks extends Page
                     $this->generateLink();
                 }),
         ];
+    }
+
+    private function resolvePublicUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/';
     }
 }
