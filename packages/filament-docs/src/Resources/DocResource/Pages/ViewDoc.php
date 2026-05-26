@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\Pages;
 
+use AIArmada\Docs\DataObjects\ShareLinkData;
+use AIArmada\Docs\Enums\ShareLinkAction;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\Draft;
@@ -12,7 +15,10 @@ use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Actions;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
@@ -26,6 +32,12 @@ final class ViewDoc extends ViewRecord
         return [
             Actions\EditAction::make()
                 ->icon(Heroicon::OutlinedPencil),
+
+            Actions\Action::make('preview_online')
+                ->label('Preview Online')
+                ->icon(Heroicon::OutlinedEye)
+                ->url(fn (Doc $record): string => route('filament-docs.documents.view', ['doc' => $record->getKey()]))
+                ->openUrlInNewTab(),
 
             Actions\Action::make('generate_pdf')
                 ->label('Generate PDF')
@@ -46,11 +58,62 @@ final class ViewDoc extends ViewRecord
                         ->send();
                 }),
 
+            Actions\Action::make('create_share_link')
+                ->label('Share')
+                ->icon(Heroicon::OutlinedLink)
+                ->form([
+                    CheckboxList::make('allowed_actions')
+                        ->label('Allowed Actions')
+                        ->options([
+                            ShareLinkAction::View->value => 'View online',
+                            ShareLinkAction::Pdf->value => 'Download PDF',
+                        ])
+                        ->default([ShareLinkAction::View->value])
+                        ->required(),
+
+                    DateTimePicker::make('expires_at')
+                        ->label('Expires At')
+                        ->default(CarbonImmutable::now()->addDays((int) config('docs.sharing.default_expiry_days', 30))),
+                ])
+                ->action(function (Doc $record, array $data): void {
+                    DocsOwnerScope::assertCanMutateDoc($record);
+
+                    $shareLink = app(DocRenderService::class)->createShareLink($record, new ShareLinkData(
+                        allowedActions: $data['allowed_actions'] ?? [ShareLinkAction::View->value],
+                        expiresAt: filled($data['expires_at'] ?? null) ? CarbonImmutable::parse($data['expires_at']) : null,
+                    ));
+
+                    $url = route(self::shareLinkRouteName($shareLink->allowed_actions), ['token' => $shareLink->plainToken]);
+
+                    Notification::make()
+                        ->title('Share link created')
+                        ->body($url)
+                        ->success()
+                        ->send();
+                }),
+
+            Actions\Action::make('revoke_share_links')
+                ->label('Revoke Links')
+                ->icon(Heroicon::OutlinedNoSymbol)
+                ->color('warning')
+                ->requiresConfirmation()
+                ->action(function (Doc $record): void {
+                    DocsOwnerScope::assertCanMutateDoc($record);
+
+                    $record->shareLinks()
+                        ->whereNull('revoked_at')
+                        ->update(['revoked_at' => CarbonImmutable::now()]);
+
+                    Notification::make()
+                        ->title('Public links revoked')
+                        ->warning()
+                        ->send();
+                }),
+
             Actions\Action::make('download_pdf')
                 ->label('Download PDF')
                 ->icon(Heroicon::OutlinedArrowDownTray)
                 ->color('success')
-                ->visible(fn (Doc $record): bool => $record->pdf_path !== null)
                 ->url(fn (Doc $record): string => route('filament-docs.download', ['doc' => $record->getKey()]))
                 ->openUrlInNewTab(),
 
@@ -117,5 +180,21 @@ final class ViewDoc extends ViewRecord
     private static function canCancel(Doc $record): bool
     {
         return ! $record->status->equals(Paid::class) && ! $record->status->equals(Cancelled::class);
+    }
+
+    /**
+     * @param  array<int, string>  $allowedActions
+     */
+    private static function shareLinkRouteName(array $allowedActions): string
+    {
+        if (in_array(ShareLinkAction::View->value, $allowedActions, true)) {
+            return 'docs.share.show';
+        }
+
+        if (in_array(ShareLinkAction::Pdf->value, $allowedActions, true)) {
+            return 'docs.share.pdf';
+        }
+
+        return 'docs.share.show';
     }
 }

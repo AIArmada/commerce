@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Database\Seeders;
 
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Support\TemplateBlockRegistry;
 use Illuminate\Database\Seeder;
 
 class DocTemplateSeeder extends Seeder
@@ -14,10 +15,10 @@ class DocTemplateSeeder extends Seeder
         DocTemplate::create([
             'name' => 'Default Doc Template',
             'slug' => 'doc-default',
-            'description' => 'Clean and professional default doc template with Tailwind CSS',
-            'view_name' => 'doc-default',
+            'description' => 'Clean and professional default online document template',
             'doc_type' => 'invoice',
             'is_default' => true,
+            'layout' => TemplateBlockRegistry::defaultLayout(),
             'settings' => [
                 'show_logo' => false,
                 'primary_color' => '#1f2937',

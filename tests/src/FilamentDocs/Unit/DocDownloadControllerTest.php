@@ -4,19 +4,40 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\FilamentDocs\Http\Controllers\DocDownloadController;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
 
 uses(TestCase::class);
 
-it('throws when a document has no pdf_path', function (): void {
-    $doc = Doc::factory()->create(['pdf_path' => null]);
+it('generates a missing pdf before download', function (): void {
+    config()->set('docs.storage.disk', 'local');
+    Storage::fake('local');
 
-    expect(fn (): mixed => (new DocDownloadController)((string) $doc->getKey()))->toThrow(NotFoundHttpException::class);
+    $doc = Doc::factory()->create([
+        'doc_type' => 'invoice',
+        'doc_number' => 'INV-ON-DEMAND',
+        'pdf_path' => null,
+    ]);
+
+    $pdfBuilderMock = Mockery::mock(PdfBuilder::class);
+    $pdfBuilderMock->shouldReceive('format')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('orientation')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('margins')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('withBrowsershot')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('generatePdfContent')->andReturn('PDF CONTENT');
+
+    Pdf::shouldReceive('html')->andReturn($pdfBuilderMock);
+
+    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class));
+
+    expect($response->getStatusCode())->toBe(200)
+        ->and($doc->fresh()->pdf_path)->toBe('docs/INV-ON-DEMAND.pdf');
 });
 
-it('throws when pdf file does not exist on disk', function (): void {
+it('regenerates when pdf file does not exist on disk', function (): void {
     config()->set('docs.storage.disk', 'local');
     Storage::fake('local');
 
@@ -26,7 +47,18 @@ it('throws when pdf file does not exist on disk', function (): void {
         'pdf_path' => 'docs/inv.pdf',
     ]);
 
-    expect(fn (): mixed => (new DocDownloadController)((string) $doc->getKey()))->toThrow(NotFoundHttpException::class);
+    $pdfBuilderMock = Mockery::mock(PdfBuilder::class);
+    $pdfBuilderMock->shouldReceive('format')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('orientation')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('margins')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('withBrowsershot')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('generatePdfContent')->andReturn('PDF CONTENT');
+
+    Pdf::shouldReceive('html')->andReturn($pdfBuilderMock);
+
+    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class));
+
+    expect($response->getStatusCode())->toBe(200);
 });
 
 it('downloads a document pdf with a safe filename', function (): void {
@@ -41,7 +73,7 @@ it('downloads a document pdf with a safe filename', function (): void {
         'pdf_path' => 'docs/inv.pdf',
     ]);
 
-    $response = (new DocDownloadController)((string) $doc->getKey());
+    $response = (new DocDownloadController)((string) $doc->getKey(), app(DocRenderService::class));
 
     expect($response->getStatusCode())->toBe(200);
     expect($response->headers->get('content-type'))->toContain('application/pdf');

@@ -38,10 +38,10 @@ test('generatePdf creates and stores pdf', function (): void {
     $pdfBuilderMock->shouldReceive('withBrowsershot')->andReturnSelf();
     $pdfBuilderMock->shouldReceive('generatePdfContent')->andReturn('PDF CONTENT');
 
-    Pdf::shouldReceive('view')
+    Pdf::shouldReceive('html')
         ->once()
-        ->withArgs(function ($view, $data) use ($doc) {
-            return $data['doc']->id === $doc->id;
+        ->withArgs(function (string $html) use ($doc) {
+            return str_contains($html, $doc->doc_number);
         })
         ->andReturn($pdfBuilderMock);
 
@@ -68,7 +68,7 @@ test('generatePdf sanitizes doc_number to prevent path traversal', function (): 
     $pdfBuilderMock->shouldReceive('withBrowsershot')->andReturnSelf();
     $pdfBuilderMock->shouldReceive('generatePdfContent')->andReturn('PDF CONTENT');
 
-    Pdf::shouldReceive('view')->andReturn($pdfBuilderMock);
+    Pdf::shouldReceive('html')->andReturn($pdfBuilderMock);
 
     $path = $this->service->generatePdf($doc);
 
@@ -89,7 +89,7 @@ test('downloadPdf returns existing path if exists', function (): void {
     Storage::disk('docs')->put('docs/INV-001.pdf', 'dummy content');
 
     // Should NOT call generatePdf (Pdf facade)
-    Pdf::shouldReceive('view')->never();
+    Pdf::shouldReceive('html')->never();
 
     $path = $this->service->downloadPdf($doc);
     expect($path)->toBe('docs/INV-001.pdf');
@@ -115,7 +115,7 @@ test('downloadPdf generates pdf if missing', function (): void {
     $pdfBuilderMock->shouldReceive('withBrowsershot')->andReturnSelf();
     $pdfBuilderMock->shouldReceive('generatePdfContent')->andReturn('PDF CONTENT');
 
-    Pdf::shouldReceive('view')->andReturn($pdfBuilderMock);
+    Pdf::shouldReceive('html')->andReturn($pdfBuilderMock);
 
     $path = $this->service->downloadPdf($doc);
     expect($path)->toBe('docs/INV-002.pdf');

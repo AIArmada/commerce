@@ -60,11 +60,12 @@ The primary resource for managing documents.
 
 ## DocTemplateResource
 
-Manages document templates and PDF defaults.
+Manages online document templates, Builder layouts, and PDF defaults.
 
 ### Highlights
 
-- edit `view_name`, `doc_type`, and `is_default`
+- compose approved layout blocks with the Filament Builder
+- edit `doc_type`, `is_default`, layout settings, and PDF defaults
 - configure PDF settings such as format, orientation, margins, and background printing
 - use **Set as Default** to call `DocTemplate::setAsDefault()`
 - delete templates with owner checks applied

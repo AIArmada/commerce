@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Docs;
 
 use AIArmada\Docs\Contracts\DocServiceInterface;
+use AIArmada\Docs\Contracts\RichContentRendererInterface;
+use AIArmada\Docs\Rendering\TiptapJsonRenderer;
+use AIArmada\Docs\Services\DocRenderService;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Services\SequenceManager;
 use Spatie\LaravelPackageTools\Package;
@@ -31,6 +34,9 @@ final class DocsServiceProvider extends PackageServiceProvider
         // Sequence manager
         $this->app->singleton(SequenceManager::class);
 
+        $this->app->singleton(RichContentRendererInterface::class, TiptapJsonRenderer::class);
+        $this->app->singleton(DocRenderService::class);
+
         // Register Doc Service (with both dependencies)
         $this->app->singleton(DocService::class, function ($app) {
             return new DocService(
@@ -52,6 +58,8 @@ final class DocsServiceProvider extends PackageServiceProvider
         return [
             DocService::class,
             DocServiceInterface::class,
+            DocRenderService::class,
+            RichContentRendererInterface::class,
             SequenceManager::class,
             'doc',
             Numbering\NumberStrategyRegistry::class,
