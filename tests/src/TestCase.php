@@ -294,7 +294,25 @@ abstract class TestCase extends Orchestra
         $app['config']->set('chip.send.api_secret', 'test_send_secret');
         $app['config']->set('chip.webhooks.company_public_key', 'test_public_key');
 
-        // Ownership defaults (avoid host env vars affecting tests)
+        // Ownership defaults — enable owner mode in tests for packages
+        // that had their config default changed to false.
+        // Individual test files can override as needed.
+        $app['config']->set('orders.owner.enabled', true);
+        $app['config']->set('orders.owner.include_global', false);
+        $app['config']->set('products.features.owner.enabled', true);
+        $app['config']->set('products.features.owner.include_global', false);
+        $app['config']->set('events.features.owner.enabled', true);
+        $app['config']->set('events.features.owner.include_global', false);
+        $app['config']->set('growth.features.owner.enabled', true);
+        $app['config']->set('growth.features.owner.include_global', false);
+        $app['config']->set('promotions.features.owner.enabled', true);
+        $app['config']->set('promotions.features.owner.include_global', false);
+        $app['config']->set('signals.owner.enabled', true);
+        $app['config']->set('signals.owner.include_global', false);
+        $app['config']->set('cashier-chip.features.owner.enabled', true);
+        $app['config']->set('cashier-chip.features.owner.include_global', false);
+        $app['config']->set('customers.features.owner.enabled', true);
+        $app['config']->set('customers.features.owner.include_global', false);
         $app['config']->set('chip.owner.enabled', false);
         $app['config']->set('chip.owner.include_global', false);
         $app['config']->set('chip.owner.auto_assign_on_create', true);
