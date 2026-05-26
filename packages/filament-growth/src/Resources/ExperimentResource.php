@@ -25,7 +25,6 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Support\Enums\Alignment;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -232,6 +231,7 @@ final class ExperimentResource extends Resource
                     Tables\Columns\TextColumn::make('status')
                         ->badge()
                         ->formatStateUsing(fn (ExperimentStatus $state): string => $state->label())
+                        ->description(fn (Experiment $record): string => static::statusOperationalDescription($record->status))
                         ->color(fn (ExperimentStatus $state): string => $state->color()),
                     Tables\Columns\ToggleColumn::make('is_running')
                         ->label('Running')
@@ -274,20 +274,6 @@ final class ExperimentResource extends Resource
                     ->options(collect(ExperimentStatus::cases())->mapWithKeys(fn (ExperimentStatus $status): array => [$status->value => $status->label()])),
             ])
             ->actions(array_values(array_filter([
-                Action::make('activate')
-                    ->label('Activate')
-                    ->icon('heroicon-o-play')
-                    ->color('success')
-                    ->visible(fn (Experiment $record): bool => static::canEdit($record) && in_array($record->status, [ExperimentStatus::Draft, ExperimentStatus::Paused], true))
-                    ->requiresConfirmation()
-                    ->action(fn (Experiment $record): bool => static::setExperimentStatus($record, ExperimentStatus::Active)),
-                Action::make('pause')
-                    ->label('Pause')
-                    ->icon('heroicon-o-pause')
-                    ->color('warning')
-                    ->visible(fn (Experiment $record): bool => static::canEdit($record) && $record->status === ExperimentStatus::Active)
-                    ->requiresConfirmation()
-                    ->action(fn (Experiment $record): bool => static::setExperimentStatus($record, ExperimentStatus::Paused)),
                 config('filament-growth.features.results', true)
                     ? Action::make('results')
                         ->label('Results')
@@ -569,6 +555,16 @@ final class ExperimentResource extends Resource
         return $record->update([
             'status' => $status->value,
         ]);
+    }
+
+    private static function statusOperationalDescription(ExperimentStatus $status): string
+    {
+        return match ($status) {
+            ExperimentStatus::Active => 'Assigning traffic',
+            ExperimentStatus::Paused => 'Bypassing middleware',
+            ExperimentStatus::Draft => 'Not live',
+            ExperimentStatus::Concluded => 'Locked',
+        };
     }
 
     /**
