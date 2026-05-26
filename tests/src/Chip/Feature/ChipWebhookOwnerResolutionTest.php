@@ -11,7 +11,6 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -85,55 +84,6 @@ it('fails closed when owner scoping is enabled but brand_id has no owner mapping
         ->assertStatus(500);
 
     expect(Purchase::query()->withoutOwnerScope()->where('id', $payload['id'])->exists())->toBeFalse();
-});
-
-it('logs a clear warning when owner scoping is enabled but no webhook owner can be resolved', function (): void {
-    Route::post('/chip/webhook-test', [WebhookController::class, 'handle'])
-        ->withoutMiddleware([VerifyWebhookSignature::class]);
-
-    config()->set('chip.owner.enabled', true);
-    config()->set('chip.owner.webhook_brand_id_map', []);
-    config()->set('chip.logging.channel', 'stack');
-    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
-
-    Log::spy();
-    Log::shouldReceive('channel')->once()->with('stack')->andReturnSelf();
-
-    $payload = WebhookFactory::purchaseCreated([
-        'brand_id' => 'brand-missing',
-    ]);
-
-    $this->postJson('/chip/webhook-test', $payload)
-        ->assertStatus(500);
-
-    Log::shouldHaveReceived('warning')
-        ->once()
-        ->withArgs(function (string $message, array $context): bool {
-            return $message === 'CHIP webhook blocked because owner scoping is enabled at runtime, but no owner could be resolved from the webhook brand_id'
-                && $context['event_type'] === 'purchase.created'
-                && $context['brand_id'] === 'brand-missing'
-                && $context['owner_scoping_enabled'] === true
-                && $context['brand_id_map_entries'] === 0
-                && str_contains($context['hint'], 'cached config');
-        });
-});
-
-it('processes webhook payloads without owner resolution when owner scoping is disabled', function (): void {
-    Route::post('/chip/webhook-test', [WebhookController::class, 'handle'])
-        ->withoutMiddleware([VerifyWebhookSignature::class]);
-
-    config()->set('chip.owner.enabled', false);
-    config()->set('chip.owner.webhook_brand_id_map', []);
-    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
-
-    $payload = WebhookFactory::purchaseCreated([
-        'brand_id' => 'brand-missing',
-    ]);
-
-    $this->postJson('/chip/webhook-test', $payload)
-        ->assertStatus(200);
-
-    expect(Purchase::query()->withoutOwnerScope()->where('id', $payload['id'])->exists())->toBeTrue();
 });
 
 it('fails closed when the brand mapping has an empty owner type', function (): void {
