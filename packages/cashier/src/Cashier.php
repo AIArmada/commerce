@@ -43,6 +43,27 @@ class Cashier
     protected static ?Closure $formatCurrencyUsing = null;
 
     /**
+     * Boot-time defaults restored for each Octane request.
+     *
+     * @var array{
+     *   remembered: bool,
+     *   customerModel: string,
+     *   deactivatePastDue: bool,
+     *   deactivateIncomplete: bool,
+     *   registersRoutes: bool,
+     *   formatCurrencyUsing: Closure|null
+     * }
+     */
+    private static array $octaneDefaults = [
+        'remembered' => false,
+        'customerModel' => 'App\\Models\\User',
+        'deactivatePastDue' => true,
+        'deactivateIncomplete' => true,
+        'registersRoutes' => true,
+        'formatCurrencyUsing' => null,
+    ];
+
+    /**
      * Get the GatewayManager instance.
      */
     public static function gateway(?string $gateway = null): GatewayContract
@@ -105,9 +126,40 @@ class Cashier
     /**
      * Set a custom currency formatter.
      */
-    public static function formatCurrencyUsing(Closure $callback): void
+    public static function formatCurrencyUsing(?Closure $callback): void
     {
         static::$formatCurrencyUsing = $callback;
+    }
+
+    /**
+     * Snapshot boot-time defaults so Octane can restore them on each request.
+     */
+    public static function rememberOctaneDefaults(): void
+    {
+        self::$octaneDefaults = [
+            'remembered' => true,
+            'customerModel' => static::$customerModel,
+            'deactivatePastDue' => static::$deactivatePastDue,
+            'deactivateIncomplete' => static::$deactivateIncomplete,
+            'registersRoutes' => static::$registersRoutes,
+            'formatCurrencyUsing' => static::$formatCurrencyUsing,
+        ];
+    }
+
+    /**
+     * Restore boot-time defaults before handling the next Octane request.
+     */
+    public static function restoreOctaneDefaults(): void
+    {
+        if (self::$octaneDefaults['remembered'] !== true) {
+            return;
+        }
+
+        static::useCustomerModel(self::$octaneDefaults['customerModel']);
+        static::$registersRoutes = self::$octaneDefaults['registersRoutes'];
+        static::deactivatePastDue(self::$octaneDefaults['deactivatePastDue']);
+        static::deactivateIncomplete(self::$octaneDefaults['deactivateIncomplete']);
+        static::formatCurrencyUsing(self::$octaneDefaults['formatCurrencyUsing']);
     }
 
     /**

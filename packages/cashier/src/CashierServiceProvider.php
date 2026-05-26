@@ -6,6 +6,7 @@ namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
 use AIArmada\CommerceSupport\Support\ConditionalMigrationLoader;
+use Laravel\Octane\Events\RequestReceived;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -43,6 +44,11 @@ final class CashierServiceProvider extends PackageServiceProvider
         $this->registerPublishing();
         $this->loadStripeMigrationFallbacks();
         $this->registerRoutes();
+        $this->registerOctaneListeners();
+
+        $this->app->booted(static function (): void {
+            Cashier::rememberOctaneDefaults();
+        });
 
         // Register cart integration if cart package is installed
         $this->app->make(CartIntegrationRegistrar::class)->register();
@@ -104,5 +110,16 @@ final class CashierServiceProvider extends PackageServiceProvider
             $this,
             base_path('vendor/laravel/cashier/database/migrations')
         );
+    }
+
+    private function registerOctaneListeners(): void
+    {
+        if (! class_exists(RequestReceived::class)) {
+            return;
+        }
+
+        $this->app['events']->listen(RequestReceived::class, static function (): void {
+            Cashier::restoreOctaneDefaults();
+        });
     }
 }
