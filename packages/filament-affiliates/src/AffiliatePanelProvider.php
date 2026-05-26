@@ -51,7 +51,13 @@ class AffiliatePanelProvider extends PanelProvider
         $panel = $panel
             ->id($config['panel_id'])
             ->path($config['path'])
-            ->brandName($config['brand_name'])
+            ->brandName($config['brand_name']);
+
+        if ($config['domain'] ?? null) {
+            $panel->domain($config['domain']);
+        }
+
+        $panel
             ->colors([
                 'primary' => $config['primary_color'],
             ])
@@ -88,6 +94,7 @@ class AffiliatePanelProvider extends PanelProvider
         $this->portalConfig = [
             'panel_id' => config('filament-affiliates.portal.panel_id', 'affiliate'),
             'path' => config('filament-affiliates.portal.path', 'affiliate'),
+            'domain' => config('filament-affiliates.portal.domain'),
             'brand_name' => config('filament-affiliates.portal.brand_name', 'Affiliate Portal'),
             'primary_color' => config('filament-affiliates.portal.primary_color', '#6366f1'),
             'login_enabled' => (bool) config('filament-affiliates.portal.login_enabled', true),

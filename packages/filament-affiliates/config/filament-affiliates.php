@@ -31,6 +31,7 @@ return [
     'portal' => [
         'panel_id' => env('AFFILIATES_PORTAL_PANEL_ID', 'affiliate'),
         'path' => env('AFFILIATES_PORTAL_PATH', 'affiliate'),
+        'domain' => env('AFFILIATES_PORTAL_DOMAIN'),
         'brand_name' => env('AFFILIATES_PORTAL_BRAND_NAME', 'Affiliate Portal'),
         'primary_color' => env('AFFILIATES_PORTAL_PRIMARY_COLOR', '#6366f1'),
         'login_enabled' => env('AFFILIATES_PORTAL_LOGIN_ENABLED', true),
