@@ -24,6 +24,7 @@ The portal is enabled by default. Configure in `config/filament-affiliates.php`:
 'portal' => [
     'panel_id' => 'affiliate',
     'path' => 'affiliate',
+    'domain' => 'affiliate.example.com',
     'brand_name' => 'Affiliate Portal',
     'primary_color' => '#6366f1',
 ],

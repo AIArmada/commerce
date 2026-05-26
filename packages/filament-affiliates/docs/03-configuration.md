@@ -56,6 +56,7 @@ return [
     'portal' => [
         'panel_id' => env('AFFILIATES_PORTAL_PANEL_ID', 'affiliate'),
         'path' => env('AFFILIATES_PORTAL_PATH', 'affiliate'),
+        'domain' => env('AFFILIATES_PORTAL_DOMAIN'),
         'brand_name' => env('AFFILIATES_PORTAL_BRAND_NAME', 'Affiliate Portal'),
         'primary_color' => env('AFFILIATES_PORTAL_PRIMARY_COLOR', '#6366f1'),
         'login_enabled' => env('AFFILIATES_PORTAL_LOGIN_ENABLED', true),
@@ -131,6 +132,7 @@ Set the navigation group for all affiliate resources:
 |-----|-------------|---------|
 | `panel_id` | Filament panel ID | `affiliate` |
 | `path` | URL path for portal | `affiliate` |
+| `domain` | Custom domain for portal (e.g., `affiliate.example.com`) | `null` |
 | `brand_name` | Portal brand name | `Affiliate Portal` |
 | `primary_color` | Primary color hex | `#6366f1` |
 | `login_enabled` | Show login page | `true` |
@@ -219,6 +221,7 @@ Available environment variables:
 # Portal
 AFFILIATES_PORTAL_PANEL_ID=affiliate
 AFFILIATES_PORTAL_PATH=affiliate
+AFFILIATES_PORTAL_DOMAIN=affiliate.example.com
 AFFILIATES_PORTAL_BRAND_NAME="Affiliate Portal"
 AFFILIATES_PORTAL_PRIMARY_COLOR=#6366f1
 AFFILIATES_PORTAL_LOGIN_ENABLED=true
