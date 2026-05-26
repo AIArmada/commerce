@@ -9,6 +9,7 @@ use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 final class RecordingRulesFactory implements RulesFactoryInterface
 {
@@ -555,6 +556,47 @@ describe('ManagesDynamicConditions edge cases', function (): void {
         expect($captured)->not->toBeNull();
         expect($captured['operation'])->toBe('restore');
         expect($captured['exception'])->toBeInstanceOf(InvalidArgumentException::class);
+    });
+
+    it('does not log dynamic condition restoration when no persisted metadata exists', function (): void {
+        Log::spy();
+
+        $cart = new Cart($this->storage, $this->identifier, events: null);
+        $cart->withRulesFactory(new RecordingRulesFactory);
+
+        Log::shouldNotHaveReceived('debug');
+    });
+
+    it('logs dynamic condition restoration when persisted metadata exists', function (): void {
+        $factory = new RecordingRulesFactory;
+        $cart = new Cart($this->storage, $this->identifier, events: null);
+        $cart->withRulesFactory($factory);
+
+        $cart->registerDynamicCondition(
+            condition: [
+                'name' => 'logged_restore',
+                'type' => 'discount',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
+                'value' => '-10%',
+            ],
+            rules: 'always-true',
+            ruleFactoryKey: null,
+            metadata: []
+        );
+
+        Log::spy();
+
+        $restoredCart = new Cart($this->storage, $this->identifier, events: null);
+        $restoredCart->withRulesFactory(new RecordingRulesFactory);
+
+        Log::shouldHaveReceived('debug')
+            ->once()
+            ->withArgs(fn (string $message, array $context): bool => $message === 'Restoring persisted dynamic conditions from cart metadata'
+                && $context['condition_count'] === 1
+                && $context['identifier'] === $this->identifier
+                && $context['instance'] === 'default');
     });
 
     it('skips restore for conditions without rule_factory_key', function (): void {

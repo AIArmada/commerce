@@ -24,15 +24,21 @@ class WebhookController extends Controller
         /** @var array<string, mixed> $payload */
         $payload = $request->all();
         $eventType = $payload['event_type'] ?? 'unknown';
+        $brandId = $payload['brand_id'] ?? data_get($payload, 'purchase.brand_id');
 
         if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
             $owner = ChipWebhookOwnerResolver::resolveFromPayload($payload);
 
             if ($owner === null) {
+                $brandIdMap = config('chip.owner.webhook_brand_id_map', []);
+
                 Log::channel(config('chip.logging.channel', 'stack'))
-                    ->warning('CHIP webhook received but no owner could be resolved for brand_id', [
+                    ->warning('CHIP webhook blocked because owner scoping is enabled at runtime, but no owner could be resolved from the webhook brand_id', [
                         'event_type' => $eventType,
-                        'brand_id' => $payload['brand_id'] ?? null,
+                        'brand_id' => is_string($brandId) ? $brandId : null,
+                        'owner_scoping_enabled' => true,
+                        'brand_id_map_entries' => is_array($brandIdMap) ? count($brandIdMap) : 0,
+                        'hint' => 'If CHIP_OWNER_ENABLED was recently changed, clear and rebuild the cached config on this server.',
                     ]);
 
                 return response()->json([
