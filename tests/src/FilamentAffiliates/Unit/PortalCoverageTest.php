@@ -327,6 +327,41 @@ it('portal pages return scoped view data when affiliate exists', function (): vo
         ->and($payoutsData['totalPaid'])->toBe(1500);
 });
 
+it('portal dashboard state objects expose label and color helpers for badges', function (): void {
+    $user = User::create([
+        'name' => 'Portal Render User',
+        'email' => 'portal-render-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'PORTAL-RENDER-' . Str::uuid(),
+        'name' => 'Portal Render Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $user->getMorphClass(),
+        'owner_id' => (string) $user->getKey(),
+    ]);
+
+    $conversion = AffiliateConversion::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'affiliate_code' => $affiliate->code,
+        'order_reference' => 'ORDER-RENDER-001',
+        'total_minor' => 5000,
+        'commission_minor' => 500,
+        'commission_currency' => 'USD',
+        'status' => PendingConversion::class,
+        'occurred_at' => now(),
+    ]);
+
+    expect($affiliate->status->label())->toBe('Active')
+        ->and($affiliate->status->color())->toBe('success')
+        ->and($conversion->status->label())->toBe('Pending Review')
+        ->and($conversion->status->color())->toBe('warning');
+});
+
 it('PortalConversions configures its table', function (): void {
     $user = User::create([
         'name' => 'Conversions User',

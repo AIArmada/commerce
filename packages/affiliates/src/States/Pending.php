@@ -18,6 +18,11 @@ final class Pending extends AffiliateStatus
         return 'Affiliate is awaiting approval';
     }
 
+    public function color(): string
+    {
+        return 'warning';
+    }
+
     public function isPending(): bool
     {
         return true;

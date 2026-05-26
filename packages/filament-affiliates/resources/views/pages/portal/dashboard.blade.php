@@ -72,7 +72,7 @@
                     </div>
                     <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
                         <span class="text-sm text-gray-500 dark:text-gray-400">{{ __('Status') }}</span>
-                        <x-filament::badge :color="$affiliate->status->value === 'active' ? 'success' : ($affiliate->status->value === 'pending' ? 'warning' : 'gray')">
+                        <x-filament::badge :color="$affiliate->status->color()">
                             {{ $affiliate->status->label() }}
                         </x-filament::badge>
                     </div>
@@ -123,10 +123,10 @@
                                         {{ $this->formatAmount($conversion->commission_minor) }}
                                     </span>
                                     <x-filament::badge 
-                                        :color="$conversion->status->value === 'approved' ? 'success' : ($conversion->status->value === 'pending' ? 'warning' : 'danger')"
+                                        :color="$conversion->status->color()"
                                         size="sm"
                                     >
-                                        {{ ucfirst($conversion->status->value) }}
+                                        {{ $conversion->status->label() }}
                                     </x-filament::badge>
                                 </div>
                             </div>

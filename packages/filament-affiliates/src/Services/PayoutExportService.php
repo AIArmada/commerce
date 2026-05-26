@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Services;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use BackedEnum;
 use Dompdf\Dompdf;
 use League\Csv\Writer;
 use Shuchkin\SimpleXLSXGen;
@@ -148,7 +150,7 @@ final class PayoutExportService
             (string) $conversion->external_reference,
             MoneyFormatter::decimalFromMinor((int) $conversion->commission_minor, (string) $conversion->commission_currency),
             (string) $conversion->commission_currency,
-            $conversion->status->value ?? (string) $conversion->status,
+            $this->stringifyStatus($conversion->status),
             $conversion->created_at?->format('Y-m-d H:i:s') ?? '',
         ];
     }
@@ -354,14 +356,28 @@ HTML;
     }
 
     /**
-     * Get status value as string (handles both enum and string types).
+     * Get status value as string (handles model states, enums, and plain strings).
      */
     private function getStatusValue(AffiliatePayout $payout): string
     {
-        $status = $payout->status;
+        return $this->stringifyStatus($payout->status);
+    }
 
-        if (is_object($status) && property_exists($status, 'value')) {
+    private function stringifyStatus(mixed $status): string
+    {
+        if ($status instanceof ConversionStatus) {
+            return $status->getValue();
+        }
+
+        if ($status instanceof BackedEnum) {
             return (string) $status->value;
+        }
+
+        if (is_object($status) && method_exists($status, 'getValue')) {
+            /** @var mixed $value */
+            $value = $status->getValue();
+
+            return (string) $value;
         }
 
         return (string) $status;

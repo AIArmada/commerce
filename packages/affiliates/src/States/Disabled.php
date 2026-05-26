@@ -18,6 +18,11 @@ final class Disabled extends AffiliateStatus
         return 'Affiliate is disabled and cannot earn commissions';
     }
 
+    public function color(): string
+    {
+        return 'danger';
+    }
+
     public function isDisabled(): bool
     {
         return true;

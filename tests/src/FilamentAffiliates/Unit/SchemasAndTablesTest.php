@@ -131,6 +131,27 @@ it('conversion resource schemas use neutral reference fields', function (): void
         ->not->toContain("->label('Order / Ref')");
 });
 
+it('affiliate portal views and schemas use state helpers instead of enum value properties', function (): void {
+    $repositoryRoot = dirname(__DIR__, 4);
+
+    $dashboardSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/resources/views/pages/portal/dashboard.blade.php');
+    $infolistSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Schemas/AffiliateConversionInfolist.php');
+    $tableSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateResource/Tables/AffiliatesTable.php');
+
+    expect($dashboardSource)
+        ->toContain(':color="$affiliate->status->color()"')
+        ->toContain('{{ $affiliate->status->label() }}')
+        ->toContain(':color="$conversion->status->color()"')
+        ->toContain('{{ $conversion->status->label() }}')
+        ->not->toContain('status->value')
+        ->and($infolistSource)
+        ->toContain('ConversionStatus::colorFor($state)')
+        ->toContain('ConversionStatus::labelFor($state)')
+        ->not->toContain('$state?->value ?? $state')
+        ->and($tableSource)
+        ->toContain('AffiliateStatus::colorFor($state)');
+});
+
 it('AffiliatePayoutsTable configures table', function (): void {
     $table = Mockery::mock(Table::class);
     $table->shouldReceive('columns')->once()->andReturnSelf();
