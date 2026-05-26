@@ -14,15 +14,25 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
+use WeakMap;
 
 final class AffiliateReportingContextResolver
 {
-    private const CACHE_RELATION = '__affiliate_reporting_context';
-
     /**
      * @var array<string, string|null>
      */
     private array $orderNumberCache = [];
+
+    /**
+     * @var WeakMap<VoucherUsage, array{
+     *     affiliate_code: string|null,
+     *     affiliate_name: string|null,
+     *     source: string|null,
+     *     medium: string|null,
+     *     campaign: string|null,
+     * }>
+     */
+    private WeakMap $usageContextCache;
 
     /**
      * @var array<string, array{
@@ -35,6 +45,11 @@ final class AffiliateReportingContextResolver
      */
     private array $lookupCache = [];
 
+    public function __construct()
+    {
+        $this->usageContextCache = new WeakMap;
+    }
+
     /**
      * @return array{
      *     affiliate_code: string|null,
@@ -46,12 +61,8 @@ final class AffiliateReportingContextResolver
      */
     public function resolve(VoucherUsage $usage): array
     {
-        if ($usage->relationLoaded(self::CACHE_RELATION)) {
-            $cached = $usage->getRelation(self::CACHE_RELATION);
-
-            if (is_array($cached)) {
-                return $cached;
-            }
+        if (isset($this->usageContextCache[$usage])) {
+            return $this->usageContextCache[$usage];
         }
 
         $voucherCode = $this->resolveVoucherCode($usage);
@@ -631,7 +642,7 @@ final class AffiliateReportingContextResolver
      */
     private function cache(VoucherUsage $usage, array $context): array
     {
-        $usage->setRelation(self::CACHE_RELATION, $context);
+        $this->usageContextCache[$usage] = $context;
 
         return $context;
     }
