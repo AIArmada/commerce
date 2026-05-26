@@ -18,6 +18,11 @@ final class Draft extends AffiliateStatus
         return 'Affiliate has not been submitted for approval';
     }
 
+    public function color(): string
+    {
+        return 'gray';
+    }
+
     public function isDraft(): bool
     {
         return true;

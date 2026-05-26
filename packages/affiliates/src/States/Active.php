@@ -18,6 +18,11 @@ final class Active extends AffiliateStatus
         return 'Affiliate can earn commissions';
     }
 
+    public function color(): string
+    {
+        return 'success';
+    }
+
     public function isActive(): bool
     {
         return true;

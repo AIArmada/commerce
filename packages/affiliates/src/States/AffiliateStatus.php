@@ -18,6 +18,8 @@ abstract class AffiliateStatus extends State
 
     abstract public function description(): string;
 
+    abstract public function color(): string;
+
     public function isDraft(): bool
     {
         return false;
@@ -96,6 +98,18 @@ abstract class AffiliateStatus extends State
         $stateClass = self::resolveStateClassFor($status, $model);
 
         return (new $stateClass($model))->description();
+    }
+
+    public static function colorFor(string | AffiliateStatus $status, ?Model $model = null): string
+    {
+        if ($status instanceof AffiliateStatus) {
+            return $status->color();
+        }
+
+        $model ??= new Affiliate;
+        $stateClass = self::resolveStateClassFor($status, $model);
+
+        return (new $stateClass($model))->color();
     }
 
     public static function fromString(string | AffiliateStatus $status, ?Model $model = null): AffiliateStatus

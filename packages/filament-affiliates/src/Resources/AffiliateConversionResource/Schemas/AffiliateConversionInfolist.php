@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas;
 
+use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -95,15 +96,8 @@ final class AffiliateConversionInfolist
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->color(fn ($state): string => match ($state?->value ?? $state) {
-                                'pending' => 'warning',
-                                'qualified' => 'info',
-                                'approved' => 'success',
-                                'rejected' => 'danger',
-                                'paid' => 'success',
-                                default => 'gray',
-                            })
-                            ->formatStateUsing(fn ($state): string => ucfirst($state?->value ?? $state ?? '—')),
+                            ->color(fn ($state): string => $state === null ? 'gray' : ConversionStatus::colorFor($state))
+                            ->formatStateUsing(fn ($state): string => $state === null ? '—' : ConversionStatus::labelFor($state)),
 
                         TextEntry::make('occurred_at')
                             ->label('Occurred At')

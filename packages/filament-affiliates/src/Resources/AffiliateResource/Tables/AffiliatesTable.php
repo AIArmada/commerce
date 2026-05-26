@@ -6,12 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Tables;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
-use AIArmada\Affiliates\States\Disabled;
-use AIArmada\Affiliates\States\Draft;
-use AIArmada\Affiliates\States\Paused;
-use AIArmada\Affiliates\States\Pending;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -44,18 +39,7 @@ final class AffiliatesTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(function (AffiliateStatus | string $state): string {
-                        $status = AffiliateStatus::fromString($state);
-
-                        return match (true) {
-                            $status instanceof Draft => 'gray',
-                            $status instanceof Active => 'success',
-                            $status instanceof Pending => 'warning',
-                            $status instanceof Paused => 'gray',
-                            $status instanceof Disabled => 'danger',
-                            default => 'info',
-                        };
-                    })
+                    ->color(fn (AffiliateStatus | string $state): string => AffiliateStatus::colorFor($state))
                     ->formatStateUsing(fn (AffiliateStatus | string $state): string => AffiliateStatus::fromString($state)->label())
                     ->sortable(),
 

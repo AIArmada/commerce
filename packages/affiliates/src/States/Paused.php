@@ -18,6 +18,11 @@ final class Paused extends AffiliateStatus
         return 'Affiliate is temporarily inactive';
     }
 
+    public function color(): string
+    {
+        return 'gray';
+    }
+
     public function isPaused(): bool
     {
         return true;

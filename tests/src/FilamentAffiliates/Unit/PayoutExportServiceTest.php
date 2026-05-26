@@ -85,7 +85,9 @@ it('downloads payout as CSV', function (): void {
         ->and($content)->toContain('Reference')
         ->and($content)->not->toContain('Order Reference')
         ->and($content)->toContain('REF-001')
-        ->and($content)->toContain('ORD-002');
+        ->and($content)->toContain('ORD-002')
+        ->and($content)->toContain('approved')
+        ->and($content)->toContain('paid');
 });
 
 it('download method returns CSV format (backward compatibility)', function (): void {
