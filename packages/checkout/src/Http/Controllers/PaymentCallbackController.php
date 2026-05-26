@@ -6,6 +6,7 @@ namespace AIArmada\Checkout\Http\Controllers;
 
 use AIArmada\Checkout\Actions\BuildCheckoutSessionViewData;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
+use AIArmada\Checkout\Data\CheckoutResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\Completed;
@@ -16,6 +17,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 
 final class PaymentCallbackController extends Controller
 {
@@ -28,26 +30,24 @@ final class PaymentCallbackController extends Controller
      */
     public function success(Request $request): RedirectResponse | View
     {
-        $session = $this->resolveSession($request);
+        $callbackOutcome = $this->processCallbackRequest($request, 'success');
+        $session = $callbackOutcome['session'];
 
         if ($session === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
-        // If already completed, respond with success
-        if ($session->status instanceof Completed) {
+        if ($callbackOutcome['alreadyCompleted']) {
             return $this->respondSuccess($session);
         }
 
-        // Verify payment via gateway API — never trust redirect query params as payment proof.
-        // Query params are user-controlled; passing them would allow forging ?status=paid.
-        $result = $this->checkoutService->handlePaymentCallback($session, 'success', []);
+        $result = $callbackOutcome['result'];
 
-        if ($result->success) {
-            return $this->respondSuccess($session->fresh());
+        if ($result?->success) {
+            return $this->respondSuccess($session);
         }
 
-        return $this->respondFailure($result->message ?? 'Payment verification failed', $session);
+        return $this->respondFailure($result?->message ?? 'Payment verification failed', $session);
     }
 
     /**
@@ -55,21 +55,15 @@ final class PaymentCallbackController extends Controller
      */
     public function failure(Request $request): RedirectResponse | View
     {
-        $session = $this->resolveSession($request);
+        $callbackOutcome = $this->processCallbackRequest($request, 'failure');
+        $session = $callbackOutcome['session'];
 
         if ($session === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
-        // Mark payment as failed if still awaiting
-        if (
-            $session->status instanceof Pending
-            ||
-            $session->status instanceof AwaitingPayment
-            || $session->status instanceof PaymentProcessing
-            || $session->status instanceof Processing
-        ) {
-            $this->checkoutService->handlePaymentCallback($session, 'failure');
+        if ($callbackOutcome['alreadyCompleted']) {
+            return $this->respondSuccess($session);
         }
 
         return $this->respondFailure('Payment failed', $session);
@@ -80,27 +74,64 @@ final class PaymentCallbackController extends Controller
      */
     public function cancel(Request $request): RedirectResponse | View
     {
-        $session = $this->resolveSession($request);
+        $callbackOutcome = $this->processCallbackRequest($request, 'cancel');
+        $session = $callbackOutcome['session'];
 
         if ($session === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
-        // Mark as cancelled if still awaiting
-        if (
-            $session->status instanceof Pending
-            ||
-            $session->status instanceof AwaitingPayment
-            || $session->status instanceof PaymentProcessing
-            || $session->status instanceof Processing
-        ) {
-            $this->checkoutService->handlePaymentCallback($session, 'cancel');
+        if ($callbackOutcome['alreadyCompleted']) {
+            return $this->respondSuccess($session);
         }
 
         return $this->respondCancel($session);
     }
 
-    private function resolveSession(Request $request): ?CheckoutSession
+    /**
+     * @return array{session: CheckoutSession|null, alreadyCompleted: bool, result: CheckoutResult|null}
+     */
+    private function processCallbackRequest(Request $request, string $callbackType): array
+    {
+        return DB::transaction(function () use ($request, $callbackType): array {
+            $session = $this->resolveSession($request, lockForUpdate: true);
+
+            if ($session === null) {
+                return [
+                    'session' => null,
+                    'alreadyCompleted' => false,
+                    'result' => null,
+                ];
+            }
+
+            if ($session->status instanceof Completed) {
+                return [
+                    'session' => $session,
+                    'alreadyCompleted' => true,
+                    'result' => null,
+                ];
+            }
+
+            $result = match ($callbackType) {
+                'success' => $this->checkoutService->handlePaymentCallback($session, 'success', []),
+                'failure' => $this->shouldProcessPendingCallback($session)
+                    ? $this->checkoutService->handlePaymentCallback($session, 'failure')
+                    : null,
+                'cancel' => $this->shouldProcessPendingCallback($session)
+                    ? $this->checkoutService->handlePaymentCallback($session, 'cancel')
+                    : null,
+                default => null,
+            };
+
+            return [
+                'session' => $session->fresh() ?? $session,
+                'alreadyCompleted' => false,
+                'result' => $result,
+            ];
+        }, 3);
+    }
+
+    private function resolveSession(Request $request, bool $lockForUpdate = false): ?CheckoutSession
     {
         $queryParam = config('checkout.defaults.session_query_param', 'session');
         $sessionId = $request->query($queryParam) ?? $request->query('checkout_session_id');
@@ -111,7 +142,14 @@ final class PaymentCallbackController extends Controller
 
         // Intentional cross-tenant lookup: payment gateways redirect back without owner context.
         // Access is guarded below by hash_equals() on the per-session callback_token stored in payment_data.
-        $session = CheckoutSession::withoutOwnerScope()->find($sessionId);
+        $sessionQuery = CheckoutSession::withoutOwnerScope()
+            ->whereKey($sessionId);
+
+        if ($lockForUpdate) {
+            $sessionQuery->lockForUpdate();
+        }
+
+        $session = $sessionQuery->first();
 
         if ($session === null) {
             return null;
@@ -127,6 +165,14 @@ final class PaymentCallbackController extends Controller
         }
 
         return hash_equals($expectedToken, $providedToken) ? $session : null;
+    }
+
+    private function shouldProcessPendingCallback(CheckoutSession $session): bool
+    {
+        return $session->status instanceof Pending
+            || $session->status instanceof AwaitingPayment
+            || $session->status instanceof PaymentProcessing
+            || $session->status instanceof Processing;
     }
 
     /**

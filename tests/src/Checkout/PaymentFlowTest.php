@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
+use AIArmada\Checkout\Data\CheckoutResult;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Http\Controllers\PaymentCallbackController;
@@ -140,6 +142,108 @@ describe('PaymentCallbackController', function (): void {
 
         expect($response->getSession()->get('checkout_session_id'))->toBe($session->id)
             ->and($response->getSession()->get('error'))->toBe('Payment failed');
+    });
+
+    it('treats failure callbacks as idempotent after checkout completion', function () use ($setConfig): void {
+        $setConfig();
+        $orderId = (string) Str::uuid();
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-completed-failure',
+            'order_id' => $orderId,
+            'status' => Completed::class,
+            'completed_at' => now(),
+            'selected_payment_gateway' => 'chip',
+            'payment_data' => ['callback_token' => 'valid-callback-token'],
+        ]);
+
+        $request = Request::create('/checkout/payment/failure', 'GET', [
+            'session' => $session->id,
+            'checkout_callback_token' => 'valid-callback-token',
+        ]);
+
+        $response = app(PaymentCallbackController::class)->failure($request);
+
+        expect($response->getTargetUrl())->toContain('/orders/' . $orderId)
+            ->and($session->fresh()->status instanceof Completed)->toBeTrue();
+    });
+
+    it('treats cancel callbacks as idempotent after checkout completion', function () use ($setConfig): void {
+        $setConfig();
+        $orderId = (string) Str::uuid();
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-completed-cancel',
+            'order_id' => $orderId,
+            'status' => Completed::class,
+            'completed_at' => now(),
+            'selected_payment_gateway' => 'chip',
+            'payment_data' => ['callback_token' => 'valid-callback-token'],
+        ]);
+
+        $request = Request::create('/checkout/payment/cancel', 'GET', [
+            'session' => $session->id,
+            'checkout_callback_token' => 'valid-callback-token',
+        ]);
+
+        $response = app(PaymentCallbackController::class)->cancel($request);
+
+        expect($response->getTargetUrl())->toContain('/orders/' . $orderId)
+            ->and($session->fresh()->status instanceof Completed)->toBeTrue();
+    });
+
+    it('treats duplicate success callbacks as idempotent once checkout completes', function () use ($setConfig): void {
+        $setConfig();
+        $orderId = (string) Str::uuid();
+
+        $checkoutService = mock(CheckoutServiceInterface::class);
+        /** @var Expectation $callbackExpectation */
+        $callbackExpectation = $checkoutService->shouldReceive('handlePaymentCallback');
+        $callbackExpectation->once()
+            ->withArgs(function (CheckoutSession $session, string $callbackType, array $payload): bool {
+                expect($session->status instanceof AwaitingPayment)->toBeTrue()
+                    ->and($callbackType)->toBe('success')
+                    ->and($payload)->toBe([]);
+
+                return true;
+            })
+            ->andReturnUsing(function (CheckoutSession $session) use ($orderId): CheckoutResult {
+                $session->transitionStatus(Completed::class);
+                $session->update([
+                    'order_id' => $orderId,
+                    'payment_redirect_url' => null,
+                ]);
+
+                return CheckoutResult::success($session->fresh() ?? $session, $orderId);
+            });
+
+        app()->instance(CheckoutServiceInterface::class, $checkoutService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-duplicate-success',
+            'status' => AwaitingPayment::class,
+            'selected_payment_gateway' => 'chip',
+            'payment_redirect_url' => 'https://gateway.example.test/pay',
+            'payment_data' => ['callback_token' => 'valid-callback-token'],
+        ]);
+
+        $firstRequest = Request::create('/checkout/payment/success', 'GET', [
+            'session' => $session->id,
+            'checkout_callback_token' => 'valid-callback-token',
+        ]);
+
+        $secondRequest = Request::create('/checkout/payment/success', 'GET', [
+            'session' => $session->id,
+            'checkout_callback_token' => 'valid-callback-token',
+        ]);
+
+        $firstResponse = app(PaymentCallbackController::class)->success($firstRequest);
+        $secondResponse = app(PaymentCallbackController::class)->success($secondRequest);
+
+        expect($firstResponse->getTargetUrl())->toContain('/orders/' . $orderId)
+            ->and($secondResponse->getTargetUrl())->toContain('/orders/' . $orderId)
+            ->and($session->fresh()->status instanceof Completed)->toBeTrue()
+            ->and($session->fresh()->order_id)->toBe($orderId);
     });
 
     it('rejects callbacks without a valid token', function () use ($setConfig): void {
