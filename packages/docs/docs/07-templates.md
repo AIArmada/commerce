@@ -2,155 +2,113 @@
 title: Templates
 ---
 
-# Templates
+## Templates
 
-Templates are Blade views that define document appearance.
+Templates are declarative JSON layouts stored on `DocTemplate::layout`. The renderer walks approved block definitions and converts the document data plus Tiptap JSON body into sanitized HTML for online viewing and optional PDF export.
 
-## Template Path Convention
+Blade views are package-owned render targets only. Do not store user-authored Blade, PHP, or arbitrary component class names in templates.
 
-Templates are resolved using:
+## Breaking Changes
 
-```
-docs::templates.<template-slug>
-```
+`view_name` is no longer the template mechanism. Migrate templates into `layout` JSON using supported block types, then render documents through `DocRenderService`.
 
-**Examples:**
-- `docs::templates.doc-default` → Default template
-- `docs::templates.modern` → Custom modern template
+## Supported Blocks
 
-## Template Resolution Priority
+- `document_header`
+- `parties`
+- `document_metadata`
+- `rich_body`
+- `static_rich_text`
+- `line_items`
+- `totals`
+- `notes_terms`
+- `signature_payment`
+- `page_break`
+- `footer`
 
-1. **By UUID** - if `doc_template_id` provided
-2. **By Slug** - if `template_slug` provided
-3. **Database Default** - `is_default = true` for doc type
-4. **Config Fallback** - `docs.types.{type}.default_template`
+Layouts are validated by `TemplateBlockRegistry` before save and again before render.
 
 ## Creating Templates
 
-### 1. Create the Blade View
-
-Publish package views:
-
-```bash
-php artisan vendor:publish --tag=docs-views
-```
-
-Create template in `resources/views/vendor/docs/templates/`:
-
-```blade
-<!-- modern.blade.php -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ $doc->doc_number }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50">
-    <div class="mx-auto max-w-4xl bg-white p-8 shadow">
-        <!-- Header -->
-        <h1 class="text-4xl font-bold text-indigo-600">
-            {{ strtoupper($doc->doc_type) }}
-        </h1>
-        <p class="text-gray-600">{{ $doc->doc_number }}</p>
-
-        <!-- Items Table -->
-        <table class="mt-8 w-full">
-            <thead class="bg-indigo-600 text-white">
-                <tr>
-                    <th class="p-3 text-left">Item</th>
-                    <th class="p-3 text-right">Qty</th>
-                    <th class="p-3 text-right">Price</th>
-                    <th class="p-3 text-right">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($doc->items as $item)
-                <tr class="border-b">
-                    <td class="p-3">{{ $item['name'] }}</td>
-                    <td class="p-3 text-right">{{ $item['quantity'] ?? 1 }}</td>
-                    <td class="p-3 text-right">{{ $doc->currency }} {{ number_format($item['price'], 2) }}</td>
-                    <td class="p-3 text-right">{{ $doc->currency }} {{ number_format(($item['quantity'] ?? 1) * $item['price'], 2) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        <!-- Total -->
-        <div class="mt-4 text-right text-xl font-bold">
-            Total: {{ $doc->currency }} {{ number_format($doc->total, 2) }}
-        </div>
-    </div>
-</body>
-</html>
-```
-
-### 2. Register Template in Database
-
 ```php
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Support\TemplateBlockRegistry;
 
-DocTemplate::create([
-    'name' => 'Modern Template',
-    'slug' => 'modern',
-    'description' => 'A modern design',
-    'view_name' => 'modern',
+$template = DocTemplate::create([
+    'name' => 'Modern Invoice',
+    'slug' => 'modern-invoice',
+    'description' => 'Online-first invoice layout',
     'doc_type' => 'invoice',
-    'is_default' => false,
+    'is_default' => true,
+    'layout' => TemplateBlockRegistry::defaultLayout(),
     'settings' => [
         'pdf' => [
             'format' => 'a4',
+            'orientation' => 'portrait',
             'print_background' => true,
+            'margin' => [
+                'top' => 10,
+                'right' => 10,
+                'bottom' => 10,
+                'left' => 10,
+            ],
         ],
     ],
 ]);
 ```
 
-### 3. Use the Template
+## Rendering Documents
 
 ```php
-$document = $docService->create(DocData::from([
-    'template_slug' => 'modern',
-    'doc_type' => 'invoice',
-    // ... other data
-]));
+use AIArmada\Docs\Enums\RenderAudience;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocRenderService;
+use Illuminate\Support\HtmlString;
+
+/** @var Doc $doc */
+/** @var DocRenderService $renderer */
+$renderer = app(DocRenderService::class);
+
+$html = $renderer->renderHtml($doc, RenderAudience::CustomerView);
+
+if ($html instanceof HtmlString) {
+    echo $html->toHtml();
+}
 ```
 
-## Available Template Variables
+## PDF Export
+
+PDF generation uses the same template layout and document data as online rendering.
 
 ```php
-$doc->doc_number          // Document number
-$doc->doc_type            // Type (invoice, receipt)
-$doc->status              // State-cast status object (AIArmada\Docs\States\DocStatus)
-$doc->issue_date          // Carbon instance
-$doc->due_date            // Carbon instance (nullable)
-$doc->subtotal            // Subtotal amount
-$doc->tax_amount          // Tax amount
-$doc->discount_amount     // Discount amount
-$doc->total               // Total amount
-$doc->currency            // Currency code
-$doc->notes               // Notes
-$doc->terms               // Terms and conditions
-$doc->customer_data       // Customer array
-$doc->company_data        // Company array
-$doc->items               // Line items array
-$doc->metadata            // Additional metadata
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocRenderService;
+
+/** @var Doc $doc */
+$pdfContents = app(DocRenderService::class)->renderPdf($doc);
 ```
 
-## Setting Default Template
+## Share Links
+
+Public customer access uses hashed tokens and action permissions. Raw document IDs are not exposed.
 
 ```php
-$template->setAsDefault();
+use AIArmada\Docs\DataObjects\ShareLinkData;
+use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocRenderService;
+use Carbon\CarbonImmutable;
+
+/** @var Doc $doc */
+$shareLink = app(DocRenderService::class)->createShareLink(
+    $doc,
+    new ShareLinkData(
+        allowedActions: [ShareLinkAction::View, ShareLinkAction::Pdf],
+        expiresAt: CarbonImmutable::now()->addDays(14),
+    ),
+);
 ```
 
-This automatically unsets other defaults for the same doc type.
+## Rich Content
 
-## Using Tailwind CSS
-
-The recommended approach uses Tailwind CDN:
-
-```html
-<script src="https://cdn.tailwindcss.com"></script>
-```
-
-For production, consider building a dedicated CSS file. See [Tailwind Usage Guide](./08-tailwind-usage.md).
+Document body content is stored as Tiptap JSON on `Doc::body`. Static rich text sections in templates are also JSON payloads. Render rich content through the package renderer so merge tags and sanitization are applied consistently.

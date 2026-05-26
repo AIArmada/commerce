@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Schemas;
 
-use Filament\Forms\Components\KeyValue;
+use AIArmada\Docs\Enums\DocMergeTag;
+use AIArmada\Docs\Support\DocRichContentStorage;
+use AIArmada\Docs\Support\TemplateBlockRegistry;
+use Filament\Forms\Components\Builder;
+use Filament\Forms\Components\Builder\Block;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -42,7 +47,7 @@ final class DocTemplateForm
                                     ->required()
                                     ->unique(ignoreRecord: true)
                                     ->maxLength(255)
-                                    ->helperText('Used for referencing the template in code'),
+                                    ->helperText('Used for selecting this template from documents'),
                             ]),
 
                         Textarea::make('description')
@@ -63,19 +68,28 @@ final class DocTemplateForm
                                     ->default(array_key_first($docTypes) ?? 'invoice')
                                     ->required(),
 
-                                TextInput::make('view_name')
-                                    ->label('View Name')
-                                    ->required()
-                                    ->default('doc-default')
-                                    ->helperText('Blade view name (e.g., doc-default, modern)'),
+                                Toggle::make('is_default')
+                                    ->label('Default Template')
+                                    ->helperText('Use this template by default for the selected document type'),
                             ]),
-
-                        Toggle::make('is_default')
-                            ->label('Default Template')
-                            ->helperText('Set as the default template for this document type'),
                     ]),
 
-                Section::make('PDF Settings')
+                Section::make('Layout Builder')
+                    ->schema([
+                        Builder::make('layout')
+                            ->label('Document Layout')
+                            ->required()
+                            ->default(TemplateBlockRegistry::defaultLayout())
+                            ->blocks(self::blocks())
+                            ->blockPickerColumns(2)
+                            ->blockPickerWidth('4xl')
+                            ->collapsible()
+                            ->cloneable()
+                            ->reorderableWithButtons()
+                            ->columnSpanFull(),
+                    ]),
+
+                Section::make('Page & PDF Settings')
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -124,23 +138,114 @@ final class DocTemplateForm
 
                         Toggle::make('settings.pdf.print_background')
                             ->label('Print Background')
-                            ->helperText('Enable background colors and gradients')
                             ->default(true),
                     ])
                     ->collapsible(),
-
-                Section::make('Custom Settings')
-                    ->schema([
-                        KeyValue::make('settings.custom')
-                            ->label('Custom Settings')
-                            ->keyLabel('Setting Key')
-                            ->valueLabel('Value')
-                            ->reorderable()
-                            ->columnSpanFull()
-                            ->helperText('Add custom settings for this template'),
-                    ])
-                    ->collapsible()
-                    ->collapsed(),
             ]);
+    }
+
+    /**
+     * @return array<Block>
+     */
+    private static function blocks(): array
+    {
+        return [
+            Block::make('document_header')
+                ->label('Document Header')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    TextInput::make('label')->label('Heading')->placeholder('Invoice, Quotation, Proposal'),
+                ]),
+
+            Block::make('parties')
+                ->label('Company / Customer')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    Grid::make(2)->schema([
+                        TextInput::make('company_label')->default('From'),
+                        TextInput::make('customer_label')->default('Bill To'),
+                    ]),
+                ]),
+
+            Block::make('document_metadata')
+                ->label('Document Details')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    TextInput::make('label')->default('Document Details'),
+                ]),
+
+            Block::make('rich_body')
+                ->label('Document Body Slot')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                ]),
+
+            Block::make('static_rich_text')
+                ->label('Static Rich Text')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    RichEditor::make('content')
+                        ->label('Content')
+                        ->json()
+                        ->mergeTags(DocMergeTag::labels())
+                        ->toolbarButtons([
+                            ['bold', 'italic', 'underline', 'strike', 'link'],
+                            ['h2', 'h3'],
+                            ['blockquote', 'bulletList', 'orderedList'],
+                            ['table', 'attachFiles'],
+                            ['mergeTags'],
+                            ['undo', 'redo'],
+                        ])
+                        ->fileAttachmentsDisk((string) config('docs.storage.disk', 'local'))
+                        ->fileAttachmentsDirectory(fn (): string => DocRichContentStorage::directory())
+                        ->fileAttachmentsVisibility((string) config('docs.storage.rich_content_visibility', 'private'))
+                        ->columnSpanFull(),
+                ]),
+
+            Block::make('line_items')
+                ->label('Line Items')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    TextInput::make('label')->default('Items'),
+                ]),
+
+            Block::make('totals')
+                ->label('Totals')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    TextInput::make('label')->default('Totals'),
+                ]),
+
+            Block::make('notes_terms')
+                ->label('Notes / Terms')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    Grid::make(2)->schema([
+                        TextInput::make('notes_label')->default('Notes'),
+                        TextInput::make('terms_label')->default('Terms'),
+                    ]),
+                ]),
+
+            Block::make('signature_payment')
+                ->label('Signature / Payment Instructions')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    TextInput::make('label')->default('Signature / Payment Instructions'),
+                    Textarea::make('body')->rows(3)->columnSpanFull(),
+                ]),
+
+            Block::make('page_break')
+                ->label('Page Break')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                ]),
+
+            Block::make('footer')
+                ->label('Footer')
+                ->schema([
+                    Toggle::make('visible')->default(true),
+                    TextInput::make('text')->default('Thank you for your business.'),
+                ]),
+        ];
     }
 }

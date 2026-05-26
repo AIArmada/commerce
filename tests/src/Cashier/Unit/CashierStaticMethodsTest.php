@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\Cashier;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
+use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
 
 uses(CashierTestCase::class);
 
 describe('Cashier Static Methods Full Coverage', function (): void {
     afterEach(function (): void {
-        // Reset static properties between tests
-        Cashier::$deactivatePastDue = true;
-        Cashier::$deactivateIncomplete = true;
-        Cashier::$registersRoutes = true;
+        Cashier::restoreOctaneDefaults();
     });
 
     describe('deactivatePastDue', function (): void {
@@ -156,12 +154,7 @@ describe('Cashier Static Methods Full Coverage', function (): void {
 
     describe('formatCurrencyUsing', function (): void {
         afterEach(function (): void {
-            // Reset the formatter
-            Cashier::formatCurrencyUsing(fn ($amount, $currency, $locale) => null);
-            // Re-set to null through reflection
-            $reflection = new ReflectionClass(Cashier::class);
-            $property = $reflection->getProperty('formatCurrencyUsing');
-            $property->setValue(null, null);
+            Cashier::restoreOctaneDefaults();
         });
 
         it('allows setting custom currency formatter', function (): void {
@@ -248,11 +241,24 @@ describe('Cashier Static Methods Full Coverage', function (): void {
             $result = Cashier::formatAmount(1000, 'eur');
 
             expect($result)->toBe('EUR');
+        });
+    });
 
-            // Reset formatter
-            $reflection = new ReflectionClass(Cashier::class);
-            $property = $reflection->getProperty('formatCurrencyUsing');
-            $property->setValue(null, null);
+    describe('Octane defaults', function (): void {
+        it('restores boot-time static configuration between requests', function (): void {
+            Cashier::useCustomerModel('App\\Models\\Customer');
+            Cashier::deactivatePastDue(false);
+            Cashier::deactivateIncomplete(false);
+            Cashier::ignoreRoutes();
+            Cashier::formatCurrencyUsing(fn ($amount, $currency, $locale) => 'mutated');
+
+            Cashier::restoreOctaneDefaults();
+
+            expect(Cashier::$customerModel)->toBe(User::class)
+                ->and(Cashier::$deactivatePastDue)->toBeTrue()
+                ->and(Cashier::$deactivateIncomplete)->toBeTrue()
+                ->and(Cashier::$registersRoutes)->toBeTrue()
+                ->and(Cashier::formatAmount(1000, 'USD', 'en_US'))->not->toBe('mutated');
         });
     });
 });

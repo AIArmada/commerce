@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Support\TemplateBlockRegistry;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -25,9 +26,9 @@ it('allows read access to global rows but denies mutation in tenant context when
         'name' => 'Global Template',
         'slug' => 'global-template',
         'description' => 'Global',
-        'view_name' => 'docs::templates.default',
         'doc_type' => 'invoice',
         'is_default' => false,
+        'layout' => TemplateBlockRegistry::defaultLayout(),
         'settings' => [],
     ]));
 
@@ -53,9 +54,9 @@ it('allows mutation for rows owned by current tenant', function (): void {
         'name' => 'Owned Template',
         'slug' => 'owned-template',
         'description' => 'Owned',
-        'view_name' => 'docs::templates.default',
         'doc_type' => 'invoice',
         'is_default' => false,
+        'layout' => TemplateBlockRegistry::defaultLayout(),
         'settings' => [],
     ]));
 

@@ -10,7 +10,7 @@ return [
 
     // Features
     'features' => [
-        'auto_generate_pdf' => true,
+        'auto_generate_pdf' => false,
     ],
 
     // Resources

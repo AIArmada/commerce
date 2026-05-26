@@ -24,10 +24,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
-use Spatie\LaravelPdf\Facades\Pdf;
 
 /**
  * Core document management service.
@@ -70,25 +68,10 @@ final class DocService implements DocServiceInterface
         // Resolve current owner
         $owner = $this->resolveOwner();
 
-        // Get template (scoped by owner if enabled)
-        $template = null;
-        if ($data->docTemplateId) {
-            $template = $this->getTemplateQuery()->find($data->docTemplateId);
+        $template = $this->resolveTemplateSelection($docType, $data->docTemplateId, $data->templateSlug);
 
-            if (! $template) {
-                throw ValidationException::withMessages([
-                    'doc_template_id' => __('Invalid template selection.'),
-                ]);
-            }
-        } elseif ($data->templateSlug) {
-            $template = $this->getTemplateQuery()->where('slug', $data->templateSlug)->first();
-        }
-
-        if (! $template) {
-            $template = $this->getTemplateQuery()
-                ->where('is_default', true)
-                ->where('doc_type', $docType)
-                ->first();
+        if ($template instanceof DocTemplate) {
+            app(DocRenderService::class)->validateDocPayload($template, $data->body, $data->items);
         }
 
         // Calculate totals (use provided values if available, otherwise calculate)
@@ -136,6 +119,7 @@ final class DocService implements DocServiceInterface
             'discount_amount' => $discountAmount,
             'total' => $total,
             'currency' => $data->currency ?? (string) $this->resolveDefault($docType, 'currency', 'MYR'),
+            'body' => $data->body,
             'notes' => $data->notes,
             'terms' => $data->terms,
             'customer_data' => $data->customerData,
@@ -189,6 +173,21 @@ final class DocService implements DocServiceInterface
                 $docData = array_merge($docData, $totals);
             }
 
+            $template = $this->resolveTemplateSelection(
+                $type->value,
+                isset($docData['doc_template_id']) ? (string) $docData['doc_template_id'] : null,
+                isset($docData['template_slug']) ? (string) $docData['template_slug'] : null,
+            );
+
+            if ($template instanceof DocTemplate) {
+                $docData['doc_template_id'] = $template->id;
+                app(DocRenderService::class)->validateDocPayload(
+                    $template,
+                    isset($docData['body']) && is_array($docData['body']) ? $docData['body'] : null,
+                    isset($docData['items']) && is_array($docData['items']) ? $docData['items'] : [],
+                );
+            }
+
             $doc = new Doc($docData);
 
             if ($owner !== null) {
@@ -213,6 +212,24 @@ final class DocService implements DocServiceInterface
     public function update(Doc $doc, array $data): Doc
     {
         return DB::transaction(function () use ($doc, $data): Doc {
+            $effectiveDocType = isset($data['doc_type']) && is_string($data['doc_type']) && $data['doc_type'] !== ''
+                ? $data['doc_type']
+                : $doc->doc_type;
+
+            $templateId = array_key_exists('doc_template_id', $data)
+                ? (filled($data['doc_template_id'] ?? null) ? (string) $data['doc_template_id'] : null)
+                : $doc->doc_template_id;
+
+            $template = $this->resolveTemplateSelection($effectiveDocType, $templateId);
+
+            if ($template instanceof DocTemplate) {
+                app(DocRenderService::class)->validateDocPayload(
+                    $template,
+                    $data['body'] ?? $doc->body,
+                    $data['items'] ?? ($doc->items ?? []),
+                );
+            }
+
             // Calculate totals if items changed
             if (isset($data['items'])) {
                 $totals = $this->calculateTotals(
@@ -255,6 +272,7 @@ final class DocService implements DocServiceInterface
             'doc_template_id' => $source->doc_template_id,
             'due_date' => $source->due_date,
             'currency' => $source->currency,
+            'body' => $source->body,
             'notes' => $source->notes,
             'terms' => $source->terms,
             'customer_data' => $source->customer_data,
@@ -329,6 +347,7 @@ final class DocService implements DocServiceInterface
             'doc_template_id' => $source->doc_template_id,
             'due_date' => CarbonImmutable::now()->addDays(config('docs.defaults.due_days', 30)),
             'currency' => $source->currency,
+            'body' => $source->body,
             'notes' => $source->notes,
             'terms' => $source->terms,
             'customer_data' => $source->customer_data,
@@ -371,72 +390,11 @@ final class DocService implements DocServiceInterface
      */
     public function generatePdf(Doc $doc, bool $save = true): string
     {
-        // Load the polymorphic relationship to access ticket/order data
-        $doc->loadMissing('docable');
+        $renderer = app(DocRenderService::class);
 
-        $docType = $doc->doc_type ?? 'invoice';
-        $template = $doc->template ?? $this->getTemplateQueryForDoc($doc)
-            ->where('is_default', true)
-            ->where('doc_type', $docType)
-            ->first();
-        $viewName = $template->view_name ?? config("docs.types.{$docType}.default_template", "{$docType}-default");
-        $resolvedView = $this->normalizeViewName($viewName);
-
-        // Resolve effective PDF options (config defaults overridden by per-doc metadata)
-        $defaults = [
-            'format' => config('docs.pdf.format', 'a4'),
-            'orientation' => config('docs.pdf.orientation', 'portrait'),
-            'margin' => [
-                'top' => config('docs.pdf.margin.top', 10),
-                'right' => config('docs.pdf.margin.right', 10),
-                'bottom' => config('docs.pdf.margin.bottom', 10),
-                'left' => config('docs.pdf.margin.left', 10),
-            ],
-            'full_bleed' => config('docs.pdf.full_bleed', false),
-            'print_background' => config('docs.pdf.print_background', true),
-        ];
-        $templatePdf = (array) ($template->settings['pdf'] ?? []);
-        $perDoc = (array) ($doc->metadata['pdf'] ?? []);
-        // Precedence: config < template < per-doc
-        $opts = array_replace_recursive($defaults, $templatePdf, $perDoc);
-
-        $pdf = Pdf::view($resolvedView, [
-            'doc' => $doc,
-        ])
-            ->format($opts['format'])
-            ->orientation($opts['orientation'])
-            ->margins(
-                $opts['margin']['top'],
-                $opts['margin']['right'],
-                $opts['margin']['bottom'],
-                $opts['margin']['left']
-            );
-
-        // Enable borderless full-bleed if configured
-        if (! empty($opts['full_bleed'])) {
-            $pdf->margins(0, 0, 0, 0);
-        }
-
-        // Ensure backgrounds (colors, gradients) are printed
-        if (! empty($opts['print_background'])) {
-            $pdf->withBrowsershot(static function ($browsershot): void {
-                $browsershot->showBackground();
-            });
-        }
-
-        if ($save) {
-            $path = $this->generatePdfPath($doc);
-            $disk = $this->resolveStorageDisk($docType);
-
-            Storage::disk($disk)->put($path, $pdf->generatePdfContent());
-
-            $doc->update(['pdf_path' => $path]);
-
-            // Return relative path (consumer can turn into URL). Avoid assuming url() method exists on custom disk.
-            return $path;
-        }
-
-        return $pdf->generatePdfContent();
+        return $save
+            ? $renderer->storePdf($doc)
+            : $renderer->renderPdf($doc);
     }
 
     /**
@@ -518,80 +476,6 @@ final class DocService implements DocServiceInterface
     }
 
     /**
-     * Get template query builder scoped to the document's owner columns.
-     *
-     * @return Builder<DocTemplate>
-     */
-    protected function getTemplateQueryForDoc(Doc $doc): Builder
-    {
-        $query = DocTemplate::query();
-
-        if (! config('docs.owner.enabled', false)) {
-            return $query;
-        }
-
-        $includeGlobal = (bool) config('docs.owner.include_global', false);
-
-        if ($doc->owner_type !== null && $doc->owner_id !== null) {
-            return $query->where(function (Builder $builder) use ($doc, $includeGlobal): void {
-                $builder->where('owner_type', $doc->owner_type)
-                    ->where('owner_id', $doc->owner_id);
-
-                if ($includeGlobal) {
-                    $builder->orWhere(function (Builder $inner): void {
-                        $inner->whereNull('owner_type')->whereNull('owner_id');
-                    });
-                }
-            });
-        }
-
-        return $query->whereNull('owner_type')->whereNull('owner_id');
-    }
-
-    /**
-     * Normalize a template view name into the canonical 'docs::templates.<slug>' form.
-     */
-    protected function normalizeViewName(string $viewName): string
-    {
-        $viewName = mb_trim($viewName);
-
-        // Already correct
-        if (str_starts_with($viewName, 'docs::templates.')) {
-            return $viewName;
-        }
-
-        // If it has the docs:: prefix but missing templates.
-        if (str_starts_with($viewName, 'docs::')) {
-            $suffix = mb_substr($viewName, mb_strlen('docs::')) ?: '';
-            if ($suffix === '') {
-                return 'docs::templates.doc-default';
-            }
-            if (str_starts_with($suffix, 'templates.')) {
-                return 'docs::' . $suffix; // becomes docs::templates.<slug>
-            }
-
-            return 'docs::templates.' . $suffix; // ensure templates prefix
-        }
-
-        // Dot notation like docs.templates.slug
-        if (str_starts_with($viewName, 'docs.templates.')) {
-            $slug = mb_substr($viewName, mb_strlen('docs.templates.')) ?: 'doc-default';
-
-            return 'docs::templates.' . $slug;
-        }
-
-        // Starting with templates.
-        if (str_starts_with($viewName, 'templates.')) {
-            $slug = mb_substr($viewName, mb_strlen('templates.')) ?: 'doc-default';
-
-            return 'docs::templates.' . $slug;
-        }
-
-        // Fallback plain slug
-        return 'docs::templates.' . $viewName;
-    }
-
-    /**
      * Calculate subtotal from items (simple sum).
      *
      * @param  array<int, array<string, mixed>>  $items
@@ -609,64 +493,48 @@ final class DocService implements DocServiceInterface
         return $subtotal;
     }
 
-    protected function generatePdfPath(Doc $doc): string
-    {
-        $docType = $doc->doc_type ?? 'invoice';
-        $basePath = $this->resolveStoragePath($docType);
-        $filename = $this->normalizePdfFilename($doc);
-
-        $basePath = mb_trim($basePath, '/');
-
-        return $basePath === '' ? $filename : "{$basePath}/{$filename}";
-    }
-
-    protected function normalizePdfFilename(Doc $doc): string
-    {
-        $raw = (string) ($doc->doc_number ?: $doc->getKey());
-
-        // Prevent path traversal / separator injection.
-        $raw = str_replace(['/', '\\'], '-', $raw);
-
-        // Keep only safe filename characters.
-        $sanitized = (string) preg_replace('/[^A-Za-z0-9._-]+/', '-', $raw);
-        $sanitized = mb_trim($sanitized, " .-_/\t\n\r\0\x0B");
-
-        while (str_contains($sanitized, '..')) {
-            $sanitized = str_replace('..', '.', $sanitized);
-        }
-
-        // Treat remaining dots as unsafe path-ish tokens.
-        $sanitized = str_replace('.', '-', $sanitized);
-
-        // Collapse repeated separators.
-        $sanitized = (string) preg_replace('/[-_]{2,}/', '-', $sanitized);
-        $sanitized = mb_trim($sanitized, '-_ ');
-
-        if ($sanitized === '') {
-            $sanitized = (string) $doc->getKey();
-        }
-
-        // Avoid extremely long filenames.
-        $sanitized = Str::limit($sanitized, 120, '');
-
-        return $sanitized . '.pdf';
-    }
-
     protected function resolveStorageDisk(string $docType): string
     {
         return config("docs.types.{$docType}.storage.disk")
             ?? config('docs.storage.disk', 'local');
     }
 
-    protected function resolveStoragePath(string $docType): string
-    {
-        return config("docs.types.{$docType}.storage.path")
-            ?? config('docs.storage.path', 'docs');
-    }
-
     protected function resolveDefault(string $docType, string $key, mixed $fallback = null): mixed
     {
         return config("docs.types.{$docType}.defaults.{$key}", config("docs.defaults.{$key}", $fallback));
+    }
+
+    protected function resolveTemplateSelection(string $docType, ?string $templateId = null, ?string $templateSlug = null): ?DocTemplate
+    {
+        $query = $this->getTemplateQuery()->where('doc_type', $docType);
+
+        if ($templateId !== null && $templateId !== '') {
+            $template = $query->find($templateId);
+
+            if (! $template instanceof DocTemplate) {
+                throw ValidationException::withMessages([
+                    'doc_template_id' => __('Invalid template selection for this document type.'),
+                ]);
+            }
+
+            return $template;
+        }
+
+        if ($templateSlug !== null && $templateSlug !== '') {
+            $template = $query->where('slug', $templateSlug)->first();
+
+            if (! $template instanceof DocTemplate) {
+                throw ValidationException::withMessages([
+                    'template_slug' => __('Invalid template selection for this document type.'),
+                ]);
+            }
+
+            return $template;
+        }
+
+        return $query
+            ->where('is_default', true)
+            ->first();
     }
 
     /**

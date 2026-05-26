@@ -76,6 +76,35 @@ final class Cashier
     protected static bool $isFake = false;
 
     /**
+     * Boot-time defaults restored for each Octane request.
+     *
+     * @var array{
+     *   remembered: bool,
+     *   registersRoutes: bool,
+     *   deactivatePastDue: bool,
+     *   deactivateIncomplete: bool,
+     *   customerModel: class-string<Model>,
+     *   subscriptionModel: class-string<Model>,
+     *   subscriptionItemModel: class-string<Model>,
+     *   formatCurrencyUsing: (callable(int, ?string, ?string, array<string, mixed>): string)|null,
+     *   fakeChip: FakeChipCollectService|null,
+     *   isFake: bool
+     * }
+     */
+    private static array $octaneDefaults = [
+        'remembered' => false,
+        'registersRoutes' => true,
+        'deactivatePastDue' => true,
+        'deactivateIncomplete' => true,
+        'customerModel' => Model::class,
+        'subscriptionModel' => Subscription::class,
+        'subscriptionItemModel' => SubscriptionItem::class,
+        'formatCurrencyUsing' => null,
+        'fakeChip' => null,
+        'isFake' => false,
+    ];
+
+    /**
      * Get the customer instance by its CHIP ID.
      *
      * @return (Model&BillableContract)|null
@@ -226,6 +255,45 @@ final class Cashier
         if (static::$fakeChip) {
             static::$fakeChip->reset();
         }
+    }
+
+    /**
+     * Snapshot boot-time defaults so Octane can restore them on each request.
+     */
+    public static function rememberOctaneDefaults(): void
+    {
+        self::$octaneDefaults = [
+            'remembered' => true,
+            'registersRoutes' => static::$registersRoutes,
+            'deactivatePastDue' => static::$deactivatePastDue,
+            'deactivateIncomplete' => static::$deactivateIncomplete,
+            'customerModel' => static::$customerModel,
+            'subscriptionModel' => static::$subscriptionModel,
+            'subscriptionItemModel' => static::$subscriptionItemModel,
+            'formatCurrencyUsing' => static::$formatCurrencyUsing,
+            'fakeChip' => static::$fakeChip,
+            'isFake' => static::$isFake,
+        ];
+    }
+
+    /**
+     * Restore boot-time defaults before handling the next Octane request.
+     */
+    public static function restoreOctaneDefaults(): void
+    {
+        if (self::$octaneDefaults['remembered'] !== true) {
+            return;
+        }
+
+        static::$registersRoutes = self::$octaneDefaults['registersRoutes'];
+        static::$deactivatePastDue = self::$octaneDefaults['deactivatePastDue'];
+        static::$deactivateIncomplete = self::$octaneDefaults['deactivateIncomplete'];
+        static::useCustomerModel(self::$octaneDefaults['customerModel']);
+        static::useSubscriptionModel(self::$octaneDefaults['subscriptionModel']);
+        static::useSubscriptionItemModel(self::$octaneDefaults['subscriptionItemModel']);
+        static::formatCurrencyUsing(self::$octaneDefaults['formatCurrencyUsing']);
+        static::$fakeChip = self::$octaneDefaults['fakeChip'];
+        static::$isFake = self::$octaneDefaults['isFake'];
     }
 
     /**

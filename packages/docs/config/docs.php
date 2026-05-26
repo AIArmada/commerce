@@ -14,6 +14,7 @@ return [
         'tables' => [
             'docs' => env('DOCS_TABLE', $tablePrefix . 'docs'),
             'doc_templates' => env('DOC_TEMPLATES_TABLE', $tablePrefix . 'doc_templates'),
+            'doc_share_links' => env('DOC_SHARE_LINKS_TABLE', $tablePrefix . 'doc_share_links'),
             'doc_status_histories' => env('DOC_STATUS_HISTORIES_TABLE', $tablePrefix . 'doc_status_histories'),
             'doc_payments' => env('DOC_PAYMENTS_TABLE', $tablePrefix . 'payments'),
             'doc_email_templates' => env('DOC_EMAIL_TEMPLATES_TABLE', $tablePrefix . 'email_templates'),
@@ -72,42 +73,36 @@ return [
     /* Document Types */
     'types' => [
         'invoice' => [
-            'default_template' => 'doc-default',
             'numbering' => [
                 'strategy' => DefaultNumberStrategy::class,
                 'prefix' => 'INV',
             ],
         ],
         'quotation' => [
-            'default_template' => 'doc-default',
             'numbering' => [
                 'strategy' => DefaultNumberStrategy::class,
                 'prefix' => 'QUO',
             ],
         ],
         'receipt' => [
-            'default_template' => 'doc-default',
             'numbering' => [
                 'strategy' => DefaultNumberStrategy::class,
                 'prefix' => 'RCP',
             ],
         ],
         'credit_note' => [
-            'default_template' => 'doc-default',
             'numbering' => [
                 'strategy' => DefaultNumberStrategy::class,
                 'prefix' => 'CN',
             ],
         ],
         'delivery_note' => [
-            'default_template' => 'doc-default',
             'numbering' => [
                 'strategy' => DefaultNumberStrategy::class,
                 'prefix' => 'DN',
             ],
         ],
         'proforma_invoice' => [
-            'default_template' => 'doc-default',
             'numbering' => [
                 'strategy' => DefaultNumberStrategy::class,
                 'prefix' => 'PI',
@@ -129,6 +124,13 @@ return [
     'storage' => [
         'disk' => env('DOCS_STORAGE_DISK', 'local'),
         'path' => env('DOCS_STORAGE_PATH', 'docs'),
+        'rich_content_path' => env('DOCS_RICH_CONTENT_PATH', 'docs/rich-content'),
+        'rich_content_visibility' => env('DOCS_RICH_CONTENT_VISIBILITY', 'private'),
+    ],
+
+    /* Sharing */
+    'sharing' => [
+        'default_expiry_days' => 30,
     ],
 
     /* PDF */
