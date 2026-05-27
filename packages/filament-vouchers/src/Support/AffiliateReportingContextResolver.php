@@ -23,15 +23,6 @@ final class AffiliateReportingContextResolver
      */
     private array $orderNumberCache = [];
 
-    /**
-     * @var WeakMap<VoucherUsage, array{
-     *     affiliate_code: string|null,
-     *     affiliate_name: string|null,
-     *     source: string|null,
-     *     medium: string|null,
-     *     campaign: string|null,
-     * }>
-     */
     private WeakMap $usageContextCache;
 
     /**
@@ -62,7 +53,10 @@ final class AffiliateReportingContextResolver
     public function resolve(VoucherUsage $usage): array
     {
         if (isset($this->usageContextCache[$usage])) {
-            return $this->usageContextCache[$usage];
+            $context = $this->usageContextCache[$usage];
+            if (\is_array($context)) {
+                return $context;
+            }
         }
 
         $voucherCode = $this->resolveVoucherCode($usage);

@@ -86,7 +86,6 @@ return new class extends Migration
             return;
         }
 
-        /** @var Migration $migration */
         $migration = require $migrationPath;
         $migration->up();
     }
