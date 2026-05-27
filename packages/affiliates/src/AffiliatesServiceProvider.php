@@ -30,6 +30,7 @@ use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Spatie\LaravelPackageTools\Package;
@@ -82,6 +83,8 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        Blade::anonymousComponentNamespace('affiliates::components', 'affiliates');
+
         if (
             config('affiliates.features.cart_integration.enabled', true)
             && config('affiliates.cart.register_manager_proxy', true)
