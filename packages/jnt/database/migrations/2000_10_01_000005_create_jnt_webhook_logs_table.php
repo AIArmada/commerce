@@ -16,7 +16,7 @@ return new class extends Migration
         $webhookLogsTable = $tables['webhook_logs'] ?? $prefix . 'webhook_logs';
 
         Schema::create($webhookLogsTable, function (Blueprint $table): void {
-            $jsonType = (string) commerce_json_column_type('jnt', 'json');
+            $jsonType = (string) commerce_json_column_type('jnt', 'jsonb');
             $table->uuid('id')->primary();
             $table->foreignUuid('order_id')->nullable()->index();
             $table->string('tracking_number', 30)->nullable()->index();
@@ -34,7 +34,7 @@ return new class extends Migration
         });
 
         // GIN indexes only work with jsonb in PostgreSQL
-        if (commerce_json_column_type('jnt', 'json') === 'jsonb') {
+        if (commerce_json_column_type('jnt', 'jsonb') === 'jsonb') {
             Schema::table($webhookLogsTable, function (Blueprint $table) use ($webhookLogsTable): void {
                 DB::statement('CREATE INDEX jnt_webhook_logs_payload_gin_index ON ' . $webhookLogsTable . ' USING GIN (payload)');
             });

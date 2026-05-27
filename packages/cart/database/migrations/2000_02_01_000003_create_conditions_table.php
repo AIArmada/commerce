@@ -16,7 +16,7 @@ return new class extends Migration
     public function up(): void
     {
         $tableName = config('cart.database.conditions_table', 'conditions');
-        $jsonType = (string) commerce_json_column_type('cart', 'json');
+        $jsonType = (string) commerce_json_column_type('cart', 'jsonb');
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();

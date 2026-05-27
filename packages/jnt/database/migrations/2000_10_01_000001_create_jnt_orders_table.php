@@ -13,7 +13,7 @@ return new class extends Migration
     {
         $tableName = config('jnt.database.tables.orders', config('jnt.database.table_prefix', 'jnt_') . 'orders');
 
-        $jsonType = (string) commerce_json_column_type('jnt', 'json');
+        $jsonType = (string) commerce_json_column_type('jnt', 'jsonb');
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();

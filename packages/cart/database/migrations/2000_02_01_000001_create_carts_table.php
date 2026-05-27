@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('owner_scope')->default('global');
             $table->nullableUuidMorphs('owner');
             $table->string('instance')->default('default')->index();
-            $jsonType = (string) commerce_json_column_type('cart', 'json');
+            $jsonType = (string) commerce_json_column_type('cart', 'jsonb');
             $table->{$jsonType}('items')->nullable();
             $table->{$jsonType}('conditions')->nullable();
             $table->{$jsonType}('metadata')->nullable();
@@ -35,7 +35,7 @@ return new class extends Migration
         // Optional: create GIN indexes when using jsonb on PostgreSQL
         $tableName = config('cart.database.table', 'carts');
         if (
-            commerce_json_column_type('cart', 'json') === 'jsonb'
+            commerce_json_column_type('cart', 'jsonb') === 'jsonb'
             && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             DB::statement("CREATE INDEX IF NOT EXISTS carts_items_gin_index ON \"{$tableName}\" USING GIN (\"items\")");

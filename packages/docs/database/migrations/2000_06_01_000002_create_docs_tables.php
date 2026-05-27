@@ -20,7 +20,7 @@ return new class extends Migration
         $statusTable = $tables['doc_status_histories'] ?? $tablePrefix . 'doc_status_histories';
 
         Schema::create($templatesTable, function (Blueprint $table) use ($templatesTable): void {
-            $jsonType = (string) commerce_json_column_type('docs', 'json');
+            $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('name');
@@ -38,7 +38,7 @@ return new class extends Migration
         });
 
         Schema::create($docsTable, function (Blueprint $table) use ($docsTable): void {
-            $jsonType = (string) commerce_json_column_type('docs', 'json');
+            $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->string('doc_number')->unique($docsTable . '_doc_number_unique');
@@ -71,7 +71,7 @@ return new class extends Migration
         });
 
         Schema::create($shareLinksTable, function (Blueprint $table) use ($shareLinksTable): void {
-            $jsonType = (string) commerce_json_column_type('docs', 'json');
+            $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('doc_id');

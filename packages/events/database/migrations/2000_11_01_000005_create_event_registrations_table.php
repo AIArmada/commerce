@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         $databaseConfig = (array) config('events.database', []);
-        $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('events', 'json'));
+        $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('events', 'jsonb'));
 
         Schema::create(config('events.database.tables.registrations', 'event_registrations'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();

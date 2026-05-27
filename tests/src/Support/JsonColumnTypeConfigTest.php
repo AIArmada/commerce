@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 afterEach(function (): void {
     unsetEnvVar('COMMERCE_JSON_COLUMN_TYPE');
+    unsetEnvVar('COMMERCE_SUPPORT_JSON_COLUMN_TYPE');
 
     unsetEnvVar('AFFILIATE_NETWORK_JSON_COLUMN_TYPE');
     unsetEnvVar('CHECKOUT_JSON_COLUMN_TYPE');
@@ -27,6 +28,24 @@ it('resolves underscore env keys for helper lookups consistently', function (): 
     putenv('CASHIER_CHIP_JSON_COLUMN_TYPE=jsonb');
 
     expect(commerce_json_column_type('cashier-chip', 'json'))->toBe('jsonb');
+});
+
+it('falls back to COMMERCE_JSON_COLUMN_TYPE for commerce support', function (): void {
+    unsetEnvVar('COMMERCE_SUPPORT_JSON_COLUMN_TYPE');
+    putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');
+
+    $config = require repoPath('packages/commerce-support/config/commerce-support.php');
+
+    expect($config['database']['json_column_type'])->toBe('jsonb');
+});
+
+it('allows per-package override for commerce support', function (): void {
+    putenv('COMMERCE_JSON_COLUMN_TYPE=json');
+    putenv('COMMERCE_SUPPORT_JSON_COLUMN_TYPE=jsonb');
+
+    $config = require repoPath('packages/commerce-support/config/commerce-support.php');
+
+    expect($config['database']['json_column_type'])->toBe('jsonb');
 });
 
 it('falls back to COMMERCE_JSON_COLUMN_TYPE for products', function (): void {
@@ -137,6 +156,19 @@ it('uses COMMERCE_JSON_COLUMN_TYPE fallback for every package config that define
         expect($config['database']['json_column_type'])
             ->toBe('jsonb', sprintf('Expected %s config to honor COMMERCE_JSON_COLUMN_TYPE fallback', $packageName));
     }
+});
+
+it('uses the configured json column type in the commerce support webhook migration', function (): void {
+    $migration = file_get_contents(repoPath('packages/commerce-support/database/migrations/1970_01_01_000004_create_webhook_calls_table.php.stub'));
+
+    expect($migration)
+        ->toBeString()
+        ->toContain("config('commerce-support.database.json_column_type', commerce_json_column_type('commerce-support', 'json'))")
+        ->toContain("commerce_json_column_type('commerce-support', 'json')")
+        ->toContain("\$table->{\$jsonType}('headers')")
+        ->toContain("\$table->{\$jsonType}('payload')")
+        ->not->toContain("->json('headers')")
+        ->not->toContain("->json('payload')");
 });
 
 function unsetEnvVar(string $key): void

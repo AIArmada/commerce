@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('min_conversions')->default(0);
             $table->integer('min_revenue')->default(0);
 
-            $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'json'));
+            $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'jsonb'));
             $table->addColumn($jsonType, 'benefits')->nullable();
 
             $table->timestamps();

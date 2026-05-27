@@ -6,7 +6,7 @@ return [
     /* Database */
     'database' => [
         'table_prefix' => 'product_',
-        'json_column_type' => env('PRODUCTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'json_column_type' => env('PRODUCTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => [
             'products' => 'products',
             'variants' => 'product_variants',

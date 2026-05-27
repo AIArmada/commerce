@@ -16,7 +16,7 @@ return [
         'tables' => [
             'checkout_sessions' => 'checkout_sessions',
         ],
-        'json_column_type' => env('CHECKOUT_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'json_column_type' => env('CHECKOUT_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     ],
 
     /*
