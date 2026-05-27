@@ -17,6 +17,7 @@ return new class extends Migration
 
         Schema::create($trackingEventsTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->string('event_hash', 64)->nullable();
             $table->foreignUuid('order_id')->nullable()->index();
             $table->string('tracking_number', 30)->index();
             $table->string('order_reference', 50)->nullable()->index();
@@ -61,10 +62,11 @@ return new class extends Migration
 
             $table->index(['tracking_number', 'scan_time'], 'jnt_tracking_events_timeline_idx');
             $table->index(['order_id', 'scan_time'], 'jnt_tracking_events_order_history_idx');
+            $table->unique('event_hash', 'jnt_tracking_events_event_hash_unique');
         });
 
         // GIN indexes only work with jsonb in PostgreSQL
-        if (commerce_json_column_type('jnt', 'jsonb') === 'jsonb') {
+        if (commerce_json_column_type('jnt', 'jsonb') === 'jsonb' && DB::connection()->getDriverName() === 'pgsql') {
             Schema::table($trackingEventsTable, function (Blueprint $table) use ($trackingEventsTable): void {
                 DB::statement('CREATE INDEX jnt_tracking_events_payload_gin_index ON ' . $trackingEventsTable . ' USING GIN (payload)');
             });
