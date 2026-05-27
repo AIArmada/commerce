@@ -37,6 +37,21 @@ describe('Cart Model', function (): void {
         expect($cart->instance)->toBe('default');
     });
 
+    it('persists the configured default currency when created without an explicit currency', function (): void {
+        config()->set('cart.money.default_currency', 'MYR');
+
+        $cart = Cart::create([
+            'instance' => 'default',
+            'identifier' => 'session-default-currency',
+        ]);
+
+        $freshCart = $cart->fresh();
+
+        expect($freshCart)->not->toBeNull()
+            ->and($freshCart?->getRawOriginal('currency'))->toBe('MYR')
+            ->and($freshCart?->currency)->toBe('MYR');
+    });
+
     it('returns correct table name', function (): void {
         $cart = new Cart;
         expect($cart->getTable())->toContain('snapshots');

@@ -119,8 +119,18 @@ class Cart extends Model
         'subtotal' => 0,
         'total' => 0,
         'savings' => 0,
-        'currency' => config('cart.money.default_currency', 'MYR'),
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $cart): void {
+            $currency = $cart->getAttributes()['currency'] ?? null;
+
+            if (! is_string($currency) || $currency === '') {
+                $cart->setAttribute('currency', (string) config('cart.money.default_currency', 'MYR'));
+            }
+        });
+    }
 
     public function getTable(): string
     {
@@ -342,6 +352,11 @@ class Cart extends Model
     {
         $query->whereNotNull('checkout_started_at')
             ->whereNull('checkout_abandoned_at');
+    }
+
+    protected function currency(): Attribute
+    {
+        return Attribute::get(fn (?string $value): string => $value ?: config('cart.money.default_currency', 'MYR'));
     }
 
     /** @return Attribute<string, never> */
