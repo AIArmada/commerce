@@ -9,7 +9,7 @@
         "aiarmada/commerce-support": "*",
         "anourvalar/eloquent-serialize": "^1.3.8",
         "chillerlan/php-qrcode": "^5.0.5",
-        "filament/blueprint": "^2.1.2",
+        "filament/blueprint": "^2.1",
         "filament/filament": "^5.6.5",
         "filament/spatie-laravel-media-library-plugin": "^5.6.5",
         "filament/spatie-laravel-tags-plugin": "^5.6.5",
