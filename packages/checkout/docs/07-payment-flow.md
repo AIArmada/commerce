@@ -42,7 +42,7 @@ if ($result->requiresRedirect()) {
 }
 ```
 
-The redirect URL includes the checkout session ID as a reference, allowing the gateway to return the user to the correct session.
+The redirect URL includes the configured session query parameter (default `session`) plus a per-session `checkout_callback_token`. `ProcessPaymentStep` preserves that callback token across retries by merging new gateway payload data into the existing `payment_data` instead of overwriting it.
 
 ## Callback Routes
 
@@ -89,11 +89,12 @@ Placeholders available:
 
 When a user returns from a successful payment, the `PaymentCallbackController::success()` handler:
 
-1. Resolves the checkout session from the query parameter
-2. If already completed, redirects to the order success page
-3. Verifies payment with the gateway
-4. Completes the checkout if verification passes
-5. Redirects to success or failure based on result
+1. Resolves the checkout session using the configured session query parameter (or `checkout_session_id` as a fallback)
+2. Performs an intentional cross-tenant lookup because gateway redirects do not carry owner context
+3. Guards that lookup with `hash_equals()` against the per-session callback token stored in `payment_data.callback_token`
+4. Wraps the callback in a database transaction and locks the session row with `lockForUpdate()` to avoid duplicate completion races
+5. Short-circuits straight to the success response if the session is already `Completed`
+6. Verifies payment with the gateway and redirects or renders based on the configured response mode
 
 ```php
 // The controller handles this automatically, but you can also:
@@ -108,9 +109,10 @@ if ($result->success) {
 
 When payment fails at the gateway:
 
-1. Session is transitioned to `PaymentFailed` state
-2. User is redirected to the failure URL
-3. Error message is flashed to session
+1. The callback resolves and token-validates the checkout session inside the same transaction-safe path as success callbacks
+2. Failure handling only runs when the session is still in a pending-like state (`Pending`, `AwaitingPayment`, `PaymentProcessing`, or `Processing`)
+3. Already-completed sessions short-circuit to the success response instead of mutating the session backward
+4. The user is redirected to the failure URL and the error message is flashed to session
 
 The user can retry payment:
 
@@ -124,9 +126,10 @@ if ($session->status->canRetryPayment()) {
 
 When user cancels at the gateway:
 
-1. Session is transitioned to `Cancelled` state
-2. User is redirected to the cancel URL
-3. Session ID and message are flashed
+1. The callback uses the same transaction + token validation path as success and failure
+2. Cancellation is only processed while the session is still pending-like
+3. Completed sessions short-circuit to the success response
+4. Otherwise the user is redirected to the cancel URL and the session ID/message are flashed
 
 ## Webhook Handling
 
@@ -188,24 +191,37 @@ Possible status values:
 
 Both callbacks and webhooks handle idempotent completion:
 
-1. If session is already `Completed`, respond with acknowledgment
-2. If payment verification passes, complete checkout
-3. Multiple webhook calls won't duplicate orders
+1. Payment callbacks wrap session resolution and mutation in a database transaction
+2. The session row is locked with `lockForUpdate()` before state-changing callback logic runs
+3. If the session is already `Completed`, callbacks short-circuit instead of re-processing the order
+4. Failure and cancel callbacks do nothing once the session has moved past the pending-like states
+5. Multiple webhook or callback deliveries therefore do not duplicate orders or regress completed sessions
 
 ## Building Callback URLs
 
 When integrating with payment gateways, get the callback URLs:
 
 ```php
-use Illuminate\Support\Facades\URL;
+$sessionParam = config('checkout.defaults.session_query_param', 'session');
+$callbackToken = $session->payment_data['callback_token'] ?? null;
 
-$successUrl = route('checkout.payment.success', ['session' => $session->id]);
-$failureUrl = route('checkout.payment.failure', ['session' => $session->id]);
-$cancelUrl = route('checkout.payment.cancel', ['session' => $session->id]);
+$successUrl = route('checkout.payment.success', [
+    $sessionParam => $session->id,
+    'checkout_callback_token' => $callbackToken,
+]);
 
-// Or with absolute URLs for external gateways
-$successUrl = URL::signedRoute('checkout.payment.success', ['session' => $session->id]);
+$failureUrl = route('checkout.payment.failure', [
+    $sessionParam => $session->id,
+    'checkout_callback_token' => $callbackToken,
+]);
+
+$cancelUrl = route('checkout.payment.cancel', [
+    $sessionParam => $session->id,
+    'checkout_callback_token' => $callbackToken,
+]);
 ```
+
+Package-generated URLs use `checkout_callback_token`; the callback controller also accepts `callback_token` and `token` aliases when a gateway renames the query parameter on return.
 
 ## Webhook Security
 

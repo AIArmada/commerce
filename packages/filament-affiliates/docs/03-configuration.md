@@ -27,7 +27,7 @@ return [
     */
 
     'widgets' => [
-        'currency' => env('AFFILIATES_DEFAULT_CURRENCY', 'USD'),
+        'currency' => env('AFFILIATES_DEFAULT_CURRENCY', 'MYR'),
     ],
 
     /*
@@ -122,7 +122,7 @@ Set the navigation group for all affiliate resources:
 ```php
 'widgets' => [
     // Currency for monetary displays
-    'currency' => 'USD',
+    'currency' => 'MYR',
 ],
 ```
 

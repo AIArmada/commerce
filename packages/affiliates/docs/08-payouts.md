@@ -9,9 +9,9 @@ The package provides comprehensive payout management including batch processing,
 ## Payout Flow
 
 ```
-Conversions → Maturity Period → Eligible for Payout → Batch Created → Processing → Paid
-     ↓             ↓                    ↓                   ↓             ↓
-  Pending      Holding           Available Balance      Scheduled    Completed
+Conversions → Qualified / Holding → Maturity Check → Approved / Available → Payout Created → Processing → Completed
+         ↓                ↓                 ↓                    ↓               ↓
+     Pending         holding_minor     available_minor       Pending        Failed / Cancelled
 ```
 
 ## Creating Payouts
@@ -46,7 +46,7 @@ $payout = AffiliatePayout::create([
     'reference' => 'PO-' . now()->format('Ymd') . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT),
     'status' => PayoutStatus::Pending,
     'total_minor' => $totalAmount,
-    'currency' => 'USD',
+    'currency' => $affiliate->currency,
     'payee_type' => $affiliate->getMorphClass(),
     'payee_id' => $affiliate->getKey(),
     'scheduled_at' => now()->addDays(3),
@@ -62,12 +62,13 @@ $conversions->each(fn ($c) => $c->update(['affiliate_payout_id' => $payout->id])
 use AIArmada\Affiliates\Enums\PayoutStatus;
 
 PayoutStatus::Pending;     // Awaiting processing
-PayoutStatus::Scheduled;   // Scheduled for future date
 PayoutStatus::Processing;  // Currently being processed
 PayoutStatus::Completed;   // Successfully paid
 PayoutStatus::Failed;      // Payment failed
 PayoutStatus::Cancelled;   // Cancelled by admin
 ```
+
+`scheduled_at` is still available on the model and used by the scheduled-payout command, but there is no separate `Scheduled` enum state.
 
 ## Payout Methods
 
@@ -160,8 +161,8 @@ use AIArmada\Affiliates\Services\CommissionMaturityService;
 
 $service = app(CommissionMaturityService::class);
 
-// Process matured conversions (moves from holding to available)
-$processed = $service->processMaturedConversions();
+// Promote qualified conversions that have reached maturity
+$processed = $service->processMaturity();
 
 // Check if specific conversion is mature
 $isMature = $service->isMature($conversion);
@@ -191,15 +192,20 @@ $balance = $affiliate->balance;
 // Available for withdrawal
 $available = $balance->available_minor; // In cents
 
-// Pending approval
-$pending = $balance->pending_minor;
-
 // On hold (maturity, fraud review)
 $holding = $balance->holding_minor;
 
 // Total lifetime earnings
-$lifetime = $balance->lifetime_minor;
+$lifetime = $balance->lifetime_earnings_minor;
+
+// Combined holding + available balance
+$total = $balance->getTotalBalanceMinor();
+
+// True when available balance meets the minimum payout threshold
+$canRequestPayout = $balance->canRequestPayout();
 ```
+
+The current maturity flow uses `holding_minor` for pre-payout commission state. There is no separate `pending_minor` balance field in the current model.
 
 ## Processing Payouts
 

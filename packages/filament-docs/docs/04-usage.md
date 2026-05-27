@@ -6,7 +6,14 @@ title: Usage
 
 ## DocResource
 
-The primary resource for managing documents.
+`DocResource` is the main document-management surface.
+
+The form is template-aware:
+
+- `doc_type` selection resets the chosen template,
+- the template dropdown is filtered to the current document type,
+- rich body, line items, totals, and notes/terms sections only appear when the selected template layout includes those blocks,
+- rich-editor attachments use the package storage configuration (`docs.storage.disk`, rich-content path, and visibility).
 
 ### List View
 
@@ -19,6 +26,8 @@ The primary resource for managing documents.
 | Total | Formatted amount with currency |
 | Issue Date | Document issue date |
 | Due Date | Due date, highlighted when overdue |
+| Template | Hidden-by-default template column |
+| Created | Hidden-by-default created timestamp |
 
 ### Filters
 
@@ -31,20 +40,33 @@ The primary resource for managing documents.
 
 ### Toolbar Actions
 
-- Export via the built-in Filament exporter integration
-- Generate PDFs in bulk
-- Mark selected documents as sent
-- Delete selected documents
+- `Export` using the built-in Filament exporter
+- `Generate PDFs` in bulk
+- `Mark as Sent` in bulk
+- `Delete Selected`
+
+### Record Actions From the List
+
+- View
+- Preview online
+- Edit
+- More actions:
+    - Generate PDF
+    - Record payment
+    - Mark as sent
+    - Mark as paid
+    - Delete
 
 ### View Page Actions
 
 - Edit
+- Preview Online
 - Generate PDF
+- Share
+- Revoke Links
 - Download PDF
 - Mark as Sent
 - Mark as Paid
-- Record Payment
-- Send Email
 - Cancel
 - Delete
 
@@ -60,15 +82,26 @@ The primary resource for managing documents.
 
 ## DocTemplateResource
 
-Manages online document templates, Builder layouts, and PDF defaults.
+Manages reusable document templates, block layouts, and PDF defaults.
 
 ### Highlights
 
-- compose approved layout blocks with the Filament Builder
-- edit `doc_type`, `is_default`, layout settings, and PDF defaults
-- configure PDF settings such as format, orientation, margins, and background printing
-- use **Set as Default** to call `DocTemplate::setAsDefault()`
-- delete templates with owner checks applied
+- create and view templates with owner-safe queries applied
+- compose layouts with the Filament Builder using these blocks:
+    - `document_header`
+    - `parties`
+    - `document_metadata`
+    - `rich_body`
+    - `static_rich_text`
+    - `line_items`
+    - `totals`
+    - `notes_terms`
+    - `signature_payment`
+    - `page_break`
+    - `footer`
+- configure `settings.pdf.*` defaults such as format, orientation, margins, and background printing
+- inspect block counts and linked document counts from the list table
+- use **Set as Default** from the table action group to call `DocTemplate::setAsDefault()`
 
 ---
 
@@ -82,6 +115,8 @@ Configures document numbering sequences.
 - format tokens such as `{PREFIX}`, `{NUMBER}`, `{YYYY}`, `{YYMM}`
 - start number, increment, padding, and active flag
 - preview text for persisted records
+- filters for document type and active state
+- edit-only record action plus bulk delete for selected rows
 
 ---
 
@@ -105,6 +140,8 @@ Configures reusable email templates for document communications.
 - active toggle
 - subject and rich-text body
 - reference list of supported template variables
+- owner-scoped unique slug validation when docs owner mode is enabled
+- record duplication from the list view
 
 ---
 

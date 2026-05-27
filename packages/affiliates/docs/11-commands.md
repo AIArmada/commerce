@@ -13,27 +13,27 @@ The package includes several Artisan commands for scheduled tasks and maintenanc
 Aggregates attribution, conversion, and commission data into daily statistics for reporting.
 
 ```bash
-php artisan affiliates:aggregate-daily-stats
+php artisan affiliates:aggregate-daily
 ```
 
 **Options:**
 
 ```bash
 # Aggregate for specific date
-php artisan affiliates:aggregate-daily-stats --date=2024-01-15
+php artisan affiliates:aggregate-daily --date=2024-01-15
 
-# Aggregate for date range
-php artisan affiliates:aggregate-daily-stats --from=2024-01-01 --to=2024-01-31
+# Backfill from the start of data
+php artisan affiliates:aggregate-daily --backfill
 
-# Force re-aggregation (overwrites existing)
-php artisan affiliates:aggregate-daily-stats --force
+# Backfill a bounded range
+php artisan affiliates:aggregate-daily --backfill --from=2024-01-01 --to=2024-01-31
 ```
 
 **Recommended Schedule:**
 
 ```php
 // app/Console/Kernel.php
-$schedule->command('affiliates:aggregate-daily-stats')
+$schedule->command('affiliates:aggregate-daily')
     ->dailyAt('02:00')
     ->withoutOverlapping();
 ```
@@ -47,9 +47,11 @@ php artisan affiliates:process-maturity
 ```
 
 This command:
-1. Finds conversions that have passed the maturity period
-2. Updates their status to allow payout eligibility
+1. Finds qualified conversions that have passed the maturity period
+2. Promotes them to the approved, payout-eligible state
 3. Updates affiliate balance records
+
+When owner mode is enabled and no owner context is already active, the command iterates each owner context automatically.
 
 **Recommended Schedule:**
 
@@ -64,23 +66,20 @@ $schedule->command('affiliates:process-maturity')
 Evaluates affiliates for rank qualification and processes upgrades.
 
 ```bash
-php artisan affiliates:process-rank-upgrades
+php artisan affiliates:process-ranks
 ```
 
 **Options:**
 
 ```bash
-# Process specific affiliate
-php artisan affiliates:process-rank-upgrades --affiliate=UUID
-
 # Dry run (show what would change)
-php artisan affiliates:process-rank-upgrades --dry-run
+php artisan affiliates:process-ranks --dry-run
 ```
 
 **Recommended Schedule:**
 
 ```php
-$schedule->command('affiliates:process-rank-upgrades')
+$schedule->command('affiliates:process-ranks')
     ->daily()
     ->withoutOverlapping();
 ```
@@ -96,11 +95,11 @@ php artisan affiliates:process-payouts
 **Options:**
 
 ```bash
-# Process specific payout method only
-php artisan affiliates:process-payouts --method=paypal
+# Process a single affiliate
+php artisan affiliates:process-payouts --affiliate=UUID
 
-# Limit number of payouts processed
-php artisan affiliates:process-payouts --limit=100
+# Override the minimum amount threshold
+php artisan affiliates:process-payouts --min-amount=10000
 
 # Dry run
 php artisan affiliates:process-payouts --dry-run
@@ -116,27 +115,20 @@ $schedule->command('affiliates:process-payouts')
 
 ### Export Affiliate Payouts
 
-Exports payout data to CSV or other formats for external processing.
+Exports a single payout batch, including its linked conversions, to CSV for external processing.
 
 ```bash
-php artisan affiliates:export-payouts
+php artisan affiliates:payout:export PAY-REF-1234
 ```
 
 **Options:**
 
 ```bash
-# Export date range
-php artisan affiliates:export-payouts --from=2024-01-01 --to=2024-01-31
+# Export by payout UUID instead of reference
+php artisan affiliates:payout:export 2d8ce0f4-0000-0000-0000-000000000000
 
-# Export specific status
-php artisan affiliates:export-payouts --status=completed
-
-# Output format
-php artisan affiliates:export-payouts --format=csv
-php artisan affiliates:export-payouts --format=json
-
-# Output path
-php artisan affiliates:export-payouts --output=/path/to/payouts.csv
+# Save to a custom path
+php artisan affiliates:payout:export PAY-REF-1234 --path=/path/to/payout.csv
 ```
 
 ## Recommended Schedule Configuration
@@ -147,7 +139,7 @@ php artisan affiliates:export-payouts --output=/path/to/payouts.csv
 protected function schedule(Schedule $schedule): void
 {
     // Aggregate stats after midnight
-    $schedule->command('affiliates:aggregate-daily-stats')
+    $schedule->command('affiliates:aggregate-daily')
         ->dailyAt('02:00')
         ->withoutOverlapping()
         ->runInBackground();
@@ -158,7 +150,7 @@ protected function schedule(Schedule $schedule): void
         ->withoutOverlapping();
 
     // Process rank upgrades daily
-    $schedule->command('affiliates:process-rank-upgrades')
+    $schedule->command('affiliates:process-ranks')
         ->dailyAt('03:00')
         ->withoutOverlapping();
 
@@ -172,21 +164,14 @@ protected function schedule(Schedule $schedule): void
 
 ## Multi-Tenant Considerations
 
-For multi-tenant applications, commands process all tenants by default. To scope to specific tenants:
+When `affiliates.owner.enabled` is `true`, the built-in commands automatically iterate owner contexts if they are started without an explicit owner already resolved.
 
-```bash
-# Process specific tenant
-php artisan affiliates:aggregate-daily-stats --tenant=UUID
-```
+That means you usually do **not** need a custom `--tenant` flag wrapper for the built-in commands.
 
-Or iterate through tenants in your schedule:
+If you are orchestrating package-specific work manually, prefer explicit owner context in your own callback or queued job:
 
 ```php
-$schedule->call(function () {
-    foreach (Tenant::all() as $tenant) {
-        Artisan::call('affiliates:aggregate-daily-stats', [
-            '--tenant' => $tenant->id,
-        ]);
-    }
-})->daily();
+OwnerContext::withOwner($tenant, function (): void {
+    Artisan::call('affiliates:aggregate-daily');
+});
 ```

@@ -96,7 +96,7 @@ Leave unset to only allow global vouchers (records where `owner_type` and `owner
 // config/filament-vouchers.php
 return [
     'navigation_group' => 'Marketing',
-    'default_currency' => 'USD',
+    'default_currency' => 'MYR',
     'polling_interval' => 30,
 
     'resources' => [

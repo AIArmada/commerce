@@ -68,24 +68,25 @@ When the Orders package is installed, it dispatches a `CommissionAttributionRequ
 after payment. The Affiliates package listens for this event and records conversions when the
 order metadata contains a `cart_id`.
 
+You usually do not need to update affiliate balances inside your own conversion listeners. The `AffiliateConversion` model already synchronizes holding and available balances as conversion states change.
+
 **Example Listener:**
 
 ```php
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 
-class UpdateAffiliateBalance
+class SendConversionToAnalytics
 {
     public function handle(AffiliateConversionRecorded $event): void
     {
         $conversion = $event->conversion;
-        $affiliate = $event->affiliate;
 
-        // Update balance
-        $balance = $affiliate->balance ?? $affiliate->balance()->create([
-            'currency' => $affiliate->currency,
+        Analytics::trackEvent('affiliate_conversion_recorded', [
+            'affiliate_code' => $conversion->affiliate_code,
+            'external_reference' => $conversion->external_reference,
+            'value_minor' => $conversion->value_minor,
+            'commission_minor' => $conversion->commission_minor,
         ]);
-
-        $balance->increment('pending_minor', $conversion->commission_minor);
     }
 }
 ```

@@ -13,7 +13,18 @@ It exists to make package ownership, package selection, and cross-package naviga
 
 ### `CONTEXT.md`
 
-The root-level architecture map.
+The short root-level AI dispatch file.
+
+Use it for:
+
+- quick package routing,
+- read-order setup,
+- monorepo-wide non-negotiables,
+- deciding which package context to open next.
+
+### `CONTEXT-MAP.md`
+
+The detailed root-level architecture map.
 
 Use it for:
 
@@ -22,6 +33,17 @@ Use it for:
 - owner-scoping rules,
 - core-vs-Filament boundaries,
 - family-level package grouping.
+
+### `packages/<pkg>/CONTEXT.md`
+
+The package-level AI entrypoint.
+
+Use it for:
+
+- package ownership boundaries,
+- paired-package routing,
+- the local docs read order,
+- high-signal folders to inspect first.
 
 ### `docs/ai/package-manifests.json`
 
@@ -55,10 +77,11 @@ These skills are designed to reduce ambiguity when an assistant needs to:
 ## Recommended read order for assistants
 
 1. [`../../CONTEXT.md`](../../CONTEXT.md)
-2. [`../index.md`](../index.md)
+2. [`../../CONTEXT-MAP.md`](../../CONTEXT-MAP.md)
 3. [`package-manifests.json`](package-manifests.json)
-4. the target package’s `01-overview.md`
-5. the target package’s installation, configuration, usage, and troubleshooting pages
+4. the target package’s `../../packages/<pkg>/CONTEXT.md`
+5. the target package’s `01-overview.md`
+6. the target package’s installation, configuration, usage, and troubleshooting pages
 
 ## Manifest schema summary
 
@@ -79,7 +102,9 @@ Each manifest entry is intentionally small and retrieval-friendly.
 ### If you need to decide where a change belongs
 
 - read `CONTEXT.md` first,
+- read `CONTEXT-MAP.md` when the task crosses package boundaries,
 - find the package entry in `package-manifests.json`,
+- read the target package `CONTEXT.md`,
 - confirm with the target package overview,
 - only then move to config or implementation files.
 
@@ -92,6 +117,7 @@ Each manifest entry is intentionally small and retrieval-friendly.
 ### If you need to audit multitenancy or owner safety
 
 - read `CONTEXT.md`,
+- read `CONTEXT-MAP.md`,
 - read `packages/commerce-support/docs/04-multi-tenancy.md`,
 - then read the target package overview and configuration docs.
 

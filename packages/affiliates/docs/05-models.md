@@ -54,10 +54,9 @@ $affiliate->volumeTiers;      // HasMany<AffiliateVolumeTier>
 **Key Methods:**
 
 ```php
-$affiliate->isActive();           // Check if status is Active
-$affiliate->getCommissionRate();  // Get rate as decimal
-$affiliate->getTotalEarnings();   // Sum of approved commissions
-$affiliate->getPendingEarnings(); // Sum of pending commissions
+$affiliate->isActive();             // Check if status is Active
+$affiliate->hasActivePayoutHold();  // Check for unreleased payout holds
+$affiliate->canRequestPayout();     // True when available balance meets the minimum payout
 ```
 
 ### AffiliateAttribution
@@ -131,9 +130,9 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 | `total_minor` | int | Order total in minor units |
 | `commission_minor` | int | Commission amount in minor units |
 | `commission_currency` | string | Commission currency |
-| `status` | ConversionStatus | Pending, Approved, Rejected, Paid |
+| `status` | ConversionStatus | Pending, Qualified, Approved, Rejected, Paid |
 | `occurred_at` | timestamp | When conversion occurred |
-| `approved_at` | timestamp | When approved |
+| `approved_at` | timestamp | When approved or matured into the payout-eligible state |
 
 **Relationships:**
 
@@ -149,6 +148,13 @@ Compatibility aliases are provided:
 - `value_minor` <-> `total_minor`
 - `subject_identifier` <-> `cart_identifier`
 - `subject_instance` <-> `cart_instance`
+- `commission_currency` <-> `currency`
+
+Balance side effects are handled by the model hooks:
+
+- pending or qualified conversions add commission to `holding_minor`
+- approved conversions release commission into `available_minor`
+- paid conversions deduct the commission from `available_minor`
 
 ### AffiliatePayout
 
@@ -163,7 +169,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 | Attribute | Type | Description |
 |-----------|------|-------------|
 | `reference` | string | Unique payout reference |
-| `status` | PayoutStatus | Pending, Processing, Completed, Failed |
+| `status` | PayoutStatus | Pending, Processing, Completed, Failed, Cancelled |
 | `total_minor` | int | Total payout amount |
 | `currency` | string | Payout currency |
 | `payee_type` | string | Polymorphic payee type |
@@ -239,10 +245,20 @@ use AIArmada\Affiliates\Models\AffiliateBalance;
 |-----------|------|-------------|
 | `affiliate_id` | uuid | The affiliate |
 | `available_minor` | int | Available for withdrawal |
-| `pending_minor` | int | Pending approval |
 | `holding_minor` | int | On hold (maturity, fraud review) |
-| `lifetime_minor` | int | Total earned all-time |
+| `lifetime_earnings_minor` | int | Total earned all-time |
+| `minimum_payout_minor` | int | Minimum available balance required before payout |
 | `currency` | string | Balance currency |
+
+**Key Methods:**
+
+```php
+$balance->getTotalBalanceMinor();   // holding + available
+$balance->canRequestPayout();       // True when available >= minimum payout
+$balance->formatHolding();          // Decimal string for display
+$balance->formatAvailable();        // Decimal string for display
+$balance->formatLifetimeEarnings(); // Decimal string for display
+```
 
 ### AffiliatePayoutMethod
 

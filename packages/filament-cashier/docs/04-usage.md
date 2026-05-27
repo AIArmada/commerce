@@ -222,6 +222,14 @@ $sub->externalDashboardUrl()  // Gateway dashboard URL
 $sub->getExternalId()         // Gateway-specific ID
 ```
 
+Normalization details that matter in practice:
+
+- Stripe `planId` falls back through `stripe_price`, `name`, and then `type`.
+- CHIP `planId` falls back through `plan_id`, `name`, and then `type`.
+- Stripe `amount` is derived from the first available subscription item (`quantity × unit_amount`) when possible.
+- CHIP `amount` uses the stored `amount` field first, then falls back to summing subscription items.
+- `getExternalId()` and `externalDashboardUrl()` use gateway-specific IDs such as `stripe_id`, `chip_id`, and `chip_subscription_id` when present.
+
 ### UnifiedInvoice
 
 ```php

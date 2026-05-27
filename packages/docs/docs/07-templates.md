@@ -80,6 +80,12 @@ if ($html instanceof HtmlString) {
 
 PDF generation uses the same template layout and document data as online rendering.
 
+PDF options resolve in this order:
+
+1. `config('docs.pdf.*')`
+2. `DocTemplate::settings['pdf']`
+3. `Doc::metadata['pdf']`
+
 ```php
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
@@ -112,3 +118,12 @@ $shareLink = app(DocRenderService::class)->createShareLink(
 ## Rich Content
 
 Document body content is stored as Tiptap JSON on `Doc::body`. Static rich text sections in templates are also JSON payloads. Render rich content through the package renderer so merge tags and sanitization are applied consistently.
+
+## Payload Validation
+
+`DocRenderService::validateDocPayload()` is called during create/update/convert flows when a template is selected.
+
+- If you submit `body`, the template must contain a `rich_body` block.
+- If the template contains a `line_items` block, you must submit at least one line item.
+
+This keeps template capabilities and document payloads aligned before the package stores or renders the document.

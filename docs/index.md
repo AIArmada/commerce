@@ -11,7 +11,7 @@ This index intentionally points only to **current** documentation.
 
 1. `packages/*/docs/*.md` are the canonical source for package behavior, configuration, extension points, and admin UI.
 2. `docs/*.md` and active subfolders under `docs/` are ecosystem guides, onboarding, operations, and cross-package context.
-3. `docs/archive/**/*` is historical material only. Use it only when you explicitly need implementation history, past audits, or archived test artifacts.
+3. Historical implementation context should come from Git history, targeted audits, or the repository memory files under `memories/repo/`.
 4. `memories/**/*` is assistant working memory, not product documentation.
 5. `stubs/**/*` contains static-analysis support files, not runtime implementation.
 
@@ -83,8 +83,6 @@ This index intentionally points only to **current** documentation.
 - [Filament Tax](../packages/filament-tax/docs/01-overview.md)
 - [Filament Vouchers](../packages/filament-vouchers/docs/01-overview.md)
 
-## Historical material
+## Need history?
 
-Historical planning documents, completed implementation trackers, archived audits, and raw test captures now live under [archive/](archive/README.md).
-
-Do not treat archived files as the current implementation reference unless you are explicitly researching history.
+Use Git history or repository memory files when you need older implementation context. Current package behavior should always be taken from the package docs listed above.

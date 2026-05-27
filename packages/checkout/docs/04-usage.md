@@ -36,6 +36,17 @@ if ($result->requiresRedirect()) {
 return back()->withErrors($result->errors);
 ```
 
+## Unified Discount Code Resolution
+
+Checkout treats the shared promo-code field as a single discount-code input.
+
+- It reads `billing_data.metadata.promo_code` first, then falls back to `cart_snapshot.metadata.promo_code`.
+- When vouchers are installed, checkout validates that code as a voucher first using a cart-aware validation context.
+- Only when no valid voucher is found does checkout fall back to code-based promotion lookup.
+- If the resolved code is a voucher, checkout merges it into the applied voucher-code list automatically, so landing-page forms and billing metadata can drive the same code path without separate voucher/promotion fields.
+
+When a live cart is available, voucher application also dispatches `VoucherApplied`, which lets downstream listeners such as affiliate attribution react to the applied voucher immediately.
+
 ## Bootstrapping a Checkout Offer Product
 
 For single-offer or landing-page checkouts, `EnsureCheckoutOfferProduct` can create or refresh the backing product, price list, and price row from one DTO.

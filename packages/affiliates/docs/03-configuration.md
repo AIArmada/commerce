@@ -4,14 +4,14 @@ title: Configuration
 
 # Configuration
 
-The package is configured via `config/affiliates.php`. This document covers all available options organized by section.
+The package is configured via `config/affiliates.php`. This document reflects the current defaults and the package sections that are actively used by the runtime and companion Filament packages.
 
 ## Database
 
 ```php
 'database' => [
     'table_prefix' => env('AFFILIATES_TABLE_PREFIX', 'affiliate_'),
-    'json_column_type' => env('AFFILIATES_JSON_COLUMN_TYPE', 'json'),
+    'json_column_type' => env('AFFILIATES_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     'tables' => [
         'affiliates' => 'affiliate_affiliates',
         'attributions' => 'affiliate_attributions',
@@ -24,21 +24,21 @@ The package is configured via `config/affiliates.php`. This document covers all 
 | Key | Description |
 |-----|-------------|
 | `table_prefix` | Prefix for all affiliate tables |
-| `json_column_type` | Column type for JSON fields (`json` or `jsonb` for PostgreSQL) |
+| `json_column_type` | Column type for JSON fields. Defaults to `jsonb` and inherits from `COMMERCE_JSON_COLUMN_TYPE` when set. |
 | `tables` | Override individual table names |
 
-## Currency
+## Defaults
 
 ```php
 'currency' => [
-    'default' => env('AFFILIATES_DEFAULT_CURRENCY', 'USD'),
+    'default' => env('AFFILIATES_DEFAULT_CURRENCY', 'MYR'),
     'percentage_scale' => env('AFFILIATES_PERCENTAGE_SCALE', 100),
 ],
 ```
 
 | Key | Description |
 |-----|-------------|
-| `default` | Default ISO 4217 currency code |
+| `default` | Default ISO 4217 currency code used by affiliate records, widgets, and portal formatting fallbacks |
 | `percentage_scale` | Basis points per 1% (100 = 1%) |
 
 ## Features / Behavior
@@ -203,9 +203,9 @@ The package is configured via `config/affiliates.php`. This document covers all 
 
 ```php
 'payouts' => [
-    'currency' => env('AFFILIATES_PAYOUT_CURRENCY', 'USD'),
+    'currency' => env('AFFILIATES_PAYOUT_CURRENCY', env('AFFILIATES_DEFAULT_CURRENCY', 'MYR')),
     'reference_prefix' => env('AFFILIATES_PAYOUT_REF_PREFIX', 'PO-'),
-    'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000), // $50.00
+    'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
     'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
     'multi_level' => [
         'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', false),
@@ -221,6 +221,8 @@ The package is configured via `config/affiliates.php`. This document covers all 
     ],
 ],
 ```
+
+`payouts.currency` falls back to `AFFILIATES_DEFAULT_CURRENCY`, so the default runtime currency is `MYR` unless you override it.
 
 ## Tracking Settings
 
@@ -312,6 +314,24 @@ The package is configured via `config/affiliates.php`. This document covers all 
 ],
 ```
 
+## Links
+
+```php
+'links' => [
+    'signing_key' => env('AFFILIATES_LINK_SIGNING_KEY', env('APP_KEY')),
+    'default_ttl_minutes' => env('AFFILIATES_LINK_TTL', 10080),
+    'parameter' => env('AFFILIATES_LINK_PARAM', 'aff'),
+    'allowed_hosts' => array_filter(explode(',', (string) env('AFFILIATES_LINK_ALLOWED_HOSTS', ''))),
+],
+```
+
+| Key | Description |
+|-----|-------------|
+| `signing_key` | Signing key used for generated affiliate links |
+| `default_ttl_minutes` | Default lifetime for generated tracking links |
+| `parameter` | Query-string parameter used when building fallback links |
+| `allowed_hosts` | Optional hostname allowlist enforced by the link generator |
+
 ## API
 
 ```php
@@ -340,3 +360,32 @@ The package is configured via `config/affiliates.php`. This document covers all 
     "subject_metadata": {"category": "subscriptions"}
 }
 ```
+
+## Tax
+
+```php
+'tax' => [
+    'storage_disk' => env('AFFILIATES_TAX_STORAGE_DISK', 'local'),
+    '1099_threshold' => env('AFFILIATES_TAX_1099_THRESHOLD', 60000),
+    'payer_info' => [
+        'name' => env('AFFILIATES_TAX_PAYER_NAME', env('APP_NAME', 'Laravel')),
+        'address' => env('AFFILIATES_TAX_PAYER_ADDRESS', ''),
+        'tin' => env('AFFILIATES_TAX_PAYER_TIN', ''),
+    ],
+],
+```
+
+`1099_threshold` is stored in minor units. For example, `60000` represents `600.00` in the configured payout currency.
+
+## Bonuses
+
+```php
+'bonuses' => [
+    'top_performer' => ['enabled' => true],
+    'recruitment' => ['enabled' => true],
+    'consistency' => ['enabled' => true],
+    'growth' => ['enabled' => true],
+],
+```
+
+The bonus section controls built-in reward programs for top performers, recruiter bonuses, consistency streaks, and growth incentives. Each subsection stores thresholds and payout amounts in minor units.
