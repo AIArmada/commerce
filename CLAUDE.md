@@ -364,3 +364,17 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
 - Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
 </laravel-boost-guidelines>
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in this repo's GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the canonical labels `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Treat this repo as multi-context: read `CONTEXT-MAP.md` first, then the relevant context `CONTEXT.md` and ADRs. See `docs/agents/domain.md`.

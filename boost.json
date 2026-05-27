@@ -4,18 +4,36 @@
         "copilot",
         "opencode"
     ],
+    "cloud": false,
     "guidelines": true,
-    "herd_mcp": true,
     "mcp": true,
+    "nightwatch": false,
     "packages": [
         "filament/blueprint",
         "filament/filament",
-        "spatie/laravel-ray"
+        "spatie/laravel-ray",
+        "spatie/guidelines-skills",
+        "spatie/laravel-activitylog",
+        "spatie/laravel-medialibrary",
+        "lorisleiva/laravel-actions",
+        "spatie/laravel-pdf",
+        "spatie/laravel-permission",
+        "spatie/laravel-sluggable"
     ],
     "sail": false,
     "skills": [
-        "livewire-development",
+        "cashier-stripe-development",
+        "laravel-best-practices",
         "pest-testing",
-        "debugging-output-and-previewing-html-using-ray"
+        "laravel-actions",
+        "spatie-javascript",
+        "spatie-laravel-php",
+        "spatie-security",
+        "spatie-version-control",
+        "medialibrary-development",
+        "laravel-pdf",
+        "laravel-permission-development",
+        "debugging-output-and-previewing-html-using-ray",
+        "sluggable-development"
     ]
 }
