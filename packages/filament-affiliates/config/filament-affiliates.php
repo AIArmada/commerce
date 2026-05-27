@@ -10,7 +10,7 @@ return [
     /* Widgets */
 
     'widgets' => [
-        'currency' => env('AFFILIATES_DEFAULT_CURRENCY', 'USD'),
+        'currency' => env('AFFILIATES_DEFAULT_CURRENCY', 'MYR'),
     ],
 
     /* Features */

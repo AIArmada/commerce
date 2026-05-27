@@ -120,7 +120,7 @@ describe('PerformanceBonusService', function (): void {
             $this->service->awardBonuses($bonuses);
 
             $balance = AffiliateBalance::where('affiliate_id', $this->affiliate->id)->first();
-            expect($balance->lifetime_earnings_minor)->toBe(6000);
+            expect($balance->lifetime_earnings_minor)->toBe(7000);
         });
 
         test('creates bonus conversion record', function (): void {

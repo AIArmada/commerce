@@ -63,7 +63,7 @@ final readonly class UnifiedSubscription
             type: (string) ($attributes['type'] ?? 'default'),
             planId: (string) ($attributes['stripe_price'] ?? ($attributes['name'] ?? ($attributes['type'] ?? 'default'))),
             amount: self::getStripeAmount($subscription),
-            currency: 'USD',
+            currency: config('cashier.currency', 'MYR'),
             quantity: (int) ($attributes['quantity'] ?? 1),
             status: self::normalizeStripeStatus($subscription),
             trialEndsAt: $trialEndsAt ? CarbonImmutable::parse($trialEndsAt) : null,

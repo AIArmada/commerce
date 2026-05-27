@@ -119,7 +119,7 @@ class Cart extends Model
         'subtotal' => 0,
         'total' => 0,
         'savings' => 0,
-        'currency' => 'USD',
+        'currency' => config('cart.money.default_currency', 'MYR'),
     ];
 
     public function getTable(): string
