@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\View;
 
@@ -86,6 +87,24 @@ test('package view composer shares public referral context without relying on mi
     $content = View::make('affiliates::components.public-referral-banner', [
         'showCheckoutLink' => true,
     ])->render();
+
+    expect($content)
+        ->toContain('Referral Applied')
+        ->toContain($this->affiliate->name)
+        ->toContain($this->affiliate->default_voucher_code)
+        ->toContain(url('/checkout?aff=' . $this->affiliate->code));
+});
+
+test('package public referral banner renders through the Blade component tag', function (): void {
+    $request = Request::create('/?aff=' . $this->affiliate->code, 'GET');
+    app()->instance('request', $request);
+
+    $content = Blade::render(
+        <<<'BLADE'
+<x-affiliates::public-referral-banner :show-checkout-link="true" />
+BLADE,
+        deleteCachedView: true,
+    );
 
     expect($content)
         ->toContain('Referral Applied')
