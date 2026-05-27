@@ -87,7 +87,7 @@ final class PerformanceBonusService
                 continue;
             }
 
-            $balance = AffiliateBalance::firstOrCreate(
+            AffiliateBalance::firstOrCreate(
                 [
                     'affiliate_id' => $affiliate->id,
                     'currency' => $affiliate->currency ?? config('affiliates.currency.default', 'USD'),
@@ -99,10 +99,6 @@ final class PerformanceBonusService
                     'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
                 ]
             );
-
-            // Award bonus directly to available (no holding period for bonuses)
-            $balance->increment('available_minor', $bonus['amount_minor']);
-            $balance->increment('lifetime_earnings_minor', $bonus['amount_minor']);
 
             // Record as a bonus conversion
             AffiliateConversion::create([

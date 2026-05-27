@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use Carbon\CarbonInterface;
 
 /**
- * Service for managing commission maturity and release to available balance.
+ * Service for managing commission maturity transitions.
  */
 final class CommissionMaturityService
 {
@@ -49,7 +48,7 @@ final class CommissionMaturityService
     }
 
     /**
-     * Mature a single conversion and move commission to available balance.
+     * Mature a single conversion.
      */
     public function matureConversion(AffiliateConversion $conversion): bool
     {
@@ -62,14 +61,6 @@ final class CommissionMaturityService
         if ($maturityDate->isFuture()) {
             return false;
         }
-
-        $affiliate = $conversion->affiliate;
-        $balance = $this->getOrCreateBalance($affiliate);
-
-        // Move from holding to available
-        $balance->holding_minor -= $conversion->commission_minor;
-        $balance->available_minor += $conversion->commission_minor;
-        $balance->save();
 
         // Update conversion status
         $conversion->update([
@@ -127,17 +118,5 @@ final class CommissionMaturityService
                 'days_remaining' => max(0, now()->diffInDays($this->getMaturityDate($c), false)),
             ])
             ->all();
-    }
-
-    private function getOrCreateBalance(Affiliate $affiliate): AffiliateBalance
-    {
-        return $affiliate->balance ?? AffiliateBalance::create([
-            'affiliate_id' => $affiliate->id,
-            'available_minor' => 0,
-            'holding_minor' => 0,
-            'lifetime_earnings_minor' => 0,
-            'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
-            'currency' => $affiliate->currency,
-        ]);
     }
 }

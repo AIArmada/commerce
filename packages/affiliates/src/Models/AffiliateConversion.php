@@ -7,6 +7,8 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -16,6 +18,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -161,52 +164,105 @@ class AffiliateConversion extends Model
         });
 
         static::created(function (self $conversion): void {
+            if (! self::syncsAffiliateBalances()) {
+                return;
+            }
+
             $affiliate = $conversion->affiliate()->first();
 
             if (! $affiliate) {
                 return;
             }
 
-            $balance = $affiliate->balance()->first() ?? AffiliateBalance::create([
-                'affiliate_id' => $affiliate->id,
-                'available_minor' => 0,
-                'holding_minor' => 0,
-                'lifetime_earnings_minor' => 0,
-                'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
-                'currency' => $conversion->commission_currency ?: $affiliate->currency ?: 'MYR',
-            ]);
+            $status = self::resolveStatus($conversion);
 
-            if (config('affiliates.commissions.auto_approve', false)) {
+            if (config('affiliates.commissions.auto_approve', false) && ($status->equals(PendingConversion::class) || $status->equals(QualifiedConversion::class))) {
+                $approvedAt = now();
+
                 $conversion->updateQuietly([
                     'status' => ApprovedConversion::class,
-                    'approved_at' => now(),
+                    'approved_at' => $approvedAt,
                 ]);
 
-                $balance->available_minor += $conversion->commission_minor;
-                $balance->lifetime_earnings_minor += $conversion->commission_minor;
-            } else {
-                $balance->addToHolding($conversion->commission_minor);
+                $conversion->approved_at = $approvedAt;
+                $status = ConversionStatus::fromString(ApprovedConversion::class, $conversion);
             }
 
-            $balance->save();
-        });
+            if ($status->equals(ApprovedConversion::class)) {
+                if ($conversion->approved_at === null) {
+                    $approvedAt = now();
 
-        static::updated(function (self $conversion): void {
-            if (! $conversion->wasChanged('status')) {
+                    $conversion->updateQuietly(['approved_at' => $approvedAt]);
+                    $conversion->approved_at = $approvedAt;
+                }
+
+                self::creditAvailableCommission(
+                    self::getOrCreateBalance($affiliate, $conversion),
+                    $conversion->commission_minor,
+                );
+
                 return;
             }
 
-            $newStatus = $conversion->fresh()->status;
+            if ($status->equals(PendingConversion::class) || $status->equals(QualifiedConversion::class)) {
+                self::getOrCreateBalance($affiliate, $conversion)->addToHolding($conversion->commission_minor);
 
-            if ($newStatus->equals(ApprovedConversion::class) && $conversion->approved_at === null) {
-                $conversion->updateQuietly(['approved_at' => now()]);
+                return;
+            }
+
+            if ($status->equals(PaidConversion::class)) {
+                self::recordLifetimeEarnings(
+                    self::getOrCreateBalance($affiliate, $conversion),
+                    $conversion->commission_minor,
+                );
+            }
+        });
+
+        static::updated(function (self $conversion): void {
+            if (! $conversion->wasChanged('status') || ! self::syncsAffiliateBalances()) {
+                return;
+            }
+
+            $newStatus = self::resolveStatus($conversion);
+
+            if ($newStatus->equals(ApprovedConversion::class)) {
+                if ($conversion->approved_at === null) {
+                    $approvedAt = now();
+
+                    $conversion->updateQuietly(['approved_at' => $approvedAt]);
+                    $conversion->approved_at = $approvedAt;
+                }
 
                 $affiliate = $conversion->affiliate()->first();
-                $balance = $affiliate?->balance()->first();
 
-                if ($balance) {
-                    $balance->releaseFromHolding($conversion->commission_minor);
+                if (! $affiliate) {
+                    return;
                 }
+
+                $balance = $affiliate->balance()->first();
+
+                if (! $balance) {
+                    self::createBalance(
+                        $affiliate,
+                        $conversion,
+                        availableMinor: $conversion->commission_minor,
+                        lifetimeEarningsMinor: $conversion->commission_minor,
+                    );
+
+                    return;
+                }
+
+                $holdingMinor = $balance->holding_minor;
+
+                $balance->releaseFromHolding($conversion->commission_minor);
+
+                $remainingMinor = max(0, $conversion->commission_minor - $holdingMinor);
+
+                if ($remainingMinor > 0) {
+                    $balance->increment('available_minor', $remainingMinor);
+                }
+
+                return;
             }
 
             if ($newStatus->equals(PaidConversion::class)) {
@@ -218,6 +274,51 @@ class AffiliateConversion extends Model
                 }
             }
         });
+    }
+
+    private static function syncsAffiliateBalances(): bool
+    {
+        return Schema::hasTable((new AffiliateBalance)->getTable());
+    }
+
+    private static function resolveStatus(self $conversion): ConversionStatus
+    {
+        return ConversionStatus::fromString($conversion->status, $conversion);
+    }
+
+    private static function getOrCreateBalance(Affiliate $affiliate, self $conversion): AffiliateBalance
+    {
+        return $affiliate->balance()->first() ?? self::createBalance($affiliate, $conversion);
+    }
+
+    private static function createBalance(
+        Affiliate $affiliate,
+        self $conversion,
+        int $holdingMinor = 0,
+        int $availableMinor = 0,
+        ?int $lifetimeEarningsMinor = null,
+    ): AffiliateBalance {
+        return AffiliateBalance::create([
+            'affiliate_id' => $affiliate->id,
+            'available_minor' => $availableMinor,
+            'holding_minor' => $holdingMinor,
+            'lifetime_earnings_minor' => $lifetimeEarningsMinor ?? ($holdingMinor + $availableMinor),
+            'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
+            'currency' => $conversion->commission_currency ?: $affiliate->currency ?: 'MYR',
+        ]);
+    }
+
+    private static function creditAvailableCommission(AffiliateBalance $balance, int $commissionMinor): void
+    {
+        $balance->available_minor += $commissionMinor;
+        $balance->lifetime_earnings_minor += $commissionMinor;
+        $balance->save();
+    }
+
+    private static function recordLifetimeEarnings(AffiliateBalance $balance, int $commissionMinor): void
+    {
+        $balance->lifetime_earnings_minor += $commissionMinor;
+        $balance->save();
     }
 
     /**

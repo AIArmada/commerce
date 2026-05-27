@@ -417,7 +417,10 @@ it('covers the filament-cashier public surface', function (): void {
     ]);
 
     $unifiedStripeSub = UnifiedSubscription::fromStripe($stripeSubscription);
-    expect($unifiedStripeSub->formattedAmount())->toBe('$0.00');
+    expect($unifiedStripeSub->formattedAmount())->toBe(CurrencyFormatter::format(
+        0,
+        (string) config('cashier.gateways.stripe.currency', config('cashier.currency', 'MYR')),
+    ));
     expect($unifiedStripeSub->billingCycle())->toBeString();
     expect($unifiedStripeSub->needsAttention())->toBeFalse();
 

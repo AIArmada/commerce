@@ -303,12 +303,8 @@ describe('PayoutReconciliationService', function (): void {
             ]);
 
             // Balance doesn't match (should be 10000)
-            AffiliateBalance::create([
-                'affiliate_id' => $this->affiliate->id,
+            $this->affiliate->balance()->firstOrFail()->update([
                 'available_minor' => 5000, // Wrong!
-                'pending_minor' => 0,
-                'minimum_payout_minor' => 5000,
-                'currency' => 'USD',
             ]);
 
             $result = $this->service->auditAffiliateBalance($this->affiliate);
