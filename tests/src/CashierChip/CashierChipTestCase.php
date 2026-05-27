@@ -36,6 +36,12 @@ abstract class CashierChipTestCase extends Orchestra
     {
         parent::setUp();
 
+        Cashier::$registersRoutes = true;
+        Cashier::$deactivatePastDue = true;
+        Cashier::$deactivateIncomplete = true;
+        Cashier::formatCurrencyUsing(null);
+        Cashier::unfake();
+
         Cashier::useCustomerModel(User::class);
         Cashier::useSubscriptionModel(Subscription::class);
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);

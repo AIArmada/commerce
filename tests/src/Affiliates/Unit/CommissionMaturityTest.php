@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\CommissionMaturityService;
 use AIArmada\Affiliates\States\Active;
@@ -27,15 +26,6 @@ describe('MatureConversion Action', function (): void {
     });
 
     test('matures qualified conversion after maturity period', function (): void {
-        $balance = AffiliateBalance::create([
-            'affiliate_id' => $this->affiliate->id,
-            'available_minor' => 0,
-            'holding_minor' => 5000,
-            'lifetime_earnings_minor' => 5000,
-            'minimum_payout_minor' => 5000,
-            'currency' => 'USD',
-        ]);
-
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -46,6 +36,8 @@ describe('MatureConversion Action', function (): void {
             'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35), // Past maturity
         ]);
+
+        $balance = $this->affiliate->balance()->firstOrFail();
 
         $result = $this->action->handle($conversion);
 
@@ -93,7 +85,7 @@ describe('MatureConversion Action', function (): void {
         expect($result)->toBeFalse();
     });
 
-    test('creates balance if affiliate has none', function (): void {
+    test('uses the balance recorded when the conversion was created', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -105,7 +97,11 @@ describe('MatureConversion Action', function (): void {
             'occurred_at' => now()->subDays(35),
         ]);
 
-        expect($this->affiliate->balance)->toBeNull();
+        $this->affiliate->refresh();
+
+        expect($this->affiliate->balance)->not->toBeNull();
+        expect($this->affiliate->balance?->holding_minor)->toBe(5000);
+        expect($this->affiliate->balance?->available_minor)->toBe(0);
 
         $result = $this->action->handle($conversion);
 
@@ -117,15 +113,6 @@ describe('MatureConversion Action', function (): void {
     });
 
     test('adds matured_at to metadata', function (): void {
-        AffiliateBalance::create([
-            'affiliate_id' => $this->affiliate->id,
-            'available_minor' => 0,
-            'holding_minor' => 5000,
-            'lifetime_earnings_minor' => 5000,
-            'minimum_payout_minor' => 5000,
-            'currency' => 'USD',
-        ]);
-
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -159,15 +146,6 @@ describe('CommissionMaturityService', function (): void {
     });
 
     test('processMaturity processes all qualified conversions', function (): void {
-        AffiliateBalance::create([
-            'affiliate_id' => $this->affiliate->id,
-            'available_minor' => 0,
-            'holding_minor' => 15000,
-            'lifetime_earnings_minor' => 15000,
-            'minimum_payout_minor' => 5000,
-            'currency' => 'USD',
-        ]);
-
         // Create multiple mature conversions
         for ($i = 1; $i <= 3; $i++) {
             AffiliateConversion::create([
@@ -188,15 +166,6 @@ describe('CommissionMaturityService', function (): void {
     });
 
     test('matureConversion works same as action', function (): void {
-        $balance = AffiliateBalance::create([
-            'affiliate_id' => $this->affiliate->id,
-            'available_minor' => 0,
-            'holding_minor' => 5000,
-            'lifetime_earnings_minor' => 5000,
-            'minimum_payout_minor' => 5000,
-            'currency' => 'USD',
-        ]);
-
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -207,6 +176,8 @@ describe('CommissionMaturityService', function (): void {
             'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
+
+        $balance = $this->affiliate->balance()->firstOrFail();
 
         $result = $this->service->matureConversion($conversion);
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
@@ -212,11 +213,14 @@ it('rejects malformed owner tuples on pricing writes', function (): void {
 
     bindPricingOwner(null);
 
-    expect(fn () => PriceList::query()->create([
+    $priceList = new PriceList([
         'name' => 'Invalid List',
         'slug' => 'invalid-list',
         'currency' => 'MYR',
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => null,
-    ]))->toThrow(RuntimeException::class);
+    ]);
+    $priceList->owner_type = $owner->getMorphClass();
+    $priceList->owner_id = null;
+
+    expect(fn () => OwnerContext::withOwner(null, static fn () => $priceList->save()))
+        ->toThrow(InvalidArgumentException::class);
 });

@@ -42,15 +42,6 @@ describe('CommissionMaturityService', function (): void {
                 'occurred_at' => now()->subDays(35),
             ]);
 
-            AffiliateBalance::create([
-                'affiliate_id' => $this->affiliate->id,
-                'currency' => 'USD',
-                'holding_minor' => 1000,
-                'available_minor' => 0,
-                'lifetime_earnings_minor' => 1000,
-                'minimum_payout_minor' => 5000,
-            ]);
-
             $matured = $this->service->processMaturity();
 
             expect($matured)->toBe(1);
@@ -110,15 +101,6 @@ describe('CommissionMaturityService', function (): void {
                 'occurred_at' => now()->subDays(35),
             ]);
 
-            AffiliateBalance::create([
-                'affiliate_id' => $this->affiliate->id,
-                'currency' => 'USD',
-                'holding_minor' => 1000,
-                'available_minor' => 0,
-                'lifetime_earnings_minor' => 1000,
-                'minimum_payout_minor' => 5000,
-            ]);
-
             $result = $this->service->matureConversion($conversion);
 
             expect($result)->toBeTrue();
@@ -139,13 +121,11 @@ describe('CommissionMaturityService', function (): void {
                 'occurred_at' => now()->subDays(35),
             ]);
 
-            $balance = AffiliateBalance::create([
-                'affiliate_id' => $this->affiliate->id,
-                'currency' => 'USD',
-                'holding_minor' => 1000,
+            $balance = $this->affiliate->balance()->firstOrFail();
+            $balance->update([
                 'available_minor' => 500,
+                'holding_minor' => 1000,
                 'lifetime_earnings_minor' => 1500,
-                'minimum_payout_minor' => 5000,
             ]);
 
             $this->service->matureConversion($conversion);
@@ -202,15 +182,6 @@ describe('CommissionMaturityService', function (): void {
                 'metadata' => ['original' => 'value'],
             ]);
 
-            AffiliateBalance::create([
-                'affiliate_id' => $this->affiliate->id,
-                'currency' => 'USD',
-                'holding_minor' => 1000,
-                'available_minor' => 0,
-                'lifetime_earnings_minor' => 1000,
-                'minimum_payout_minor' => 5000,
-            ]);
-
             $this->service->matureConversion($conversion);
 
             $conversion->refresh();
@@ -218,7 +189,7 @@ describe('CommissionMaturityService', function (): void {
             expect($conversion->metadata['original'])->toBe('value');
         });
 
-        test('creates balance if not exists', function (): void {
+        test('uses the recorded balance created with the conversion', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
@@ -230,7 +201,7 @@ describe('CommissionMaturityService', function (): void {
                 'occurred_at' => now()->subDays(35),
             ]);
 
-            expect(AffiliateBalance::where('affiliate_id', $this->affiliate->id)->exists())->toBeFalse();
+            expect(AffiliateBalance::where('affiliate_id', $this->affiliate->id)->exists())->toBeTrue();
 
             $this->service->matureConversion($conversion);
 

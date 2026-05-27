@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Conversions;
 
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Mature a single conversion and move commission to available balance.
+ * Mature a single conversion.
  */
 final class MatureConversion
 {
@@ -40,14 +38,6 @@ final class MatureConversion
             return false;
         }
 
-        $affiliate = $conversion->affiliate;
-        $balance = $this->getOrCreateBalance($affiliate);
-
-        // Move from holding to available
-        $balance->holding_minor -= $conversion->commission_minor;
-        $balance->available_minor += $conversion->commission_minor;
-        $balance->save();
-
         // Update conversion status
         $conversion->update([
             'status' => ApprovedConversion::class,
@@ -57,17 +47,5 @@ final class MatureConversion
         ]);
 
         return true;
-    }
-
-    private function getOrCreateBalance(Affiliate $affiliate): AffiliateBalance
-    {
-        return $affiliate->balance ?? AffiliateBalance::create([
-            'affiliate_id' => $affiliate->id,
-            'available_minor' => 0,
-            'holding_minor' => 0,
-            'lifetime_earnings_minor' => 0,
-            'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
-            'currency' => $affiliate->currency,
-        ]);
     }
 }
