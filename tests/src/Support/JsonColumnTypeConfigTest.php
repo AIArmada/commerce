@@ -163,8 +163,8 @@ it('uses the configured json column type in the commerce support webhook migrati
 
     expect($migration)
         ->toBeString()
-        ->toContain("config('commerce-support.database.json_column_type', commerce_json_column_type('commerce-support', 'json'))")
-        ->toContain("commerce_json_column_type('commerce-support', 'json')")
+        ->toContain("config('commerce-support.database.json_column_type', commerce_json_column_type('commerce-support', 'jsonb'))")
+        ->toContain("commerce_json_column_type('commerce-support', 'jsonb')")
         ->toContain("\$table->{\$jsonType}('headers')")
         ->toContain("\$table->{\$jsonType}('payload')")
         ->not->toContain("->json('headers')")

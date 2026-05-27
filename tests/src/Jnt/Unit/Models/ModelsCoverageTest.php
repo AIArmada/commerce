@@ -339,13 +339,7 @@ describe('JntTrackingEvent model', function (): void {
 describe('JntWebhookLog model', function (): void {
     it('gets table name from config', function (): void {
         $log = new JntWebhookLog;
-        expect($log->getTable())->toBe('jnt_webhook_logs');
-    });
-
-    it('gets table name from custom tables config', function (): void {
-        config(['jnt.database.tables.webhook_logs' => 'custom_jnt_webhooks']);
-        $log = new JntWebhookLog;
-        expect($log->getTable())->toBe('custom_jnt_webhooks');
+        expect($log->getTable())->toBe('webhook_calls');
     });
 
     it('has correct fillable attributes', function (): void {

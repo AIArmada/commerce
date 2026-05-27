@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Model;
+use Override;
+use Spatie\WebhookClient\Models\WebhookCall;
 use Throwable;
 
 /**
@@ -30,9 +37,88 @@ use Throwable;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-class Webhook extends ChipModel
+class Webhook extends WebhookCall
 {
+    use HasOwner {
+        scopeForOwner as private scopeForOwnerUsingTrait;
+    }
+    use HasOwnerScopeConfig;
+
+    public const WEBHOOK_NAME = 'chip.webhook';
+
+    protected static string $ownerScopeConfigKey = 'chip.owner';
+
     public $timestamps = true;
+
+    public $guarded = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'headers' => 'array',
+        'payload' => 'array',
+        'exception' => 'array',
+        'events' => 'array',
+        'all_events' => 'boolean',
+        'verified' => 'boolean',
+        'processed' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'processed_at' => 'datetime',
+        'last_retry_at' => 'datetime',
+        'retry_count' => 'integer',
+        'processing_attempts' => 'integer',
+        'processing_time_ms' => 'float',
+    ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('chip_webhook_calls', function (Builder $builder): void {
+            $builder
+                ->where('name', self::WEBHOOK_NAME)
+                ->whereNotNull('event_type');
+        });
+
+        static::creating(function (Webhook $webhook): void {
+            $webhook->setAttribute('name', $webhook->getAttribute('name') ?? self::WEBHOOK_NAME);
+            $webhook->setAttribute('url', $webhook->getAttribute('url') ?? (string) ($webhook->getAttribute('callback') ?? ''));
+
+            if ($webhook->getAttribute('event_type') === null) {
+                $webhook->setAttribute('event_type', $webhook->getAttribute('event'));
+            }
+        });
+    }
+
+    #[Override]
+    public function getTable(): string
+    {
+        return 'webhook_calls';
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    final public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, ?bool $includeGlobal = null): Builder
+    {
+        if (! (bool) config('chip.owner.enabled', false)) {
+            return $query;
+        }
+
+        if ($owner === OwnerContext::CURRENT) {
+            $owner = OwnerContext::resolve();
+
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                sprintf('%s requires an owner context or explicit global context.', static::class),
+            );
+        }
+
+        $includeGlobal ??= (bool) config('chip.owner.include_global', false);
+
+        return $this->scopeForOwnerUsingTrait($query, $owner, $includeGlobal);
+    }
 
     public function createdOn(): Attribute
     {
@@ -85,29 +171,8 @@ class Webhook extends ChipModel
         return $this;
     }
 
-    protected static function tableSuffix(): string
+    protected function toTimestamp(?int $value): ?CarbonImmutable
     {
-        return 'webhooks';
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'events' => 'array',
-            'payload' => 'array',
-            'headers' => 'array',
-            'all_events' => 'boolean',
-            'verified' => 'boolean',
-            'processed' => 'boolean',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-            'processed_at' => 'datetime',
-            'last_retry_at' => 'datetime',
-            'retry_count' => 'integer',
-            'processing_time_ms' => 'float',
-        ];
+        return $value !== null ? CarbonImmutable::createFromTimestampUTC($value) : null;
     }
 }

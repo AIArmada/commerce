@@ -141,27 +141,45 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
             return null;
         }
 
-        return Webhook::query()
-            ->forOwner()
-            ->updateOrCreate(
-                ['idempotency_key' => $idempotencyKey],
-                [
-                    'event_type' => $eventType,
-                    'event' => $eventType,
-                    'payload' => $payload,
-                    'status' => 'pending',
-                    'verified' => true,
-                    'processed' => false,
-                    'processed_at' => null,
-                    'last_error' => null,
-                    'processing_time_ms' => null,
-                    'title' => 'Incoming: ' . $eventType,
-                    'events' => [$eventType],
-                    'callback' => (string) ($this->webhookCall->url ?? ''),
-                    'created_on' => is_numeric($payload['created_on'] ?? null) ? (int) $payload['created_on'] : time(),
-                    'updated_on' => is_numeric($payload['updated_on'] ?? null) ? (int) $payload['updated_on'] : time(),
-                ]
-            );
+        $owner = OwnerContext::resolve();
+
+        $attributes = [
+            'event_type' => $eventType,
+            'event' => $eventType,
+            'payload' => $payload,
+            'status' => 'pending',
+            'verified' => true,
+            'processed' => false,
+            'processed_at' => null,
+            'last_error' => null,
+            'processing_time_ms' => null,
+            'idempotency_key' => $idempotencyKey,
+            'title' => 'Incoming: ' . $eventType,
+            'events' => [$eventType],
+            'callback' => (string) ($this->webhookCall->url ?? ''),
+            'created_on' => is_numeric($payload['created_on'] ?? null) ? (int) $payload['created_on'] : time(),
+            'updated_on' => is_numeric($payload['updated_on'] ?? null) ? (int) $payload['updated_on'] : time(),
+        ];
+
+        if ((bool) config('chip.owner.enabled', false) && $owner instanceof Model) {
+            $attributes['owner_type'] = $owner->getMorphClass();
+            $attributes['owner_id'] = (string) $owner->getKey();
+        }
+
+        Webhook::query()
+            ->withoutGlobalScope('chip_webhook_calls')
+            ->withoutOwnerScope()
+            ->where('name', Webhook::WEBHOOK_NAME)
+            ->whereKey($this->webhookCall->getKey())
+            ->update($attributes);
+
+        /** @var Webhook|null $webhook */
+        $webhook = Webhook::query()
+            ->withoutOwnerScope()
+            ->whereKey($this->webhookCall->getKey())
+            ->first();
+
+        return $webhook;
     }
 
     /**

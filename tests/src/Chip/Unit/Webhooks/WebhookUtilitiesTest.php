@@ -329,7 +329,6 @@ describe('WebhookLogger', function (): void {
 
         OwnerContext::withOwner($ownerA, function () use ($idempotencyKey): void {
             Webhook::create([
-                'id' => '11111111-1111-1111-1111-111111111111',
                 'title' => 'Owner A webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],

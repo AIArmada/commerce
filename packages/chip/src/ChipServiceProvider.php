@@ -68,6 +68,10 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     protected function configureSpatieWebhookClient(): void
     {
+        if (! config('chip.webhooks.enabled', true)) {
+            return;
+        }
+
         if (! class_exists(WebhookCall::class)) {
             return;
         }

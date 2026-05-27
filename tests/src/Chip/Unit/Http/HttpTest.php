@@ -24,7 +24,7 @@ describe('WebhookController', function (): void {
             Schema::create('webhook_calls', function (Blueprint $table): void {
                 $table->bigIncrements('id');
                 $table->string('name');
-                $table->string('url')->nullable();
+                $table->string('url', 512);
                 $table->json('headers')->nullable();
                 $table->json('payload')->nullable();
                 $table->timestamp('processed_at')->nullable();

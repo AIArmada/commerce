@@ -7,7 +7,9 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\NullOwnerResolver;
 use AIArmada\CommerceSupport\SupportServiceProvider;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Spatie\LaravelPackageTools\Package;
+use Spatie\WebhookClient\Models\WebhookCall;
 
 it('registers the commerce setup command', function (): void {
     $provider = new SupportServiceProvider(app());
@@ -95,6 +97,32 @@ it('registers fallback dependency migration paths when they are not published', 
         expect($containsRuntimePath('create_media_table'))->toBeTrue();
     }
 
+    if ($expectsPath('create_webhook_calls_table')) {
+        expect($containsRuntimePath('create_webhook_calls_table'))->toBeTrue();
+    }
+
+});
+
+it('only loads the shared webhook migration when a package registers a valid webhook config', function (): void {
+    config()->set('webhook-client.configs', []);
+
+    $provider = new SupportServiceProvider(app());
+    $method = new ReflectionMethod($provider, 'shouldLoadWebhookCallsMigration');
+    $method->setAccessible(true);
+
+    expect($method->invoke($provider))->toBeFalse();
+
+    config()->set('webhook-client.configs', [
+        [
+            'name' => 'support-test',
+            'webhook_model' => WebhookCall::class,
+            'process_webhook_job' => stdClass::class,
+        ],
+    ]);
+
+    Schema::dropIfExists('webhook_calls');
+
+    expect($method->invoke($provider))->toBeTrue();
 });
 
 class SupportTestOwnerResolver implements OwnerResolverInterface
