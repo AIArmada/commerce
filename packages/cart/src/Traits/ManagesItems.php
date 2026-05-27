@@ -128,10 +128,11 @@ trait ManagesItems
         // Invalidate pipeline cache after cart modification
         $this->invalidatePipelineCacheIfEnabled();
 
-        $this->dispatchEvent(new ItemUpdated($item, $this));
-
-        // Mark dynamic conditions dirty - evaluation deferred until totals requested
+        // Mark dynamic conditions dirty before dispatching events so
+        // listeners observe the latest cart state.
         $this->markDynamicConditionsDirty();
+
+        $this->dispatchEvent(new ItemUpdated($item, $this));
 
         return $item;
     }
@@ -158,10 +159,11 @@ trait ManagesItems
         // Invalidate pipeline cache after cart modification
         $this->invalidatePipelineCacheIfEnabled();
 
-        $this->dispatchEvent(new ItemRemoved($item, $this));
-
-        // Mark dynamic conditions dirty - evaluation deferred until totals requested
+        // Mark dynamic conditions dirty before dispatching events so
+        // listeners observe the latest cart state.
         $this->markDynamicConditionsDirty();
+
+        $this->dispatchEvent(new ItemRemoved($item, $this));
 
         // Handle empty cart based on configured behavior
         if ($cartItems->isEmpty()) {
@@ -255,6 +257,10 @@ trait ManagesItems
         // Invalidate pipeline cache after cart modification
         $this->invalidatePipelineCacheIfEnabled();
 
+        // Mark dynamic conditions dirty before dispatching events so
+        // listeners observe the latest cart state.
+        $this->markDynamicConditionsDirty();
+
         // Dispatch CartCreated event only when adding the first item to an empty cart
         if ($isFirstItem) {
             $this->dispatchEvent(new CartCreated($this));
@@ -262,9 +268,6 @@ trait ManagesItems
 
         // Dispatch ItemAdded event
         $this->dispatchEvent(new ItemAdded($item, $this));
-
-        // Mark dynamic conditions dirty - evaluation deferred until totals requested
-        $this->markDynamicConditionsDirty();
 
         return $item;
     }
