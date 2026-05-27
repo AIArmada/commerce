@@ -10,6 +10,7 @@ use AIArmada\Jnt\Models\JntWebhookLog;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
 
@@ -260,6 +261,12 @@ describe('JntTrackingEvent model', function (): void {
         expect($fillable)->toContain('scan_time');
         expect($fillable)->toContain('description');
         expect($fillable)->toContain('payload');
+    });
+
+    it('includes the event hash column in the schema', function (): void {
+        $event = new JntTrackingEvent;
+
+        expect(Schema::hasColumn($event->getTable(), 'event_hash'))->toBeTrue();
     });
 
     it('casts attributes correctly', function (): void {

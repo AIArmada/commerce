@@ -34,7 +34,7 @@ return new class extends Migration
         });
 
         // GIN indexes only work with jsonb in PostgreSQL
-        if (commerce_json_column_type('jnt', 'jsonb') === 'jsonb') {
+        if (commerce_json_column_type('jnt', 'jsonb') === 'jsonb' && DB::connection()->getDriverName() === 'pgsql') {
             Schema::table($orderItemsTable, function (Blueprint $table) use ($orderItemsTable): void {
                 DB::statement('CREATE INDEX jnt_order_items_metadata_gin_index ON ' . $orderItemsTable . ' USING GIN (metadata)');
             });
