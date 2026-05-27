@@ -67,6 +67,23 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
+     * Resolve the identifier and instance for a cart row by its UUID.
+     *
+     * @return object{identifier: string, instance: string}|null
+     */
+    public function findSnapshotById(string $uuid): ?object
+    {
+        $query = $this->database->table($this->table)->where('id', $uuid);
+
+        $this->applyOwnerConstraints($query);
+
+        /** @var object{identifier: string, instance: string}|null $snapshot */
+        $snapshot = $query->first(['identifier', 'instance']);
+
+        return $snapshot;
+    }
+
+    /**
      * Retrieve cart items from storage
      *
      * @return array<string, mixed>

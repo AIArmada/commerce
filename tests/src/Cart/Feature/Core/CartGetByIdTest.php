@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 
@@ -21,6 +22,21 @@ describe('Cart getById', function (): void {
         expect($cart)->not->toBeNull();
         expect($cart?->getId())->toBe($cartId);
         expect($cart?->get('item'))->not->toBeNull();
+    });
+
+    it('reuses the same cart instance when resolving the same cart by id within one manager', function (): void {
+        Cart::add('item', 'Item', 10.00, 1);
+
+        $cartId = Cart::getId();
+        expect($cartId)->not->toBeNull();
+
+        $manager = app(CartManager::class);
+
+        $first = $manager->getById($cartId);
+        $second = $manager->getById($cartId);
+
+        expect($first)->not->toBeNull()
+            ->and($second)->toBe($first);
     });
 
     it('scopes getById to the current owner', function (): void {

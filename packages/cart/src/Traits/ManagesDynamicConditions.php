@@ -29,6 +29,12 @@ trait ManagesDynamicConditions
     protected ?RulesFactoryInterface $rulesFactory = null;
 
     /**
+     * Flag indicating persisted dynamic conditions have already been restored
+     * for the current cart instance and rules factory.
+     */
+    protected bool $dynamicConditionsRestored = false;
+
+    /**
      * Optional handler invoked when a dynamic condition fails to evaluate or restore.
      *
      * @var (callable(string, ?CartCondition, ?Throwable, array<string, mixed>): void)|null
@@ -51,6 +57,10 @@ trait ManagesDynamicConditions
      */
     public function setRulesFactory(RulesFactoryInterface $factory): static
     {
+        if ($this->rulesFactory !== $factory) {
+            $this->dynamicConditionsRestored = false;
+        }
+
         $this->rulesFactory = $factory;
 
         return $this;
@@ -220,16 +230,26 @@ trait ManagesDynamicConditions
             return $this; // No factory, can't restore
         }
 
+        if ($this->dynamicConditionsRestored) {
+            return $this;
+        }
+
         $metadata = $this->storage->getMetadata(
             $this->getIdentifier(),
             $this->instance(),
             'dynamic_conditions'
         );
 
-        Log::debug('Restoring dynamic conditions', [
-            'count' => is_array($metadata) ? count($metadata) : 0,
-            'identifier' => $this->getIdentifier(),
-        ]);
+        $this->dynamicConditionsRestored = true;
+
+        $metadataCount = is_array($metadata) ? count($metadata) : 0;
+
+        if ($metadataCount > 0) {
+            Log::debug('Restoring dynamic conditions', [
+                'count' => $metadataCount,
+                'identifier' => $this->getIdentifier(),
+            ]);
+        }
 
         if (empty($metadata) || ! is_array($metadata)) {
             return $this; // No conditions to restore

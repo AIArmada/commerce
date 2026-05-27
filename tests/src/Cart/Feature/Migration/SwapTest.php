@@ -298,6 +298,31 @@ it('can swap through cart facade', function (): void {
     expect($storage->getItems('user_facade', 'default'))->toHaveCount(1);
 });
 
+it('invalidates cached carts after swapping identifiers', function (): void {
+    $cartManager = new CartManager($this->storage);
+    $cartManager->setIdentifier('guest_session_cached');
+    $cartManager->add('product-1', 'Cached Product', 25.00, 1);
+
+    $cartId = $cartManager->getId();
+    expect($cartId)->not->toBeNull();
+
+    $cachedCart = $cartManager->getById($cartId);
+
+    expect($cachedCart)->not->toBeNull()
+        ->and($cachedCart?->getIdentifier())->toBe('guest_session_cached');
+
+    $result = $cartManager->swap('guest_session_cached', 'user_cached', 'default');
+
+    expect($result)->toBeTrue();
+
+    $swappedCart = $cartManager->getById($cartId);
+
+    expect($swappedCart)->not->toBeNull()
+        ->and($swappedCart)->not->toBe($cachedCart)
+        ->and($swappedCart?->getIdentifier())->toBe('user_cached')
+        ->and($swappedCart?->get('product-1'))->not->toBeNull();
+});
+
 it('can swap guest cart using convenience method', function (): void {
     $storage = $this->storage;
 

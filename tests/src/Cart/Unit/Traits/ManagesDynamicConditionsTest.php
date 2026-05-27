@@ -359,6 +359,33 @@ describe('CartCondition helpers', function (): void {
 });
 
 describe('ManagesDynamicConditions edge cases', function (): void {
+    it('restores persisted dynamic conditions only once per cart instance', function (): void {
+        $this->storage->putMetadata(
+            $this->identifier,
+            'default',
+            'dynamic_conditions',
+            [
+                'restored_once' => [
+                    'type' => 'discount',
+                    'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+                    'value' => '-10%',
+                    'rule_factory_key' => 'always-true',
+                ],
+            ]
+        );
+
+        $factory = new RecordingRulesFactory;
+        $cart = new Cart($this->storage, $this->identifier, events: null);
+        $cart->withRulesFactory($factory);
+
+        expect($factory->created)->toHaveCount(1);
+
+        $cart->restoreDynamicConditions();
+
+        expect($factory->created)->toHaveCount(1)
+            ->and($cart->getDynamicConditions()->has('restored_once'))->toBeTrue();
+    });
+
     it('throws when registering condition with invalid rules type', function (): void {
         $cart = new Cart($this->storage, $this->identifier, events: null);
 
@@ -526,7 +553,6 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     it('handles restore with invalid factory key in metadata', function (): void {
         $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
-        $cart->withRulesFactory($factory);
 
         // Manually inject bad metadata
         $this->storage->putMetadata(
@@ -550,6 +576,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             $captured = compact('operation', 'condition', 'exception', 'context');
         });
 
+        $cart->setRulesFactory($factory);
         $cart->restoreDynamicConditions();
 
         expect($captured)->not->toBeNull();
@@ -560,7 +587,6 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     it('skips restore for conditions without rule_factory_key', function (): void {
         $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
-        $cart->withRulesFactory($factory);
 
         // Manually inject metadata without rule_factory_key
         $this->storage->putMetadata(
@@ -578,6 +604,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             ]
         );
 
+        $cart->setRulesFactory($factory);
         $cart->restoreDynamicConditions();
 
         expect($cart->getDynamicConditions()->count())->toBe(0);

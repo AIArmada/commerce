@@ -7,7 +7,6 @@ namespace AIArmada\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\Cart\Support\CartOwnerScope;
 use Illuminate\Contracts\Auth\Factory;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +22,9 @@ class CartManager implements CartManagerInterface
     private Cart $currentCart;
 
     private string $currentInstance = 'default';
+
+    /** @var array<string, Cart> */
+    private array $cartCache = [];
 
     public function __construct(
         private StorageInterface $storage,
@@ -195,22 +197,21 @@ class CartManager implements CartManagerInterface
      */
     public function getById(string $uuid): ?Cart
     {
+        if (isset($this->cartCache[$uuid])) {
+            return $this->cartCache[$uuid];
+        }
+
         if (! $this->storage instanceof Storage\DatabaseStorage) {
             return null;
         }
 
-        $tableName = config('cart.database.table', 'carts');
-
-        $query = app('db')->table($tableName)->where('id', $uuid);
-        $query = CartOwnerScope::apply($query, $this->storage);
-
-        $snapshot = $query->first(['identifier', 'instance']);
+        $snapshot = $this->storage->findSnapshotById($uuid);
 
         if (! $snapshot) {
             return null;
         }
 
-        return $this->getCartInstance($snapshot->instance, $snapshot->identifier);
+        return $this->cartCache[$uuid] = $this->getCartInstance($snapshot->instance, $snapshot->identifier);
     }
 
     /**
@@ -229,7 +230,13 @@ class CartManager implements CartManagerInterface
     {
         $migrationService = new Services\CartMigrationService([], $this->storage);
 
-        return $migrationService->swap($oldIdentifier, $newIdentifier, $instance);
+        $swapped = $migrationService->swap($oldIdentifier, $newIdentifier, $instance);
+
+        if ($swapped) {
+            $this->cartCache = [];
+        }
+
+        return $swapped;
     }
 
     /**
