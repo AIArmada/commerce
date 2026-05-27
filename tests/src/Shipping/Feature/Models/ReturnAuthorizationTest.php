@@ -243,14 +243,14 @@ describe('ReturnAuthorization Model', function (): void {
         ReturnAuthorizationItem::create([
             'return_authorization_id' => $rma->id,
             'name' => 'Item 1',
-            'quantity' => 1,
+            'quantity_requested' => 1,
             'reason' => 'defective',
         ]);
 
         ReturnAuthorizationItem::create([
             'return_authorization_id' => $rma->id,
             'name' => 'Item 2',
-            'quantity' => 2,
+            'quantity_requested' => 2,
             'reason' => 'wrong_size',
         ]);
 
