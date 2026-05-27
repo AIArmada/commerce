@@ -35,7 +35,7 @@ describe('ChipModel base class', function (): void {
         expect($client->getTable())->toBe('chip_clients');
 
         $webhook = new Webhook;
-        expect($webhook->getTable())->toBe('chip_webhooks');
+        expect($webhook->getTable())->toBe('webhook_calls');
     });
 
     it('uses guarded property', function (): void {
@@ -311,7 +311,7 @@ describe('Webhook model', function (): void {
     it('returns correct table name', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
         $webhook = new Webhook;
-        expect($webhook->getTable())->toBe('chip_webhooks');
+        expect($webhook->getTable())->toBe('webhook_calls');
     });
 
     it('can access timestamp attributes', function (): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -19,10 +20,23 @@ describe('Package bootstrap', function (): void {
 
         expect(Schema::hasTable($tablePrefix . 'purchases'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'payments'))->toBeTrue();
-        expect(Schema::hasTable($tablePrefix . 'webhooks'))->toBeTrue();
+        expect(Schema::hasTable('webhook_calls'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'send_instructions'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'bank_accounts'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'clients'))->toBeTrue();
+    });
+
+    it('can rerun the chip webhook extension without duplicate indexes', function (): void {
+        /** @var Migration $migration */
+        $migration = require dirname(__DIR__, 4) . '/packages/chip/database/migrations/2000_04_01_000003_add_chip_webhook_columns_to_webhook_calls_table.php';
+
+        $migration->up();
+        $migration->up();
+
+        expect(Schema::hasColumn('webhook_calls', 'event_type'))->toBeTrue()
+            ->and(Schema::hasIndex('webhook_calls', 'webhook_calls_event_type_processed_idx'))->toBeTrue()
+            ->and(Schema::hasIndex('webhook_calls', 'webhook_calls_verified_processed_idx'))->toBeTrue()
+            ->and(Schema::hasIndex('webhook_calls', 'webhook_calls_status_retry_count_idx'))->toBeTrue();
     });
 
     it('loads configuration from chip config file', function (): void {

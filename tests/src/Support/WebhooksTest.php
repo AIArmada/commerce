@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Webhooks\CommerceSignatureValidator;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProfile;
+use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -18,10 +19,10 @@ beforeEach(function (): void {
     Schema::create('webhook_calls', function (Blueprint $table): void {
         $table->id();
         $table->string('name');
-        $table->text('url')->nullable();
+        $table->string('url', 512);
         $table->json('headers')->nullable();
         $table->json('payload')->nullable();
-        $table->json('exception')->nullable();
+        $table->text('exception')->nullable();
         $table->timestamp('processed_at')->nullable();
         $table->timestamps();
     });
@@ -36,6 +37,15 @@ it('validates commerce webhook signatures with constant time comparison', functi
     $validator = new SupportWebhookSignatureValidator;
 
     expect($validator->isValid($request, supportWebhookConfig($secret)))->toBeTrue();
+});
+
+it('creates webhook calls tables with processed_at support', function (): void {
+    Schema::dropIfExists('webhook_calls');
+
+    commerceSupportMigration('1970_01_01_000004_create_webhook_calls_table.php.stub')->up();
+
+    expect(Schema::hasTable('webhook_calls'))->toBeTrue()
+        ->and(Schema::hasColumn('webhook_calls', 'processed_at'))->toBeTrue();
 });
 
 it('rejects unsigned invalid or unconfigured commerce webhook signatures', function (): void {
@@ -234,4 +244,12 @@ final class SupportWebhookProcessor extends CommerceWebhookProcessor
     {
         self::$processed[] = [$eventType, $payload];
     }
+}
+
+function commerceSupportMigration(string $migrationFile): Migration
+{
+    /** @var Migration $migration */
+    $migration = require dirname(__DIR__, 3) . '/packages/commerce-support/database/migrations/' . $migrationFile;
+
+    return $migration;
 }

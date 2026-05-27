@@ -21,7 +21,7 @@ beforeEach(function (): void {
         Schema::create('webhook_calls', function (Blueprint $table): void {
             $table->bigIncrements('id');
             $table->string('name');
-            $table->string('url')->nullable();
+            $table->string('url', 512);
             $table->json('headers')->nullable();
             $table->json('payload')->nullable();
             $table->timestamp('processed_at')->nullable();
@@ -108,6 +108,43 @@ it('fails closed when the brand mapping has an empty owner type', function (): v
         ->assertStatus(500);
 
     expect(Purchase::query()->withoutOwnerScope()->where('id', $payload['id'])->exists())->toBeFalse();
+});
+
+it('keeps webhook owner columns empty when owner mode is disabled', function (): void {
+    Route::post('/chip/webhook-test', [WebhookController::class, 'handle'])
+        ->withoutMiddleware([VerifyWebhookSignature::class]);
+
+    config()->set('chip.owner.enabled', false);
+
+    $owner = User::query()->create([
+        'name' => 'Disabled Owner Mode',
+        'email' => 'disabled-owner-mode@example.com',
+        'password' => 'secret',
+    ]);
+
+    config()->set('chip.owner.webhook_brand_id_map', [
+        'brand-owner-disabled' => [
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ],
+    ]);
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver(null));
+
+    $payload = WebhookFactory::payoutSuccess([
+        'brand_id' => 'brand-owner-disabled',
+    ]);
+
+    $this->postJson('/chip/webhook-test', $payload)
+        ->assertStatus(200);
+
+    $webhook = Webhook::query()
+        ->withoutOwnerScope()
+        ->where('event_type', 'payout.success')
+        ->first();
+
+    expect($webhook)->not->toBeNull()
+        ->and($webhook?->owner_type)->toBeNull()
+        ->and($webhook?->owner_id)->toBeNull();
 });
 
 it('stores matching webhook payloads separately for different owners', function (): void {

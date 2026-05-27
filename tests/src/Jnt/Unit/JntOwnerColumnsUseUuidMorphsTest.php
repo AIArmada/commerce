@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
+
 it('uses nullableMorphs for JNT owner columns', function (): void {
     $repoRoot = dirname(__DIR__, 4);
 
@@ -10,7 +13,7 @@ it('uses nullableMorphs for JNT owner columns', function (): void {
     $itemsMigration = $repoRoot . '/packages/jnt/database/migrations/2000_10_01_000002_create_jnt_order_items_table.php';
     $parcelsMigration = $repoRoot . '/packages/jnt/database/migrations/2000_10_01_000003_create_jnt_order_parcels_table.php';
     $eventsMigration = $repoRoot . '/packages/jnt/database/migrations/2000_10_01_000004_create_jnt_tracking_events_table.php';
-    $webhooksMigration = $repoRoot . '/packages/jnt/database/migrations/2000_10_01_000005_create_jnt_webhook_logs_table.php';
+    $webhooksMigration = $repoRoot . '/packages/jnt/database/migrations/2000_10_01_000005_add_jnt_webhook_columns_to_webhook_calls_table.php';
 
     $orders = file_get_contents($ordersMigration);
     $items = file_get_contents($itemsMigration);
@@ -37,4 +40,15 @@ it('uses nullableMorphs for JNT owner columns', function (): void {
     expect($webhooks)->toBeString();
     expect($webhooks)->toContain("nullableMorphs('owner')");
     expect($webhooks)->not->toContain("nullableUuidMorphs('owner')");
+});
+
+it('can rerun the JNT webhook extension without duplicate indexes', function (): void {
+    /** @var Migration $migration */
+    $migration = require dirname(__DIR__, 4) . '/packages/jnt/database/migrations/2000_10_01_000005_add_jnt_webhook_columns_to_webhook_calls_table.php';
+
+    $migration->up();
+    $migration->up();
+
+    expect(Schema::hasColumn('webhook_calls', 'tracking_number'))->toBeTrue()
+        ->and(Schema::hasIndex('webhook_calls', 'jnt_webhook_calls_pending_idx'))->toBeTrue();
 });

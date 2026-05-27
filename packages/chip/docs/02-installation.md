@@ -35,7 +35,7 @@ php artisan migrate
 The package creates the following tables (with configurable prefix):
 - `chip_purchases` - Payment records from CHIP
 - `chip_payments` - Payment details (fees, net amounts)
-- `chip_webhooks` - Webhook event log
+- `webhook_calls` - Shared webhook event log
 - `chip_bank_accounts` - Saved bank accounts (Send)
 - `chip_clients` - Customer records
 - `chip_send_instructions` - Payout records
