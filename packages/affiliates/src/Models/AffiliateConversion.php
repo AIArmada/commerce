@@ -173,7 +173,7 @@ class AffiliateConversion extends Model
                 'holding_minor' => 0,
                 'lifetime_earnings_minor' => 0,
                 'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
-                'currency' => $conversion->commission_currency,
+                'currency' => $conversion->commission_currency ?: $affiliate->currency ?: 'MYR',
             ]);
 
             if (config('affiliates.commissions.auto_approve', false)) {

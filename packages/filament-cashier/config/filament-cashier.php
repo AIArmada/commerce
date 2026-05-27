@@ -74,7 +74,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'currency' => [
-        'base' => 'USD',
+        'base' => 'MYR',
         'display_converted' => false,
         'conversion_rates' => [
             'MYR' => 4.70,

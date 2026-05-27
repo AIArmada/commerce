@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 $currency = env('CASHIER_CURRENCY', 'MYR');
 
-$stripeCurrency = env('CASHIER_STRIPE_CURRENCY', env('CASHIER_CURRENCY', 'USD'));
+$stripeCurrency = env('CASHIER_STRIPE_CURRENCY', env('CASHIER_CURRENCY', 'MYR'));
 $chipCurrency = env('CASHIER_CHIP_CURRENCY', env('CASHIER_CURRENCY', 'MYR'));
 
 $stripeCurrencyLocale = env('CASHIER_STRIPE_CURRENCY_LOCALE', env('CASHIER_CURRENCY_LOCALE', 'en_US'));
