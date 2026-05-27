@@ -42,7 +42,7 @@ return new class extends Migration
             $table->string('shipping_state', 128)->nullable();
 
             // Email notifications
-            $jsonType = (string) commerce_json_column_type('chip', 'json');
+            $jsonType = (string) commerce_json_column_type('chip', 'jsonb');
             $table->{$jsonType}('cc')->nullable(); // Carbon copy email addresses
             $table->{$jsonType}('bcc')->nullable(); // Blind carbon copy email addresses
 

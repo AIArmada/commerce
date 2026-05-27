@@ -13,7 +13,7 @@ return new class extends Migration
         $database = config('docs.database', []);
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
-        $jsonType = (string) commerce_json_column_type('docs', 'json');
+        $jsonType = (string) commerce_json_column_type('docs', 'jsonb');
 
         // Phase 2: Payments
         $paymentsTable = $tables['doc_payments'] ?? $tablePrefix . 'payments';

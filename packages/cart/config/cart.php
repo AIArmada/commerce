@@ -11,7 +11,7 @@ return [
     'database' => [
         'table' => env('CART_DB_TABLE', 'carts'),
         'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
-        'json_column_type' => env('CART_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'json_column_type' => env('CART_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30), // 30 days, null to disable
         'lock_for_update' => env('CART_DB_LOCK_FOR_UPDATE', false),
     ],

@@ -29,7 +29,7 @@ return new class extends Migration
 
             $table->nullableUuidMorphs('owner');
 
-            $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'json'));
+            $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'jsonb'));
             $table->addColumn($jsonType, 'eligibility_rules')->nullable();
             $table->addColumn($jsonType, 'metadata')->nullable();
 

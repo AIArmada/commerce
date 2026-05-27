@@ -22,7 +22,7 @@ return new class extends Migration
             $table->integer('updated_on'); // Unix timestamp as per API
 
             // Client details - stored as JSON per API structure
-            $jsonType = (string) commerce_json_column_type('chip', 'json');
+            $jsonType = (string) commerce_json_column_type('chip', 'jsonb');
             $table->{$jsonType}('client'); // Full client object from API
 
             // Purchase details - stored as JSON per API structure
@@ -138,7 +138,7 @@ return new class extends Migration
 
         // Optional: create GIN index for metadata when using jsonb on PostgreSQL
         if (
-            commerce_json_column_type('chip', 'json') === 'jsonb'
+            commerce_json_column_type('chip', 'jsonb') === 'jsonb'
             && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             $tableName = $tablePrefix . 'purchases';

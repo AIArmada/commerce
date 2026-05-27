@@ -58,7 +58,7 @@ return new class extends Migration
      */
     private function addPostgreSQLIndexes(string $tableName): void
     {
-        $jsonType = (string) config('cart.database.json_column_type', commerce_json_column_type('cart', 'json'));
+        $jsonType = (string) config('cart.database.json_column_type', commerce_json_column_type('cart', 'jsonb'));
 
         // Covering index for owner-scoped primary lookup (avoids table access)
         DB::statement("

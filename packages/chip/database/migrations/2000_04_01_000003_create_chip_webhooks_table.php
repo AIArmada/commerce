@@ -21,7 +21,7 @@ return new class extends Migration
 
             // Webhook configuration - as per CHIP API
             $table->string('title', 100); // Arbitrary title of webhook
-            $jsonType = (string) commerce_json_column_type('chip', 'json');
+            $jsonType = (string) commerce_json_column_type('chip', 'jsonb');
             $table->{$jsonType}('events'); // List of events to trigger webhook
             $table->string('callback', 500); // Callback URL
             $table->boolean('all_events')->default(false); // Trigger on all events

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('email', 254);
 
             // List of subscribed event hooks as returned by the API
-            $jsonType = (string) commerce_json_column_type('chip', 'json');
+            $jsonType = (string) commerce_json_column_type('chip', 'jsonb');
             $table->{$jsonType}('event_hooks');
 
             // API lifecycle timestamps (ISO8601 strings converted to timestamps)

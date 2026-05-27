@@ -54,7 +54,7 @@ return new class extends Migration
             $table->string('signature_picture_url', 500)->nullable();
             $table->string('sign_url', 500)->nullable();
             $table->string('electronic_signature_pic_url', 500)->nullable();
-            $jsonType = (string) commerce_json_column_type('jnt', 'json');
+            $jsonType = (string) commerce_json_column_type('jnt', 'jsonb');
             $table->{$jsonType}('payload')->nullable();
             $table->nullableMorphs('owner');
             $table->timestamps();
@@ -64,7 +64,7 @@ return new class extends Migration
         });
 
         // GIN indexes only work with jsonb in PostgreSQL
-        if (commerce_json_column_type('jnt', 'json') === 'jsonb') {
+        if (commerce_json_column_type('jnt', 'jsonb') === 'jsonb') {
             Schema::table($trackingEventsTable, function (Blueprint $table) use ($trackingEventsTable): void {
                 DB::statement('CREATE INDEX jnt_tracking_events_payload_gin_index ON ' . $trackingEventsTable . ' USING GIN (payload)');
             });
