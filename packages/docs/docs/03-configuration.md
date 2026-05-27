@@ -11,10 +11,11 @@ Configuration lives in `config/docs.php`.
 ```php
 'database' => [
     'table_prefix' => env('DOCS_TABLE_PREFIX', 'docs_'),
-    'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+    'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     'tables' => [
         'docs' => 'docs_docs',
         'doc_templates' => 'docs_doc_templates',
+        'doc_share_links' => 'docs_doc_share_links',
         'doc_status_histories' => 'docs_doc_status_histories',
         'doc_payments' => 'docs_payments',
         'doc_email_templates' => 'docs_email_templates',
@@ -102,16 +103,16 @@ The e-invoice integration is sandboxed by default.
 
 ```php
 'types' => [
-    'invoice' => ['default_template' => 'doc-default', 'numbering' => ['prefix' => 'INV']],
-    'quotation' => ['default_template' => 'doc-default', 'numbering' => ['prefix' => 'QUO']],
-    'receipt' => ['default_template' => 'doc-default', 'numbering' => ['prefix' => 'RCP']],
-    'credit_note' => ['default_template' => 'doc-default', 'numbering' => ['prefix' => 'CN']],
-    'delivery_note' => ['default_template' => 'doc-default', 'numbering' => ['prefix' => 'DN']],
-    'proforma_invoice' => ['default_template' => 'doc-default', 'numbering' => ['prefix' => 'PI']],
+    'invoice' => ['numbering' => ['prefix' => 'INV']],
+    'quotation' => ['numbering' => ['prefix' => 'QUO']],
+    'receipt' => ['numbering' => ['prefix' => 'RCP']],
+    'credit_note' => ['numbering' => ['prefix' => 'CN']],
+    'delivery_note' => ['numbering' => ['prefix' => 'DN']],
+    'proforma_invoice' => ['numbering' => ['prefix' => 'PI']],
 ],
 ```
 
-Each type can choose its own template and numbering prefix while still using the shared numbering strategy.
+Each type configures numbering only. Default templates are now resolved from `DocTemplate` records using `doc_type` + `is_default`, not from config keys such as `default_template`.
 
 ## Numbering
 
@@ -134,10 +135,22 @@ Use this block when you need to align document numbers with external finance or 
 'storage' => [
     'disk' => env('DOCS_STORAGE_DISK', 'local'),
     'path' => env('DOCS_STORAGE_PATH', 'docs'),
+    'rich_content_path' => env('DOCS_RICH_CONTENT_PATH', 'docs/rich-content'),
+    'rich_content_visibility' => env('DOCS_RICH_CONTENT_VISIBILITY', 'private'),
 ],
 ```
 
-Global storage defaults can be overridden again per document type.
+Global storage defaults can be overridden again per document type. Rich-content attachments are stored separately from generated PDFs so editors and renderers can keep uploaded assets private by default.
+
+## Sharing
+
+```php
+'sharing' => [
+    'default_expiry_days' => 30,
+],
+```
+
+Share links are persisted in `doc_share_links` and default to a 30-day expiry unless you pass a different `expiresAt` value to `DocRenderService::createShareLink()`.
 
 ## PDF
 
@@ -157,6 +170,8 @@ Global storage defaults can be overridden again per document type.
 ```
 
 These are the default PDF rendering options when a document or template does not override them.
+
+PDF options resolve in this order: package config defaults → template `settings['pdf']` → per-document `metadata['pdf']`.
 
 ## Company
 

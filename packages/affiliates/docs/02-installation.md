@@ -84,7 +84,7 @@ Key environment variables (all optional with sensible defaults):
 AFFILIATES_OWNER_ENABLED=false
 
 # Currency
-AFFILIATES_DEFAULT_CURRENCY=USD
+AFFILIATES_DEFAULT_CURRENCY=MYR
 
 # Cookie tracking
 AFFILIATES_COOKIES_ENABLED=true
@@ -111,7 +111,7 @@ AFFILIATES_API_ENABLED=false
 Run the following to verify the package is properly installed:
 
 ```bash
-php artisan affiliates:aggregate-daily-stats --help
+php artisan affiliates:aggregate-daily --help
 ```
 
 If you see the command help output, the installation is complete.

@@ -60,12 +60,11 @@ php artisan filament:install
 
 **Solutions:**
 
-1. Verify portal is enabled:
+1. Verify the affiliate panel provider is registered and the path is configured:
 
 ```php
 // config/filament-affiliates.php
 'portal' => [
-    'enabled' => true,
     'path' => 'affiliate',
 ],
 ```
@@ -106,18 +105,22 @@ class AffiliatePortalProvider extends PanelProvider
 ],
 ```
 
-2. Verify user has affiliate record:
+2. Verify the user can authenticate with that guard and that the provider is using the same guard.
+
+3. If you expect affiliate-specific data, verify the user has an affiliate record:
 
 ```php
 $user = auth()->user();
 $user->affiliate; // Must not be null
 ```
 
-3. Check affiliate status is active:
+4. If you need the affiliate to be active for your own custom middleware, check the state object instead of an old enum case:
 
 ```php
-$user->affiliate->status; // Should be AffiliateStatus::Active
+$user->affiliate?->status?->isActive();
 ```
+
+By default, the shipped portal does not redirect non-affiliate users in a loop. If you see a loop, it is usually caused by custom auth middleware, an auth-guard mismatch, or panel registration issues.
 
 ## Resource Issues
 

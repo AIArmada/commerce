@@ -133,6 +133,8 @@ $affiliate->commissionRules()
 $conversion->status; // Should be ConversionStatus::Approved
 ```
 
+If you are using the maturity workflow, a conversion may sit in `Qualified` until `php artisan affiliates:process-maturity` promotes it.
+
 2. **Maturity period has passed:**
 ```php
 // config/affiliates.php

@@ -53,6 +53,8 @@ Read-only resource for viewing voucher redemption history.
 **Header actions:**
 - Export voucher usage data with affiliate and order columns via `VoucherUsageExporter`
 
+Affiliate-aware voucher reporting is resolved by `AffiliateReportingContextResolver`, which matches voucher usages against affiliate conversions and attributions using the voucher code plus the resolved order reference/order number when available.
+
 ### VoucherWalletResource
 
 Manage vouchers saved to user wallets.
@@ -235,15 +237,15 @@ MoneyHelper::displayToBasisPoints('25.75'); // 2575
 
 ```php
 // Format money with currency symbol
-MoneyHelper::formatMoney(1000, 'USD'); // "$10.00"
-MoneyHelper::formatMoney(1999, 'MYR'); // "RM19.99"
+MoneyHelper::formatMoney(1000);        // "RM10.00"
+MoneyHelper::formatMoney(1999, 'USD'); // "$19.99"
 
 // Format percentage
 MoneyHelper::formatPercentage(1000);   // "10%"
 MoneyHelper::formatPercentage(1050);   // "10.5%"
 
 // Get default currency
-MoneyHelper::defaultCurrency();        // "USD" (from config)
+MoneyHelper::defaultCurrency();        // "MYR" (from config)
 ```
 
 ### Usage in Filament Forms

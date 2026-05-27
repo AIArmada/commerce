@@ -5,7 +5,7 @@ status: current
 
 # Affiliates Integration Map
 
-This page is a **current cross-package map**, not the canonical package reference.
+This page is a **current cross-package map** for affiliate-related work. Keep it for ecosystem routing; package docs remain the canonical reference.
 
 For detailed behavior, configuration keys, and API surface, prefer the package docs directly.
 
@@ -31,6 +31,7 @@ If you need exact config keys, model fields, events, or extension points, jump t
 | Public referral entry routes and cookies | `packages/affiliates/docs/03-configuration.md`, `packages/affiliates/docs/04-usage.md` |
 | Voucher-driven affiliate attribution | `packages/affiliates/docs/04-usage.md`, `packages/vouchers/docs/09-usage-tracking.md` |
 | Checkout carry-through and conversion behavior | `packages/checkout/docs/08-integrations.md`, `packages/affiliates/docs/04-usage.md` |
+| Commission maturity, payout eligibility, and performance bonuses | `packages/affiliates/docs/05-models.md`, `packages/affiliates/docs/06-services.md`, `packages/affiliates/docs/08-payouts.md` |
 | Admin operations and payout workflows | `packages/filament-affiliates/docs/04-usage.md`, `packages/affiliates/docs/08-payouts.md` |
 | Affiliate-aware voucher reporting and exports | `packages/filament-vouchers/docs/04-usage.md`, `packages/filament-vouchers/docs/05-widgets.md` |
 | Owner scoping / tenant safety | `packages/affiliates/docs/10-multi-tenancy.md`, `packages/commerce-support/docs/04-multi-tenancy.md` |

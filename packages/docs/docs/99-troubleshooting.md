@@ -31,9 +31,10 @@ Common issues and solutions for the Docs package.
    # Then install Chromium manually
    ```
 
-4. **Check view exists**
+4. **Check the package render view and template layout**
    ```php
-   view()->exists('docs::templates.doc-default') // Should return true
+   view()->exists('docs::documents.show'); // Should be true
+   $doc->template?->layout; // Should be an approved block layout array when a template is selected
    ```
 
 ### PDF Has Wrong Content
@@ -47,15 +48,19 @@ Common issues and solutions for the Docs package.
    $doc->template; // Should return DocTemplate model
    ```
 
-2. **Check view name normalization**
-   The package normalizes view names. All these are equivalent:
-   - `modern`
-   - `templates.modern`
-   - `docs::templates.modern`
-
-3. **Test view directly**
+2. **Render the canonical HTML output directly**
    ```php
-   return view('docs::templates.doc-default', ['doc' => $doc]);
+   use AIArmada\Docs\Enums\RenderAudience;
+   use AIArmada\Docs\Services\DocRenderService;
+
+   app(DocRenderService::class)->renderHtml($doc, RenderAudience::CustomerView);
+   ```
+
+3. **Check template/payload compatibility**
+   ```php
+   // Throws when body is present without a rich_body block,
+   // or when the selected template requires line items but items are empty.
+   app(DocRenderService::class)->validateDocPayload($doc->template, $doc->body, $doc->items ?? []);
    ```
 
 ### Background Colors Not Printing
@@ -235,6 +240,27 @@ The package queues mail when `docs.email.queue_enabled` is true and sends immedi
 
 2. **Check token format**
    Tokens should be URL-safe encrypted JSON.
+
+### Shared Link Returns 404
+
+**Symptom:** `/docs/share/{token}` or `/docs/share/{token}/pdf` returns not found.
+
+**Solutions:**
+
+1. **Check expiry / revocation**
+   ```php
+   $shareLink->isExpired();
+   $shareLink->isRevoked();
+   ```
+
+2. **Check allowed actions**
+   ```php
+   $shareLink->allows(\AIArmada\Docs\Enums\ShareLinkAction::View);
+   $shareLink->allows(\AIArmada\Docs\Enums\ShareLinkAction::Pdf);
+   ```
+
+3. **Check owner context on the linked document**
+   Share links re-enter the linked document's owner / explicit-global context before loading the document. If the stored owner tuple is malformed, link resolution fails closed with a 404.
 
 ---
 

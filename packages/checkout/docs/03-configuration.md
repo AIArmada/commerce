@@ -21,7 +21,7 @@ return [
         'tables' => [
             'checkout_sessions' => 'checkout_sessions',
         ],
-        'json_column_type' => env('CHECKOUT_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'json_column_type' => env('CHECKOUT_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     ],
 
     /*
@@ -238,7 +238,7 @@ return [
 |-----|------|---------|-------------|
 | `database.table_prefix` | string | `''` | Prefix for database tables |
 | `database.tables.checkout_sessions` | string | `checkout_sessions` | Sessions table name |
-| `database.json_column_type` | string | `json` | JSON column type (`json` or `jsonb`) |
+| `database.json_column_type` | string | `jsonb` | JSON column type (`json` or `jsonb`) |
 
 ### Default Settings
 
@@ -292,6 +292,12 @@ Gateway-specific configuration references the related package configs:
 - **Cashier CHIP** (`cashier-chip`): Uses `config('cashier-chip.*')`
 - **Cashier** (`cashier`): Uses `config('cashier.*')`
 
+### Create Order Settings
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `create_order.confirm_payment` | bool | `true` | Triggers the order payment-confirmed transition immediately after checkout creates the order |
+
 ### Routes
 
 | Key | Type | Default | Description |
@@ -319,6 +325,8 @@ Gateway-specific configuration references the related package configs:
 
 - `response_mode='redirect'` redirects users using `redirects.*`.
 - `response_mode='view'` renders checkout package views directly.
+
+Package-generated gateway return URLs include both the configured session query parameter (default `session`) and `checkout_callback_token`. External gateways must preserve that token on the redirect back to checkout; the callback controller accepts `checkout_callback_token`, `callback_token`, or `token` on the return request.
 
 ### Redirects
 
@@ -385,6 +393,9 @@ Enable multi-tenancy:
 ```env
 # Currency
 CHECKOUT_CURRENCY=MYR
+
+# Storage / schema
+CHECKOUT_JSON_COLUMN_TYPE=jsonb
 
 # Payment gateway
 CHECKOUT_DEFAULT_GATEWAY=chip

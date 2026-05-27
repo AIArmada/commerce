@@ -178,7 +178,7 @@ $conversion = $service->recordConversion(
     affiliate: $affiliate,
     data: [
         'external_reference' => 'ORD-12345',
-        'value_minor' => 15000, // $150.00
+        'value_minor' => 15000,
         'total_minor' => 15000, // compatibility alias
         'subtotal_minor' => 14000,
         'conversion_type' => 'purchase',
@@ -216,11 +216,15 @@ $link = $service->createTrackingLink($affiliate, 'https://example.com/products/s
 use AIArmada\Affiliates\Enums\ConversionStatus;
 
 ConversionStatus::Pending;    // Awaiting review
-ConversionStatus::Qualified;  // Met qualifications, pending approval
-ConversionStatus::Approved;   // Approved for payout
+ConversionStatus::Qualified;  // Qualified and waiting for maturity processing
+ConversionStatus::Approved;   // Approved and released toward payout eligibility
 ConversionStatus::Rejected;   // Rejected (fraud, refund, etc.)
 ConversionStatus::Paid;       // Commission paid out
 ```
+
+Use `value_minor` as the canonical neutral revenue field for conversions. `total_minor`, `order_reference`, `cart_identifier`, and `cart_instance` remain compatibility aliases for older cart and order-centric integrations.
+
+When the maturity workflow is enabled, conversions typically move from `Pending` into `Qualified`, remain in holding, and then become `Approved` when `affiliates:process-maturity` runs after the configured maturity window.
 
 ## Commission Calculation
 
@@ -234,11 +238,11 @@ $calculator = app(CommissionCalculator::class);
 // Calculate commission for an order
 $commission = $calculator->calculate(
     affiliate: $affiliate,
-    orderTotal: 15000, // $150.00 in minor units
+    orderTotal: 15000,
     orderSubtotal: 14000,
 );
 
-// Returns commission in minor units (e.g., 1500 = $15.00)
+// Returns commission in minor units (for example, 1500 = 15.00 in the affiliate currency)
 ```
 
 ### Commission Types
@@ -251,8 +255,8 @@ $affiliate->commission_type = CommissionType::Percentage;
 $affiliate->commission_rate = 1000; // 10%
 
 // Fixed amount (in minor units)
-$affiliate->commission_type = CommissionType::FixedAmount;
-$affiliate->commission_rate = 500; // $5.00 per conversion
+$affiliate->commission_type = CommissionType::Fixed;
+$affiliate->commission_rate = 500;
 ```
 
 ## Working with Affiliates
@@ -261,16 +265,16 @@ $affiliate->commission_rate = 500; // $5.00 per conversion
 
 ```php
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\States\Active;
 
 $affiliate = Affiliate::create([
     'code' => 'PARTNER42',
     'name' => 'John Partner',
-    'status' => AffiliateStatus::Active,
+    'status' => Active::class,
     'commission_type' => CommissionType::Percentage,
     'commission_rate' => 1000, // 10%
-    'currency' => 'USD',
+    'currency' => 'MYR',
     'contact_email' => 'john@partner.com',
 ]);
 ```
@@ -278,21 +282,31 @@ $affiliate = Affiliate::create([
 ### Affiliate Statuses
 
 ```php
-use AIArmada\Affiliates\Enums\AffiliateStatus;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Draft;
+use AIArmada\Affiliates\States\Paused;
+use AIArmada\Affiliates\States\Pending;
 
-AffiliateStatus::Draft;      // Not yet active
-AffiliateStatus::Pending;    // Awaiting approval
-AffiliateStatus::Active;     // Active and earning
-AffiliateStatus::Suspended;  // Temporarily disabled
-AffiliateStatus::Terminated; // Permanently disabled
+AffiliateStatus::normalize(Draft::class);    // Not yet active
+AffiliateStatus::normalize(Pending::class);  // Awaiting approval
+AffiliateStatus::normalize(Active::class);   // Active and earning
+AffiliateStatus::normalize(Paused::class);   // Temporarily paused
+AffiliateStatus::normalize(Disabled::class); // Disabled
 ```
+
+Affiliate lifecycle is implemented with Spatie model states, not a backed enum. In write paths you can assign the state class directly, for example `Pending::class` or `Active::class`.
 
 ### Querying Affiliates
 
 ```php
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+
 // Get active affiliates
 $active = Affiliate::query()
-    ->where('status', AffiliateStatus::Active)
+    ->where('status', AffiliateStatus::normalize(Active::class))
     ->get();
 
 // Find by default voucher code

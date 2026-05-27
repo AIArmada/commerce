@@ -43,6 +43,8 @@ The package creates the following tables (with configurable prefix):
 - `chip_send_webhooks` - Send webhook records
 - `chip_company_statements` - Settlement statements
 
+Incoming Collect webhook deliveries are now persisted on the shared `webhook_calls` table and updated in place with CHIP event metadata, idempotency keys, processing status, and owner tuple data when owner mode is enabled. Current versions do not create a separate `chip_webhooks` table.
+
 ## Environment Variables
 
 Add these to your `.env` file:

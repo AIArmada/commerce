@@ -49,14 +49,12 @@ Configure types in `config/docs.php`:
 ```php
 'types' => [
     'invoice' => [
-        'default_template' => 'doc-default',
         'numbering' => [
             'strategy' => DefaultNumberStrategy::class,
             'prefix' => 'INV',
         ],
     ],
     'receipt' => [
-        'default_template' => 'doc-default',
         'numbering' => [
             'strategy' => DefaultNumberStrategy::class,
             'prefix' => 'RCP',
@@ -64,6 +62,25 @@ Configure types in `config/docs.php`:
     ],
 ],
 ```
+
+Default template selection no longer lives in config. `DocService` resolves the default template from `DocTemplate` records for the current `doc_type`, or you can pass `doc_template_id` / `template_slug` when you want a specific layout.
+
+## Selecting a Template Explicitly
+
+```php
+$document = $docService->create(DocData::from([
+    'doc_type' => 'invoice',
+    'template_slug' => 'modern-invoice',
+    'items' => [
+        ['name' => 'Web Development Service', 'quantity' => 1, 'price' => 2500.00],
+    ],
+    'customer_data' => [
+        'name' => 'John Doe',
+    ],
+]));
+```
+
+If the selected template contains a `rich_body` block, you can also pass Tiptap JSON in `body`. `DocRenderService::validateDocPayload()` rejects bodies when the template has no rich-body block, and rejects templates with a `line_items` block when you submit an empty `items` array.
 
 ## Automatic Calculations
 
@@ -128,3 +145,25 @@ $docs = Doc::with(['template', 'statusHistories', 'docable'])
 ```
 
 When owner mode is enabled, the package models use `HasOwner` and follow the configured owner-scoping rules from `commerce-support`.
+
+## Rendering and Share Links
+
+`DocService` delegates HTML/PDF rendering and share-link generation to `DocRenderService`.
+
+```php
+use AIArmada\Docs\DataObjects\ShareLinkData;
+use AIArmada\Docs\Enums\RenderAudience;
+use AIArmada\Docs\Enums\ShareLinkAction;
+use AIArmada\Docs\Services\DocRenderService;
+
+$renderer = app(DocRenderService::class);
+
+$html = $renderer->renderHtml($document, RenderAudience::CustomerView);
+$pdf = $renderer->renderPdf($document);
+
+$shareLink = $renderer->createShareLink($document, new ShareLinkData(
+    allowedActions: [ShareLinkAction::View, ShareLinkAction::Pdf],
+));
+```
+
+Share links resolve the document back inside its owner or explicit-global context, then serve either the HTML customer view or inline PDF with hardened response headers.

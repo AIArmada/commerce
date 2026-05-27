@@ -77,7 +77,7 @@ $signals = $service->analyzeConversion($conversion);
 $score = $service->getFraudScore($affiliate);
 
 if ($score >= 100) {
-    // Consider suspending this affiliate
+    // Consider pausing or disabling this affiliate in your application workflow
 }
 ```
 
@@ -121,7 +121,7 @@ FraudSeverity::Critical;  // Score: 100 - Immediate action needed
 ```php
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 
-FraudSignalStatus::Pending;   // Awaiting review
+FraudSignalStatus::Detected;  // Newly detected and awaiting review
 FraudSignalStatus::Reviewed;  // Reviewed by admin
 FraudSignalStatus::Dismissed; // False positive
 FraudSignalStatus::Confirmed; // Fraud confirmed
@@ -226,8 +226,8 @@ $signal->update([
     'reviewed_at' => now(),
 ]);
 
-// Suspend affiliate
-$affiliate->update(['status' => AffiliateStatus::Suspended]);
+// Optionally reject the linked conversion
+$signal->conversion?->update(['status' => RejectedConversion::class]);
 ```
 
 ## Self-Referral Protection

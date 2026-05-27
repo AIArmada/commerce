@@ -33,6 +33,7 @@ The promotions table displays:
 **Actions:**
 - View promotion details
 - Edit promotion
+- Issue vouchers from the promotion (when voucher issuance tracking is available)
 - Delete promotion
 - Bulk delete
 
@@ -65,6 +66,19 @@ Displays promotion details in an infolist format with:
 - Schedule dates
 - Status icons
 - Targeting conditions (collapsible)
+
+When promotion-issued voucher tracking is supported, the record view also exposes an `IssuedVouchersRelationManager` so admins can review the generated vouchers without leaving the promotion.
+
+## Issuing vouchers from promotions
+
+When the vouchers package is installed and `Promotion::supportsIssuedVoucherTracking()` returns `true`, Filament Promotions adds two issuance entry points:
+
+- `IssuePromotionVouchersAction` on promotion record pages and table rows
+- `IssuePromotionVouchersFromListAction` on the list page for issuing without opening a record first
+
+Both actions let admins choose a voucher count and optional code prefix. Global promotions are issued inside explicit global context automatically, while owner-scoped promotions are revalidated through `OwnerWriteGuard` before vouchers are created.
+
+The generated vouchers are one-time use by default and remain linked back to the source promotion via `promotion_id`, which powers the issued-vouchers relation manager and downstream voucher reporting.
 
 ## Promotion Types
 

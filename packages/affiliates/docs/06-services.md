@@ -4,7 +4,7 @@ title: Services Reference
 
 # Services Reference
 
-The package includes 16 specialized services for affiliate management. All services are registered as singletons and can be resolved from the container.
+The package includes specialized services for affiliate management. Resolve them from the container and treat the public methods documented here as the stable surface.
 
 ## AffiliateService
 
@@ -88,22 +88,30 @@ $bonus = $calculator->getVolumeTierBonus($affiliate, $periodVolume);
 
 ## CommissionMaturityService
 
-Manages commission maturity periods before payouts are allowed.
+Manages the maturity window that promotes qualified conversions into approved, payout-eligible conversions.
 
 ```php
 use AIArmada\Affiliates\Services\CommissionMaturityService;
 
 $service = app(CommissionMaturityService::class);
 
-// Process matured commissions
-$processed = $service->processMaturedConversions();
+// Promote qualified conversions that have reached the maturity date
+$processed = $service->processMaturity();
 
 // Check if conversion is mature
 $isMature = $service->isMature($conversion);
 
 // Get maturity date
 $maturesAt = $service->getMaturityDate($conversion);
+
+// Sum qualified commission still in the maturity window
+$pendingMinor = $service->getPendingMaturity($affiliate);
+
+// List conversions maturing soon
+$upcoming = $service->getMaturingWithin($affiliate, 7);
 ```
+
+Only conversions in the `Qualified` state are processed by the maturity service.
 
 ## AffiliatePayoutService
 
@@ -354,22 +362,24 @@ $comparison = $analyzer->compare($cohortA, $cohortB);
 
 ## PerformanceBonusService
 
-Calculates and awards performance bonuses.
+Calculates performance bonuses, awards them as approved bonus conversions, and exposes leaderboards based on approved revenue.
 
 ```php
 use AIArmada\Affiliates\Services\PerformanceBonusService;
 
 $service = app(PerformanceBonusService::class);
 
-// Calculate top performer bonuses
-$bonuses = $service->calculateTopPerformerBonuses($period);
+// Calculate all configured bonuses for a period
+$bonuses = $service->calculateBonuses($from, $to);
 
-// Calculate recruitment bonuses
-$bonuses = $service->calculateRecruitmentBonuses($period);
+// Award the calculated bonuses as approved conversions
+$awarded = $service->awardBonuses($bonuses);
 
-// Award bonus to affiliate
-$service->awardBonus($affiliate, $amount, $reason);
+// Get the owner-scoped approved-revenue leaderboard
+$leaderboard = $service->getLeaderboard($from, $to, 10);
 ```
+
+The service uses approved conversions only and treats `value_minor` as the canonical revenue field, falling back to `total_minor` for legacy records.
 
 ## AttributionModel
 

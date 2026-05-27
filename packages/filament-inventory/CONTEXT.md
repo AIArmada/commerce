@@ -1,0 +1,28 @@
+---
+title: Filament Inventory Context
+package: filament-inventory
+status: current
+surface: filament
+family: catalog-and-identity
+---
+
+# Filament Inventory Context
+
+## Snapshot
+- Composer: `aiarmada/filament-inventory`
+- Role: Filament admin UI for inventory resources, widgets, and operational actions.
+- Search first: `src/Resources`, `src/Pages`, `src/Widgets`, `src/Actions`, `config`, `docs`
+- Related: `inventory`, `filament-authz`
+
+## Read next
+1. `docs/01-overview.md`
+2. `docs/03-configuration.md`
+3. `docs/04-usage.md`
+4. `docs/99-troubleshooting.md`
+5. `../inventory/CONTEXT.md` when domain behavior or persistence changes are involved
+6. `docs/02-installation.md` when plugin or panel setup changes are involved
+
+## Guardrails
+- Owns Filament resources, pages, widgets, tables, forms, and panel/plugin glue.
+- Keep domain rules, persistence, and state transitions in `inventory`.
+- Revalidate submitted IDs server-side; UI scoping is not authorization.

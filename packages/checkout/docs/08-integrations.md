@@ -168,6 +168,17 @@ When the `aiarmada/tax` package is installed, checkout calculates applicable tax
 
 When the `aiarmada/promotions` package is installed, checkout can apply promotional discounts.
 
+### Unified discount-code input
+
+Checkout resolves a single discount-code input from `billing_data.metadata.promo_code` first, then `cart_snapshot.metadata.promo_code`.
+
+Resolution order is intentional:
+
+1. validate the code as a voucher when vouchers are installed
+2. if no valid voucher is found, try a code-based promotion against the promotion targeting context
+
+This lets landing pages and billing forms submit one code field without deciding in advance whether the code represents a voucher or a promotion.
+
 ### Configuration
 
 ```php
@@ -218,11 +229,15 @@ When the `aiarmada/vouchers` package is installed, checkout can redeem voucher c
 
 ### How It Works
 
-1. **Validation**: Voucher codes are validated for eligibility and usage limits.
+1. **Validation**: Voucher codes are validated for eligibility and usage limits using a cart-aware validation context from `CheckoutCartResolver`.
 
-2. **Redemption**: Valid vouchers are applied to the order total.
+2. **Unified codes**: If the shared discount-code field resolved to a voucher, checkout prepends that code to the submitted voucher-code list automatically.
 
-3. **Recording**: Voucher usage is recorded after successful checkout.
+3. **Discount calculation**: Valid vouchers are priced through `VoucherDiscountCalculator`, which keeps voucher math consistent with the vouchers package.
+
+4. **Events**: When a live cart is available, checkout dispatches `VoucherApplied` so downstream listeners can attach attribution or other side effects immediately.
+
+5. **Recording**: Voucher usage is recorded after successful checkout.
 
 ### Recorded Voucher Usage Metadata
 
@@ -236,6 +251,8 @@ Checkout redemptions call the vouchers service after order creation. When the Or
 - `metadata.grand_total`
 
 That metadata powers downstream voucher reporting, exports, and affiliate-source attribution in Filament.
+
+Applied voucher payloads in checkout also include `promotion_id` when the voucher originated from promotion-issued voucher flows.
 
 ## Checking Package Availability
 

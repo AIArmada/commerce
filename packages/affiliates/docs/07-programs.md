@@ -107,9 +107,9 @@ $membership = $programService->enroll($affiliate, $program);
 use AIArmada\Affiliates\Enums\MembershipStatus;
 
 MembershipStatus::Pending;    // Awaiting approval
-MembershipStatus::Active;     // Enrolled and earning
+MembershipStatus::Approved;   // Enrolled and earning
+MembershipStatus::Rejected;   // Rejected from the program
 MembershipStatus::Suspended;  // Temporarily disabled
-MembershipStatus::Terminated; // Removed from program
 ```
 
 ## Program Creatives

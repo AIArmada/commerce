@@ -24,9 +24,25 @@ Use `filament-signals.features.saved_reports` if you want operators to create re
 
 Supported report pages automatically ignore saved reports that are inactive, inaccessible in the current owner scope, or created for a different report type.
 
+## Interaction Rule Workflows
+
+Use `filament-signals.features.interaction_rules` to enable or hide the interaction-rule resource entirely.
+
+When enabled, operators can build rules manually or through the scan workflow powered by `InteractionRuleScanner`:
+
+- scan a live URL,
+- scan local Blade sources under `resources/views`,
+- scan Livewire sources under `app/Livewire` and `app/Livewire/Volt`,
+- preview candidates before creation,
+- rescan a route pattern and replace the preview.
+
+The preview is stored per signed-in operator, so one user’s scan candidates do not overwrite another user’s working set.
+
 ## Navigation Order
 
 Use `filament-signals.resources.navigation_sort.*` to align menu order with your panel IA.
+
+This includes `filament-signals.resources.navigation_sort.interaction_rules` for the interaction-rule resource.
 
 ## Label Overrides
 
