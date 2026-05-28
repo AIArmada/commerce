@@ -45,25 +45,56 @@ describe('ProductType Enum', function (): void {
         });
     });
 
-    describe('hasVariants()', function (): void {
+    describe('supportsVariantsByDefault()', function (): void {
         it('returns true for configurable', function (): void {
-            expect(ProductType::Configurable->hasVariants())->toBeTrue();
+            expect(ProductType::Configurable->supportsVariantsByDefault())->toBeTrue();
         });
 
         it('returns false for simple', function (): void {
-            expect(ProductType::Simple->hasVariants())->toBeFalse();
+            expect(ProductType::Simple->supportsVariantsByDefault())->toBeFalse();
         });
 
         it('returns false for bundle', function (): void {
-            expect(ProductType::Bundle->hasVariants())->toBeFalse();
+            expect(ProductType::Bundle->supportsVariantsByDefault())->toBeFalse();
         });
 
         it('returns false for digital', function (): void {
-            expect(ProductType::Digital->hasVariants())->toBeFalse();
+            expect(ProductType::Digital->supportsVariantsByDefault())->toBeFalse();
         });
 
         it('returns false for subscription', function (): void {
-            expect(ProductType::Subscription->hasVariants())->toBeFalse();
+            expect(ProductType::Subscription->supportsVariantsByDefault())->toBeFalse();
+        });
+
+        it('keeps hasVariants as an alias for default variant support', function (): void {
+            expect(ProductType::Configurable->hasVariants())->toBeTrue()
+                ->and(ProductType::Digital->hasVariants())->toBeFalse();
+        });
+    });
+
+    describe('tracksInventoryByDefault()', function (): void {
+        it('returns true for simple', function (): void {
+            expect(ProductType::Simple->tracksInventoryByDefault())->toBeTrue();
+        });
+
+        it('returns true for configurable', function (): void {
+            expect(ProductType::Configurable->tracksInventoryByDefault())->toBeTrue();
+        });
+
+        it('returns false for digital', function (): void {
+            expect(ProductType::Digital->tracksInventoryByDefault())->toBeFalse();
+        });
+    });
+
+    describe('requiresShippingByDefault()', function (): void {
+        it('returns true for physical types', function (): void {
+            expect(ProductType::Simple->requiresShippingByDefault())->toBeTrue()
+                ->and(ProductType::Configurable->requiresShippingByDefault())->toBeTrue();
+        });
+
+        it('returns false for digital fulfillment types', function (): void {
+            expect(ProductType::Digital->requiresShippingByDefault())->toBeFalse()
+                ->and(ProductType::Subscription->requiresShippingByDefault())->toBeFalse();
         });
     });
 

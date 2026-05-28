@@ -8,12 +8,29 @@ title: Usage
 
 The ProductResource provides a comprehensive interface for managing products.
 
+### Product type vs behavior
+
+The product form now separates **fulfillment/category semantics** from **behavior semantics**:
+
+- `type` describes what kind of product you are modeling.
+- `requires_shipping` describes whether the customer should go through shipping flows.
+- `supports_variants` controls whether the product can manage purchasable sub-items such as dates, sizes, or editions.
+- `tracks_inventory` controls whether stock should be consumed and validated.
+
+This keeps the model orthogonal:
+
+- `Configurable` remains the type for physical configurable goods.
+- `Digital` products stay non-shipping by default.
+- A `Digital` product can still opt into variants and inventory when the business case needs it, such as ticketed event dates.
+
 ### Form Structure
 
 The product form is organized into tabs:
 
 1. **Basic Information**
-   - Name, SKU, Type, Status, Visibility
+    - Name, SKU, Type, Status, Visibility
+    - Supports Variants toggle
+    - Track Inventory toggle
    - Short Description, Full Description
    - Featured toggle
 
@@ -23,7 +40,8 @@ The product form is organized into tabs:
    - Cost (for margin calculations)
    - Taxable toggle
 
-3. **Inventory**
+3. **Shipping / Inventory**
+    - Requires Shipping toggle
    - Weight (grams)
    - Dimensions (length, width, height)
 
@@ -55,15 +73,25 @@ Forms\Components\TextInput::make('price')
 
 ### Variant Management
 
-For configurable products, use the Variants relation manager:
+For any **variant-capable** product, use the Variants relation manager.
 
-1. Navigate to a configurable product
+Common examples:
+
+- Physical configurable goods: `Configurable` + variants + tracked inventory
+- Digital event tickets: `Digital` + variants + tracked inventory
+- Unlimited digital downloads: `Digital` without variants and without tracked inventory
+
+When `supports_variants` is enabled:
+
+1. Navigate to a variant-capable product
 2. Click the "Variants" tab
 3. Add/edit variants with:
    - SKU override
    - Price override
    - Weight/dimensions overrides
    - Option value assignments
+
+The Options relation manager follows the same capability rule. If `supports_variants` is disabled, the variant-related managers stay hidden.
 
 ### Bulk Actions
 

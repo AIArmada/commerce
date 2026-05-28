@@ -200,8 +200,8 @@ final class ProductResource extends Resource
                         Section::make('Shipping')
                             ->schema([
                                 Toggle::make('requires_shipping')
-                                    ->label('This is a physical product')
-                                    ->default(true),
+                                    ->label('Requires shipping')
+                                    ->default(ProductType::Simple->requiresShippingByDefault()),
 
                                 TextInput::make('weight')
                                     ->label('Weight')
@@ -276,7 +276,25 @@ final class ProductResource extends Resource
                                             ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
                                     )
                                     ->required()
-                                    ->default('simple'),
+                                    ->default('simple')
+                                    ->live()
+                                    ->afterStateUpdated(function (Set $set, ?string $state): void {
+                                        $type = ProductType::tryFrom((string) $state) ?? ProductType::Simple;
+
+                                        $set('requires_shipping', $type->requiresShippingByDefault());
+                                        $set('supports_variants', $type->supportsVariantsByDefault());
+                                        $set('tracks_inventory', $type->tracksInventoryByDefault());
+                                    }),
+
+                                Toggle::make('supports_variants')
+                                    ->label('Supports variants')
+                                    ->helperText('Enable variants for dates, sizes, editions, or other purchasable sub-items.')
+                                    ->default(ProductType::Simple->supportsVariantsByDefault()),
+
+                                Toggle::make('tracks_inventory')
+                                    ->label('Track inventory')
+                                    ->helperText('Enable this when purchases should consume stock.')
+                                    ->default(ProductType::Simple->tracksInventoryByDefault()),
 
                                 Toggle::make('is_featured')
                                     ->label('Featured Product'),
@@ -505,6 +523,16 @@ final class ProductResource extends Resource
                     ->boolean()
                     ->toggleable(),
 
+                Tables\Columns\IconColumn::make('supports_variants')
+                    ->label('Variants')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\IconColumn::make('tracks_inventory')
+                    ->label('Inventory')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 (class_exists(SpatieTagsColumn::class)
                     ? SpatieTagsColumn::make('tags')
                     : Tables\Columns\TextColumn::make('tags')->state(fn (Product $record): string => $record->tags->pluck('name')->implode(', ')))
@@ -630,8 +658,18 @@ final class ProductResource extends Resource
                             ->badge()
                             ->formatStateUsing(fn ($state) => $state->label())
                             ->color(fn ($state) => $state->color()),
+                        TextEntry::make('supports_variants')
+                            ->label('Supports Variants')
+                            ->badge()
+                            ->formatStateUsing(fn (bool $state): string => $state ? 'Yes' : 'No')
+                            ->color(fn (bool $state): string => $state ? 'info' : 'gray'),
+                        TextEntry::make('tracks_inventory')
+                            ->label('Tracks Inventory')
+                            ->badge()
+                            ->formatStateUsing(fn (bool $state): string => $state ? 'Yes' : 'No')
+                            ->color(fn (bool $state): string => $state ? 'warning' : 'gray'),
                     ])
-                    ->columns(4),
+                    ->columns(6),
 
                 Section::make('Pricing')
                     ->schema([

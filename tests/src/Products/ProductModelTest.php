@@ -49,7 +49,9 @@ describe('Product Model', function (): void {
                 ->and($product->visibility)->toBe(ProductVisibility::CatalogSearch)
                 ->and($product->is_featured)->toBeFalse()
                 ->and($product->is_taxable)->toBeTrue()
-                ->and($product->requires_shipping)->toBeTrue();
+                ->and($product->requires_shipping)->toBeTrue()
+                ->and($product->supports_variants)->toBeFalse()
+                ->and($product->tracks_inventory)->toBeTrue();
         });
 
         it('uses slug as route key name', function (): void {
@@ -185,7 +187,10 @@ describe('Product Model', function (): void {
                 'type' => ProductType::Digital,
             ]);
 
-            expect($product->isDigital())->toBeTrue();
+            expect($product->isDigital())->toBeTrue()
+                ->and($product->requires_shipping)->toBeFalse()
+                ->and($product->supportsVariants())->toBeFalse()
+                ->and($product->tracksInventory())->toBeFalse();
         });
 
         it('can be subscription product', function (): void {
@@ -207,6 +212,7 @@ describe('Product Model', function (): void {
                 'type' => ProductType::Configurable,
             ]);
 
+            expect($product->supportsVariants())->toBeTrue();
             expect($product->hasVariants())->toBeFalse();
 
             $product->variants()->create([
@@ -227,6 +233,48 @@ describe('Product Model', function (): void {
             ]);
 
             expect($product->hasVariants())->toBeFalse();
+        });
+
+        it('digital product can opt into variants without becoming configurable', function (): void {
+            $product = Product::create([
+                'name' => 'Digital Ticket Product',
+                'price' => 1000,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Digital,
+                'supports_variants' => true,
+            ]);
+
+            expect($product->isDigital())->toBeTrue()
+                ->and($product->supportsVariants())->toBeTrue()
+                ->and($product->hasVariants())->toBeFalse();
+
+            $product->variants()->create([
+                'name' => 'Morning Session',
+                'sku' => 'DIGITAL-VAR-001',
+                'price' => 1000,
+            ]);
+
+            expect($product->hasVariants())->toBeTrue();
+        });
+
+        it('can update type defaults without collapsing digital capability toggles', function (): void {
+            $product = Product::create([
+                'name' => 'Type Switch Product',
+                'price' => 1000,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Simple,
+            ]);
+
+            $product->update([
+                'type' => ProductType::Digital,
+                'requires_shipping' => false,
+                'supports_variants' => true,
+                'tracks_inventory' => true,
+            ]);
+
+            expect($product->fresh()?->requires_shipping)->toBeFalse()
+                ->and($product->fresh()?->supportsVariants())->toBeTrue()
+                ->and($product->fresh()?->tracksInventory())->toBeTrue();
         });
     });
 
@@ -600,10 +648,9 @@ describe('Product Model', function (): void {
             expect($product->getStockQuantity())->toBe(0);
         });
 
-        it('digital products are always in stock', function (): void {
+        it('digital products without inventory tracking are always in stock', function (): void {
             $digital = Product::create(['name' => 'Digital', 'price' => 1000, 'type' => ProductType::Digital]);
 
-            // Digital products don't track inventory, so always in stock
             expect($digital->isInStock())->toBeTrue()
                 ->and($digital->hasStock(999))->toBeTrue();
         });
@@ -616,13 +663,21 @@ describe('Product Model', function (): void {
                 ->and($product->hasStock(5))->toBeFalse();
         });
 
-        it('does not track inventory by default', function (): void {
+        it('uses explicit inventory capabilities', function (): void {
             $physical = Product::create(['name' => 'Physical', 'price' => 1000, 'type' => ProductType::Simple]);
             $digital = Product::create(['name' => 'Digital', 'price' => 1000, 'type' => ProductType::Digital]);
+            $inventoryTrackedDigital = Product::create([
+                'name' => 'Tracked Digital',
+                'price' => 1000,
+                'type' => ProductType::Digital,
+                'tracks_inventory' => true,
+            ]);
 
-            // Physical products track inventory, digital do not
             expect($physical->tracksInventory())->toBeTrue()
-                ->and($digital->tracksInventory())->toBeFalse();
+                ->and($digital->tracksInventory())->toBeFalse()
+                ->and($inventoryTrackedDigital->tracksInventory())->toBeTrue()
+                ->and($inventoryTrackedDigital->isInStock())->toBeFalse()
+                ->and($inventoryTrackedDigital->hasStock(1))->toBeFalse();
         });
     });
 

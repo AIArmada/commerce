@@ -35,6 +35,8 @@ final class CheckoutOfferProductData extends Data
         public readonly bool $isFeatured = true,
         public readonly bool $isTaxable = false,
         public readonly bool $requiresShipping = false,
+        public readonly ?bool $supportsVariants = null,
+        public readonly ?bool $tracksInventory = null,
         public readonly ProductType $productType = ProductType::Digital,
         public readonly ProductStatus $productStatus = ProductStatus::Active,
         public readonly ProductVisibility $productVisibility = ProductVisibility::Individual,

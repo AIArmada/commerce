@@ -48,6 +48,8 @@ return new class extends Migration
             $table->boolean('is_featured')->default(false);
             $table->boolean('is_taxable')->default(true);
             $table->boolean('requires_shipping')->default(true);
+            $table->boolean('supports_variants')->default(false);
+            $table->boolean('tracks_inventory')->default(true);
 
             // SEO
             $table->string('meta_title')->nullable();

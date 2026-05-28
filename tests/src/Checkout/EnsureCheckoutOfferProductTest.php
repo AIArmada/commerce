@@ -35,6 +35,8 @@ it('creates a checkout offer product with price list, price, and seeded inventor
             'offer_slug' => $suffix,
         ],
         priceListDescription: 'Public checkout pricing for the reusable offer.',
+        supportsVariants: true,
+        tracksInventory: true,
         minimumOnHand: 5,
         inventoryReason: 'checkout-offer-test',
         inventoryNote: 'Seeded by checkout offer bootstrap test.',
@@ -54,6 +56,9 @@ it('creates a checkout offer product with price list, price, and seeded inventor
         ->and($product->sku)->toBe($offer->sku)
         ->and($product->price)->toBe(12700)
         ->and($product->compare_price)->toBe(12700)
+        ->and($product->supportsVariants())->toBeTrue()
+        ->and($product->tracksInventory())->toBeTrue()
+        ->and($product->requires_shipping)->toBeFalse()
         ->and($priceList?->name)->toBe($offer->priceListName)
         ->and($price?->amount)->toBe(9700)
         ->and($price?->compare_amount)->toBe(12700);
@@ -92,5 +97,7 @@ it('is idempotent when ensuring the same checkout offer product twice', function
     expect($secondProduct->is($firstProduct))->toBeTrue()
         ->and($productCount)->toBe(1)
         ->and($priceListCount)->toBe(1)
-        ->and($priceCount)->toBe(1);
+        ->and($priceCount)->toBe(1)
+        ->and($secondProduct->supportsVariants())->toBeFalse()
+        ->and($secondProduct->tracksInventory())->toBeFalse();
 });

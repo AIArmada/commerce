@@ -7,7 +7,9 @@ namespace AIArmada\Products\Models;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
+use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Contracts\Priceable;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
@@ -23,6 +25,7 @@ use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Throwable;
 
 /**
  * @property string $id
@@ -49,7 +52,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property-read Collection<int, Media> $display_images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
  */
-class Variant extends Model implements HasMedia, Priceable, PricingPriceable
+class Variant extends Model implements HasMedia, Inventoryable, Priceable, PricingPriceable
 {
     use HasAttributes;
     use HasFactory;
@@ -331,6 +334,51 @@ class Variant extends Model implements HasMedia, Priceable, PricingPriceable
     public function isPurchasable(): bool
     {
         return $this->is_enabled && $this->product->isPurchasable();
+    }
+
+    public function getInventorySku(): string
+    {
+        return $this->sku;
+    }
+
+    public function getStockQuantity(): int
+    {
+        if (! $this->tracksInventory()) {
+            return 0;
+        }
+
+        if (class_exists(InventoryService::class)) {
+            try {
+                return app(InventoryService::class)->getTotalAvailable($this);
+            } catch (Throwable) {
+                return 0;
+            }
+        }
+
+        return 0;
+    }
+
+    public function isInStock(): bool
+    {
+        if (! $this->tracksInventory()) {
+            return true;
+        }
+
+        return $this->getStockQuantity() > 0;
+    }
+
+    public function hasStock(int $quantity): bool
+    {
+        if (! $this->tracksInventory()) {
+            return true;
+        }
+
+        return $this->getStockQuantity() >= $quantity;
+    }
+
+    public function tracksInventory(): bool
+    {
+        return $this->product->tracksInventory();
     }
 
     // =========================================================================

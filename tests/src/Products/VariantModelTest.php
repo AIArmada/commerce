@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
@@ -121,6 +122,48 @@ describe('Variant Model', function (): void {
             $variant = new Variant;
 
             expect(Schema::hasColumn($variant->getTable(), 'stock_quantity'))->toBeFalse();
+        });
+
+        it('inherits inventory tracking from the parent product', function (): void {
+            $digitalTicket = Product::create([
+                'name' => 'Digital Ticket',
+                'price' => 3000,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Digital,
+                'supports_variants' => true,
+                'tracks_inventory' => true,
+            ]);
+
+            $variant = Variant::create([
+                'product_id' => $digitalTicket->id,
+                'name' => 'Morning Session',
+                'sku' => 'DIGITAL-TICKET-' . uniqid(),
+            ]);
+
+            expect($variant->tracksInventory())->toBeTrue()
+                ->and($variant->isInStock())->toBeFalse()
+                ->and($variant->hasStock(1))->toBeFalse();
+        });
+
+        it('stays unlimited when the parent product does not track inventory', function (): void {
+            $digitalDownload = Product::create([
+                'name' => 'Digital Download',
+                'price' => 3000,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Digital,
+                'supports_variants' => true,
+                'tracks_inventory' => false,
+            ]);
+
+            $variant = Variant::create([
+                'product_id' => $digitalDownload->id,
+                'name' => 'Lifetime Access',
+                'sku' => 'DIGITAL-DOWNLOAD-' . uniqid(),
+            ]);
+
+            expect($variant->tracksInventory())->toBeFalse()
+                ->and($variant->isInStock())->toBeTrue()
+                ->and($variant->hasStock(999))->toBeTrue();
         });
     });
 
