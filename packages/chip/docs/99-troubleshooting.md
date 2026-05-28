@@ -38,7 +38,7 @@ echo $CHIP_ENVIRONMENT  # Should be 'sandbox' or 'production'
 Route::middleware(['api'])->withoutMiddleware([
     \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
 ])->group(function () {
-    Route::post('/chip/webhook', [WebhookController::class, 'handle']);
+    Route::post('/chip/webhooks', [WebhookController::class, 'handle']);
 });
 ```
 

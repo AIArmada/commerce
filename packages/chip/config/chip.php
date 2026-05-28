@@ -116,7 +116,7 @@ return [
     */
     'webhooks' => [
         'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
-        'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhook'),
+        'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
         'middleware' => ['api'],
         'company_public_key' => env('CHIP_COMPANY_PUBLIC_KEY'),
         'webhook_keys' => $webhookKeys,

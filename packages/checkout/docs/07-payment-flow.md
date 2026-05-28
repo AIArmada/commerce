@@ -72,6 +72,14 @@ The package registers routes for handling payment gateway callbacks:
 | `GET /checkout/payment/cancel` | `checkout.payment.cancel` | Cancelled payment return |
 | `POST /webhooks/checkout` | `checkout.webhook` | Webhook notifications |
 
+### CHIP Default Setup
+
+When `aiarmada/chip` is installed and `checkout.integrations.chip.enabled` is `true` (the default), the recommended setup is to register only the CHIP webhook route from `config('chip.webhooks.route', '/chip/webhooks')` in the CHIP dashboard.
+
+In that flow, CHIP verifies and processes the delivery first, then checkout listens to the resulting typed CHIP events and calls `handlePaymentCallback()` internally. You do not need to send the same CHIP webhook to `POST /webhooks/checkout` as well.
+
+Keep `POST /webhooks/checkout` for other gateways, or disable `checkout.integrations.chip.enabled` if you want checkout to consume CHIP webhooks directly.
+
 ### Route Configuration
 
 Configure routes in `config/checkout.php`:
@@ -176,31 +184,6 @@ The webhook controller extracts the session ID from various payload formats:
 }
 ```
 
-**Metadata format:**
-```json
-{
-    "metadata": {
-        "checkout_session_id": "checkout-session-uuid"
-    },
-    "status": "succeeded"
-}
-```
-
-### Webhook Response
-
-The webhook returns JSON with the processing result:
-
-```json
-{
-    "status": "success",
-    "checkout_completed": true,
-    "order_id": "order-uuid"
-}
-```
-
-Possible status values:
-- `success` - Payment processed, checkout completed
-- `processed` - Payment handled but checkout not completed
 - `acknowledged` - Webhook received but no action needed
 - `ignored` - Session not found or invalid state
 

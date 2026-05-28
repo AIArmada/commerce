@@ -53,7 +53,7 @@ final class Chip extends Facade
      */
     public static function webhookUrl(): string
     {
-        $route = config('chip.webhooks.route', '/chip/webhook');
+        $route = config('chip.webhooks.route', '/chip/webhooks');
 
         return url($route);
     }

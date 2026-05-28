@@ -254,6 +254,20 @@ That metadata powers downstream voucher reporting, exports, and affiliate-source
 
 Applied voucher payloads in checkout also include `promotion_id` when the voucher originated from promotion-issued voucher flows.
 
+## CHIP
+
+When `aiarmada/chip` is installed and `checkout.integrations.chip.enabled` is `true`, checkout listens to CHIP purchase events and forwards them into the same internal payment-callback flow used by `POST /webhooks/checkout`.
+
+This keeps checkout gateway-agnostic while letting CHIP remain the single webhook ingress. The recommended setup is to register only `config('chip.webhooks.route', '/chip/webhooks')` in the CHIP dashboard. Disable this integration if you want checkout to rely on `/webhooks/checkout` for CHIP callbacks instead.
+
+```php
+'integrations' => [
+    'chip' => [
+        'enabled' => true,
+    ],
+],
+```
+
 ## Checking Package Availability
 
 You can check if integrations are available:
@@ -281,6 +295,7 @@ Disable integrations via config or environment:
     'tax' => ['enabled' => false],
     'promotions' => ['enabled' => false],
     'vouchers' => ['enabled' => false],
+    'chip' => ['enabled' => false],
 ],
 ```
 

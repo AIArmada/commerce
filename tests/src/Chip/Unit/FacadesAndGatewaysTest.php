@@ -18,11 +18,11 @@ use Illuminate\Support\Facades\Config;
 
 describe('Chip Facade', function (): void {
     it('returns webhook URL', function (): void {
-        Config::set('chip.webhooks.route', '/chip/webhook');
+        Config::set('chip.webhooks.route', '/chip/webhooks');
 
         $url = Chip::webhookUrl();
 
-        expect($url)->toContain('/chip/webhook');
+        expect($url)->toContain('/chip/webhooks');
     });
 
     it('uses custom webhook route from config', function (): void {

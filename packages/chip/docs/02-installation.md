@@ -71,7 +71,7 @@ CHIP_FAILURE_REDIRECT=https://your-app.com/payment/failed
 # Optional Settings
 CHIP_DEFAULT_CURRENCY=MYR
 CHIP_SEND_RECEIPT=false
-CHIP_WEBHOOK_ROUTE=/chip/webhook
+CHIP_WEBHOOK_ROUTE=/chip/webhooks
 ```
 
 ## Obtaining API Credentials
@@ -98,8 +98,10 @@ CHIP_WEBHOOK_ROUTE=/chip/webhook
 
 Add your webhook URL in the CHIP Dashboard:
 ```
-https://your-app.com/chip/webhook
+https://your-app.com/chip/webhooks
 ```
+
+If you also install `aiarmada/checkout` with its default CHIP integration enabled, register only this CHIP route. Checkout listens to the typed CHIP events emitted after CHIP webhook processing, so you do not need to send the same delivery to `/webhooks/checkout`.
 
 ### 2. Ensure Route is Accessible
 
@@ -114,7 +116,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 ->withMiddleware(function (Middleware $middleware): void {
     $middleware->validateCsrfTokens(except: [
-        'chip/webhook',
+    'chip/*',
     ]);
 })
 ```

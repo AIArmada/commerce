@@ -222,7 +222,7 @@ describe('WebhookSimulator', function (): void {
     });
 
     it('creates JSON requests that the CHIP webhook profile can process', function (): void {
-        $request = WebhookSimulator::forEvent(WebhookEventType::PurchasePendingRefund)->toRequest('/chip/webhook');
+        $request = WebhookSimulator::forEvent(WebhookEventType::PurchasePendingRefund)->toRequest('/chip/webhooks');
 
         expect($request->input('event_type'))->toBe('purchase.pending_refund')
             ->and($request->getContentTypeFormat())->toBe('json')

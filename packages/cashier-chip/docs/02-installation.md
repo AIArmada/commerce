@@ -160,7 +160,7 @@ longer requires gateway-specific billing columns on that model.
 The package automatically registers a webhook route at:
 
 ```
-POST /chip/webhook
+POST /chip/webhooks
 ```
 
 Configure your CHIP dashboard to send webhooks to this URL.

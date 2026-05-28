@@ -8,7 +8,7 @@ Use the built-in CHIP webhook route when you want signature verification, queued
 
 ## Built-in route
 
-The package registers a POST route at `config('chip.webhooks.route', '/chip/webhook')`:
+The package registers a POST route at `config('chip.webhooks.route', '/chip/webhooks')`:
 
 - controller: `AIArmada\Chip\Http\Controllers\WebhookController`
 - route name: `chip.webhook`
@@ -18,7 +18,7 @@ This path integrates with `spatie/laravel-webhook-client` and the package's webh
 
 ```env
 CHIP_WEBHOOKS_ENABLED=true
-CHIP_WEBHOOK_ROUTE=/chip/webhook
+CHIP_WEBHOOK_ROUTE=/chip/webhooks
 CHIP_WEBHOOK_VERIFY_SIGNATURE=true
 CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
 CHIP_WEBHOOK_PUBLIC_KEYS='{"webhook-id":"-----BEGIN PUBLIC KEY-----..."}'
@@ -29,7 +29,7 @@ Relevant config:
 ```php
 'webhooks' => [
     'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
-    'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhook'),
+    'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
     'middleware' => ['api'],
     'company_public_key' => env('CHIP_COMPANY_PUBLIC_KEY'),
     'webhook_keys' => json_decode(env('CHIP_WEBHOOK_PUBLIC_KEYS', '[]'), true) ?: [],
@@ -38,6 +38,8 @@ Relevant config:
     'deduplication' => env('CHIP_WEBHOOK_DEDUPLICATION', true),
 ],
 ```
+
+If `aiarmada/checkout` is installed with the default `checkout.integrations.chip.enabled=true`, register only this CHIP route in the CHIP dashboard. Checkout listens to the typed CHIP events emitted after this route processes the delivery, so you do not need to post the same webhook to `/webhooks/checkout`.
 
 ## Signature verification
 
