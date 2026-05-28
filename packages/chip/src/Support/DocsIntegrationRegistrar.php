@@ -8,7 +8,7 @@ use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Listeners\GenerateDocOnPayment;
 use AIArmada\Chip\Listeners\GenerateDocOnRefund;
-use AIArmada\Docs\DocsServiceProvider;
+use AIArmada\Docs\Services\DocService;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -26,7 +26,7 @@ final class DocsIntegrationRegistrar
             return;
         }
 
-        if (! config('chip.integrations.docs.enabled', true)) {
+        if (! config('chip.integrations.docs.enabled', false)) {
             return;
         }
 
@@ -35,17 +35,17 @@ final class DocsIntegrationRegistrar
 
     private function registerEventListeners(): void
     {
-        if (config('chip.integrations.docs.auto_generate_invoice', true)) {
+        if (config('chip.integrations.docs.auto_generate_invoice', false)) {
             Event::listen(PurchasePaid::class, GenerateDocOnPayment::class);
         }
 
-        if (config('chip.integrations.docs.auto_generate_credit_note', true)) {
+        if (config('chip.integrations.docs.auto_generate_credit_note', false)) {
             Event::listen(PaymentRefunded::class, GenerateDocOnRefund::class);
         }
     }
 
     private function isDocsPackageInstalled(): bool
     {
-        return class_exists(DocsServiceProvider::class);
+        return class_exists(DocService::class);
     }
 }

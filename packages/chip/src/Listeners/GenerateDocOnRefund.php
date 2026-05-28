@@ -8,10 +8,11 @@ use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\DocStatus;
-use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\Refunded;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -27,9 +28,9 @@ final class GenerateDocOnRefund implements ShouldQueue
             return;
         }
 
-        $docType = config('chip.integrations.docs.refund_doc_type', 'credit_note');
+        $docType = $this->resolveConfiguredDocType('chip.integrations.docs.refund_doc_type', DocType::CreditNote);
 
-        if ($docType === null || $docType === false) {
+        if (! $docType instanceof DocType) {
             return;
         }
 
@@ -47,11 +48,11 @@ final class GenerateDocOnRefund implements ShouldQueue
                 return;
             }
 
-            if ($this->creditNoteExistsForRefund($purchase, $event, (string) $docType)) {
+            if ($this->creditNoteExistsForRefund($purchase, $event, $docType)) {
                 return;
             }
 
-            $this->generateCreditNote($purchase, $event, (string) $docType);
+            $this->generateCreditNote($purchase, $event, $docType);
         };
 
         if (! (bool) config('chip.owner.enabled', false)) {
@@ -88,7 +89,7 @@ final class GenerateDocOnRefund implements ShouldQueue
         return OwnerContext::fromTypeAndId($ownerType, $ownerId);
     }
 
-    private function generateCreditNote(Purchase $purchase, PaymentRefunded $event, string $docType): void
+    private function generateCreditNote(Purchase $purchase, PaymentRefunded $event, DocType $docType): void
     {
         /** @var DocService $docService */
         $docService = app(DocService::class);
@@ -103,16 +104,24 @@ final class GenerateDocOnRefund implements ShouldQueue
     private function buildDocData(
         Purchase $purchase,
         PaymentRefunded $event,
-        string $docType,
+        DocType $docType,
         ?Doc $originalInvoice
     ): DocData {
         $amount = $event->getAmount();
         $currency = $event->getCurrency();
 
-        $customerData = [
-            'name' => $event->payment?->getClientName(),
-            'email' => $event->payment?->getClientEmail(),
-        ];
+        $customerData = array_filter([
+            'name' => Arr::get($purchase->client, 'full_name')
+                ?? Arr::get($purchase->client, 'legal_name')
+                ?? $event->payment?->getClientName(),
+            'email' => Arr::get($purchase->client, 'email') ?? $event->payment?->getClientEmail(),
+            'phone' => Arr::get($purchase->client, 'phone'),
+            'address' => Arr::get($purchase->client, 'street_address'),
+            'city' => Arr::get($purchase->client, 'city'),
+            'state' => Arr::get($purchase->client, 'state'),
+            'postcode' => Arr::get($purchase->client, 'zip_code'),
+            'country' => Arr::get($purchase->client, 'country'),
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
 
         // Credit note uses negative amounts or references original
         $metadata = [
@@ -131,8 +140,8 @@ final class GenerateDocOnRefund implements ShouldQueue
         $notes = $this->generateNotes($purchase, $event, $originalInvoice);
 
         return new DocData(
-            docType: $docType,
-            status: DocStatus::fromString(Paid::class), // Credit notes are immediately effective
+            docType: $docType->value,
+            status: DocStatus::fromString(Refunded::class),
             issueDate: now(),
             dueDate: null,
             subtotal: $amount / 100,
@@ -150,9 +159,9 @@ final class GenerateDocOnRefund implements ShouldQueue
                 ],
             ],
             notes: $notes,
-            docableType: Purchase::class,
+            docableType: $purchase->getMorphClass(),
             docableId: (string) $purchase->id,
-            generatePdf: config('chip.integrations.docs.generate_pdf', true),
+            generatePdf: (bool) config('chip.integrations.docs.generate_pdf', false),
             metadata: $metadata,
         );
     }
@@ -179,22 +188,22 @@ final class GenerateDocOnRefund implements ShouldQueue
         }
 
         return Doc::query()
-            ->where('docable_type', Purchase::class)
+            ->where('docable_type', $purchase->getMorphClass())
             ->where('docable_id', $purchase->id)
-            ->where('doc_type', config('chip.integrations.docs.paid_doc_type', 'invoice'))
+            ->where('doc_type', $this->resolveConfiguredDocType('chip.integrations.docs.paid_doc_type', DocType::Invoice)?->value)
             ->first();
     }
 
-    private function creditNoteExistsForRefund(Purchase $purchase, PaymentRefunded $event, string $docType): bool
+    private function creditNoteExistsForRefund(Purchase $purchase, PaymentRefunded $event, DocType $docType): bool
     {
         if (! class_exists(Doc::class)) {
             return false;
         }
 
         $query = Doc::query()
-            ->where('docable_type', Purchase::class)
+            ->where('docable_type', $purchase->getMorphClass())
             ->where('docable_id', $purchase->id)
-            ->where('doc_type', $docType);
+            ->where('doc_type', $docType->value);
 
         $paymentId = $event->payment?->getPaymentId();
 
@@ -205,5 +214,16 @@ final class GenerateDocOnRefund implements ShouldQueue
         }
 
         return $query->exists();
+    }
+
+    private function resolveConfiguredDocType(string $configKey, DocType $fallback): ?DocType
+    {
+        $configuredType = config($configKey, $fallback->value);
+
+        if (! is_string($configuredType) || $configuredType === '') {
+            return null;
+        }
+
+        return DocType::tryFrom($configuredType);
     }
 }

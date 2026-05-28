@@ -69,6 +69,17 @@ class ChipGateway extends AbstractGateway
         return new ChipCustomer($billable);
     }
 
+    protected function resolveBillableByGatewayId(string $gatewayId): ?BillableContract
+    {
+        $billable = CashierChip::findBillable($gatewayId);
+
+        if (! $billable instanceof BillableContract) {
+            return null;
+        }
+
+        return $billable;
+    }
+
     /**
      * Create or get a customer on CHIP.
      *

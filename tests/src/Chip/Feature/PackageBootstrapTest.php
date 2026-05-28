@@ -3,8 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\ChipServiceProvider;
+use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\Listeners\GenerateDocOnPayment;
+use AIArmada\Chip\Listeners\GenerateDocOnRefund;
+use AIArmada\Chip\Support\DocsIntegrationRegistrar;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -46,6 +52,36 @@ describe('Package bootstrap', function (): void {
         expect(config('chip.environment'))->toBe('sandbox');
         expect(config('chip.webhooks.company_public_key'))->toBe('test_public_key');
         expect(config('chip.webhooks.store_webhooks'))->toBeTrue();
+        expect(config('chip.integrations.docs.enabled'))->toBeFalse();
+        expect(config('chip.integrations.docs.auto_generate_invoice'))->toBeFalse();
+        expect(config('chip.integrations.docs.auto_generate_credit_note'))->toBeFalse();
+        expect(config('chip.integrations.docs.generate_pdf'))->toBeFalse();
+    });
+
+    it('does not register docs listeners when the docs integration remains at its defaults', function (): void {
+        Event::shouldReceive('listen')->never();
+
+        $registrar = new DocsIntegrationRegistrar;
+
+        $registrar->register();
+    });
+
+    it('registers docs listeners only when the docs integration is explicitly enabled', function (): void {
+        config()->set('chip.integrations.docs.enabled', true);
+        config()->set('chip.integrations.docs.auto_generate_invoice', true);
+        config()->set('chip.integrations.docs.auto_generate_credit_note', true);
+
+        Event::shouldReceive('listen')
+            ->once()
+            ->with(PurchasePaid::class, GenerateDocOnPayment::class);
+
+        Event::shouldReceive('listen')
+            ->once()
+            ->with(PaymentRefunded::class, GenerateDocOnRefund::class);
+
+        $registrar = new DocsIntegrationRegistrar;
+
+        $registrar->register();
     });
 
     it('registers the package webhook route without signature middleware', function (): void {

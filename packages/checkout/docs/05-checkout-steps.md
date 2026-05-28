@@ -84,8 +84,8 @@ Creates the order record:
 
 Dispatches document generation:
 
-- Queues invoice generation
-- Triggers receipt creation
+- Queues invoice generation when checkout document generation is explicitly enabled
+- Triggers receipt creation when checkout document generation is explicitly enabled
 - Dispatches notifications
 
 ## Step Result

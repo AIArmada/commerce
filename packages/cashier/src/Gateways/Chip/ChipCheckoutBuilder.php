@@ -255,9 +255,10 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
             'metadata' => [],
         ];
 
-        // Check for CHIP customer ID using the unified gateway interface
-        if ($this->billable && $this->billable->hasGatewayId('chip')) {
-            $options['client_id'] = $this->billable->gatewayId('chip');
+        $chipCustomerId = $this->resolveBillableChipId();
+
+        if ($chipCustomerId !== null) {
+            $options['client_id'] = $chipCustomerId;
         } elseif ($this->billable) {
             $options['client'] = [
                 'email' => $this->billable->customerEmail(),
@@ -306,5 +307,22 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
         $checkout = $this->create();
 
         return redirect()->to($checkout->url());
+    }
+
+    private function resolveBillableChipId(): ?string
+    {
+        if (! $this->billable) {
+            return null;
+        }
+
+        if (method_exists($this->billable, 'chipId')) {
+            $chipId = $this->billable->chipId();
+
+            if (is_string($chipId) && $chipId !== '') {
+                return $chipId;
+            }
+        }
+
+        return $this->billable->gatewayId('chip');
     }
 }

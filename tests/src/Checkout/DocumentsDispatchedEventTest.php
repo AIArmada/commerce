@@ -13,6 +13,26 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 
 describe('DocumentsDispatched event', function (): void {
+    it('skips document dispatch when checkout document generation remains at its defaults', function (): void {
+        Bus::fake();
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'cart-docs-defaults',
+            'order_id' => 'order-docs-defaults',
+            'selected_payment_gateway' => 'chip',
+        ]);
+
+        $step = app(DispatchDocumentGenerationStep::class);
+        $result = $step->handle($session);
+
+        Bus::assertNothingDispatched();
+
+        expect($result->isSuccessful())->toBeTrue()
+            ->and($result->status->value)->toBe('skipped')
+            ->and($result->data)->toMatchArray([])
+            ->and($result->message)->toBe('No documents configured for generation');
+    });
+
     it('fires after dispatching document generation', function (): void {
         Event::fake([DocumentsDispatched::class]);
         Bus::fake();

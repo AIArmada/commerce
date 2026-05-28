@@ -53,16 +53,20 @@ trait ManagesGateway // @phpstan-ignore trait.unused
     /**
      * Get the gateway ID for a specific gateway.
      *
-     * The column name follows the convention: {gateway}_id
-     * Each gateway package provides its own migration to add this column.
-     * For example: stripe_id (from laravel/cashier), chip_id (from cashier-chip)
+     * Shared cashier stores most gateway identifiers on `{gateway}_id` columns,
+     * while gateway-native adapters may expose their own accessors.
      */
     public function gatewayId(?string $gateway = null): ?string
     {
         $gateway = $gateway ?? $this->preferredGateway();
+
+        if ($gateway === 'chip') {
+            return $this->resolveChipGatewayId();
+        }
+
         $column = $gateway . '_id';
 
-        return $this->{$column} ?? null;
+        return $this->normalizeGatewayId($this->{$column} ?? null);
     }
 
     /**
@@ -70,7 +74,33 @@ trait ManagesGateway // @phpstan-ignore trait.unused
      */
     public function hasGatewayId(?string $gateway = null): bool
     {
-        return ! is_null($this->gatewayId($gateway));
+        $gateway = $gateway ?? $this->preferredGateway();
+
+        if ($gateway === 'chip' && method_exists($this, 'hasChipId')) {
+            return (bool) $this->hasChipId();
+        }
+
+        return $this->gatewayId($gateway) !== null;
+    }
+
+    private function resolveChipGatewayId(): ?string
+    {
+        if (! method_exists($this, 'chipId')) {
+            return null;
+        }
+
+        return $this->normalizeGatewayId($this->chipId());
+    }
+
+    private function normalizeGatewayId(mixed $gatewayId): ?string
+    {
+        if (! is_string($gatewayId)) {
+            return null;
+        }
+
+        $gatewayId = trim($gatewayId);
+
+        return $gatewayId !== '' ? $gatewayId : null;
     }
 
     /**

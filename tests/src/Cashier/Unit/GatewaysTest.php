@@ -6,7 +6,11 @@ use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Gateways\AbstractGateway;
 use AIArmada\Cashier\Gateways\StripeGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
+use AIArmada\Commerce\Tests\Cashier\Fixtures\ChiplessBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
+use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 uses(CashierTestCase::class);
 
@@ -111,6 +115,32 @@ describe('Gateways', function (): void {
 
             expect($paymentMethods)->toHaveCount(2)
                 ->and($invoices)->toHaveCount(2);
+        });
+
+        it('does not assume a chip_id column when resolving billables', function (): void {
+            Schema::create('chipless_billables', function (Blueprint $table): void {
+                $table->id();
+                $table->string('name');
+                $table->string('email')->unique();
+                $table->timestamps();
+            });
+
+            config([
+                'cashier.models.billable' => ChiplessBillableUser::class,
+                'cashier-chip.features.owner.enabled' => false,
+            ]);
+
+            $directory = Mockery::mock(ChipCustomerDirectoryInterface::class);
+            $directory->shouldReceive('findByChipCustomerId')
+                ->once()
+                ->with('cli_missing')
+                ->andReturn(null);
+
+            $this->app->instance(ChipCustomerDirectoryInterface::class, $directory);
+
+            $gateway = $this->gatewayManager->gateway('chip');
+
+            expect($gateway->findBillable('cli_missing'))->toBeNull();
         });
     });
 });
