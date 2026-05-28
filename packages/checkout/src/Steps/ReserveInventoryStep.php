@@ -122,7 +122,7 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
                     productId: $productId,
                     variantId: $variantId,
                     quantity: $quantity,
-                    reference: $session->id,
+                    reference: $session->cart_id,
                     ttl: $reservationTtl,
                 );
 
@@ -170,8 +170,8 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
             return;
         }
 
-        // Release all reservations for this checkout session at once
-        $this->inventoryAdapter->releaseAllForReference($session->id);
+        // Release all reservations for this checkout cart at once
+        $this->inventoryAdapter->releaseAllForReference($session->cart_id);
 
         // Clear reservation data from session
         $pricingData = $session->pricing_data ?? [];
