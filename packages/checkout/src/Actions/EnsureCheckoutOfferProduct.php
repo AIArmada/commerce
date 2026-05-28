@@ -22,6 +22,8 @@ final class EnsureCheckoutOfferProduct
             $product = Product::query()->firstOrNew([
                 'slug' => $offer->productSlug,
             ]);
+            $supportsVariants = $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault();
+            $tracksInventory = $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault();
 
             $product->fill([
                 'name' => $offer->name,
@@ -37,12 +39,13 @@ final class EnsureCheckoutOfferProduct
                 'is_featured' => $offer->isFeatured,
                 'is_taxable' => $offer->isTaxable,
                 'requires_shipping' => $offer->requiresShipping,
-                'supports_variants' => $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault(),
-                'tracks_inventory' => $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault(),
                 'meta_title' => $offer->metaTitle,
                 'meta_description' => $offer->metaDescription,
                 'metadata' => $offer->metadata,
             ]);
+
+            $product->supports_variants = $supportsVariants;
+            $product->tracks_inventory = $tracksInventory;
 
             if (! $product->exists && $product->published_at === null) {
                 $product->published_at = Carbon::now();
