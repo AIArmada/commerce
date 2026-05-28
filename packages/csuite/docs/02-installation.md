@@ -107,6 +107,7 @@ COMMERCE_JSON_COLUMN_TYPE=jsonb
 In your `AdminPanelProvider.php`:
 
 ```php
+use AIArmada\CommerceSupport\Support\Filament\CommerceNavigationPlugin;
 use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
@@ -121,6 +122,7 @@ public function panel(Panel $panel): Panel
         ->id('admin')
         ->path('admin')
         ->plugins([
+            CommerceNavigationPlugin::make(),
             FilamentCartPlugin::make(),
             FilamentVouchersPlugin::make(),
             FilamentDocsPlugin::make(),
