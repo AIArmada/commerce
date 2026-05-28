@@ -5,10 +5,10 @@ declare(strict_types=1);
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Gateways\AbstractGateway;
 use AIArmada\Cashier\Gateways\StripeGateway;
+use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\ChiplessBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
-use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
