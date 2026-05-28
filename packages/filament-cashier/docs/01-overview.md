@@ -13,11 +13,13 @@ The `aiarmada/filament-cashier` package is the Filament admin adapter for `aiarm
 - Unified Filament resources for subscriptions and invoices across installed gateways
 - Billing dashboard and gateway comparison widgets
 - Gateway-agnostic billing administration and optional gateway-management UI
+- Cross-gateway customer portal pages for subscriptions, payment methods, and invoices
+- Customer-portal preview widgets for active subscriptions, payment methods, and recent invoices
 
 ## What this package does not own
 
 - Gateway API integrations or billing persistence; those stay in `aiarmada/cashier`, `aiarmada/cashier-chip`, and `laravel/cashier`
-- CHIP-specific billing portal flows owned by `aiarmada/filament-cashier-chip`
+- CHIP-specific analytics and direct CHIP-only admin surfaces owned by `aiarmada/filament-cashier-chip`
 - Tenant resolution itself; it consumes the owner context from the host app and `commerce-support`
 
 ## Related packages
@@ -30,16 +32,15 @@ The `aiarmada/filament-cashier` package is the Filament admin adapter for `aiarm
 ## Main models services or surfaces
 
 - **Resources** — unified subscriptions and unified invoices
-- **Pages** — billing dashboard, gateway setup, and optional gateway management
+- **Pages** — billing dashboard, gateway setup, optional gateway management, and customer portal pages such as `BillingOverview`, `ManageSubscriptions`, `ManagePaymentMethods`, and `ViewInvoices`
 - **Widgets** — total MRR, subscribers, gateway breakdown/comparison, and unified churn
+- **Portal widgets** — `ActiveSubscriptionsWidget`, `PaymentMethodsPreviewWidget`, and `RecentInvoicesWidget`
 - **Support** — gateway detector, normalized DTOs, and owner-scope helpers
 
 ## Owner scoping and security notes
 
 - The plugin should mirror the owner-scoping behavior defined by `aiarmada/cashier` and the installed gateway packages
 - Unified admin views are not authorization; write operations still rely on the backing gateway package to validate owner-safe billing actions
-
-Unified Filament admin interface for multi-gateway billing management with Stripe and CHIP support.
 
 ## Overview
 
@@ -84,6 +85,14 @@ Payment Gateway APIs (Stripe, CHIP)
 | `GatewayBreakdownWidget` | Revenue distribution by gateway |
 | `GatewayComparisonWidget` | 6-month revenue comparison chart |
 | `UnifiedChurnWidget` | Combined monthly churn metrics |
+
+### Customer Portal Widgets
+
+| Widget | Description |
+|--------|-------------|
+| `ActiveSubscriptionsWidget` | Preview of the authenticated user's active subscriptions across gateways |
+| `PaymentMethodsPreviewWidget` | Preview of saved payment methods grouped by gateway |
+| `RecentInvoicesWidget` | Recent invoices for the authenticated user |
 
 ### Customer Portal Features
 
@@ -151,15 +160,6 @@ public function panel(Panel $panel): Panel
         ]);
 }
 ```
-
-## Related Packages
-
-| Package | Purpose |
-|---------|---------|
-| `aiarmada/cashier` | Core multi-gateway billing abstraction |
-| `aiarmada/cashier-chip` | CHIP payment gateway integration |
-| `aiarmada/filament-cashier-chip` | Enhanced CHIP-specific Filament UI |
-| `laravel/cashier` | Stripe integration (official Laravel package) |
 
 ## Read next
 

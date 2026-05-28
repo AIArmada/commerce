@@ -36,6 +36,22 @@ if ($result->requiresRedirect()) {
 return back()->withErrors($result->errors);
 ```
 
+## Customer and Billable Resolution
+
+Checkout resolves the payment subject before payment is created.
+
+The `resolve_customer` step uses Commerce Support's `PaymentSubjectResolverInterface` to inspect:
+
+- the authenticated user
+- the current session customer
+- the current session billable model
+- `billing_data`
+- `shipping_data`
+
+When the resolver returns a model, checkout stores it on the session as `billable_type` and `billable_id`. If the resolved subject is a `Customer`, checkout also stores `customer_id` and hydrates empty `billing_data` / `shipping_data` from that customer's default addresses.
+
+This is why guest checkout, authenticated checkout, and billable-model checkout all flow through the same payment steps without separate controller logic.
+
 ## Unified Discount Code Resolution
 
 Checkout treats the shared promo-code field as a single discount-code input.
@@ -117,14 +133,19 @@ $session = Checkout::cancelCheckout($session);
 ```php
 $session->id;               // Session ID
 $session->cart_id;          // Associated cart
+$session->customer_id;      // Resolved customer ID (if any)
+$session->billable_type;    // Resolved payment subject morph type
+$session->billable_id;      // Resolved payment subject morph key
 $session->order_id;         // Created order (after completion)
 $session->status;           // Current status (CheckoutState state object)
 $session->current_step;     // Current step name
-$session->completed_steps;  // Array of completed step names
-$session->shipping_address; // Shipping address data
-$session->billing_address;  // Billing address data
-$session->payment_method;   // Selected payment method
-$session->payment_gateway;  // Payment gateway used
+$session->step_states;      // Per-step status map
+$session->shipping_data;    // Shipping payload data
+$session->billing_data;     // Billing payload data
+$session->payment_id;       // Gateway payment identifier
+$session->selected_payment_gateway; // Payment gateway used
+$session->payment_data;     // Payment metadata, callback token, gateway response
+$session->payment_redirect_url; // Redirect URL for hosted payment flows
 $session->expires_at;       // Session expiration
 ```
 
@@ -196,7 +217,7 @@ if ($session->status->canCancel()) {
 
 // Check if session can be modified
 if ($session->status->canModify()) {
-    $session->update(['shipping_address' => $newAddress]);
+    $session->update(['shipping_data' => $newAddress]);
 }
 
 // Check if payment can be retried
@@ -283,6 +304,26 @@ $result->metadata;       // Additional data
 
 ## Payment Handling
 
+### How Checkout Builds the Payment Request
+
+`ProcessPaymentStep` builds `PaymentRequest` from the session after customer resolution.
+
+The request uses this fallback order for customer details:
+
+1. `billing_data.name`, `billing_data.email`, and `billing_data.phone`
+2. the resolved `customer` on the checkout session
+3. the resolved `billable` model using `chipName()`, `chipEmail()`, `chipPhone()`, or the matching attributes
+
+The resulting request metadata includes:
+
+- `checkout_session_id`
+- `cart_id`
+- `customer_id`
+- `billable_type`
+- `billable_id`
+
+For redirect-based gateways, `ProcessPaymentStep` also stores a per-session callback token in `payment_data.callback_token` and preserves it across retries so callback validation keeps working even after multiple payment attempts.
+
 ### Retry Failed Payment
 
 ```php
@@ -318,7 +359,7 @@ Route::post('/webhook/chip', function (Request $request) {
 
 ```php
 $session->update([
-    'shipping_address' => [
+    'shipping_data' => [
         'first_name' => 'John',
         'last_name' => 'Doe',
         'line1' => '123 Main St',
@@ -329,7 +370,7 @@ $session->update([
         'phone' => '+60123456789',
         'email' => 'john@example.com',
     ],
-    'billing_address' => [
+    'billing_data' => [
         // Same structure as shipping
     ],
 ]);
@@ -339,7 +380,7 @@ $session->update([
 
 ```php
 $session->update([
-    'billing_address' => $session->shipping_address,
+    'billing_data' => $session->shipping_data,
 ]);
 ```
 

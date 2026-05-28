@@ -14,10 +14,16 @@ Methods available on models using the `Billable` trait.
 
 ```php
 // Create CHIP customer
-$user->createAsChipCustomer(array $options = []): Client
+$user->createAsChipCustomer(array $options = []): ClientData
 
-// Create if not exists
-$user->createAsChipCustomerIfNotExists(): ?Client
+// Create if not exists, otherwise return the linked client
+$user->createOrGetChipCustomer(array $options = []): ClientData
+
+// Update if exists, otherwise create
+$user->updateOrCreateChipCustomer(array $options = []): ClientData
+
+// Sync if exists, otherwise create
+$user->syncOrCreateChipCustomer(array $options = []): ClientData
 
 // Get CHIP client ID
 $user->chipId(): ?string
@@ -26,41 +32,54 @@ $user->chipId(): ?string
 $user->hasChipId(): bool
 
 // Get CHIP customer object
-$user->asChipCustomer(): Client
+$user->asChipCustomer(): ClientData
 
 // Update CHIP customer
-$user->updateChipCustomer(array $data): Client
+$user->updateChipCustomer(array $data): ClientData
 
 // Sync local data to CHIP
-$user->syncToChip(): Client
+$user->syncChipCustomerDetails(): ClientData
 
-// Get customer data for CHIP
-$user->chipCustomerData(): array
+// CHIP customer mapping helpers
+$user->chipName(): ?string
+$user->chipEmail(): ?string
+$user->chipPhone(): ?string
+$user->chipCountry(): ?string
+$user->chipAddress(): array
 ```
 
 ### Payment Methods
 
 ```php
 // Get all payment methods
-$user->paymentMethods(): Collection
+$user->paymentMethods(): Collection<int, PaymentMethod>
+
+// Find a specific payment method
+$user->findPaymentMethod(string $paymentMethodId): ?PaymentMethod
 
 // Get default payment method
-$user->defaultPaymentMethod(): ?string
+$user->defaultPaymentMethod(): ?PaymentMethod
 
 // Check if has default payment method
 $user->hasDefaultPaymentMethod(): bool
 
-// Update default payment method
-$user->updateDefaultPaymentMethod(string $token): void
+// Check if has any saved payment method
+$user->hasPaymentMethod(): bool
 
-// Add payment method
-$user->addPaymentMethod(string $token, array $details = []): void
+// Update default payment method
+$user->updateDefaultPaymentMethod(string $paymentMethodId): static
+
+// Refresh the default payment method from CHIP
+$user->updateDefaultPaymentMethodFromChip(): static
 
 // Delete payment method
-$user->deletePaymentMethod(string $token): void
+$user->deletePaymentMethod(string $paymentMethodId): void
+
+// Delete all payment methods
+$user->deletePaymentMethods(): void
 
 // Create setup purchase (for adding payment methods)
-$user->createSetupPurchase(array $options = []): Purchase
+$user->createSetupPurchase(array $options = []): PurchaseData
 
 // Get setup purchase URL
 $user->setupPaymentMethodUrl(array $options = []): string
@@ -70,12 +89,12 @@ $user->setupPaymentMethodUrl(array $options = []): string
 
 ```php
 // Charge with default payment method
-$user->charge(int $amount, array $options = []): Payment
+$user->charge(int $amount, ?string $recurringToken = null, array $options = []): Payment
 
 // Charge with specific recurring token
 $user->chargeWithRecurringToken(
-    int $amount, 
-    string $recurringToken, 
+    int $amount,
+    ?string $recurringToken = null,
     array $options = []
 ): Payment
 ```
@@ -383,35 +402,38 @@ $item->totalAmount(): int
 
 ---
 
-## CashierChip Class
+## Cashier Class
 
 ### Static Configuration
 
 ```php
 // Set customer model
-CashierChip::useCustomerModel(string $model): void
+Cashier::useCustomerModel(string $customerModel): void
 
 // Set subscription model
-CashierChip::useSubscriptionModel(string $model): void
+Cashier::useSubscriptionModel(string $subscriptionModel): void
 
 // Set subscription item model
-CashierChip::useSubscriptionItemModel(string $model): void
+Cashier::useSubscriptionItemModel(string $subscriptionItemModel): void
 
 // Enable fake mode for testing
-CashierChip::fake(): void
+Cashier::fake(?FakeChipClient $fakeClient = null): FakeChipCollectService
 
 // Format amount for display
-CashierChip::formatAmount(int $amount, string $currency = null): string
+Cashier::formatAmount(int $amount, ?string $currency = null, ?string $locale = null, array $options = []): string
 
 // Find billable by CHIP client ID
-CashierChip::findBillable(string $chipId): ?Model
+Cashier::findBillable(?string $chipId): ?Model
+
+// Find billable by CHIP client ID during webhook/system handling
+Cashier::findBillableForWebhook(?string $chipId): ?Model
 ```
 
 ### Instance Methods
 
 ```php
 // Get CHIP instance
-$cashier = CashierChip::chip();
+$cashier = Cashier::chip();
 
 // Access purchase builder
 $cashier->purchase(): PurchaseBuilder

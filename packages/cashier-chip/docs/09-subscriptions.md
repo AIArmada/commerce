@@ -47,7 +47,7 @@ $subscription = $user->newSubscription('default', 'price_monthly')
 
 // Use default payment method
 $subscription = $user->newSubscription('default', 'price_monthly')
-    ->create($user->defaultPaymentMethod());
+    ->create($user->defaultPaymentMethod()?->id());
 ```
 
 ### Via Checkout
@@ -394,7 +394,7 @@ $ended = Subscription::ended()->get();
 
 ## Database Schema
 
-### chip_subscriptions
+### cashier_chip_subscriptions
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -412,7 +412,7 @@ $ended = Subscription::ended()->get();
 | `billing_interval` | string | Interval (day, week, month, year) |
 | `recurring_token` | string | Payment method |
 
-### chip_subscription_items
+### cashier_chip_subscription_items
 
 | Column | Type | Description |
 |--------|------|-------------|
