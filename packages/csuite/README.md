@@ -86,6 +86,7 @@ php artisan migrate
 ### 4. Register Filament Plugins
 
 ```php
+use AIArmada\CommerceSupport\Support\Filament\CommerceNavigationPlugin;
 use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
@@ -94,6 +95,7 @@ public function panel(Panel $panel): Panel
 {
     return $panel
         ->plugins([
+            CommerceNavigationPlugin::make(),
             FilamentCartPlugin::make(),
             FilamentVouchersPlugin::make(),
             FilamentDocsPlugin::make(),

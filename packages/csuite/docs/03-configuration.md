@@ -143,6 +143,46 @@ return [
 
 ## Filament Configuration
 
+For applications that install many `filament-*` packages, prefer the shared Commerce navigation plugin so menu grouping/hiding lives in one application-level config file.
+
+Register it once before the package plugins:
+
+```php
+use AIArmada\CommerceSupport\Support\Filament\CommerceNavigationPlugin;
+
+return $panel
+    ->plugins([
+        CommerceNavigationPlugin::make(),
+        // Other Commerce Filament plugins...
+    ]);
+```
+
+Then configure `config/commerce-support.php`:
+
+```php
+'filament' => [
+    'navigation' => [
+        'groups' => [
+            'Catalog' => ['label' => 'Catalog', 'sort' => 10],
+            'Sales' => ['label' => 'Sales', 'sort' => 20],
+            'Operations' => ['label' => 'Operations', 'sort' => 30, 'collapsed' => true],
+        ],
+        'packages' => [
+            'filament-products' => ['group' => 'Catalog'],
+            'filament-orders' => ['group' => 'Sales'],
+            'filament-shipping' => ['group' => 'Operations'],
+        ],
+        'items' => [
+            AIArmada\FilamentProducts\Resources\AttributeResource::class => [
+                'visible' => false,
+            ],
+        ],
+    ],
+],
+```
+
+Hiding a navigation item only removes it from the menu. Policies, owner scopes, and server-side validation remain responsible for access control.
+
 Each Filament package has its own configuration:
 
 ### filament-cart
