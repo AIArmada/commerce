@@ -98,7 +98,7 @@ trait ManagesGateway // @phpstan-ignore trait.unused
             return null;
         }
 
-        $gatewayId = trim($gatewayId);
+        $gatewayId = mb_trim($gatewayId);
 
         return $gatewayId !== '' ? $gatewayId : null;
     }
