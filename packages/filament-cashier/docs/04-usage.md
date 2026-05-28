@@ -12,6 +12,8 @@ This guide covers common usage patterns for Filament Cashier.
 
 Navigate to **Billing → Subscriptions** to see all subscriptions across gateways.
 
+The unified subscriptions resource is DTO-backed: it aggregates records from installed gateways, normalizes them into one table, and keeps gateway-specific actions delegated to the original subscription model.
+
 The subscription list shows:
 - **Customer** - The user who owns the subscription
 - **Gateway** - Stripe or CHIP badge
@@ -61,6 +63,8 @@ Available actions:
 - **Download** - Download PDF invoice
 - **View in Gateway** - Open gateway dashboard
 - **Export** - Bulk export to CSV
+
+The unified invoices resource is list-first: it aggregates invoice records across installed gateways and exposes download, export, and external-dashboard actions without pretending the underlying gateway data lives in one table.
 
 ## Dashboard Widgets
 
@@ -119,6 +123,26 @@ Shows monthly cancellations with trend indicator.
 | **Payment Methods** | View, add, remove, set default payment methods |
 | **View Invoices** | List and download invoices |
 
+### Billing Overview Widgets
+
+The overview page can surface three customer-facing preview widgets:
+
+- `ActiveSubscriptionsWidget`
+- `PaymentMethodsPreviewWidget`
+- `RecentInvoicesWidget`
+
+These widgets only show records for the authenticated user and rely on `CashierOwnerScope` plus the current auth identifier when loading Stripe and CHIP data.
+
+### Manage Subscriptions Behavior
+
+The `ManageSubscriptions` portal page merges Stripe and CHIP subscriptions for the authenticated user, sorts them by newest first, and keeps a per-gateway fetch limit so the portal can progressively load more records without querying the full history every time.
+
+Portal subscription actions are owner-scoped and policy-checked before mutation:
+
+- `cancelSubscription()` only runs when the normalized status is cancelable and `SubscriptionPolicy` authorizes the underlying record
+- `resumeSubscription()` only runs when the normalized status is resumable and policy checks pass
+- the optional `new subscription` header action is shown only when subscriptions are enabled for the billing portal and the create route exists on the active panel
+
 ### Customer Actions
 
 Customers can:
@@ -129,6 +153,7 @@ Customers can:
 - Set default payment method per gateway
 - Delete payment methods
 - View and download invoices
+- See a compact overview of active subscriptions, saved payment methods, and recent invoices from the billing dashboard
 
 ## Gateway Management
 

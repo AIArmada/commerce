@@ -11,7 +11,7 @@ The checkout package supports multiple payment gateways through the `PaymentGate
 | Gateway | Package | Description |
 |---------|---------|-------------|
 | `cashier` | `aiarmada/cashier` | Unified payment gateway |
-| `cashier-chip` | `aiarmada/cashier-chip` | Chip via Cashier |
+| `cashier-chip` | `aiarmada/cashier-chip` | CHIP billing bridge that uses billable `charge()` flows first and falls back to guest CHIP purchases |
 | `chip` | `aiarmada/chip` | Direct Chip integration |
 
 ## Gateway Priority
@@ -26,6 +26,20 @@ Gateways are resolved by priority:
 ```
 
 The first available gateway is used unless a specific gateway is requested.
+
+## Cashier CHIP Bridge Behavior
+
+The `cashier-chip` processor now bridges checkout, customers, and CHIP billing in two stages:
+
+1. `ResolveCustomerStep` resolves the best payment subject and writes `customer_id`, `billable_type`, and `billable_id` onto the checkout session.
+2. `ProcessPaymentStep` builds the `PaymentRequest` from `billing_data`, then falls back to the resolved customer or billable model when direct billing payload fields are missing.
+
+`CashierChipProcessor` then chooses the payment path:
+
+- if the resolved billable subject exposes `charge()`, checkout uses the Billable payment flow from `aiarmada/cashier-chip`
+- otherwise checkout falls back to a direct guest CHIP purchase using the normalized request payload
+
+This keeps authenticated billing flows and guest checkout flows on the same processor without requiring separate gateway selection logic.
 
 ## Forcing a Gateway
 
@@ -72,6 +86,8 @@ $request = new PaymentRequest(
                                └─────────┘
 ```
 
+In redirect flows, checkout stores a callback token in `payment_data.callback_token` before creating the payment and preserves it across retries. The callback routes use that token to reject forged or stale gateway returns.
+
 ## Payment Request
 
 Create payment requests:
@@ -87,9 +103,9 @@ $request = new PaymentRequest(
     customerEmail: 'customer@example.com',
     customerName: 'John Doe',
     customerPhone: '+60123456789',
-    successUrl: route('checkout.success'),
-    failureUrl: route('checkout.failure'),
-    cancelUrl: route('checkout.cancel'),
+    successUrl: route('checkout.payment.success'),
+    failureUrl: route('checkout.payment.failure'),
+    cancelUrl: route('checkout.payment.cancel'),
     metadata: ['order_id' => 'order_123'],
 );
 ```
@@ -147,7 +163,22 @@ use AIArmada\Checkout\Models\CheckoutSession;
 
 class StripeProcessor implements PaymentProcessorInterface
 {
-    public function process(CheckoutSession $session, PaymentRequest $request): PaymentResult
+    public function getIdentifier(): string
+    {
+        return 'stripe';
+    }
+
+    public function getName(): string
+    {
+        return 'Stripe';
+    }
+
+    public function isAvailable(CheckoutSession $session): bool
+    {
+        return ! empty(config('services.stripe.secret'));
+    }
+
+    public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
     {
         try {
             $intent = \Stripe\PaymentIntent::create([
@@ -171,19 +202,24 @@ class StripeProcessor implements PaymentProcessorInterface
         }
     }
 
-    public function refund(string $paymentId, int $amount): PaymentResult
+    public function handleCallback(array $payload): PaymentResult
+    {
+        return PaymentResult::processing($payload['id'] ?? 'unknown');
+    }
+
+    public function getRedirectUrl(CheckoutSession $session): ?string
+    {
+        return $session->payment_redirect_url;
+    }
+
+    public function refund(string $paymentId, int $amount, ?string $reason = null): PaymentResult
     {
         // Implement refund logic
     }
 
-    public function supports(string $method): bool
+    public function checkStatus(string $paymentId): PaymentResult
     {
-        return in_array($method, ['card', 'fpx', 'grabpay']);
-    }
-
-    public function isAvailable(): bool
-    {
-        return ! empty(config('services.stripe.secret'));
+        // Implement remote status lookup
     }
 }
 ```

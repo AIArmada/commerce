@@ -234,9 +234,9 @@ Configure the ngrok URL in your CHIP dashboard.
 ### Faking Webhooks
 
 ```php
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 
-CashierChip::fake();
+Cashier::fake();
 
 // Now all CHIP API calls are faked
 $user->charge(10000);
@@ -258,11 +258,11 @@ For testing:
 ```php
 // config/cashier-chip.php
 'webhooks' => [
-    'verify_signature' => env('CHIP_VERIFY_WEBHOOK', true),
+    'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
 ],
 
 // .env.testing
-CHIP_VERIFY_WEBHOOK=false
+CHIP_WEBHOOK_VERIFY_SIGNATURE=false
 ```
 
 ## Webhook Queues

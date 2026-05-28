@@ -23,11 +23,11 @@ $user->createAsChipCustomer([
 ]);
 ```
 
-### Create If Not Exists
+### Create or Get Existing Customer
 
 ```php
-// Only create if the user doesn't already have a CHIP ID
-$user->createAsChipCustomerIfNotExists();
+// Create a client if needed, otherwise reuse the linked one
+$user->createOrGetChipCustomer();
 ```
 
 ### Auto-Creation
@@ -66,33 +66,42 @@ $user->updateChipCustomer([
 ### Sync to CHIP
 
 ```php
-// Sync local user data to CHIP
-$user->syncToChip();
+// Sync the current billable details to CHIP
+$user->syncChipCustomerDetails();
+
+// Or create the customer first when needed
+$user->syncOrCreateChipCustomer();
 ```
 
 This syncs the following fields (if present on your model):
-- `name` → `full_name`
-- `email` → `email`
-- `phone` → `phone`
+- `chipName()` → `full_name`
+- `chipEmail()` → `email`
+- `chipPhone()` → `phone`
+- `chipCountry()` → `country`
+- `chipAddress()` → address fields
 
 ### Custom Sync Mapping
 
-Override the `chipCustomerData` method for custom mapping:
+Override the CHIP mapping helpers for custom data:
 
 ```php
 class User extends Authenticatable
 {
     use Billable;
-    
-    /**
-     * Get the customer data to sync with CHIP.
-     */
-    public function chipCustomerData(): array
+
+    public function chipName(): ?string
+    {
+        return $this->full_name;
+    }
+
+    public function chipPhone(): ?string
+    {
+        return $this->phone_number;
+    }
+
+    public function chipAddress(): array
     {
         return [
-            'full_name' => $this->full_name,
-            'email' => $this->email,
-            'phone' => $this->phone_number,
             'street_address' => $this->line1,
             'city' => $this->city,
             'country' => 'MY',
@@ -122,11 +131,11 @@ You can use different models for billing:
 
 ```php
 // In a service provider
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 
 public function boot(): void
 {
-    CashierChip::useCustomerModel(Team::class);
+    Cashier::useCustomerModel(Team::class);
 }
 ```
 

@@ -44,7 +44,7 @@ For saved payment methods (recurring tokens):
 // Charge using a specific recurring token
 $payment = $user->chargeWithRecurringToken(
     amount: 10000,
-    recurringToken: $user->defaultPaymentMethod(),
+    recurringToken: $user->defaultPaymentMethod()?->id(),
     options: [
         'reference' => 'Monthly Service Fee',
     ]
@@ -163,8 +163,8 @@ All amounts are in the smallest currency unit (cents for MYR):
 Format amounts for display:
 
 ```php
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 
-$formatted = CashierChip::formatAmount(10000, 'MYR');
+$formatted = Cashier::formatAmount(10000, 'MYR');
 // "RM 100.00"
 ```

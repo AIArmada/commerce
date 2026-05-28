@@ -153,9 +153,9 @@ dd([
     'id' => $session->id,
     'status' => $session->status->value,
     'current_step' => $session->current_step,
-    'completed_steps' => $session->completed_steps,
+    'step_states' => $session->step_states,
     'payment_attempts' => $session->payment_attempts,
-    'metadata' => $session->metadata,
+    'payment_data' => $session->payment_data,
 ]);
 ```
 
@@ -165,8 +165,8 @@ dd([
 $resolver = app(PaymentGatewayResolverInterface::class);
 
 dd([
-    'available' => $resolver->available(),
-    'default' => $resolver->getDefault(),
+    'available' => array_keys($resolver->getAvailable()),
+    'default' => $resolver->getDefaultGateway(),
 ]);
 ```
 
@@ -179,7 +179,10 @@ use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Data\PaymentResult;
 
 $mock = Mockery::mock(PaymentProcessorInterface::class);
-$mock->shouldReceive('process')->andReturn(
+$mock->shouldReceive('getIdentifier')->andReturn('mock');
+$mock->shouldReceive('getName')->andReturn('Mock');
+$mock->shouldReceive('isAvailable')->andReturn(true);
+$mock->shouldReceive('createPayment')->andReturn(
     PaymentResult::success('test_pay', 'test_txn', 10000)
 );
 

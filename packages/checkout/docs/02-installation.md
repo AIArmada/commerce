@@ -160,5 +160,5 @@ Or via Tinker:
 app(\AIArmada\Checkout\Contracts\CheckoutServiceInterface::class);
 
 // Check payment gateways
-app(\AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface::class)->available();
+app(\AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface::class)->getAvailable();
 ```

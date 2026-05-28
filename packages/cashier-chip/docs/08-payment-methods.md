@@ -23,9 +23,9 @@ When a customer completes a checkout with `force_recurring = true`, CHIP returns
 $paymentMethods = $user->paymentMethods();
 
 foreach ($paymentMethods as $method) {
-    echo $method->token;
-    echo $method->card_brand;
-    echo $method->last_four;
+    echo $method->id();
+    echo $method->brand();
+    echo $method->lastFour();
 }
 ```
 
@@ -102,16 +102,10 @@ $user->deletePaymentMethod($recurringToken);
 // This removes the local record only
 ```
 
-### Add Payment Method Directly
+There is no public `addPaymentMethod()` helper on the billable API. Recurring tokens are stored automatically when:
 
-```php
-// Add a recurring token received from webhook
-$user->addPaymentMethod($recurringToken, [
-    'card_brand' => 'visa',
-    'last_four' => '4242',
-    'is_default' => true,
-]);
-```
+- a successful webhook includes `force_recurring = true`
+- the package syncs tokens back from CHIP for an existing linked customer
 
 ## Payment Method Properties
 
@@ -119,12 +113,14 @@ Each payment method record contains:
 
 | Property | Description |
 |----------|-------------|
-| `token` | The recurring token string |
-| `card_brand` | Card brand (visa, mastercard, etc.) |
-| `last_four` | Last 4 digits of card |
-| `expiry_month` | Card expiry month |
-| `expiry_year` | Card expiry year |
-| `is_default` | Whether this is the default method |
+| `id()` | The recurring token string |
+| `brand()` | Card or payment-method brand |
+| `lastFour()` | Last 4 digits when provided |
+| `expirationMonth()` | Expiry month when CHIP returns it |
+| `expirationYear()` | Expiry year when CHIP returns it |
+| `isDefault()` | Whether this is the current default method |
+
+For Blade or presentation helpers, the wrapper also exposes aliases such as `cardBrand()`, `cardLastFour()`, `cardExpMonth()`, and `cardExpYear()`.
 
 ## Charging with Payment Methods
 
@@ -179,18 +175,18 @@ protected $listen = [
 
 ## Database Schema
 
-Payment methods are stored in `chip_payment_methods`:
+Payment methods are stored in `cashier_chip_payment_methods`:
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | uuid | Primary key |
 | `billable_id` | uuid | Foreign key to billable |
 | `billable_type` | string | Billable model class |
-| `token` | string | CHIP recurring token |
-| `card_brand` | string | Card brand |
+| `recurring_token` | string | CHIP recurring token |
+| `type` | string nullable | Payment-method type |
+| `brand` | string nullable | Card or payment-method brand |
 | `last_four` | string | Last 4 digits |
-| `expiry_month` | int | Expiry month |
-| `expiry_year` | int | Expiry year |
 | `is_default` | boolean | Default flag |
+| `metadata` | json nullable | Raw token payload and synced details |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |

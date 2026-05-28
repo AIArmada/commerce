@@ -44,8 +44,8 @@ use AIArmada\CashierChip\Checkout;
 $checkout = Checkout::customer($user)
     ->addProduct('Monthly Plan', 9900)
     ->addProduct('Setup Fee', 2500)
-    ->successUrl(route('checkout.success'))
-    ->cancelUrl(route('checkout.cancel'))
+    ->successUrl(route('checkout.payment.success'))
+    ->cancelUrl(route('checkout.payment.cancel'))
     ->webhookUrl(route('chip.webhook'))
     ->recurring()  // Request recurring token
     ->withMetadata(['order_id' => $order->id])
@@ -61,8 +61,8 @@ return $checkout->redirect();
 
 ```php
 $checkout = $user->checkout(10000, [
-    'success_url' => route('checkout.success'),
-    'cancel_url' => route('checkout.cancel'),
+    'success_url' => route('checkout.payment.success'),
+    'cancel_url' => route('checkout.payment.cancel'),
 ]);
 ```
 

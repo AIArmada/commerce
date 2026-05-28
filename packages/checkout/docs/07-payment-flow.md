@@ -44,6 +44,23 @@ if ($result->requiresRedirect()) {
 
 The redirect URL includes the configured session query parameter (default `session`) plus a per-session `checkout_callback_token`. `ProcessPaymentStep` preserves that callback token across retries by merging new gateway payload data into the existing `payment_data` instead of overwriting it.
 
+## Subject Resolution Before Payment
+
+Before `process_payment` runs, the `resolve_customer` step asks Commerce Support's payment-subject resolver for the best subject for the current checkout session.
+
+That step reads:
+
+- the authenticated actor
+- the current `customer_id`
+- the current billable morph
+- `billing_data`
+- `shipping_data`
+- the current owner context
+
+When the resolver returns a `Customer`, checkout writes that customer back to the session and fills empty `billing_data` / `shipping_data` from the customer's default addresses. When it returns another model, checkout stores that model as the billable morph and continues the payment flow with that subject.
+
+This resolution stage is what lets `cashier-chip` use billable models for authenticated flows while still supporting guest purchases from the same checkout pipeline.
+
 ## Callback Routes
 
 The package registers routes for handling payment gateway callbacks:
