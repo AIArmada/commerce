@@ -13,43 +13,36 @@ use Filament\Tables\Table;
 
 final class PaymentMethodsRelationManager extends RelationManager
 {
-    protected static string $relationship = 'paymentMethods';
+    protected static string $relationship = 'storedPaymentMethods';
 
     protected static ?string $title = 'Payment Methods';
 
-    /**
-     * Since payment methods are not Eloquent models (they're from API),
-     * we need to handle this differently.
-     */
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => $this->getOwnerRecord()->query()->whereKey($this->getOwnerRecord()->getKey()))
             ->columns([
-                TextColumn::make('type')
+                TextColumn::make('brand')
                     ->label('Type')
-                    ->getStateUsing(fn (): string => $this->getOwnerRecord()->pm_type ?? 'Unknown')
+                    ->formatStateUsing(fn (?string $state, $record): string => ucfirst($state ?? $record->type ?? 'Unknown'))
                     ->badge()
-                    ->color('primary')
-                    ->formatStateUsing(fn (?string $state): string => ucfirst($state ?? 'Unknown')),
+                    ->color('primary'),
 
                 TextColumn::make('last_four')
                     ->label('Last Four')
-                    ->getStateUsing(fn (): string => '•••• ' . ($this->getOwnerRecord()->pm_last_four ?? '****')),
+                    ->formatStateUsing(fn (?string $state): string => '•••• ' . ($state ?? '****')),
 
                 IconColumn::make('is_default')
                     ->label('Default')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
-                    ->trueColor('success')
-                    ->getStateUsing(fn (): bool => true),
+                    ->trueColor('success'),
             ])
             ->headerActions([
                 Action::make('add_payment_method')
                     ->label('Add Payment Method')
                     ->icon('heroicon-o-plus')
                     ->color('success')
-                    ->visible(fn (): bool => ! empty($this->getOwnerRecord()->chip_id))
+                    ->visible(fn (): bool => method_exists($this->getOwnerRecord(), 'hasChipId') && $this->getOwnerRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getOwnerRecord();
 
@@ -80,7 +73,7 @@ final class PaymentMethodsRelationManager extends RelationManager
                     ->label('Refresh from Chip')
                     ->icon('heroicon-o-arrow-path')
                     ->color('gray')
-                    ->visible(fn (): bool => ! empty($this->getOwnerRecord()->chip_id))
+                    ->visible(fn (): bool => method_exists($this->getOwnerRecord(), 'hasChipId') && $this->getOwnerRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getOwnerRecord();
 
@@ -100,14 +93,14 @@ final class PaymentMethodsRelationManager extends RelationManager
                     ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(function (): void {
-                        $record = $this->getOwnerRecord();
+                    ->action(function ($record): void {
+                        $owner = $this->getOwnerRecord();
 
-                        if (method_exists($record, 'deletePaymentMethods')) {
-                            $record->deletePaymentMethods();
+                        if (method_exists($owner, 'deletePaymentMethod')) {
+                            $owner->deletePaymentMethod($record->recurring_token);
 
                             Notification::make()
-                                ->title('Payment Methods Deleted')
+                                ->title('Payment Method Deleted')
                                 ->success()
                                 ->send();
                         }
@@ -120,7 +113,7 @@ final class PaymentMethodsRelationManager extends RelationManager
                 Action::make('add_first')
                     ->label('Add Payment Method')
                     ->icon('heroicon-o-plus')
-                    ->visible(fn (): bool => ! empty($this->getOwnerRecord()->chip_id))
+                    ->visible(fn (): bool => method_exists($this->getOwnerRecord(), 'hasChipId') && $this->getOwnerRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getOwnerRecord();
 
@@ -135,13 +128,5 @@ final class PaymentMethodsRelationManager extends RelationManager
                         }
                     }),
             ]);
-    }
-
-    /**
-     * Override to indicate this isn't a standard Eloquent relationship.
-     */
-    public function isReadOnly(): bool
-    {
-        return true;
     }
 }

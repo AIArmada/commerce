@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
@@ -9,6 +10,7 @@ use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 
 uses(CashierChipTestCase::class);
@@ -44,8 +46,7 @@ it('scopes reads and blocks cross-tenant subscription item writes', function ():
     bindCashierChipOwner($ownerB);
 
     /** @var Subscription $subscriptionB */
-    $subscriptionB = Subscription::factory()->create([
-        'user_id' => $ownerB->id,
+    $subscriptionB = Subscription::factory()->for($ownerB, 'billable')->create([
         'type' => 'default',
     ]);
 
@@ -85,8 +86,7 @@ it('blocks subscription creation when billable differs from owner and owner-scop
 
     bindCashierChipOwner($owner);
 
-    expect(fn () => Subscription::factory()->create([
-        'user_id' => $customer->id,
+    expect(fn () => Subscription::factory()->for($customer, 'billable')->create([
         'type' => 'default',
     ]))->toThrow(AuthorizationException::class);
 });
@@ -109,12 +109,67 @@ it('allows subscription creation when validate_billable_owner is disabled', func
 
     bindCashierChipOwner($owner);
 
-    $subscription = Subscription::factory()->create([
-        'user_id' => $customer->id,
+    $subscription = Subscription::factory()->for($customer, 'billable')->create([
         'type' => 'default',
     ]);
 
     expect($subscription->owner_type)->toBe($owner->getMorphClass());
     expect($subscription->owner_id)->toBe($owner->getKey());
-    expect($subscription->user_id)->toBe($customer->getKey());
+    expect($subscription->billable_id)->toBe($customer->getKey());
+});
+
+it('blocks cross-tenant subscription creation when billable type uses a morph alias', function (): void {
+    $originalMorphMap = Relation::morphMap();
+
+    Relation::morphMap(['cashier-chip-user' => User::class], false);
+
+    try {
+        config()->set('cashier-chip.features.owner.enabled', true);
+        config()->set('cashier-chip.features.owner.include_global', false);
+        config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
+        config()->set('cashier-chip.features.owner.validate_billable_owner', true);
+
+        $owner = User::query()->create([
+            'name' => 'Owner Morph Alias',
+            'email' => 'cashier-chip-owner-morph@example.com',
+        ]);
+
+        $customer = User::query()->create([
+            'name' => 'Customer Morph Alias',
+            'email' => 'cashier-chip-customer-morph@example.com',
+        ]);
+
+        bindCashierChipOwner($owner);
+
+        expect(fn () => Subscription::factory()->for($customer, 'billable')->create([
+            'type' => 'default',
+        ]))->toThrow(AuthorizationException::class);
+    } finally {
+        Relation::morphMap($originalMorphMap, false);
+    }
+});
+
+it('blocks cross-tenant payment method writes for billables in owner mode', function (): void {
+    config()->set('cashier-chip.features.owner.enabled', true);
+    config()->set('cashier-chip.features.owner.include_global', false);
+    config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
+    config()->set('cashier-chip.features.owner.validate_billable_owner', true);
+
+    $owner = User::query()->create([
+        'name' => 'Owner Payment Method',
+        'email' => 'cashier-chip-owner-payment-method@example.com',
+    ]);
+
+    $customer = User::query()->create([
+        'name' => 'Customer Payment Method',
+        'email' => 'cashier-chip-customer-payment-method@example.com',
+    ]);
+
+    bindCashierChipOwner($owner);
+
+    expect(fn () => Cashier::paymentMethodStore()->saveForBillable(
+        $customer,
+        'tok_cross_tenant',
+        ['type' => 'card'],
+    ))->toThrow(AuthorizationException::class);
 });

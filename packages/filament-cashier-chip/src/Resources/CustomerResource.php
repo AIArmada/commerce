@@ -75,7 +75,6 @@ final class CustomerResource extends BaseCashierChipResource
         return [
             'name',
             'email',
-            'chip_id',
         ];
     }
 

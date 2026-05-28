@@ -163,13 +163,14 @@ final class ListInvoices extends ListRecords
         // Collect CHIP invoices/purchases
         if ($detector->isAvailable('chip') && class_exists(Purchase::class)) {
             $chipPurchases = CashierOwnerScope::apply(Purchase::query())
-                ->where('user_id', $userId)
+                ->where('metadata->billable_type', $user->getMorphClass())
+                ->where('metadata->billable_id', (string) $user->getKey())
                 ->orderByDesc('created_at')
                 ->limit(100)
                 ->get();
 
             foreach ($chipPurchases as $purchase) {
-                $invoices->push($this->mapUnifiedInvoice(UnifiedInvoice::fromChip($purchase, (string) ($purchase->user_id ?? ''))));
+                $invoices->push($this->mapUnifiedInvoice(UnifiedInvoice::fromChip($purchase, (string) $user->getKey())));
             }
         }
 

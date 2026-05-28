@@ -21,7 +21,7 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
         Schema::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('user_id');
+            $table->uuidMorphs('billable');
             $table->nullableMorphs('owner');
             $table->string('type');
             $table->string('chip_id')->unique();
@@ -72,7 +72,8 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
     $activeId = (string) Str::uuid();
     ChipSubscription::query()->create([
         'id' => $activeId,
-        'user_id' => (string) $user->getKey(),
+        'billable_type' => $user->getMorphClass(),
+        'billable_id' => (string) $user->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $activeId,
         'chip_status' => ChipSubscription::STATUS_ACTIVE,
@@ -90,7 +91,8 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
     $graceId = (string) Str::uuid();
     ChipSubscription::query()->create([
         'id' => $graceId,
-        'user_id' => (string) $user->getKey(),
+        'billable_type' => $user->getMorphClass(),
+        'billable_id' => (string) $user->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $graceId,
         'chip_status' => ChipSubscription::STATUS_CANCELED,
@@ -130,7 +132,7 @@ it('limits customer portal subscriptions and can load more', function (): void {
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
         Schema::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('user_id');
+            $table->uuidMorphs('billable');
             $table->nullableMorphs('owner');
             $table->string('type');
             $table->string('chip_id')->unique();
@@ -184,7 +186,8 @@ it('limits customer portal subscriptions and can load more', function (): void {
 
         ChipSubscription::query()->create([
             'id' => $id,
-            'user_id' => (string) $user->getKey(),
+            'billable_type' => $user->getMorphClass(),
+            'billable_id' => (string) $user->getKey(),
             'type' => 'default',
             'chip_id' => 'sub_' . $id,
             'chip_status' => ChipSubscription::STATUS_ACTIVE,

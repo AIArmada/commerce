@@ -86,8 +86,9 @@ final class SubscriptionInfolist
                                 ->copyable()
                                 ->placeholder('—'),
 
-                            TextEntry::make('customer.chip_id')
+                            TextEntry::make('customer_chip_customer_id')
                                 ->label('Chip Customer ID')
+                                ->getStateUsing(fn (Subscription $record): ?string => method_exists($record->customer, 'chipId') ? $record->customer->chipId() : null)
                                 ->copyable()
                                 ->placeholder('Not linked'),
                         ]),

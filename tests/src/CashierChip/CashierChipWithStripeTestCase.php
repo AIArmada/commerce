@@ -26,7 +26,6 @@ abstract class CashierChipWithStripeTestCase extends CashierChipTestCase
             $table->string('name');
             $table->string('email')->unique();
             $table->string('phone')->nullable();
-            $table->string('default_pm_id')->nullable();
             $table->timestamps();
         });
 

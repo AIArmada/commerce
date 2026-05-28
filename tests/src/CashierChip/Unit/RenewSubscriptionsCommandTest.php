@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
+use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Subscription;
@@ -11,7 +12,11 @@ use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Carbon\Carbon;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\Event;
+use ReflectionMethod;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 class RenewSubscriptionsCommandTest extends CashierChipTestCase
 {
@@ -24,7 +29,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
     public function test_command_runs_with_dry_run_option(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        Subscription::factory()->for($user, 'customer')->create([
+        Subscription::factory()->for($user, 'billable')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
             'chip_price' => 'price_123',
@@ -38,7 +43,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
     {
         // Subscription with null owner should be skipped
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        Subscription::factory()->for($user, 'customer')->create([
+        Subscription::factory()->for($user, 'billable')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
@@ -63,7 +68,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         $token = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
         $user->updateDefaultPaymentMethod($token['id']);
 
-        $subscription = Subscription::factory()->for($user, 'customer')->create([
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
@@ -73,8 +78,9 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
             'quantity' => 2,
         ]);
 
-        $this->artisan('cashier-chip:renew-subscriptions')
-            ->assertSuccessful();
+        $result = $this->processRenewals();
+
+        $this->assertSame(['renewed' => 1, 'failed' => 0], $result);
 
         Event::assertDispatched(SubscriptionRenewed::class);
         Event::assertNotDispatched(SubscriptionRenewalFailed::class);
@@ -90,7 +96,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         /** @var User $user */
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
-        $subscription = Subscription::factory()->for($user, 'customer')->create([
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
@@ -100,8 +106,9 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
             'quantity' => 1,
         ]);
 
-        $this->artisan('cashier-chip:renew-subscriptions')
-            ->assertFailed();
+        $result = $this->processRenewals();
+
+        $this->assertSame(['renewed' => 0, 'failed' => 1], $result);
 
         $subscription->refresh();
 
@@ -124,7 +131,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         $token = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
         $user->updateDefaultPaymentMethod($token['id']);
 
-        $subscription = Subscription::factory()->for($user, 'customer')->create([
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
@@ -134,8 +141,9 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
             'quantity' => 1,
         ]);
 
-        $this->artisan('cashier-chip:renew-subscriptions')
-            ->assertFailed();
+        $result = $this->processRenewals();
+
+        $this->assertSame(['renewed' => 0, 'failed' => 1], $result);
 
         $subscription->refresh();
 
@@ -143,5 +151,25 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         Event::assertDispatched(SubscriptionRenewalFailed::class);
         Event::assertNotDispatched(SubscriptionRenewed::class);
+    }
+
+    /**
+     * @return array{renewed: int, failed: int}
+     */
+    private function processRenewals(bool $dryRun = false, int $graceHours = 0): array
+    {
+        $command = $this->app->make(RenewSubscriptionsCommand::class);
+        $command->setLaravel($this->app);
+        $command->setOutput(new OutputStyle(
+            new ArrayInput([]),
+            new BufferedOutput,
+        ));
+
+        $method = new ReflectionMethod($command, 'processRenewals');
+
+        /** @var array{renewed: int, failed: int} $result */
+        $result = $method->invoke($command, $dryRun, $graceHours);
+
+        return $result;
     }
 }

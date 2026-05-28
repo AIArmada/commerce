@@ -97,8 +97,9 @@ final class ManageSubscriptions extends Page
         if ($detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
             $chipModels = CashierOwnerScope::apply($subscriptionModel::query())
-                ->with('items')
-                ->where('user_id', $userIdentifier)
+                ->with(['billable', 'items'])
+                ->where('billable_type', $user->getMorphClass())
+                ->where('billable_id', (string) $user->getKey())
                 ->orderByDesc('created_at')
                 ->limit($fetchLimit)
                 ->get()
@@ -269,8 +270,9 @@ final class ManageSubscriptions extends Page
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
             $sub = CashierOwnerScope::apply($subscriptionModel::query())
-                ->with('items')
-                ->where('user_id', $userId)
+                ->with(['billable', 'items'])
+                ->where('billable_type', $user->getMorphClass())
+                ->where('billable_id', (string) $user->getKey())
                 ->whereKey($id)
                 ->first();
 

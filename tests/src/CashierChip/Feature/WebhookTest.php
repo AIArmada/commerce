@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CashierChip\Subscription;
@@ -163,14 +164,15 @@ it('resolves billable by owner context when chip_id is duplicated across tenants
     $ownerB = User::query()->create([
         'name' => 'Owner B Duplicate',
         'email' => 'cashier-chip-owner-b-dup@example.com',
-        'chip_id' => 'duplicated-client-id',
     ]);
 
     $ownerA = User::query()->create([
         'name' => 'Owner A Duplicate',
         'email' => 'cashier-chip-owner-a-dup@example.com',
-        'chip_id' => 'duplicated-client-id',
     ]);
+
+    OwnerContext::withOwner($ownerB, fn () => Cashier::chipCustomerDirectory()->link($ownerB, 'duplicated-client-id'));
+    OwnerContext::withOwner($ownerA, fn () => Cashier::chipCustomerDirectory()->link($ownerA, 'duplicated-client-id'));
 
     $purchaseData = [
         'id' => 'test-purchase-id-owner-a',
@@ -188,6 +190,6 @@ it('resolves billable by owner context when chip_id is duplicated across tenants
         PurchasePaid::dispatch($purchase, $purchaseData);
     });
 
-    expect($ownerA->fresh()?->default_pm_id)->toBe('tok_owner_a_only');
-    expect($ownerB->fresh()?->default_pm_id)->toBeNull();
+    OwnerContext::withOwner($ownerA, fn () => expect($ownerA->fresh()?->default_pm_id)->toBe('tok_owner_a_only'));
+    OwnerContext::withOwner($ownerB, fn () => expect($ownerB->fresh()?->default_pm_id)->toBeNull());
 });

@@ -6,13 +6,24 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\PaymentMethod;
+use AIArmada\CashierChip\StoredPaymentMethod;
 use AIArmada\Chip\Data\PurchaseData;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use SensitiveParameter;
-use Throwable;
 
 trait ManagesPaymentMethods // @phpstan-ignore trait.unused
 {
+    /**
+     * @return MorphMany<StoredPaymentMethod, $this>
+     */
+    public function storedPaymentMethods(): MorphMany
+    {
+        return $this->morphMany(StoredPaymentMethod::class, 'billable')
+            ->orderByDesc('is_default')
+            ->orderByDesc('created_at');
+    }
+
     /**
      * Get the customer's recurring tokens (payment methods).
      *
@@ -20,23 +31,14 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function paymentMethods(): Collection
     {
-        if (! $this->hasChipId()) {
-            return collect();
+        $paymentMethods = Cashier::paymentMethodStore()->allForBillable($this);
+
+        if ($paymentMethods->isEmpty() && $this->hasChipId()) {
+            $this->syncPaymentMethodsFromChip();
+            $paymentMethods = Cashier::paymentMethodStore()->allForBillable($this);
         }
 
-        try {
-            $tokens = Cashier::chip()->listClientRecurringTokens($this->chip_id);
-        } catch (Throwable) {
-            return collect();
-        }
-
-        if (isset($tokens['results']) && is_array($tokens['results'])) {
-            $tokens = $tokens['results'];
-        }
-
-        return collect($tokens)->map(function ($token) {
-            return new PaymentMethod($this, $token);
-        });
+        return $paymentMethods->map(fn ($paymentMethod) => new PaymentMethod($this, $paymentMethod));
     }
 
     /**
@@ -44,17 +46,13 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function findPaymentMethod(#[SensitiveParameter] string $paymentMethodId): ?PaymentMethod
     {
-        if (! $this->hasChipId()) {
-            return null;
+        $paymentMethod = Cashier::paymentMethodStore()->findForBillable($this, $paymentMethodId);
+
+        if ($paymentMethod === null && $this->hasChipId()) {
+            $paymentMethod = $this->syncPaymentMethodFromChip($paymentMethodId);
         }
 
-        try {
-            $token = Cashier::chip()->getClientRecurringToken($this->chip_id, $paymentMethodId);
-
-            return new PaymentMethod($this, $token);
-        } catch (Throwable) {
-            return null;
-        }
+        return $paymentMethod === null ? null : new PaymentMethod($this, $paymentMethod);
     }
 
     /**
@@ -62,7 +60,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function hasDefaultPaymentMethod(): bool
     {
-        return ! is_null($this->default_pm_id) || ! is_null($this->pm_type);
+        return $this->defaultPaymentMethod() !== null;
     }
 
     /**
@@ -70,7 +68,11 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function hasPaymentMethod(): bool
     {
-        return $this->paymentMethods()->isNotEmpty();
+        if (! Cashier::paymentMethodStore()->hasAnyForBillable($this) && $this->hasChipId()) {
+            $this->syncPaymentMethodsFromChip();
+        }
+
+        return Cashier::paymentMethodStore()->hasAnyForBillable($this);
     }
 
     /**
@@ -78,27 +80,29 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function defaultPaymentMethod(): ?PaymentMethod
     {
-        if (! $this->hasChipId()) {
-            return null;
+        $paymentMethod = Cashier::paymentMethodStore()->defaultForBillable($this);
+
+        if ($paymentMethod === null && $this->hasChipId()) {
+            $this->syncPaymentMethodsFromChip();
+            $paymentMethod = Cashier::paymentMethodStore()->defaultForBillable($this);
         }
 
-        $paymentMethods = $this->paymentMethods();
+        return $paymentMethod === null ? null : new PaymentMethod($this, $paymentMethod);
+    }
 
-        if ($paymentMethods->isEmpty()) {
-            return null;
-        }
+    public function getDefaultPmIdAttribute(): ?string
+    {
+        return $this->defaultPaymentMethod()?->id();
+    }
 
-        if (is_string($this->default_pm_id)) {
-            $preferredPaymentMethod = $paymentMethods->first(
-                fn (PaymentMethod $paymentMethod): bool => $paymentMethod->id() === $this->default_pm_id
-            );
+    public function getPmTypeAttribute(): ?string
+    {
+        return $this->defaultPaymentMethod()?->brand() ?? $this->defaultPaymentMethod()?->type();
+    }
 
-            if ($preferredPaymentMethod instanceof PaymentMethod) {
-                return $preferredPaymentMethod;
-            }
-        }
-
-        return $paymentMethods->first();
+    public function getPmLastFourAttribute(): ?string
+    {
+        return $this->defaultPaymentMethod()?->lastFour();
     }
 
     /**
@@ -106,19 +110,14 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function updateDefaultPaymentMethod(#[SensitiveParameter] string $paymentMethodId): self
     {
-        $paymentMethod = $this->findPaymentMethod($paymentMethodId);
+        $paymentMethod = Cashier::paymentMethodStore()->setDefaultForBillable($this, $paymentMethodId);
 
-        if ($paymentMethod) {
-            $paymentMethodData = $paymentMethod->toArray();
-            $brand = $paymentMethod->brand()
-                ?? ($paymentMethodData['card']['brand'] ?? null)
-                ?? ($paymentMethodData['transaction_data']['extra']['card_brand'] ?? null);
+        if ($paymentMethod === null && $this->hasChipId()) {
+            $syncedPaymentMethod = $this->syncPaymentMethodFromChip($paymentMethodId, makeDefault: true);
 
-            $this->forceFill([
-                'default_pm_id' => $paymentMethodId,
-                'pm_type' => is_string($brand) && $brand !== '' ? $brand : $paymentMethod->type(),
-                'pm_last_four' => $paymentMethod->lastFour(),
-            ])->save();
+            if ($syncedPaymentMethod === null) {
+                return $this;
+            }
         }
 
         return $this;
@@ -129,20 +128,12 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function updateDefaultPaymentMethodFromChip(): self
     {
-        $defaultMethod = $this->paymentMethods()->first();
+        $this->syncPaymentMethodsFromChip();
 
-        if ($defaultMethod) {
-            $this->forceFill([
-                'default_pm_id' => $defaultMethod->id(),
-                'pm_type' => $defaultMethod->brand() ?? $defaultMethod->type(),
-                'pm_last_four' => $defaultMethod->lastFour(),
-            ])->save();
-        } else {
-            $this->forceFill([
-                'default_pm_id' => null,
-                'pm_type' => null,
-                'pm_last_four' => null,
-            ])->save();
+        $defaultMethod = Cashier::paymentMethodStore()->defaultForBillable($this);
+
+        if ($defaultMethod !== null) {
+            Cashier::paymentMethodStore()->setDefaultForBillable($this, $defaultMethod->recurring_token);
         }
 
         return $this;
@@ -153,18 +144,11 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
      */
     public function deletePaymentMethod(#[SensitiveParameter] string $paymentMethodId): void
     {
-        if (! $this->hasChipId()) {
-            return;
+        if ($this->hasChipId()) {
+            Cashier::chip()->deleteClientRecurringToken($this->chipId(), $paymentMethodId);
         }
 
-        $wasDefaultPaymentMethod = $this->default_pm_id === $paymentMethodId;
-
-        Cashier::chip()->deleteClientRecurringToken($this->chip_id, $paymentMethodId);
-
-        // If this was the default, update it
-        if ($wasDefaultPaymentMethod || $this->hasDefaultPaymentMethod()) {
-            $this->updateDefaultPaymentMethodFromChip();
-        }
+        Cashier::paymentMethodStore()->deleteForBillable($this, $paymentMethodId);
     }
 
     /**
@@ -176,11 +160,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             $paymentMethod->delete();
         }
 
-        $this->forceFill([
-            'default_pm_id' => null,
-            'pm_type' => null,
-            'pm_last_four' => null,
-        ])->save();
+        Cashier::paymentMethodStore()->deleteAllForBillable($this);
     }
 
     /**
@@ -204,7 +184,7 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
         }
 
         $purchaseData = array_merge([
-            'client_id' => $this->chip_id,
+            'client_id' => $this->chipId(),
             'send_receipt' => false,
             'skip_capture' => true,
             'total_override' => 0,
@@ -239,5 +219,74 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
         $purchase = $this->createSetupPurchase($options);
 
         return $purchase->checkout_url ?? '';
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function chipRecurringTokens(): array
+    {
+        if (! $this->hasChipId()) {
+            return [];
+        }
+
+        $response = Cashier::chip()->listClientRecurringTokens($this->chipId());
+        $results = $response['results'] ?? [];
+
+        return is_array($results) ? array_values(array_filter($results, 'is_array')) : [];
+    }
+
+    protected function syncPaymentMethodsFromChip(): void
+    {
+        foreach ($this->chipRecurringTokens() as $index => $token) {
+            $tokenId = $token['id'] ?? $token['recurring_token'] ?? null;
+
+            if (! is_string($tokenId) || $tokenId === '') {
+                continue;
+            }
+
+            $makeDefault = ($token['is_default'] ?? false) === true || $index === 0;
+
+            Cashier::paymentMethodStore()->saveForBillable(
+                $this,
+                $tokenId,
+                $this->paymentMethodAttributesFromToken($token),
+                $makeDefault,
+            );
+        }
+    }
+
+    protected function syncPaymentMethodFromChip(string $paymentMethodId, bool $makeDefault = false): ?StoredPaymentMethod
+    {
+        if (! $this->hasChipId()) {
+            return null;
+        }
+
+        $token = Cashier::chip()->getClientRecurringToken($this->chipId(), $paymentMethodId);
+
+        if (! is_array($token) || $token === []) {
+            return null;
+        }
+
+        return Cashier::paymentMethodStore()->saveForBillable(
+            $this,
+            $paymentMethodId,
+            $this->paymentMethodAttributesFromToken($token),
+            $makeDefault,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $token
+     * @return array<string, mixed>
+     */
+    protected function paymentMethodAttributesFromToken(array $token): array
+    {
+        return [
+            'type' => $token['type'] ?? $token['payment_method'] ?? null,
+            'brand' => $token['card_brand'] ?? $token['brand'] ?? null,
+            'last_four' => $token['last_4'] ?? $token['card_last_4'] ?? $token['last_four'] ?? null,
+            'metadata' => $token,
+        ];
     }
 }

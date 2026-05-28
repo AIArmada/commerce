@@ -95,7 +95,7 @@ it('builds customer options, plans, payment methods, and can create a subscripti
     $plans = filamentCashier_invokeProtectedMethod($page, 'getPlansForGateway', ['chip']);
     expect($plans)->toBeArray()->toHaveKey('plan_a')->toHaveKey('plan_b');
 
-    $paymentMethods = filamentCashier_invokeProtectedMethod($page, 'getPaymentMethodsForUser', [(string) $user->getKey(), 'chip']);
+    $paymentMethods = filamentCashier_invokeProtectedMethod($page, 'getPaymentMethodsForBillable', [(string) $user->getKey(), 'chip']);
     expect($paymentMethods)->toBeArray()->toHaveKey('chip_pm_1')->toHaveKey('chip_pm_2');
 
     $gateway = Mockery::mock(GatewayContract::class);
@@ -116,7 +116,7 @@ it('builds customer options, plans, payment methods, and can create a subscripti
     $builder->shouldReceive('create')->once()->withNoArgs()->andReturn($subscription);
 
     $created = filamentCashier_invokeProtectedMethod($page, 'handleRecordCreation', [[
-        'user_id' => $user->getKey(),
+        'billable_id' => $user->getKey(),
         'gateway' => 'chip',
         'type' => 'default',
         'plan_id' => 'plan_a',
@@ -129,7 +129,7 @@ it('builds customer options, plans, payment methods, and can create a subscripti
     expect($created)->toBeInstanceOf(ChipBillableUser::class);
 
     $createdWithoutPaymentMethod = filamentCashier_invokeProtectedMethod($page, 'handleRecordCreation', [[
-        'user_id' => $user->getKey(),
+        'billable_id' => $user->getKey(),
         'gateway' => 'chip',
         'type' => 'default',
         'plan_id' => 'plan_a',
@@ -175,7 +175,7 @@ it('rejects creating a subscription with an inaccessible payment method id', fun
     $page = app(CreateSubscription::class);
 
     expect(fn () => filamentCashier_invokeProtectedMethod($page, 'handleRecordCreation', [[
-        'user_id' => $user->getKey(),
+        'billable_id' => $user->getKey(),
         'gateway' => 'chip',
         'type' => 'default',
         'plan_id' => 'plan_a',

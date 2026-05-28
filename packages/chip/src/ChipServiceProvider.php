@@ -9,11 +9,13 @@ use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
 use AIArmada\Chip\Commands\CleanWebhooksCommand;
 use AIArmada\Chip\Commands\RetryWebhooksCommand;
+use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\Chip\Services\ChipCustomerDirectory;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\Chip\Support\DocsIntegrationRegistrar;
@@ -141,6 +143,8 @@ final class ChipServiceProvider extends PackageServiceProvider
     {
         return [
             ChipCollectService::class,
+            ChipCustomerDirectory::class,
+            ChipCustomerDirectoryInterface::class,
             ChipSendService::class,
             WebhookService::class,
             ChipCollectClient::class,
@@ -183,6 +187,14 @@ final class ChipServiceProvider extends PackageServiceProvider
                 $app->make(CacheRepository::class)
             );
         });
+
+        $this->app->singleton(ChipCustomerDirectory::class, function ($app): ChipCustomerDirectory {
+            return new ChipCustomerDirectory(
+                $app->make(ChipCollectService::class)
+            );
+        });
+
+        $this->app->alias(ChipCustomerDirectory::class, ChipCustomerDirectoryInterface::class);
 
         $this->app->singleton(ChipSendService::class, function ($app): ChipSendService {
             return new ChipSendService(

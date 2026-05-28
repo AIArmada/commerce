@@ -33,7 +33,7 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
     if (! Schema::hasTable('cashier_chip_subscriptions')) {
         Schema::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('user_id');
+            $table->uuidMorphs('billable');
             $table->nullableMorphs('owner');
             $table->string('type');
             $table->string('chip_id')->unique();
@@ -84,7 +84,8 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
     $activeId = (string) Str::uuid();
     ChipSubscription::query()->create([
         'id' => $activeId,
-        'user_id' => (string) $user->getKey(),
+        'billable_type' => $user->getMorphClass(),
+        'billable_id' => (string) $user->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $activeId,
         'chip_status' => ChipSubscription::STATUS_ACTIVE,
@@ -102,7 +103,8 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
     $canceledId = (string) Str::uuid();
     ChipSubscription::query()->create([
         'id' => $canceledId,
-        'user_id' => (string) $user->getKey(),
+        'billable_type' => $user->getMorphClass(),
+        'billable_id' => (string) $user->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $canceledId,
         'chip_status' => ChipSubscription::STATUS_CANCELED,

@@ -150,6 +150,24 @@ $storedClient = Chip::getClient($client->id);
 $recurringTokens = Chip::listClientRecurringTokens($client->id);
 ```
 
+### Customer Directory
+
+Billing packages can use the CHIP customer directory to link any local billable model to a CHIP client ID:
+
+```php
+use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
+
+$directory = app(ChipCustomerDirectoryInterface::class);
+
+$link = $directory->link($user, $client->id, [
+    'source' => 'checkout',
+]);
+
+$chipCustomerId = $directory->getChipCustomerId($user);
+```
+
+The directory stores links in `chip_customers` and applies owner scoping through `commerce-support` when CHIP owner mode is enabled.
+
 ### Account Information
 
 ```php

@@ -176,6 +176,12 @@ class CustomerResource extends Resource
                     ->formatStateUsing(fn ($state) => $state->label())
                     ->color(fn ($state) => $state->color()),
 
+                Tables\Columns\TextColumn::make('company')
+                    ->label('Company')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->toggleable(),
+
                 Tables\Columns\IconColumn::make('accepts_marketing')
                     ->label('Marketing')
                     ->boolean()
@@ -276,6 +282,9 @@ class CustomerResource extends Resource
                         TextEntry::make('phone')
                             ->label('Phone')
                             ->copyable(),
+                        TextEntry::make('company')
+                            ->label('Company')
+                            ->placeholder('Not set'),
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()

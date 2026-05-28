@@ -8,7 +8,7 @@ use AIArmada\CashierChip\Payment;
 use AIArmada\CashierChip\PaymentMethod;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\ClientData;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 interface BillableContract
 {
@@ -52,7 +52,7 @@ interface BillableContract
 
     public function deletePaymentMethod(string $paymentMethodId): void;
 
-    public function subscriptions(): HasMany;
+    public function subscriptions(): MorphMany;
 
     public function subscription(string $type = 'default'): ?Subscription;
 }

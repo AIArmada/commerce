@@ -43,7 +43,7 @@ final class ListCustomers extends ListRecords
                 ->action(function (): void {
                     $model = Cashier::$customerModel;
                     $customers = CashierChipOwnerScope::apply($model::query())
-                        ->whereNull('chip_id')
+                        ->whereDoesntHave('chipCustomerLink')
                         ->get();
                     $synced = 0;
                     $failed = 0;

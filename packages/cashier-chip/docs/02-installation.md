@@ -101,21 +101,16 @@ Only publish the migration tag when you want to customize the package-owned migr
 php artisan vendor:publish --tag=cashier-chip-migrations
 ```
 
-This creates the following tables by default:
+After the `aiarmada/chip` and `aiarmada/cashier-chip` migrations run, these tables exist by default:
 
+- `chip_customers` - Subject-to-CHIP customer links from `aiarmada/chip`
+- `cashier_chip_payment_methods` - Stored recurring tokens for billable models from `aiarmada/cashier-chip`
 - `cashier_chip_subscriptions` - Subscription records
 - `cashier_chip_subscription_items` - Subscription line items
 
-It also adds the billable columns:
-
-- `chip_id`
-- `default_pm_id`
-
-When `laravel/cashier` is **not** installed, Cashier CHIP additionally provisions the shared
-standalone columns `pm_type`, `pm_last_four`, and `trial_ends_at`.
-
-When `laravel/cashier` **is** installed, those shared columns remain owned by Laravel Cashier and
-Cashier CHIP intentionally leaves them alone to avoid duplicated ownership.
+Cashier CHIP stores CHIP-specific customer and payment-method state in its own package tables.
+Your billable model does **not** need `chip_id`, `default_pm_id`, `pm_type`, or `pm_last_four`
+columns.
 
 ## Billable Model
 
@@ -143,6 +138,9 @@ The `Billable` trait provides:
 - Subscription management
 - One-off charges
 
+CHIP customer links are resolved through the package-owned `chip_customers` table, and recurring
+tokens are stored in `cashier_chip_payment_methods`.
+
 ## Custom Customer Model
 
 If you're using a different model for billing:
@@ -153,6 +151,9 @@ use AIArmada\CashierChip\CashierChip;
 
 CashierChip::useCustomerModel(Team::class);
 ```
+
+The configured billable model only needs the `Billable` trait and a primary key. Cashier CHIP no
+longer requires gateway-specific billing columns on that model.
 
 ## Webhook Route
 

@@ -412,6 +412,10 @@ describe('CreateOrderStep', function (): void {
             ->withArgs(function (array $orderData, array $items) use ($customer): bool {
                 expect($orderData['customer_id'])->toBe($customer->id)
                     ->and($orderData['customer_type'])->toBe($customer->getMorphClass())
+                    ->and(data_get($orderData, 'metadata.cart_id'))->toBe('test-cart-priced-order')
+                    ->and(data_get($orderData, 'metadata.cart_snapshot_id'))->toBe('snapshot-row-123')
+                    ->and(data_get($orderData, 'metadata.cart_identifier'))->toBe('public-cart-identifier-123')
+                    ->and(data_get($orderData, 'metadata.cart_instance'))->toBe('public-checkout')
                     ->and($items)->toHaveCount(1)
                     ->and($items[0]['unit_price'])->toBe(1000)
                     ->and($items[0]['discount_amount'])->toBe(200)
@@ -430,6 +434,9 @@ describe('CreateOrderStep', function (): void {
             'cart_id' => 'test-cart-priced-order',
             'customer_id' => $customer->id,
             'cart_snapshot' => [
+                'id' => 'snapshot-row-123',
+                'identifier' => 'public-cart-identifier-123',
+                'instance' => 'public-checkout',
                 'items' => [
                     [
                         'name' => 'Priced Item',

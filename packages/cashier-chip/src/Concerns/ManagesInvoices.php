@@ -125,7 +125,7 @@ trait ManagesInvoices // @phpstan-ignore trait.unused
         }
 
         if ($this->hasChipId()) {
-            $builder->clientId($this->chip_id);
+            $builder->clientId($this->chipId());
         } else {
             $builder->customer(
                 email: $this->chipEmail() ?? '',

@@ -34,6 +34,7 @@ use RuntimeException;
  * @property string $last_name
  * @property string $email
  * @property string|null $phone
+ * @property string|null $company
  * @property Carbon|null $checked_in_at
  * @property Carbon|null $cancelled_at
  * @property array<string, mixed>|null $metadata
@@ -61,6 +62,7 @@ class Registration extends Model
         'last_name',
         'email',
         'phone',
+        'company',
         'checked_in_at',
         'cancelled_at',
         'metadata',

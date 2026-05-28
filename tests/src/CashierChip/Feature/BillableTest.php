@@ -7,7 +7,7 @@ use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 uses(CashierChipTestCase::class);
 
@@ -34,21 +34,18 @@ it('can get chip id', function (): void {
 it('can check if has default payment method', function (): void {
     expect($this->user->hasDefaultPaymentMethod())->toBeFalse();
 
-    // hasDefaultPaymentMethod() checks pm_type, not default_pm_id
-    $this->user->update(['pm_type' => 'card', 'pm_last_four' => '4242']);
+    Cashier::paymentMethodStore()->saveForBillable($this->user, 'tok_default_card', [
+        'type' => 'card',
+        'brand' => 'Visa',
+        'last_four' => '4242',
+    ], true);
 
     expect($this->user->hasDefaultPaymentMethod())->toBeTrue();
 });
 
 it('can get default payment method', function (): void {
-    // First, set up user with chip_id and a stored default payment method
-    $this->user->update([
-        'chip_id' => 'cli_test123',
-        'pm_type' => 'card',
-        'pm_last_four' => '4242',
-    ]);
+    $this->user->update(['chip_id' => 'cli_test123']);
 
-    // Add a recurring token to the fake client using Cashier::getFake()
     $fake = Cashier::getFake();
     $fake->addRecurringToken($this->user->chip_id, [
         'type' => 'card',
@@ -58,7 +55,6 @@ it('can get default payment method', function (): void {
         'exp_year' => 2030,
     ]);
 
-    // Now get the default payment method
     $paymentMethod = $this->user->defaultPaymentMethod();
 
     expect($paymentMethod)->not->toBeNull();
@@ -192,7 +188,7 @@ it('can check generic trial on model', function (): void {
 // Subscription Scopes
 
 it('has subscriptions relationship', function (): void {
-    expect($this->user->subscriptions())->toBeInstanceOf(HasMany::class);
+    expect($this->user->subscriptions())->toBeInstanceOf(MorphMany::class);
 });
 
 it('can get only active subscriptions', function (): void {

@@ -10,12 +10,18 @@ uses(CashierChipWithStripeTestCase::class);
 it('coexists with laravel cashier customer column migrations', function (): void {
     expect(Schema::hasColumns('users', [
         'stripe_id',
-        'chip_id',
-        'default_pm_id',
-        'pm_type',
-        'pm_last_four',
         'trial_ends_at',
     ]))->toBeTrue();
 
-    expect(Schema::hasColumn('users', 'chip_default_payment_method'))->toBeFalse();
+    expect(Schema::hasColumns('cashier_chip_payment_methods', [
+        'billable_type',
+        'billable_id',
+        'recurring_token',
+    ]))->toBeTrue();
+
+    expect(Schema::hasColumns('chip_customers', [
+        'subject_type',
+        'subject_id',
+        'chip_customer_id',
+    ]))->toBeTrue();
 });

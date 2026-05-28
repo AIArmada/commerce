@@ -8,11 +8,49 @@ use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use Carbon\Carbon;
+use DateTimeInterface;
 use Illuminate\Contracts\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait ManagesSubscriptions // @phpstan-ignore trait.unused
 {
+    /**
+     * Get the model-level generic trial end timestamp, if the billable model supports it.
+     */
+    private function genericTrialEndsAtValue(): ?Carbon
+    {
+        if (! $this->supportsGenericTrialAttribute()) {
+            return null;
+        }
+
+        $trialEndsAt = $this->getAttribute('trial_ends_at');
+
+        if ($trialEndsAt instanceof Carbon) {
+            return $trialEndsAt;
+        }
+
+        if ($trialEndsAt instanceof DateTimeInterface) {
+            return Carbon::instance($trialEndsAt);
+        }
+
+        if (is_string($trialEndsAt) && $trialEndsAt !== '') {
+            return Carbon::parse($trialEndsAt);
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine whether the underlying model can safely expose a generic trial attribute.
+     */
+    private function supportsGenericTrialAttribute(): bool
+    {
+        return array_key_exists('trial_ends_at', $this->getAttributes())
+            || array_key_exists('trial_ends_at', $this->getCasts())
+            || $this->hasGetMutator('trial_ends_at')
+            || $this->hasAttributeGetMutator('trial_ends_at');
+    }
+
     /**
      * Begin creating a new subscription.
      *
@@ -64,7 +102,7 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function onGenericTrial(): bool
     {
-        return $this->trial_ends_at && $this->trial_ends_at->isFuture();
+        return $this->genericTrialEndsAtValue()?->isFuture() ?? false;
     }
 
     /**
@@ -80,7 +118,7 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function hasExpiredGenericTrial(): bool
     {
-        return $this->trial_ends_at && $this->trial_ends_at->isPast();
+        return $this->genericTrialEndsAtValue()?->isPast() ?? false;
     }
 
     /**
@@ -98,15 +136,17 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
      */
     public function trialEndsAt(string $type = 'default')
     {
-        if (func_num_args() === 0 && $this->onGenericTrial()) {
-            return $this->trial_ends_at;
+        $genericTrialEndsAt = $this->genericTrialEndsAtValue();
+
+        if (func_num_args() === 0 && $genericTrialEndsAt?->isFuture()) {
+            return $genericTrialEndsAt;
         }
 
         if ($subscription = $this->subscription($type)) {
             return $subscription->trial_ends_at;
         }
 
-        return $this->trial_ends_at;
+        return $genericTrialEndsAt;
     }
 
     /**
@@ -134,9 +174,9 @@ trait ManagesSubscriptions // @phpstan-ignore trait.unused
     /**
      * Get all of the subscriptions for the CHIP model.
      */
-    public function subscriptions(): HasMany
+    public function subscriptions(): MorphMany
     {
-        return $this->hasMany(Cashier::$subscriptionModel, $this->getForeignKey())->orderBy('created_at', 'desc');
+        return $this->morphMany(Cashier::$subscriptionModel, 'billable')->orderBy('created_at', 'desc');
     }
 
     /**

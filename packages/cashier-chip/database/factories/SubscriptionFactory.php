@@ -28,7 +28,8 @@ final class SubscriptionFactory extends Factory
         return [
             'owner_type' => null,
             'owner_id' => null,
-            'user_id' => method_exists($model, 'factory') ? $model::factory() : null,
+            'billable_type' => $model,
+            'billable_id' => method_exists($model, 'factory') ? $model::factory() : null,
             'type' => 'default',
             'chip_id' => 'sub_' . Str::random(40),
             'chip_status' => Subscription::STATUS_ACTIVE,

@@ -9,7 +9,9 @@ use AIArmada\FilamentCashierChip\Resources\CustomerResource\Tables\CustomerTable
 use Illuminate\Database\Eloquent\Model;
 
 it('extends base cashier chip resource', function (): void {
-    expect(is_subclass_of(CustomerResource::class, BaseCashierChipResource::class))->toBeTrue();
+    $reflection = new ReflectionClass(CustomerResource::class);
+
+    expect($reflection->getParentClass()?->getName())->toBe(BaseCashierChipResource::class);
 });
 
 it('has model label property', function (): void {
@@ -110,4 +112,19 @@ it('resolves subscriptions relation name for customer infolist with subscription
     expect($resolver->invoke(null, $subscriptionsModel))->toBe('subscriptions')
         ->and($resolver->invoke(null, $chipSubscriptionsModel))->toBe('chipSubscriptions')
         ->and($resolver->invoke(null, $noSubscriptionsModel))->toBeNull();
+});
+
+it('does not throw when resolving trial state for billable models without a generic trial column', function (): void {
+    $trialEndsAt = new ReflectionMethod(CustomerTable::class, 'trialEndsAt');
+    $querySupport = new ReflectionMethod(CustomerTable::class, 'supportsGenericTrialQuery');
+
+    $record = new class extends Model
+    {
+        protected $table = 'users';
+
+        protected $guarded = [];
+    };
+
+    expect($trialEndsAt->invoke(null, $record))->toBeNull()
+        ->and($querySupport->invoke(null, $record))->toBeFalse();
 });

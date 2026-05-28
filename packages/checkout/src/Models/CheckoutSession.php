@@ -16,12 +16,15 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
  * @property string $cart_id
  * @property string|null $customer_id
+ * @property string|null $billable_type
+ * @property string|null $billable_id
  * @property string|null $order_id
  * @property string|null $payment_id
  * @property CheckoutState $status
@@ -70,6 +73,8 @@ class CheckoutSession extends Model
     protected $fillable = [
         'cart_id',
         'customer_id',
+        'billable_type',
+        'billable_id',
         'order_id',
         'payment_id',
         'status',
@@ -126,6 +131,14 @@ class CheckoutSession extends Model
         $customerModel = config('checkout.models.customer', Customer::class);
 
         return $this->belongsTo($customerModel, 'customer_id');
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function billable(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     /**

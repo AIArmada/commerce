@@ -24,7 +24,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
      */
     public function charge(int $amount, #[SensitiveParameter] ?string $recurringToken = null, array $options = []): Payment
     {
-        $rateLimitKey = 'cashier-chip:charge:' . ($this->chip_id ?? $this->getKey());
+        $rateLimitKey = 'cashier-chip:charge:' . ($this->chipId() ?? $this->getKey());
         $executed = RateLimiter::attempt(
             key: $rateLimitKey,
             maxAttempts: (int) config('cashier-chip.rate_limits.charges_per_minute', 30),
@@ -39,6 +39,8 @@ trait PerformsCharges // @phpstan-ignore trait.unused
             );
         }
 
+        $metadata = $this->billableMetadata($options['metadata'] ?? null);
+
         $builder = Cashier::chip()->purchase()
             ->currency($this->preferredCurrency());
 
@@ -48,7 +50,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         // Add customer details
         if ($this->hasChipId()) {
-            $builder->clientId($this->chip_id);
+            $builder->clientId($this->chipId());
         } else {
             $builder->customer(
                 email: $this->chipEmail() ?? '',
@@ -69,8 +71,8 @@ trait PerformsCharges // @phpstan-ignore trait.unused
             $builder->reference($options['reference']);
         }
 
-        if (isset($options['metadata']) && is_array($options['metadata'])) {
-            $builder->metadata($options['metadata']);
+        if ($metadata !== []) {
+            $builder->metadata($metadata);
         }
 
         // Create the purchase
@@ -124,6 +126,8 @@ trait PerformsCharges // @phpstan-ignore trait.unused
      */
     public function createPayment(int $amount, array $options = []): Payment
     {
+        $metadata = $this->billableMetadata($options['metadata'] ?? null);
+
         $builder = Cashier::chip()->purchase()
             ->currency($options['currency'] ?? $this->preferredCurrency());
 
@@ -133,7 +137,7 @@ trait PerformsCharges // @phpstan-ignore trait.unused
 
         // Add customer details
         if ($this->hasChipId()) {
-            $builder->clientId($this->chip_id);
+            $builder->clientId($this->chipId());
         } else {
             $builder->customer(
                 email: $this->chipEmail() ?? '',
@@ -166,6 +170,10 @@ trait PerformsCharges // @phpstan-ignore trait.unused
         // Force recurring if needed
         if (isset($options['force_recurring']) && $options['force_recurring']) {
             $builder->forceRecurring(true);
+        }
+
+        if ($metadata !== []) {
+            $builder->metadata($metadata);
         }
 
         // Create the purchase
@@ -239,5 +247,18 @@ trait PerformsCharges // @phpstan-ignore trait.unused
         return Checkout::customer($this)
             ->addProduct($name, $amount, $quantity)
             ->create($amount * max(1, $quantity), array_merge($sessionOptions, $customerOptions));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function billableMetadata(mixed $metadata): array
+    {
+        $resolvedMetadata = is_array($metadata) ? $metadata : [];
+
+        $resolvedMetadata['billable_type'] = $this->getMorphClass();
+        $resolvedMetadata['billable_id'] = (string) $this->getKey();
+
+        return $resolvedMetadata;
     }
 }

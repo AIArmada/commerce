@@ -17,8 +17,10 @@ final class CashierOwnerScope
      * Strategy:
      * - If owner scoping primitives exist but no owner context is available, fail closed.
      * - If the model supports `scopeForOwner`, use it.
-     * - Else, if the model has a `user_id` or `billable_id` column and the billable model supports owner scoping,
+     * - Else, if the model has a `user_id` column and the billable model supports owner scoping,
      *   scope via a subquery of billable IDs for the current owner.
+     * - Else, if the model has a `billable_type`/`billable_id` morph and the billable model supports owner scoping,
+     *   scope via the current billable model morph plus a subquery of billable IDs for the current owner.
      * - Else, fail closed when an owner context exists.
      */
     public static function apply(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
@@ -51,8 +53,8 @@ final class CashierOwnerScope
             return self::applyViaBillableIdSubquery($query, 'user_id', $owner, $includeGlobal);
         }
 
-        if (self::modelHasColumn($model, 'billable_id')) {
-            return self::applyViaBillableIdSubquery($query, 'billable_id', $owner, $includeGlobal);
+        if (self::modelHasColumn($model, 'billable_type') && self::modelHasColumn($model, 'billable_id')) {
+            return self::applyViaBillableMorphSubquery($query, $owner, $includeGlobal);
         }
 
         return self::empty($query);
@@ -107,6 +109,33 @@ final class CashierOwnerScope
         $billables = $billables->forOwner($owner, $includeGlobal)->select($billableKeyName);
 
         return $query->whereIn($foreignKey, $billables);
+    }
+
+    private static function applyViaBillableMorphSubquery(Builder $query, Model $owner, bool $includeGlobal): Builder
+    {
+        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+
+        if (! class_exists($billableModel)) {
+            return self::empty($query);
+        }
+
+        $billable = new $billableModel;
+
+        if (! method_exists($billable, 'scopeForOwner')) {
+            return self::empty($query);
+        }
+
+        $billableKeyName = $billable->getKeyName();
+
+        /** @var Builder<Model> $billables */
+        $billables = $billableModel::query();
+
+        /** @phpstan-ignore-next-line dynamic local scope */
+        $billables = $billables->forOwner($owner, $includeGlobal)->select($billableKeyName);
+
+        return $query
+            ->where('billable_type', $billable->getMorphClass())
+            ->whereIn('billable_id', $billables);
     }
 
     private static function empty(Builder $query): Builder

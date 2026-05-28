@@ -148,13 +148,16 @@ class Team extends Model
 
 ## Database Schema
 
-The `chip_customers` table stores the relationship:
+The `chip_customers` table is owned by `aiarmada/chip` and stores the relationship:
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | uuid | Primary key |
-| `billable_id` | uuid | Foreign key to billable model |
-| `billable_type` | string | Billable model class |
-| `chip_id` | string | CHIP client ID |
+| `subject_id` | uuid | Morph key for the local billable subject |
+| `subject_type` | string | Morph type for the local billable subject |
+| `chip_customer_id` | string | CHIP client ID |
+| `owner_id` | uuid nullable | Owner scope morph key when multitenancy is enabled |
+| `owner_type` | string nullable | Owner scope morph type when multitenancy is enabled |
+| `metadata` | json nullable | Bridge metadata |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |

@@ -45,7 +45,7 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
         'purchase' => ['amount' => 1000, 'currency' => 'MYR', 'total' => 1000],
         'brand_id' => (string) Str::uuid(),
         'company_id' => null,
-        'user_id' => (string) $user->getKey(),
+        'user_id' => null,
         'billing_template_id' => null,
         'client_id' => null,
         'payment' => null,
@@ -82,7 +82,10 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
         'created_from_ip' => null,
         'marked_as_paid' => true,
         'order_id' => null,
-        'metadata' => null,
+        'metadata' => [
+            'billable_type' => $user->getMorphClass(),
+            'billable_id' => (string) $user->getKey(),
+        ],
         'created_at' => Carbon::parse('2025-01-01 00:00:00'),
         'updated_at' => Carbon::parse('2025-01-01 00:00:00'),
     ]);
@@ -96,7 +99,7 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
         'purchase' => ['amount' => 2000, 'currency' => 'MYR', 'total' => 2000],
         'brand_id' => (string) Str::uuid(),
         'company_id' => null,
-        'user_id' => (string) $user->getKey(),
+        'user_id' => null,
         'billing_template_id' => null,
         'client_id' => null,
         'payment' => null,
@@ -133,7 +136,10 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
         'created_from_ip' => null,
         'marked_as_paid' => false,
         'order_id' => null,
-        'metadata' => null,
+        'metadata' => [
+            'billable_type' => $user->getMorphClass(),
+            'billable_id' => (string) $user->getKey(),
+        ],
         'created_at' => Carbon::parse('2025-01-02 00:00:00'),
         'updated_at' => Carbon::parse('2025-01-02 00:00:00'),
     ]);
