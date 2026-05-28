@@ -88,7 +88,7 @@ final readonly class UnifiedSubscription
         return new self(
             id: (string) $subscription->getKey(),
             gateway: 'chip',
-            userId: (string) ($attributes['user_id'] ?? ''),
+            userId: (string) ($attributes['billable_id'] ?? $attributes['user_id'] ?? ''),
             type: (string) ($attributes['type'] ?? 'default'),
             planId: (string) ($attributes['plan_id'] ?? ($attributes['name'] ?? ($attributes['type'] ?? 'default'))),
             amount: self::getChipAmount($subscription),

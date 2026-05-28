@@ -68,9 +68,23 @@ class SubscriptionPolicy
     protected function ownsSubscription(Model $user, Model $subscription): bool
     {
         $userId = $this->resolveIdentifier($user, [$user->getKeyName()]);
-        $subscriptionUserId = $this->resolveIdentifier($subscription, ['user_id', 'billable_id']);
 
-        if ($userId === null || $subscriptionUserId === null) {
+        if ($userId === null) {
+            return false;
+        }
+
+        $billableType = $this->resolveStringAttribute($subscription, 'billable_type');
+        $billableId = $this->resolveIdentifier($subscription, ['billable_id']);
+
+        if ($billableType !== null || $billableId !== null) {
+            return $billableType === $user->getMorphClass()
+                && $billableId !== null
+                && (string) $billableId === (string) $userId;
+        }
+
+        $subscriptionUserId = $this->resolveIdentifier($subscription, ['user_id']);
+
+        if ($subscriptionUserId === null) {
             return false;
         }
 
@@ -105,5 +119,18 @@ class SubscriptionPolicy
         }
 
         return null;
+    }
+
+    private function resolveStringAttribute(Model $model, string $attributeName): ?string
+    {
+        $attributes = $model->getAttributes();
+
+        if (array_key_exists($attributeName, $attributes) && is_string($attributes[$attributeName]) && $attributes[$attributeName] !== '') {
+            return $attributes[$attributeName];
+        }
+
+        $value = $model->getRawOriginal($attributeName);
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 }

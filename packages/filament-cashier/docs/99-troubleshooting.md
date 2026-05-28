@@ -200,10 +200,13 @@ Check auth guard configuration:
 
 **Solution:**
 1. Verify `CashierOwnerScope` is applied
-2. Check that `user_id` column exists in subscription tables
-3. Ensure queries filter by authenticated user:
+2. Check that the gateway's ownership columns match the installed package:
+   - Stripe subscriptions use `user_id`
+   - CHIP subscriptions use `billable_type` + `billable_id`
+3. Ensure queries filter by the authenticated billable subject:
    ```php
-   ->where('user_id', auth()->id())
+   ->where('billable_type', auth()->user()->getMorphClass())
+   ->where('billable_id', (string) auth()->id())
    ```
 
 ## Performance Issues
@@ -334,7 +337,7 @@ $user->stripe_id;              // Should have value if using Stripe
 $user->stripeId();             // Method should work
 
 // Check CHIP  
-$user->chip_id;                // Should have value if using CHIP
+$user->chipId();               // Method should work if the model uses Billable
 ```
 
 ## Getting Help

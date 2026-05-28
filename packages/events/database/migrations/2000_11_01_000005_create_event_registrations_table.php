@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('last_name')->default('');
             $table->string('email')->index();
             $table->string('phone')->nullable();
+            $table->string('company')->nullable();
             $table->timestamp('checked_in_at')->nullable()->index();
             $table->timestamp('cancelled_at')->nullable()->index();
             $table->{$jsonType}('metadata')->nullable();

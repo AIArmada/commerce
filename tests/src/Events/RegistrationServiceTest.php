@@ -162,11 +162,13 @@ it('creates one confirmed registration per purchased seat for an order item', fu
                 'name' => 'Saif Fil',
                 'email' => 'buyer@example.com',
                 'phone' => '+60123456789',
+                'company' => 'Buyer Labs Sdn Bhd',
             ],
             [
                 'name' => 'Guest Participant',
                 'email' => 'guest@example.com',
                 'phone' => '+60111222333',
+                'company' => 'Guest Ops Sdn Bhd',
             ],
         ],
         $purchaser,
@@ -176,7 +178,11 @@ it('creates one confirmed registration per purchased seat for an order item', fu
         ->and(Registration::query()->count())->toBe(2)
         ->and($registrations->every(fn (Registration $registration): bool => $registration->status === RegistrationStatus::Confirmed))->toBeTrue()
         ->and($registrations->pluck('order_item_id')->unique()->all())->toBe([$orderItem->id])
-        ->and($registrations->pluck('purchaser_customer_id')->unique()->all())->toBe([$purchaser->id]);
+        ->and($registrations->pluck('purchaser_customer_id')->unique()->all())->toBe([$purchaser->id])
+        ->and($registrations->pluck('company')->all())->toBe([
+            'Buyer Labs Sdn Bhd',
+            'Guest Ops Sdn Bhd',
+        ]);
 
     Event::assertDispatched(RegistrationCreated::class, 2);
 });

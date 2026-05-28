@@ -19,6 +19,7 @@ return new class extends Migration
             // References
             $table->string('cart_id')->index();
             $table->foreignUuid('customer_id')->nullable()->index();
+            $table->nullableUuidMorphs('billable');
             $table->foreignUuid('order_id')->nullable()->index();
             $table->string('payment_id')->nullable()->index();
 

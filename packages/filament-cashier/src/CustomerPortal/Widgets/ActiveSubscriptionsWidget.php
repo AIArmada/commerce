@@ -69,8 +69,9 @@ final class ActiveSubscriptionsWidget extends Widget
         if ($detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
             $chipSubscriptions = CashierOwnerScope::apply($subscriptionModel::query())
-                ->with('items')
-                ->where('user_id', $userIdentifier)
+                ->with(['billable', 'items'])
+                ->where('billable_type', $user->getMorphClass())
+                ->where('billable_id', (string) $user->getKey())
                 ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());

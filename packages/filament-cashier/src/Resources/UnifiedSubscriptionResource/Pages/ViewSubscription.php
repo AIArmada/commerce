@@ -168,7 +168,7 @@ final class ViewSubscription extends ViewRecord
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
             $sub = CashierOwnerScope::apply($subscriptionModel::query())
-                ->with('items')
+                ->with(['billable', 'items'])
                 ->whereKey($id)
                 ->first();
             if ($sub) {
@@ -272,7 +272,15 @@ final class ViewSubscription extends ViewRecord
 
                         TextEntry::make('chip_customer_id')
                             ->label(__('filament-cashier::subscriptions.details.customer_id'))
-                            ->state(fn () => $sub->original->chip_client_id ?? $sub->original->user?->chip_id ?? '—')
+                            ->state(function () use ($sub): string {
+                                $billable = $sub->original->getRelationValue('billable');
+
+                                if (is_object($billable) && method_exists($billable, 'chipId')) {
+                                    return $billable->chipId() ?? '—';
+                                }
+
+                                return $sub->original->chip_client_id ?? '—';
+                            })
                             ->copyable(),
                     ]),
             ];

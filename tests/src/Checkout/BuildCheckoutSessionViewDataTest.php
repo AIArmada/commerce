@@ -36,3 +36,19 @@ it('builds checkout session view data', function (): void {
         ->and($data['formattedTotal'])->toBeString()
         ->and($data['shippingData'])->toBe(['name' => 'Test User']);
 });
+
+it('falls back to the cart identifier instead of the internal cart row uuid when no payment reference exists', function (): void {
+    $session = new CheckoutSession;
+    $session->id = 'session-2';
+    $session->cart_id = 'internal-cart-row-uuid';
+    $session->cart_snapshot = [
+        'identifier' => 'public-cart-identifier',
+    ];
+    $session->currency = 'MYR';
+    $session->grand_total = 9700;
+    $session->payment_data = [];
+
+    $data = BuildCheckoutSessionViewData::run($session);
+
+    expect($data['reference'])->toBe('public-cart-identifier');
+});

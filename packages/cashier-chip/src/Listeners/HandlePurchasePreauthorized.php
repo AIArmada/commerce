@@ -55,16 +55,20 @@ class HandlePurchasePreauthorized
      */
     protected function handleRecurringToken(object $billable, string $recurringToken, array $purchase): void
     {
-        if (! $billable->hasDefaultPaymentMethod()) {
-            $transactionData = $purchase['transaction_data'] ?? [];
-            $extra = $transactionData['extra'] ?? [];
-            $card = $purchase['card'] ?? [];
+        $transactionData = $purchase['transaction_data'] ?? [];
+        $extra = $transactionData['extra'] ?? [];
+        $card = $purchase['card'] ?? [];
 
-            $billable->forceFill([
-                'default_pm_id' => $recurringToken,
-                'pm_type' => $card['brand'] ?? $extra['card_brand'] ?? $transactionData['payment_method'] ?? 'card',
-                'pm_last_four' => $card['last_4'] ?? $extra['card_last_4'] ?? null,
-            ])->save();
-        }
+        Cashier::paymentMethodStore()->saveForBillable(
+            $billable,
+            $recurringToken,
+            attributes: [
+                'type' => $transactionData['payment_method'] ?? 'card',
+                'brand' => $card['brand'] ?? $extra['card_brand'] ?? $transactionData['payment_method'] ?? 'card',
+                'last_four' => $card['last_4'] ?? $extra['card_last_4'] ?? null,
+                'metadata' => $purchase,
+            ],
+            makeDefault: ! $billable->hasDefaultPaymentMethod(),
+        );
     }
 }

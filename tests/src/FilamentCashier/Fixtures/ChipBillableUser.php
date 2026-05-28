@@ -18,7 +18,7 @@ use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use RuntimeException;
@@ -240,9 +240,9 @@ class ChipBillableUser extends User implements BillableContract
         return null;
     }
 
-    public function subscriptions(): HasMany
+    public function subscriptions(): MorphMany
     {
-        return $this->hasMany(Subscription::class, 'user_id');
+        return $this->morphMany(Subscription::class, 'billable');
     }
 
     public function hasIncompletePayment(string $type = 'default'): bool

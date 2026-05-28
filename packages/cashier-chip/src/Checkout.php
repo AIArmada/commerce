@@ -79,6 +79,17 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      */
     public static function create($owner, int $amount, array $options = []): self
     {
+        $metadata = isset($options['metadata']) && is_array($options['metadata'])
+            ? $options['metadata']
+            : [];
+
+        if ($owner instanceof Model) {
+            $metadata = array_merge($metadata, [
+                'billable_type' => $owner->getMorphClass(),
+                'billable_id' => (string) $owner->getKey(),
+            ]);
+        }
+
         $builder = Cashier::chip()->purchase()
             ->currency($options['currency'] ?? config('cashier-chip.currency', 'MYR'));
 
@@ -145,8 +156,8 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
         }
 
         // Merge any additional metadata
-        if (isset($options['metadata'])) {
-            $builder->metadata($options['metadata']);
+        if ($metadata !== []) {
+            $builder->metadata($metadata);
         }
 
         $purchase = $builder->create();

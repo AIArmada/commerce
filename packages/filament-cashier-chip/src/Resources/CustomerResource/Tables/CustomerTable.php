@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Tables;
 
 use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
+use DateTimeInterface;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\IconColumn;
@@ -16,9 +17,15 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 final class CustomerTable
 {
+    /** @var array<string, bool> */
+    private static array $genericTrialQuerySupport = [];
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -36,30 +43,31 @@ final class CustomerTable
                     ->copyable()
                     ->icon('heroicon-o-envelope'),
 
-                TextColumn::make('chip_id')
+                TextColumn::make('chip_customer_id')
                     ->label('Chip ID')
+                    ->getStateUsing(fn (Model $record): ?string => self::chipCustomerId($record))
                     ->copyable()
-                    ->searchable()
                     ->placeholder('Not linked')
                     ->toggleable(),
 
-                IconColumn::make('has_chip_id')
+                IconColumn::make('has_chip_customer_link')
                     ->label('Linked')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
                     ->falseColor('gray')
-                    ->getStateUsing(fn (Model $record): bool => ! empty($record->chip_id)),
+                    ->getStateUsing(fn (Model $record): bool => method_exists($record, 'hasChipId') && $record->hasChipId()),
 
-                TextColumn::make('pm_type')
+                TextColumn::make('default_payment_method')
                     ->label('Payment Method')
+                    ->getStateUsing(fn (Model $record): ?string => self::defaultPaymentMethodLabel($record))
                     ->badge()
                     ->color('primary')
                     ->placeholder('None')
                     ->formatStateUsing(
                         fn (?string $state, Model $record): ?string => $state !== null
-                        ? ucfirst($state) . ' •••• ' . ($record->pm_last_four ?? '****')
+                        ? ucfirst($state) . ' •••• ' . (self::defaultPaymentMethodLastFour($record) ?? '****')
                         : null
                     ),
 
@@ -91,8 +99,15 @@ final class CustomerTable
 
                 TextColumn::make('trial_ends_at')
                     ->label('Trial Ends')
+                    ->getStateUsing(fn (Model $record): ?Carbon => self::trialEndsAt($record))
                     ->dateTime(config('filament-cashier-chip.tables.date_format', 'Y-m-d H:i:s'))
-                    ->sortable()
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        if (! self::supportsGenericTrialQuery($query->getModel())) {
+                            return $query;
+                        }
+
+                        return $query->orderBy('trial_ends_at', $direction);
+                    })
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -103,14 +118,14 @@ final class CustomerTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                TernaryFilter::make('has_chip_id')
+                TernaryFilter::make('has_chip_customer_link')
                     ->label('Chip Linked')
                     ->placeholder('All')
                     ->trueLabel('Linked to Chip')
                     ->falseLabel('Not Linked')
                     ->queries(
-                        true: fn (Builder $query): Builder => $query->whereNotNull('chip_id'),
-                        false: fn (Builder $query): Builder => $query->whereNull('chip_id'),
+                        true: fn (Builder $query): Builder => $query->whereHas('chipCustomerLink'),
+                        false: fn (Builder $query): Builder => $query->whereDoesntHave('chipCustomerLink'),
                     ),
 
                 TernaryFilter::make('has_payment_method')
@@ -119,8 +134,8 @@ final class CustomerTable
                     ->trueLabel('Has Payment Method')
                     ->falseLabel('No Payment Method')
                     ->queries(
-                        true: fn (Builder $query): Builder => $query->whereNotNull('pm_type'),
-                        false: fn (Builder $query): Builder => $query->whereNull('pm_type'),
+                        true: fn (Builder $query): Builder => $query->whereHas('storedPaymentMethods'),
+                        false: fn (Builder $query): Builder => $query->whereDoesntHave('storedPaymentMethods'),
                     ),
 
                 Filter::make('has_subscriptions')
@@ -142,8 +157,14 @@ final class CustomerTable
                 Filter::make('on_trial')
                     ->label('On Trial')
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->whereNotNull('trial_ends_at')
-                        ->where('trial_ends_at', '>', now())),
+                    ->query(function (Builder $query): Builder {
+                        if (! self::supportsGenericTrialQuery($query->getModel())) {
+                            return $query;
+                        }
+
+                        return $query->whereNotNull('trial_ends_at')
+                            ->where('trial_ends_at', '>', now());
+                    }),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->actions([
                 ViewAction::make()
@@ -166,5 +187,110 @@ final class CustomerTable
         }
 
         return null;
+    }
+
+    private static function chipCustomerId(Model $record): ?string
+    {
+        if (! is_callable([$record, 'chipId'])) {
+            return null;
+        }
+
+        $chipCustomerId = call_user_func([$record, 'chipId']);
+
+        return is_string($chipCustomerId) && $chipCustomerId !== '' ? $chipCustomerId : null;
+    }
+
+    private static function defaultPaymentMethod(Model $record): mixed
+    {
+        if (! is_callable([$record, 'defaultPaymentMethod'])) {
+            return null;
+        }
+
+        return call_user_func([$record, 'defaultPaymentMethod']);
+    }
+
+    private static function defaultPaymentMethodLabel(Model $record): ?string
+    {
+        $paymentMethod = self::defaultPaymentMethod($record);
+
+        if (! is_object($paymentMethod)) {
+            return null;
+        }
+
+        if (is_callable([$paymentMethod, 'brand'])) {
+            $brand = call_user_func([$paymentMethod, 'brand']);
+
+            if (is_string($brand) && $brand !== '') {
+                return $brand;
+            }
+        }
+
+        if (! is_callable([$paymentMethod, 'type'])) {
+            return null;
+        }
+
+        $type = call_user_func([$paymentMethod, 'type']);
+
+        return is_string($type) && $type !== '' ? $type : null;
+    }
+
+    private static function defaultPaymentMethodLastFour(Model $record): ?string
+    {
+        $paymentMethod = self::defaultPaymentMethod($record);
+
+        if (! is_object($paymentMethod) || ! is_callable([$paymentMethod, 'lastFour'])) {
+            return null;
+        }
+
+        $lastFour = call_user_func([$paymentMethod, 'lastFour']);
+
+        return is_string($lastFour) && $lastFour !== '' ? $lastFour : null;
+    }
+
+    private static function trialEndsAt(Model $record): ?Carbon
+    {
+        if (! self::supportsGenericTrialValue($record)) {
+            return null;
+        }
+
+        $trialEndsAt = $record->getAttribute('trial_ends_at');
+
+        if ($trialEndsAt instanceof Carbon) {
+            return $trialEndsAt;
+        }
+
+        if ($trialEndsAt instanceof DateTimeInterface) {
+            return Carbon::instance($trialEndsAt);
+        }
+
+        if (is_string($trialEndsAt) && $trialEndsAt !== '') {
+            return Carbon::parse($trialEndsAt);
+        }
+
+        return null;
+    }
+
+    private static function supportsGenericTrialValue(Model $record): bool
+    {
+        return array_key_exists('trial_ends_at', $record->getAttributes())
+            || array_key_exists('trial_ends_at', $record->getCasts());
+    }
+
+    private static function supportsGenericTrialQuery(Model $model): bool
+    {
+        $connectionName = $model->getConnectionName();
+        $cacheKey = $connectionName . '|' . $model->getTable();
+
+        if (! array_key_exists($cacheKey, self::$genericTrialQuerySupport)) {
+            try {
+                self::$genericTrialQuerySupport[$cacheKey] = $connectionName !== null
+                    ? Schema::connection($connectionName)->hasColumn($model->getTable(), 'trial_ends_at')
+                    : Schema::hasColumn($model->getTable(), 'trial_ends_at');
+            } catch (Throwable) {
+                self::$genericTrialQuerySupport[$cacheKey] = false;
+            }
+        }
+
+        return self::$genericTrialQuerySupport[$cacheKey];
     }
 }

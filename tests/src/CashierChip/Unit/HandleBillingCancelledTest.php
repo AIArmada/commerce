@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Listeners\HandleBillingCancelled;
 use AIArmada\CashierChip\Subscription;
@@ -19,9 +20,10 @@ class HandleBillingCancelledTest extends CashierChipTestCase
     {
         Event::fake([SubscriptionCanceled::class]);
 
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'user_id' => $user->id,
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+
+        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
             'recurring_token' => 'tok_123',
@@ -55,9 +57,10 @@ class HandleBillingCancelledTest extends CashierChipTestCase
         config()->set('cashier-chip.features.owner.enabled', true);
         config()->set('cashier-chip.features.owner.include_global', false);
 
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'user_id' => $user->id,
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+
+        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
             'recurring_token' => 'tok_123',
@@ -125,7 +128,8 @@ class HandleBillingCancelledTest extends CashierChipTestCase
     {
         Event::fake([SubscriptionCanceled::class]);
 
-        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
 
         $billingTemplateClientData = BillingTemplateClientData::from([
             'id' => 'btc_123',

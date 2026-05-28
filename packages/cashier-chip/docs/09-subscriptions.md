@@ -399,7 +399,8 @@ $ended = Subscription::ended()->get();
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | uuid | Primary key |
-| `user_id` | uuid | Foreign key to user |
+| `billable_type` | string | Morph type for the billable model |
+| `billable_id` | uuid | Morph key for the billable model |
 | `type` | string | Subscription type name |
 | `chip_id` | string | Local subscription ID |
 | `chip_status` | string | Status (active, canceled, etc.) |
@@ -422,3 +423,31 @@ $ended = Subscription::ended()->get();
 | `chip_price` | string | Price identifier |
 | `quantity` | int | Quantity |
 | `unit_amount` | int | Unit price in cents |
+
+### chip_customers
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `subject_type` | string | Morph type for the local billable subject |
+| `subject_id` | uuid | Morph key for the local billable subject |
+| `chip_customer_id` | string | Remote CHIP customer ID |
+| `owner_type` | string nullable | Owner scope morph type when multitenancy is enabled |
+| `owner_id` | uuid nullable | Owner scope morph key when multitenancy is enabled |
+| `metadata` | json nullable | Bridge metadata |
+
+This table is owned by `aiarmada/chip`; Cashier CHIP uses it through the CHIP customer directory.
+
+### cashier_chip_payment_methods
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `billable_type` | string | Morph type for the billable model |
+| `billable_id` | uuid | Morph key for the billable model |
+| `recurring_token` | string | Stored CHIP recurring token |
+| `brand` | string nullable | Card brand / payment method brand |
+| `type` | string nullable | Payment method type |
+| `last_four` | string nullable | Last four digits |
+| `is_default` | bool | Whether this is the default payment method |
+| `metadata` | json nullable | Additional payment-method metadata |

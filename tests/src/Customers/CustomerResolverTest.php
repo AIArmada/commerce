@@ -75,6 +75,37 @@ describe('CustomerResolver', function (): void {
         expect($guest->fresh()?->addresses()->count())->toBe(1);
     });
 
+    it('syncs purchaser company onto an existing guest customer resolved by email', function (): void {
+        $resolver = new CustomerResolver;
+
+        $guest = Customer::query()->create([
+            'first_name' => 'Existing',
+            'last_name' => 'Guest',
+            'email' => 'existing-guest-' . uniqid() . '@example.com',
+            'status' => 'active',
+            'is_guest' => true,
+            'company' => null,
+            'user_id' => null,
+        ]);
+
+        $resolved = $resolver->resolve(
+            user: null,
+            sessionCustomer: null,
+            billingData: [
+                'email' => $guest->email,
+                'name' => 'Existing Guest Example',
+                'company' => 'Example Labs Sdn Bhd',
+            ],
+            shippingData: [],
+        );
+
+        expect($resolved)
+            ->not->toBeNull()
+            ->and($resolved?->id)->toBe($guest->id)
+            ->and($resolved?->company)->toBe('Example Labs Sdn Bhd')
+            ->and($resolved?->full_name)->toBe('Existing Guest Example');
+    });
+
     it('merges segment and group memberships into the target customer', function (): void {
         $resolver = new CustomerResolver;
 
@@ -115,5 +146,27 @@ describe('CustomerResolver', function (): void {
         expect($merged->segments()->whereKey($segment->id)->exists())->toBeTrue();
         expect($merged->groups()->whereKey($group->id)->exists())->toBeTrue();
         expect(Customer::query()->whereKey($source->id)->exists())->toBeFalse();
+    });
+
+    it('preserves multi-word names and purchaser company when creating a guest customer', function (): void {
+        $resolver = new CustomerResolver;
+
+        $resolved = $resolver->resolve(
+            user: null,
+            sessionCustomer: null,
+            billingData: [
+                'email' => 'multi-name-' . uniqid() . '@example.com',
+                'name' => 'Saiffil Checkout QA',
+                'company' => 'Example Sdn Bhd',
+            ],
+            shippingData: [],
+        );
+
+        expect($resolved)
+            ->not->toBeNull()
+            ->and($resolved?->first_name)->toBe('Saiffil')
+            ->and($resolved?->last_name)->toBe('Checkout QA')
+            ->and($resolved?->company)->toBe('Example Sdn Bhd')
+            ->and($resolved?->full_name)->toBe('Saiffil Checkout QA');
     });
 });

@@ -296,7 +296,7 @@ class SubscriptionBuilder
             throw new Exception('At least one price is required when starting subscriptions.');
         }
 
-        // Ensure the customer exists (only if they don't have a chip_id already)
+        // Ensure the customer exists in CHIP before creating the local subscription.
         if (method_exists($this->owner, 'createOrGetChipCustomer') && ! $this->owner->hasChipId()) {
             $this->owner->createOrGetChipCustomer();
         }

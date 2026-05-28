@@ -166,10 +166,31 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
     {
         $billingData = $session->billing_data ?? [];
         $customer = $session->customer;
+        $billable = $session->billable;
 
         $customerName = $billingData['name'] ?? null;
         if ($customerName === null && $customer !== null) {
             $customerName = $customer->full_name ?? $customer->first_name ?? null;
+        }
+
+        if ($customerName === null && $billable !== null) {
+            $customerName = method_exists($billable, 'chipName')
+                ? $billable->chipName()
+                : ($billable->name ?? null);
+        }
+
+        $customerEmail = $billingData['email'] ?? $customer?->email;
+        if ($customerEmail === null && $billable !== null) {
+            $customerEmail = method_exists($billable, 'chipEmail')
+                ? $billable->chipEmail()
+                : ($billable->email ?? null);
+        }
+
+        $customerPhone = $billingData['phone'] ?? $customer?->phone;
+        if ($customerPhone === null && $billable !== null) {
+            $customerPhone = method_exists($billable, 'chipPhone')
+                ? $billable->chipPhone()
+                : ($billable->phone ?? null);
         }
 
         return new PaymentRequest(
@@ -177,9 +198,9 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
             currency: $session->currency,
             gateway: $session->selected_payment_gateway,
             description: "Order checkout - Session {$session->id}",
-            customerEmail: $billingData['email'] ?? $customer?->email,
+            customerEmail: $customerEmail,
             customerName: $customerName,
-            customerPhone: $billingData['phone'] ?? $customer?->phone,
+            customerPhone: $customerPhone,
             successUrl: $this->buildCallbackUrl('success', $session),
             failureUrl: $this->buildCallbackUrl('failure', $session),
             cancelUrl: $this->buildCallbackUrl('cancel', $session),
@@ -187,6 +208,8 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                 'checkout_session_id' => $session->id,
                 'cart_id' => $session->cart_id,
                 'customer_id' => $session->customer_id,
+                'billable_type' => $session->billable_type,
+                'billable_id' => $session->billable_id,
             ],
         );
     }

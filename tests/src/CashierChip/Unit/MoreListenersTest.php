@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Listeners\HandlePurchasePaymentFailure;
@@ -24,7 +25,8 @@ class MoreListenersTest extends CashierChipTestCase
     {
         Event::fake([PaymentFailed::class]);
 
-        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
 
         $purchaseData = [
             'id' => 'pur_123',
@@ -64,8 +66,10 @@ class MoreListenersTest extends CashierChipTestCase
 
     public function test_handle_purchase_payment_failure_marks_subscription_past_due(): void
     {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'customer')->create([
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+
+        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
         ]);
@@ -88,7 +92,8 @@ class MoreListenersTest extends CashierChipTestCase
 
     public function test_handle_purchase_preauthorized_saves_recurring_token(): void
     {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
 
         $purchaseData = [
             'id' => 'pur_123',
@@ -106,8 +111,11 @@ class MoreListenersTest extends CashierChipTestCase
         OwnerContext::withOwner($user, fn (): null => tap(null, fn () => $listener->handle($event)));
 
         $user->refresh();
-        // Recurring token should be saved
-        $this->assertEquals('tok_preauth_123', $user->default_pm_id);
+
+        $paymentMethod = $user->defaultPaymentMethod();
+
+        $this->assertNotNull($paymentMethod);
+        $this->assertEquals('tok_preauth_123', $paymentMethod?->id());
     }
 
     public function test_handle_purchase_preauthorized_returns_early_without_client_id(): void
@@ -130,7 +138,8 @@ class MoreListenersTest extends CashierChipTestCase
 
     public function test_handle_purchase_preauthorized_returns_early_without_recurring_token(): void
     {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
 
         $purchaseData = [
             'id' => 'pur_123',
@@ -145,15 +154,17 @@ class MoreListenersTest extends CashierChipTestCase
         OwnerContext::withOwner($user, fn (): null => tap(null, fn () => $listener->handle($event)));
 
         $user->refresh();
-        $this->assertNull($user->default_pm_id);
+        $this->assertNull($user->defaultPaymentMethod());
     }
 
     public function test_handle_subscription_charge_failure_dispatches_event(): void
     {
         Event::fake([SubscriptionRenewalFailed::class]);
 
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'customer')->create([
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+
+        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
         ]);
@@ -179,8 +190,10 @@ class MoreListenersTest extends CashierChipTestCase
 
     public function test_handle_subscription_charge_failure_marks_past_due(): void
     {
-        $user = $this->createUser(['chip_id' => 'cli_123']);
-        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'customer')->create([
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
+
+        $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
         ]);
@@ -205,7 +218,8 @@ class MoreListenersTest extends CashierChipTestCase
     {
         Event::fake([SubscriptionRenewalFailed::class]);
 
-        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $user = $this->createUser();
+        Cashier::chipCustomerDirectory()->link($user, 'cli_123');
 
         $purchaseData = [
             'id' => 'pur_123',

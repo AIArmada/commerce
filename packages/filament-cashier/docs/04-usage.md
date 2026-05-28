@@ -228,7 +228,7 @@ Normalization details that matter in practice:
 - CHIP `planId` falls back through `plan_id`, `name`, and then `type`.
 - Stripe `amount` is derived from the first available subscription item (`quantity × unit_amount`) when possible.
 - CHIP `amount` uses the stored `amount` field first, then falls back to summing subscription items.
-- `getExternalId()` and `externalDashboardUrl()` use gateway-specific IDs such as `stripe_id`, `chip_id`, and `chip_subscription_id` when present.
+- `getExternalId()` and `externalDashboardUrl()` use gateway-specific record identifiers such as Stripe customer/subscription IDs and CHIP subscription IDs when present.
 
 ### UnifiedInvoice
 

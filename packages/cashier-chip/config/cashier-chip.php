@@ -17,6 +17,7 @@ return [
             return [
                 'subscriptions' => $prefix . 'subscriptions',
                 'subscription_items' => $prefix . 'subscription_items',
+                'payment_methods' => $prefix . 'payment_methods',
             ];
         })(),
     ],

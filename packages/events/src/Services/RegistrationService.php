@@ -186,6 +186,7 @@ final class RegistrationService
         [$firstName, $lastName] = $this->resolveParticipantName($participant);
         $email = $this->requireString($participant, 'email');
         $phone = $this->optionalString($participant, 'phone');
+        $company = $this->optionalString($participant, 'company');
         $metadata = array_merge(
             Arr::wrap($links['metadata'] ?? []),
             Arr::wrap($participant['metadata'] ?? []),
@@ -204,6 +205,7 @@ final class RegistrationService
             'last_name' => $lastName,
             'email' => $email,
             'phone' => $phone,
+            'company' => $company,
             'metadata' => $metadata === [] ? null : $metadata,
         ]);
 

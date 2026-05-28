@@ -68,14 +68,14 @@ final class CreateOrderStep extends AbstractCheckoutStep
         }
 
         $orderService = app(OrderServiceInterface::class);
-        $customer = $session->customer;
+        $customer = $session->customer ?? $session->billable;
 
         $shippingData = $session->shipping_data ?? [];
         $billingData = $session->billing_data ?? [];
         $paymentData = $session->payment_data ?? [];
 
         $orderData = [
-            'customer_id' => $session->customer_id,
+            'customer_id' => $customer?->getKey(),
             'customer_type' => $customer?->getMorphClass(),
             'subtotal' => $session->subtotal,
             'discount_total' => $session->discount_total,
@@ -206,9 +206,16 @@ final class CreateOrderStep extends AbstractCheckoutStep
      */
     private function buildOrderMetadata(CheckoutSession $session, array $paymentData): array
     {
+        $cartSnapshotId = $this->stringFromCartSnapshot($session, 'id') ?? $session->cart_id;
+        $cartIdentifier = $this->stringFromCartSnapshot($session, 'identifier');
+        $cartInstance = $this->stringFromCartSnapshot($session, 'instance');
+
         $metadata = [
             'checkout_session_id' => $session->id,
             'cart_id' => $session->cart_id,
+            'cart_snapshot_id' => $cartSnapshotId,
+            'cart_identifier' => $cartIdentifier,
+            'cart_instance' => $cartInstance,
             'payment_gateway' => $session->selected_payment_gateway,
             'payment_id' => $session->payment_id,
             'payment_data' => $paymentData,
@@ -253,6 +260,19 @@ final class CreateOrderStep extends AbstractCheckoutStep
         }
 
         return $metadata;
+    }
+
+    private function stringFromCartSnapshot(CheckoutSession $session, string $key): ?string
+    {
+        $value = data_get($session->cart_snapshot, $key);
+
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $resolved = mb_trim((string) $value);
+
+        return $resolved !== '' ? $resolved : null;
     }
 
     private function commitInventoryReservations(CheckoutSession $session): void

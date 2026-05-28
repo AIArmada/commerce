@@ -106,6 +106,9 @@ final class RegistrationResource extends Resource
             TextInput::make('phone')
                 ->tel()
                 ->maxLength(255),
+
+            TextInput::make('company')
+                ->maxLength(255),
         ];
 
         if ($includeOccurrenceField) {
@@ -220,6 +223,11 @@ final class RegistrationResource extends Resource
                     ->dateTime('d M Y H:i')
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('company')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('checked_in_at')
                     ->dateTime('d M Y H:i')
                     ->placeholder('Not checked in')
@@ -266,6 +274,8 @@ final class RegistrationResource extends Resource
                             ->copyable(),
                         TextEntry::make('phone')
                             ->copyable()
+                            ->placeholder('Not set'),
+                        TextEntry::make('company')
                             ->placeholder('Not set'),
                         TextEntry::make('status')
                             ->badge()
@@ -317,7 +327,7 @@ final class RegistrationResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['code', 'first_name', 'last_name', 'email', 'phone'];
+        return ['code', 'first_name', 'last_name', 'email', 'phone', 'company'];
     }
 
     /**

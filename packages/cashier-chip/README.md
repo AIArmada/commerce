@@ -37,18 +37,16 @@ php artisan migrate
 
 ### Migration Ownership
 
-By default, Cashier CHIP owns these schema pieces:
+By default, Cashier CHIP uses these schema pieces:
 
-- `users.chip_id`
-- `users.default_pm_id`
+- `chip_customers` from `aiarmada/chip` for subject-to-CHIP customer links
+- `cashier_chip_payment_methods` for stored recurring tokens
 - `cashier_chip_subscriptions`
 - `cashier_chip_subscription_items`
 
-When `laravel/cashier` is **not** installed, Cashier CHIP also provisions the shared convenience
-columns `pm_type`, `pm_last_four`, and `trial_ends_at` so it can operate standalone.
-
-When `laravel/cashier` **is** installed, those shared columns remain owned by Laravel Cashier and
-Cashier CHIP intentionally does not recreate them.
+Cashier CHIP stores CHIP-specific customer links and recurring tokens in its own package tables.
+Your billable model does **not** need `chip_id`, `default_pm_id`, `pm_type`, or `pm_last_four`
+columns.
 
 ## Billable Model
 
@@ -62,6 +60,10 @@ class User extends Authenticatable
     use Billable;
 }
 ```
+
+The `Billable` trait uses the package-owned `chip_customers` bridge and
+`cashier_chip_payment_methods` store, so any Eloquent model can be the billable subject without
+adding CHIP-specific columns.
 
 ## Customer Management
 

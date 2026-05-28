@@ -7,6 +7,7 @@ namespace AIArmada\CashierChip;
 use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Console\WebhookCommand;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
+use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
 use AIArmada\CashierChip\Invoices\DocsInvoiceRenderer;
 use AIArmada\CashierChip\Listeners\HandleBillingCancelled;
 use AIArmada\CashierChip\Listeners\HandlePurchasePaid;
@@ -44,6 +45,7 @@ final class CashierChipServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->bindInvoiceRenderer();
+        $this->bindPaymentMethodStore();
     }
 
     public function bootingPackage(): void
@@ -76,6 +78,12 @@ final class CashierChipServiceProvider extends PackageServiceProvider
 
             throw new RuntimeException('Docs package is required for invoice rendering. Install aiarmada/docs.');
         });
+    }
+
+    protected function bindPaymentMethodStore(): void
+    {
+        $this->app->singleton(PaymentMethodStore::class, fn (): PaymentMethodStore => new PaymentMethodStore);
+        $this->app->alias(PaymentMethodStore::class, PaymentMethodStoreInterface::class);
     }
 
     /**

@@ -307,7 +307,7 @@ it('blocks selecting a cross-tenant customer when an owner context exists', func
     $page = app(CreateSubscription::class);
 
     expect(fn () => filamentCashier_invokeProtectedMethod($page, 'handleRecordCreation', [[
-        'user_id' => $billableB->getKey(),
+        'billable_id' => $billableB->getKey(),
         'gateway' => 'chip',
         'type' => 'default',
         'plan_id' => 'plan_a',

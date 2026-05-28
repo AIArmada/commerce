@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Schemas;
 
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
+use DateTimeInterface;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -15,6 +16,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Carbon;
 
 final class CustomerInfolist
 {
@@ -48,21 +50,24 @@ final class CustomerInfolist
                 ->schema([
                     Grid::make(3)
                         ->schema([
-                            TextEntry::make('chip_id')
+                            TextEntry::make('chip_customer_id')
                                 ->label('Chip Customer ID')
+                                ->getStateUsing(fn (Model $record): ?string => self::chipCustomerId($record))
                                 ->copyable()
                                 ->placeholder('Not linked to Chip')
                                 ->icon(Heroicon::OutlinedIdentification),
 
-                            TextEntry::make('pm_type')
+                            TextEntry::make('default_payment_method_type')
                                 ->label('Payment Method Type')
+                                ->getStateUsing(fn (Model $record): ?string => self::defaultPaymentMethodLabel($record))
                                 ->badge()
                                 ->color('primary')
                                 ->placeholder('No payment method')
                                 ->formatStateUsing(fn (?string $state): ?string => $state !== null ? ucfirst($state) : null),
 
-                            TextEntry::make('pm_last_four')
+                            TextEntry::make('default_payment_method_last_four')
                                 ->label('Card Last Four')
+                                ->getStateUsing(fn (Model $record): ?string => self::defaultPaymentMethodLastFour($record))
                                 ->placeholder('—')
                                 ->formatStateUsing(fn (?string $state): ?string => $state !== null ? '•••• ' . $state : null),
                         ]),
@@ -95,6 +100,7 @@ final class CustomerInfolist
 
                             TextEntry::make('trial_ends_at')
                                 ->label('Trial Ends')
+                                ->getStateUsing(fn (Model $record): ?Carbon => self::trialEndsAt($record))
                                 ->dateTime(config('filament-cashier-chip.tables.date_format', 'Y-m-d H:i:s'))
                                 ->placeholder('No trial')
                                 ->color(fn (Model $record): ?string => method_exists($record, 'onGenericTrial') && $record->onGenericTrial() ? 'warning' : null),
@@ -150,5 +156,92 @@ final class CustomerInfolist
         }
 
         return null;
+    }
+
+    private static function chipCustomerId(Model $record): ?string
+    {
+        if (! is_callable([$record, 'chipId'])) {
+            return null;
+        }
+
+        $chipCustomerId = call_user_func([$record, 'chipId']);
+
+        return is_string($chipCustomerId) && $chipCustomerId !== '' ? $chipCustomerId : null;
+    }
+
+    private static function defaultPaymentMethod(Model $record): mixed
+    {
+        if (! is_callable([$record, 'defaultPaymentMethod'])) {
+            return null;
+        }
+
+        return call_user_func([$record, 'defaultPaymentMethod']);
+    }
+
+    private static function defaultPaymentMethodLabel(Model $record): ?string
+    {
+        $paymentMethod = self::defaultPaymentMethod($record);
+
+        if (! is_object($paymentMethod)) {
+            return null;
+        }
+
+        if (is_callable([$paymentMethod, 'brand'])) {
+            $brand = call_user_func([$paymentMethod, 'brand']);
+
+            if (is_string($brand) && $brand !== '') {
+                return $brand;
+            }
+        }
+
+        if (! is_callable([$paymentMethod, 'type'])) {
+            return null;
+        }
+
+        $type = call_user_func([$paymentMethod, 'type']);
+
+        return is_string($type) && $type !== '' ? $type : null;
+    }
+
+    private static function defaultPaymentMethodLastFour(Model $record): ?string
+    {
+        $paymentMethod = self::defaultPaymentMethod($record);
+
+        if (! is_object($paymentMethod) || ! is_callable([$paymentMethod, 'lastFour'])) {
+            return null;
+        }
+
+        $lastFour = call_user_func([$paymentMethod, 'lastFour']);
+
+        return is_string($lastFour) && $lastFour !== '' ? $lastFour : null;
+    }
+
+    private static function trialEndsAt(Model $record): ?Carbon
+    {
+        if (! self::supportsGenericTrialValue($record)) {
+            return null;
+        }
+
+        $trialEndsAt = $record->getAttribute('trial_ends_at');
+
+        if ($trialEndsAt instanceof Carbon) {
+            return $trialEndsAt;
+        }
+
+        if ($trialEndsAt instanceof DateTimeInterface) {
+            return Carbon::instance($trialEndsAt);
+        }
+
+        if (is_string($trialEndsAt) && $trialEndsAt !== '') {
+            return Carbon::parse($trialEndsAt);
+        }
+
+        return null;
+    }
+
+    private static function supportsGenericTrialValue(Model $record): bool
+    {
+        return array_key_exists('trial_ends_at', $record->getAttributes())
+            || array_key_exists('trial_ends_at', $record->getCasts());
     }
 }

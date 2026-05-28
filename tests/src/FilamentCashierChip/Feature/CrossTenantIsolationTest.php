@@ -47,7 +47,8 @@ it('scopes SubscriptionResource queries to the current owner', function (): void
 
     $subscriptionB = OwnerContext::withOwner($ownerB, fn (): Subscription => Subscription::query()->create([
         // Safe fast-path: billable == owner for strict owner validation.
-        'user_id' => $ownerB->id,
+        'billable_type' => $ownerB->getMorphClass(),
+        'billable_id' => (string) $ownerB->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . Str::random(40),
         'chip_status' => Subscription::STATUS_ACTIVE,
@@ -127,7 +128,8 @@ it('fails closed when owner scoping is enabled but no owner can be resolved', fu
 
     $subscription = OwnerContext::withOwner($owner, fn (): Subscription => Subscription::query()->create([
         // Safe fast-path: billable == owner for strict owner validation.
-        'user_id' => $owner->id,
+        'billable_type' => $owner->getMorphClass(),
+        'billable_id' => (string) $owner->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . Str::random(40),
         'chip_status' => Subscription::STATUS_ACTIVE,

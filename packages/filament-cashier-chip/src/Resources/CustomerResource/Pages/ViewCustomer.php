@@ -10,6 +10,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 
 final class ViewCustomer extends ViewRecord
@@ -44,20 +45,19 @@ final class ViewCustomer extends ViewRecord
                     ->requiresConfirmation()
                     ->modalHeading('Create Customer in Chip')
                     ->modalDescription('This will create this customer in the Chip payment gateway.')
-                    ->visible(fn (): bool => empty($this->getRecord()->getAttribute('chip_id')))
+                    ->visible(fn (): bool => ! method_exists($this->getRecord(), 'hasChipId') || ! $this->getRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getRecord();
 
                         if (method_exists($record, 'createAsChipCustomer')) {
                             $record->createAsChipCustomer();
+                            $this->record = $record->fresh();
 
                             Notification::make()
                                 ->title('Customer Created in Chip')
-                                ->body('Chip ID: ' . $record->getAttribute('chip_id'))
+                                ->body('Chip ID: ' . ($this->chipCustomerId($record) ?? 'unknown'))
                                 ->success()
                                 ->send();
-
-                            $this->refreshFormData(['chip_id']);
                         }
                     }),
 
@@ -66,12 +66,13 @@ final class ViewCustomer extends ViewRecord
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
                     ->requiresConfirmation()
-                    ->visible(fn (): bool => ! empty($this->getRecord()->getAttribute('chip_id')))
+                    ->visible(fn (): bool => method_exists($this->getRecord(), 'hasChipId') && $this->getRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getRecord();
 
                         if (method_exists($record, 'syncChipCustomerDetails')) {
                             $record->syncChipCustomerDetails();
+                            $this->record = $record->fresh();
 
                             Notification::make()
                                 ->title('Customer Synced to Chip')
@@ -85,19 +86,18 @@ final class ViewCustomer extends ViewRecord
                     ->icon('heroicon-o-credit-card')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->visible(fn (): bool => ! empty($this->getRecord()->getAttribute('chip_id')))
+                    ->visible(fn (): bool => method_exists($this->getRecord(), 'hasChipId') && $this->getRecord()->hasChipId())
                     ->action(function (): void {
                         $record = $this->getRecord();
 
                         if (method_exists($record, 'updateDefaultPaymentMethodFromChip')) {
                             $record->updateDefaultPaymentMethodFromChip();
+                            $this->record = $record->fresh();
 
                             Notification::make()
                                 ->title('Payment Method Refreshed')
                                 ->success()
                                 ->send();
-
-                            $this->refreshFormData(['pm_type', 'pm_last_four']);
                         }
                     }),
             ])->label('Customer Actions'),
@@ -106,7 +106,7 @@ final class ViewCustomer extends ViewRecord
                 ->label('Add Payment Method')
                 ->icon('heroicon-o-plus-circle')
                 ->color('success')
-                ->visible(fn (): bool => ! empty($this->getRecord()->getAttribute('chip_id')))
+                ->visible(fn (): bool => method_exists($this->getRecord(), 'hasChipId') && $this->getRecord()->hasChipId())
                 ->action(function (): void {
                     $record = $this->getRecord();
 
@@ -131,9 +131,20 @@ final class ViewCustomer extends ViewRecord
                 ->label('View in Chip')
                 ->icon('heroicon-o-arrow-top-right-on-square')
                 ->color('gray')
-                ->visible(fn (): bool => ! empty($this->getRecord()->getAttribute('chip_id')))
-                ->url(fn (): string => 'https://app.chip-in.asia/clients/' . $this->getRecord()->getAttribute('chip_id'))
+                ->visible(fn (): bool => method_exists($this->getRecord(), 'hasChipId') && $this->getRecord()->hasChipId())
+                ->url(fn (): string => 'https://app.chip-in.asia/clients/' . ($this->chipCustomerId($this->getRecord()) ?? ''))
                 ->openUrlInNewTab(),
         ];
+    }
+
+    private function chipCustomerId(Model $record): ?string
+    {
+        if (! is_callable([$record, 'chipId'])) {
+            return null;
+        }
+
+        $chipCustomerId = call_user_func([$record, 'chipId']);
+
+        return is_string($chipCustomerId) && $chipCustomerId !== '' ? $chipCustomerId : null;
     }
 }

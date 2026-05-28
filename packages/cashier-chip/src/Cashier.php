@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Contracts\PaymentMethodStoreInterface;
 use AIArmada\CashierChip\Testing\FakeChipClient;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
+use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Akaunting\Money\Currency;
@@ -115,10 +117,13 @@ final class Cashier
             return null;
         }
 
-        $model = static::$customerModel;
+        $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId);
+        $subject = $link?->subject;
 
         /** @var (Model&BillableContract)|null $billable */
-        $billable = $model::where('chip_id', $chipId)->first();
+        $billable = $subject instanceof Model && static::isBillableModel($subject)
+            ? $subject
+            : null;
 
         return $billable;
     }
@@ -137,13 +142,8 @@ final class Cashier
             return null;
         }
 
-        $model = static::$customerModel;
-
         if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
-            /** @var (Model&BillableContract)|null $billable */
-            $billable = $model::query()->where('chip_id', $chipId)->first();
-
-            return $billable;
+            return static::findBillable($chipId);
         }
 
         $owner = OwnerContext::resolve();
@@ -155,41 +155,34 @@ final class Cashier
         $shouldValidateBillableOwner = (bool) config('cashier-chip.features.owner.validate_billable_owner', true);
 
         if (! $shouldValidateBillableOwner) {
-            /** @var (Model&BillableContract)|null $billable */
-            $billable = $model::query()->where('chip_id', $chipId)->first();
-
-            return $billable;
+            return static::findBillable($chipId);
         }
 
-        if (method_exists($model, 'scopeForOwner')) {
-            /** @var (Model&BillableContract)|null $billable */
-            $billable = $model::forOwner($owner, false)
-                ->where('chip_id', $chipId)
-                ->first();
-
-            return $billable;
-        }
-
-        if (is_a($owner, $model)) {
-            /** @var (Model&BillableContract)|null $billable */
-            $billable = $model::query()
-                ->whereKey($owner->getKey())
-                ->where('chip_id', $chipId)
-                ->first();
-
-            return $billable;
-        }
+        $link = static::chipCustomerDirectory()->findByChipCustomerId($chipId, $owner);
+        $subject = $link?->subject;
 
         /** @var (Model&BillableContract)|null $billable */
-        $billable = null;
+        $billable = $subject instanceof Model && static::isBillableModel($subject)
+            ? $subject
+            : null;
 
         return $billable;
+    }
+
+    private static function isBillableModel(Model $subject): bool
+    {
+        if ($subject instanceof BillableContract) {
+            return true;
+        }
+
+        return in_array(Billable::class, class_uses_recursive($subject), true);
     }
 
     public static function findSubscriptionForWebhook(Model $billable, string $subscriptionType): ?Subscription
     {
         $query = Subscription::query()
-            ->where('user_id', $billable->getKey())
+            ->where('billable_type', $billable->getMorphClass())
+            ->where('billable_id', (string) $billable->getKey())
             ->where('type', $subscriptionType);
 
         if ((bool) config('cashier-chip.features.owner.enabled', true) && OwnerContext::resolve() === null) {
@@ -209,6 +202,16 @@ final class Cashier
         }
 
         return app(ChipCollectService::class);
+    }
+
+    public static function chipCustomerDirectory(): ChipCustomerDirectoryInterface
+    {
+        return app(ChipCustomerDirectoryInterface::class);
+    }
+
+    public static function paymentMethodStore(): PaymentMethodStoreInterface
+    {
+        return app(PaymentMethodStoreInterface::class);
     }
 
     /**

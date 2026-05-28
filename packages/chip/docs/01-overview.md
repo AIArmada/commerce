@@ -11,6 +11,7 @@ The `aiarmada/chip` package is the direct CHIP gateway integration for Commerce.
 ## What this package owns
 
 - CHIP Collect purchases, payments, clients, and refunds
+- Subject-to-CHIP customer links used by billing packages
 - CHIP Send bank accounts, payout instructions, payout limits, and payout webhooks
 - CHIP webhook routing, signature verification, and webhook storage
 - CHIP health checks, analytics, gateway registration, and docs integration hooks
@@ -33,7 +34,7 @@ The `aiarmada/chip` package is the direct CHIP gateway integration for Commerce.
 ## Main models services or surfaces
 
 - **Models** — CHIP purchases, payments, webhooks, bank accounts, clients, send instructions, send limits, send webhooks, and company statements
-- **Services** — collect, send, analytics, webhook, and gateway registration services
+- **Services** — collect, send, customer directory, analytics, webhook, and gateway registration services
 - **Infrastructure** — webhook middleware, health-check commands, and payment gateway integration
 
 ## Owner scoping and security notes
@@ -61,6 +62,7 @@ CHIP is a Malaysian fintech payment gateway that offers:
 - Full and partial refunds
 - Real-time webhook handling with signature verification
 - Client/customer management with saved payment methods
+- Local customer directory linking any billable Eloquent subject to a CHIP client ID
 - Idempotency support for preventing duplicate payments
 
 ### Payouts (CHIP Send)

@@ -187,7 +187,7 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_end_trial()
     {
         $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
-        $subscription = Subscription::factory()->for($user, 'customer')->create([
+        $subscription = Subscription::factory()->for($user, 'billable')->create([
             'trial_ends_at' => Carbon::tomorrow(),
         ]);
 
@@ -219,7 +219,7 @@ class SubscriptionTest extends CashierChipTestCase
         OwnerContext::withOwner($user, function () use ($user, &$subscription): void {
             $subscription = Subscription::factory()
                 ->for($user, 'owner')
-                ->for($user, 'customer')
+                ->for($user, 'billable')
                 ->create(['quantity' => 1, 'chip_price' => 'price_1']);
 
             $subscription->items()->create(['quantity' => 1, 'chip_id' => 'si_1', 'chip_price' => 'price_1']);
@@ -237,8 +237,8 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_scope_active()
     {
         $user = User::create(['email' => 'u1', 'name' => 'U1', 'chip_id' => 'c1']);
-        Subscription::factory()->for($user, 'customer')->create(['chip_status' => Subscription::STATUS_ACTIVE]);
-        Subscription::factory()->for($user, 'customer')->create(['chip_status' => Subscription::STATUS_CANCELED, 'ends_at' => Carbon::now()->subDay()]);
+        Subscription::factory()->for($user, 'billable')->create(['chip_status' => Subscription::STATUS_ACTIVE]);
+        Subscription::factory()->for($user, 'billable')->create(['chip_status' => Subscription::STATUS_CANCELED, 'ends_at' => Carbon::now()->subDay()]);
 
         // Use query()->active()
         $this->assertEquals(1, Subscription::query()->active()->count());

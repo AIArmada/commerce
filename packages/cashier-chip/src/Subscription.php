@@ -24,8 +24,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,8 @@ use LogicException;
  * This model manages subscriptions locally with CHIP recurring tokens for payment.
  *
  * @property string $id
- * @property string $user_id
+ * @property string $billable_type
+ * @property string $billable_id
  * @property string $type
  * @property string $chip_id
  * @property string $chip_status
@@ -122,22 +124,27 @@ class Subscription extends Model
     /**
      * Get the user that owns the subscription.
      */
-    public function user(): BelongsTo
+    public function user(): MorphTo
     {
-        return $this->customer();
+        return $this->billable();
     }
 
     /**
      * Get the billable customer model related to the subscription.
      *
-     * @return BelongsTo<Model, $this>
+     * @return MorphTo<Model, $this>
      */
-    public function customer(): BelongsTo
+    public function customer(): MorphTo
     {
-        /** @var class-string<Model> $model */
-        $model = Cashier::$customerModel;
+        return $this->billable();
+    }
 
-        return $this->belongsTo($model, 'user_id');
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function billable(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     /**
@@ -1168,32 +1175,38 @@ class Subscription extends Model
                 return;
             }
 
-            // Validate that billable customer (user_id) belongs to the subscription owner
+            // Validate that the billable belongs to the subscription owner.
             if (
                 (bool) config('cashier-chip.features.owner.validate_billable_owner', true)
-                && $subscription->user_id !== null
+                && is_string($subscription->billable_type)
+                && $subscription->billable_type !== ''
+                && $subscription->billable_id !== null
             ) {
-                /** @var class-string<Model> $customerModel */
-                $customerModel = Cashier::$customerModel;
+                $billableModel = Relation::getMorphedModel($subscription->billable_type)
+                    ?? $subscription->billable_type;
+
+                if (! is_a($billableModel, Model::class, true)) {
+                    throw new AuthorizationException('Cross-tenant subscription write blocked.');
+                }
 
                 // Fast-path: if owner is the billable, allow it
                 if (
-                    is_a($owner, $customerModel)
-                    && (string) $owner->getKey() === (string) $subscription->user_id
+                    is_a($owner, $billableModel)
+                    && (string) $owner->getKey() === (string) $subscription->billable_id
                 ) {
                     // Safe fast-path: tenant owner is the billable.
                     // No additional owner-scoped lookup required.
                 } else {
-                    if (! method_exists($customerModel, 'scopeForOwner')) {
-                        if (is_a($owner, $customerModel)) {
+                    if (! method_exists($billableModel, 'scopeForOwner')) {
+                        if (is_a($owner, $billableModel)) {
                             throw new AuthorizationException('Cross-tenant subscription write blocked.');
                         }
 
                         return;
                     }
 
-                    $exists = $customerModel::forOwner($owner, false)
-                        ->whereKey($subscription->user_id)
+                    $exists = $billableModel::forOwner($owner, false)
+                        ->whereKey($subscription->billable_id)
                         ->exists();
 
                     if (! $exists) {

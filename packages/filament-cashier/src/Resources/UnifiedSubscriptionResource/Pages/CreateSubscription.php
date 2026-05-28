@@ -40,7 +40,7 @@ final class CreateSubscription extends CreateRecord
                     Wizard\Step::make(__('filament-cashier::subscriptions.create.steps.customer'))
                         ->icon('heroicon-o-user')
                         ->schema([
-                            Select::make('user_id')
+                            Select::make('billable_id')
                                 ->label(__('filament-cashier::subscriptions.create.customer_label'))
                                 ->options(fn () => $this->getCustomerOptions())
                                 ->searchable()
@@ -104,7 +104,7 @@ final class CreateSubscription extends CreateRecord
                             Select::make('payment_method')
                                 ->label(__('filament-cashier::subscriptions.create.payment_method_label'))
                                 ->placeholder(__('filament-cashier::subscriptions.create.payment_method_placeholder'))
-                                ->options(fn (Get $get) => $this->getPaymentMethodsForUser($get('user_id'), $get('gateway'))),
+                                ->options(fn (Get $get) => $this->getPaymentMethodsForBillable($get('billable_id'), $get('gateway'))),
                         ]),
                 ])
                     ->submitAction(new HtmlString(view('filament-cashier::components.wizard-submit-button')->render()))
@@ -169,9 +169,9 @@ final class CreateSubscription extends CreateRecord
     /**
      * @return array<string, string>
      */
-    protected function getPaymentMethodsForUser(?string $userId, ?string $gateway): array
+    protected function getPaymentMethodsForBillable(?string $billableId, ?string $gateway): array
     {
-        if ($userId === null || $gateway === null) {
+        if ($billableId === null || $gateway === null) {
             return [];
         }
 
@@ -187,29 +187,48 @@ final class CreateSubscription extends CreateRecord
             return [];
         }
 
-        $user = CashierOwnerScope::apply($billableModel::query())
-            ->whereKey($userId)
+        $billable = CashierOwnerScope::apply($billableModel::query())
+            ->whereKey($billableId)
             ->first();
 
-        if ($user === null) {
+        if ($billable === null) {
             return [];
         }
 
-        // Try to get payment methods from the gateway
         try {
-            if ($gateway === 'stripe' && method_exists($user, 'paymentMethods')) {
-                return $user->paymentMethods()
+            if ($gateway === 'stripe' && method_exists($billable, 'paymentMethods')) {
+                $paymentMethods = $billable->paymentMethods();
+
+                if (! is_iterable($paymentMethods)) {
+                    return [];
+                }
+
+                return collect($paymentMethods)
                     ->mapWithKeys(fn ($pm) => [
-                        $pm->id => ($pm->card->brand ?? 'Card') . ' **** ' . ($pm->card->last4 ?? '****'),
+                        data_get($pm, 'id') => (data_get($pm, 'card.brand') ?? 'Card') . ' **** ' . (data_get($pm, 'card.last4') ?? '****'),
                     ])
                     ->toArray();
             }
 
-            if ($gateway === 'chip' && method_exists($user, 'chipPaymentMethods')) {
-                return $user->chipPaymentMethods()
-                    ->mapWithKeys(fn ($pm) => [
-                        $pm->id => $pm->type . ' **** ' . ($pm->last4 ?? '****'),
-                    ])
+            if ($gateway === 'chip' && method_exists($billable, 'paymentMethods')) {
+                $paymentMethods = $billable->paymentMethods();
+
+                if (! is_iterable($paymentMethods)) {
+                    return [];
+                }
+
+                return collect($paymentMethods)
+                    ->mapWithKeys(function (mixed $paymentMethod): array {
+                        $paymentMethodId = $this->getChipPaymentMethodId($paymentMethod);
+
+                        if ($paymentMethodId === null) {
+                            return [];
+                        }
+
+                        return [
+                            $paymentMethodId => $this->getChipPaymentMethodLabel($paymentMethod),
+                        ];
+                    })
                     ->toArray();
             }
         } catch (Throwable) {
@@ -226,15 +245,15 @@ final class CreateSubscription extends CreateRecord
         if (! class_exists($billableModel) || ! is_a($billableModel, Model::class, true)) {
             throw new RuntimeException('Configured cashier billable model must be an Eloquent model.');
         }
-        $user = CashierOwnerScope::apply($billableModel::query())
-            ->whereKey($data['user_id'])
+        $billable = CashierOwnerScope::apply($billableModel::query())
+            ->whereKey($data['billable_id'])
             ->first();
 
-        if ($user === null) {
+        if ($billable === null) {
             throw new AuthorizationException('Selected customer is not accessible.');
         }
 
-        if (! $user instanceof BillableContract) {
+        if (! $billable instanceof BillableContract) {
             throw new RuntimeException('Configured cashier billable model must implement BillableContract.');
         }
 
@@ -247,7 +266,7 @@ final class CreateSubscription extends CreateRecord
         }
 
         $builder = Cashier::gateway($gateway)
-            ->newSubscription($user, $data['type'] ?? 'default', $data['plan_id']);
+            ->newSubscription($billable, $data['type'] ?? 'default', $data['plan_id']);
 
         if (isset($data['quantity']) && $data['quantity'] > 1) {
             $builder->quantity((int) $data['quantity']);
@@ -258,29 +277,29 @@ final class CreateSubscription extends CreateRecord
         }
 
         if (! empty($data['payment_method']) && is_string($data['payment_method'])) {
-            if (! $this->userOwnsPaymentMethod($user, $gateway, $data['payment_method'])) {
+            if (! $this->billableOwnsPaymentMethod($billable, $gateway, $data['payment_method'])) {
                 throw new AuthorizationException('Selected payment method is not accessible.');
             }
 
             $builder->create($data['payment_method']);
 
-            return $user;
+            return $billable;
         }
 
         $builder->create();
 
-        return $user;
+        return $billable;
     }
 
-    private function userOwnsPaymentMethod(BillableContract $user, string $gateway, string $paymentMethodId): bool
+    private function billableOwnsPaymentMethod(BillableContract $billable, string $gateway, string $paymentMethodId): bool
     {
         if ($gateway === 'stripe') {
-            if (! method_exists($user, 'paymentMethods')) {
+            if (! method_exists($billable, 'paymentMethods')) {
                 return false;
             }
 
             try {
-                $methods = $user->paymentMethods();
+                $methods = $billable->paymentMethods();
 
                 if (! is_iterable($methods)) {
                     return false;
@@ -296,12 +315,12 @@ final class CreateSubscription extends CreateRecord
         }
 
         if ($gateway === 'chip') {
-            if (! method_exists($user, 'chipPaymentMethods')) {
+            if (! method_exists($billable, 'paymentMethods')) {
                 return false;
             }
 
             try {
-                $methods = $user->chipPaymentMethods();
+                $methods = $billable->paymentMethods();
 
                 if (! is_iterable($methods)) {
                     return false;
@@ -309,7 +328,7 @@ final class CreateSubscription extends CreateRecord
 
                 /** @var iterable<int, mixed> $methods */
                 return collect($methods)->contains(
-                    fn (mixed $paymentMethod): bool => (string) data_get($paymentMethod, 'id') === $paymentMethodId
+                    fn (mixed $paymentMethod): bool => $this->getChipPaymentMethodId($paymentMethod) === $paymentMethodId
                 );
             } catch (Throwable) {
                 return false;
@@ -317,6 +336,51 @@ final class CreateSubscription extends CreateRecord
         }
 
         return false;
+    }
+
+    private function getChipPaymentMethodId(mixed $paymentMethod): ?string
+    {
+        if (is_object($paymentMethod) && method_exists($paymentMethod, 'id')) {
+            $paymentMethodId = $paymentMethod->id();
+
+            if (is_string($paymentMethodId) && $paymentMethodId !== '') {
+                return $paymentMethodId;
+            }
+        }
+
+        $paymentMethodId = data_get($paymentMethod, 'id') ?? data_get($paymentMethod, 'recurring_token');
+
+        return is_string($paymentMethodId) && $paymentMethodId !== '' ? $paymentMethodId : null;
+    }
+
+    private function getChipPaymentMethodLabel(mixed $paymentMethod): string
+    {
+        $brand = 'Card';
+
+        if (is_object($paymentMethod) && method_exists($paymentMethod, 'brand')) {
+            $brand = $paymentMethod->brand() ?? $paymentMethod->type() ?? $brand;
+        } else {
+            $brand = data_get($paymentMethod, 'brand')
+                ?? data_get($paymentMethod, 'card_brand')
+                ?? data_get($paymentMethod, 'type')
+                ?? data_get($paymentMethod, 'payment_method')
+                ?? $brand;
+        }
+
+        $lastFour = '****';
+
+        if (is_object($paymentMethod) && method_exists($paymentMethod, 'lastFour')) {
+            $lastFour = $paymentMethod->lastFour() ?? $lastFour;
+        } else {
+            $lastFour = data_get($paymentMethod, 'last_four')
+                ?? data_get($paymentMethod, 'last_4')
+                ?? data_get($paymentMethod, 'card_last_4')
+                ?? data_get($paymentMethod, 'card_last4')
+                ?? data_get($paymentMethod, 'last4')
+                ?? $lastFour;
+        }
+
+        return $brand . ' **** ' . $lastFour;
     }
 
     protected function getCreatedNotification(): ?Notification

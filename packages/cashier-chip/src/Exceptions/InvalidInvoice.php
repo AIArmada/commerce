@@ -15,7 +15,15 @@ class InvalidInvoice extends Exception
      */
     public static function invalidOwner(Invoice $invoice, Model $owner): self
     {
-        $chipId = $owner->getAttribute('chip_id');
+        $chipId = null;
+
+        if (method_exists($owner, 'chipId')) {
+            $resolvedChipId = $owner->chipId();
+            $chipId = is_string($resolvedChipId) && $resolvedChipId !== '' ? $resolvedChipId : null;
+        }
+
+        $chipId ??= $owner->getAttribute('chip_id');
+        $chipId = is_scalar($chipId) && $chipId !== '' ? (string) $chipId : (string) $owner->getKey();
 
         return new self("The invoice `{$invoice->id()}` does not belong to this customer `{$chipId}`.");
     }

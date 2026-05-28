@@ -23,7 +23,10 @@ final class BuildCheckoutSessionViewData
         $total = (int) ($session->grand_total ?? 0);
         $formattedTotal = MoneyFormatter::formatMinor($total, (string) $currency);
         $paymentData = is_array($session->payment_data) ? $session->payment_data : [];
-        $reference = Arr::get($paymentData, 'reference') ?? $session->payment_id ?? $session->cart_id ?? $session->id;
+        $reference = Arr::get($paymentData, 'reference')
+            ?? $session->payment_id
+            ?? Arr::get($session->cart_snapshot, 'identifier')
+            ?? $session->id;
 
         return [
             'session' => $session,

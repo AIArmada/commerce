@@ -173,8 +173,9 @@ final class ListSubscriptions extends ListRecords
         if ($detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
             $chipSubscriptions = CashierOwnerScope::apply($subscriptionModel::query())
-                ->with(['user', 'items'])
-                ->where('user_id', $userId)
+                ->with(['billable', 'items'])
+                ->where('billable_type', $user->getMorphClass())
+                ->where('billable_id', (string) $user->getKey())
                 ->orderByDesc('created_at')
                 ->get()
                 ->map(fn ($sub) => $this->mapUnifiedSubscription(UnifiedSubscription::fromChip($sub)));

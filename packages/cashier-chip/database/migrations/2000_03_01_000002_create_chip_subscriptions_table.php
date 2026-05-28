@@ -24,7 +24,7 @@ return new class extends Migration
             Schema::create($subscriptionsTable, function (Blueprint $table) use ($subscriptionsTable): void {
                 $table->uuid('id')->primary();
                 $table->nullableUuidMorphs('owner');
-                $table->foreignUuid('user_id');
+                $table->uuidMorphs('billable');
                 $table->string('type');
                 $table->string('chip_id')->unique();
                 $table->string('chip_status');
@@ -42,15 +42,14 @@ return new class extends Migration
                 $table->timestamp('coupon_applied_at')->nullable();
                 $table->timestamps();
 
-                $table->index(['user_id', 'chip_status']);
-                $table->index('user_id');
+                $table->index(['billable_type', 'billable_id', 'chip_status']);
                 $table->index('type');
                 $table->index('recurring_token');
                 $table->index('trial_ends_at');
                 $table->index('next_billing_at');
                 $table->index('ends_at');
                 $table->index('coupon_id');
-                $table->index(['user_id', 'type'], $subscriptionsTable . '_user_type_idx');
+                $table->index(['billable_type', 'billable_id', 'type'], $subscriptionsTable . '_billable_type_idx');
             });
         }
 

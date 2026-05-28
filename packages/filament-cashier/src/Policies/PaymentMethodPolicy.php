@@ -67,9 +67,23 @@ class PaymentMethodPolicy
     protected function ownsPaymentMethod(Model $user, Model $paymentMethod): bool
     {
         $userId = $this->resolveIdentifier($user, [$user->getKeyName()]);
-        $pmUserId = $this->resolveIdentifier($paymentMethod, ['billable_id', 'user_id']);
 
-        if ($userId === null || $pmUserId === null) {
+        if ($userId === null) {
+            return false;
+        }
+
+        $billableType = $this->resolveStringAttribute($paymentMethod, 'billable_type');
+        $billableId = $this->resolveIdentifier($paymentMethod, ['billable_id']);
+
+        if ($billableType !== null || $billableId !== null) {
+            return $billableType === $user->getMorphClass()
+                && $billableId !== null
+                && (string) $billableId === (string) $userId;
+        }
+
+        $pmUserId = $this->resolveIdentifier($paymentMethod, ['user_id']);
+
+        if ($pmUserId === null) {
             return false;
         }
 
@@ -104,5 +118,18 @@ class PaymentMethodPolicy
         }
 
         return null;
+    }
+
+    private function resolveStringAttribute(Model $model, string $attributeName): ?string
+    {
+        $attributes = $model->getAttributes();
+
+        if (array_key_exists($attributeName, $attributes) && is_string($attributes[$attributeName]) && $attributes[$attributeName] !== '') {
+            return $attributes[$attributeName];
+        }
+
+        $value = $model->getRawOriginal($attributeName);
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 }

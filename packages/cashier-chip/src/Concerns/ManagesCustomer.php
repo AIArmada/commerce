@@ -8,6 +8,9 @@ use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\Chip\Data\ClientData;
+use AIArmada\Chip\Models\ChipCustomerLink;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentCustomerData;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 trait ManagesCustomer // @phpstan-ignore trait.unused
 {
@@ -16,7 +19,20 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
      */
     public function chipId(): ?string
     {
-        return $this->chip_id;
+        return Cashier::chipCustomerDirectory()->getChipCustomerId($this);
+    }
+
+    /**
+     * @return MorphOne<ChipCustomerLink, $this>
+     */
+    public function chipCustomerLink(): MorphOne
+    {
+        return $this->morphOne(ChipCustomerLink::class, 'subject');
+    }
+
+    public function getChipIdAttribute(): ?string
+    {
+        return $this->chipId();
     }
 
     /**
@@ -24,7 +40,7 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
      */
     public function hasChipId(): bool
     {
-        return ! is_null($this->chip_id);
+        return Cashier::chipCustomerDirectory()->hasChipCustomerId($this);
     }
 
     /**
@@ -40,7 +56,7 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
             throw CustomerAlreadyCreated::exists($this);
         }
 
-        $options = array_merge([
+        $payload = array_merge([
             'email' => $this->chipEmail(),
             'full_name' => $this->chipName(),
             'phone' => $this->chipPhone(),
@@ -49,13 +65,16 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
 
         // Add address if available
         if ($address = $this->chipAddress()) {
-            $options = array_merge($options, $address);
+            $payload = array_merge($payload, $address);
         }
 
-        $client = Cashier::chip()->createClient(array_filter($options));
+        $client = Cashier::chip()->createClient(array_filter($payload));
 
-        $this->chip_id = $client->id;
-        $this->save();
+        Cashier::chipCustomerDirectory()->link(
+            $this,
+            $client->id,
+            $this->toPaymentCustomerData()->getCustomerMetadata(),
+        );
 
         return $client;
     }
@@ -69,7 +88,13 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
     {
         $this->assertCustomerExists();
 
-        return Cashier::chip()->updateClient($this->chip_id, $options);
+        return Cashier::chip()->updateClient($this->chipId(), array_filter(array_merge([
+            'full_name' => $this->chipName(),
+            'email' => $this->chipEmail(),
+            'phone' => $this->chipPhone(),
+            'country' => $this->chipCountry(),
+            ...$this->chipAddress(),
+        ], $options)));
     }
 
     /**
@@ -121,7 +146,7 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
     {
         $this->assertCustomerExists();
 
-        return Cashier::chip()->getClient($this->chip_id);
+        return Cashier::chip()->getClient($this->chipId());
     }
 
     /**
@@ -268,6 +293,27 @@ trait ManagesCustomer // @phpstan-ignore trait.unused
         if (! $this->hasChipId()) {
             throw InvalidCustomer::notYetCreated($this);
         }
+    }
+
+    private function toPaymentCustomerData(): PaymentCustomerData
+    {
+        $address = $this->chipAddress();
+
+        return new PaymentCustomerData(
+            email: $this->chipEmail() ?? '',
+            name: $this->chipName(),
+            phone: $this->chipPhone(),
+            country: $this->chipCountry(),
+            billingStreetAddress: $address['street_address'] ?? $address['line1'] ?? null,
+            billingCity: $address['city'] ?? null,
+            billingState: $address['state'] ?? null,
+            billingPostalCode: $address['zip_code'] ?? $address['postcode'] ?? null,
+            billingCountry: $address['country'] ?? $this->chipCountry(),
+            metadata: [
+                'billable_type' => $this->getMorphClass(),
+                'billable_id' => (string) $this->getKey(),
+            ],
+        );
     }
 
     /**

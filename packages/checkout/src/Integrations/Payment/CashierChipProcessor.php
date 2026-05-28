@@ -45,7 +45,8 @@ final class CashierChipProcessor implements PaymentProcessorInterface
     public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
     {
         try {
-            $customer = $session->customer;
+            $billable = $session->billable;
+            $customer = $billable instanceof Model ? $billable : $session->customer;
 
             if ($customer instanceof Model && method_exists($customer, 'charge')) {
                 return $this->createBillablePayment($customer, $request);

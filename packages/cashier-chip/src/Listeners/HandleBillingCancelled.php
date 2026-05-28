@@ -41,7 +41,8 @@ class HandleBillingCancelled
         }
 
         $query = Subscription::query()
-            ->where('user_id', $billable->getKey())
+            ->where('billable_type', $billable->getMorphClass())
+            ->where('billable_id', (string) $billable->getKey())
             ->where(function ($query) use ($billingTemplateClient): void {
                 $query->where('chip_billing_template_id', $billingTemplateClient->billing_template_id)
                     ->orWhere('recurring_token', $billingTemplateClient->recurring_token);

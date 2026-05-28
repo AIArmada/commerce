@@ -24,6 +24,7 @@ describe('Package bootstrap', function (): void {
         expect(Schema::hasTable($tablePrefix . 'send_instructions'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'bank_accounts'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'clients'))->toBeTrue();
+        expect(Schema::hasTable($tablePrefix . 'customers'))->toBeTrue();
     });
 
     it('can rerun the chip webhook extension without duplicate indexes', function (): void {
