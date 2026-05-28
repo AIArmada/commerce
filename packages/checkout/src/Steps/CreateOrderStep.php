@@ -97,8 +97,11 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         // Confirm payment if not a free order (triggers PaymentConfirmed transition → OrderPaid event)
         $isFreeOrder = ($paymentData['type'] ?? null) === 'free_order';
-        if (! $isFreeOrder && config('checkout.create_order.confirm_payment', true)) {
-            $this->confirmPayment($orderService, $order, $session, $paymentData);
+        $paymentConfirmationEnabled = ! $isFreeOrder && config('checkout.create_order.confirm_payment', true);
+        $paymentWasConfirmed = false;
+
+        if ($paymentConfirmationEnabled) {
+            $paymentWasConfirmed = $this->confirmPayment($orderService, $order, $session, $paymentData);
         }
 
         $session->update([
@@ -117,7 +120,9 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $session->transitionStatus(Completed::class);
         }
 
-        $this->commitInventoryReservations($session);
+        if ($this->shouldCommitInventoryReservations($isFreeOrder, $paymentConfirmationEnabled, $paymentWasConfirmed)) {
+            $this->commitInventoryReservations($session);
+        }
         $this->clearCart($session);
 
         return $this->success('Order created successfully', [
@@ -290,8 +295,24 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         $inventoryAdapter = app(InventoryAdapter::class);
 
-        // Commit all reservations for this checkout session at once
-        $inventoryAdapter->commitAllForReference($session->id, $session->order_id);
+        // Commit all reservations for this checkout cart at once
+        $inventoryAdapter->commitAllForReference($session->cart_id, $session->order_id);
+    }
+
+    private function shouldCommitInventoryReservations(
+        bool $isFreeOrder,
+        bool $paymentConfirmationEnabled,
+        bool $paymentWasConfirmed,
+    ): bool {
+        if ($isFreeOrder) {
+            return true;
+        }
+
+        if (! $paymentConfirmationEnabled) {
+            return true;
+        }
+
+        return ! $paymentWasConfirmed;
     }
 
     private function clearCart(CheckoutSession $session): void
@@ -373,7 +394,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
         Order $order,
         CheckoutSession $session,
         array $paymentData,
-    ): void {
+    ): bool {
         $transactionId = $paymentData['transaction_id']
             ?? $paymentData['payment_id']
             ?? $session->payment_id
@@ -406,12 +427,16 @@ final class CreateOrderStep extends AbstractCheckoutStep
                 'transaction_id' => $transactionId,
                 'gateway' => $gateway,
             ]);
+
+            return true;
         } catch (Throwable $e) {
             Log::error('Failed to confirm payment for order', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);
             // Don't re-throw - order was created successfully, payment confirmation is supplementary
+
+            return false;
         }
     }
 }

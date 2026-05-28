@@ -9,6 +9,7 @@ use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\CheckoutResult;
 use AIArmada\Checkout\Data\PaymentResult;
 use AIArmada\Checkout\Data\StepResult;
+use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Http\Controllers\PaymentCallbackController;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -22,11 +23,13 @@ use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Steps\CreateOrderStep;
 use AIArmada\Checkout\Steps\ProcessPaymentStep;
+use AIArmada\Checkout\Steps\ReserveInventoryStep;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchaseCancelled;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Inventory\Contracts\CheckoutInventoryServiceInterface;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
@@ -477,6 +480,178 @@ describe('CreateOrderStep', function (): void {
             ->and($session->fresh()->order_id)->not->toBeNull();
     });
 
+    it('skips directly committing inventory reservations when payment confirmation already handles paid orders', function (): void {
+        config()->set('checkout.create_order.confirm_payment', true);
+
+        $orderService = mock(OrderServiceInterface::class);
+        $order = new Order;
+        $order->forceFill([
+            'id' => (string) Str::uuid(),
+            'order_number' => 'TEST-ORDER-PAID-INVENTORY',
+        ]);
+
+        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+        $orderService->shouldReceive('confirmPayment')->once()->andReturn($order);
+
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $inventoryService = mock(CheckoutInventoryServiceInterface::class);
+        $inventoryService->shouldReceive('commitAllForReference')->never();
+
+        app()->instance(CheckoutInventoryServiceInterface::class, $inventoryService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-paid-inventory-order',
+            'selected_payment_gateway' => 'chip',
+            'payment_id' => 'pay_paid_inventory_123',
+            'cart_snapshot' => [
+                'items' => [
+                    [
+                        'name' => 'Paid Inventory Item',
+                        'quantity' => 1,
+                        'price' => 1000,
+                    ],
+                ],
+            ],
+            'pricing_data' => [
+                'inventory_reservations' => [
+                    [
+                        'product_id' => 'product-123',
+                        'variant_id' => 'variant-123',
+                        'quantity' => 1,
+                    ],
+                ],
+            ],
+            'payment_data' => [
+                'status' => PaymentStatus::Completed->value,
+                'transaction_id' => 'txn_paid_inventory_123',
+            ],
+            'subtotal' => 1000,
+            'grand_total' => 1000,
+            'currency' => 'USD',
+        ]);
+        $session = $session->transitionStatus(Processing::class);
+
+        $step = app(CreateOrderStep::class);
+
+        expect($step->handle($session)->isSuccessful())->toBeTrue();
+    });
+
+    it('still commits inventory reservations for paid orders when payment confirmation is disabled', function (): void {
+        config()->set('checkout.create_order.confirm_payment', false);
+
+        $orderService = mock(OrderServiceInterface::class);
+        $order = new Order;
+        $order->forceFill([
+            'id' => (string) Str::uuid(),
+            'order_number' => 'TEST-ORDER-PAID-WITHOUT-CONFIRM',
+        ]);
+
+        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+        $orderService->shouldReceive('confirmPayment')->never();
+
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-paid-without-confirm',
+            'selected_payment_gateway' => 'chip',
+            'payment_id' => 'pay_without_confirm_123',
+            'cart_snapshot' => [
+                'items' => [
+                    [
+                        'name' => 'Paid Item Without Confirmation',
+                        'quantity' => 1,
+                        'price' => 1000,
+                    ],
+                ],
+            ],
+            'pricing_data' => [
+                'inventory_reservations' => [
+                    [
+                        'product_id' => 'product-123',
+                        'variant_id' => 'variant-123',
+                        'quantity' => 1,
+                    ],
+                ],
+            ],
+            'payment_data' => [
+                'status' => PaymentStatus::Completed->value,
+                'transaction_id' => 'txn_without_confirm_123',
+            ],
+            'subtotal' => 1000,
+            'grand_total' => 1000,
+            'currency' => 'USD',
+        ]);
+        $session = $session->transitionStatus(Processing::class);
+
+        $inventoryService = mock(CheckoutInventoryServiceInterface::class);
+        $inventoryService->shouldReceive('commitAllForReference')
+            ->once()
+            ->with($session->cart_id, $order->id)
+            ->andReturn(1);
+
+        app()->instance(CheckoutInventoryServiceInterface::class, $inventoryService);
+
+        $step = app(CreateOrderStep::class);
+
+        expect($step->handle($session)->isSuccessful())->toBeTrue();
+    });
+
+    it('still commits inventory reservations for free orders', function (): void {
+        $orderService = mock(OrderServiceInterface::class);
+        $order = new Order;
+        $order->forceFill([
+            'id' => (string) Str::uuid(),
+            'order_number' => 'TEST-ORDER-FREE-INVENTORY',
+        ]);
+
+        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+        $orderService->shouldReceive('confirmPayment')->never();
+
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-free-inventory-order',
+            'cart_snapshot' => [
+                'items' => [
+                    [
+                        'name' => 'Free Inventory Item',
+                        'quantity' => 1,
+                        'price' => 0,
+                    ],
+                ],
+            ],
+            'pricing_data' => [
+                'inventory_reservations' => [
+                    [
+                        'product_id' => 'product-123',
+                        'variant_id' => 'variant-123',
+                        'quantity' => 1,
+                    ],
+                ],
+            ],
+            'payment_data' => [
+                'type' => 'free_order',
+            ],
+            'subtotal' => 0,
+            'grand_total' => 0,
+            'currency' => 'USD',
+        ]);
+        $session = $session->transitionStatus(Processing::class);
+
+        $inventoryService = mock(CheckoutInventoryServiceInterface::class);
+        $inventoryService->shouldReceive('commitAllForReference')
+            ->once()
+            ->with($session->cart_id, $order->id)
+            ->andReturn(1);
+
+        app()->instance(CheckoutInventoryServiceInterface::class, $inventoryService);
+
+        $step = app(CreateOrderStep::class);
+
+        expect($step->handle($session)->isSuccessful())->toBeTrue();
+    });
+
     it('passes customer type and finalized pricing data to the order service', function (): void {
         $customer = Customer::create([
             'first_name' => 'Priced',
@@ -711,6 +886,69 @@ describe('CreateOrderStep', function (): void {
         $step = app(CreateOrderStep::class);
 
         expect($step->handle($session)->isSuccessful())->toBeTrue();
+    });
+
+    it('reserves inventory against the checkout cart id', function (): void {
+        $inventoryService = mock(CheckoutInventoryServiceInterface::class);
+        $inventoryService->shouldReceive('reserve')
+            ->once()
+            ->with('product-123', 'variant-123', 2, 'test-cart-reserve-reference', 900)
+            ->andReturn([
+                'id' => 'reservation-123',
+                'expires_at' => now()->addSeconds(900)->toIso8601String(),
+            ]);
+
+        app()->instance(CheckoutInventoryServiceInterface::class, $inventoryService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-reserve-reference',
+            'cart_snapshot' => [
+                'items' => [
+                    [
+                        'name' => 'Reserved Item',
+                        'quantity' => 2,
+                        'product_id' => 'product-123',
+                        'variant_id' => 'variant-123',
+                    ],
+                ],
+            ],
+        ]);
+
+        $step = app(ReserveInventoryStep::class);
+
+        expect($step->handle($session)->isSuccessful())->toBeTrue()
+            ->and(data_get($session->fresh()->pricing_data, 'inventory_reservations.0.reservation_id'))->toBe('reservation-123');
+    });
+
+    it('releases reserved inventory against the checkout cart id during rollback', function (): void {
+        $inventoryService = mock(CheckoutInventoryServiceInterface::class);
+        $inventoryService->shouldReceive('releaseAllForReference')
+            ->once()
+            ->with('test-cart-release-reference')
+            ->andReturn(1);
+
+        app()->instance(CheckoutInventoryServiceInterface::class, $inventoryService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-release-reference',
+            'pricing_data' => [
+                'inventory_reservations' => [
+                    [
+                        'product_id' => 'product-123',
+                        'variant_id' => 'variant-123',
+                        'quantity' => 1,
+                        'reservation_id' => 'reservation-123',
+                    ],
+                ],
+                'reservations_expire_at' => now()->addMinutes(15)->toIso8601String(),
+            ],
+        ]);
+
+        $step = app(ReserveInventoryStep::class);
+        $step->rollback($session);
+
+        expect(data_get($session->fresh()->pricing_data, 'inventory_reservations'))->toBeNull()
+            ->and(data_get($session->fresh()->pricing_data, 'reservations_expire_at'))->toBeNull();
     });
 });
 
