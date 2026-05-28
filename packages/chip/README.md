@@ -110,7 +110,7 @@ $instruction = ChipSend::createSendInstruction(
 ### Webhooks
 
 ```php
-Route::post('/chip/webhook', function (Request $request) {
+Route::post('/chip/webhooks', function (Request $request) {
     $handler = app(ChipGateway::class)->getWebhookHandler();
     $payload = $handler->verify($request);
     

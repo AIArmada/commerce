@@ -11,7 +11,7 @@ Cashier CHIP handles incoming CHIP webhooks to update payment statuses, save rec
 The package registers a webhook route at:
 
 ```
-POST /chip/webhook
+POST /chip/webhooks
 ```
 
 Configure your CHIP dashboard to send webhooks to this URL.
@@ -163,7 +163,7 @@ Register your custom controller:
 // routes/web.php
 use App\Http\Controllers\WebhookController;
 
-Route::post('chip/webhook', [WebhookController::class, 'handleWebhook'])
+Route::post('chip/webhooks', [WebhookController::class, 'handleWebhook'])
     ->name('chip.webhook');
 ```
 
@@ -242,7 +242,7 @@ Cashier::fake();
 $user->charge(10000);
 
 // Simulate a webhook
-$response = $this->postJson('/chip/webhook', [
+$response = $this->postJson('/chip/webhooks', [
     'event_type' => 'purchase.payment_successful',
     'id' => 'purchase-123',
     'status' => 'paid',

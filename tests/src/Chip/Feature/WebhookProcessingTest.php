@@ -51,7 +51,7 @@ describe('ProcessChipWebhook', function (): void {
     it('can be instantiated', function (): void {
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => ['event_type' => 'purchase.paid', 'type' => 'purchase'],
         ]);
 
@@ -74,7 +74,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -98,7 +98,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -122,7 +122,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -146,7 +146,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -165,7 +165,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -189,7 +189,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -212,7 +212,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -235,7 +235,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -259,7 +259,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -283,7 +283,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -307,7 +307,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -331,7 +331,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -366,7 +366,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -437,7 +437,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -488,7 +488,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $firstWebhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => [
                 'event_type' => 'payment.refunded',
                 'type' => 'payment',
@@ -516,7 +516,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $secondWebhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => [
                 'event_type' => 'payment.refunded',
                 'type' => 'payment',
@@ -564,7 +564,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 
@@ -588,7 +588,7 @@ describe('ProcessChipWebhook', function (): void {
 
         $webhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
-            'url' => 'https://example.test/chip/webhook',
+            'url' => 'https://example.test/chip/webhooks',
             'payload' => $payload,
         ]);
 

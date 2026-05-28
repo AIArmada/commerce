@@ -302,7 +302,7 @@ $subscription = $user->newSubscription('default', 'price_custom')
 
 ## Webhooks
 
-The package automatically registers a webhook route at `/chip/webhook`. Configure your CHIP dashboard to send webhooks to this URL.
+The package automatically registers a webhook route at `/chip/webhooks`. Configure your CHIP dashboard to send webhooks to this URL.
 
 ### Webhook Events
 

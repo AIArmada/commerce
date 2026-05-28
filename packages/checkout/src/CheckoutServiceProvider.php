@@ -23,6 +23,7 @@ use AIArmada\Checkout\Steps\ProcessPaymentStep;
 use AIArmada\Checkout\Steps\ReserveInventoryStep;
 use AIArmada\Checkout\Steps\ResolveCustomerStep;
 use AIArmada\Checkout\Steps\ValidateCartStep;
+use AIArmada\Checkout\Support\ChipIntegrationRegistrar;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
@@ -218,6 +219,8 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         } else {
             $registry->disable('apply_discounts');
         }
+
+        $this->registerChipIntegration();
     }
 
     protected function validateOwnerConfiguration(): void
@@ -335,5 +338,11 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     {
         return config('checkout.integrations.promotions.enabled', true)
             || config('checkout.integrations.vouchers.enabled', true);
+    }
+
+    protected function registerChipIntegration(): void
+    {
+        $registrar = new ChipIntegrationRegistrar;
+        $registrar->register();
     }
 }

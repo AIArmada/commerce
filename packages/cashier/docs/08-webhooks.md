@@ -34,7 +34,7 @@ Default webhook routes depend on the installed gateway packages:
 | Gateway | Owner | Default endpoint |
 |---------|-------|------------------|
 | Stripe | `laravel/cashier` | `/stripe/webhook` |
-| CHIP | `aiarmada/cashier-chip` | `/chip/webhook` |
+| CHIP | `aiarmada/cashier-chip` | `/chip/webhooks` |
 
 If you customize the path in those packages, update your gateway dashboard to match.
 
@@ -61,7 +61,7 @@ If you customize the path in those packages, update your gateway dashboard to ma
 ### CHIP Webhooks
 
 1. Go to the CHIP dashboard
-2. Add endpoint: `https://yourdomain.com/chip/webhook`
+2. Add endpoint: `https://yourdomain.com/chip/webhooks`
 3. Copy the webhook secret into `.env`:
 
    ```env

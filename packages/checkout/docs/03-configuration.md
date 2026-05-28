@@ -120,7 +120,7 @@ return [
             ],
         ],
         'tax' => [
-            'enabled' => true,
+            'enabled' => false,
         ],
         'promotions' => [
             'enabled' => true,
@@ -129,6 +129,9 @@ return [
         'vouchers' => [
             'enabled' => true,
             'allow_multiple' => false,
+        ],
+        'chip' => [
+            'enabled' => true,
         ],
     ],
 
@@ -157,6 +160,7 @@ return [
             ],
         ],
     ],
+
     'response_mode' => 'redirect',
 
     'views' => [
@@ -168,7 +172,6 @@ return [
             'cancel' => 'checkout::cancel',
         ],
     ],
-
 
     /*
     |--------------------------------------------------------------------------
@@ -372,9 +375,10 @@ Control which integrations are active:
         'require_selection' => true,
         'jnt' => ['enabled' => true, 'auto_detect' => true],
     ],
-    'tax' => ['enabled' => true],
+    'tax' => ['enabled' => false],
     'promotions' => ['enabled' => true, 'auto_apply' => true],
     'vouchers' => ['enabled' => true, 'allow_multiple' => false],
+    'chip' => ['enabled' => true],
 ],
 ```
 

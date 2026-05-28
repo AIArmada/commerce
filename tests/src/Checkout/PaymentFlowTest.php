@@ -22,6 +22,10 @@ use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
 use AIArmada\Checkout\Steps\CreateOrderStep;
 use AIArmada\Checkout\Steps\ProcessPaymentStep;
+use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Events\PurchaseCancelled;
+use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
@@ -32,6 +36,88 @@ use Illuminate\Support\Str;
 use Mockery\Expectation;
 
 use function Pest\Laravel\mock;
+
+/**
+ * @return array<string, mixed>
+ */
+function chipCheckoutWebhookPayload(string $reference, string $status): array
+{
+    $timestamp = time();
+
+    return [
+        'id' => 'purchase-' . uniqid(),
+        'type' => 'purchase',
+        'created_on' => $timestamp,
+        'updated_on' => $timestamp,
+        'client' => [
+            'email' => 'checkout@example.com',
+            'full_name' => 'Checkout Customer',
+        ],
+        'purchase' => [
+            'total' => 1000,
+            'currency' => 'MYR',
+            'products' => [
+                [
+                    'name' => 'Checkout Product',
+                    'price' => 1000,
+                    'quantity' => 1,
+                ],
+            ],
+        ],
+        'brand_id' => 'brand-123',
+        'payment' => null,
+        'issuer_details' => [
+            'legal_name' => 'Example Merchant',
+        ],
+        'transaction_data' => [
+            'payment_method' => 'card',
+            'attempts' => [],
+        ],
+        'status' => $status,
+        'status_history' => [],
+        'viewed_on' => null,
+        'company_id' => null,
+        'is_test' => true,
+        'user_id' => null,
+        'billing_template_id' => null,
+        'client_id' => null,
+        'send_receipt' => false,
+        'is_recurring_token' => false,
+        'recurring_token' => null,
+        'skip_capture' => false,
+        'force_recurring' => false,
+        'reference_generated' => $reference,
+        'reference' => $reference,
+        'notes' => null,
+        'issued' => null,
+        'due' => null,
+        'refund_availability' => 'all',
+        'refundable_amount' => 0,
+        'currency_conversion' => null,
+        'payment_method_whitelist' => [],
+        'success_redirect' => null,
+        'failure_redirect' => null,
+        'cancel_redirect' => null,
+        'success_callback' => null,
+        'creator_agent' => 'AIArmada/Chip',
+        'platform' => 'api',
+        'product' => 'purchases',
+        'created_from_ip' => null,
+        'invoice_url' => null,
+        'checkout_url' => null,
+        'direct_post_url' => null,
+        'marked_as_paid' => false,
+        'order_id' => null,
+        'upsell_campaigns' => [],
+        'referral_campaign_id' => null,
+        'referral_code' => null,
+        'referral_code_details' => null,
+        'referral_code_generated' => null,
+        'retain_level_details' => null,
+        'can_retrieve' => false,
+        'can_chargeback' => false,
+    ];
+}
 
 describe('PaymentCallbackController', function (): void {
     $setConfig = function (): void {
@@ -527,6 +613,122 @@ describe('CreateOrderStep', function (): void {
 });
 
 describe('CheckoutService', function (): void {
+    it('bridges chip purchase paid events into checkout success callbacks', function (): void {
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-chip-paid',
+            'status' => AwaitingPayment::class,
+            'selected_payment_gateway' => 'chip',
+        ]);
+
+        $payload = chipCheckoutWebhookPayload($session->id, 'paid');
+
+        $checkoutService = mock(CheckoutServiceInterface::class);
+        /** @var Expectation $callbackExpectation */
+        $callbackExpectation = $checkoutService->shouldReceive('handlePaymentCallback');
+        $callbackExpectation->once()
+            ->withArgs(function (CheckoutSession $resolvedSession, string $callbackType, array $incomingPayload) use ($payload, $session): bool {
+                expect($resolvedSession->id)->toBe($session->id)
+                    ->and($callbackType)->toBe('success')
+                    ->and($incomingPayload)->toBe($payload);
+
+                return true;
+            })
+            ->andReturn(CheckoutResult::success($session));
+
+        app()->instance(CheckoutServiceInterface::class, $checkoutService);
+
+        PurchasePaid::dispatch(PurchaseData::from($payload), $payload);
+    });
+
+    it('bridges chip purchase payment failure events into checkout failure callbacks', function (): void {
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-chip-failure',
+            'status' => AwaitingPayment::class,
+            'selected_payment_gateway' => 'chip',
+        ]);
+
+        $payload = chipCheckoutWebhookPayload($session->id, 'error');
+
+        $checkoutService = mock(CheckoutServiceInterface::class);
+        /** @var Expectation $callbackExpectation */
+        $callbackExpectation = $checkoutService->shouldReceive('handlePaymentCallback');
+        $callbackExpectation->once()
+            ->withArgs(function (CheckoutSession $resolvedSession, string $callbackType, array $incomingPayload) use ($payload, $session): bool {
+                expect($resolvedSession->id)->toBe($session->id)
+                    ->and($callbackType)->toBe('failure')
+                    ->and($incomingPayload)->toBe($payload);
+
+                return true;
+            })
+            ->andReturn(CheckoutResult::failed($session, 'Payment failed'));
+
+        app()->instance(CheckoutServiceInterface::class, $checkoutService);
+
+        PurchasePaymentFailure::dispatch(PurchaseData::from($payload), $payload);
+    });
+
+    it('bridges chip purchase cancelled events into checkout cancel callbacks', function (): void {
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-chip-cancelled',
+            'status' => AwaitingPayment::class,
+            'selected_payment_gateway' => 'chip',
+        ]);
+
+        $payload = chipCheckoutWebhookPayload($session->id, 'cancelled');
+
+        $checkoutService = mock(CheckoutServiceInterface::class);
+        /** @var Expectation $callbackExpectation */
+        $callbackExpectation = $checkoutService->shouldReceive('handlePaymentCallback');
+        $callbackExpectation->once()
+            ->withArgs(function (CheckoutSession $resolvedSession, string $callbackType, array $incomingPayload) use ($payload, $session): bool {
+                expect($resolvedSession->id)->toBe($session->id)
+                    ->and($callbackType)->toBe('cancel')
+                    ->and($incomingPayload)->toBe($payload);
+
+                return true;
+            })
+            ->andReturn(CheckoutResult::failed($session, 'Payment was cancelled'));
+
+        app()->instance(CheckoutServiceInterface::class, $checkoutService);
+
+        PurchaseCancelled::dispatch(PurchaseData::from($payload), $payload);
+    });
+
+    it('ignores duplicate chip purchase paid events for already completed sessions', function (): void {
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-chip-completed',
+            'status' => Completed::class,
+            'selected_payment_gateway' => 'chip',
+            'completed_at' => now(),
+        ]);
+
+        $payload = chipCheckoutWebhookPayload($session->id, 'paid');
+
+        $checkoutService = mock(CheckoutServiceInterface::class);
+        $checkoutService->shouldReceive('handlePaymentCallback')->never();
+
+        app()->instance(CheckoutServiceInterface::class, $checkoutService);
+
+        PurchasePaid::dispatch(PurchaseData::from($payload), $payload);
+    });
+
+    it('ignores chip purchase events for checkout sessions using another gateway', function (): void {
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-chip-wrong-gateway',
+            'status' => AwaitingPayment::class,
+            'selected_payment_gateway' => 'cashier',
+        ]);
+
+        $payload = chipCheckoutWebhookPayload($session->id, 'paid');
+
+        $checkoutService = mock(CheckoutServiceInterface::class);
+        $checkoutService->shouldReceive('handlePaymentCallback')->never();
+
+        app()->instance(CheckoutServiceInterface::class, $checkoutService);
+
+        PurchasePaid::dispatch(PurchaseData::from($payload), $payload);
+    });
+
     it('completes successfully when a step sets the session to completed', function (): void {
         $registry = new CheckoutStepRegistry;
 

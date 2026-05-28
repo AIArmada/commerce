@@ -476,7 +476,7 @@ final class WebhookSimulator
      *
      * @param  array<string, string>  $headers
      */
-    public function toRequest(string $uri = '/chip/webhook', array $headers = []): Request
+    public function toRequest(string $uri = '/chip/webhooks', array $headers = []): Request
     {
         $payload = $this->factory->toArray();
         $content = json_encode($payload);

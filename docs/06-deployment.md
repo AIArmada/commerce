@@ -38,7 +38,7 @@ CHIP_SEND_API_KEY=your-send-api-key
 CHIP_SEND_API_SECRET=your-send-secret
 CHIP_SEND_ENVIRONMENT=production
 CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
-CHIP_WEBHOOK_ROUTE=/chip/webhook
+CHIP_WEBHOOK_ROUTE=/chip/webhooks
 
 # J&T Express
 JNT_API_KEY=your-production-api-key

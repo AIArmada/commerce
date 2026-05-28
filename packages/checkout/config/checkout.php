@@ -136,7 +136,7 @@ return [
             ],
         ],
         'tax' => [
-            'enabled' => true,
+            'enabled' => false,
         ],
         'promotions' => [
             'enabled' => true,
@@ -145,6 +145,9 @@ return [
         'vouchers' => [
             'enabled' => true,
             'allow_multiple' => false,
+        ],
+        'chip' => [
+            'enabled' => true,
         ],
     ],
 

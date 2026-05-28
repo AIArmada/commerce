@@ -31,19 +31,21 @@ CHIP_COLLECT_API_KEY=your-collect-api-key
 CHIP_COLLECT_BRAND_ID=your-brand-id
 CHIP_ENVIRONMENT=sandbox
 CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
-CHIP_WEBHOOK_ROUTE=/chip/webhook
+CHIP_WEBHOOK_ROUTE=/chip/webhooks
 ```
 
 If you register multiple CHIP webhook IDs, use `CHIP_WEBHOOK_PUBLIC_KEYS` as documented in the canonical CHIP configuration guide.
 
 ### 3. Register Webhook
 
-In CHIP dashboard, register the webhook route from `config('chip.webhooks.route', '/chip/webhook')`, typically:
+In CHIP dashboard, register the webhook route from `config('chip.webhooks.route', '/chip/webhooks')`, typically:
 ```
-https://your-app.com/chip/webhook
+https://your-app.com/chip/webhooks
 ```
 
 Package automatically handles webhook routes.
+
+If the checkout package is installed with the default `checkout.integrations.chip.enabled=true`, register only this CHIP route. Checkout listens to the typed CHIP events emitted after webhook processing, so you do not need to send the same delivery to `/webhooks/checkout`.
 
 ## Creating Purchases
 

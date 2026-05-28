@@ -178,7 +178,7 @@ public function test_webhook_updates_payment_status(): void
     // ...
     
     // Simulate webhook
-    $response = $this->postJson('/chip/webhook', [
+    $response = $this->postJson('/chip/webhooks', [
         'event_type' => 'purchase.payment_successful',
         'id' => $purchaseId,
         'client_id' => $user->chipId(),
@@ -199,7 +199,7 @@ public function test_payment_event_is_dispatched(): void
 {
     Event::fake([PaymentSucceeded::class]);
     
-    $this->postJson('/chip/webhook', [
+    $this->postJson('/chip/webhooks', [
         'event_type' => 'purchase.payment_successful',
         'id' => 'purchase-123',
         'status' => 'paid',
