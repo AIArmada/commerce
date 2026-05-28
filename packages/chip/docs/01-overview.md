@@ -28,7 +28,7 @@ The `aiarmada/chip` package is the direct CHIP gateway integration for Commerce.
 - [`aiarmada/filament-chip`](../../filament-chip/docs/01-overview.md) — Filament admin resources and analytics for CHIP data
 - [`aiarmada/cashier-chip`](../../cashier-chip/docs/01-overview.md) — Cashier-style subscription billing on top of CHIP
 - [`aiarmada/checkout`](../../checkout/docs/01-overview.md) — checkout orchestration that may use CHIP for payment collection
-- [`aiarmada/docs`](../../docs/docs/01-overview.md) — optional document integration hooks registered by the package
+- [`aiarmada/docs`](../../docs/docs/01-overview.md) — optional, disabled-by-default document integration hooks registered by the package
 - [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and payment gateway contracts
 
 ## Main models services or surfaces

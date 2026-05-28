@@ -234,6 +234,14 @@ abstract class AbstractGateway implements GatewayContract
      */
     final public function findBillable(string $gatewayId): ?BillableContract
     {
+        return $this->resolveBillableByGatewayId($gatewayId);
+    }
+
+    /**
+     * Resolve a billable by gateway customer ID.
+     */
+    protected function resolveBillableByGatewayId(string $gatewayId): ?BillableContract
+    {
         $model = $this->billableModel();
 
         /** @var Builder<Model> $query */

@@ -156,19 +156,23 @@ See [Webhooks](webhooks.md) for detailed webhook handling.
 ```php
 'integrations' => [
     'docs' => [
-        'enabled' => env('CHIP_DOCS_INTEGRATION_ENABLED', true),
-        'auto_generate_invoice' => env('CHIP_DOCS_AUTO_INVOICE', true),
-        'auto_generate_credit_note' => env('CHIP_DOCS_AUTO_CREDIT_NOTE', true),
+        'enabled' => env('CHIP_DOCS_INTEGRATION_ENABLED', false),
+        'auto_generate_invoice' => env('CHIP_DOCS_AUTO_INVOICE', false),
+        'auto_generate_credit_note' => env('CHIP_DOCS_AUTO_CREDIT_NOTE', false),
         'paid_doc_type' => env('CHIP_DOCS_PAID_TYPE', 'invoice'),
         'refund_doc_type' => env('CHIP_DOCS_REFUND_TYPE', 'credit_note'),
-        'generate_pdf' => env('CHIP_DOCS_GENERATE_PDF', true),
+        'generate_pdf' => env('CHIP_DOCS_GENERATE_PDF', false),
     ],
 ],
 ```
 
-When the `aiarmada/docs` package is installed, CHIP can automatically generate:
+This integration is disabled by default. To activate it intentionally, enable the top-level switch and then opt into the specific document flows you want.
+
+When the `aiarmada/docs` package is installed and this integration is enabled, CHIP can automatically generate:
 - Invoices when payments are completed
 - Credit notes when refunds are processed
+
+Refund-generated documents are stored with the docs-package `refunded` status so `aiarmada/filament-docs` widgets and revenue reporting do not treat credit notes as paid revenue.
 
 ## HTTP Settings
 

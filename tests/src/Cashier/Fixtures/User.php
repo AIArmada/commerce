@@ -47,4 +47,14 @@ class User extends Authenticatable
     {
         return $this->phone ?? null;
     }
+
+    public function chipId(): ?string
+    {
+        return $this->chip_id;
+    }
+
+    public function hasChipId(): bool
+    {
+        return $this->chipId() !== null;
+    }
 }

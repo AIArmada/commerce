@@ -8,7 +8,7 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Events\DocumentsDispatched;
 use AIArmada\Checkout\Jobs\GenerateCheckoutDocumentsJob;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Docs\DocsServiceProvider;
+use AIArmada\Docs\Contracts\DocServiceInterface;
 
 final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
 {
@@ -33,13 +33,13 @@ final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
     public function canSkip(CheckoutSession $session): bool
     {
         // Skip if docs package is not available
-        if (! class_exists(DocsServiceProvider::class)) {
+        if (! interface_exists(DocServiceInterface::class)) {
             return true;
         }
 
         // Skip if no documents are configured to generate
-        $generateInvoice = config('checkout.documents.generate_invoice', true);
-        $generateReceipt = config('checkout.documents.generate_receipt', true);
+        $generateInvoice = config('checkout.documents.generate_invoice', false);
+        $generateReceipt = config('checkout.documents.generate_receipt', false);
 
         return ! $generateInvoice && ! $generateReceipt;
     }
@@ -52,11 +52,11 @@ final class DispatchDocumentGenerationStep extends AbstractCheckoutStep
 
         $documentsToGenerate = [];
 
-        if (config('checkout.documents.generate_invoice', true)) {
+        if (config('checkout.documents.generate_invoice', false)) {
             $documentsToGenerate[] = 'invoice';
         }
 
-        if (config('checkout.documents.generate_receipt', true)) {
+        if (config('checkout.documents.generate_receipt', false)) {
             $documentsToGenerate[] = 'receipt';
         }
 

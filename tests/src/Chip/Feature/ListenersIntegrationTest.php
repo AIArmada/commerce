@@ -13,6 +13,7 @@ use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\Refunded;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -367,14 +368,74 @@ describe('GenerateDocOnRefund Listener', function (): void {
         $listener->handle($secondEvent);
 
         $creditNotes = Doc::query()
-            ->where('docable_type', Purchase::class)
+            ->where('docable_type', $purchase->getMorphClass())
             ->where('docable_id', $purchase->id)
             ->where('doc_type', 'credit_note')
             ->orderBy('doc_number')
             ->get();
 
         expect($creditNotes)->toHaveCount(2)
+            ->and($creditNotes->pluck('status')->map(fn ($status) => $status::class)->unique()->values()->all())->toBe([Refunded::class])
             ->and($creditNotes->pluck('metadata.chip_payment_id')->sort()->values()->all())
             ->toBe(collect(['refund-payment-doc-1', 'refund-payment-doc-2'])->sort()->values()->all());
+    });
+
+    it('skips refund doc generation when the configured docs type is invalid', function (): void {
+        config()->set('chip.integrations.docs.refund_doc_type', 'not-a-doc-type');
+
+        $purchase = Purchase::create([
+            'id' => 'purchase-invalid-refund-doc-type',
+            'type' => 'purchase',
+            'status' => 'paid',
+            'brand_id' => 'brand-invalid-refund-doc-type',
+            'company_id' => 'company-invalid-refund-doc-type',
+            'client_id' => 'client-invalid-refund-doc-type',
+            'created_on' => time(),
+            'updated_on' => time(),
+            'client' => ['email' => 'invalid-refund-doc-type@example.com'],
+            'purchase' => ['total' => 10000, 'currency' => 'MYR'],
+            'payment' => [
+                'amount' => 10000,
+                'currency' => 'MYR',
+            ],
+            'issuer_details' => [],
+            'transaction_data' => [],
+            'status_history' => [],
+            'refund_availability' => 'all',
+            'refundable_amount' => 10000,
+            'refund_amount_minor' => 0,
+            'platform' => 'test',
+            'product' => 'chip',
+            'send_receipt' => false,
+            'is_test' => true,
+            'is_recurring_token' => false,
+            'skip_capture' => false,
+            'force_recurring' => false,
+            'marked_as_paid' => false,
+        ]);
+
+        $listener = new GenerateDocOnRefund;
+
+        $listener->handle(PaymentRefunded::fromPayload(WebhookFactory::paymentRefunded([
+            'id' => 'refund-payment-invalid-doc-type',
+            'related_to' => [
+                'type' => 'purchase',
+                'id' => $purchase->id,
+            ],
+            'payment' => [
+                'amount' => 2500,
+                'currency' => 'MYR',
+                'net_amount' => 2500,
+                'fee_amount' => 0,
+                'pending_amount' => 0,
+                'payment_type' => 'refund',
+                'is_outgoing' => true,
+            ],
+        ])));
+
+        expect(Doc::query()
+            ->where('docable_type', $purchase->getMorphClass())
+            ->where('docable_id', $purchase->id)
+            ->count())->toBe(0);
     });
 });

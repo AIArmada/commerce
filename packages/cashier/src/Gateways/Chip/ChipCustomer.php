@@ -33,7 +33,7 @@ class ChipCustomer implements CustomerContract
      */
     public function id(): string
     {
-        return $this->client?->id ?? $this->billable->gatewayId('chip') ?? '';
+        return $this->client?->id ?? $this->resolveBillableChipId() ?? '';
     }
 
     /**
@@ -127,6 +127,19 @@ class ChipCustomer implements CustomerContract
     public function asGatewayCustomer(): ?ClientData
     {
         return $this->client;
+    }
+
+    private function resolveBillableChipId(): ?string
+    {
+        if (method_exists($this->billable, 'chipId')) {
+            $chipId = $this->billable->chipId();
+
+            if (is_string($chipId) && $chipId !== '') {
+                return $chipId;
+            }
+        }
+
+        return $this->billable->gatewayId('chip');
     }
 
     /**

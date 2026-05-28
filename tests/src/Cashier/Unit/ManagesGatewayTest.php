@@ -83,7 +83,7 @@ describe('ManagesGateway Trait', function (): void {
             expect($id)->toBe('cus_stripe_xxx');
         });
 
-        it('returns chip_id for chip gateway', function (): void {
+        it('returns chip billable ID for chip gateway', function (): void {
             $this->user->chip_id = 'cus_chip_xxx';
             $this->user->save();
 
@@ -105,6 +105,15 @@ describe('ManagesGateway Trait', function (): void {
             $this->user->save();
 
             $hasId = $this->user->hasGatewayId('stripe');
+
+            expect($hasId)->toBeTrue();
+        });
+
+        it('returns true when chip billable ID exists', function (): void {
+            $this->user->chip_id = 'cus_chip_xxx';
+            $this->user->save();
+
+            $hasId = $this->user->hasGatewayId('chip');
 
             expect($hasId)->toBeTrue();
         });

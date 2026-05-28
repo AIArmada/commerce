@@ -8,6 +8,7 @@ use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\States\DocStatus;
@@ -27,9 +28,9 @@ final class GenerateDocOnPayment implements ShouldQueue
             return;
         }
 
-        $docType = config('chip.integrations.docs.paid_doc_type', 'invoice');
+        $docType = $this->resolveConfiguredDocType('chip.integrations.docs.paid_doc_type', DocType::Invoice);
 
-        if ($docType === null || $docType === false) {
+        if (! $docType instanceof DocType) {
             return;
         }
 
@@ -46,7 +47,7 @@ final class GenerateDocOnPayment implements ShouldQueue
                 return;
             }
 
-            $this->generateDoc($purchase, $event, (string) $docType);
+            $this->generateDoc($purchase, $event, $docType);
         };
 
         if (! (bool) config('chip.owner.enabled', false)) {
@@ -83,7 +84,7 @@ final class GenerateDocOnPayment implements ShouldQueue
         return OwnerContext::fromTypeAndId($ownerType, $ownerId);
     }
 
-    private function generateDoc(Purchase $purchase, PurchasePaid $event, string $docType): void
+    private function generateDoc(Purchase $purchase, PurchasePaid $event, DocType $docType): void
     {
         /** @var DocService $docService */
         $docService = app(DocService::class);
@@ -92,9 +93,9 @@ final class GenerateDocOnPayment implements ShouldQueue
         $docService->create($docData);
     }
 
-    private function buildDocData(Purchase $purchase, PurchasePaid $event, string $docType): DocData
+    private function buildDocData(Purchase $purchase, PurchasePaid $event, DocType $docType): DocData
     {
-        $customerData = $this->extractCustomerData($event);
+        $customerData = $this->extractCustomerData($purchase, $event);
         $items = $this->extractItems($purchase, $event);
         $amount = $event->getAmount();
         $currency = $event->getCurrency();
@@ -103,7 +104,7 @@ final class GenerateDocOnPayment implements ShouldQueue
         $status = DocStatus::fromString(Paid::class);
 
         return new DocData(
-            docType: $docType,
+            docType: $docType->value,
             status: $status,
             issueDate: now(),
             dueDate: null, // Already paid
@@ -115,9 +116,9 @@ final class GenerateDocOnPayment implements ShouldQueue
             customerData: $customerData,
             items: $items,
             notes: $this->generateNotes($purchase, $event),
-            docableType: Purchase::class,
+            docableType: $purchase->getMorphClass(),
             docableId: (string) $purchase->id,
-            generatePdf: config('chip.integrations.docs.generate_pdf', true),
+            generatePdf: (bool) config('chip.integrations.docs.generate_pdf', false),
             metadata: [
                 'chip_purchase_id' => $event->getPurchaseId(),
                 'chip_reference' => $event->getReference(),
@@ -130,12 +131,20 @@ final class GenerateDocOnPayment implements ShouldQueue
     /**
      * @return array<string, mixed>
      */
-    private function extractCustomerData(PurchasePaid $event): array
+    private function extractCustomerData(Purchase $purchase, PurchasePaid $event): array
     {
-        return [
-            'name' => $event->getCustomerName(),
-            'email' => $event->getCustomerEmail(),
-        ];
+        return array_filter([
+            'name' => Arr::get($purchase->client, 'full_name')
+                ?? Arr::get($purchase->client, 'legal_name')
+                ?? $event->getCustomerName(),
+            'email' => Arr::get($purchase->client, 'email') ?? $event->getCustomerEmail(),
+            'phone' => Arr::get($purchase->client, 'phone'),
+            'address' => Arr::get($purchase->client, 'street_address'),
+            'city' => Arr::get($purchase->client, 'city'),
+            'state' => Arr::get($purchase->client, 'state'),
+            'postcode' => Arr::get($purchase->client, 'zip_code'),
+            'country' => Arr::get($purchase->client, 'country'),
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
     /**
@@ -152,6 +161,7 @@ final class GenerateDocOnPayment implements ShouldQueue
             // Fallback to single line item
             return [
                 [
+                    'name' => Arr::get($purchaseData, 'description', 'Payment'),
                     'description' => Arr::get($purchaseData, 'description', 'Payment'),
                     'quantity' => 1,
                     'price' => $event->getAmount() / 100,
@@ -195,9 +205,20 @@ final class GenerateDocOnPayment implements ShouldQueue
         }
 
         return Doc::query()
-            ->where('docable_type', Purchase::class)
+            ->where('docable_type', $purchase->getMorphClass())
             ->where('docable_id', $purchase->id)
-            ->where('doc_type', config('chip.integrations.docs.paid_doc_type', 'invoice'))
+            ->where('doc_type', $this->resolveConfiguredDocType('chip.integrations.docs.paid_doc_type', DocType::Invoice)?->value)
             ->exists();
+    }
+
+    private function resolveConfiguredDocType(string $configKey, DocType $fallback): ?DocType
+    {
+        $configuredType = config($configKey, $fallback->value);
+
+        if (! is_string($configuredType) || $configuredType === '') {
+            return null;
+        }
+
+        return DocType::tryFrom($configuredType);
     }
 }

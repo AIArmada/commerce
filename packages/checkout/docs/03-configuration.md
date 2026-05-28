@@ -224,11 +224,13 @@ return [
     */
     'documents' => [
         'queue' => env('CHECKOUT_DOCUMENTS_QUEUE', 'default'),
-        'generate_invoice' => true,
-        'generate_receipt' => true,
+        'generate_invoice' => env('CHECKOUT_DOCUMENTS_GENERATE_INVOICE', false),
+        'generate_receipt' => env('CHECKOUT_DOCUMENTS_GENERATE_RECEIPT', false),
     ],
 ];
 ```
+
+Checkout document generation is disabled by default. The `dispatch_documents` step stays in the pipeline, but it will skip itself unless you explicitly enable invoice and/or receipt generation.
 
 ## Configuration Options
 
@@ -417,4 +419,6 @@ CHECKOUT_OWNER_ENABLED=false
 
 # Documents
 CHECKOUT_DOCUMENTS_QUEUE=default
+CHECKOUT_DOCUMENTS_GENERATE_INVOICE=false
+CHECKOUT_DOCUMENTS_GENERATE_RECEIPT=false
 ```

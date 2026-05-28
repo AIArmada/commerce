@@ -82,12 +82,12 @@ return [
     'integrations' => [
         // Docs package integration (auto-generate invoices/credit notes)
         'docs' => [
-            'enabled' => env('CHIP_DOCS_INTEGRATION_ENABLED', true),
-            'auto_generate_invoice' => env('CHIP_DOCS_AUTO_INVOICE', true),
-            'auto_generate_credit_note' => env('CHIP_DOCS_AUTO_CREDIT_NOTE', true),
+            'enabled' => env('CHIP_DOCS_INTEGRATION_ENABLED', false),
+            'auto_generate_invoice' => env('CHIP_DOCS_AUTO_INVOICE', false),
+            'auto_generate_credit_note' => env('CHIP_DOCS_AUTO_CREDIT_NOTE', false),
             'paid_doc_type' => env('CHIP_DOCS_PAID_TYPE', 'invoice'),
             'refund_doc_type' => env('CHIP_DOCS_REFUND_TYPE', 'credit_note'),
-            'generate_pdf' => env('CHIP_DOCS_GENERATE_PDF', true),
+            'generate_pdf' => env('CHIP_DOCS_GENERATE_PDF', false),
         ],
     ],
 

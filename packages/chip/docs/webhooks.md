@@ -83,7 +83,7 @@ When the built-in route is enabled, successful deliveries flow through these ste
 2. deduplication and webhook-call storage
 3. `WebhookReceived` dispatch
 4. typed event dispatch through `WebhookEventDispatcher`
-5. local model synchronization and docs integration listeners
+5. local model synchronization and optional docs integration listeners when explicitly enabled
 
 The generic event is:
 
