@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
+use AIArmada\Products\Models\Product;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -19,12 +20,18 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 final class OptionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'options';
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord instanceof Product && $ownerRecord->supportsVariants();
+    }
 
     public function form(Schema $schema): Schema
     {

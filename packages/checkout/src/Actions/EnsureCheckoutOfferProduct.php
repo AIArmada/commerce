@@ -37,6 +37,8 @@ final class EnsureCheckoutOfferProduct
                 'is_featured' => $offer->isFeatured,
                 'is_taxable' => $offer->isTaxable,
                 'requires_shipping' => $offer->requiresShipping,
+                'supports_variants' => $offer->supportsVariants ?? $offer->productType->supportsVariantsByDefault(),
+                'tracks_inventory' => $offer->tracksInventory ?? $offer->productType->tracksInventoryByDefault(),
                 'meta_title' => $offer->metaTitle,
                 'meta_description' => $offer->metaDescription,
                 'metadata' => $offer->metadata,

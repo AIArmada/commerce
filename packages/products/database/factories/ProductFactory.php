@@ -25,13 +25,15 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         $name = $this->faker->unique()->words(3, true);
+        $type = $this->faker->randomElement(ProductType::cases());
+        $requiresShipping = $type->requiresShippingByDefault();
 
         $data = [
             'name' => ucwords($name),
             'slug' => Str::slug($name),
             'short_description' => $this->faker->sentence(),
             'description' => $this->faker->paragraphs(3, true),
-            'type' => $this->faker->randomElement(ProductType::cases()),
+            'type' => $type,
             'status' => ProductStatus::Active,
             'visibility' => ProductVisibility::CatalogSearch,
             'price' => $this->faker->numberBetween(1000, 100000), // RM 10 - RM 1000
@@ -40,7 +42,10 @@ class ProductFactory extends Factory
             'sku' => mb_strtoupper(Str::random(8)),
             'barcode' => $this->faker->optional()->ean13(),
             'is_featured' => $this->faker->boolean(20),
-            'weight' => $this->faker->optional()->randomFloat(2, 0.1, 50),
+            'requires_shipping' => $requiresShipping,
+            'supports_variants' => $type->supportsVariantsByDefault(),
+            'tracks_inventory' => $type->tracksInventoryByDefault(),
+            'weight' => $requiresShipping ? $this->faker->optional()->randomFloat(2, 0.1, 50) : null,
             'meta_title' => null,
             'meta_description' => null,
         ];
@@ -48,13 +53,13 @@ class ProductFactory extends Factory
         // Only include dimension columns if they exist in the table
         $tableColumns = Schema::getColumnListing((new Product)->getTable());
         if (in_array('length', $tableColumns)) {
-            $data['length'] = $this->faker->optional()->randomFloat(2, 1, 100);
+            $data['length'] = $requiresShipping ? $this->faker->optional()->randomFloat(2, 1, 100) : null;
         }
         if (in_array('width', $tableColumns)) {
-            $data['width'] = $this->faker->optional()->randomFloat(2, 1, 100);
+            $data['width'] = $requiresShipping ? $this->faker->optional()->randomFloat(2, 1, 100) : null;
         }
         if (in_array('height', $tableColumns)) {
-            $data['height'] = $this->faker->optional()->randomFloat(2, 1, 100);
+            $data['height'] = $requiresShipping ? $this->faker->optional()->randomFloat(2, 1, 100) : null;
         }
 
         return $data;
@@ -98,10 +103,40 @@ class ProductFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'type' => ProductType::Digital,
             'requires_shipping' => false,
+            'supports_variants' => false,
+            'tracks_inventory' => false,
             'weight' => null,
             'length' => null,
             'width' => null,
             'height' => null,
+        ]);
+    }
+
+    /**
+     * Unlimited digital product.
+     */
+    public function digitalUnlimited(): static
+    {
+        return $this->digital();
+    }
+
+    /**
+     * Inventory-tracked digital product.
+     */
+    public function digitalInventoryTracked(): static
+    {
+        return $this->digital()->state(fn (array $attributes) => [
+            'tracks_inventory' => true,
+        ]);
+    }
+
+    /**
+     * Variant-capable digital product.
+     */
+    public function digitalVariantCapable(): static
+    {
+        return $this->digital()->state(fn (array $attributes) => [
+            'supports_variants' => true,
         ]);
     }
 

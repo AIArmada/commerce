@@ -168,10 +168,10 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $pricingDiscount = max(0, ($baseUnitPrice - $finalUnitPrice) * $quantity);
             $associatedModel = $cartItem['associated_model'] ?? null;
             $attributes = is_array($cartItem['attributes'] ?? null) ? $cartItem['attributes'] : [];
-            $purchasableId = $cartItem['product_id']
-                ?? $cartItem['purchasable_id']
-                ?? $attributes['product_id']
+            $purchasableId = $cartItem['purchasable_id']
                 ?? $attributes['purchasable_id']
+                ?? $cartItem['product_id']
+                ?? $attributes['product_id']
                 ?? (is_array($associatedModel) ? $associatedModel['id'] ?? null : null);
             $purchasableType = $cartItem['purchasable_type']
                 ?? $attributes['purchasable_type']

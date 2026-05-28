@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers\OptionsRelationManager;
 use AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers\VariantsRelationManager;
 use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\Product;
 use Filament\Actions\EditAction;
@@ -29,6 +31,7 @@ it('executes option manage_values action to create/update/delete values', functi
         'currency' => 'MYR',
         'price' => 1000,
         'status' => ProductStatus::Active,
+        'supports_variants' => true,
     ]);
 
     /** @var Option $option */
@@ -78,6 +81,7 @@ it('exercises variant relation manager actions and bulk actions', function (): v
         'currency' => 'MYR',
         'price' => 1000,
         'status' => ProductStatus::Active,
+        'supports_variants' => true,
     ]);
 
     $variant = $product->variants()->create([
@@ -119,4 +123,31 @@ it('exercises variant relation manager actions and bulk actions', function (): v
     $edit->data(['price' => 10.0]);
 
     expect($edit->getData()['price'])->toBe(1000);
+});
+
+it('shows relation managers only for variant-capable products', function (): void {
+    $simpleProduct = Product::query()->create([
+        'name' => 'Simple Product',
+        'slug' => 'simple-product',
+        'currency' => 'MYR',
+        'price' => 1000,
+        'status' => ProductStatus::Active,
+        'supports_variants' => false,
+    ]);
+
+    $digitalTicket = Product::query()->create([
+        'name' => 'Digital Ticket',
+        'slug' => 'digital-ticket',
+        'currency' => 'MYR',
+        'price' => 1000,
+        'status' => ProductStatus::Active,
+        'type' => ProductType::Digital,
+        'supports_variants' => true,
+        'tracks_inventory' => true,
+    ]);
+
+    expect(VariantsRelationManager::canViewForRecord($simpleProduct, ProductResource::class))->toBeFalse()
+        ->and(OptionsRelationManager::canViewForRecord($simpleProduct, ProductResource::class))->toBeFalse()
+        ->and(VariantsRelationManager::canViewForRecord($digitalTicket, ProductResource::class))->toBeTrue()
+        ->and(OptionsRelationManager::canViewForRecord($digitalTicket, ProductResource::class))->toBeTrue();
 });

@@ -24,6 +24,57 @@ $product = OwnerContext::withOwner($team, function () {
 });
 ```
 
+## Fulfillment semantics vs capabilities
+
+`ProductType` now describes the product's fulfillment/category semantics, while explicit booleans control runtime behavior.
+
+- `type` answers **what it is**.
+- `requires_shipping` answers **whether shipping is involved**.
+- `supports_variants` answers **whether it can manage purchasable sub-items**.
+- `tracks_inventory` answers **whether stock should be validated and consumed**.
+
+This means:
+
+- `Configurable` remains the type for physical configurable goods.
+- `Digital` stays non-shipping by default.
+- `Digital` can opt into variants and inventory when you need ticket-style or seat-style stock buckets.
+
+```php
+use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
+use AIArmada\Products\Models\Product;
+
+$download = Product::query()->create([
+    'name' => 'Digital Download',
+    'type' => ProductType::Digital,
+    'status' => ProductStatus::Active,
+    'price' => 4900,
+]);
+
+$ticket = Product::query()->create([
+    'name' => 'Workshop Ticket',
+    'type' => ProductType::Digital,
+    'status' => ProductStatus::Active,
+    'price' => 9700,
+    'requires_shipping' => false,
+    'supports_variants' => true,
+    'tracks_inventory' => true,
+]);
+
+$shirt = Product::query()->create([
+    'name' => 'Configurable T-Shirt',
+    'type' => ProductType::Configurable,
+    'status' => ProductStatus::Active,
+    'price' => 2999,
+]);
+```
+
+In practice:
+
+- the download remains unlimited by default,
+- the ticket can have per-date or per-session variants with separate stock,
+- the shirt stays the physical configurable product model.
+
 ## Create an intentional global record
 
 ```php
@@ -67,6 +118,8 @@ $variant->optionValues()->sync([$small->id]);
 $variant->sku = $variant->generateSku();
 $variant->save();
 ```
+
+Use this pattern for digital ticketing as well. A `Digital` parent product can keep `requires_shipping = false` while variants represent seats, sessions, or event dates and still participate in inventory-aware flows.
 
 ## Work with categories and collections
 

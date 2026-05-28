@@ -66,6 +66,8 @@ use Throwable;
  * @property bool $is_featured
  * @property bool $is_taxable
  * @property bool $requires_shipping
+ * @property bool $supports_variants
+ * @property bool $tracks_inventory
  * @property string|null $meta_title
  * @property string|null $meta_description
  * @property string|null $tax_class
@@ -121,6 +123,8 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             'is_featured' => 'boolean',
             'is_taxable' => 'boolean',
             'requires_shipping' => 'boolean',
+            'supports_variants' => 'boolean',
+            'tracks_inventory' => 'boolean',
             'metadata' => 'array',
             'published_at' => 'datetime',
         ];
@@ -135,7 +139,6 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
         'visibility' => 'catalog_search',
         'is_featured' => false,
         'is_taxable' => true,
-        'requires_shipping' => true,
     ];
 
     public function getTable(): string
@@ -430,7 +433,15 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
 
     public function hasVariants(): bool
     {
-        return $this->type->hasVariants() && $this->variants()->exists();
+        return $this->supportsVariants() && $this->variants()->exists();
+    }
+
+    public function supportsVariants(): bool
+    {
+        return $this->resolveCapability(
+            'supports_variants',
+            $this->resolveProductType()->supportsVariantsByDefault(),
+        );
     }
 
     public function isPhysical(): bool
@@ -619,6 +630,17 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             return 0;
         }
 
+        if ($this->supportsVariants()) {
+            /** @var \Illuminate\Database\Eloquent\Collection<int, Variant> $variants */
+            $variants = $this->relationLoaded('variants')
+                ? $this->variants
+                : $this->variants()->get();
+
+            if ($variants->isNotEmpty()) {
+                return $variants->sum(fn (Variant $variant): int => $variant->getStockQuantity());
+            }
+        }
+
         // Use inventory package if installed and configured
         if (class_exists(InventoryService::class)) {
             try {
@@ -652,7 +674,10 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
 
     public function tracksInventory(): bool
     {
-        return ! $this->isDigital();
+        return $this->resolveCapability(
+            'tracks_inventory',
+            $this->resolveProductType()->tracksInventoryByDefault(),
+        );
     }
 
     // =========================================================================
@@ -662,6 +687,8 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     protected static function booted(): void
     {
         static::creating(function (Product $product): void {
+            $product->applyTypeDefaultsOnCreate();
+
             if (! (bool) config('products.features.owner.enabled', true)) {
                 return;
             }
@@ -745,5 +772,43 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     protected static function newFactory(): ProductFactory
     {
         return ProductFactory::new();
+    }
+
+    private function applyTypeDefaultsOnCreate(): void
+    {
+        $type = $this->resolveProductType();
+
+        $this->applyMissingTypeDefault('requires_shipping', $type->requiresShippingByDefault());
+        $this->applyMissingTypeDefault('supports_variants', $type->supportsVariantsByDefault());
+        $this->applyMissingTypeDefault('tracks_inventory', $type->tracksInventoryByDefault());
+    }
+
+    private function applyMissingTypeDefault(string $attribute, bool $value): void
+    {
+        if (array_key_exists($attribute, $this->getAttributes())) {
+            return;
+        }
+
+        $this->setAttribute($attribute, $value);
+    }
+
+    private function resolveCapability(string $attribute, bool $default): bool
+    {
+        if (! array_key_exists($attribute, $this->getAttributes())) {
+            return $default;
+        }
+
+        return (bool) $this->getAttribute($attribute);
+    }
+
+    private function resolveProductType(): ProductType
+    {
+        $type = $this->type;
+
+        if ($type instanceof ProductType) {
+            return $type;
+        }
+
+        return ProductType::tryFrom((string) $type) ?? ProductType::Simple;
     }
 }

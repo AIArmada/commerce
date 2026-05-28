@@ -787,6 +787,8 @@ abstract class TestCase extends Orchestra
             $table->boolean('is_featured')->default(false);
             $table->boolean('is_taxable')->default(true);
             $table->boolean('requires_shipping')->default(true);
+            $table->boolean('supports_variants')->default(false);
+            $table->boolean('tracks_inventory')->default(true);
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
             $table->string('tax_class')->nullable();

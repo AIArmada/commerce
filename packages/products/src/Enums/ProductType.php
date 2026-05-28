@@ -23,12 +23,30 @@ enum ProductType: string
         };
     }
 
-    public function hasVariants(): bool
+    public function supportsVariantsByDefault(): bool
     {
         return match ($this) {
             self::Configurable => true,
             default => false,
         };
+    }
+
+    public function hasVariants(): bool
+    {
+        return $this->supportsVariantsByDefault();
+    }
+
+    public function tracksInventoryByDefault(): bool
+    {
+        return match ($this) {
+            self::Digital => false,
+            default => true,
+        };
+    }
+
+    public function requiresShippingByDefault(): bool
+    {
+        return $this->isPhysical();
     }
 
     public function isPhysical(): bool

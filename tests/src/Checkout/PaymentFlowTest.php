@@ -610,6 +610,108 @@ describe('CreateOrderStep', function (): void {
 
         expect($step->handle($session)->isSuccessful())->toBeTrue();
     });
+
+    it('prefers an explicit purchasable over a plain product id when building order items', function (): void {
+        $orderService = mock(OrderServiceInterface::class);
+        $order = new Order;
+        $order->forceFill([
+            'id' => (string) Str::uuid(),
+            'order_number' => 'TEST-ORDER-PURCHASABLE',
+        ]);
+
+        /** @var Expectation $createOrderExpectation */
+        $createOrderExpectation = $orderService->shouldReceive('createOrder');
+        $createOrderExpectation->once()
+            ->withArgs(function (array $orderData, array $items): bool {
+                expect($items)->toHaveCount(1)
+                    ->and($items[0]['purchasable_id'])->toBe('variant-123')
+                    ->and($items[0]['purchasable_type'])->toBe('variant-model');
+
+                return true;
+            })
+            ->andReturn($order);
+
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-explicit-purchasable',
+            'cart_snapshot' => [
+                'items' => [
+                    [
+                        'name' => 'Variant Item',
+                        'quantity' => 1,
+                        'price' => 1000,
+                        'product_id' => 'product-123',
+                        'purchasable_id' => 'variant-123',
+                        'purchasable_type' => 'variant-model',
+                    ],
+                ],
+            ],
+            'payment_data' => [
+                'type' => 'free_order',
+            ],
+            'subtotal' => 1000,
+            'grand_total' => 1000,
+            'currency' => 'USD',
+        ]);
+        $session = $session->transitionStatus(Processing::class);
+
+        $step = app(CreateOrderStep::class);
+
+        expect($step->handle($session)->isSuccessful())->toBeTrue();
+    });
+
+    it('prefers an explicit attribute purchasable over an attribute product id when building order items', function (): void {
+        $orderService = mock(OrderServiceInterface::class);
+        $order = new Order;
+        $order->forceFill([
+            'id' => (string) Str::uuid(),
+            'order_number' => 'TEST-ORDER-ATTRIBUTE-PURCHASABLE',
+        ]);
+
+        /** @var Expectation $createOrderExpectation */
+        $createOrderExpectation = $orderService->shouldReceive('createOrder');
+        $createOrderExpectation->once()
+            ->withArgs(function (array $orderData, array $items): bool {
+                expect($items)->toHaveCount(1)
+                    ->and($items[0]['purchasable_id'])->toBe('variant-attribute-123')
+                    ->and($items[0]['purchasable_type'])->toBe('variant-model');
+
+                return true;
+            })
+            ->andReturn($order);
+
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-attribute-purchasable',
+            'cart_snapshot' => [
+                'items' => [
+                    [
+                        'name' => 'Variant Attribute Item',
+                        'quantity' => 1,
+                        'price' => 1000,
+                        'attributes' => [
+                            'product_id' => 'product-attribute-123',
+                            'purchasable_id' => 'variant-attribute-123',
+                            'purchasable_type' => 'variant-model',
+                        ],
+                    ],
+                ],
+            ],
+            'payment_data' => [
+                'type' => 'free_order',
+            ],
+            'subtotal' => 1000,
+            'grand_total' => 1000,
+            'currency' => 'USD',
+        ]);
+        $session = $session->transitionStatus(Processing::class);
+
+        $step = app(CreateOrderStep::class);
+
+        expect($step->handle($session)->isSuccessful())->toBeTrue();
+    });
 });
 
 describe('CheckoutService', function (): void {

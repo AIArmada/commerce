@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -20,6 +21,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 final class VariantsRelationManager extends RelationManager
@@ -27,6 +29,11 @@ final class VariantsRelationManager extends RelationManager
     protected static string $relationship = 'variants';
 
     protected static ?string $recordTitleAttribute = 'sku';
+
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord instanceof Product && $ownerRecord->supportsVariants();
+    }
 
     public function form(Schema $schema): Schema
     {
