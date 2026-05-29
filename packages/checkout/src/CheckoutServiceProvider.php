@@ -231,14 +231,6 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     {
         $registry = $this->app->make(CheckoutStepRegistryInterface::class);
 
-        if (! $registry->has('process_payment') || ! $registry->has('reserve_inventory')) {
-            return;
-        }
-
-        if (! $registry->isEnabled('process_payment') || ! $registry->isEnabled('reserve_inventory')) {
-            return;
-        }
-
         $configuredOrder = method_exists($registry, 'getOrder')
             ? $registry->getOrder()
             : array_map(
@@ -250,7 +242,18 @@ final class CheckoutServiceProvider extends PackageServiceProvider
             return;
         }
 
-        $registry->setOrder($this->resolveInventoryStepOrder($configuredOrder));
+        $normalizedOrder = $configuredOrder;
+
+        if (
+            $registry->has('process_payment')
+            && $registry->has('reserve_inventory')
+            && $registry->isEnabled('process_payment')
+            && $registry->isEnabled('reserve_inventory')
+        ) {
+            $normalizedOrder = $this->resolveInventoryStepOrder($normalizedOrder);
+        }
+
+        $registry->setOrder($this->enforceStepDependencyOrder($normalizedOrder));
     }
 
     /**
@@ -278,6 +281,48 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $inventoryPosition = $reserveBeforePayment ? $processPaymentPosition : $processPaymentPosition + 1;
 
         array_splice($order, $inventoryPosition, 0, ['reserve_inventory']);
+
+        return $order;
+    }
+
+    /**
+     * @param  array<int, mixed>  $configuredOrder
+     * @return array<string>
+     */
+    protected function enforceStepDependencyOrder(array $configuredOrder): array
+    {
+        $order = array_values(array_filter($configuredOrder, 'is_string'));
+
+        return $this->ensureStepPrecedes($order, 'persist_customer', 'create_order');
+    }
+
+    /**
+     * @param  array<string>  $order
+     * @return array<string>
+     */
+    protected function ensureStepPrecedes(array $order, string $requiredBefore, string $dependent): array
+    {
+        $beforePosition = array_search($requiredBefore, $order, true);
+        $dependentPosition = array_search($dependent, $order, true);
+
+        if ($beforePosition === false || $dependentPosition === false || $beforePosition < $dependentPosition) {
+            return $order;
+        }
+
+        $order = array_values(array_filter(
+            $order,
+            static fn (string $identifier): bool => $identifier !== $requiredBefore,
+        ));
+
+        $dependentPosition = array_search($dependent, $order, true);
+
+        if ($dependentPosition === false) {
+            $order[] = $requiredBefore;
+
+            return $order;
+        }
+
+        array_splice($order, $dependentPosition, 0, [$requiredBefore]);
 
         return $order;
     }
