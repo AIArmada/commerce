@@ -77,10 +77,23 @@ final class CheckoutServiceProvider extends PackageServiceProvider
             'defaults.currency',
         ]);
 
+        $this->validateStepConfiguration();
         $this->validateOwnerConfiguration();
         $this->validatePaymentGatewayConfiguration();
         $this->registerDefaultSteps();
         $this->registerOptionalIntegrations();
+    }
+
+    protected function validateStepConfiguration(): void
+    {
+        $createOrderEnabled = (bool) config('checkout.steps.enabled.create_order', true);
+        $persistCustomerEnabled = (bool) config('checkout.steps.enabled.persist_customer', true);
+
+        if ($createOrderEnabled && ! $persistCustomerEnabled) {
+            throw new RuntimeException(
+                'Invalid checkout step configuration: step [persist_customer] must be enabled when [create_order] is enabled.'
+            );
+        }
     }
 
     /**
@@ -142,7 +155,8 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     protected function registerPaymentProcessors(PaymentGatewayResolver $resolver): void
     {
-        // Priority: cashier → cashier-chip → chip
+        // Registration order does not control resolution order.
+        // Resolution follows checkout.payment.gateway_priority (default: chip → cashier-chip → cashier).
         $gateways = (array) config('checkout.payment.gateways', []);
 
         if (class_exists(GatewayManager::class) && ($gateways['cashier']['enabled'] ?? true)) {

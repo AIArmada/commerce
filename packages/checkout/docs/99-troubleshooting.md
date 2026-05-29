@@ -115,6 +115,33 @@ Or disable owner mode:
 ],
 ```
 
+### Invalid Step Configuration (Create Order + Persist Customer)
+
+**Error**: `RuntimeException: Invalid checkout step configuration: step [persist_customer] must be enabled when [create_order] is enabled.`
+
+**Cause**:
+- `steps.enabled.create_order` is `true`
+- `steps.enabled.persist_customer` is `false`
+
+**Solution**:
+
+Enable `persist_customer` when `create_order` is enabled:
+
+```php
+'steps' => [
+    'enabled' => [
+        'persist_customer' => true,
+        'create_order' => true,
+    ],
+],
+```
+
+Then clear config cache:
+
+```bash
+php artisan optimize:clear
+```
+
 ## Debugging
 
 ### Enable Debug Logging

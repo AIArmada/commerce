@@ -288,11 +288,18 @@ Each transformer must implement `AIArmada\Checkout\Contracts\SessionDataTransfor
 
 The default checkout pipeline now persists guest/direct-capable customers only after payment succeeds.
 
-The configured `steps.order` above is the default sequence when `integrations.inventory.reserve_before_payment` is `true`. When that flag is `false`, checkout shifts `reserve_inventory` to the start of the post-payment phase so the effective sequence becomes `process_payment -> reserve_inventory -> persist_customer -> create_order`.
+The configured `steps.order` above is the default sequence when `integrations.inventory.reserve_before_payment` is `true`. When that flag is `false`, and both `process_payment` and `reserve_inventory` are present and enabled, checkout shifts `reserve_inventory` to the start of the post-payment phase so the effective sequence becomes `process_payment -> reserve_inventory -> persist_customer -> create_order`.
 
 - `resolve_customer` stays in the pre-payment phase and only resolves existing customer or billable subjects for guest/direct-capable flows.
 - `persist_customer` runs in the post-payment phase to create or sync the `Customer` record from checkout payload data once payment is complete.
 - `cashier` keeps its pre-payment persisted-model requirement because it needs a chargeable billable subject before the payment can be created.
+
+#### Step dependency guardrails
+
+Checkout validates core step invariants during provider boot.
+
+- If `steps.enabled.create_order` is `true`, `steps.enabled.persist_customer` must also be `true`.
+- If this invariant is violated, checkout throws a `RuntimeException` during boot so misconfiguration fails fast (instead of failing later in payment callbacks).
 
 ### Payment Settings
 
