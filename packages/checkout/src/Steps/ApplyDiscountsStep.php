@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Steps;
 
+use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
@@ -14,6 +15,7 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
     public function __construct(
         private readonly ?PromotionsAdapter $promotionsAdapter = null,
         private readonly ?VouchersAdapter $vouchersAdapter = null,
+        private readonly ?CartManagerInterface $cartManager = null,
     ) {}
 
     public function getIdentifier(): string
@@ -79,6 +81,7 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
 
         $session->calculateTotals();
         $session->save();
+        $this->refreshCartSnapshot($session);
 
         return $this->success('Discounts applied', [
             'total_discount' => $totalDiscount,
@@ -158,5 +161,51 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
         }
 
         return $this->vouchersAdapter->applyVouchers($session, $voucherCodes);
+    }
+
+    private function refreshCartSnapshot(CheckoutSession $session): void
+    {
+        $cartManager = $this->cartManager;
+
+        if ($cartManager === null) {
+            if (! app()->bound(CartManagerInterface::class)) {
+                return;
+            }
+
+            $resolvedCartManager = app(CartManagerInterface::class);
+
+            if (! $resolvedCartManager instanceof CartManagerInterface) {
+                return;
+            }
+
+            $cartManager = $resolvedCartManager;
+        }
+
+        $cart = $cartManager->getById($session->cart_id);
+
+        if ($cart === null) {
+            return;
+        }
+
+        $metadata = method_exists($cart, 'getAllMetadata') ? $cart->getAllMetadata() : [];
+        $conditions = method_exists($cart, 'getConditions') ? $cart->getConditions()->toArray() : [];
+        $subtotal = $cart->subtotal()->getAmount();
+        $total = $cart->total()->getAmount();
+
+        $session->update([
+            'cart_snapshot' => [
+                'items' => $cart->getItems()->toArray(),
+                'metadata' => $metadata,
+                'conditions' => $conditions,
+                'totals' => [
+                    'subtotal' => $subtotal,
+                    'total' => $total,
+                ],
+                'subtotal' => $subtotal,
+                'total' => $total,
+                'item_count' => $cart->countItems(),
+                'captured_at' => now()->toIso8601String(),
+            ],
+        ]);
     }
 }
