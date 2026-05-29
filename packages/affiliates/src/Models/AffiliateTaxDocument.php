@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -26,9 +29,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  */
-class AffiliateTaxDocument extends Model
+class AffiliateTaxDocument extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
     protected $fillable = [
@@ -43,6 +48,20 @@ class AffiliateTaxDocument extends Model
         'generated_at',
         'sent_at',
     ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'affiliate_id',
+            'document_type',
+            'tax_year',
+            'status',
+            'total_amount_minor',
+            'currency',
+            'generated_at',
+            'sent_at',
+        ];
+    }
 
     protected $casts = [
         'tax_year' => 'integer',
@@ -62,5 +81,18 @@ class AffiliateTaxDocument extends Model
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class, 'affiliate_id');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return $this->getAuditInclude();
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

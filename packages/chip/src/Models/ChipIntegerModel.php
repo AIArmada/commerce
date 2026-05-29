@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 use AIArmada\Chip\Models\Concerns\AutoAssignOwnerOnCreate;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -27,6 +28,7 @@ abstract class ChipIntegerModel extends Model
         scopeForOwner as private scopeForOwnerUsingTrait;
     }
     use HasOwnerScopeConfig;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'chip.owner';
 

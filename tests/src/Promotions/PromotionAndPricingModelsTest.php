@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 describe('PriceList Model', function (): void {
     describe('PriceList Creation', function (): void {
@@ -105,6 +107,13 @@ describe('PriceList Model', function (): void {
 });
 
 describe('Promotion Model', function (): void {
+    it('is auditable using commerce audit trait', function (): void {
+        $traits = class_uses_recursive(Promotion::class);
+
+        expect($traits)->toContain(HasCommerceAudit::class)
+            ->and(in_array(Auditable::class, class_implements(Promotion::class), true))->toBeTrue();
+    });
+
     describe('Promotion Creation', function (): void {
         it('can create a percentage discount promotion', function (): void {
             $promotion = Promotion::create([

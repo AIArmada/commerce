@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -11,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Collection;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Closure table for efficient ancestor/descendant queries.
@@ -24,11 +27,13 @@ use Illuminate\Support\Collection;
  * @property-read Affiliate $ancestor
  * @property-read Affiliate $descendant
  */
-class AffiliateNetwork extends Model
+class AffiliateNetwork extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
@@ -217,6 +222,11 @@ class AffiliateNetwork extends Model
         static::query()
             ->whereIn('descendant_id', $descendantIds)
             ->delete();
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 
     /**

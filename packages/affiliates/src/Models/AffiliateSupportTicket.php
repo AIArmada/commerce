@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -24,9 +27,11 @@ use Illuminate\Support\Carbon;
  * @property-read Affiliate $affiliate
  * @property-read Collection<int, AffiliateSupportMessage> $messages
  */
-class AffiliateSupportTicket extends Model
+class AffiliateSupportTicket extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
     protected $fillable = [
@@ -64,5 +69,10 @@ class AffiliateSupportTicket extends Model
         self::deleting(function (self $ticket): void {
             $ticket->messages()->delete();
         });
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

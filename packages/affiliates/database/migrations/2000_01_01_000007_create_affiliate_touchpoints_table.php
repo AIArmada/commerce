@@ -17,6 +17,10 @@ return new class extends Migration
             $table->foreignUuid('affiliate_attribution_id')->index();
             $table->foreignUuid('affiliate_id')->index();
             $table->string('affiliate_code', 64)->index();
+            $table->string('subject_type', 64)->nullable();
+            $table->string('subject_identifier')->nullable();
+            $table->string('subject_instance', 64)->nullable();
+            $table->string('subject_title_snapshot', 200)->nullable();
 
             $table->nullableUuidMorphs('owner');
 
@@ -30,6 +34,8 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamp('touched_at')->nullable()->index();
             $table->timestamps();
+
+            $table->index(['subject_type', 'subject_identifier'], 'affiliate_touchpoints_subject_idx');
         });
     }
 

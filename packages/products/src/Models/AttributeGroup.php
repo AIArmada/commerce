@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -30,14 +33,16 @@ use InvalidArgumentException;
  * @property-read Collection<int, Attribute> $groupAttributes
  * @property-read Collection<int, AttributeSet> $attributeSets
  */
-class AttributeGroup extends Model
+class AttributeGroup extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasFactory;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 

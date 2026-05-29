@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -13,6 +15,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -33,13 +36,15 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Affiliate> $affiliates
  * @property-read Model|null $owner
  */
-class AffiliateRank extends Model
+class AffiliateRank extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
@@ -161,5 +166,10 @@ class AffiliateRank extends Model
         static::deleting(function (self $rank): void {
             $rank->affiliates()->update(['rank_id' => null]);
         });
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

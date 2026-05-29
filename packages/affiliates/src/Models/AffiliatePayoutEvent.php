@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -22,9 +25,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read string $status Alias for to_status
  * @property-read AffiliatePayout $payout
  */
-class AffiliatePayoutEvent extends Model
+class AffiliatePayoutEvent extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected $fillable = [
         'affiliate_payout_id',
@@ -58,5 +63,10 @@ class AffiliatePayoutEvent extends Model
         return Attribute::make(
             get: fn () => $this->to_status,
         );
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

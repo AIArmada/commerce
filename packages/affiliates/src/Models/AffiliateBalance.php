@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -23,9 +26,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  */
-class AffiliateBalance extends Model
+class AffiliateBalance extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
     protected $fillable = [
@@ -110,5 +115,10 @@ class AffiliateBalance extends Model
     private function formatAmount(int $amountMinor): string
     {
         return MoneyFormatter::decimalFromMinor($amountMinor, $this->currency);
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

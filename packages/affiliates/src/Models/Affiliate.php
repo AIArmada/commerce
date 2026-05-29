@@ -9,6 +9,8 @@ use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -24,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -69,14 +72,16 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
  */
-class Affiliate extends Model
+class Affiliate extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
     use HasStates;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
@@ -103,6 +108,31 @@ class Affiliate extends Model
         'owner_id',
         'activated_at',
     ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'code',
+            'name',
+            'description',
+            'status',
+            'commission_type',
+            'commission_rate',
+            'currency',
+            'parent_affiliate_id',
+            'rank_id',
+            'network_depth',
+            'direct_downline_count',
+            'total_downline_count',
+            'default_voucher_code',
+            'website_url',
+            'payout_terms',
+            'tracking_domain',
+            'owner_type',
+            'owner_id',
+            'activated_at',
+        ];
+    }
 
     public function getTable(): string
     {
@@ -367,5 +397,18 @@ class Affiliate extends Model
             'metadata' => 'array',
             'activated_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return $this->getAuditInclude();
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

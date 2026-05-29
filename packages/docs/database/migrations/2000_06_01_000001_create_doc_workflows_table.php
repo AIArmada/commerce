@@ -33,6 +33,7 @@ return new class extends Migration
 
         Schema::create($workflowStepsTable, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->foreignUuid('workflow_id');
             $table->string('name');
             $table->unsignedInteger('order')->default(0);

@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Volume-based tier for progressive commission rates.
@@ -24,9 +27,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read AffiliateProgram|null $program
  */
-class AffiliateVolumeTier extends Model
+class AffiliateVolumeTier extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByProgramOwner;
 
     protected $fillable = [
@@ -73,5 +78,10 @@ class AffiliateVolumeTier extends Model
     public function getCommissionRatePercentage(): float
     {
         return $this->commission_rate_basis_points / 100;
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

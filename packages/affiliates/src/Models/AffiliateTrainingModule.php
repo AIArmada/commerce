@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -13,6 +15,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -34,13 +37,15 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, AffiliateTrainingProgress> $progress
  */
-class AffiliateTrainingModule extends Model
+class AffiliateTrainingModule extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
@@ -60,6 +65,25 @@ class AffiliateTrainingModule extends Model
         'owner_type',
         'owner_id',
     ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'title',
+            'description',
+            'type',
+            'video_url',
+            'resources',
+            'quiz',
+            'passing_score',
+            'duration_minutes',
+            'sort_order',
+            'is_required',
+            'is_active',
+            'owner_type',
+            'owner_id',
+        ];
+    }
 
     protected $casts = [
         'resources' => 'array',
@@ -125,5 +149,18 @@ class AffiliateTrainingModule extends Model
         static::deleting(function (self $module): void {
             $module->progress()->delete();
         });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return $this->getAuditInclude();
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

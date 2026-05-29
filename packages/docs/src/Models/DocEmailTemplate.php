@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Email template for document communications.
@@ -27,12 +30,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  */
-final class DocEmailTemplate extends Model
+final class DocEmailTemplate extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'docs.owner';
 

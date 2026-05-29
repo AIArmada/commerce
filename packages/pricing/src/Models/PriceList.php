@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
@@ -36,9 +38,10 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
  */
-class PriceList extends Model
+class PriceList extends Model implements Auditable
 {
     use FormatsMoney;
+    use HasCommerceAudit;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
@@ -200,6 +203,26 @@ class PriceList extends Model
             ->logOnly(['name', 'priority', 'is_active', 'starts_at', 'ends_at'])
             ->logOnlyDirty()
             ->useLogName('pricing');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getAuditInclude(): array
+    {
+        return [
+            'owner_type',
+            'owner_id',
+            'name',
+            'slug',
+            'description',
+            'currency',
+            'priority',
+            'is_default',
+            'is_active',
+            'starts_at',
+            'ends_at',
+        ];
     }
 
     // =========================================================================

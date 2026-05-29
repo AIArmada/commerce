@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Time-limited promotional commission.
@@ -30,9 +33,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read AffiliateProgram|null $program
  */
-class AffiliateCommissionPromotion extends Model
+class AffiliateCommissionPromotion extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByProgramOwner;
 
     protected $fillable = [
@@ -125,5 +130,10 @@ class AffiliateCommissionPromotion extends Model
             'multiplier' => (int) round($baseCommissionMinor * ($this->bonus_value / 100 - 1)),
             default => 0,
         };
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
@@ -33,9 +35,10 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
  */
-class Price extends Model
+class Price extends Model implements Auditable
 {
     use FormatsMoney;
+    use HasCommerceAudit;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
@@ -262,5 +265,25 @@ class Price extends Model
             ->logOnly(['amount', 'compare_amount', 'min_quantity', 'starts_at', 'ends_at'])
             ->logOnlyDirty()
             ->useLogName('pricing');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getAuditInclude(): array
+    {
+        return [
+            'owner_type',
+            'owner_id',
+            'price_list_id',
+            'priceable_id',
+            'priceable_type',
+            'amount',
+            'compare_amount',
+            'currency',
+            'min_quantity',
+            'starts_at',
+            'ends_at',
+        ];
     }
 }

@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Tracking links created by affiliates for campaigns.
@@ -39,9 +42,11 @@ use Illuminate\Support\Carbon;
  * @property-read Affiliate $affiliate
  * @property-read AffiliateProgram|null $program
  */
-class AffiliateLink extends Model
+class AffiliateLink extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
     protected $fillable = [
@@ -64,6 +69,29 @@ class AffiliateLink extends Model
         'conversions',
         'is_active',
     ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'affiliate_id',
+            'program_id',
+            'destination_url',
+            'tracking_url',
+            'short_url',
+            'custom_slug',
+            'campaign',
+            'sub_id',
+            'sub_id_2',
+            'sub_id_3',
+            'subject_type',
+            'subject_identifier',
+            'subject_instance',
+            'subject_title_snapshot',
+            'clicks',
+            'conversions',
+            'is_active',
+        ];
+    }
 
     protected $casts = [
         'subject_metadata' => 'array',
@@ -157,5 +185,18 @@ class AffiliateLink extends Model
             ->whereNull($config->ownerTypeColumn)
             ->whereNull($config->ownerIdColumn)
             ->exists();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return $this->getAuditInclude();
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

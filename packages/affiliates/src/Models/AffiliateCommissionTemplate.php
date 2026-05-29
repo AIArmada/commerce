@@ -6,6 +6,8 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Pre-defined commission structures that can be applied to affiliates or programs.
@@ -32,13 +35,15 @@ use Illuminate\Support\Str;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  */
-class AffiliateCommissionTemplate extends Model
+class AffiliateCommissionTemplate extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
@@ -53,6 +58,11 @@ class AffiliateCommissionTemplate extends Model
         'owner_type',
         'owner_id',
     ];
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
+    }
 
     /**
      * Get the default template.

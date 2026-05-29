@@ -8,12 +8,15 @@ use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Models\Concerns\HasCartOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * Cart Eloquent Model for database persistence.
@@ -36,10 +39,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read CartCollection<int, CartItem> $cartItems
  * @property-read CartConditionCollection<int, CartCondition> $cartConditions
  */
-class CartModel extends Model
+class CartModel extends Model implements Auditable
 {
     use HasCartOwner;
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
 
     /**
      * The attributes that are mass assignable.

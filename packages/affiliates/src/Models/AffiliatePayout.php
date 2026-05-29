@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\States\PayoutStatus;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -16,6 +18,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -43,14 +46,16 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, AffiliateConversion> $conversions
  * @property-read Collection<int, AffiliatePayoutEvent> $events
  */
-class AffiliatePayout extends Model
+class AffiliatePayout extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
     use HasStates;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
@@ -70,6 +75,11 @@ class AffiliatePayout extends Model
         'scheduled_at',
         'paid_at',
     ];
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
+    }
 
     protected $casts = [
         'status' => PayoutStatus::class,
