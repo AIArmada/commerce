@@ -15,9 +15,10 @@ use AIArmada\Customers\Models\Customer;
 use function Pest\Laravel\actingAs;
 
 describe('ResolveCustomerStep', function (): void {
-    it('creates a guest customer from billing and shipping data', function (): void {
+    it('does not create a guest customer from billing and shipping data for direct-capable gateways', function (): void {
         $session = CheckoutSession::create([
             'cart_id' => 'cart-guest-1',
+            'selected_payment_gateway' => 'chip',
             'billing_data' => [
                 'email' => 'guest@example.com',
                 'first_name' => 'Guest',
@@ -41,15 +42,47 @@ describe('ResolveCustomerStep', function (): void {
         $step->handle($session);
 
         $session->refresh();
+
+        expect($session->customer_id)->toBeNull()
+            ->and(Customer::query()->where('email', 'guest@example.com')->exists())->toBeFalse();
+    });
+
+    it('still creates a guest customer before payment when the gateway requires a persisted billable model', function (): void {
+        $session = CheckoutSession::create([
+            'cart_id' => 'cart-cashier-guest-1',
+            'selected_payment_gateway' => 'cashier',
+            'billing_data' => [
+                'email' => 'cashier-guest@example.com',
+                'first_name' => 'Cashier',
+                'last_name' => 'Guest',
+                'line1' => '123 Guest Lane',
+                'city' => 'Kuala Lumpur',
+                'postcode' => '50000',
+                'country' => 'MY',
+            ],
+            'shipping_data' => [
+                'email' => 'cashier-guest@example.com',
+                'name' => 'Cashier Guest',
+                'line1' => '456 Shipping Road',
+                'city' => 'Kuala Lumpur',
+                'postcode' => '50000',
+                'country' => 'MY',
+            ],
+        ]);
+
+        $step = app(ResolveCustomerStep::class);
+        $step->handle($session);
+
+        $session->refresh();
         $customer = Customer::find($session->customer_id);
 
         expect($customer)->not->toBeNull()
             ->and($customer->is_guest)->toBeTrue()
-            ->and($customer->email)->toBe('guest@example.com')
+            ->and($customer->email)->toBe('cashier-guest@example.com')
             ->and($customer->addresses()->count())->toBe(2);
     });
 
-    it('merges a guest customer into an authenticated customer', function (): void {
+    it('merges a guest customer into an authenticated customer when the gateway requires pre-payment customer materialization', function (): void {
         $user = User::factory()->create([
             'email' => 'registered@example.com',
         ]);
@@ -80,6 +113,7 @@ describe('ResolveCustomerStep', function (): void {
 
         $session = CheckoutSession::create([
             'cart_id' => 'cart-merge-1',
+            'selected_payment_gateway' => 'cashier',
             'customer_id' => $guestCustomer->id,
             'billing_data' => [
                 'email' => 'registered@example.com',

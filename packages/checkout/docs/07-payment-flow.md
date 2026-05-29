@@ -57,9 +57,19 @@ That step reads:
 - `shipping_data`
 - the current owner context
 
-When the resolver returns a `Customer`, checkout writes that customer back to the session and fills empty `billing_data` / `shipping_data` from the customer's default addresses. When it returns another model, checkout stores that model as the billable morph and continues the payment flow with that subject.
+When the resolver returns an existing `Customer`, checkout writes that customer back to the session and fills empty `billing_data` / `shipping_data` from the customer's default addresses. When it returns another model, checkout stores that model as the billable morph and continues the payment flow with that subject.
+
+For guest/direct-capable flows, `resolve_customer` stays read-only. Checkout uses normalized billing/shipping payload data for the gateway request and defers any new `Customer` persistence until after payment succeeds.
 
 This resolution stage is what lets `cashier-chip` use billable models for authenticated flows while still supporting guest purchases from the same checkout pipeline.
+
+## Post-Payment Customer Persistence
+
+After `process_payment` succeeds, checkout runs `persist_customer` before `create_order`.
+
+- direct-capable guest flows create or sync the `Customer` only after payment completion
+- authenticated flows can promote or merge guest customers once the actor context is available
+- pre-existing non-customer billable subjects remain untouched so billable-first gateway integrations keep their current order linkage behavior
 
 ## Callback Routes
 

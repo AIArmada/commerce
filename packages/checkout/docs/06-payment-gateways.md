@@ -31,8 +31,9 @@ The first available gateway is used unless a specific gateway is requested.
 
 The `cashier-chip` processor now bridges checkout, customers, and CHIP billing in two stages:
 
-1. `ResolveCustomerStep` resolves the best payment subject and writes `customer_id`, `billable_type`, and `billable_id` onto the checkout session.
+1. `ResolveCustomerStep` resolves any existing customer or billable subject before payment and writes that subject onto the checkout session when one already exists.
 2. `ProcessPaymentStep` builds the `PaymentRequest` from `billing_data`, then falls back to the resolved customer or billable model when direct billing payload fields are missing.
+3. `PersistCustomerStep` runs after successful payment and creates or syncs the `Customer` for guest/direct-capable flows before checkout creates the order.
 
 `CashierChipProcessor` then chooses the payment path:
 
@@ -40,6 +41,10 @@ The `cashier-chip` processor now bridges checkout, customers, and CHIP billing i
 - otherwise checkout falls back to a direct guest CHIP purchase using the normalized request payload
 
 This keeps authenticated billing flows and guest checkout flows on the same processor without requiring separate gateway selection logic.
+
+## Cashier Pre-Payment Requirement
+
+The generic `cashier` processor still requires a persisted, chargeable billable subject before payment is created. Checkout therefore preserves the pre-payment customer materialization path for that gateway while deferring guest/direct customer creation for gateways that can pay from normalized checkout payload data.
 
 ## Forcing a Gateway
 

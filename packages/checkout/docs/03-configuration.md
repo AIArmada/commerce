@@ -70,6 +70,7 @@ return [
             'calculate_tax' => true,
             'reserve_inventory' => true,
             'process_payment' => true,
+            'persist_customer' => true,
             'create_order' => true,
             'dispatch_documents' => true,
         ],
@@ -82,6 +83,7 @@ return [
             'calculate_tax',
             'reserve_inventory',
             'process_payment',
+            'persist_customer',
             'create_order',
             'dispatch_documents',
         ],
@@ -281,6 +283,14 @@ Transform billing/shipping data before checkout steps use it:
 ```
 
 Each transformer must implement `AIArmada\Checkout\Contracts\SessionDataTransformerInterface`.
+
+### Checkout Steps
+
+The default checkout pipeline now persists guest/direct-capable customers only after payment succeeds.
+
+- `resolve_customer` stays in the pre-payment phase and only resolves existing customer or billable subjects for guest/direct-capable flows.
+- `persist_customer` runs after `process_payment` and before `create_order` to create or sync the `Customer` record from checkout payload data once payment is complete.
+- `cashier` keeps its pre-payment persisted-model requirement because it needs a chargeable billable subject before the payment can be created.
 
 ### Payment Settings
 

@@ -40,7 +40,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
      */
     public function getDependencies(): array
     {
-        return ['process_payment'];
+        return ['persist_customer'];
     }
 
     /**

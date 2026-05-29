@@ -56,6 +56,10 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
         $shippingData = $session->shipping_data ?? [];
         $user = auth()->check() ? auth()->user() : null;
 
+        if ($user instanceof Model) {
+            $this->storeCheckoutActorReference($session, $user);
+        }
+
         $resolved = $this->paymentSubjectResolver->resolve(new PaymentSubjectContext(
             gateway: $session->selected_payment_gateway ?? (string) config('checkout.payment.default_gateway', 'chip'),
             actor: $user instanceof Model ? $user : null,
@@ -119,6 +123,29 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
         }
 
         return $this->success('Proceeding as guest checkout');
+    }
+
+    private function storeCheckoutActorReference(CheckoutSession $session, Model $user): void
+    {
+        $actorId = $user->getKey();
+
+        if ($actorId === null) {
+            return;
+        }
+
+        $paymentData = $session->payment_data ?? [];
+        $actorReference = [
+            'type' => $user->getMorphClass(),
+            'id' => (string) $actorId,
+        ];
+
+        if (($paymentData['checkout_actor'] ?? null) === $actorReference) {
+            return;
+        }
+
+        $paymentData['checkout_actor'] = $actorReference;
+
+        $session->update(['payment_data' => $paymentData]);
     }
 
     private function loadCustomerDefaults(CheckoutSession $session): void
