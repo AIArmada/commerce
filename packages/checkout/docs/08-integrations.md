@@ -28,7 +28,7 @@ When the `aiarmada/inventory` package is installed, checkout automatically manag
     'inventory' => [
         'enabled' => true,                    // Enable inventory integration
         'validate_stock' => true,              // Validate stock availability
-        'reserve_before_payment' => true,      // Reserve before or after payment
+        'reserve_before_payment' => true,      // True keeps reserve_inventory before payment; false moves it to the post-payment phase
         'release_on_failure' => true,          // Auto-release on failure/cancel
         'reservation_ttl' => 60 * 15,          // Reservation duration (15 minutes)
     ],
@@ -41,7 +41,7 @@ When the `aiarmada/inventory` package is installed, checkout automatically manag
 |-----|------|---------|-------------|
 | `enabled` | bool | `true` | Enable/disable inventory integration |
 | `validate_stock` | bool | `true` | Validate stock availability before reservation |
-| `reserve_before_payment` | bool | `true` | Reserve stock before payment (vs after) |
+| `reserve_before_payment` | bool | `true` | Keep `reserve_inventory` before `process_payment`; when `false`, checkout runs it first in the post-payment phase before `persist_customer` and `create_order` |
 | `release_on_failure` | bool | `true` | Automatically release reservations on failure |
 | `reservation_ttl` | int | `900` | Reservation expiration in seconds (15 min) |
 

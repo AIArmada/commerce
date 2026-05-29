@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepInterface;
+use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\CheckoutResult;
@@ -974,6 +975,38 @@ describe('CreateOrderStep', function (): void {
         expect(data_get($session->fresh()->pricing_data, 'inventory_reservations'))->toBeNull()
             ->and(data_get($session->fresh()->pricing_data, 'reservations_expire_at'))->toBeNull();
     });
+
+    it('depends on tax before payment when the tax step is enabled', function (): void {
+        config()->set('checkout.integrations.inventory.reserve_before_payment', true);
+
+        $stepRegistry = mock(CheckoutStepRegistryInterface::class);
+        $stepRegistry->shouldReceive('has')->once()->with('calculate_tax')->andReturn(true);
+        $stepRegistry->shouldReceive('isEnabled')->once()->with('calculate_tax')->andReturn(true);
+
+        $step = new ReserveInventoryStep(stepRegistry: $stepRegistry);
+
+        expect($step->getDependencies())->toBe(['calculate_pricing', 'calculate_tax']);
+    });
+
+    it('does not depend on tax before payment when the tax step is disabled', function (): void {
+        config()->set('checkout.integrations.inventory.reserve_before_payment', true);
+
+        $stepRegistry = mock(CheckoutStepRegistryInterface::class);
+        $stepRegistry->shouldReceive('has')->once()->with('calculate_tax')->andReturn(true);
+        $stepRegistry->shouldReceive('isEnabled')->once()->with('calculate_tax')->andReturn(false);
+
+        $step = new ReserveInventoryStep(stepRegistry: $stepRegistry);
+
+        expect($step->getDependencies())->toBe(['calculate_pricing']);
+    });
+
+    it('depends on payment when configured to reserve inventory after payment', function (): void {
+        config()->set('checkout.integrations.inventory.reserve_before_payment', false);
+
+        $step = new ReserveInventoryStep;
+
+        expect($step->getDependencies())->toBe(['calculate_pricing', 'process_payment']);
+    });
 });
 
 describe('CheckoutService', function (): void {
@@ -1267,6 +1300,128 @@ describe('CheckoutService', function (): void {
         expect($result->requiresRedirect())->toBeTrue()
             ->and($session->fresh()->payment_attempts)->toBe(1)
             ->and($downstreamTracker->executed)->toBeFalse();
+    });
+
+    it('continues with inventory before customer persistence after successful payment callbacks', function (): void {
+        $tracker = new class
+        {
+            /** @var array<int, string> */
+            public array $steps = [];
+        };
+
+        $processPaymentStep = new class implements CheckoutStepInterface
+        {
+            public function getIdentifier(): string
+            {
+                return 'process_payment';
+            }
+
+            public function getName(): string
+            {
+                return 'Process Payment';
+            }
+
+            public function validate(CheckoutSession $session): array
+            {
+                return [];
+            }
+
+            public function handle(CheckoutSession $session): StepResult
+            {
+                return StepResult::success($this->getIdentifier());
+            }
+
+            public function canSkip(CheckoutSession $session): bool
+            {
+                return false;
+            }
+
+            public function rollback(CheckoutSession $session): void {}
+
+            public function getDependencies(): array
+            {
+                return [];
+            }
+        };
+
+        $trackedStep = static function (object $tracker, string $identifier, array $dependencies = []): CheckoutStepInterface {
+            return new class($tracker, $identifier, $dependencies) implements CheckoutStepInterface
+            {
+                public function __construct(
+                    private readonly object $tracker,
+                    private readonly string $identifier,
+                    private readonly array $dependencies,
+                ) {}
+
+                public function getIdentifier(): string
+                {
+                    return $this->identifier;
+                }
+
+                public function getName(): string
+                {
+                    return $this->identifier;
+                }
+
+                public function validate(CheckoutSession $session): array
+                {
+                    return [];
+                }
+
+                public function handle(CheckoutSession $session): StepResult
+                {
+                    $this->tracker->steps[] = $this->identifier;
+
+                    return StepResult::success($this->identifier);
+                }
+
+                public function canSkip(CheckoutSession $session): bool
+                {
+                    return false;
+                }
+
+                public function rollback(CheckoutSession $session): void {}
+
+                public function getDependencies(): array
+                {
+                    return $this->dependencies;
+                }
+            };
+        };
+
+        $registry = new CheckoutStepRegistry;
+        $registry->register('process_payment', $processPaymentStep);
+        $registry->register('reserve_inventory', $trackedStep($tracker, 'reserve_inventory', ['process_payment']));
+        $registry->register('persist_customer', $trackedStep($tracker, 'persist_customer', ['process_payment']));
+        $registry->register('create_order', $trackedStep($tracker, 'create_order', ['persist_customer']));
+        $registry->setOrder(['process_payment', 'reserve_inventory', 'persist_customer', 'create_order']);
+
+        $service = new CheckoutService(
+            stepRegistry: $registry,
+            events: app(Dispatcher::class),
+            paymentResolver: null,
+        );
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-post-payment-phase',
+            'status' => AwaitingPayment::class,
+            'selected_payment_gateway' => 'chip',
+            'step_states' => [
+                'process_payment' => 'pending',
+                'reserve_inventory' => 'pending',
+                'persist_customer' => 'pending',
+                'create_order' => 'pending',
+            ],
+            'payment_data' => [
+                'callback_token' => 'callback-token',
+            ],
+        ]);
+
+        $result = $service->handlePaymentCallback($session, 'success', ['status' => 'paid']);
+
+        expect($result->success)->toBeTrue()
+            ->and($tracker->steps)->toBe(['reserve_inventory', 'persist_customer', 'create_order'])
+            ->and($session->fresh()->status instanceof Completed)->toBeTrue();
     });
 });
 

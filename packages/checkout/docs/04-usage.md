@@ -50,7 +50,7 @@ The `resolve_customer` step uses Commerce Support's `PaymentSubjectResolverInter
 
 When the resolver returns an existing model, checkout stores it on the session as `billable_type` and `billable_id`. If the resolved subject is an existing `Customer`, checkout also stores `customer_id` and hydrates empty `billing_data` / `shipping_data` from that customer's default addresses.
 
-For direct-capable guest flows, `resolve_customer` intentionally stays read-only. Checkout uses the guest payment payload for the gateway request, then the `persist_customer` step creates or syncs the `Customer` after payment succeeds and before `create_order` runs.
+For direct-capable guest flows, `resolve_customer` intentionally stays read-only. Checkout uses the guest payment payload for the gateway request, then enters a post-payment phase. If inventory is configured to reserve after payment, checkout runs `reserve_inventory` first; it then runs `persist_customer` to create or sync the `Customer` before `create_order` runs.
 
 When checkout owner mode is enabled, both steps use the checkout session owner context so post-payment customer creation and guest-customer lookups stay tenant-safe even across redirects and webhook callbacks.
 

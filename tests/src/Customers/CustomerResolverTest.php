@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
@@ -168,5 +169,45 @@ describe('CustomerResolver', function (): void {
             ->and($resolved?->last_name)->toBe('Checkout QA')
             ->and($resolved?->company)->toBe('Example Sdn Bhd')
             ->and($resolved?->full_name)->toBe('Saiffil Checkout QA');
+    });
+
+    it('promotes an existing guest customer by email when the authenticated user has no customer yet', function (): void {
+        $resolver = new CustomerResolver;
+
+        $email = 'promote-existing-guest-' . uniqid() . '@example.com';
+
+        $user = User::factory()->create([
+            'email' => $email,
+            'name' => 'Registered Guest Merge',
+        ]);
+
+        $guest = Customer::query()->create([
+            'first_name' => 'Guest',
+            'last_name' => 'Before Login',
+            'email' => $email,
+            'status' => 'active',
+            'is_guest' => true,
+            'user_id' => null,
+        ]);
+
+        $resolved = $resolver->resolve(
+            user: $user,
+            sessionCustomer: null,
+            billingData: [
+                'email' => $email,
+                'line1' => '123 Upgrade Street',
+                'city' => 'Kuala Lumpur',
+                'postcode' => '50000',
+                'country' => 'MY',
+            ],
+            shippingData: []
+        );
+
+        expect($resolved)
+            ->not->toBeNull()
+            ->and($resolved?->id)->toBe($guest->id)
+            ->and((string) $resolved?->user_id)->toBe((string) $user->getKey())
+            ->and($resolved?->is_guest)->toBeFalse()
+            ->and($resolved?->addresses()->count())->toBe(1);
     });
 });
