@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Models;
 
 use AIArmada\Chip\Models\Concerns\AutoAssignOwnerOnCreate;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -32,6 +33,7 @@ abstract class ChipModel extends Model implements Auditable
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'chip.owner';
 

@@ -6,11 +6,14 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -25,9 +28,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read string $label Computed label from type and details
  * @property-read Affiliate $affiliate
  */
-class AffiliatePayoutMethod extends Model
+class AffiliatePayoutMethod extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
     protected $fillable = [
@@ -38,6 +43,17 @@ class AffiliatePayoutMethod extends Model
         'is_default',
         'verified_at',
     ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'affiliate_id',
+            'type',
+            'is_verified',
+            'is_default',
+            'verified_at',
+        ];
+    }
 
     protected $casts = [
         'type' => PayoutMethodType::class,
@@ -143,5 +159,18 @@ class AffiliatePayoutMethod extends Model
             : str_repeat('*', mb_strlen($name));
 
         return $maskedName . '@' . $domain;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return $this->getAuditInclude();
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

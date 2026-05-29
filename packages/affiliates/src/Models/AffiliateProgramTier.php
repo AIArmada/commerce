@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -27,9 +30,11 @@ use Illuminate\Support\Facades\DB;
  * @property-read AffiliateProgram $program
  * @property-read Collection<int, AffiliateProgramMembership> $memberships
  */
-class AffiliateProgramTier extends Model
+class AffiliateProgramTier extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByProgramOwner;
 
     protected $fillable = [
@@ -115,5 +120,10 @@ class AffiliateProgramTier extends Model
             // Set tier_id to null on memberships when tier is deleted
             $tier->memberships()->update(['tier_id' => null]);
         });
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

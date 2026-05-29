@@ -7,11 +7,14 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -30,9 +33,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read AffiliateProgram|null $program
  */
-class AffiliateCommissionRule extends Model
+class AffiliateCommissionRule extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByProgramOwner;
 
     protected $fillable = [
@@ -168,5 +173,10 @@ class AffiliateCommissionRule extends Model
         }
 
         return $value === $requirement;
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

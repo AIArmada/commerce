@@ -187,8 +187,8 @@ final class ApplyDiscountsStep extends AbstractCheckoutStep
             return;
         }
 
-        $metadata = $cart->getAllMetadata();
-        $conditions = $cart->getConditions()->toArray();
+        $metadata = method_exists($cart, 'getAllMetadata') ? $cart->getAllMetadata() : [];
+        $conditions = method_exists($cart, 'getConditions') ? $cart->getConditions()->toArray() : [];
         $subtotal = $cart->subtotal()->getAmount();
         $total = $cart->total()->getAmount();
 

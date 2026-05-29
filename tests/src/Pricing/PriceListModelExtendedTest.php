@@ -2,14 +2,23 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 describe('PriceList Model - Extended Tests', function (): void {
+    it('is auditable using commerce audit trait', function (): void {
+        $traits = class_uses_recursive(PriceList::class);
+
+        expect($traits)->toContain(HasCommerceAudit::class)
+            ->and(in_array(Auditable::class, class_implements(PriceList::class), true))->toBeTrue();
+    });
+
     describe('getTable', function (): void {
         it('returns configured table name', function (): void {
             $priceList = new PriceList;

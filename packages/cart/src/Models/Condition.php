@@ -8,6 +8,8 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Database\Factories\ConditionFactory;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -22,6 +24,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use OwenIt\Auditing\Contracts\Auditable;
 use RuntimeException;
 
 /**
@@ -55,8 +58,10 @@ use RuntimeException;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-class Condition extends Model
+class Condition extends Model implements Auditable
 {
+    use HasCommerceAudit;
+
     /** @use HasFactory<ConditionFactory> */
     use HasFactory;
 
@@ -66,6 +71,7 @@ class Condition extends Model
     use HasOwnerScopeConfig;
     use HasOwnerScopeKey;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'cart.owner';
 
@@ -106,6 +112,32 @@ class Condition extends Model
         'is_active',
         'is_global',
     ];
+
+    public function getAuditInclude(): array
+    {
+        return [
+            'owner_type',
+            'owner_id',
+            'name',
+            'display_name',
+            'description',
+            'type',
+            'target',
+            'target_definition',
+            'value',
+            'operator',
+            'is_charge',
+            'is_dynamic',
+            'is_discount',
+            'is_percentage',
+            'parsed_value',
+            'order',
+            'attributes',
+            'rules',
+            'is_active',
+            'is_global',
+        ];
+    }
 
     /**
      * @param  array{factory_keys?: array<int, string>, context?: array<string, mixed>}|null  $rules
@@ -258,6 +290,11 @@ class Condition extends Model
     public function isFee(): bool
     {
         return in_array($this->type, ['fee', 'surcharge']);
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'cart';
     }
 
     /**

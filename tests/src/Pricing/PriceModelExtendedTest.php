@@ -2,11 +2,20 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 describe('Price Model - Extended Tests', function (): void {
+    it('is auditable using commerce audit trait', function (): void {
+        $traits = class_uses_recursive(Price::class);
+
+        expect($traits)->toContain(HasCommerceAudit::class)
+            ->and(in_array(Auditable::class, class_implements(Price::class), true))->toBeTrue();
+    });
+
     describe('getTable', function (): void {
         it('returns configured table name', function (): void {
             $price = new Price;

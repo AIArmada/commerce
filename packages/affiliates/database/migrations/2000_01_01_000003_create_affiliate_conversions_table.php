@@ -19,13 +19,20 @@ return new class extends Migration
             $table->foreignUuid('affiliate_attribution_id')->nullable()->index();
             $table->foreignUuid('affiliate_payout_id')->nullable()->index();
             $table->string('affiliate_code', 64)->index();
+            $table->string('subject_type', 64)->nullable();
+            $table->string('subject_identifier')->nullable();
+            $table->string('subject_instance')->nullable();
+            $table->string('subject_title_snapshot', 200)->nullable();
             $table->string('cart_identifier')->nullable();
             $table->string('cart_instance')->nullable();
             $table->string('voucher_code', 64)->nullable();
             $table->string('order_reference', 120)->nullable();
+            $table->string('external_reference', 120)->nullable();
+            $table->string('conversion_type', 64)->nullable();
             $table->unsignedBigInteger('subtotal_minor')->default(0);
             $table->unsignedBigInteger('total_minor')->default(0);
             $table->unsignedBigInteger('commission_minor')->default(0);
+            $table->unsignedBigInteger('value_minor')->default(0);
             $table->string('commission_currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
             $table->string('status', 32)->default(config('affiliates.commissions.default_status', 'pending'))->index();
             $table->string('channel')->nullable();
@@ -37,6 +44,10 @@ return new class extends Migration
 
             $table->index(['affiliate_id', 'status'], 'affiliate_conversions_affiliate_status_idx');
             $table->index(['status', 'occurred_at'], 'affiliate_conversions_status_date_idx');
+            $table->index(['subject_identifier', 'subject_instance'], 'affiliate_conversions_subject_idx');
+            $table->index('external_reference', 'affiliate_conversions_external_ref_idx');
+            $table->index('conversion_type', 'affiliate_conversions_type_idx');
+            $table->index(['subject_type', 'subject_identifier'], 'affiliate_conversions_subject_type_idx');
         });
     }
 

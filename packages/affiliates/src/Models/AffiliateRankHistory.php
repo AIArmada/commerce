@@ -6,10 +6,13 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -24,9 +27,11 @@ use Illuminate\Support\Carbon;
  * @property-read AffiliateRank|null $fromRank
  * @property-read AffiliateRank|null $toRank
  */
-class AffiliateRankHistory extends Model
+class AffiliateRankHistory extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
     protected $fillable = [
@@ -87,5 +92,10 @@ class AffiliateRankHistory extends Model
         }
 
         return $this->toRank->isLowerThan($this->fromRank);
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

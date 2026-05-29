@@ -37,6 +37,7 @@ return new class extends Migration
 
         Schema::create($numbersTable, function (Blueprint $table) use ($numbersTable): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->foreignUuid('doc_sequence_id');
             $table->string('period_key', 20);
             $table->unsignedBigInteger('last_number')->default(0);

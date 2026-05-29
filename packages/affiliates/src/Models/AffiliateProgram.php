@@ -7,6 +7,8 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -45,13 +48,15 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, AffiliateProgramCreative> $creatives
  * @property-read Model|null $owner
  */
-class AffiliateProgram extends Model
+class AffiliateProgram extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
@@ -262,5 +267,10 @@ class AffiliateProgram extends Model
         }
 
         return true;
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

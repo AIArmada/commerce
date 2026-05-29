@@ -7,11 +7,14 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
@@ -33,9 +36,11 @@ use Illuminate\Support\Carbon;
  * @property-read AffiliateConversion|null $conversion
  * @property-read AffiliateTouchpoint|null $touchpoint
  */
-class AffiliateFraudSignal extends Model
+class AffiliateFraudSignal extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
+    use LogsCommerceActivity;
     use ScopesByAffiliateOwner;
 
     protected $fillable = [
@@ -131,5 +136,10 @@ class AffiliateFraudSignal extends Model
             'reviewed_at' => now(),
             'reviewed_by' => $reviewedBy,
         ]);
+    }
+
+    protected function getActivityLogName(): string
+    {
+        return 'affiliates';
     }
 }

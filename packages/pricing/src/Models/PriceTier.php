@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use InvalidArgumentException;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
@@ -33,9 +35,10 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property string $currency
  * @property-read PriceList|null $priceList
  */
-class PriceTier extends Model
+class PriceTier extends Model implements Auditable
 {
     use FormatsMoney;
+    use HasCommerceAudit;
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
@@ -270,5 +273,25 @@ class PriceTier extends Model
             ->logOnly(['min_quantity', 'max_quantity', 'amount', 'discount_type', 'discount_value'])
             ->logOnlyDirty()
             ->useLogName('pricing');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getAuditInclude(): array
+    {
+        return [
+            'owner_type',
+            'owner_id',
+            'price_list_id',
+            'tierable_id',
+            'tierable_type',
+            'min_quantity',
+            'max_quantity',
+            'amount',
+            'discount_type',
+            'discount_value',
+            'currency',
+        ];
     }
 }

@@ -17,6 +17,10 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_id')->index();
             $table->string('affiliate_code', 64)->index();
+            $table->string('subject_type', 64)->nullable();
+            $table->string('subject_identifier')->nullable();
+            $table->string('subject_instance')->nullable();
+            $table->string('subject_title_snapshot', 200)->nullable();
             $table->string('cart_identifier')->nullable();
             $table->string('cart_instance')->default('default');
             $table->string('cookie_value', 120)->nullable()->unique();
@@ -43,6 +47,8 @@ return new class extends Migration
             $table->index('cookie_value', 'affiliate_attributions_cookie_index');
 
             $table->index(['affiliate_id', 'first_seen_at'], 'affiliate_attributions_timeline_idx');
+            $table->index(['subject_identifier', 'subject_instance'], 'affiliate_attributions_subject_idx');
+            $table->index(['subject_type', 'subject_identifier'], 'affiliate_attributions_subject_type_idx');
         });
     }
 

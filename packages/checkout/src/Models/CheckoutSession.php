@@ -7,6 +7,7 @@ namespace AIArmada\Checkout\Models;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\States\CheckoutState;
 use AIArmada\Checkout\States\Completed;
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -59,6 +60,7 @@ class CheckoutSession extends Model
     use HasOwnerScopeConfig;
     use HasStates;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'checkout.owner';
 
