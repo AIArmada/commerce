@@ -20,9 +20,17 @@ Validates the cart before checkout:
 
 Resolves customer information:
 
-- Finds or creates customer record
-- Associates customer with session
-- Validates customer eligibility
+- Resolves existing customer or billable subjects before payment
+- Associates any existing subject with the checkout session
+- Leaves direct-capable guest flows side-effect free before payment
+
+### PersistCustomerStep
+
+Persists customer information after payment succeeds:
+
+- Creates or syncs the customer record from checkout payload data
+- Merges or promotes guest customers when an authenticated actor is known
+- Updates the checkout session before `CreateOrderStep` runs
 
 ### CalculatePricingStep
 

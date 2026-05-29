@@ -38,7 +38,7 @@ return back()->withErrors($result->errors);
 
 ## Customer and Billable Resolution
 
-Checkout resolves the payment subject before payment is created.
+Checkout resolves the payment subject before payment is created, but it no longer persists brand-new guest customers during direct-capable pre-payment flows.
 
 The `resolve_customer` step uses Commerce Support's `PaymentSubjectResolverInterface` to inspect:
 
@@ -48,7 +48,11 @@ The `resolve_customer` step uses Commerce Support's `PaymentSubjectResolverInter
 - `billing_data`
 - `shipping_data`
 
-When the resolver returns a model, checkout stores it on the session as `billable_type` and `billable_id`. If the resolved subject is a `Customer`, checkout also stores `customer_id` and hydrates empty `billing_data` / `shipping_data` from that customer's default addresses.
+When the resolver returns an existing model, checkout stores it on the session as `billable_type` and `billable_id`. If the resolved subject is an existing `Customer`, checkout also stores `customer_id` and hydrates empty `billing_data` / `shipping_data` from that customer's default addresses.
+
+For direct-capable guest flows, `resolve_customer` intentionally stays read-only. Checkout uses the guest payment payload for the gateway request, then the `persist_customer` step creates or syncs the `Customer` after payment succeeds and before `create_order` runs.
+
+When checkout owner mode is enabled, both steps use the checkout session owner context so post-payment customer creation and guest-customer lookups stay tenant-safe even across redirects and webhook callbacks.
 
 This is why guest checkout, authenticated checkout, and billable-model checkout all flow through the same payment steps without separate controller logic.
 

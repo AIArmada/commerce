@@ -65,11 +65,13 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
     {
         // Handle free orders (e.g., 100% discount)
         if ($session->grand_total <= 0) {
+            $paymentData = array_merge($session->payment_data ?? [], [
+                'type' => 'free_order',
+                'processed_at' => now()->toIso8601String(),
+            ]);
+
             $session->update([
-                'payment_data' => [
-                    'type' => 'free_order',
-                    'processed_at' => now()->toIso8601String(),
-                ],
+                'payment_data' => $paymentData,
             ]);
             if (! $session->status->is(Processing::class)) {
                 $session->transitionStatus(Processing::class);

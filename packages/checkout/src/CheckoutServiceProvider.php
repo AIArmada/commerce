@@ -19,6 +19,7 @@ use AIArmada\Checkout\Steps\CalculateShippingStep;
 use AIArmada\Checkout\Steps\CalculateTaxStep;
 use AIArmada\Checkout\Steps\CreateOrderStep;
 use AIArmada\Checkout\Steps\DispatchDocumentGenerationStep;
+use AIArmada\Checkout\Steps\PersistCustomerStep;
 use AIArmada\Checkout\Steps\ProcessPaymentStep;
 use AIArmada\Checkout\Steps\ReserveInventoryStep;
 use AIArmada\Checkout\Steps\ResolveCustomerStep;
@@ -180,6 +181,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $registry->registerLazy('calculate_pricing', fn () => $this->app->make(CalculatePricingStep::class));
         $registry->registerLazy('calculate_shipping', fn () => $this->app->make(CalculateShippingStep::class));
         $registry->registerLazy('process_payment', fn () => $this->app->make(ProcessPaymentStep::class));
+        $registry->registerLazy('persist_customer', fn () => $this->app->make(PersistCustomerStep::class));
         $registry->registerLazy('create_order', fn () => new CreateOrderStep(
             vouchersAdapter: $this->app->make(Integrations\VouchersAdapter::class),
         ));

@@ -399,6 +399,30 @@ describe('ProcessPaymentStep', function (): void {
             ->and($session->fresh()->payment_data['type'] ?? null)->toBe('free_order');
     });
 
+    it('preserves the stored checkout actor reference in payment_data for free orders', function (): void {
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-free-actor',
+            'grand_total' => 0,
+            'currency' => 'USD',
+            'payment_data' => [
+                'checkout_actor' => [
+                    'type' => 'fixture-user',
+                    'id' => 'actor-123',
+                ],
+            ],
+        ]);
+
+        $session->transitionStatus(Processing::class);
+
+        $step = app(ProcessPaymentStep::class);
+        $result = $step->handle($session);
+
+        expect($result->isSuccessful())->toBeTrue()
+            ->and(data_get($session->fresh()->payment_data, 'checkout_actor.type'))->toBe('fixture-user')
+            ->and(data_get($session->fresh()->payment_data, 'checkout_actor.id'))->toBe('actor-123')
+            ->and($session->fresh()->payment_data['type'] ?? null)->toBe('free_order');
+    });
+
     it('preserves callback_token in payment_data after payment initiation (P1 regression)', function (): void {
         // Regression test for P1: ProcessPaymentStep was replacing the entire payment_data
         // JSON, silently wiping the callback_token that ensureCallbackToken() had just stored.
