@@ -17,7 +17,9 @@ use AIArmada\Checkout\Support\HandleChipPurchaseEventForCheckout;
 use AIArmada\Chip\Events\PurchaseCancelled;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Support\Facades\Event;
+use RuntimeException;
 
 describe('CheckoutServiceProvider', function (): void {
     it('provides correct services list', function (): void {
@@ -226,6 +228,86 @@ describe('CheckoutServiceProvider', function (): void {
             'dispatch_documents',
         ]);
     });
+
+    it('fails fast when create_order is enabled but persist_customer is disabled', function (): void {
+        config()->set('checkout.steps.enabled.create_order', true);
+        config()->set('checkout.steps.enabled.persist_customer', false);
+
+        $provider = new CheckoutServiceProvider(app());
+
+        expect(static function () use ($provider): void {
+            invokeStepConfigurationValidator($provider);
+        })
+            ->toThrow(RuntimeException::class);
+
+        try {
+            invokeStepConfigurationValidator($provider);
+        } catch (RuntimeException $exception) {
+            expect($exception->getMessage())
+                ->toContain('persist_customer')
+                ->and($exception->getMessage())->toContain('create_order');
+        }
+    });
+
+    it('allows disabling persist_customer when create_order is disabled', function (): void {
+        config()->set('checkout.steps.enabled.create_order', false);
+        config()->set('checkout.steps.enabled.persist_customer', false);
+
+        $provider = new CheckoutServiceProvider(app());
+
+        expect(static function () use ($provider): void {
+            invokeStepConfigurationValidator($provider);
+        })
+            ->not->toThrow(RuntimeException::class);
+    });
+
+    it('fails during provider boot when create_order is enabled and persist_customer is disabled', function (): void {
+        config()->set('checkout.steps.enabled.create_order', true);
+        config()->set('checkout.steps.enabled.persist_customer', false);
+
+        // Also make owner config invalid to ensure step validation fails first.
+        config()->set('checkout.owner.enabled', true);
+
+        $provider = new CheckoutServiceProvider(app());
+
+        expect(static function () use ($provider): void {
+            invokeProviderBootingPackage($provider);
+        })
+            ->toThrow(RuntimeException::class);
+
+        try {
+            invokeProviderBootingPackage($provider);
+        } catch (RuntimeException $exception) {
+            expect($exception->getMessage())
+                ->toContain('persist_customer')
+                ->and($exception->getMessage())->toContain('create_order');
+        }
+    });
+
+    it('fails owner validation during provider boot when step configuration is valid', function (): void {
+        config()->set('checkout.steps.enabled.create_order', true);
+        config()->set('checkout.steps.enabled.persist_customer', true);
+        config()->set('checkout.owner.enabled', true);
+
+        if (app()->bound(OwnerResolverInterface::class)) {
+            app()->offsetUnset(OwnerResolverInterface::class);
+        }
+
+        $provider = new CheckoutServiceProvider(app());
+
+        expect(static function () use ($provider): void {
+            invokeProviderBootingPackage($provider);
+        })
+            ->toThrow(RuntimeException::class);
+
+        try {
+            invokeProviderBootingPackage($provider);
+        } catch (RuntimeException $exception) {
+            expect($exception->getMessage())
+                ->toContain('Checkout owner is enabled')
+                ->and($exception->getMessage())->toContain('resolver');
+        }
+    });
 });
 
 function resolveInventoryStepOrder(CheckoutServiceProvider $provider, array $order): array
@@ -251,6 +333,20 @@ function resolveInventoryStepOrder(CheckoutServiceProvider $provider, array $ord
 function invokeInventoryStepNormalizer(CheckoutServiceProvider $provider): void
 {
     $method = new ReflectionMethod($provider, 'normalizeInventoryStepOrder');
+    $method->setAccessible(true);
+    $method->invoke($provider);
+}
+
+function invokeStepConfigurationValidator(CheckoutServiceProvider $provider): void
+{
+    $method = new ReflectionMethod($provider, 'validateStepConfiguration');
+    $method->setAccessible(true);
+    $method->invoke($provider);
+}
+
+function invokeProviderBootingPackage(CheckoutServiceProvider $provider): void
+{
+    $method = new ReflectionMethod($provider, 'bootingPackage');
     $method->setAccessible(true);
     $method->invoke($provider);
 }

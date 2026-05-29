@@ -137,22 +137,43 @@ use AIArmada\Checkout\Models\CheckoutSession;
 
 class CustomValidationStep implements CheckoutStepInterface
 {
-    public function execute(CheckoutSession $session): StepResult
+    public function getIdentifier(): string
+    {
+        return 'custom_validation';
+    }
+
+    public function getName(): string
+    {
+        return 'Custom Validation';
+    }
+
+    public function validate(CheckoutSession $session): array
+    {
+        // Return validation errors keyed by field, or an empty array to proceed.
+        return [];
+    }
+
+    public function handle(CheckoutSession $session): StepResult
     {
         // Your validation logic
         if ($this->isValid($session)) {
             return StepResult::success(
-                $this->identifier(),
+                $this->getIdentifier(),
                 'Custom validation passed',
                 ['validated_at' => now()]
             );
         }
 
         return StepResult::failed(
-            $this->identifier(),
+            $this->getIdentifier(),
             'Custom validation failed',
             ['reason' => 'Some validation error']
         );
+    }
+
+    public function canSkip(CheckoutSession $session): bool
+    {
+        return false; // Or conditional logic
     }
 
     public function rollback(CheckoutSession $session): void
@@ -160,19 +181,9 @@ class CustomValidationStep implements CheckoutStepInterface
         // Undo any changes if needed
     }
 
-    public function identifier(): string
-    {
-        return 'custom_validation';
-    }
-
-    public function dependencies(): array
+    public function getDependencies(): array
     {
         return ['validate_cart']; // Must run after validate_cart
-    }
-
-    public function shouldExecute(CheckoutSession $session): bool
-    {
-        return true; // Or conditional logic
     }
 
     private function isValid(CheckoutSession $session): bool
@@ -217,7 +228,7 @@ Or via config:
 Steps can declare dependencies:
 
 ```php
-public function dependencies(): array
+public function getDependencies(): array
 {
     return ['validate_cart', 'resolve_customer'];
 }
@@ -225,15 +236,17 @@ public function dependencies(): array
 
 Checkout validates dependencies before executing a step, but the configured step order still determines the actual sequence. For the built-in inventory step, prefer `integrations.inventory.reserve_before_payment` over manually swapping `reserve_inventory` and `process_payment` in `steps.order`.
 
+For built-in steps, `create_order` depends on `persist_customer`. Keep `persist_customer` enabled whenever `create_order` is enabled. Checkout now validates this configuration at boot and throws a `RuntimeException` if violated.
+
 ## Conditional Execution
 
 Steps can skip execution based on conditions:
 
 ```php
-public function shouldExecute(CheckoutSession $session): bool
+public function canSkip(CheckoutSession $session): bool
 {
-    // Only for physical products
-    return $session->cart->hasPhysicalItems();
+    // Skip when there are no physical items.
+    return ! $session->cart->hasPhysicalItems();
 }
 ```
 
