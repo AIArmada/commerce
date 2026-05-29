@@ -65,7 +65,11 @@ This resolution stage is what lets `cashier-chip` use billable models for authen
 
 ## Post-Payment Customer Persistence
 
-After `process_payment` succeeds, checkout runs `persist_customer` before `create_order`.
+After `process_payment` succeeds, checkout enters a post-payment phase.
+
+- when `integrations.inventory.reserve_before_payment` is `false`, checkout runs `reserve_inventory` first
+- checkout then runs `persist_customer`
+- checkout finally runs `create_order`
 
 - direct-capable guest flows create or sync the `Customer` only after payment completion
 - authenticated flows can promote or merge guest customers once the actor context is available

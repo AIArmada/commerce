@@ -71,6 +71,7 @@ Reserves inventory for items:
 - Creates stock reservations
 - Sets reservation expiry
 - Handles reservation failures
+- Runs before `process_payment` by default and moves to the start of the post-payment phase when `integrations.inventory.reserve_before_payment` is `false`
 
 ### ProcessPaymentStep
 
@@ -222,7 +223,7 @@ public function dependencies(): array
 }
 ```
 
-The registry ensures dependencies execute before the step.
+Checkout validates dependencies before executing a step, but the configured step order still determines the actual sequence. For the built-in inventory step, prefer `integrations.inventory.reserve_before_payment` over manually swapping `reserve_inventory` and `process_payment` in `steps.order`.
 
 ## Conditional Execution
 

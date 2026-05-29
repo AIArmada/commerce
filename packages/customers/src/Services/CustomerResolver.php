@@ -105,6 +105,37 @@ final class CustomerResolver
                     return null;
                 }
 
+                $emailCustomer = $this->findCustomerByEmail($email);
+
+                if ($emailCustomer !== null) {
+                    if ($emailCustomer->user_id !== null && (string) $emailCustomer->user_id !== (string) $user->getKey()) {
+                        return null;
+                    }
+
+                    if (
+                        $sessionCustomer !== null
+                        && $sessionCustomer->is_guest
+                        && $sessionCustomer->id !== $emailCustomer->id
+                        && $this->customersShareOwnerContext($sessionCustomer, $emailCustomer)
+                    ) {
+                        $this->mergeCustomers($sessionCustomer, $emailCustomer);
+                    }
+
+                    $emailCustomer->fill([
+                        'user_id' => $user->getKey(),
+                        'is_guest' => false,
+                    ]);
+
+                    if ($emailCustomer->isDirty()) {
+                        $emailCustomer->save();
+                    }
+
+                    $this->syncCustomerProfileFromPayload($emailCustomer, $billingData, $shippingData, $user);
+                    $this->syncAddressesFromPayload($emailCustomer, $billingData, $shippingData);
+
+                    return $emailCustomer;
+                }
+
                 $customer = $this->createCustomer($email, $billingData, $shippingData, $user, false);
                 $this->syncCustomerProfileFromPayload($customer, $billingData, $shippingData, $user);
                 $this->syncAddressesFromPayload($customer, $billingData, $shippingData);
@@ -123,9 +154,13 @@ final class CustomerResolver
                 return null;
             }
 
-            $existingCustomer = $this->findReusableGuestCustomerByEmail($email);
+            $existingCustomer = $this->findCustomerByEmail($email);
 
             if ($existingCustomer !== null) {
+                if (! $existingCustomer->is_guest || $existingCustomer->user_id !== null) {
+                    return null;
+                }
+
                 $this->syncCustomerProfileFromPayload($existingCustomer, $billingData, $shippingData, null);
                 $this->syncAddressesFromPayload($existingCustomer, $billingData, $shippingData);
 
@@ -202,9 +237,7 @@ final class CustomerResolver
 
     private function findReusableGuestCustomerByEmail(string $email): ?Customer
     {
-        $existingCustomer = Customer::query()
-            ->where('email', $email)
-            ->first();
+        $existingCustomer = $this->findCustomerByEmail($email);
 
         if ($existingCustomer === null) {
             return null;
@@ -215,6 +248,13 @@ final class CustomerResolver
         }
 
         return $existingCustomer;
+    }
+
+    private function findCustomerByEmail(string $email): ?Customer
+    {
+        return Customer::query()
+            ->where('email', $email)
+            ->first();
     }
 
     /**

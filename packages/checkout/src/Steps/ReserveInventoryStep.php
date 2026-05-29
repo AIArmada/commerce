@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Steps;
 
+use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Exceptions\InventoryException;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
@@ -14,6 +15,7 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
 {
     public function __construct(
         private readonly ?InventoryAdapter $inventoryAdapter = null,
+        private readonly ?CheckoutStepRegistryInterface $stepRegistry = null,
     ) {}
 
     public function getIdentifier(): string
@@ -33,12 +35,31 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
     {
         $deps = ['calculate_pricing'];
 
-        // If configured to reserve before payment, run after tax calculation
-        if (config('checkout.integrations.inventory.reserve_before_payment', true)) {
+        if (! config('checkout.integrations.inventory.reserve_before_payment', true)) {
+            $deps[] = 'process_payment';
+
+            return $deps;
+        }
+
+        if ($this->taxStepIsEnabled()) {
             $deps[] = 'calculate_tax';
         }
 
         return $deps;
+    }
+
+    private function taxStepIsEnabled(): bool
+    {
+        if ($this->stepRegistry === null) {
+            return (bool) config('checkout.steps.enabled.calculate_tax', true)
+                && (bool) config('checkout.integrations.tax.enabled', false);
+        }
+
+        if (! $this->stepRegistry->has('calculate_tax')) {
+            return false;
+        }
+
+        return $this->stepRegistry->isEnabled('calculate_tax');
     }
 
     public function canSkip(CheckoutSession $session): bool
