@@ -192,19 +192,58 @@ describe('CheckoutServiceProvider', function (): void {
             'calculate_pricing',
             'process_payment',
             'reserve_inventory',
+            'persist_customer',
+            'create_order',
+        ]);
+    });
+
+    it('enforces persist_customer before create_order when custom order is dependency-unsafe', function (): void {
+        config()->set('checkout.integrations.inventory.reserve_before_payment', false);
+
+        $provider = new CheckoutServiceProvider(app());
+
+        expect(resolveInventoryStepOrder($provider, [
+            'validate_cart',
+            'resolve_customer',
+            'calculate_pricing',
+            'apply_discounts',
+            'calculate_shipping',
+            'process_payment',
+            'reserve_inventory',
             'create_order',
             'persist_customer',
+            'dispatch_documents',
+        ]))->toBe([
+            'validate_cart',
+            'resolve_customer',
+            'calculate_pricing',
+            'apply_discounts',
+            'calculate_shipping',
+            'process_payment',
+            'reserve_inventory',
+            'persist_customer',
+            'create_order',
+            'dispatch_documents',
         ]);
     });
 });
 
 function resolveInventoryStepOrder(CheckoutServiceProvider $provider, array $order): array
 {
-    $method = new ReflectionMethod($provider, 'resolveInventoryStepOrder');
+    $method = new ReflectionMethod($provider, 'enforceStepDependencyOrder');
     $method->setAccessible(true);
 
+    /** @var array<string> $dependencySafeOrder */
+    $dependencySafeOrder = $method->invoke($provider, $order);
+
+    $inventoryMethod = new ReflectionMethod($provider, 'resolveInventoryStepOrder');
+    $inventoryMethod->setAccessible(true);
+
     /** @var array<string> $resolvedOrder */
-    $resolvedOrder = $method->invoke($provider, $order);
+    $resolvedOrder = $inventoryMethod->invoke($provider, $dependencySafeOrder);
+
+    /** @var array<string> $resolvedOrder */
+    $resolvedOrder = $method->invoke($provider, $resolvedOrder);
 
     return $resolvedOrder;
 }
