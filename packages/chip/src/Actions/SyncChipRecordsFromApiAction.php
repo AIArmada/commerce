@@ -155,10 +155,6 @@ class SyncChipRecordsFromApiAction
             return;
         }
 
-        if (! $this->isChipCustomerBridgeEnabled($customer)) {
-            return;
-        }
-
         ChipCustomerLink::query()->updateOrCreate(
             [
                 'subject_type' => $customer->getMorphClass(),
@@ -175,12 +171,5 @@ class SyncChipRecordsFromApiAction
                 ],
             ],
         );
-    }
-
-    private function isChipCustomerBridgeEnabled(Model $customer): bool
-    {
-        return method_exists($customer, 'chipCustomerLink')
-            && method_exists($customer, 'chipId')
-            && method_exists($customer, 'createAsChipCustomer');
     }
 }
