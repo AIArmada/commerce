@@ -23,6 +23,7 @@ use AIArmada\Chip\Support\DocsIntegrationRegistrar;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use InvalidArgumentException;
@@ -34,6 +35,8 @@ use Spatie\WebhookClient\WebhookClientServiceProvider;
 final class ChipServiceProvider extends PackageServiceProvider
 {
     use ValidatesConfiguration;
+
+    private const CUSTOMER_MODEL = 'AIArmada\\Customers\\Models\\Customer';
 
     public function configurePackage(Package $package): void
     {
@@ -127,6 +130,8 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        $this->registerMorphAliases();
+
         $this->validateConfiguration('chip', [
             'collect.api_key',
             'collect.brand_id',
@@ -177,6 +182,24 @@ final class ChipServiceProvider extends PackageServiceProvider
     protected function registerEventListeners(): void
     {
         Event::listen(WebhookReceived::class, StoreWebhookData::class);
+    }
+
+    protected function registerMorphAliases(): void
+    {
+        $customerModel = config('chip.integrations.customer_bridge.customer_model', self::CUSTOMER_MODEL);
+        $customerMorphAlias = config('chip.integrations.customer_bridge.customer_morph_alias', 'Customer');
+
+        if (! is_string($customerModel) || $customerModel === '' || ! class_exists($customerModel)) {
+            return;
+        }
+
+        if (! is_string($customerMorphAlias) || $customerMorphAlias === '') {
+            return;
+        }
+
+        Relation::morphMap([
+            $customerMorphAlias => $customerModel,
+        ]);
     }
 
     protected function registerServices(): void
