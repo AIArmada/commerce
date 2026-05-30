@@ -14,6 +14,10 @@ use Throwable;
 
 class SyncChipRecordsFromApiAction
 {
+    private const CHECKOUT_SESSION_MODEL = 'AIArmada\\Checkout\\Models\\CheckoutSession';
+
+    private const CUSTOMER_MODEL = 'AIArmada\\Customers\\Models\\Customer';
+
     public function __construct(
         private readonly StoreWebhookData $storeWebhookData,
     ) {}
@@ -122,8 +126,8 @@ class SyncChipRecordsFromApiAction
      */
     private function linkChipCustomer(string $purchaseId, array $payload): void
     {
-        $checkoutSessionModel = 'AIArmada\\Checkout\\Models\\CheckoutSession';
-        $customerModel = 'AIArmada\\Customers\\Models\\Customer';
+        $checkoutSessionModel = $this->resolveCheckoutSessionModel();
+        $customerModel = $this->resolveCustomerModel();
 
         if (! class_exists($checkoutSessionModel) || ! class_exists($customerModel)) {
             return;
@@ -171,5 +175,23 @@ class SyncChipRecordsFromApiAction
                 ],
             ],
         );
+    }
+
+    private function resolveCheckoutSessionModel(): string
+    {
+        $configured = config('chip.integrations.customer_bridge.checkout_session_model');
+
+        return is_string($configured) && $configured !== ''
+            ? $configured
+            : self::CHECKOUT_SESSION_MODEL;
+    }
+
+    private function resolveCustomerModel(): string
+    {
+        $configured = config('chip.integrations.customer_bridge.customer_model');
+
+        return is_string($configured) && $configured !== ''
+            ? $configured
+            : self::CUSTOMER_MODEL;
     }
 }

@@ -80,6 +80,12 @@ return [
     |--------------------------------------------------------------------------
     */
     'integrations' => [
+        'customer_bridge' => [
+            'checkout_session_model' => 'AIArmada\\Checkout\\Models\\CheckoutSession',
+            'customer_model' => 'AIArmada\\Customers\\Models\\Customer',
+            'customer_morph_alias' => 'Customer',
+        ],
+
         // Docs package integration (auto-generate invoices/credit notes)
         'docs' => [
             'enabled' => env('CHIP_DOCS_INTEGRATION_ENABLED', false),
