@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Http\Controllers\WebhookController;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Database\Schema\Blueprint;
@@ -18,6 +20,7 @@ describe('WebhookController', function (): void {
         config([
             'chip.webhooks.store_webhooks' => false,
             'chip.webhooks.verify_signature' => false,
+            'queue.default' => 'sync',
         ]);
 
         if (! Schema::hasTable('webhook_calls')) {
@@ -33,6 +36,54 @@ describe('WebhookController', function (): void {
                 $table->timestamps();
             });
         }
+
+        Schema::table('webhook_calls', function (Blueprint $table): void {
+            if (! Schema::hasColumn('webhook_calls', 'event_type')) {
+                $table->string('event_type')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'event')) {
+                $table->string('event')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'status')) {
+                $table->string('status')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'verified')) {
+                $table->boolean('verified')->default(false);
+            }
+            if (! Schema::hasColumn('webhook_calls', 'processed')) {
+                $table->boolean('processed')->default(false);
+            }
+            if (! Schema::hasColumn('webhook_calls', 'idempotency_key')) {
+                $table->string('idempotency_key')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'title')) {
+                $table->string('title')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'events')) {
+                $table->json('events')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'callback')) {
+                $table->string('callback', 512)->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'created_on')) {
+                $table->bigInteger('created_on')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'updated_on')) {
+                $table->bigInteger('updated_on')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'last_error')) {
+                $table->text('last_error')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'processing_time_ms')) {
+                $table->decimal('processing_time_ms', 10, 3)->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'owner_type')) {
+                $table->string('owner_type')->nullable();
+            }
+            if (! Schema::hasColumn('webhook_calls', 'owner_id')) {
+                $table->string('owner_id')->nullable();
+            }
+        });
     });
 
     afterEach(function (): void {
@@ -194,6 +245,9 @@ describe('WebhookController', function (): void {
     });
 
     it('ignores duplicate webhook payloads after the first successful processing', function (): void {
+        Event::fakeExcept([WebhookReceived::class]);
+        Event::listen(WebhookReceived::class, StoreWebhookData::class);
+
         config([
             'chip.webhooks.store_webhooks' => true,
             'chip.webhooks.deduplication' => true,
@@ -207,6 +261,8 @@ describe('WebhookController', function (): void {
             'event_type' => 'purchase.paid',
             'status' => 'paid',
             'brand_id' => 'brand_123',
+            'platform' => 'api',
+            'product' => 'purchases',
             'created_on' => time(),
             'updated_on' => time(),
             'purchase' => [

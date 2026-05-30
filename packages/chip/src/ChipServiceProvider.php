@@ -9,6 +9,7 @@ use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
 use AIArmada\Chip\Commands\CleanWebhooksCommand;
 use AIArmada\Chip\Commands\RetryWebhooksCommand;
+use AIArmada\Chip\Commands\SyncChipRecordsFromApiCommand;
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Gateways\ChipGateway;
@@ -45,6 +46,7 @@ final class ChipServiceProvider extends PackageServiceProvider
                 ChipHealthCheckCommand::class,
                 RetryWebhooksCommand::class,
                 CleanWebhooksCommand::class,
+                SyncChipRecordsFromApiCommand::class,
             ]);
     }
 
@@ -174,9 +176,7 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     protected function registerEventListeners(): void
     {
-        if (config('chip.webhooks.store_webhooks', true)) {
-            Event::listen(WebhookReceived::class, StoreWebhookData::class);
-        }
+        Event::listen(WebhookReceived::class, StoreWebhookData::class);
     }
 
     protected function registerServices(): void

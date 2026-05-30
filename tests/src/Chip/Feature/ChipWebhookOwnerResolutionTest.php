@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Http\Controllers\WebhookController;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
@@ -11,11 +13,15 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
     config()->set('chip.webhooks.verify_signature', false);
+    config()->set('chip.webhooks.store_webhooks', true);
+    config()->set('queue.default', 'sync');
+    Event::listen(WebhookReceived::class, StoreWebhookData::class);
 
     if (! Schema::hasTable('webhook_calls')) {
         Schema::create('webhook_calls', function (Blueprint $table): void {
@@ -30,6 +36,54 @@ beforeEach(function (): void {
             $table->timestamps();
         });
     }
+
+    Schema::table('webhook_calls', function (Blueprint $table): void {
+        if (! Schema::hasColumn('webhook_calls', 'event_type')) {
+            $table->string('event_type')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'event')) {
+            $table->string('event')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'status')) {
+            $table->string('status')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'verified')) {
+            $table->boolean('verified')->default(false);
+        }
+        if (! Schema::hasColumn('webhook_calls', 'processed')) {
+            $table->boolean('processed')->default(false);
+        }
+        if (! Schema::hasColumn('webhook_calls', 'idempotency_key')) {
+            $table->string('idempotency_key')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'title')) {
+            $table->string('title')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'events')) {
+            $table->json('events')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'callback')) {
+            $table->string('callback', 512)->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'created_on')) {
+            $table->bigInteger('created_on')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'updated_on')) {
+            $table->bigInteger('updated_on')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'last_error')) {
+            $table->text('last_error')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'processing_time_ms')) {
+            $table->decimal('processing_time_ms', 10, 3)->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'owner_type')) {
+            $table->string('owner_type')->nullable();
+        }
+        if (! Schema::hasColumn('webhook_calls', 'owner_id')) {
+            $table->string('owner_id')->nullable();
+        }
+    });
 });
 
 it('assigns purchase owner from brand_id mapping when owner context is missing', function (): void {
