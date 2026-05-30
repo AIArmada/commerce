@@ -17,27 +17,34 @@ class ChipWebhookProfile extends CommerceWebhookProfile
      */
     public function shouldProcess(Request $request): bool
     {
-        // Only process if event_type is present
-        $eventType = $request->input('event_type');
+        $eventType = $request->input('event_type') ?? $request->input('event');
 
-        if (empty($eventType)) {
+        if (is_string($eventType) && $eventType !== '') {
+            // Process all valid CHIP events
+            $validPrefixes = [
+                'purchase.',
+                'payment.',
+                'payout.',
+                'billing_template_client.',
+            ];
+
+            foreach ($validPrefixes as $prefix) {
+                if (str_starts_with($eventType, $prefix)) {
+                    return true;
+                }
+            }
+
             return false;
         }
 
-        // Process all valid CHIP events
-        $validPrefixes = [
-            'purchase.',
-            'payment.',
-            'payout.',
-            'billing_template_client.',
+        $type = $request->input('type');
+        $validTypes = [
+            'purchase',
+            'payment',
+            'payout',
+            'billing_template_client',
         ];
 
-        foreach ($validPrefixes as $prefix) {
-            if (str_starts_with($eventType, $prefix)) {
-                return true;
-            }
-        }
-
-        return false;
+        return is_string($type) && in_array($type, $validTypes, true);
     }
 }
