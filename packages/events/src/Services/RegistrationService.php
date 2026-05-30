@@ -199,7 +199,7 @@ final class RegistrationService
             'order_id' => $this->resolveModelKey($links['order'] ?? $links['order_id'] ?? null),
             'order_item_id' => $this->resolveModelKey($links['order_item'] ?? $links['order_item_id'] ?? null),
             'purchaser_customer_id' => $this->resolveModelKey($links['purchaser_customer'] ?? $links['purchaser_customer_id'] ?? null),
-            'participant_customer_id' => $this->resolveModelKey($participant['participant_customer_id'] ?? $participant['participant_customer'] ?? $links['participant_customer'] ?? $links['participant_customer_id'] ?? null),
+            'participant_customer_id' => $this->resolveModelKey($links['participant_customer'] ?? $links['participant_customer_id'] ?? null),
             'status' => $status,
             'first_name' => $firstName,
             'last_name' => $lastName,
