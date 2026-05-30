@@ -7,11 +7,19 @@ namespace AIArmada\FilamentAffiliates;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
+use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateRankResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
 use AIArmada\FilamentAffiliates\Widgets\NetworkVisualizationWidget;
@@ -74,6 +82,32 @@ final class FilamentAffiliatesPlugin implements Plugin
             $resources[] = AffiliateProgramResource::class;
         }
 
+        if ($features['commission_management']) {
+            $resources[] = AffiliateCommissionTemplateResource::class;
+        }
+
+        if ($features['links']) {
+            $resources[] = AffiliateLinkResource::class;
+        }
+
+        if ($features['attribution']) {
+            $resources[] = AffiliateTouchpointResource::class;
+        }
+
+        if ($features['ranks']) {
+            $resources[] = AffiliateRankResource::class;
+            $resources[] = AffiliateRankHistoryResource::class;
+        }
+
+        if ($features['support_compliance']) {
+            $resources[] = AffiliateSupportTicketResource::class;
+            $resources[] = AffiliateTaxDocumentResource::class;
+        }
+
+        if ($features['network_visualization']) {
+            $resources[] = AffiliateNetworkResource::class;
+        }
+
         if ($features['fraud_monitoring']) {
             $resources[] = AffiliateFraudSignalResource::class;
         }
@@ -132,7 +166,7 @@ final class FilamentAffiliatesPlugin implements Plugin
     }
 
     /**
-     * @return array{conversions: bool, payouts: bool, programs: bool, fraud_monitoring: bool, reports: bool, network_visualization: bool}
+     * @return array{conversions: bool, payouts: bool, programs: bool, commission_management: bool, links: bool, attribution: bool, ranks: bool, support_compliance: bool, fraud_monitoring: bool, reports: bool, network_visualization: bool}
      */
     private function getAdminFeatures(): array
     {
@@ -143,6 +177,11 @@ final class FilamentAffiliatesPlugin implements Plugin
             'conversions' => (bool) ($configured['conversions'] ?? true),
             'payouts' => $commissionTrackingEnabled && (bool) ($configured['payouts'] ?? true),
             'programs' => $commissionTrackingEnabled && (bool) ($configured['programs'] ?? true),
+            'commission_management' => $commissionTrackingEnabled && (bool) ($configured['commission_management'] ?? true),
+            'links' => (bool) ($configured['links'] ?? true),
+            'attribution' => (bool) ($configured['attribution'] ?? true),
+            'ranks' => (bool) ($configured['ranks'] ?? true),
+            'support_compliance' => (bool) ($configured['support_compliance'] ?? true),
             'fraud_monitoring' => (bool) ($configured['fraud_monitoring'] ?? true),
             'reports' => (bool) ($configured['reports'] ?? true),
             'network_visualization' => (bool) ($configured['network_visualization'] ?? true),

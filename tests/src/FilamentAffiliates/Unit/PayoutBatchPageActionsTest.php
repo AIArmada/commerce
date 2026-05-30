@@ -14,6 +14,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAuthz\Models\Permission;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
@@ -76,6 +77,59 @@ it('processes a payout via the record action', function (): void {
         ->and($payout->external_reference)->not->toBeNull();
 
     expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+});
+
+it('processes a payout when user only has affiliate.payout permission', function (): void {
+    $user = User::create([
+        'name' => 'Payout Operator (affiliate.payout)',
+        'email' => 'payout-operator-affiliate-payout@example.com',
+        'password' => 'secret',
+    ]);
+
+    Permission::create(['name' => 'affiliate.payout', 'guard_name' => 'web']);
+
+    $user->givePermissionTo('affiliate.payout');
+    $this->actingAs($user);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-' . Str::uuid(),
+        'name' => 'Payout Alternate Permission Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+
+    AffiliatePayoutMethod::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'type' => PayoutMethodType::BankTransfer,
+        'details' => ['bank_name' => 'Alt Permission Bank', 'account_number' => '87654321'],
+        'is_verified' => true,
+        'is_default' => true,
+    ]);
+
+    $payout = AffiliatePayout::create([
+        'reference' => 'PAY-' . Str::uuid(),
+        'status' => PendingPayout::class,
+        'total_minor' => 6500,
+        'currency' => 'USD',
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
+    ]);
+
+    $page = new PayoutBatchPage;
+    $table = $page->table(Table::make($page));
+
+    $process = $table->getAction('process');
+    expect($process)->not->toBeNull();
+
+    $process?->call(['record' => $payout]);
+
+    $payout->refresh();
+
+    expect($payout->status)->toBeInstanceOf(CompletedPayout::class)
+        ->and($payout->paid_at)->not->toBeNull()
+        ->and($payout->external_reference)->not->toBeNull();
 });
 
 it('marks payout as failed when no default method exists', function (): void {
@@ -239,4 +293,53 @@ it('executes batch processing bulk action', function (): void {
 
     expect($payoutA->status)->toBeInstanceOf(CompletedPayout::class)
         ->and($payoutB->status)->toBeInstanceOf(FailedPayout::class);
+});
+
+it('blocks payout processing action when user lacks payout update permission', function (): void {
+    $user = User::create([
+        'name' => 'Payout Unauthorized Processor',
+        'email' => 'payout-unauthorized-processor@example.com',
+        'password' => 'secret',
+    ]);
+
+    $this->actingAs($user);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-' . Str::uuid(),
+        'name' => 'Unauthorized Payout Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+
+    AffiliatePayoutMethod::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'type' => PayoutMethodType::BankTransfer,
+        'details' => ['bank_name' => 'Test Bank', 'account_number' => '12345678'],
+        'is_verified' => true,
+        'is_default' => true,
+    ]);
+
+    $payout = AffiliatePayout::create([
+        'reference' => 'PAY-' . Str::uuid(),
+        'status' => PendingPayout::class,
+        'total_minor' => 5000,
+        'currency' => 'USD',
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
+    ]);
+
+    $page = new PayoutBatchPage;
+    $table = $page->table(Table::make($page));
+
+    $process = $table->getAction('process');
+    expect($process)->not->toBeNull();
+
+    expect(fn () => $process?->call(['record' => $payout]))
+        ->toThrow(AuthorizationException::class);
+
+    $payout->refresh();
+
+    expect($payout->status)->toBeInstanceOf(PendingPayout::class);
 });

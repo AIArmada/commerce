@@ -27,17 +27,10 @@ parameters:
 
     ignoreErrors:
         - identifier: 'missingType.generics'
-        - identifier: 'larastan.noEnvCallsOutsideOfConfig'
-          paths:
-              - packages/*/config/*
-
         - identifier: 'nullsafe.neverNull'
         - identifier: 'missingType.iterableValue'
         - identifier: 'return.unusedType'
         - message: '#Method.*should return.*Relations\\(HasMany|BelongsTo|MorphTo).*but returns.*Relations\\(HasMany|BelongsTo|MorphTo).*#'
-        - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Builder<.*> but returns Illuminate\\Database\\Eloquent\\Builder<static\(.*\)>#'
-        - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Builder<static\(.*\)> but returns Illuminate\\Database\\Eloquent\\Builder<.*>#'
-        - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Relations\\.*<.*> but returns Illuminate\\Database\\Eloquent\\Relations\\.*<.*\$this.*>#'
 
     excludePaths:
         analyseAndScan:

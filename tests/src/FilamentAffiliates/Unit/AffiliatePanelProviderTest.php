@@ -7,6 +7,9 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
@@ -27,9 +30,12 @@ it('AffiliatePanelProvider creates panel with correct id', function (): void {
     config(['filament-affiliates.portal.auth_guard' => 'web']);
     config(['filament-affiliates.portal.features' => [
         'dashboard' => true,
+        'profile' => true,
         'links' => true,
+        'programs' => true,
         'conversions' => true,
         'payouts' => true,
+        'support_compliance' => true,
     ]]);
 
     $provider = new AffiliatePanelProvider(app());
@@ -56,9 +62,32 @@ it('AffiliatePanelProvider omits the payouts page when commission tracking is di
 
     expect($pages)->toBe([
         PortalDashboard::class,
+        PortalProfile::class,
         PortalLinks::class,
+        PortalPrograms::class,
         PortalConversions::class,
+        PortalSupport::class,
     ])->not->toContain(PortalPayouts::class);
+});
+
+it('AffiliatePanelProvider omits the support page when support compliance is disabled', function (): void {
+    config(['filament-affiliates.portal.features' => [
+        'dashboard' => true,
+        'profile' => true,
+        'links' => true,
+        'programs' => true,
+        'conversions' => true,
+        'payouts' => true,
+        'support_compliance' => false,
+    ]]);
+
+    $provider = new AffiliatePanelProvider(app());
+    $method = new ReflectionMethod(AffiliatePanelProvider::class, 'getPages');
+
+    /** @var array<class-string> $pages */
+    $pages = $method->invoke($provider);
+
+    expect($pages)->not->toContain(PortalSupport::class);
 });
 
 it('AffiliatePanelProvider registers the affiliate portal stylesheet as a package asset', function (): void {

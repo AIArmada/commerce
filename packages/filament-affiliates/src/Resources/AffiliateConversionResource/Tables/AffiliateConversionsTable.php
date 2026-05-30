@@ -10,6 +10,7 @@ use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
@@ -85,6 +86,7 @@ final class AffiliateConversionsTable
                     ->label('Approve')
                     ->color('success')
                     ->icon(Heroicon::OutlinedCheck)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
                     ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(ApprovedConversion::class))
                     ->requiresConfirmation()
                     ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, ApprovedConversion::class)),
@@ -92,6 +94,7 @@ final class AffiliateConversionsTable
                     ->label('Reject')
                     ->color('danger')
                     ->icon(Heroicon::OutlinedXMark)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
                     ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(RejectedConversion::class))
                     ->requiresConfirmation()
                     ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, RejectedConversion::class)),
@@ -99,6 +102,7 @@ final class AffiliateConversionsTable
                     ->label('Mark Paid')
                     ->color('primary')
                     ->icon(Heroicon::OutlinedBanknotes)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
                     ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(PaidConversion::class))
                     ->requiresConfirmation()
                     ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, PaidConversion::class)),
@@ -106,6 +110,7 @@ final class AffiliateConversionsTable
                     ->label('Reset to Pending')
                     ->color('gray')
                     ->icon(Heroicon::OutlinedArrowPath)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve']))
                     ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(PendingConversion::class))
                     ->requiresConfirmation()
                     ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, PendingConversion::class)),

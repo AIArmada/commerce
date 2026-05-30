@@ -11,6 +11,9 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\EditAffiliate;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\ListAffiliates;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\ViewAffiliate;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ConversionsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutHoldsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutMethodsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Tables\AffiliatesTable;
@@ -106,6 +109,9 @@ final class AffiliateResource extends Resource
     {
         return [
             ConversionsRelationManager::class,
+            PayoutsRelationManager::class,
+            PayoutMethodsRelationManager::class,
+            PayoutHoldsRelationManager::class,
         ];
     }
 

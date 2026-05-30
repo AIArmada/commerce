@@ -4,316 +4,94 @@ title: Widgets
 
 # Widgets
 
-The plugin provides six dashboard widgets for affiliate analytics.
+`FilamentAffiliatesPlugin` registers widget surfaces for affiliate analytics and operations.
+
+## Registration behavior
+
+### Always registered
 
 - `AffiliateStatsWidget`
 - `PerformanceOverviewWidget`
 - `RealTimeActivityWidget`
-- `FraudAlertWidget`
-- `PayoutQueueWidget`
-- `NetworkVisualizationWidget`
+
+### Feature-gated
+
+- `FraudAlertWidget` (`filament-affiliates.features.admin.fraud_monitoring`)
+- `PayoutQueueWidget` (`filament-affiliates.features.admin.payouts`)
+- `NetworkVisualizationWidget` (`filament-affiliates.features.admin.network_visualization`)
 
 ## AffiliateStatsWidget
 
-Overview statistics for affiliate performance.
+Stats overview based on `AffiliateStatsAggregator`.
 
-### Metrics
+Current cards include:
 
-- Total Affiliates (with growth trend)
-- Active Affiliates
-- Total Conversions
-- Total Commission Paid
-- Conversion Rate (optional)
+- Affiliates (active/total)
+- Pending Affiliates
+- Pending Commission
+- Paid Commission
+- Conversion Rate
 
-### Configuration
-
-```php
-use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
-
-class AffiliateStatsWidget extends BaseWidget
-{
-    protected static ?int $sort = 1;
-
-    protected int|string|array $columnSpan = 'full';
-
-    // Customize time period
-    protected function getDateRange(): array
-    {
-        return [
-            now()->subDays(30),
-            now(),
-        ];
-    }
-}
-```
-
-### Usage
-
-Register in your panel:
+Currency display uses:
 
 ```php
-FilamentAffiliatesPlugin::make()
-    ->widgets([
-        AffiliateStatsWidget::class,
-    ]);
+config('filament-affiliates.widgets.currency', 'USD')
 ```
 
 ## PerformanceOverviewWidget
 
-Chart showing affiliate performance over time.
+Stats overview widget (not a chart widget) with monthly comparisons.
 
-### Chart Types
+Current cards include:
 
-- Line chart (conversions over time)
-- Bar chart (top affiliates)
-- Comparison with previous period
-
-### Customization
-
-```php
-use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
-
-class PerformanceOverviewWidget extends BaseWidget
-{
-    protected function getData(): array
-    {
-        return [
-            'datasets' => [
-                [
-                    'label' => 'Conversions',
-                    'data' => $this->getConversionData(),
-                    'borderColor' => '#6366f1',
-                ],
-                [
-                    'label' => 'Commission',
-                    'data' => $this->getCommissionData(),
-                    'borderColor' => '#10b981',
-                ],
-            ],
-            'labels' => $this->getLabels(),
-        ];
-    }
-}
-```
+- Conversions This Month
+- Revenue This Month
+- Commission Earned
+- Active Affiliates
 
 ## FraudAlertWidget
 
-Display recent fraud signals requiring attention.
+Table widget for detected fraud signals.
 
-### Features
+Current actions:
 
-- Badge count of unreviewed signals
-- Severity color coding
-- Quick dismiss/confirm actions
-- Link to fraud review page
-
-### Configuration
-
-```php
-use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
-
-class FraudAlertWidget extends BaseWidget
-{
-    protected static ?int $sort = 2;
-
-    // Show only critical/high severity
-    protected function getSignals(): Collection
-    {
-        return FraudSignal::query()
-            ->whereIn('severity', [FraudSeverity::High, FraudSeverity::Critical])
-            ->whereNull('reviewed_at')
-            ->latest()
-            ->limit(5)
-            ->get();
-    }
-}
-```
+- `review` (opens fraud signal view)
+- `dismiss` (status update, permission-gated)
 
 ## PayoutQueueWidget
 
-Pending payouts overview.
+Table widget for pending/processing payouts.
 
-### Metrics
+Current actions:
 
-- Pending payout count
-- Total pending amount
-- Processing payouts
-- Recently completed
-
-### Quick Actions
-
-```php
-protected function getActions(): array
-{
-    return [
-        Action::make('process_all')
-            ->label('Process All Pending')
-            ->action(fn () => $this->processPendingPayouts())
-            ->requiresConfirmation(),
-
-        Action::make('export')
-            ->label('Export Batch')
-            ->action(fn () => $this->exportPayoutBatch()),
-    ];
-}
-```
+- `process` (pending only; owner-scoped + policy-gated)
+- `view`
 
 ## RealTimeActivityWidget
 
-Live conversion tracking (Livewire polling).
+Live conversion activity table.
 
 ### Features
 
 - Auto-refresh every 10 seconds
-- Latest conversions feed
-- Real-time commission counter
-- Active affiliate sessions
-
-### Configuration
-
-```php
-use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
-
-class RealTimeActivityWidget extends BaseWidget
-{
-    // Poll interval in seconds
-    protected static string $pollingInterval = '10s';
-
-    protected function getRecentConversions(): Collection
-    {
-        return AffiliateConversion::query()
-            ->with('affiliate')
-            ->where('created_at', '>=', now()->subHour())
-            ->latest()
-            ->limit(10)
-            ->get();
-    }
-}
-```
+- Affiliate + reference + value + commission + status columns
+- Owner-aware query when owner mode is enabled
 
 ## NetworkVisualizationWidget
 
-MLM/Network structure visualization.
+Network tree visualization widget (Blade-backed widget view).
 
 ### Features
 
 - Tree view of affiliate hierarchy
 - Downline depth indicators
-- Network commission totals
 - Expand/collapse nodes
 
-### Customization
+Provides network summary stats and nested node data for the widget view.
 
-```php
-use AIArmada\FilamentAffiliates\Widgets\NetworkVisualizationWidget;
+## Notes on customization
 
-class NetworkVisualizationWidget extends BaseWidget
-{
-    // Maximum depth to display
-    protected int $maxDepth = 5;
+- The plugin does not expose per-widget fluent registration methods.
+- Enable/disable plugin widgets through `filament-affiliates.features.admin.*`.
+- For additional app-specific widgets, register those in your panel provider as usual.
 
-    // Root affiliate filter
-    protected function getRootAffiliates(): Collection
-    {
-        return Affiliate::query()
-            ->whereNull('referrer_affiliate_id')
-            ->withCount('referrals')
-            ->having('referrals_count', '>', 0)
-            ->get();
-    }
-}
-```
-
-## Registering Widgets
-
-### In Panel Provider
-
-```php
-use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
-use AIArmada\FilamentAffiliates\Widgets;
-
-FilamentAffiliatesPlugin::make()
-    ->widgets([
-        Widgets\AffiliateStatsWidget::class,
-        Widgets\PerformanceOverviewWidget::class,
-        Widgets\FraudAlertWidget::class,
-        Widgets\PayoutQueueWidget::class,
-    ]);
-```
-
-## Real-Time Activity Columns
-
-The live activity table uses neutral conversion fields:
-
-- `external_reference` (`Reference`)
-- `value_minor` (`Value`)
-
-and polls every 10 seconds.
-
-### On Dashboard
-
-Add to your dashboard:
-
-```php
-namespace App\Filament\Pages;
-
-use Filament\Pages\Dashboard as BaseDashboard;
-use AIArmada\FilamentAffiliates\Widgets;
-
-class Dashboard extends BaseDashboard
-{
-    public function getWidgets(): array
-    {
-        return [
-            Widgets\AffiliateStatsWidget::class,
-            Widgets\FraudAlertWidget::class,
-            // ... other widgets
-        ];
-    }
-}
-```
-
-## Widget Authorization
-
-Control widget visibility:
-
-```php
-use Filament\Widgets\Widget;
-
-class AffiliateStatsWidget extends Widget
-{
-    public static function canView(): bool
-    {
-        return auth()->user()->can('viewAffiliateStats');
-    }
-}
-```
-
-## Custom Widgets
-
-Create your own affiliate widgets:
-
-```php
-namespace App\Filament\Widgets;
-
-use Filament\Widgets\StatsOverviewWidget as BaseWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
-use AIArmada\Affiliates\Models\Affiliate;
-
-class TopAffiliatesWidget extends BaseWidget
-{
-    protected function getStats(): array
-    {
-        $top = Affiliate::query()
-            ->withSum('conversions', 'amount')
-            ->orderByDesc('conversions_sum_amount')
-            ->limit(3)
-            ->get();
-
-        return $top->map(fn ($affiliate) => Stat::make(
-            $affiliate->name,
-            money($affiliate->conversions_sum_amount)
-        ))->toArray();
-    }
-}
-```

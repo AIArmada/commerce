@@ -4,205 +4,92 @@ title: Usage
 
 # Usage
 
-This guide covers the resources, pages, and widgets registered by `FilamentAffiliatesPlugin`.
+This package registers resources, pages, and widgets through `FilamentAffiliatesPlugin`.
 
-The plugin always registers `AffiliateResource`, then conditionally adds other resources and pages based on `filament-affiliates.features.admin.*` and whether commission tracking is enabled in the core affiliates package.
+Registration is config-driven:
 
-## Registered Resources
+- `filament-affiliates.features.admin.*` controls admin surfaces.
+- `affiliates.features.commission_tracking.enabled` can force-disable some admin features.
 
-- `AffiliateResource` — always registered
-- `AffiliateConversionResource` — when `features.admin.conversions` is enabled
-- `AffiliatePayoutResource` — when `features.admin.payouts` is enabled and commission tracking is on
-- `AffiliateProgramResource` — when `features.admin.programs` is enabled and commission tracking is on
-- `AffiliateFraudSignalResource` — when `features.admin.fraud_monitoring` is enabled
+## Admin resources
 
-## Registered Pages
+### Always registered
 
-- `FraudReviewPage` — when fraud monitoring is enabled
-- `PayoutBatchPage` — when payouts are enabled
-- `ReportsPage` — when reports are enabled
+- `AffiliateResource`
 
-## Registered Widgets
+### Feature-gated resources
+
+- `AffiliateConversionResource` (`features.admin.conversions`)
+- `AffiliatePayoutResource` (`features.admin.payouts` + commission tracking enabled)
+- `AffiliateProgramResource` (`features.admin.programs` + commission tracking enabled)
+- `AffiliateCommissionTemplateResource` (`features.admin.commission_management` + commission tracking enabled)
+- `AffiliateLinkResource` (`features.admin.links`)
+- `AffiliateTouchpointResource` (`features.admin.attribution`)
+- `AffiliateRankResource` (`features.admin.ranks`)
+- `AffiliateRankHistoryResource` (`features.admin.ranks`)
+- `AffiliateSupportTicketResource` (`features.admin.support_compliance`)
+- `AffiliateTaxDocumentResource` (`features.admin.support_compliance`)
+- `AffiliateNetworkResource` (`features.admin.network_visualization`)
+- `AffiliateFraudSignalResource` (`features.admin.fraud_monitoring`)
+
+## Admin pages
+
+- `FraudReviewPage` (`features.admin.fraud_monitoring`)
+- `PayoutBatchPage` (`features.admin.payouts`)
+- `ReportsPage` (`features.admin.reports`)
+
+## Widgets
+
+### Always registered
 
 - `AffiliateStatsWidget`
 - `PerformanceOverviewWidget`
 - `RealTimeActivityWidget`
-- `FraudAlertWidget` when fraud monitoring is enabled
-- `PayoutQueueWidget` when payouts are enabled
-- `NetworkVisualizationWidget` when network visualization is enabled
 
-## AffiliateResource
+### Feature-gated widgets
 
-Manage affiliate accounts with owner-aware queries when affiliate owner mode is enabled.
+- `FraudAlertWidget` (`features.admin.fraud_monitoring`)
+- `PayoutQueueWidget` (`features.admin.payouts`)
+- `NetworkVisualizationWidget` (`features.admin.network_visualization`)
 
-### List View
+## Commission tracking gate behavior
 
-- Code
-- Name
-- Status
-- Commission
-- Parent affiliate
-- Updated timestamp
+When `affiliates.features.commission_tracking.enabled` is `false`, these admin features are suppressed even if enabled in `filament-affiliates` config:
 
-The table includes a status filter and these row actions:
+- payouts
+- programs
+- commission management
 
-- View
-- Edit
-- Delete
+## Owner scope and write safety
 
-The resource also exposes the `ConversionsRelationManager` on the record page.
+Resource/page filters are not authorization by themselves.
 
-### Customization
+Write paths should:
 
-Extend the resource to customize:
+- authorize via policy/ability checks,
+- re-resolve submitted IDs server-side in owner scope,
+- fail validation when IDs are out-of-scope.
+
+Recent hardened write paths include support-ticket, link/program membership, and commission-promotion affiliate targeting flows.
+
+## Plugin registration
+
+Register in your panel provider:
 
 ```php
-namespace App\Filament\Resources;
+use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 
-use AIArmada\FilamentAffiliates\Resources\AffiliateResource as BaseResource;
-
-class AffiliateResource extends BaseResource
+public function panel(Panel $panel): Panel
 {
-| View | Open the affiliate record |
-| Edit | Update the affiliate profile |
-| Delete | Remove the affiliate record |
-    {
-        return static::getModel()::pending()->count() ?: null;
-    }
-Manage affiliate conversions and their commission lifecycle.
-    public static function form(Form $form): Form
-This resource is feature-gated by `filament-affiliates.features.admin.conversions`.
-        return parent::form($form)
-Typical workflows include reviewing conversion records, inspecting references and amounts, and updating conversion status from Filament actions when the operator has permission to approve affiliate activity.
-    }
-## AffiliatePayoutResource
-```
-Manage affiliate payout records when commission tracking and payout admin features are enabled.
-```php
-The payout resource works alongside `PayoutBatchPage`, which is registered only when payouts are enabled.
-
-## AffiliateProgramResource
-            Affiliate::class,
-Manage affiliate programs and related commission structures when commission tracking is enabled.
-            includeGlobal: (bool) config('affiliates.owner.include_global', false),
-## AffiliateFraudSignalResource
-
-Review fraud signals from the standard resource screens when fraud monitoring is enabled.
-
-For queue-style operator workflows, pair it with `FraudReviewPage`.
-|--------|-------------|
-## FraudReviewPage
-| Suspend | Suspend active affiliate |
-`FraudReviewPage` is the focused review queue for detected fraud signals.
-
-Verified actions include:
-
-- Approve — dismiss the signal as a false positive
-- Confirm Fraud — mark the signal as confirmed and optionally reject the linked conversion
-- View
-- Bulk approve
-- Bulk confirm fraud
-- Bulk fraud review
-- Status
-The page is owner-scoped through the affiliate relationship and only shows signals in the detected state.
-Tables\Filters\SelectFilter::make('status')
-## Feature Flags
-
-Admin registration is driven by `config('filament-affiliates.features.admin')`:
-    ->options(ConversionType::class),
-
-use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
-                    ->numeric()
-FilamentAffiliatesPlugin::make();
-```
-
-When `affiliates.features.commission_tracking.enabled` is `false`, payout and program admin surfaces are suppressed even if their Filament feature flags remain `true`.
-
-## Overriding Registration
-
-Register the plugin in your panel as usual:
-
-```php
-use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
-| Manager | Description |
-|---------|-------------|
-| TiersRelationManager | Manage program tiers |
     return $panel
         ->plugins([
             FilamentAffiliatesPlugin::make(),
         ]);
-
-Review and manage fraud alerts.
-
-### Severity Levels
-
-| Level | Color | Description |
-|-------|-------|-------------|
-| Low | Gray | Minor anomaly |
-| Medium | Yellow | Suspicious pattern |
-| High | Orange | Likely fraud |
-| Critical | Red | Confirmed fraud |
-
-### Actions
-
-```php
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
-
-Tables\Actions\Action::make('dismiss')
-    ->label('Dismiss')
-    ->action(fn (FraudSignal $record) => UpdateAffiliateFraudSignalStatus::run($record, FraudSignalStatus::Dismissed)),
-
-Tables\Actions\Action::make('confirm')
-    ->label('Confirm Fraud')
-    ->color('danger')
-    ->requiresConfirmation()
-    ->action(fn (FraudSignal $record) => UpdateAffiliateFraudSignalStatus::run($record, FraudSignalStatus::Confirmed)),
-
-Tables\Actions\Action::make('block_affiliate')
-    ->label('Block Affiliate')
-    ->color('danger')
-    ->requiresConfirmation()
-    ->action(fn (FraudSignal $record) => $record->affiliate->suspend()),
-```
-
-## Overriding Resources
-
-Register custom resources in your panel:
-
-```php
-use App\Filament\Resources\AffiliateResource;
-use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
-
-FilamentAffiliatesPlugin::make()
-    ->resources([
-        AffiliateResource::class,
-        // Use default for others...
-    ]);
-```
-
-## Feature-Gated Registration
-
-The plugin resolves resources from `filament-affiliates.features.admin`:
-
-- `conversions` controls `AffiliateConversionResource`
-- `payouts` controls `AffiliatePayoutResource`
-- `programs` controls `AffiliateProgramResource`
-- `fraud_monitoring` controls `AffiliateFraudSignalResource`
-
-When `affiliates.features.commission_tracking.enabled` is false, payout/program resources are automatically disabled.
-
-## Adding Custom Columns
-
-Extend table columns in your resource:
-
-```php
-public static function table(Table $table): Table
-{
-    return parent::table($table)
-        ->columns([
-            ...parent::getTableColumns(),
-            Tables\Columns\TextColumn::make('custom_field'),
-        ]);
 }
 ```
+
+## Related docs
+
+- [Configuration](03-configuration.md)
+- [Widgets](05-widgets.md)
+- [Portal](06-portal.md)

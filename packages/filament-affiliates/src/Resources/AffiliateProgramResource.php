@@ -8,6 +8,12 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CommissionPromotionsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CommissionRulesRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CreativesRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\MembershipsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\TiersRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Schemas\AffiliateProgramInfolist;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -242,10 +248,19 @@ final class AffiliateProgramResource extends Resource
             ]);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return AffiliateProgramInfolist::configure($schema);
+    }
+
     public static function getRelations(): array
     {
         return [
-            //
+            TiersRelationManager::class,
+            MembershipsRelationManager::class,
+            CreativesRelationManager::class,
+            CommissionRulesRelationManager::class,
+            CommissionPromotionsRelationManager::class,
         ];
     }
 

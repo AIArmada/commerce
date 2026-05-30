@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\States\Pending;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -74,6 +76,43 @@ final class AffiliateInfolist
                     KeyValueEntry::make('metadata')
                         ->label('Metadata')
                         ->hidden(fn ($state): bool => empty($state ?? [])),
+                ])
+                ->collapsed(),
+
+            Section::make('Finance')
+                ->schema([
+                    Grid::make(3)->schema([
+                        TextEntry::make('balance.available_minor')
+                            ->label('Available')
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->balance?->currency ?? $record->currency))
+                            ->placeholder('—'),
+
+                        TextEntry::make('balance.holding_minor')
+                            ->label('Holding')
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->balance?->currency ?? $record->currency))
+                            ->placeholder('—'),
+
+                        TextEntry::make('balance.minimum_payout_minor')
+                            ->label('Minimum Payout')
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->balance?->currency ?? $record->currency))
+                            ->placeholder('—'),
+
+                        TextEntry::make('balance.lifetime_earnings_minor')
+                            ->label('Lifetime Earnings')
+                            ->formatStateUsing(fn ($state, Affiliate $record): string => MoneyFormatter::formatMinor((int) $state, $record->balance?->currency ?? $record->currency))
+                            ->placeholder('—'),
+
+                        TextEntry::make('payout_holds_count')
+                            ->label('Payout Holds')
+                            ->state(fn ($record): int => $record->payoutHolds()->count())
+                            ->numeric(),
+
+                        TextEntry::make('has_active_payout_hold')
+                            ->label('Active Hold')
+                            ->state(fn ($record): string => $record->hasActivePayoutHold() ? 'Yes' : 'No')
+                            ->badge()
+                            ->color(fn (string $state): string => $state === 'Yes' ? 'warning' : 'success'),
+                    ]),
                 ])
                 ->collapsed(),
         ]);

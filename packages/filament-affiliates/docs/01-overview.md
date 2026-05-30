@@ -6,20 +6,25 @@ title: Overview
 
 ## Purpose
 
-The `aiarmada/filament-affiliates` package is the Filament admin and affiliate-portal adapter for `aiarmada/affiliates`.
+`aiarmada/filament-affiliates` is the Filament adapter for `aiarmada/affiliates`.
+
+It provides:
+
+- admin resources/pages/widgets for affiliate operations,
+- an optional affiliate self-service portal panel,
+- UI-layer workflow actions that delegate domain rules to the core affiliates package.
 
 ## What this package owns
 
-- Filament resources for affiliates, conversions, payouts, programs, and fraud signals
-- Admin pages for fraud review, payout batching, and affiliate reporting
-- Affiliate self-service portal pages for dashboards, conversions, payouts, links, and registration
-- Affiliate-focused widgets and UI-specific services
+- Filament resources and relation managers for affiliate operations surfaces
+- Admin workflow pages (`FraudReviewPage`, `PayoutBatchPage`, `ReportsPage`)
+- Portal pages (`PortalDashboard`, `PortalProfile`, `PortalLinks`, `PortalPrograms`, `PortalConversions`, `PortalPayouts`, `PortalSupport`, and optional `PortalRegistration`)
+- Widget surfaces (`AffiliateStatsWidget`, `PerformanceOverviewWidget`, `RealTimeActivityWidget`, plus feature-gated widgets)
 
 ## What this package does not own
 
-- Attribution, commission calculation, payout bookkeeping, or fraud-detection rules; those stay in `aiarmada/affiliates`
-- Marketplace offer publishing and network-specific admin surfaces; those belong to `aiarmada/affiliate-network` and `aiarmada/filament-affiliate-network`
-- Tenant resolution itself; it consumes the owner context supplied by the host app and `commerce-support`
+- Commission calculation, attribution core logic, payout accounting rules, and fraud-rule semantics — these stay in `aiarmada/affiliates`
+- Tenant resolution internals — this package consumes owner context from `commerce-support`
 
 ## Related packages
 
@@ -28,83 +33,22 @@ The `aiarmada/filament-affiliates` package is the Filament admin and affiliate-p
 - [`aiarmada/filament-affiliate-network`](../../filament-affiliate-network/docs/01-overview.md) — network marketplace admin plugin
 - [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner scoping and shared primitives
 
-## Main models services or surfaces
+## Main surfaces
 
-- **Resources** — affiliates, conversions, payouts, programs, and fraud signals
-- **Pages** — fraud review, payout batches, reports, and the affiliate portal pages
-- **Widgets** — affiliate stats, performance overview, fraud alerts, payout queue, activity feed, and network visualization
+- **Resources** — affiliates, conversions, payouts, programs, commission templates, links, touchpoints, ranks, rank history, support tickets, tax documents, fraud signals, network
+- **Pages** — fraud review, payout batching, reports, and portal pages
+- **Widgets** — stats, performance, activity, fraud alerts, payout queue, network visualization
 
 ## Owner scoping and security notes
 
-- The plugin should mirror the owner-scoping behavior defined by `aiarmada/affiliates` and `commerce-support`
-- Portal and admin UI filters are not authorization; the backing domain package must still validate submitted IDs, ownership, and payout eligibility on write paths
-
-The `aiarmada/filament-affiliates` package provides a complete Filament v5 admin interface for managing affiliates, conversions, payouts, programs, and fraud detection.
-
-## Features
-
-### Resources
-
-- **AffiliateResource** - Full CRUD for affiliate partners with status management
-- **AffiliateConversionResource** - View and manage conversions with status moderation
-- **AffiliatePayoutResource** - Track and process payout batches
-- **AffiliateProgramResource** - Manage affiliate programs and tiers
-- **AffiliateFraudSignalResource** - Review and act on fraud signals
-
-### Pages
-
-- **FraudReviewPage** - Dedicated fraud review workflow with bulk actions
-- **PayoutBatchPage** - Batch payout processing interface
-- **ReportsPage** - Affiliate performance reports and analytics
-
-### Portal Pages (Affiliate Self-Service)
-
-- **PortalDashboard** - Affiliate dashboard with stats
-- **PortalConversions** - View conversion history
-- **PortalPayouts** - Track payout status
-- **PortalLinks** - Generate and manage affiliate links
-- **PortalRegistration** - Self-registration for new affiliates
-
-### Widgets
-
-- **AffiliateStatsWidget** - Key performance indicators
-- **PerformanceOverviewWidget** - Trends and charts
-- **FraudAlertWidget** - Recent fraud signals
-- **PayoutQueueWidget** - Pending payout overview
-- **RealTimeActivityWidget** - Live attribution/conversion feed
-- **NetworkVisualizationWidget** - MLM network tree view
-
-## Architecture
-
-```
-src/
-├── Actions/               # Filament action classes
-├── AffiliatePanelProvider.php  # Optional standalone panel
-├── Concerns/              # Shared traits
-├── FilamentAffiliates.php      # Facade
-├── FilamentAffiliatesPlugin.php # Main plugin class
-├── FilamentAffiliatesServiceProvider.php
-├── Pages/                 # Custom pages
-│   ├── FraudReviewPage.php
-│   ├── PayoutBatchPage.php
-│   ├── ReportsPage.php
-│   └── Portal/           # Affiliate self-service portal
-├── Policies/              # Authorization policies
-├── Resources/             # Filament resources
-│   ├── AffiliateResource/
-│   ├── AffiliateConversionResource/
-│   ├── AffiliatePayoutResource/
-│   ├── AffiliateProgramResource/
-│   └── AffiliateFraudSignalResource/
-├── Services/              # UI-specific services
-├── Support/               # Form schemas, aggregators
-└── Widgets/               # Dashboard widgets
-```
+- Owner scoping follows `affiliates` + `commerce-support` primitives.
+- Filament filtering is not authorization.
+- Write paths must still validate submitted IDs server-side (owner-safe lookup).
 
 ## Requirements
 
 - PHP 8.4+
-- Laravel 11+
+- Laravel app with Filament v5 panel support
 - Filament v5
 - `aiarmada/affiliates` (core package)
 

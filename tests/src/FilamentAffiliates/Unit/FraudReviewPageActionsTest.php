@@ -14,6 +14,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAuthz\Models\Permission;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
@@ -104,6 +105,52 @@ it('executes approve and reject record actions', function (): void {
         ->and($signalToReject->evidence)->toBeArray()
         ->and($signalToReject->evidence['review_notes'])->toBe('Confirmed fraud by QA')
         ->and($conversion->status->equals(RejectedConversion::class))->toBeTrue();
+});
+
+it('executes fraud review actions when user only has affiliate.approve permission', function (): void {
+    $user = User::create([
+        'name' => 'Fraud Approver Only',
+        'email' => 'fraud-approver-only@example.com',
+        'password' => 'secret',
+    ]);
+
+    Permission::create(['name' => 'affiliate.approve', 'guard_name' => 'web']);
+
+    $user->givePermissionTo('affiliate.approve');
+
+    $this->actingAs($user);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-' . Str::uuid(),
+        'name' => 'Fraud Approver Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+
+    $signal = AffiliateFraudSignal::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'rule_code' => 'velocity',
+        'risk_points' => 80,
+        'severity' => FraudSeverity::Critical,
+        'description' => 'Approve-only fraud review',
+        'status' => FraudSignalStatus::Detected,
+        'detected_at' => now(),
+    ]);
+
+    $page = new FraudReviewPage;
+    $table = $page->table(Table::make($page));
+
+    $approve = $table->getAction('approve');
+    expect($approve)->not->toBeNull();
+    $approve?->call(['record' => $signal]);
+
+    $signal->refresh();
+
+    expect($signal->status)->toBe(FraudSignalStatus::Dismissed)
+        ->and($signal->reviewed_by)->toBe((string) $user->getAuthIdentifier())
+        ->and($signal->reviewed_at)->not->toBeNull();
 });
 
 it('executes bulk approve and bulk reject actions', function (): void {
@@ -263,4 +310,46 @@ it('executes hardened advanced bulk fraud review action', function (): void {
         ->and($signalB->evidence)->toBeArray()
         ->and($signalA->evidence['review_notes'])->toBe('Analyst reviewed and accepted.')
         ->and($signalB->evidence['review_notes'])->toBe('Analyst reviewed and accepted.');
+});
+
+it('blocks fraud review record action when user lacks fraud update permission', function (): void {
+    $user = User::create([
+        'name' => 'Fraud Unauthorized Reviewer',
+        'email' => 'fraud-unauthorized-reviewer@example.com',
+        'password' => 'secret',
+    ]);
+
+    $this->actingAs($user);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-' . Str::uuid(),
+        'name' => 'Fraud Unauthorized Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+
+    $signal = AffiliateFraudSignal::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'rule_code' => 'velocity',
+        'risk_points' => 85,
+        'severity' => FraudSeverity::Critical,
+        'description' => 'Unauthorized review attempt',
+        'status' => FraudSignalStatus::Detected,
+        'detected_at' => now(),
+    ]);
+
+    $page = new FraudReviewPage;
+    $table = $page->table(Table::make($page));
+
+    $approve = $table->getAction('approve');
+    expect($approve)->not->toBeNull();
+
+    expect(fn () => $approve?->call(['record' => $signal]))
+        ->toThrow(AuthorizationException::class);
+
+    $signal->refresh();
+
+    expect($signal->status)->toBe(FraudSignalStatus::Detected);
 });

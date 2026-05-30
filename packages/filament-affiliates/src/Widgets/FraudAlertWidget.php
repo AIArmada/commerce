@@ -7,15 +7,14 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
-use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 
 final class FraudAlertWidget extends BaseWidget
 {
@@ -79,18 +78,11 @@ final class FraudAlertWidget extends BaseWidget
                     ->icon('heroicon-o-x-mark')
                     ->color('gray')
                     ->requiresConfirmation()
-                    ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.fraud.update') ?? false)
-                    ->action(function (AffiliateFraudSignal $record): void {
-                        Gate::authorize('update', $record);
-
-                        $signal = OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
-
-                        $reviewedBy = Auth::id();
-
-                        $signal->dismiss($reviewedBy === null ? null : (string) $reviewedBy);
-                    }),
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate.approve', 'affiliates.fraud.update']))
+                    ->action(fn (AffiliateFraudSignal $record): AffiliateFraudSignal => UpdateAffiliateFraudSignalStatus::run(
+                        $record,
+                        FraudSignalStatus::Dismissed,
+                    )),
             ])
             ->paginated(false)
             ->emptyStateHeading('No fraud alerts')

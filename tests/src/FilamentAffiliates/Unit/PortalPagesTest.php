@@ -6,6 +6,9 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
 
 // PortalDashboard Tests
 it('PortalDashboard can be instantiated', function (): void {
@@ -129,4 +132,88 @@ it('PortalPayouts returns view data', function (): void {
         ->toHaveKey('totalPaid')
         ->toHaveKey('availableEarnings')
         ->toHaveKey('pendingEarnings');
+});
+
+// PortalProfile Tests
+it('PortalProfile can be instantiated', function (): void {
+    $page = new PortalProfile;
+
+    expect($page)->toBeInstanceOf(PortalProfile::class);
+});
+
+it('PortalProfile has correct navigation label', function (): void {
+    expect(PortalProfile::getNavigationLabel())->toBe('Profile');
+});
+
+it('PortalProfile has correct title', function (): void {
+    $page = new PortalProfile;
+
+    expect($page->getTitle())->toBe('Profile & Payout Setup');
+});
+
+it('PortalProfile returns view data', function (): void {
+    $page = new PortalProfile;
+    $viewData = $page->getViewData();
+
+    expect($viewData)
+        ->toBeArray()
+        ->toHaveKey('hasAffiliate')
+        ->toHaveKey('payoutMethodOptions')
+        ->and($viewData['payoutMethodOptions'])->toBeArray()->not->toBeEmpty();
+});
+
+// PortalPrograms Tests
+it('PortalPrograms can be instantiated', function (): void {
+    $page = new PortalPrograms;
+
+    expect($page)->toBeInstanceOf(PortalPrograms::class);
+});
+
+it('PortalPrograms has correct navigation label', function (): void {
+    expect(PortalPrograms::getNavigationLabel())->toBe('Programs');
+});
+
+it('PortalPrograms has correct title', function (): void {
+    $page = new PortalPrograms;
+
+    expect($page->getTitle())->toBe('Programs & Assets');
+});
+
+it('PortalPrograms returns view data', function (): void {
+    $page = new PortalPrograms;
+    $viewData = $page->getViewData();
+
+    expect($viewData)
+        ->toBeArray()
+        ->toHaveKey('hasAffiliate')
+        ->toHaveKey('programs')
+        ->toHaveKey('creativeCount');
+});
+
+// PortalSupport Tests
+it('PortalSupport can be instantiated', function (): void {
+    $page = new PortalSupport;
+
+    expect($page)->toBeInstanceOf(PortalSupport::class);
+});
+
+it('PortalSupport has correct navigation label', function (): void {
+    expect(PortalSupport::getNavigationLabel())->toBe('Support');
+});
+
+it('PortalSupport has correct title', function (): void {
+    $page = new PortalSupport;
+
+    expect($page->getTitle())->toBe('Support & Compliance');
+});
+
+it('PortalSupport returns view data', function (): void {
+    $page = new PortalSupport;
+    $viewData = $page->getViewData();
+
+    expect($viewData)
+        ->toBeArray()
+        ->toHaveKey('hasAffiliate')
+        ->toHaveKey('tickets')
+        ->toHaveKey('taxDocuments');
 });

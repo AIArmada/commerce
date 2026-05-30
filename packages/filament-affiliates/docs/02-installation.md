@@ -6,10 +6,9 @@ title: Installation
 
 ## Requirements
 
-- PHP 8.4 or higher
-- Laravel 11.x or higher
-- Filament v5
-- `aiarmada/affiliates` package
+- PHP 8.4+
+- Laravel application with Filament v5
+- `aiarmada/affiliates`
 
 ## Install via Composer
 
@@ -17,9 +16,9 @@ title: Installation
 composer require aiarmada/filament-affiliates
 ```
 
-This will automatically install `aiarmada/affiliates` as a dependency.
+`aiarmada/affiliates` is required and will be installed if missing.
 
-## Register the Plugin
+## Register the admin plugin
 
 Add the plugin to your Filament panel provider:
 
@@ -59,85 +58,37 @@ php artisan vendor:publish --tag=filament-affiliates-views
 
 Views are published to `resources/views/vendor/filament-affiliates/`.
 
-## Plugin Options
+## Configure features and registration
 
-### Navigation Group
+Feature selection is config-driven via `config/filament-affiliates.php`.
 
-```php
-FilamentAffiliatesPlugin::make()
-    ->navigationGroup('Sales & Marketing')
-```
+- Admin resources/pages/widgets are controlled by `features.admin.*`
+- Portal pages are controlled by `portal.features.*`
 
-### Disable Specific Resources
-
-```php
-FilamentAffiliatesPlugin::make()
-    ->resources([
-        AffiliateResource::class,
-        AffiliateConversionResource::class,
-        // Omit resources you don't need
-    ])
-```
-
-### Disable Widgets
-
-```php
-FilamentAffiliatesPlugin::make()
-    ->widgets([
-        AffiliateStatsWidget::class,
-        // Only include widgets you want
-    ])
-```
-
-### Custom Navigation Sort
-
-```php
-FilamentAffiliatesPlugin::make()
-    ->navigationSort(50)
-```
+See [Configuration](03-configuration.md) for the exact keys.
 
 ## Affiliate Portal (Self-Service)
 
-The package includes an optional affiliate self-service portal.
+The package ships an optional dedicated panel provider:
 
-### Enable Portal
+- `AIArmada\FilamentAffiliates\AffiliatePanelProvider`
+
+Register that provider in your app's provider list.
+
+### Configure portal
 
 ```php
 // config/filament-affiliates.php
 'portal' => [
-    'enabled' => true,
     'panel_id' => 'affiliate',
     'path' => 'affiliate',
+    'domain' => null,
     'brand_name' => 'Affiliate Portal',
+    'primary_color' => '#6366f1',
+    'login_enabled' => true,
+    'registration_enabled' => true,
+    'auth_guard' => 'web',
 ],
-```
-
-### Register Portal Panel
-
-Create a new panel provider:
-
-```php
-namespace App\Providers\Filament;
-
-use AIArmada\FilamentAffiliates\AffiliatePanelProvider;
-
-class AffiliatePanelProvider extends \Filament\PanelProvider
-{
-    public function panel(Panel $panel): Panel
-    {
-        return $panel
-            ->id('affiliate')
-            ->path('affiliate')
-            ->login()
-            ->registration()
-            ->pages([
-                \AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard::class,
-                \AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions::class,
-                \AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts::class,
-                \AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks::class,
-            ]);
-    }
-}
 ```
 
 ### Portal Features
@@ -148,50 +99,18 @@ Configure which features are available to affiliates:
 'portal' => [
     'features' => [
         'dashboard' => true,
+        'profile' => true,
         'links' => true,
+        'programs' => true,
         'conversions' => true,
         'payouts' => true,
+        'support_compliance' => true,
     ],
 ],
 ```
 
-## Authorization
-
-The package includes policies for all resources. Customize by extending:
-
-```php
-namespace App\Policies;
-
-use AIArmada\FilamentAffiliates\Policies\AffiliatePolicy as BasePolicy;
-
-class AffiliatePolicy extends BasePolicy
-{
-    public function viewAny(User $user): bool
-    {
-        return $user->hasPermission('view-affiliates');
-    }
-}
-```
-
-Register your custom policy:
-
-```php
-// AuthServiceProvider
-protected $policies = [
-    \AIArmada\Affiliates\Models\Affiliate::class => \App\Policies\AffiliatePolicy::class,
-];
-```
-
 ## Verify Installation
 
-Visit your admin panel and look for the "Affiliates" navigation group.
+Visit your admin panel and check that affiliate resources/pages are visible according to your enabled admin features.
 
-You should see:
-- Affiliates
-- Conversions
-- Payouts
-- Programs
-- Fraud Signals
-
-And on the dashboard:
-- Affiliate Stats widget
+If portal is registered, visit the configured portal path and verify login/registration behavior per your portal config.
