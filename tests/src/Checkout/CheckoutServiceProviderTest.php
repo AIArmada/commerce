@@ -19,7 +19,6 @@ use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Support\Facades\Event;
-use RuntimeException;
 
 describe('CheckoutServiceProvider', function (): void {
     it('provides correct services list', function (): void {

@@ -62,6 +62,10 @@ class AffiliateProgram extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
+    protected $attributes = [
+        'is_public' => true,
+    ];
+
     protected $fillable = [
         'name',
         'slug',

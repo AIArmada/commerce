@@ -430,7 +430,7 @@ class InventorySerialTest extends InventoryTestCase
             'status' => SerialStatus::normalize(Available::class),
         ]);
 
-        $result = $serial->transitionTo(Reserved::class);
+        $result = $serial->transitionStatusTo(Reserved::class);
 
         expect($result)->toBe($serial);
         expect($serial->fresh()->status)->toBeInstanceOf(Reserved::class);
@@ -444,7 +444,7 @@ class InventorySerialTest extends InventoryTestCase
             'status' => SerialStatus::normalize(Sold::class),
         ]);
 
-        expect(fn () => $serial->transitionTo(Available::class))
+        expect(fn () => $serial->transitionStatusTo(Available::class))
             ->toThrow(InvalidArgumentException::class);
     }
 
