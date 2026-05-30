@@ -8,7 +8,10 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -106,7 +109,9 @@ class AffiliatePanelProvider extends PanelProvider
             'auth_guard' => config('filament-affiliates.portal.auth_guard', 'web'),
             'features' => config('filament-affiliates.portal.features', [
                 'dashboard' => true,
+                'profile' => true,
                 'links' => true,
+                'programs' => true,
                 'conversions' => true,
                 'payouts' => true,
             ]),
@@ -131,8 +136,16 @@ class AffiliatePanelProvider extends PanelProvider
             $pages[] = PortalDashboard::class;
         }
 
+        if ($features['profile'] ?? true) {
+            $pages[] = PortalProfile::class;
+        }
+
         if ($features['links'] ?? true) {
             $pages[] = PortalLinks::class;
+        }
+
+        if ($features['programs'] ?? true) {
+            $pages[] = PortalPrograms::class;
         }
 
         if ($features['conversions'] ?? true) {
@@ -141,6 +154,10 @@ class AffiliatePanelProvider extends PanelProvider
 
         if ($features['payouts'] ?? true) {
             $pages[] = PortalPayouts::class;
+        }
+
+        if ($features['support_compliance'] ?? true) {
+            $pages[] = PortalSupport::class;
         }
 
         return $pages;

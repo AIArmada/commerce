@@ -2,10 +2,18 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Models\AffiliateSupportMessage;
+use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\CompletedPayout;
@@ -17,7 +25,10 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -25,6 +36,12 @@ use Illuminate\Support\Str;
 beforeEach(function (): void {
     config(['affiliates.owner.enabled' => false]);
 
+    AffiliateProgramCreative::query()->delete();
+    AffiliateProgramMembership::query()->delete();
+    AffiliateProgram::query()->delete();
+    AffiliateSupportMessage::query()->delete();
+    AffiliateSupportTicket::query()->delete();
+    AffiliateTaxDocument::query()->delete();
     AffiliatePayout::query()->delete();
     AffiliateConversion::query()->delete();
     AffiliateAttribution::query()->delete();
@@ -545,4 +562,282 @@ it('PortalRegistration subheading reflects approval mode', function (): void {
 
     $mode->setValue($registration, 'admin');
     expect($registration->getSubheading())->toContain('reviewed');
+});
+
+it('PortalProfile updates affiliate profile and default payout method', function (): void {
+    $user = User::create([
+        'name' => 'Portal Profile User',
+        'email' => 'portal-profile-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'PROFILE-' . Str::uuid(),
+        'name' => 'Original Affiliate Name',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $user->getMorphClass(),
+        'owner_id' => (string) $user->getKey(),
+    ]);
+
+    $this->actingAs($user);
+
+    $page = new PortalProfile;
+    $page->mount();
+
+    $page->name = 'Updated Affiliate Name';
+    $page->contactEmail = 'updated-affiliate@example.com';
+    $page->websiteUrl = 'https://affiliate.example.com';
+    $page->payoutMethodType = 'paypal';
+    $page->payoutMethodLabel = 'Primary PayPal';
+    $page->payoutMethodAccountRef = 'payouts@example.com';
+
+    $page->saveProfile();
+
+    $affiliate->refresh();
+
+    $payoutMethod = AffiliatePayoutMethod::query()
+        ->where('affiliate_id', $affiliate->getKey())
+        ->where('is_default', true)
+        ->first();
+
+    expect($affiliate->name)->toBe('Updated Affiliate Name')
+        ->and($affiliate->contact_email)->toBe('updated-affiliate@example.com')
+        ->and($affiliate->website_url)->toBe('https://affiliate.example.com')
+        ->and($payoutMethod)->not->toBeNull()
+        ->and($payoutMethod?->type->value)->toBe('paypal')
+        ->and($payoutMethod?->details['label'] ?? null)->toBe('Primary PayPal')
+        ->and($payoutMethod?->details['account_ref'] ?? null)->toBe('payouts@example.com');
+});
+
+it('PortalPrograms returns joined programs and creative assets for the current affiliate', function (): void {
+    $user = User::create([
+        'name' => 'Portal Programs User',
+        'email' => 'portal-programs-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'PROGRAMS-' . Str::uuid(),
+        'name' => 'Programs Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $user->getMorphClass(),
+        'owner_id' => (string) $user->getKey(),
+    ]);
+
+    $program = AffiliateProgram::create([
+        'name' => 'Starter Program',
+        'slug' => 'starter-program-' . Str::uuid(),
+        'status' => 'active',
+        'default_commission_rate_basis_points' => 500,
+        'commission_type' => 'percentage',
+        'cookie_lifetime_days' => 30,
+        'is_public' => true,
+        'requires_approval' => false,
+    ]);
+
+    AffiliateProgramMembership::query()->create([
+        'affiliate_id' => $affiliate->getKey(),
+        'program_id' => $program->getKey(),
+        'status' => 'approved',
+        'applied_at' => now(),
+        'approved_at' => now(),
+    ]);
+
+    AffiliateProgramCreative::create([
+        'program_id' => $program->getKey(),
+        'type' => 'banner',
+        'name' => 'Hero Banner',
+        'asset_url' => 'https://cdn.example.com/banner.jpg',
+        'destination_url' => 'https://example.com/offer',
+        'tracking_code' => 'trk-hero-banner',
+    ]);
+
+    $this->actingAs($user);
+
+    $page = new PortalPrograms;
+    $viewData = $page->getViewData();
+
+    expect($viewData['hasAffiliate'])->toBeTrue()
+        ->and($viewData['creativeCount'])->toBe(1)
+        ->and($viewData['programs'])->toHaveCount(1)
+        ->and($viewData['programs'][0]['name'])->toBe('Starter Program')
+        ->and($viewData['programs'][0]['is_joined'])->toBeTrue()
+        ->and($viewData['programs'][0]['creative_count'])->toBe(1)
+        ->and($viewData['programs'][0]['creatives'][0]['name'])->toBe('Hero Banner');
+});
+
+it('PortalPrograms can join available programs and expose accessible creative assets', function (): void {
+    $user = User::create([
+        'name' => 'Portal Join User',
+        'email' => 'portal-join-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'JOIN-' . Str::uuid(),
+        'name' => 'Join Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $user->getMorphClass(),
+        'owner_id' => (string) $user->getKey(),
+    ]);
+
+    $program = AffiliateProgram::create([
+        'name' => 'Joinable Program',
+        'slug' => 'joinable-program-' . Str::uuid(),
+        'status' => 'active',
+        'default_commission_rate_basis_points' => 500,
+        'commission_type' => 'percentage',
+        'cookie_lifetime_days' => 30,
+        'is_public' => true,
+        'requires_approval' => false,
+    ]);
+
+    AffiliateProgramCreative::create([
+        'program_id' => $program->getKey(),
+        'type' => 'banner',
+        'name' => 'Join Banner',
+        'asset_url' => 'https://cdn.example.com/join-banner.jpg',
+        'destination_url' => 'https://example.com/join-offer',
+        'tracking_code' => 'trk-join-banner',
+    ]);
+
+    $this->actingAs($user);
+
+    $page = new PortalPrograms;
+
+    $viewData = $page->getViewData();
+
+    expect($viewData['programs'])->toHaveCount(1)
+        ->and($viewData['programs'][0]['can_join'])->toBeTrue()
+        ->and($viewData['programs'][0]['is_joined'])->toBeFalse()
+        ->and($viewData['programs'][0]['creative_count'])->toBe(0)
+        ->and($viewData['programs'][0]['creatives'])->toBe([]);
+
+    $page->joinProgram((string) $program->getKey());
+
+    $membership = AffiliateProgramMembership::query()
+        ->where('affiliate_id', $affiliate->getKey())
+        ->where('program_id', $program->getKey())
+        ->first();
+
+    expect($membership)->not->toBeNull()
+        ->and($membership?->status)->toBe(MembershipStatus::Approved);
+
+    $updatedViewData = $page->getViewData();
+
+    expect($updatedViewData['programs'][0]['is_joined'])->toBeTrue()
+        ->and($updatedViewData['programs'][0]['creative_count'])->toBe(1)
+        ->and($updatedViewData['programs'][0]['creatives'][0]['name'])->toBe('Join Banner');
+});
+
+it('PortalPrograms marks approval-required programs as pending requests', function (): void {
+    $user = User::create([
+        'name' => 'Portal Pending User',
+        'email' => 'portal-pending-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'PENDING-' . Str::uuid(),
+        'name' => 'Pending Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $user->getMorphClass(),
+        'owner_id' => (string) $user->getKey(),
+    ]);
+
+    $program = AffiliateProgram::create([
+        'name' => 'Approval Program',
+        'slug' => 'approval-program-' . Str::uuid(),
+        'status' => 'active',
+        'default_commission_rate_basis_points' => 500,
+        'commission_type' => 'percentage',
+        'cookie_lifetime_days' => 30,
+        'is_public' => true,
+        'requires_approval' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    $page = new PortalPrograms;
+    $page->joinProgram((string) $program->getKey());
+
+    $membership = AffiliateProgramMembership::query()
+        ->where('affiliate_id', $affiliate->getKey())
+        ->where('program_id', $program->getKey())
+        ->first();
+
+    expect($membership)->not->toBeNull()
+        ->and($membership?->status)->toBe(MembershipStatus::Pending);
+});
+
+it('PortalSupport can create tickets, reply to them, and track compliance documents', function (): void {
+    $user = User::create([
+        'name' => 'Portal Support User',
+        'email' => 'portal-support-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'SUPPORT-' . Str::uuid(),
+        'name' => 'Support Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $user->getMorphClass(),
+        'owner_id' => (string) $user->getKey(),
+    ]);
+
+    $this->actingAs($user);
+
+    $page = new PortalSupport;
+    $page->subject = 'Payout question';
+    $page->category = 'billing';
+    $page->priority = 'high';
+    $page->message = 'Can you clarify the latest payout status?';
+    $page->createTicket();
+
+    $ticket = AffiliateSupportTicket::query()
+        ->where('affiliate_id', $affiliate->getKey())
+        ->first();
+
+    expect($ticket)->not->toBeNull()
+        ->and($ticket?->subject)->toBe('Payout question')
+        ->and($ticket?->messages()->count())->toBe(1);
+
+    $page->replyMessages[(string) $ticket->getKey()] = 'Thanks, please review this ticket.';
+    $page->replyToTicket((string) $ticket->getKey());
+
+    expect($ticket->messages()->count())->toBe(2);
+
+    AffiliateTaxDocument::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'document_type' => '1099',
+        'tax_year' => (int) now()->format('Y'),
+        'status' => 'generated',
+        'total_amount_minor' => 250000,
+        'currency' => 'USD',
+        'generated_at' => now(),
+        'notes' => 'Ready for review',
+    ]);
+
+    $viewData = $page->getViewData();
+
+    expect($viewData['hasAffiliate'])->toBeTrue()
+        ->and($viewData['tickets'])->toHaveCount(1)
+        ->and($viewData['tickets'][0]['messages'])->toHaveCount(2)
+        ->and($viewData['taxDocuments'])->toHaveCount(1)
+        ->and($viewData['taxDocuments'][0]['document_type'])->toBe('1099');
 });

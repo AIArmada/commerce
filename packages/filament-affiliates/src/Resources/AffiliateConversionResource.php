@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Pages\ListAffiliateConversions;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Pages\ViewAffiliateConversion;
-use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas\AffiliateConversionForm;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas\AffiliateConversionInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
@@ -55,22 +54,40 @@ final class AffiliateConversionResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return FilamentPermission::hasAbility('affiliate_conversion.viewAny');
+        return FilamentPermission::hasAnyAbility([
+            'affiliate_conversion.viewAny',
+            'affiliate_conversion.update',
+            'affiliate.approve',
+        ]);
     }
 
     public static function canView(Model $record): bool
     {
-        return FilamentPermission::hasAbility('affiliate_conversion.view');
+        return FilamentPermission::hasAnyAbility([
+            'affiliate_conversion.view',
+            'affiliate_conversion.update',
+            'affiliate.approve',
+        ]);
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
     }
 
     public static function shouldRegisterNavigation(): bool
     {
         return static::canViewAny();
-    }
-
-    public static function form(Schema $schema): Schema
-    {
-        return AffiliateConversionForm::configure($schema);
     }
 
     public static function table(Table $table): Table

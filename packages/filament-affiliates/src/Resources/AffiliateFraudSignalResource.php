@@ -6,26 +6,23 @@ namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
+use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
+use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Schemas\AffiliateFraudSignalInfolist;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\ViewAction;
-use Filament\Facades\Filament;
-use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 final class AffiliateFraudSignalResource extends Resource
@@ -46,62 +43,24 @@ final class AffiliateFraudSignalResource extends Resource
         return config('filament-affiliates.resources.navigation_sort.affiliate_fraud_signals', 64);
     }
 
-    public static function form(Schema $schema): Schema
+    public static function canCreate(): bool
     {
-        return $schema->schema([
-            Section::make('Signal Details')
-                ->schema([
-                    Forms\Components\TextInput::make('affiliate_id')
-                        ->label('Affiliate')
-                        ->formatStateUsing(static function (?string $state): string {
-                            if ($state === null) {
-                                return '';
-                            }
+        return false;
+    }
 
-                            return Affiliate::query()->find($state)?->name ?? $state;
-                        })
-                        ->disabled(),
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
 
-                    Forms\Components\TextInput::make('rule_code')
-                        ->disabled(),
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
 
-                    Forms\Components\Select::make('severity')
-                        ->options(FraudSeverity::class)
-                        ->disabled(),
-
-                    Forms\Components\Select::make('status')
-                        ->options(FraudSignalStatus::class)
-                        ->required(),
-                ])
-                ->columns(2),
-
-            Section::make('Detection')
-                ->schema([
-                    Forms\Components\TextInput::make('risk_points')
-                        ->disabled(),
-
-                    Forms\Components\DateTimePicker::make('detected_at')
-                        ->disabled(),
-
-                    Forms\Components\Textarea::make('description')
-                        ->disabled()
-                        ->columnSpanFull(),
-                ])
-                ->columns(2),
-
-            Section::make('Review Notes')
-                ->schema([
-                    Forms\Components\Textarea::make('evidence.review_notes')
-                        ->rows(3)
-                        ->columnSpanFull(),
-
-                    Forms\Components\TextInput::make('reviewed_by')
-                        ->disabled(),
-
-                    Forms\Components\DateTimePicker::make('reviewed_at')
-                        ->disabled(),
-                ]),
-        ]);
+    public static function infolist(Schema $schema): Schema
+    {
+        return AffiliateFraudSignalInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table
@@ -166,56 +125,34 @@ final class AffiliateFraudSignalResource extends Resource
                     ->icon('heroicon-o-x-mark')
                     ->color('gray')
                     ->requiresConfirmation()
-                    ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.fraud.update') ?? false)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate.approve', 'affiliates.fraud.update']))
                     ->visible(fn ($record) => $record->status === FraudSignalStatus::Detected)
-                    ->action(function (AffiliateFraudSignal $record): void {
-                        Gate::authorize('update', $record);
-
-                        $signal = OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
-
-                        $reviewedBy = auth()->user()?->getAuthIdentifier();
-
-                        $signal->dismiss($reviewedBy === null ? null : (string) $reviewedBy);
-                    }),
+                    ->action(fn (AffiliateFraudSignal $record): AffiliateFraudSignal => UpdateAffiliateFraudSignalStatus::run(
+                        $record,
+                        FraudSignalStatus::Dismissed,
+                    )),
                 Action::make('confirm')
                     ->icon('heroicon-o-check')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.fraud.update') ?? false)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate.approve', 'affiliates.fraud.update']))
                     ->visible(fn ($record) => $record->status === FraudSignalStatus::Detected)
-                    ->action(function (AffiliateFraudSignal $record): void {
-                        Gate::authorize('update', $record);
-
-                        $signal = OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
-
-                        $reviewedBy = auth()->user()?->getAuthIdentifier();
-
-                        $signal->confirm($reviewedBy === null ? null : (string) $reviewedBy);
-                    }),
+                    ->action(fn (AffiliateFraudSignal $record): AffiliateFraudSignal => UpdateAffiliateFraudSignalStatus::run(
+                        $record,
+                        FraudSignalStatus::Confirmed,
+                    )),
             ])
             ->bulkActions([
                 BulkAction::make('dismiss_selected')
                     ->label('Dismiss Selected')
                     ->icon('heroicon-o-x-mark')
                     ->requiresConfirmation()
-                    ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.fraud.update') ?? false)
+                    ->authorize(fn (): bool => FilamentPermission::hasAnyAbility(['affiliate.approve', 'affiliates.fraud.update']))
                     ->action(function ($records): void {
-                        $reviewedBy = auth()->user()?->getAuthIdentifier();
-                        $reviewedBy = $reviewedBy === null ? null : (string) $reviewedBy;
-
-                        $records->each(function (AffiliateFraudSignal $record) use ($reviewedBy): void {
-                            Gate::authorize('update', $record);
-
-                            $signal = OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
-                                ->whereKey($record->getKey())
-                                ->firstOrFail();
-
-                            $signal->dismiss($reviewedBy);
-                        });
+                        $records->each(fn (AffiliateFraudSignal $record) => UpdateAffiliateFraudSignalStatus::run(
+                            $record,
+                            FraudSignalStatus::Dismissed,
+                        ));
                     }),
             ])
             ->defaultSort('detected_at', 'desc');

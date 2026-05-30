@@ -50,6 +50,18 @@ final class AffiliateForm
                             ->required()
                             ->options(AffiliateStatus::options())
                             ->default(AffiliateStatus::fromString(Draft::class)->getValue()),
+
+                        Select::make('parent_affiliate_id')
+                            ->label('Parent Affiliate')
+                            ->relationship('parent', 'name')
+                            ->searchable()
+                            ->preload(),
+
+                        Select::make('rank_id')
+                            ->label('Rank')
+                            ->relationship('rank', 'name')
+                            ->searchable()
+                            ->preload(),
                     ]),
 
                     Textarea::make('description')

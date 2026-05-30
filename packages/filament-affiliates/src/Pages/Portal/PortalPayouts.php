@@ -62,7 +62,7 @@ class PortalPayouts extends Page implements HasTable
                     ->label(__('Reference'))
                     ->searchable(),
 
-                TextColumn::make('amount_minor')
+                TextColumn::make('total_minor')
                     ->label(__('Amount'))
                     ->formatStateUsing(fn ($state) => $this->formatAmount((int) $state))
                     ->sortable(),

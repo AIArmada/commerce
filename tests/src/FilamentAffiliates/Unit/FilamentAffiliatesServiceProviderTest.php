@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
+use AIArmada\FilamentAffiliates\Policies\AffiliateConversionPolicy;
 use AIArmada\FilamentAffiliates\Policies\AffiliatePayoutPolicy;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
@@ -48,4 +49,10 @@ it('registers AffiliatePayoutPolicy in Gate', function (): void {
     $policy = app(AffiliatePayoutPolicy::class);
 
     expect($policy)->toBeInstanceOf(AffiliatePayoutPolicy::class);
+});
+
+it('registers AffiliateConversionPolicy in Gate', function (): void {
+    $policy = app(AffiliateConversionPolicy::class);
+
+    expect($policy)->toBeInstanceOf(AffiliateConversionPolicy::class);
 });

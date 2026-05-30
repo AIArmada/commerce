@@ -13,6 +13,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
 use AIArmada\FilamentAuthz\Models\Permission;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -74,4 +75,53 @@ it('processes a payout via the queue widget action', function (): void {
         ->and($payout->external_reference)->not->toBeNull();
 
     expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
+});
+
+it('blocks queue widget payout action when user lacks payout update permission', function (): void {
+    $user = User::create([
+        'name' => 'Queue Widget Unauthorized Processor',
+        'email' => 'queue-widget-unauthorized-processor@example.com',
+        'password' => 'secret',
+    ]);
+
+    $this->actingAs($user);
+
+    $affiliate = Affiliate::create([
+        'code' => 'AFF-' . Str::uuid(),
+        'name' => 'Unauthorized Widget Affiliate',
+        'status' => Active::class,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+    ]);
+
+    AffiliatePayoutMethod::create([
+        'affiliate_id' => $affiliate->getKey(),
+        'type' => PayoutMethodType::BankTransfer,
+        'details' => ['bank_name' => 'Test Bank', 'account_number' => '12345678'],
+        'is_verified' => true,
+        'is_default' => true,
+    ]);
+
+    $payout = AffiliatePayout::create([
+        'reference' => 'PAY-' . Str::uuid(),
+        'status' => PendingPayout::class,
+        'total_minor' => 5000,
+        'currency' => 'USD',
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
+    ]);
+
+    $widget = new PayoutQueueWidget;
+    $table = $widget->table(Table::make($widget));
+
+    $process = $table->getAction('process');
+    expect($process)->not->toBeNull();
+
+    expect(fn () => $process?->call(['record' => $payout]))
+        ->toThrow(AuthorizationException::class);
+
+    $payout->refresh();
+
+    expect($payout->status)->toBeInstanceOf(PendingPayout::class);
 });

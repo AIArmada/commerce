@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -15,8 +16,12 @@ final class UpdateAffiliateFraudSignalStatus
 {
     use AsAction;
 
-    public function handle(AffiliateFraudSignal $record, FraudSignalStatus $status): AffiliateFraudSignal
-    {
+    public function handle(
+        AffiliateFraudSignal $record,
+        FraudSignalStatus $status,
+        ?string $reviewNotes = null,
+        bool $rejectLinkedConversion = false,
+    ): AffiliateFraudSignal {
         Gate::authorize('update', $record);
 
         /** @var AffiliateFraudSignal $signal */
@@ -36,6 +41,22 @@ final class UpdateAffiliateFraudSignalStatus
                 $status->value,
             )),
         };
+
+        $normalizedReviewNotes = is_string($reviewNotes) ? mb_trim($reviewNotes) : null;
+
+        if ($normalizedReviewNotes !== null && $normalizedReviewNotes !== '') {
+            $signal->update([
+                'evidence' => array_merge($signal->evidence ?? [], [
+                    'review_notes' => $normalizedReviewNotes,
+                ]),
+            ]);
+        }
+
+        if ($rejectLinkedConversion && $signal->conversion !== null) {
+            $signal->conversion->update([
+                'status' => RejectedConversion::class,
+            ]);
+        }
 
         return $signal->refresh();
     }

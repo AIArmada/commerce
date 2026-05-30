@@ -30,216 +30,63 @@ Register `AIArmada\FilamentAffiliates\AffiliatePanelProvider::class` in your app
 ],
 ```
 
-## Portal Pages
+## Portal pages
 
-### Dashboard
+Pages are feature-gated through `filament-affiliates.portal.features`:
 
-The main portal dashboard displays:
+- `dashboard` -> `PortalDashboard`
+- `profile` -> `PortalProfile`
+- `links` -> `PortalLinks`
+- `programs` -> `PortalPrograms`
+- `conversions` -> `PortalConversions`
+- `payouts` -> `PortalPayouts`
+- `support_compliance` -> `PortalSupport`
 
-- Lifetime earnings summary
-- Monthly performance chart
-- Recent conversions list
-- Pending payout amount
-- Quick link generator
+If `filament-affiliates.portal.registration_enabled` is `true`, the panel uses `PortalRegistration` as the registration page.
 
-`PortalDashboard` displays:
-namespace AIArmada\FilamentAffiliates\Pages\Portal;
-- total earnings,
-- pending earnings,
-- available earnings,
-- total clicks,
-- total conversions,
-- conversion rate,
-- recent conversions,
-- recent payouts.
-    protected function getStats(): array
-    {
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
-            Stat::make('Total Earnings', $this->affiliate->totalEarnings()),
-class PortalDashboard extends Page
-            Stat::make('Pending', $this->affiliate->pendingCommission()),
-    }
-}
-```
-            'totalEarnings' => $this->getTotalEarnings(),
-            'pendingEarnings' => $this->getPendingEarnings(),
-            'availableEarnings' => $this->getAvailableEarnings(),
+## Panel behavior
 
-- Generate links for any URL
-- Copy to clipboard
-- QR code generation
-- Link analytics (clicks, conversions)
+`AffiliatePanelProvider` configures:
 
-```php
-`PortalLinks` exposes the affiliate’s default link and a header action for generating a custom target URL.
-{
-- Link generation is delegated to `AffiliateLinkGenerator`.
-- If you configure `affiliates.links.allowed_hosts`, generated links must stay within that allowlist.
-- The page falls back to the configured query parameter (`aff` by default) when it needs a simple default link for display.
-            targetUrl: $this->url,
-            campaign: $this->campaign,
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
+- panel id/path/domain/branding from config,
+- Filament auth middleware,
+- optional login and registration pages,
+- configured auth guard,
+- bundled portal CSS asset.
 
-class PortalLinks extends Page
-
-        $this->createdLink = $link->full_url;
-    }
-        $this->generatedLink = app(AffiliateLinkGenerator::class)->generate(
-            $affiliate->code,
-            $this->targetUrl,
-
-- Date/time of conversion
-- Reference (`external_reference`)
-- Total value (`value_minor`)
-- Commission amount
-- Status (pending, approved, paid)
-- Filter by date range and status
-`PortalConversions` renders an affiliate-scoped table with:
-### Payouts
-
-Track payout history:
-
-- Payout date
-- Amount
-- default descending sort by occurrence time
-- summary values for total conversions, total earnings, and pending earnings
-- Status
-- Transaction reference
-
-`PortalPayouts` renders an affiliate-scoped payout table with:
-
-Self-registration for new affiliates:
-
-class RegistrationPage extends Page
-{
-- Paid-at timestamp
-
-The payout page is automatically disabled when `affiliates.features.commission_tracking.enabled` is `false`, even if `filament-affiliates.portal.features.payouts` remains `true`.
-    public function register(): void
-    {
-        $affiliate = $this->affiliateRegistrationService->register(
-When `filament-affiliates.portal.registration_enabled` is `true`, the panel uses `PortalRegistration` as its registration page.
-
-The registration form creates both:
-
-- the authenticated user record, and
-- an affiliate via `AffiliateRegistrationService`.
-
-The form collects:
-
-- name,
-- email,
-- password,
-- affiliate/business name,
-- optional website URL.
-
-If affiliate owner mode is enabled, the registration flow uses the current owner context when creating the affiliate.
-            programId: $this->program_id,
-            referralCode: $this->referral_code,
-use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
-
-class PortalRegistration extends FilamentRegister
-
-    protected function createAffiliateForUser(Model $user, array $data): Affiliate
-    }
-        return app(AffiliateRegistrationService::class)->register([
-            'name' => $data['affiliate_name'],
-            'contact_email' => $data['email'],
-            'website_url' => $data['website_url'] ?? null,
-        ], $owner);
-    }
-}
-```
-
-The registration subheading changes with `affiliates.registration.approval_mode`:
-
-- `auto` — the affiliate is immediately activated,
-- `open` — the affiliate is created as pending,
-- `admin` — the user is told their application will be reviewed.
-
-If registration is disabled, the page redirects back to the portal login page.
-
-## Authentication
-
-The panel uses standard Filament auth middleware and the configured auth guard:
+## Portal configuration example
 
 ```php
 'portal' => [
-    'auth_guard' => 'web',
-    'login_enabled' => true,
-],
-```
-
-By default the panel requires an authenticated user, but it does not hard-block non-affiliate users with a special middleware. Portal pages use `InteractsWithAffiliate` and render empty-state behavior when no affiliate is linked to the current user.
-
-If you want to enforce an affiliate-only gate, extend the panel provider and add your own auth middleware.
-
-## Customizing Portal Access
-
-You can extend the panel provider if you need stricter access rules or extra middleware:
-
-```php
-use AIArmada\FilamentAffiliates\AffiliatePanelProvider;
-use Filament\Panel;
-
-class AppAffiliatePanelProvider extends AffiliatePanelProvider
-{
-    public function panel(Panel $panel): Panel
-    {
-        return parent::panel($panel)
-            ->authMiddleware([
-                \Filament\Http\Middleware\Authenticate::class,
-                \App\Http\Middleware\EnsureUserIsAffiliate::class,
-            ]);
-    }
-}
-```
-
-## Portal Theming
-
-### Brand Colors
-
-```php
-'portal' => [
-    'primary_color' => '#your-brand-color',
-],
-```
-
-### Custom CSS
-
-The provider already registers the bundled `affiliate-portal.css` asset. If you need more branding, extend the provider and register additional assets on the panel.
-
-## Disabling Portal Features
-
-Disable specific pages with the feature map:
-
-```php
-'portal' => [
+    'panel_id' => env('AFFILIATES_PORTAL_PANEL_ID', 'affiliate'),
+    'path' => env('AFFILIATES_PORTAL_PATH', 'affiliate'),
+    'domain' => env('AFFILIATES_PORTAL_DOMAIN'),
+    'brand_name' => env('AFFILIATES_PORTAL_BRAND_NAME', 'Affiliate Portal'),
+    'primary_color' => env('AFFILIATES_PORTAL_PRIMARY_COLOR', '#6366f1'),
+    'login_enabled' => env('AFFILIATES_PORTAL_LOGIN_ENABLED', true),
+    'registration_enabled' => env('AFFILIATES_PORTAL_REGISTRATION_ENABLED', true),
+    'auth_guard' => env('AFFILIATES_PORTAL_AUTH_GUARD', 'web'),
     'features' => [
         'dashboard' => true,
+        'profile' => true,
         'links' => true,
+        'programs' => true,
         'conversions' => true,
-        'payouts' => false,
+        'payouts' => true,
+        'support_compliance' => true,
     ],
 ],
 ```
 
-Available feature keys are:
+When `affiliates.features.commission_tracking.enabled` is `false`, portal payouts are automatically disabled by the panel provider.
 
-- `dashboard`
-- `links`
-- `conversions`
-- `payouts`
+## Access model
 
-## What the Portal Does Not Do by Default
+By default, portal pages require authentication and resolve affiliate context from the current user. If a user has no linked affiliate, pages should render empty-state behavior.
 
-The shipped portal does **not** currently provide:
+If stricter enforcement is needed (for example affiliate-only guard middleware), extend `AffiliatePanelProvider` and add custom auth middleware.
 
-- QR code generation,
-- per-link analytics pages,
-- custom login-page subclasses,
-- special session-lifetime or single-session settings,
-- webhook-specific portal features.
+## Notes
 
-If you need those, extend the panel provider or add custom pages alongside the built-in portal pages.
-### Brand Colors
+- Portal filters are not authorization by themselves.
+- Server-side write validation should continue to enforce owner-safe access.

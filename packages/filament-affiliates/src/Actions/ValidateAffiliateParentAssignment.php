@@ -42,6 +42,10 @@ final class ValidateAffiliateParentAssignment
 
         $parentAffiliate = $this->resolveParentAffiliate($parentAffiliateId);
 
+        if ($record instanceof Affiliate) {
+            $this->ensureNoHierarchyCycle($record, $parentAffiliate);
+        }
+
         $data['parent_affiliate_id'] = (string) $parentAffiliate->getKey();
 
         return $data;
@@ -79,5 +83,18 @@ final class ValidateAffiliateParentAssignment
         return ValidationException::withMessages([
             'parent_affiliate_id' => $message,
         ]);
+    }
+
+    private function ensureNoHierarchyCycle(Affiliate $record, Affiliate $candidateParent): void
+    {
+        $current = $candidateParent;
+
+        while ($current instanceof Affiliate) {
+            if ((string) $current->getKey() === (string) $record->getKey()) {
+                throw $this->validationException('Selected parent affiliate would create a hierarchy cycle.');
+            }
+
+            $current = $current->parent;
+        }
     }
 }

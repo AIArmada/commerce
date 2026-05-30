@@ -122,6 +122,43 @@ it('rejects self-parent assignments', function (): void {
     });
 });
 
+it('rejects assignments that would create a hierarchy cycle', function (): void {
+    $owner = User::create([
+        'name' => 'Parent Guard Cycle Owner',
+        'email' => 'parent-guard-cycle-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    [$parent, $child] = OwnerContext::withOwner($owner, function (): array {
+        $parent = Affiliate::create([
+            'code' => 'PARENT-' . Str::uuid(),
+            'name' => 'Cycle Parent',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 300,
+            'currency' => 'USD',
+        ]);
+
+        $child = Affiliate::create([
+            'code' => 'CHILD-' . Str::uuid(),
+            'name' => 'Cycle Child',
+            'status' => Active::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 300,
+            'currency' => 'USD',
+            'parent_affiliate_id' => $parent->getKey(),
+        ]);
+
+        return [$parent, $child];
+    });
+
+    OwnerContext::withOwner($owner, function () use ($parent, $child): void {
+        expect(fn () => ValidateAffiliateParentAssignment::run([
+            'parent_affiliate_id' => $child->getKey(),
+        ], $parent))->toThrow(ValidationException::class, 'Selected parent affiliate would create a hierarchy cycle.');
+    });
+});
+
 it('allows global parent affiliates when include-global is enabled', function (): void {
     config()->set('affiliates.owner.include_global', true);
 

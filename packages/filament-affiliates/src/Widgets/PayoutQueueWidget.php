@@ -48,7 +48,7 @@ final class PayoutQueueWidget extends BaseWidget
                     ->label('Affiliate')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('amount_minor')
+                Tables\Columns\TextColumn::make('total_minor')
                     ->label('Amount')
                     ->money(fn ($record) => $record->currency, divideBy: 100)
                     ->sortable(),

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas\AffiliateConversionForm;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas\AffiliateConversionInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
+use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Schemas\AffiliateFraudSignalInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Schemas\AffiliatePayoutInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Tables\AffiliatePayoutsTable;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm;
@@ -46,11 +46,6 @@ it('AffiliatesTable configures table with columns and filters', function (): voi
     expect(true)->toBeTrue();
 });
 
-// AffiliateConversionForm Tests
-it('AffiliateConversionForm exists and is callable', function (): void {
-    expect(class_exists(AffiliateConversionForm::class))->toBeTrue();
-});
-
 // AffiliateConversionInfolist Tests
 it('AffiliateConversionInfolist exists and is callable', function (): void {
     expect(class_exists(AffiliateConversionInfolist::class))->toBeTrue();
@@ -81,20 +76,24 @@ it('AffiliateConversionInfolist configures schema', function (): void {
     expect(true)->toBeTrue();
 });
 
+it('AffiliateFraudSignalInfolist exists and is callable', function (): void {
+    expect(class_exists(AffiliateFraudSignalInfolist::class))->toBeTrue();
+});
+
+it('AffiliateFraudSignalInfolist configures schema', function (): void {
+    $schema = Mockery::mock(Schema::class);
+    $schema->shouldReceive('components')->once()->andReturnSelf();
+
+    AffiliateFraudSignalInfolist::configure($schema);
+
+    expect(true)->toBeTrue();
+});
+
 it('AffiliatePayoutInfolist configures schema', function (): void {
     $schema = Mockery::mock(Schema::class);
     $schema->shouldReceive('components')->once()->andReturnSelf();
 
     AffiliatePayoutInfolist::configure($schema);
-
-    expect(true)->toBeTrue();
-});
-
-it('AffiliateConversionForm configures schema', function (): void {
-    $schema = Mockery::mock(Schema::class);
-    $schema->shouldReceive('components')->once()->andReturnSelf();
-
-    AffiliateConversionForm::configure($schema);
 
     expect(true)->toBeTrue();
 });
@@ -115,20 +114,31 @@ it('conversion resource schemas use neutral reference fields', function (): void
     $repositoryRoot = dirname(__DIR__, 4);
 
     $infolistSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Schemas/AffiliateConversionInfolist.php');
-    $formSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Schemas/AffiliateConversionForm.php');
     $tableSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateConversionResource/Tables/AffiliateConversionsTable.php');
 
     expect($infolistSource)
         ->toContain("TextEntry::make('external_reference')")
         ->toContain("TextEntry::make('subject_identifier')")
         ->toContain("Section::make('Cart Integration')")
-        ->and($formSource)
-        ->toContain("TextInput::make('external_reference')")
-        ->toContain("TextInput::make('subject_identifier')")
-        ->toContain("Section::make('Cart Integration')")
         ->and($tableSource)
         ->toContain("TextColumn::make('external_reference')")
+        ->toContain("FilamentPermission::hasAnyAbility(['affiliate_conversion.update', 'affiliate.approve'])")
         ->not->toContain("->label('Order / Ref')");
+});
+
+it('fraud review surfaces share dual-permission authorization semantics', function (): void {
+    $repositoryRoot = dirname(__DIR__, 4);
+
+    $fraudResourceSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Resources/AffiliateFraudSignalResource.php');
+    $fraudPageSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Pages/FraudReviewPage.php');
+    $fraudWidgetSource = file_get_contents($repositoryRoot . '/packages/filament-affiliates/src/Widgets/FraudAlertWidget.php');
+
+    expect($fraudResourceSource)
+        ->toContain("FilamentPermission::hasAnyAbility(['affiliate.approve', 'affiliates.fraud.update'])")
+        ->and($fraudPageSource)
+        ->toContain("FilamentPermission::hasAnyAbility(['affiliate.approve', 'affiliates.fraud.update'])")
+        ->and($fraudWidgetSource)
+        ->toContain("FilamentPermission::hasAnyAbility(['affiliate.approve', 'affiliates.fraud.update'])");
 });
 
 it('affiliate portal views and schemas use state helpers instead of enum value properties', function (): void {

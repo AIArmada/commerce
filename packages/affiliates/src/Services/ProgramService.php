@@ -33,7 +33,7 @@ final class ProgramService
         return AffiliateProgram::query()
             ->active()
             ->public()
-            ->with('tiers')
+            ->with(['tiers', 'creatives'])
             ->get();
     }
 
@@ -52,6 +52,10 @@ final class ProgramService
 
         if ($existing) {
             return $existing;
+        }
+
+        if (! $program->canJoin($affiliate)) {
+            throw new RuntimeException('Affiliate cannot join this program.');
         }
 
         $defaultTier = $this->resolveDefaultTier($program);

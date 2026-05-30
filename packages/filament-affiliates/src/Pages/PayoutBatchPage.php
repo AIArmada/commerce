@@ -79,7 +79,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->label('Name')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('amount_minor')
+                Tables\Columns\TextColumn::make('total_minor')
                     ->label('Amount')
                     ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->currency ?? 'USD'))
                     ->sortable(),

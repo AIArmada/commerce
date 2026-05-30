@@ -41,6 +41,11 @@ return [
             'conversions' => true,
             'payouts' => true,
             'programs' => true,
+            'commission_management' => true,
+            'links' => true,
+            'attribution' => true,
+            'ranks' => true,
+            'support_compliance' => true,
             'fraud_monitoring' => true,
             'reports' => true,
             'network_visualization' => true,
@@ -64,9 +69,12 @@ return [
         'auth_guard' => env('AFFILIATES_PORTAL_AUTH_GUARD', 'web'),
         'features' => [
             'dashboard' => true,
+            'profile' => true,
             'links' => true,
+            'programs' => true,
             'conversions' => true,
             'payouts' => true,
+            'support_compliance' => true,
         ],
     ],
 
@@ -93,7 +101,15 @@ return [
             'affiliate_conversions' => 61,
             'affiliate_payouts' => 62,
             'affiliate_programs' => 63,
-            'affiliate_fraud_signals' => 64,
+            'affiliate_commission_templates' => 64,
+            'affiliate_fraud_signals' => 65,
+            'affiliate_links' => 66,
+            'affiliate_touchpoints' => 67,
+            'affiliate_ranks' => 68,
+            'affiliate_network' => 69,
+            'affiliate_rank_histories' => 70,
+            'affiliate_support_tickets' => 71,
+            'affiliate_tax_documents' => 72,
         ],
     ],
 
@@ -146,9 +162,12 @@ Enable/disable specific portal pages:
 ```php
 'features' => [
     'dashboard' => true,     // Main dashboard
+    'profile' => true,       // Affiliate profile + payout method setup
     'links' => true,         // Link generator
+    'programs' => true,      // Program browsing and enrollment
     'conversions' => true,   // Conversion history
     'payouts' => true,       // Payout history
+    'support_compliance' => true, // Support tickets and tax document tracking
 ],
 ```
 
@@ -174,6 +193,11 @@ Auto-detect and enable integrations:
         'conversions' => true,
         'payouts' => true,
         'programs' => true,
+        'commission_management' => true,
+        'links' => true,
+        'attribution' => true,
+        'ranks' => true,
+        'support_compliance' => true,
         'fraud_monitoring' => true,
         'reports' => true,
         'network_visualization' => true,
@@ -181,7 +205,7 @@ Auto-detect and enable integrations:
 ],
 ```
 
-`payouts` and `programs` are force-disabled by the plugin when `affiliates.features.commission_tracking.enabled` is false.
+`payouts`, `programs`, and `commission_management` are force-disabled by the plugin when `affiliates.features.commission_tracking.enabled` is false.
 
 ### Resource Navigation Sort
 
@@ -194,7 +218,15 @@ Control the order of resources in navigation:
         'affiliate_conversions' => 61,
         'affiliate_payouts' => 62,
         'affiliate_programs' => 63,
-        'affiliate_fraud_signals' => 64,
+        'affiliate_commission_templates' => 64,
+        'affiliate_fraud_signals' => 65,
+        'affiliate_links' => 66,
+        'affiliate_touchpoints' => 67,
+        'affiliate_ranks' => 68,
+        'affiliate_network' => 69,
+        'affiliate_rank_histories' => 70,
+        'affiliate_support_tickets' => 71,
+        'affiliate_tax_documents' => 72,
     ],
 ],
 ```

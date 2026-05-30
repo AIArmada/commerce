@@ -168,14 +168,11 @@ public function affiliate(): HasOne
 
 **Solutions:**
 
-1. Register widgets in your plugin or panel:
+1. Verify feature flags for widget registration:
 
-```php
-FilamentAffiliatesPlugin::make()
-    ->widgets([
-        \AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget::class,
-    ]);
-```
+- `filament-affiliates.features.admin.fraud_monitoring` (FraudAlertWidget)
+- `filament-affiliates.features.admin.payouts` (PayoutQueueWidget)
+- `filament-affiliates.features.admin.network_visualization` (NetworkVisualizationWidget)
 
 2. Check authorization:
 
@@ -193,27 +190,29 @@ public static function canView(): bool
 AffiliateConversion::count();
 ```
 
-### Charts Not Rendering
+4. Confirm the plugin is registered on the panel you are viewing.
 
-**Symptoms:** Chart widgets show empty or broken.
+### Widget Table Empty or Stale
+
+**Symptoms:** Widget table renders but shows no rows or appears stale.
 
 **Solutions:**
 
-1. Ensure Chart.js assets are loaded (Filament handles this automatically).
-
-2. Check browser console for JavaScript errors.
-
-3. Verify data format:
+1. Confirm data exists for the underlying model(s):
 
 ```php
-protected function getData(): array
-{
-    return [
-        'datasets' => [...],
-        'labels' => [...], // Must not be empty
-    ];
-}
+\AIArmada\Affiliates\Models\AffiliateConversion::count();
+\AIArmada\Affiliates\Models\AffiliatePayout::count();
+\AIArmada\Affiliates\Models\AffiliateFraudSignal::count();
 ```
+
+2. Verify owner mode/context (owner-scoped widgets will hide out-of-scope data).
+
+3. Check polling behavior:
+
+- `RealTimeActivityWidget` polls every `10s`
+- `FraudAlertWidget` polls every `30s`
+- `PayoutQueueWidget` polls every `60s`
 
 ## Performance Issues
 
@@ -278,14 +277,13 @@ php artisan queue:work --memory=512
 ```php
 public static function getEloquentQuery(): Builder
 {
-    return parent::getEloquentQuery()
-        ->whereHas('affiliate', fn ($q) => $q->forCurrentOwner());
+    return parent::getEloquentQuery(); // then ensure owner-safe scope/helper is applied
 }
 ```
 
 2. Check `HasOwner` trait is used on models.
 
-3. Review action handlers for owner validation.
+3. Review action handlers for owner-safe ID validation on submitted foreign keys.
 
 ### Filament Tenancy Conflicts
 
