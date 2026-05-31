@@ -16,7 +16,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 final class AffiliateForm
@@ -33,10 +32,16 @@ final class AffiliateForm
                             ->label('Tracking Code')
                             ->required()
                             ->maxLength(64)
-                            ->unique(ignoreRecord: true)
-                            ->afterStateUpdated(function (?string $state, Set $set): void {
-                                if ($state !== null) {
-                                    $set('code', mb_strtoupper($state));
+                            ->rule(fn (mixed $component): \Closure => function (string $attribute, string $value, \Closure $fail) use ($component): void {
+                                $query = \AIArmada\Affiliates\Models\Affiliate::query()
+                                    ->whereRaw('LOWER(code) = ?', [mb_strtolower($value)]);
+
+                                if (method_exists($component, 'getRecord') && $record = $component->getRecord()) {
+                                    $query->whereKeyNot($record->getKey());
+                                }
+
+                                if ($query->exists()) {
+                                    $fail('The code has already been taken.');
                                 }
                             }),
 
