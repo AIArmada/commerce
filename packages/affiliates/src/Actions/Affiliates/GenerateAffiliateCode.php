@@ -22,7 +22,7 @@ final class GenerateAffiliateCode
     {
         $slug = Str::slug($name, '');
         $base = ($slug !== '' && mb_strlen($slug) > 0)
-            ? Str::upper(Str::substr($slug, 0, 6))
+            ? Str::substr($slug, 0, 6)
             : 'AFF';
 
         // Ensure base is not empty after all transformations
@@ -30,11 +30,11 @@ final class GenerateAffiliateCode
             $base = 'AFF';
         }
 
-        $suffix = Str::upper(Str::random(4));
+        $suffix = Str::random(4);
         $code = $base . $suffix;
 
-        while (Affiliate::where('code', $code)->exists()) {
-            $suffix = Str::upper(Str::random(4));
+        while (Affiliate::whereRaw('LOWER(code) = ?', [mb_strtolower($code)])->exists()) {
+            $suffix = Str::random(4);
             $code = $base . $suffix;
         }
 

@@ -757,7 +757,7 @@ final class AffiliateService
 
     private function normalizeCode(string $code): string
     {
-        return Str::upper(mb_trim($code));
+        return trim($code);
     }
 
     private function shouldDispatch(string $flag): bool
