@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas;
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use BackedEnum;
+use Closure;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -32,8 +34,8 @@ final class AffiliateForm
                             ->label('Tracking Code')
                             ->required()
                             ->maxLength(64)
-                            ->rule(fn (mixed $component): \Closure => function (string $attribute, string $value, \Closure $fail) use ($component): void {
-                                $query = \AIArmada\Affiliates\Models\Affiliate::query()
+                            ->rule(fn (mixed $component): Closure => function (string $attribute, string $value, Closure $fail) use ($component): void {
+                                $query = Affiliate::query()
                                     ->whereRaw('LOWER(code) = ?', [mb_strtolower($value)]);
 
                                 if (method_exists($component, 'getRecord') && $record = $component->getRecord()) {
