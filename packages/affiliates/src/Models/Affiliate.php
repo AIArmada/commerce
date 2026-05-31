@@ -185,6 +185,17 @@ class Affiliate extends Model implements Auditable
     }
 
     /**
+     * @return HasMany<AffiliateProgramMembership, $this>
+     */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(
+            AffiliateProgramMembership::class,
+            'affiliate_id'
+        );
+    }
+
+    /**
      * @return BelongsTo<self, $this>
      */
     public function parent(): BelongsTo
