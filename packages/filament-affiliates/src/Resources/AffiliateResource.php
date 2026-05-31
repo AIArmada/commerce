@@ -14,6 +14,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\Con
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutHoldsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutMethodsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ProgramsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateForm;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas\AffiliateInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Tables\AffiliatesTable;
@@ -112,6 +113,7 @@ final class AffiliateResource extends Resource
             PayoutsRelationManager::class,
             PayoutMethodsRelationManager::class,
             PayoutHoldsRelationManager::class,
+            ProgramsRelationManager::class,
         ];
     }
 
