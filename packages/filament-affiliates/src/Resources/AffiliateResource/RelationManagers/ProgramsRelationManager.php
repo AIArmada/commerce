@@ -19,17 +19,11 @@ use Filament\Tables\Table;
 
 final class ProgramsRelationManager extends RelationManager
 {
-    protected static string $relationship = 'memberships';
+    protected static string $relationship = 'programs';
 
     public function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Select::make('program_id')
-                ->relationship('program', 'name')
-                ->searchable()
-                ->preload()
-                ->required(),
-
             Select::make('tier_id')
                 ->relationship('tier', 'name')
                 ->searchable()
@@ -53,29 +47,29 @@ final class ProgramsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('program.name')
+            ->recordTitleAttribute('name')
             ->columns([
-                TextColumn::make('program.name')
+                TextColumn::make('name')
                     ->label('Program')
                     ->searchable(),
 
-                TextColumn::make('tier.name')
+                TextColumn::make('pivot.tier.name')
                     ->label('Tier')
                     ->placeholder('—'),
 
-                TextColumn::make('status')
+                TextColumn::make('pivot.status')
                     ->badge(),
 
-                TextColumn::make('applied_at')
+                TextColumn::make('pivot.applied_at')
                     ->label('Applied')
                     ->dateTime(),
 
-                TextColumn::make('approved_at')
+                TextColumn::make('pivot.approved_at')
                     ->label('Approved')
                     ->dateTime()
                     ->placeholder('—'),
 
-                TextColumn::make('expires_at')
+                TextColumn::make('pivot.expires_at')
                     ->label('Expires')
                     ->dateTime()
                     ->placeholder('—'),
