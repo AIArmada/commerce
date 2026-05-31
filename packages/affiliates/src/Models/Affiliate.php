@@ -68,6 +68,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, AffiliatePayoutHold> $payoutHolds
  * @property-read Collection<int, AffiliatePayout> $payouts
  * @property-read Collection<int, AffiliateLink> $links
+ * @property-read Collection<int, AffiliateProgramMembership> $memberships
  * @property-read Collection<int, AffiliateProgram> $programs
  * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
@@ -182,6 +183,14 @@ class Affiliate extends Model implements Auditable
             'affiliate_id',
             'program_id'
         );
+    }
+
+    /**
+     * @return HasMany<AffiliateProgramMembership, $this>
+     */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(AffiliateProgramMembership::class, 'affiliate_id');
     }
 
     /**
