@@ -9,8 +9,10 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use App\Models\User;
 use BackedEnum;
 use Closure;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -18,6 +20,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 final class AffiliateForm
@@ -145,6 +148,44 @@ final class AffiliateForm
                     ]),
                 ])
                 ->collapsed(),
+
+            Section::make('Portal Access')
+                ->description('Link a user to this affiliate for self-service portal access.')
+                ->schema([
+                    Hidden::make('owner_type'),
+                    Hidden::make('owner_id'),
+                    Grid::make(1)->schema([
+                        Select::make('linked_user')
+                            ->label('Linked User')
+                            ->searchable()
+                            ->placeholder('No linked user')
+                            ->helperText('Leave empty for admin-managed affiliates without portal access.')
+                            ->getSearchResultsUsing(fn (string $search): array => User::where('email', 'like', "%{$search}%")
+                                ->orWhere('name', 'like', "%{$search}%")
+                                ->limit(50)
+                                ->pluck('email', 'id')
+                                ->toArray())
+                            ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->email)
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function (Select $component): void {
+                                $record = $component->getRecord();
+
+                                if ($record instanceof Affiliate && $record->owner_type === 'user' && $record->owner_id) {
+                                    $component->state($record->owner_id);
+                                }
+                            })
+                            ->afterStateUpdated(function (?string $state, Set $set): void {
+                                if ($state) {
+                                    $set('owner_type', 'user');
+                                    $set('owner_id', $state);
+                                } else {
+                                    $set('owner_type', null);
+                                    $set('owner_id', null);
+                                }
+                            }),
+                    ]),
+                ])
+                ->collapsible(),
 
             Section::make('Metadata')
                 ->schema([
