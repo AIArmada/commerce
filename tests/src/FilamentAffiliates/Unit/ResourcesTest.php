@@ -42,6 +42,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\Pay
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutMethodsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ProgramsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\VouchersRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\RelationManagers\MessagesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
@@ -81,6 +82,7 @@ it('AffiliateResource has relations', function (): void {
             PayoutsRelationManager::class,
             PayoutMethodsRelationManager::class,
             PayoutHoldsRelationManager::class,
+            VouchersRelationManager::class,
         ]);
 });
 
