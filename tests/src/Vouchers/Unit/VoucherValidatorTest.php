@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart as BaseCart;
+use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
@@ -223,6 +225,124 @@ test('validates with object cart', function (): void {
 
     expect($result->isValid)->toBeTrue();
 });
+
+test('validates voucher with cart condition target definition as no eligibility restriction', function (): void {
+    Config::set('vouchers.validation.check_targeting', true);
+
+    Voucher::create([
+        'code' => 'CONDTARGET',
+        'name' => 'Condition Target Voucher',
+        'type' => VoucherType::Percentage->value,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => Active::class,
+        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+    ]);
+
+    $validator = app(VoucherValidator::class);
+    $cart = new BaseCart(new InMemoryStorage, 'condition-target-validator', events: null, eventsEnabled: false);
+
+    $result = $validator->validate('condtarget', $cart);
+
+    expect($result->isValid)->toBeTrue();
+});
+
+test('fails closed for unknown non-empty target definition payloads', function (): void {
+    Config::set('vouchers.validation.check_targeting', true);
+
+    Voucher::create([
+        'code' => 'BADTARGET',
+        'name' => 'Bad Target Voucher',
+        'type' => VoucherType::Percentage->value,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => Active::class,
+        'target_definition' => [
+            'type' => 'category',
+            'categories' => ['electronics'],
+        ],
+    ]);
+
+    $validator = app(VoucherValidator::class);
+    $cart = new BaseCart(new InMemoryStorage, 'bad-target-validator', events: null, eventsEnabled: false);
+
+    $result = $validator->validate('badtarget', $cart);
+
+    expect($result->isValid)->toBeFalse()
+        ->and($result->details)->toBe(['targeting_failed' => true]);
+});
+
+test('fails closed for invalid cart condition target definition payloads', function (): void {
+    Config::set('vouchers.validation.check_targeting', true);
+
+    Voucher::create([
+        'code' => 'INVALIDCONDTARGET',
+        'name' => 'Invalid Condition Target Voucher',
+        'type' => VoucherType::Percentage->value,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => Active::class,
+        'target_definition' => [
+            'scope' => 'not-a-scope',
+            'phase' => 'cart_subtotal',
+            'application' => 'aggregate',
+            'targeting' => [
+                'mode' => 'all',
+                'rules' => [
+                    ['type' => 'cart_quantity', 'operator' => '>=', 'value' => 1],
+                ],
+            ],
+        ],
+    ]);
+
+    $validator = app(VoucherValidator::class);
+    $cart = new BaseCart(new InMemoryStorage, 'invalid-condition-target-validator', events: null, eventsEnabled: false);
+
+    $result = $validator->validate('invalidcondtarget', $cart);
+
+    expect($result->isValid)->toBeFalse()
+        ->and($result->details)->toBe(['targeting_failed' => true]);
+});
+
+test('fails closed for malformed targeting payloads', function (array $targetDefinition): void {
+    Config::set('vouchers.validation.check_targeting', true);
+
+    Voucher::create([
+        'code' => 'MALFORMEDTARGETING',
+        'name' => 'Malformed Targeting Voucher',
+        'type' => VoucherType::Percentage->value,
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => Active::class,
+        'target_definition' => $targetDefinition,
+    ]);
+
+    $validator = app(VoucherValidator::class);
+    $cart = new BaseCart(new InMemoryStorage, 'malformed-targeting-validator', events: null, eventsEnabled: false);
+
+    $result = $validator->validate('malformedtargeting', $cart);
+
+    expect($result->isValid)->toBeFalse()
+        ->and($result->details)->toBe(['targeting_failed' => true]);
+})->with([
+    'non-array targeting' => [['targeting' => 'cart_quantity >= 1']],
+    'invalid targeting mode' => [[
+        'targeting' => [
+            'mode' => 'sometimes',
+            'rules' => [
+                ['type' => 'cart_quantity', 'operator' => '>=', 'value' => 1],
+            ],
+        ],
+    ]],
+    'non-scalar targeting mode' => [[
+        'targeting' => [
+            'mode' => ['all'],
+            'rules' => [
+                ['type' => 'cart_quantity', 'operator' => '>=', 'value' => 1],
+            ],
+        ],
+    ]],
+]);
 
 test('normalizes code with uppercase', function (): void {
     Config::set('vouchers.code.auto_uppercase', true);

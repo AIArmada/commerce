@@ -140,14 +140,16 @@ final class VoucherForm
                                     if ($dsl !== null) {
                                         $set('condition_target_dsl', $dsl);
                                     }
-                                })
-                                ->dehydrated(false),
+                                }),
 
                             TextInput::make('condition_target_dsl')
-                                ->label('Target DSL')
+                                ->label('Custom target DSL')
                                 ->default(fn (): ?string => ConditionTargetPreset::default()->dsl())
                                 ->placeholder('cart@cart_subtotal/aggregate')
-                                ->helperText('Advanced targeting syntax. Leave blank to fall back to cart subtotal.')
+                                ->helperText('Shown only for custom targets. Example: cart@cart_subtotal/aggregate.')
+                                ->visible(fn (Get $get): bool => $get('condition_target_preset') === ConditionTargetPreset::Custom->value)
+                                ->required(fn (Get $get): bool => $get('condition_target_preset') === ConditionTargetPreset::Custom->value)
+                                ->dehydrated(fn (Get $get): bool => $get('condition_target_preset') === ConditionTargetPreset::Custom->value)
                                 ->columnSpan(2)
                                 ->extraInputAttributes(['spellcheck' => 'false']),
                         ])
