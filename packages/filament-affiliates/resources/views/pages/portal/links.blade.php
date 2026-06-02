@@ -42,6 +42,22 @@
                             </div>
                         </div>
                     @endif
+
+                    @if ($shortLink)
+                        <div class="fia-portal-field">
+                            <label class="fia-portal-label">{{ __('Short Referral Link') }}</label>
+
+                            <div class="fia-portal-inline-code">
+                                <code class="fia-portal-code-box fia-portal-code-box--primary">{{ $shortLink }}</code>
+
+                                <x-filament::icon-button
+                                    icon="heroicon-o-clipboard-document"
+                                    color="primary"
+                                    x-on:click="navigator.clipboard.writeText('{{ $shortLink }}'); $tooltip('Copied!')"
+                                />
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </x-filament::section>
 

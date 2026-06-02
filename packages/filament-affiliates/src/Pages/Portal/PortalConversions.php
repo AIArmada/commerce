@@ -61,6 +61,20 @@ class PortalConversions extends Page implements HasTable
                     ->dateTime()
                     ->sortable(),
 
+                TextColumn::make('voucher_code')
+                    ->label(__('Source'))
+                    ->badge()
+                    ->getStateUsing(fn (AffiliateConversion $record): string => match (true) {
+                        $record->channel === 'upline' => __('Downline'),
+                        $record->voucher_code !== null => __('Voucher'),
+                        default => __('Link'),
+                    })
+                    ->color(fn (AffiliateConversion $record): string => match (true) {
+                        $record->channel === 'upline' => 'warning',
+                        $record->voucher_code !== null => 'info',
+                        default => 'gray',
+                    }),
+
                 TextColumn::make('external_reference')
                     ->label(__('Reference'))
                     ->searchable(),

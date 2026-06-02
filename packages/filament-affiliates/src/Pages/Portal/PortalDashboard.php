@@ -51,6 +51,7 @@ class PortalDashboard extends Page
             'conversionRate' => $clicks > 0 ? round(($conversions / $clicks) * 100, 1) : 0,
             'recentConversions' => $this->getConversions(5),
             'recentPayouts' => $this->getPayouts(3),
+            'vouchers' => $this->getVouchers(10),
         ];
     }
 }

@@ -205,6 +205,74 @@
                     @endif
                 </x-filament::section>
             </div>
+
+            @if ($vouchers->isNotEmpty())
+                <x-filament::section>
+                    <x-slot name="heading">
+                        {{ __('Your Vouchers') }}
+                    </x-slot>
+
+                    <x-slot name="description">
+                        {{ __('Coupon codes linked to your affiliate account. Share these with your audience to earn conversion credit.') }}
+                    </x-slot>
+
+                    <div class="fia-portal-table-wrap">
+                        <table class="fia-portal-table">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('Code') }}</th>
+                                    <th>{{ __('Name') }}</th>
+                                    <th>{{ __('Type') }}</th>
+                                    <th>{{ __('Value') }}</th>
+                                    <th class="fia-portal-status">{{ __('Status') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($vouchers as $voucher)
+                                    <tr>
+                                        <td>
+                                            <div class="fia-portal-detail-value">
+                                                <code class="fia-portal-code">{{ $voucher->code }}</code>
+
+                                                <x-filament::icon-button
+                                                    icon="heroicon-o-clipboard-document"
+                                                    size="sm"
+                                                    x-on:click="navigator.clipboard.writeText('{{ $voucher->code }}'); $tooltip('Copied!')"
+                                                />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span>{{ $voucher->name }}</span>
+                                        </td>
+                                        <td>
+                                            <x-filament::badge :color="\AIArmada\Vouchers\Enums\VoucherType::from($voucher->type->value)->color()" size="sm">
+                                                {{ $voucher->type->label() }}
+                                            </x-filament::badge>
+                                        </td>
+                                        <td>
+                                            <span class="fia-portal-amount">{{ $voucher->value_label }}</span>
+                                        </td>
+                                        <td class="fia-portal-status">
+                                            @php
+                                                $statusColor = match (true) {
+                                                    $voucher->status instanceof \AIArmada\Vouchers\States\Active => 'success',
+                                                    $voucher->status instanceof \AIArmada\Vouchers\States\Paused => 'warning',
+                                                    $voucher->status instanceof \AIArmada\Vouchers\States\Expired => 'danger',
+                                                    $voucher->status instanceof \AIArmada\Vouchers\States\Depleted => 'gray',
+                                                    default => 'gray',
+                                                };
+                                            @endphp
+                                            <x-filament::badge :color="$statusColor" size="sm">
+                                                {{ $voucher->status->label() }}
+                                            </x-filament::badge>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </x-filament::section>
+            @endif
         </div>
     @endif
 </x-filament-panels::page>

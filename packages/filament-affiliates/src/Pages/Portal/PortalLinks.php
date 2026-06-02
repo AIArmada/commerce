@@ -55,6 +55,7 @@ class PortalLinks extends Page
             'hasAffiliate' => $this->hasAffiliate(),
             'affiliateCode' => $affiliate?->code,
             'defaultLink' => $this->getDefaultLink(),
+            'shortLink' => $this->getShortLink(),
         ];
     }
 
@@ -67,18 +68,28 @@ class PortalLinks extends Page
             return null;
         }
 
-        $publicUrl = $this->resolvePublicUrl();
+        $param = config('affiliates.links.parameter', 'aff');
 
-        try {
-            return app(AffiliateLinkGenerator::class)->generate(
-                $affiliate->code,
-                $publicUrl,
-            );
-        } catch (InvalidArgumentException) {
-            $param = config('affiliates.links.parameter', 'aff');
+        return $this->resolvePublicUrl() . '?' . $param . '=' . $affiliate->code;
+    }
 
-            return $publicUrl . '?' . $param . '=' . $affiliate->code;
+    #[Computed]
+    public function getShortLink(): ?string
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return null;
         }
+
+        if (! config('affiliates.public_pages.enabled', true) || ! config('affiliates.public_pages.route.enabled', true)) {
+            return null;
+        }
+
+        $routePath = (string) config('affiliates.public_pages.route.path', 'r/{affiliateCode}');
+        $shortPath = str_replace('{affiliateCode}', $affiliate->code, $routePath);
+
+        return mb_rtrim((string) config('app.url'), '/') . '/' . mb_ltrim($shortPath, '/');
     }
 
     public function generateLink(): void

@@ -10,9 +10,9 @@ The plugin includes a self-service Filament panel for affiliates.
 
 The portal allows affiliates to:
 
-- view a dashboard with earnings, click, and conversion summaries,
-- generate affiliate links,
-- review conversion history,
+- view a dashboard with earnings, click, conversion summaries, and linked vouchers,
+- generate affiliate links (full and short),
+- review conversion history with source labels (link, voucher, downline),
 - review payout history,
 - register a new affiliate account when portal registration is enabled.
 

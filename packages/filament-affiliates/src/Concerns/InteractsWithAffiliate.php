@@ -12,6 +12,7 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -181,6 +182,26 @@ trait InteractsWithAffiliate
         }
 
         return (int) $affiliate->conversions()->count();
+    }
+
+    /**
+     * Get vouchers linked to the affiliate.
+     *
+     * @return Collection<int, Voucher>
+     */
+    public function getVouchers(int $limit = 10): Collection
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate || ! class_exists(Voucher::class)) {
+            return new Collection;
+        }
+
+        /** @phpstan-ignore-next-line */
+        return $affiliate->vouchers()
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
     }
 
     /**

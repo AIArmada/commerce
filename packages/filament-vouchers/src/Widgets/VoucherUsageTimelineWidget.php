@@ -108,7 +108,10 @@ final class VoucherUsageTimelineWidget extends Widget
 
         $totalSavings = $usages->sum('discount_amount');
         $currency = $usages->first()?->currency ?? 'MYR';
-        $uniqueCustomers = $usages->pluck('user_identifier')->unique()->count();
+        $uniqueCustomers = $usages->filter(fn (VoucherUsage $u) => isset($u->metadata['user_identifier']))
+            ->map(fn (VoucherUsage $u) => $u->metadata['user_identifier'])
+            ->unique()
+            ->count();
 
         return [
             'total_redemptions' => $usages->count(),
@@ -173,13 +176,13 @@ final class VoucherUsageTimelineWidget extends Widget
         $details = [
             'savings' => $savings,
             'currency' => $usage->currency,
-            'cart_identifier' => $usage->cart_identifier,
-            'user_identifier' => $usage->user_identifier,
+            'cart_identifier' => $usage->metadata['cart_identifier'] ?? null,
+            'user_identifier' => $usage->metadata['user_identifier'] ?? null,
             'channel' => $usage->channel,
             'notes' => $usage->notes,
             'order_id' => $orderId,
             'order_number' => $orderNumber,
-            'cart_snapshot' => $usage->cart_snapshot,
+            'cart_snapshot' => $usage->metadata['cart_snapshot'] ?? null,
             'metadata' => $usage->metadata,
             'affiliate_code' => $affiliateContext['affiliate_code'],
             'affiliate_name' => $affiliateContext['affiliate_name'],
@@ -190,9 +193,11 @@ final class VoucherUsageTimelineWidget extends Widget
             'affiliate_source_medium' => $sourceMediumLabel,
         ];
 
-        if ($usage->cart_snapshot) {
-            $details['cart_items_count'] = $usage->cart_snapshot['items_count'] ?? null;
-            $details['cart_total'] = $usage->cart_snapshot['total'] ?? null;
+        $cartSnapshot = $usage->metadata['cart_snapshot'] ?? null;
+
+        if ($cartSnapshot !== null) {
+            $details['cart_items_count'] = $cartSnapshot['items_count'] ?? null;
+            $details['cart_total'] = $cartSnapshot['total'] ?? null;
         }
 
         if ($usage->metadata) {
