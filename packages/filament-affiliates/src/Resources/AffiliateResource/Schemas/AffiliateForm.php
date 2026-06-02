@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use App\Models\User;
 use BackedEnum;
 use Closure;
 use Filament\Forms\Components\Hidden;
@@ -22,6 +21,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Foundation\Auth\User;
 
 final class AffiliateForm
 {
@@ -160,12 +160,20 @@ final class AffiliateForm
                             ->searchable()
                             ->placeholder('No linked user')
                             ->helperText('Leave empty for admin-managed affiliates without portal access.')
-                            ->getSearchResultsUsing(fn (string $search): array => User::where('email', 'like', "%{$search}%")
-                                ->orWhere('name', 'like', "%{$search}%")
-                                ->limit(50)
-                                ->pluck('email', 'id')
-                                ->toArray())
-                            ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->email)
+                            ->getSearchResultsUsing(function (string $search): array {
+                                $userModel = config('auth.providers.users.model', User::class);
+
+                                return $userModel::where('email', 'like', "%{$search}%")
+                                    ->orWhere('name', 'like', "%{$search}%")
+                                    ->limit(50)
+                                    ->pluck('email', 'id')
+                                    ->toArray();
+                            })
+                            ->getOptionLabelUsing(function ($value): ?string {
+                                $userModel = config('auth.providers.users.model', User::class);
+
+                                return $userModel::find($value)?->email;
+                            })
                             ->dehydrated(false)
                             ->afterStateHydrated(function (Select $component): void {
                                 $record = $component->getRecord();

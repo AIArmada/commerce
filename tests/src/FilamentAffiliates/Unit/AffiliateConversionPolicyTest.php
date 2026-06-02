@@ -48,7 +48,6 @@ it('update policy returns true when user has affiliate_conversion.update permiss
         'total_minor' => 10000,
         'value_minor' => 10000,
         'commission_minor' => 1000,
-        'currency' => 'USD',
         'commission_currency' => 'USD',
     ]);
 
@@ -87,7 +86,6 @@ it('update policy returns true when user has affiliate.approve permission', func
         'total_minor' => 12000,
         'value_minor' => 12000,
         'commission_minor' => 1200,
-        'currency' => 'USD',
         'commission_currency' => 'USD',
     ]);
 
@@ -123,7 +121,6 @@ it('update policy returns false when user lacks conversion moderation permission
         'total_minor' => 15000,
         'value_minor' => 15000,
         'commission_minor' => 1500,
-        'currency' => 'USD',
         'commission_currency' => 'USD',
     ]);
 
