@@ -7,17 +7,16 @@ namespace AIArmada\Checkout\Steps;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
+use AIArmada\Checkout\Events\CheckoutCompleted;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
-use AIArmada\Events\Actions\FulfillEventOrderAction;
 use AIArmada\Inventory\InventoryServiceProvider;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
-use App\Actions\Checkout\SendEventWelcomeEmailAction;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -99,10 +98,6 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         $isFreeOrder = ($paymentData['type'] ?? null) === 'free_order';
 
-        if ($isFreeOrder) {
-            $this->fulfillFreeOrder($order);
-        }
-
         // Confirm payment if not a free order (triggers PaymentConfirmed transition → OrderPaid event)
         $paymentConfirmationEnabled = ! $isFreeOrder && config('checkout.create_order.confirm_payment', true);
         $paymentWasConfirmed = false;
@@ -131,6 +126,18 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $this->commitInventoryReservations($session);
         }
         $this->clearCart($session);
+
+        if ($isFreeOrder) {
+            try {
+                CheckoutCompleted::dispatch($session);
+            } catch (Throwable $e) {
+                Log::error('Free order fulfillment failed', [
+                    'order_id' => $order->id,
+                    'checkout_session_id' => $session->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return $this->success('Order created successfully', [
             'order_id' => $order->id,
@@ -387,21 +394,6 @@ final class CreateOrderStep extends AbstractCheckoutStep
         }
 
         return $allocations;
-    }
-
-    private function fulfillFreeOrder(Order $order): void
-    {
-        if (! app()->bound(FulfillEventOrderAction::class)) {
-            return;
-        }
-
-        $order->loadMissing(['items', 'billingAddress', 'shippingAddress', 'payments', 'customer']);
-
-        $registrations = app(FulfillEventOrderAction::class)->handle($order);
-
-        $freshOrder = $order->fresh(['items', 'billingAddress', 'shippingAddress', 'payments']) ?? $order;
-
-        SendEventWelcomeEmailAction::run($freshOrder, $registrations);
     }
 
     /**
