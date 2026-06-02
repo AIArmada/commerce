@@ -7,19 +7,14 @@ namespace AIArmada\Chip\Actions;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Listeners\StoreWebhookData;
-use AIArmada\Chip\Models\ChipCustomerLink;
 use AIArmada\Chip\Models\Purchase;
-use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 class SyncChipRecordsFromApiAction
 {
-    private const CHECKOUT_SESSION_MODEL = 'AIArmada\\Checkout\\Models\\CheckoutSession';
-
-    private const CUSTOMER_MODEL = 'AIArmada\\Customers\\Models\\Customer';
-
     public function __construct(
         private readonly StoreWebhookData $storeWebhookData,
+        private readonly LinkChipCustomerFromCheckout $linkChipCustomerFromCheckout,
     ) {}
 
     /**
@@ -56,6 +51,7 @@ class SyncChipRecordsFromApiAction
             $summary['processed']++;
 
             if (! $dryRun && ! $overwriteExisting && Purchase::query()->whereKey($purchaseId)->exists()) {
+                // The command links customers only while re-syncing the CHIP payload; live checkout completion calls the bridge directly.
                 $summary['skipped']++;
 
                 continue;
@@ -87,7 +83,7 @@ class SyncChipRecordsFromApiAction
                 }
 
                 $this->storeWebhookData->handle(WebhookReceived::fromPayload($payload));
-                $this->linkChipCustomer($purchaseId, $payload);
+                $this->linkChipCustomerFromCheckout->handle($purchaseId, $payload, 'chip_sync_from_api');
                 $summary['synced']++;
             } catch (Throwable $throwable) {
                 $summary['failed']++;
@@ -119,79 +115,5 @@ class SyncChipRecordsFromApiAction
         }
 
         return (array) $remotePurchase;
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function linkChipCustomer(string $purchaseId, array $payload): void
-    {
-        $checkoutSessionModel = $this->resolveCheckoutSessionModel();
-        $customerModel = $this->resolveCustomerModel();
-
-        if (! class_exists($checkoutSessionModel) || ! class_exists($customerModel)) {
-            return;
-        }
-
-        $chipCustomerId = $payload['client_id'] ?? null;
-
-        if (! is_string($chipCustomerId) || $chipCustomerId === '') {
-            return;
-        }
-
-        /** @var Model|null $checkoutSession */
-        $checkoutSession = $checkoutSessionModel::query()
-            ->where('payment_id', $purchaseId)
-            ->whereNotNull('customer_id')
-            ->latest('created_at')
-            ->first();
-
-        $customerId = $checkoutSession?->getAttribute('customer_id');
-
-        if (! is_string($customerId) || $customerId === '') {
-            return;
-        }
-
-        /** @var Model|null $customer */
-        $customer = $customerModel::query()->find($customerId);
-
-        if ($customer === null) {
-            return;
-        }
-
-        ChipCustomerLink::query()->updateOrCreate(
-            [
-                'subject_type' => $customer->getMorphClass(),
-                'subject_id' => (string) $customer->getKey(),
-            ],
-            [
-                'chip_customer_id' => $chipCustomerId,
-                'owner_type' => $customer->getAttribute('owner_type'),
-                'owner_id' => $customer->getAttribute('owner_id'),
-                'metadata' => [
-                    'source' => 'chip_sync_from_api',
-                    'checkout_session_id' => (string) $checkoutSession->getKey(),
-                    'chip_purchase_id' => $purchaseId,
-                ],
-            ],
-        );
-    }
-
-    private function resolveCheckoutSessionModel(): string
-    {
-        $configured = config('chip.integrations.customer_bridge.checkout_session_model');
-
-        return is_string($configured) && $configured !== ''
-            ? $configured
-            : self::CHECKOUT_SESSION_MODEL;
-    }
-
-    private function resolveCustomerModel(): string
-    {
-        $configured = config('chip.integrations.customer_bridge.customer_model');
-
-        return is_string($configured) && $configured !== ''
-            ? $configured
-            : self::CUSTOMER_MODEL;
     }
 }

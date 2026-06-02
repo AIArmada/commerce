@@ -14,6 +14,7 @@ use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\Listeners\LinkChipCustomerFromCheckoutCompletion;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipCustomerDirectory;
@@ -37,6 +38,8 @@ final class ChipServiceProvider extends PackageServiceProvider
     use ValidatesConfiguration;
 
     private const CUSTOMER_MODEL = 'AIArmada\\Customers\\Models\\Customer';
+
+    private const CHECKOUT_COMPLETED_EVENT = 'AIArmada\\Checkout\\Events\\CheckoutCompleted';
 
     public function configurePackage(Package $package): void
     {
@@ -182,6 +185,16 @@ final class ChipServiceProvider extends PackageServiceProvider
     protected function registerEventListeners(): void
     {
         Event::listen(WebhookReceived::class, StoreWebhookData::class);
+        $this->registerCheckoutCustomerBridgeListener();
+    }
+
+    private function registerCheckoutCustomerBridgeListener(): void
+    {
+        if (! class_exists(self::CHECKOUT_COMPLETED_EVENT)) {
+            return;
+        }
+
+        Event::listen(self::CHECKOUT_COMPLETED_EVENT, LinkChipCustomerFromCheckoutCompletion::class);
     }
 
     protected function registerMorphAliases(): void

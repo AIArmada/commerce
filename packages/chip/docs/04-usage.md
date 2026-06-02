@@ -168,6 +168,20 @@ $chipCustomerId = $directory->getChipCustomerId($user);
 
 The directory stores links in `chip_customers` and applies owner scoping through `commerce-support` when CHIP owner mode is enabled.
 
+### Checkout Customer Bridge
+
+When `aiarmada/checkout` and `aiarmada/customers` are installed, CHIP automatically listens for completed CHIP checkout sessions and links the local checkout customer to the CHIP `client_id` from `payment_data.gateway_response`.
+
+The listener writes to `chip_customers` with an idempotent upsert, so replayed checkout completion events update the existing customer link instead of creating duplicates.
+
+To backfill older checkout sessions where `chip_purchases`, `chip_payments`, and `chip_clients` already exist but `chip_customers` is missing, re-sync the purchase payload from CHIP:
+
+```bash
+php artisan chip:sync-from-api --purchase-id=purchase_uuid --overwrite-existing
+```
+
+`--overwrite-existing` is required for those backfills because the sync command skips locally stored purchases by default. Live checkout completion does not use that command path, so normal production inserts are not gated by this option.
+
 ### Account Information
 
 ```php
