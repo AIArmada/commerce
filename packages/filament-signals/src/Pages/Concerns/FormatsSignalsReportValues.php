@@ -13,7 +13,7 @@ trait FormatsSignalsReportValues
 {
     public function formatMoney(int $minor): string
     {
-        return config('signals.defaults.currency', 'MYR').' '.number_format($minor / 100, 2, '.', ',');
+        return config('signals.defaults.currency', 'MYR') . ' ' . number_format($minor / 100, 2, '.', ',');
     }
 
     protected function formatAggregateTimestamp(mixed $state): ?string
