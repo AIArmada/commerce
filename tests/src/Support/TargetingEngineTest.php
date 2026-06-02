@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart as BaseCart;
+use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\CommerceSupport\Targeting\TargetingEngine;
 
@@ -77,6 +79,29 @@ it('evaluates valid targeting rules', function (): void {
 
     expect($engine->validate($targeting))->toBeEmpty()
         ->and($engine->evaluate($targeting, new TargetingContext($cart)))->toBeTrue();
+});
+
+it('extracts metadata from carts that expose an all metadata API', function (): void {
+    $cart = new BaseCart(new InMemoryStorage, 'targeting-cart-context', events: null, eventsEnabled: false);
+    $cart->add(
+        id: 'ua-awakening-seat',
+        name: 'AI Awakening seat',
+        price: 9700,
+        quantity: 2,
+        attributes: [
+            'sku' => 'ua-awakening-seat',
+            'category' => 'event',
+        ],
+    );
+    $cart->setMetadata('coupon_code', 'SAVE10');
+
+    $context = TargetingContext::fromCart($cart);
+
+    expect($context->cartContext->value)->toBe(19400)
+        ->and($context->cartContext->quantity)->toBe(2)
+        ->and($context->cartContext->productIdentifiers)->toBe(['ua-awakening-seat'])
+        ->and($context->cartContext->productCategories)->toBe(['event'])
+        ->and($context->cartContext->metadata)->toBe(['coupon_code' => 'SAVE10']);
 });
 
 it('validates evaluator-backed targeting rule types not listed in the legacy enum', function (): void {

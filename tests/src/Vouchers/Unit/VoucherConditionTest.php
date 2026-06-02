@@ -88,3 +88,31 @@ it('supports overriding the target definition via voucher metadata', function ()
         ->and($target->phase->value)->toBe('item_discount')
         ->and($target->application->value)->toBe('per-item');
 });
+
+it('uses the default condition target when target definition only contains eligibility targeting', function (): void {
+    $voucherData = VoucherData::fromArray([
+        'id' => 33,
+        'code' => 'ELIGIBILITYONLY',
+        'name' => 'Eligibility Only Voucher',
+        'type' => VoucherType::Percentage->value,
+        'value' => 500,
+        'currency' => 'USD',
+        'status' => Active::class,
+        'target_definition' => [
+            'targeting' => [
+                'mode' => 'all',
+                'rules' => [
+                    ['type' => 'cart_quantity', 'operator' => '>=', 'value' => 2],
+                ],
+            ],
+        ],
+    ]);
+
+    $voucherCondition = new VoucherCondition($voucherData, dynamic: false);
+
+    $target = $voucherCondition->toCartCondition()->getTargetDefinition();
+
+    expect($target->scope->value)->toBe('cart')
+        ->and($target->phase->value)->toBe('cart_subtotal')
+        ->and($target->application->value)->toBe('aggregate');
+});

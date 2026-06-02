@@ -29,6 +29,12 @@ The main resource for managing vouchers.
 - Stacking rules
 - Targeting configuration
 
+### Condition Targeting
+
+Voucher create and edit forms use a preset selector for the cart condition target. The raw DSL input is hidden by default and only appears when selecting **Custom target**.
+
+Common presets include cart subtotal, grand total, shipments / shipping, taxable amount, and each cart item. Use a custom target only when you need an advanced cart condition expression such as `cart@cart_subtotal/aggregate` or `items@item_discount/per-item`.
+
 ### VoucherUsageResource
 
 Read-only resource for viewing voucher redemption history.
