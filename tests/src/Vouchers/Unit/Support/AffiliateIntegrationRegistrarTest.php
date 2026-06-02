@@ -44,10 +44,10 @@ describe('AffiliateIntegrationRegistrar', function (): void {
     });
 
     describe('voucher code generation formats', function (): void {
-        it('uses prefix_code format by default', function (): void {
-            $format = config('vouchers.affiliates.code_format', 'prefix_code');
+        it('uses code_only format by default', function (): void {
+            $format = config('vouchers.affiliates.code_format', 'code_only');
 
-            expect($format)->toBe('prefix_code');
+            expect($format)->toBe('code_only');
         });
 
         it('uses REF prefix by default', function (): void {
