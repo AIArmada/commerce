@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Enums\VoucherType;
@@ -242,6 +243,23 @@ final class VoucherForm
             // Product / category applicability is not persisted in the vouchers table
             // and has been removed from the current application schema.
         ];
+
+        if (class_exists(Affiliate::class)) {
+            $sections[] = Section::make('Affiliate')
+                ->description('Optionally link this voucher to an affiliate for tracking and attribution.')
+                ->schema([
+                    Grid::make(1)->schema([
+                        Select::make('affiliate_id')
+                            ->label('Linked Affiliate')
+                            ->relationship('affiliate', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('Not linked to any affiliate')
+                            ->helperText('Used for affiliate conversion tracking when this voucher is redeemed.'),
+                    ]),
+                ])
+                ->collapsible();
+        }
 
         if ($ownerRegistry->hasDefinitions()) {
             $sections[] = Section::make('Ownership')

@@ -13,9 +13,11 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
+use AIArmada\Events\Actions\FulfillEventOrderAction;
 use AIArmada\Inventory\InventoryServiceProvider;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
+use App\Actions\Checkout\SendEventWelcomeEmailAction;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -95,8 +97,13 @@ final class CreateOrderStep extends AbstractCheckoutStep
             shippingAddress: $shippingData ?: null,
         );
 
-        // Confirm payment if not a free order (triggers PaymentConfirmed transition → OrderPaid event)
         $isFreeOrder = ($paymentData['type'] ?? null) === 'free_order';
+
+        if ($isFreeOrder) {
+            $this->fulfillFreeOrder($order);
+        }
+
+        // Confirm payment if not a free order (triggers PaymentConfirmed transition → OrderPaid event)
         $paymentConfirmationEnabled = ! $isFreeOrder && config('checkout.create_order.confirm_payment', true);
         $paymentWasConfirmed = false;
 
@@ -380,6 +387,21 @@ final class CreateOrderStep extends AbstractCheckoutStep
         }
 
         return $allocations;
+    }
+
+    private function fulfillFreeOrder(Order $order): void
+    {
+        if (! app()->bound(FulfillEventOrderAction::class)) {
+            return;
+        }
+
+        $order->loadMissing(['items', 'billingAddress', 'shippingAddress', 'payments', 'customer']);
+
+        $registrations = app(FulfillEventOrderAction::class)->handle($order);
+
+        $freshOrder = $order->fresh(['items', 'billingAddress', 'shippingAddress', 'payments']) ?? $order;
+
+        SendEventWelcomeEmailAction::run($freshOrder, $registrations);
     }
 
     /**

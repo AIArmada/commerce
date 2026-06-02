@@ -1,0 +1,88 @@
+name: Monorepo Split on Push
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - '**'
+
+jobs:
+  changed-packages:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.changed.outputs.packages }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed packages
+        id: changed
+        run: |
+          BEFORE="${{ github.event.before }}"
+          EMPTY_TREE="4b825dc642cb6eb9a060e54bf8996b6b8c3d1e8"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="$EMPTY_TREE"
+          fi
+
+          PACKAGES=$(git diff --name-only "$BEFORE" HEAD \
+            | grep '^packages/[^/]\+/' \
+            | cut -d'/' -f2 \
+            | sort -u \
+            | jq -R -s -c 'split("\n")[:-1]')
+
+          echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
+          echo "Changed packages: $PACKAGES"
+
+  split:
+    needs: changed-packages
+    if: ${{ needs.changed-packages.outputs.packages != '[]' && needs.changed-packages.outputs.packages != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.changed-packages.outputs.packages) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Monorepo Split → ${{ matrix.package }}
+        uses: danharrin/monorepo-split-github-action@v2.4.4
+        with:
+          package_directory: packages/${{ matrix.package }}
+          repository_organization: AIArmada
+          repository_name: ${{ matrix.package }}
+          branch: main
+          user_name: AIArmada Bot
+          user_email: bot@aiarmada.com
+        env:
+          PAT: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Instant Packagist Update
+        env:
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME }}
+        run: |
+          sleep 12
+
+          if [[ -z "$PACKAGIST_USERNAME" ]]; then
+            echo "::error::PACKAGIST_USERNAME is not set. Add it as a repository or organization variable."
+            exit 1
+          fi
+
+          if [[ -z "$PACKAGIST_TOKEN" ]]; then
+            echo "::error::PACKAGIST_TOKEN is not set. Add it as a repository or organization secret."
+            exit 1
+          fi
+
+          echo "Triggering Packagist update for aiarmada/${{ matrix.package }}"
+
+          curl --fail-with-body --silent --show-error -X POST \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"repository\":{\"url\":\"https://github.com/AIArmada/${{ matrix.package }}\"}}"

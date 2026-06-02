@@ -28,6 +28,7 @@ The main resource for managing vouchers.
 - Minimum order amount
 - Stacking rules
 - Targeting configuration
+- **Affiliate linking** — when `aiarmada/affiliates` is installed, a collapsible "Affiliate" section appears for linking a voucher to an affiliate for conversion tracking
 
 ### Condition Targeting
 

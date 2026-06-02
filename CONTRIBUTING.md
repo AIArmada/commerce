@@ -447,18 +447,28 @@ git push origin v2.1.0
 
 #### Package Split
 
-When a tag is pushed, the **Monorepo Split** workflow automatically:
+Two workflows keep the individual package repositories up to date:
 
-1. Detects the tag (e.g., `v2.1.0`)
-2. Splits each package to its own repository:
+**On every push to `main`** — the **Monorepo Split on Push** workflow automatically:
+
+1. Detects which packages changed in the push
+2. Splits only the changed packages to their own repositories:
    - `packages/cart` → `github.com/aiarmada/cart`
    - `packages/chip` → `github.com/aiarmada/chip`
    - etc.
-3. Tags each split repository with the same version
+3. Updates Packagist (backup in case the webhook is delayed)
+
+This ensures each package repo is always current, even between releases.
+
+**On tag push** (`v*.*.*`) — the **Monorepo Split** workflow automatically:
+
+1. Splits **all** packages (not just changed ones)
+2. Tags each split repository with the same version (e.g., `v2.1.0`)
 
 This allows:
 - Users install individual packages: `composer require aiarmada/cart`
 - Each package has its own repository and issues
+- Tagged versions are available for stable Composer installs
 - Monorepo development continues seamlessly
 
 ### Package Dependencies

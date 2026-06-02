@@ -177,14 +177,17 @@ final class AffiliateForm
                             ->dehydrated(false)
                             ->afterStateHydrated(function (Select $component): void {
                                 $record = $component->getRecord();
+                                $userModelClass = (string) config('auth.providers.users.model', User::class);
+                                $userMorphClass = (new $userModelClass)->getMorphClass();
 
-                                if ($record instanceof Affiliate && $record->owner_type === 'user' && $record->owner_id) {
+                                if ($record instanceof Affiliate && $record->owner_type === $userMorphClass && $record->owner_id) {
                                     $component->state($record->owner_id);
                                 }
                             })
                             ->afterStateUpdated(function (?string $state, Set $set): void {
                                 if ($state) {
-                                    $set('owner_type', 'user');
+                                    $userModelClass = (string) config('auth.providers.users.model', User::class);
+                                    $set('owner_type', (new $userModelClass)->getMorphClass());
                                     $set('owner_id', $state);
                                 } else {
                                     $set('owner_type', null);
