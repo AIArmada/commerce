@@ -108,8 +108,8 @@ final class VoucherUsageTimelineWidget extends Widget
 
         $totalSavings = $usages->sum('discount_amount');
         $currency = $usages->first()?->currency ?? 'MYR';
-        $uniqueCustomers = $usages->filter(fn (VoucherUsage $u) => isset($u->metadata['user_identifier']))
-            ->map(fn (VoucherUsage $u) => $u->metadata['user_identifier'])
+        $uniqueCustomers = $usages->map(fn (VoucherUsage $u) => $u->user_identifier ?? $u->metadata['user_identifier'] ?? null)
+            ->filter()
             ->unique()
             ->count();
 
@@ -176,8 +176,8 @@ final class VoucherUsageTimelineWidget extends Widget
         $details = [
             'savings' => $savings,
             'currency' => $usage->currency,
-            'cart_identifier' => $usage->metadata['cart_identifier'] ?? null,
-            'user_identifier' => $usage->metadata['user_identifier'] ?? null,
+            'cart_identifier' => $usage->metadata['cart_identifier'] ?? $usage->cart_identifier ?? null,
+            'user_identifier' => $usage->metadata['user_identifier'] ?? $usage->user_identifier ?? null,
             'channel' => $usage->channel,
             'notes' => $usage->notes,
             'order_id' => $orderId,
