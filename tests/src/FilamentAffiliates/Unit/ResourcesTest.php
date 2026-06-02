@@ -41,6 +41,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\Con
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutHoldsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutMethodsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ProgramsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\RelationManagers\MessagesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
@@ -76,6 +77,7 @@ it('AffiliateResource has relations', function (): void {
         ->toBeArray()
         ->toBe([
             ConversionsRelationManager::class,
+            ProgramsRelationManager::class,
             PayoutsRelationManager::class,
             PayoutMethodsRelationManager::class,
             PayoutHoldsRelationManager::class,

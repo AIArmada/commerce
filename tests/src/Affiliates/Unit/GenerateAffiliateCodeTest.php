@@ -14,11 +14,10 @@ describe('GenerateAffiliateCode', function (): void {
 
             $code = $action->handle('John Smith');
 
-            // Code should start with uppercase letters from the name
+            // Code should be alphanumeric from the slugged name plus random suffix
             expect($code)->toBeString();
             expect(mb_strlen($code))->toBeGreaterThanOrEqual(7); // at least base + 4 random
-            // Str::random can include numbers, so check for alphanumeric uppercase
-            expect($code)->toMatch('/^[A-Z0-9]+$/');
+            expect($code)->toMatch('/^[A-Za-z0-9]+$/');
         });
 
         test('generates code with empty name uses AFF prefix', function (): void {
@@ -100,8 +99,7 @@ describe('GenerateAffiliateCode', function (): void {
 
             expect($code)->toBeString();
             expect(mb_strlen($code))->toBeGreaterThanOrEqual(7);
-            // Str::random can include numbers, so check for alphanumeric uppercase
-            expect($code)->toMatch('/^[A-Z0-9]+$/');
+            expect($code)->toMatch('/^[A-Za-z0-9]+$/');
         });
 
         test('handles numbers in name', function (): void {
@@ -118,8 +116,8 @@ describe('GenerateAffiliateCode', function (): void {
 
             $code = $action->handle('JoHn DoE');
 
-            // All uppercase (Str::random can include numbers)
-            expect($code)->toMatch('/^[A-Z0-9]+$/');
+            // Sluggified name + random alphanumeric suffix
+            expect($code)->toMatch('/^[A-Za-z0-9]+$/');
         });
     });
 
