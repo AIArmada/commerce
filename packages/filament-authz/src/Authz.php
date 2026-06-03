@@ -29,7 +29,7 @@ class Authz
 {
     protected ?Closure $customPermissionKeyBuilder = null;
 
-    /** @var array<string, Collection<int, array<string, mixed>>> */
+    /** @var array<string, Collection<int, mixed>> */
     protected array $discoveryCache = [];
 
     /** @var array<string, array<string, string>> */
