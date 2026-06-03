@@ -64,7 +64,7 @@ class EntityDiscoveryService
                         'type' => 'resource',
                         'class' => $resource,
                         'permission' => $this->keyBuilder->build($subject, $action),
-                        'label' => $label.' - '.$this->getActionLabel($action),
+                        'label' => $label . ' - ' . $this->getActionLabel($action),
                     ])
                     ->all();
             })
