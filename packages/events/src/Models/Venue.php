@@ -89,7 +89,7 @@ class Venue extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('events.database.tables.venues', 'commerce_event_venues');
+        return config('events.database.tables.venues', 'event_venues');
     }
 
     /**

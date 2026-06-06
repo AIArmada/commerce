@@ -10,8 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $occurrencesTable = (string) config('events.database.tables.occurrences', 'commerce_event_occurrences');
-        $registrationsTable = (string) config('events.database.tables.registrations', 'commerce_event_registrations');
+        $occurrencesTable = (string) config('events.database.tables.occurrences', 'event_occurrences');
+        $registrationsTable = (string) config('events.database.tables.registrations', 'event_registrations');
 
         if (Schema::hasTable($occurrencesTable) && ! Schema::hasColumn($occurrencesTable, 'participation_mode')) {
             Schema::table($occurrencesTable, function (Blueprint $table): void {

@@ -10,15 +10,15 @@ All package options live in `config/events.php`.
 
 ```php
 'database' => [
-    'table_prefix' => 'commerce_event_',
+    'table_prefix' => 'event_',
     'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
     'tables' => [
-        'series' => 'commerce_event_series',
-        'events' => 'commerce_events',
-        'speakers' => 'commerce_event_speakers',
-        'venues' => 'commerce_event_venues',
-        'occurrences' => 'commerce_event_occurrences',
-        'registrations' => 'commerce_event_registrations',
+        'series' => 'event_series',
+        'events' => 'events',
+        'speakers' => 'event_speakers',
+        'venues' => 'event_venues',
+        'occurrences' => 'event_occurrences',
+        'registrations' => 'event_registrations',
     ],
 ],
 ```

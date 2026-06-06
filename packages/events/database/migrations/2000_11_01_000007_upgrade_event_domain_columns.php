@@ -13,9 +13,9 @@ return new class extends Migration
         $databaseConfig = (array) config('events.database', []);
         $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('events', 'jsonb'));
 
-        $eventsTable = (string) config('events.database.tables.events', 'commerce_events');
-        $venuesTable = (string) config('events.database.tables.venues', 'commerce_event_venues');
-        $speakersTable = (string) config('events.database.tables.speakers', 'commerce_event_speakers');
+        $eventsTable = (string) config('events.database.tables.events', 'events');
+        $venuesTable = (string) config('events.database.tables.venues', 'event_venues');
+        $speakersTable = (string) config('events.database.tables.speakers', 'event_speakers');
 
         $this->upgradeEventsTable($eventsTable, $jsonType);
         $this->upgradeVenuesTable($venuesTable);

@@ -60,7 +60,7 @@ class EventSeries extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('events.database.tables.series', 'commerce_event_series');
+        return config('events.database.tables.series', 'event_series');
     }
 
     /**

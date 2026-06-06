@@ -56,7 +56,7 @@ Applications can either use `AIArmada\Events\Models\Event` as their base event m
 - Participation modes for no registration, registration-required, walk-in-only, and hybrid events
 - Registration service that enforces sold-out, availability, and lifecycle rules
 - Idempotent upsert flow for syncing series, events, venues, and occurrences
-- Collision-resistant default tables such as `commerce_events` and `commerce_event_occurrences`
+- Collision-resistant default tables such as `events` and `event_occurrences`
 - Generic attendee morph support for non-customer attendee identities
 - Display timezone resolver for app/viewer-specific presentation behavior
 - Config-backed lifecycle policy rules for capacity, check-in, and terminal statuses

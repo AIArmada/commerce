@@ -110,12 +110,12 @@ Even then, the default `EventOrderItemFulfillmentResolver` is a no-op. Applicati
 
 Fresh installs use package-specific tables:
 
-- `commerce_event_series`
-- `commerce_events`
-- `commerce_event_speakers`
-- `commerce_event_venues`
-- `commerce_event_occurrences`
-- `commerce_event_registrations`
+- `event_series`
+- `events`
+- `event_speakers`
+- `event_venues`
+- `event_occurrences`
+- `event_registrations`
 
 Existing installs that already use older defaults must pin `events.database.tables.*` to their installed table names before running migrations.
 
