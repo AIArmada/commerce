@@ -10,7 +10,7 @@ use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 
-$tablePrefix = env('EVENTS_TABLE_PREFIX', 'commerce_event_');
+$tablePrefix = env('EVENTS_TABLE_PREFIX', 'event_');
 $productModel = Product::class;
 $variantModel = Variant::class;
 $customerModel = Customer::class;
@@ -23,7 +23,7 @@ return [
         'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => [
             'series' => env('EVENTS_TABLE_SERIES', $tablePrefix . 'series'),
-            'events' => env('EVENTS_TABLE_EVENTS', 'commerce_events'),
+            'events' => env('EVENTS_TABLE_EVENTS', 'events'),
             'speakers' => env('EVENTS_TABLE_SPEAKERS', $tablePrefix . 'speakers'),
             'venues' => env('EVENTS_TABLE_VENUES', $tablePrefix . 'venues'),
             'occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'occurrences'),

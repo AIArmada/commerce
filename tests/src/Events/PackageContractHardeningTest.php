@@ -23,21 +23,21 @@ use Illuminate\Support\Facades\Schema;
 
 it('uses collision-resistant package table defaults', function (): void {
     expect(config('events.database.tables'))->toMatchArray([
-        'series' => 'commerce_event_series',
-        'events' => 'commerce_events',
-        'speakers' => 'commerce_event_speakers',
-        'venues' => 'commerce_event_venues',
-        'occurrences' => 'commerce_event_occurrences',
-        'registrations' => 'commerce_event_registrations',
+        'series' => 'event_series',
+        'events' => 'events',
+        'speakers' => 'event_speakers',
+        'venues' => 'event_venues',
+        'occurrences' => 'event_occurrences',
+        'registrations' => 'event_registrations',
     ])
-        ->and((new EventSeries)->getTable())->toBe('commerce_event_series')
-        ->and((new EventModel)->getTable())->toBe('commerce_events')
-        ->and((new Venue)->getTable())->toBe('commerce_event_venues')
-        ->and((new Occurrence)->getTable())->toBe('commerce_event_occurrences')
-        ->and((new Registration)->getTable())->toBe('commerce_event_registrations')
-        ->and(Schema::hasTable('commerce_events'))->toBeTrue()
-        ->and(Schema::hasTable('commerce_event_series'))->toBeTrue()
-        ->and(Schema::hasTable('commerce_event_speakers'))->toBeTrue();
+        ->and((new EventSeries)->getTable())->toBe('event_series')
+        ->and((new EventModel)->getTable())->toBe('events')
+        ->and((new Venue)->getTable())->toBe('event_venues')
+        ->and((new Occurrence)->getTable())->toBe('event_occurrences')
+        ->and((new Registration)->getTable())->toBe('event_registrations')
+        ->and(Schema::hasTable('events'))->toBeTrue()
+        ->and(Schema::hasTable('event_series'))->toBeTrue()
+        ->and(Schema::hasTable('event_speakers'))->toBeTrue();
 });
 
 it('resolves host event and venue models from config for occurrence relationships', function (): void {

@@ -20,18 +20,18 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 
 it('adds reusable public event domain columns and speaker links', function (): void {
-    expect(Schema::hasColumn('commerce_events', 'organizer_type'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_events', 'organizer_id'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_events', 'moderation_status'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_events', 'visibility'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_events', 'published_at'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_events', 'media_references'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_events', 'taxonomy'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_events', 'search_keywords'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_event_venues', 'latitude'))->toBeTrue()
-        ->and(Schema::hasColumn('commerce_event_venues', 'longitude'))->toBeTrue()
-        ->and(Schema::hasTable('commerce_event_speakers'))->toBeTrue()
-        ->and((new EventSpeaker)->getTable())->toBe('commerce_event_speakers');
+    expect(Schema::hasColumn('events', 'organizer_type'))->toBeTrue()
+        ->and(Schema::hasColumn('events', 'organizer_id'))->toBeTrue()
+        ->and(Schema::hasColumn('events', 'moderation_status'))->toBeTrue()
+        ->and(Schema::hasColumn('events', 'visibility'))->toBeTrue()
+        ->and(Schema::hasColumn('events', 'published_at'))->toBeTrue()
+        ->and(Schema::hasColumn('events', 'media_references'))->toBeTrue()
+        ->and(Schema::hasColumn('events', 'taxonomy'))->toBeTrue()
+        ->and(Schema::hasColumn('events', 'search_keywords'))->toBeTrue()
+        ->and(Schema::hasColumn('event_venues', 'latitude'))->toBeTrue()
+        ->and(Schema::hasColumn('event_venues', 'longitude'))->toBeTrue()
+        ->and(Schema::hasTable('event_speakers'))->toBeTrue()
+        ->and((new EventSpeaker)->getTable())->toBe('event_speakers');
 });
 
 it('imports organizer speakers media taxonomy moderation visibility and location data', function (): void {

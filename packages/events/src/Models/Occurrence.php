@@ -121,7 +121,7 @@ class Occurrence extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('events.database.tables.occurrences', 'commerce_event_occurrences');
+        return config('events.database.tables.occurrences', 'event_occurrences');
     }
 
     /**

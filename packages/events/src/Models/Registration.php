@@ -108,7 +108,7 @@ class Registration extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('events.database.tables.registrations', 'commerce_event_registrations');
+        return config('events.database.tables.registrations', 'event_registrations');
     }
 
     /**

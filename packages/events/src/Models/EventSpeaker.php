@@ -63,7 +63,7 @@ class EventSpeaker extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('events.database.tables.speakers', 'commerce_event_speakers');
+        return config('events.database.tables.speakers', 'event_speakers');
     }
 
     /**
