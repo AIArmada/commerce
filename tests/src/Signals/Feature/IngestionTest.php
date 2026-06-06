@@ -13,7 +13,6 @@ use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\SignalIdentity;
 use AIArmada\Signals\Models\SignalSession;
 use AIArmada\Signals\Models\TrackedProperty;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
@@ -478,23 +477,18 @@ it('uses the configured tracker filename when deriving the pageview endpoint', f
         ->and($response->getContent())->toContain('/collect/pageview');
 });
 
-it('adds geolocation columns to the configured session table', function (): void {
+it('adds the consolidated columns through the base session migration', function (): void {
     config()->set('signals.database.tables.sessions', 'custom_signal_sessions');
     config()->set('signals.database.json_column_type', 'json');
 
     Schema::dropIfExists('custom_signal_sessions');
     Schema::dropIfExists('signal_sessions');
 
-    Schema::create('custom_signal_sessions', function (Blueprint $table): void {
-        $table->uuid('id')->primary();
-        $table->string('country', 2)->nullable();
-        $table->timestamps();
-    });
-
-    $migration = require __DIR__ . '/../../../../packages/signals/database/migrations/2001_01_01_000017_add_geolocation_fields_to_signals_sessions_table.php';
+    $migration = require __DIR__ . '/../../../../packages/signals/database/migrations/2001_01_01_000003_create_signals_sessions_table.php';
     $migration->up();
 
     expect(Schema::hasColumn('custom_signal_sessions', 'country_source'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'duration_milliseconds'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'latitude'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'longitude'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'accuracy_meters'))->toBeTrue()
@@ -509,5 +503,16 @@ it('adds geolocation columns to the configured session table', function (): void
         ->and(Schema::hasColumn('custom_signal_sessions', 'reverse_geocode_provider'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'reverse_geocoded_at'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'raw_reverse_geocode_payload'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'browser_version'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'os_version'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'device_brand'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'device_model'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'referrer'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'utm_content'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'utm_term'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'is_bot'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'user_agent'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'ip_address'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'duration_seconds'))->toBeFalse()
         ->and(Schema::hasTable('signal_sessions'))->toBeFalse();
 });
