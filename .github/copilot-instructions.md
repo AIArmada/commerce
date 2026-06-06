@@ -246,6 +246,7 @@ ls packages/*/docs/*.md | grep -v "/[0-9][0-9]-"
 ## Independence
 - Packages must work fully standalone without requiring other commerce packages.
 - Use `suggest` or optional dependencies in `composer.json`, not `require`.
+- When a capability may grow variants, prefer stable extension seams—contracts, metadata, hooks, domain events, resolvers, and support classes—over hard-coded branching; put shared seams in `commerce-support` when multiple packages may benefit.
 
 ## Tight Integration
 - When related packages are installed together, enable seamless integrations:
@@ -473,6 +474,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
   - the right fix likely belongs in `commerce-support` or another shared foundation, not in one package-specific patch.
 - When you switch, say so explicitly: name the local pattern you are not copying, explain why, propose the smallest architecture change that fixes the root cause, and list the surfaces that need verification.
 - Stay architecture-first in scope, not in blast radius: prefer one well-placed shared primitive or boundary correction over a broad rewrite.
+- During refactors and reviews, look for opportunities to preserve or add extension seams—hooks, domain events, metadata, contracts, resolvers, and support classes—so the package stays easy to extend without hard-coded branching.
 
 ## Naming
 
@@ -615,6 +617,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - **Independence**: Packages must work standalone. Prefer `suggest` over hard `require` for optional integrations.
 - **Foundation**: Always check `commerce-support` for existing primitives, traits, or contracts before building custom logic or requiring external packages directly.
+- When a capability may grow variants, prefer stable extension seams—contracts, metadata, hooks, domain events, resolvers, and support classes—over hard-coded branching; put shared seams in `commerce-support` when multiple packages may benefit.
 - **Integration**: When related packages are installed together, auto-enable integrations via `class_exists()` checks in service providers.
 - **DTOs**: Use `spatie/laravel-data`.
 - **Deletes**: No soft deletes (`SoftDeletes`).

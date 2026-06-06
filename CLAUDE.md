@@ -206,6 +206,7 @@ These files are intentionally split by concern for easier maintenance. Read and 
 # Packages Guidelines
 - **Independence**: Packages must work standalone. Prefer `suggest` over hard `require` for optional integrations.
 - **Foundation**: Always check `commerce-support` for existing primitives, traits, or contracts before building custom logic or requiring external packages directly.
+- When a capability may grow variants, prefer stable extension seams—contracts, metadata, hooks, domain events, resolvers, and support classes—over hard-coded branching; put shared seams in `commerce-support` when multiple packages may benefit.
 - **Integration**: When related packages are installed together, auto-enable integrations via `class_exists()` checks in service providers.
 - **DTOs**: Use `spatie/laravel-data`.
 - **Deletes**: No soft deletes (`SoftDeletes`).
@@ -277,6 +278,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 ## Application Structure & Architecture
 - Stick to existing directory structure; don't create new base folders without approval.
 - Do not change the application's dependencies without approval.
+- During refactors and reviews, look for opportunities to preserve or add extension seams—hooks, domain events, metadata, contracts, resolvers, and support classes—before locking in hard-coded branching.
 
 ## Frontend Bundling
 - If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
