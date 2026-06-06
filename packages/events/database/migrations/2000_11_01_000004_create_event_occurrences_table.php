@@ -13,7 +13,7 @@ return new class extends Migration
         $databaseConfig = (array) config('events.database', []);
         $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('events', 'jsonb'));
 
-        Schema::create(config('events.database.tables.occurrences', 'event_occurrences'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('events.database.tables.occurrences', 'commerce_event_occurrences'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->uuid('event_id')->index();
@@ -41,6 +41,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('events.database.tables.occurrences', 'event_occurrences'));
+        Schema::dropIfExists(config('events.database.tables.occurrences', 'commerce_event_occurrences'));
     }
 };

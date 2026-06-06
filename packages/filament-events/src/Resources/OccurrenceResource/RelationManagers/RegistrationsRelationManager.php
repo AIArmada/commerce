@@ -42,7 +42,7 @@ final class RegistrationsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Participant')
                     ->searchable(['first_name', 'last_name'])
-                    ->description(fn (Registration $record): string => $record->email),
+                    ->description(fn (Registration $record): string => RegistrationResource::registrationContactLabel($record)),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()

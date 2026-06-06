@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Events\Enums\RegistrationAttendanceSource;
 use AIArmada\Events\Enums\RegistrationStatus;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
@@ -26,10 +27,12 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 final class RegistrationResource extends Resource
 {
@@ -90,6 +93,12 @@ final class RegistrationResource extends Resource
                 ->required()
                 ->default(RegistrationStatus::Pending->value),
 
+            Select::make('attendance_source')
+                ->label('Attendance Source')
+                ->options(static::attendanceSourceOptions())
+                ->required()
+                ->default(RegistrationAttendanceSource::Registration->value),
+
             TextInput::make('first_name')
                 ->required()
                 ->maxLength(255),
@@ -100,7 +109,7 @@ final class RegistrationResource extends Resource
 
             TextInput::make('email')
                 ->email()
-                ->required()
+                ->required(fn (Get $get): bool => static::emailIsRequiredForAttendanceSource($get('attendance_source')))
                 ->maxLength(255),
 
             TextInput::make('phone')
@@ -207,7 +216,14 @@ final class RegistrationResource extends Resource
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Participant')
                     ->searchable(['first_name', 'last_name'])
-                    ->description(fn (Registration $record): string => $record->email),
+                    ->description(fn (Registration $record): string => static::registrationContactLabel($record)),
+
+                Tables\Columns\TextColumn::make('attendance_source')
+                    ->label('Source')
+                    ->badge()
+                    ->formatStateUsing(fn (RegistrationAttendanceSource $state): string => $state->label())
+                    ->color(fn (RegistrationAttendanceSource $state): string => $state === RegistrationAttendanceSource::WalkIn ? 'info' : 'primary')
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -271,7 +287,8 @@ final class RegistrationResource extends Resource
                         TextEntry::make('full_name')
                             ->label('Participant'),
                         TextEntry::make('email')
-                            ->copyable(),
+                            ->copyable()
+                            ->placeholder('Not set'),
                         TextEntry::make('phone')
                             ->copyable()
                             ->placeholder('Not set'),
@@ -281,6 +298,11 @@ final class RegistrationResource extends Resource
                             ->badge()
                             ->formatStateUsing(fn (RegistrationStatus $state): string => $state->label())
                             ->color(fn (RegistrationStatus $state): string => $state->color()),
+                        TextEntry::make('attendance_source')
+                            ->label('Attendance Source')
+                            ->badge()
+                            ->formatStateUsing(fn (RegistrationAttendanceSource $state): string => $state->label())
+                            ->color(fn (RegistrationAttendanceSource $state): string => $state === RegistrationAttendanceSource::WalkIn ? 'info' : 'primary'),
                         TextEntry::make('occurrence.event.name')
                             ->label('Event'),
                         TextEntry::make('occurrence.starts_at')
@@ -340,6 +362,16 @@ final class RegistrationResource extends Resource
             ->all();
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public static function attendanceSourceOptions(): array
+    {
+        return collect(RegistrationAttendanceSource::cases())
+            ->mapWithKeys(fn (RegistrationAttendanceSource $source): array => [$source->value => $source->label()])
+            ->all();
+    }
+
     public static function checkInAction(): Action
     {
         return Action::make('check_in')
@@ -373,10 +405,37 @@ final class RegistrationResource extends Resource
 
     public static function occurrenceLabel(Occurrence $occurrence): string
     {
-        $eventName = $occurrence->event?->name ?? 'Event';
+        $event = $occurrence->event;
+        $eventName = $event instanceof Model
+            ? (string) ($event->getAttribute('name') ?? $event->getAttribute('title') ?? 'Event')
+            : 'Event';
         $startsAt = $occurrence->starts_at?->format('d M Y H:i') ?? 'unscheduled';
 
         return "{$eventName} ({$startsAt})";
+    }
+
+    public static function registrationContactLabel(Registration $registration): string
+    {
+        if (is_string($registration->email) && mb_trim($registration->email) !== '') {
+            return $registration->email;
+        }
+
+        return $registration->attendance_source instanceof RegistrationAttendanceSource
+            ? $registration->attendance_source->label()
+            : RegistrationAttendanceSource::Registration->label();
+    }
+
+    private static function emailIsRequiredForAttendanceSource(mixed $source): bool
+    {
+        if ($source instanceof RegistrationAttendanceSource) {
+            return $source === RegistrationAttendanceSource::Registration;
+        }
+
+        if (is_string($source) && RegistrationAttendanceSource::tryFrom($source) instanceof RegistrationAttendanceSource) {
+            return RegistrationAttendanceSource::from($source) === RegistrationAttendanceSource::Registration;
+        }
+
+        return true;
     }
 
     private static function customerLabel(Customer $customer): string

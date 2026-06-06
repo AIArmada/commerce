@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Events\Enums\EventModerationStatus;
+use AIArmada\Events\Enums\EventVisibility;
+use AIArmada\Events\Enums\OccurrenceParticipationMode;
+use AIArmada\Events\Enums\RegistrationAttendanceSource;
+use AIArmada\Events\Models\Registration;
 use AIArmada\FilamentEvents\FilamentEventsPlugin;
 use AIArmada\FilamentEvents\FilamentEventsServiceProvider;
 use AIArmada\FilamentEvents\Resources\EventResource;
@@ -9,6 +14,7 @@ use AIArmada\FilamentEvents\Resources\EventResource\Pages\EditEvent;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages\ListEvents;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages\ViewEvent;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\OccurrencesRelationManager;
+use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\SpeakersRelationManager;
 use AIArmada\FilamentEvents\Resources\EventSeriesResource;
 use AIArmada\FilamentEvents\Resources\EventSeriesResource\Pages\EditEventSeries;
 use AIArmada\FilamentEvents\Resources\EventSeriesResource\Pages\ListEventSeries;
@@ -78,16 +84,22 @@ it('builds event resource schemas and tables', function (): void {
         expect($resource::getPages())->not->toBeEmpty();
     }
 
-    expect(EventResource::getRelations())->toContain(OccurrencesRelationManager::class);
+    expect(EventResource::getRelations())
+        ->toContain(OccurrencesRelationManager::class)
+        ->toContain(SpeakersRelationManager::class);
     expect(OccurrenceResource::getRelations())->toContain(RegistrationsRelationManager::class);
 });
 
 it('builds event relation manager schemas and tables', function (): void {
     $occurrences = app(OccurrencesRelationManager::class);
+    $speakers = app(SpeakersRelationManager::class);
     $registrations = app(RegistrationsRelationManager::class);
 
     expect($occurrences->form(Schema::make()))->toBeInstanceOf(Schema::class);
     expect($occurrences->table(makeFilamentEventsTable()))->toBeInstanceOf(Table::class);
+
+    expect($speakers->form(Schema::make()))->toBeInstanceOf(Schema::class);
+    expect($speakers->table(makeFilamentEventsTable()))->toBeInstanceOf(Table::class);
 
     expect($registrations->form(Schema::make()))->toBeInstanceOf(Schema::class);
     expect($registrations->table(makeFilamentEventsTable()))->toBeInstanceOf(Table::class);
@@ -121,4 +133,35 @@ it('builds event resource page header actions', function (): void {
     foreach ($pages as $page) {
         expect($getActions($page))->toBeArray()->not->toBeEmpty();
     }
+});
+
+it('exposes event moderation and visibility options', function (): void {
+    expect(EventResource::moderationStatusOptions())->toMatchArray([
+        EventModerationStatus::Pending->value => EventModerationStatus::Pending->label(),
+        EventModerationStatus::Approved->value => EventModerationStatus::Approved->label(),
+        EventModerationStatus::Rejected->value => EventModerationStatus::Rejected->label(),
+    ])
+        ->and(EventResource::visibilityOptions())->toMatchArray([
+            EventVisibility::Public->value => EventVisibility::Public->label(),
+            EventVisibility::Unlisted->value => EventVisibility::Unlisted->label(),
+            EventVisibility::Private->value => EventVisibility::Private->label(),
+        ]);
+});
+
+it('exposes participation modes and labels walk-in registrations without email', function (): void {
+    expect(OccurrenceResource::participationModeOptions())->toMatchArray([
+        OccurrenceParticipationMode::None->value => OccurrenceParticipationMode::None->label(),
+        OccurrenceParticipationMode::RegistrationRequired->value => OccurrenceParticipationMode::RegistrationRequired->label(),
+        OccurrenceParticipationMode::WalkInOnly->value => OccurrenceParticipationMode::WalkInOnly->label(),
+        OccurrenceParticipationMode::Hybrid->value => OccurrenceParticipationMode::Hybrid->label(),
+    ]);
+
+    $walkIn = new Registration([
+        'attendance_source' => RegistrationAttendanceSource::WalkIn,
+        'first_name' => 'Walk-in',
+        'last_name' => 'Attendee',
+        'email' => null,
+    ]);
+
+    expect(RegistrationResource::registrationContactLabel($walkIn))->toBe('Walk-in');
 });

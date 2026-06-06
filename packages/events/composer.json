@@ -1,13 +1,16 @@
 {
     "name": "aiarmada/events",
-    "description": "Event series, occurrences, venues, and attendee registrations for the AIArmada commerce ecosystem",
+    "description": "Reusable Laravel event domain, scheduling, attendance, and optional commerce integration for AIArmada applications",
     "license": "MIT",
     "type": "library",
     "keywords": [
         "laravel",
         "commerce",
         "events",
+        "speakers",
+        "organizers",
         "registrations",
+        "attendance",
         "venues",
         "tickets"
     ],
@@ -19,10 +22,12 @@
     ],
     "require": {
         "aiarmada/commerce-support": "self.version",
-        "aiarmada/customers": "self.version",
-        "aiarmada/orders": "self.version",
-        "aiarmada/products": "self.version",
         "php": "^8.4"
+    },
+    "suggest": {
+        "aiarmada/products": "Enables product and variant relationships for event definitions and occurrences.",
+        "aiarmada/customers": "Enables customer-backed purchasers and participants for registrations.",
+        "aiarmada/orders": "Enables order-item fulfillment and event order completion sync."
     },
     "autoload": {
         "psr-4": {

@@ -6,11 +6,13 @@ namespace AIArmada\Events\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Events\Enums\RegistrationAttendanceSource;
 use AIArmada\Events\Enums\RegistrationStatus;
 use AIArmada\Events\Events\RegistrationCancelled;
 use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Events\RegistrationCreated;
 use AIArmada\Events\Events\RegistrationMarkedNoShow;
+use AIArmada\Events\Events\WalkInRecorded;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 use AIArmada\Orders\Models\OrderItem;
@@ -36,6 +38,23 @@ final class RegistrationService
                 $this->ensureOccurrenceCanAcceptRegistrations($lockedOccurrence, 1);
 
                 return $this->createRegistration($lockedOccurrence, $participant, $links);
+            });
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $participant
+     * @param  array<string, mixed>  $links
+     */
+    public function recordWalkInForOccurrence(Occurrence $occurrence, array $participant = [], array $links = []): Registration
+    {
+        return $this->withRecordOwnerContext($occurrence, function () use ($occurrence, $participant, $links): Registration {
+            return DB::transaction(function () use ($occurrence, $participant, $links): Registration {
+                $lockedOccurrence = $this->lockOccurrence($occurrence);
+
+                $this->ensureOccurrenceCanAcceptWalkIns($lockedOccurrence, 1);
+
+                return $this->createWalkInAttendance($lockedOccurrence, $participant, $links);
             });
         });
     }
@@ -105,7 +124,7 @@ final class RegistrationService
 
             $registration->update([
                 'status' => RegistrationStatus::CheckedIn,
-                'checked_in_at' => now(),
+                'checked_in_at' => now('UTC'),
                 'metadata' => $metadata,
             ]);
 
@@ -128,7 +147,7 @@ final class RegistrationService
 
             $registration->update([
                 'status' => RegistrationStatus::Cancelled,
-                'cancelled_at' => now(),
+                'cancelled_at' => now('UTC'),
                 'metadata' => $metadata,
             ]);
 
@@ -193,6 +212,7 @@ final class RegistrationService
         );
 
         $status = $this->resolveStatus($links);
+        [$attendeeType, $attendeeId] = $this->resolveAttendeeIdentity($participant, $links);
 
         $registration = Registration::create([
             'occurrence_id' => $occurrence->id,
@@ -200,6 +220,9 @@ final class RegistrationService
             'order_item_id' => $this->resolveModelKey($links['order_item'] ?? $links['order_item_id'] ?? null),
             'purchaser_customer_id' => $this->resolveModelKey($links['purchaser_customer'] ?? $links['purchaser_customer_id'] ?? null),
             'participant_customer_id' => $this->resolveModelKey($links['participant_customer'] ?? $links['participant_customer_id'] ?? null),
+            'attendance_source' => RegistrationAttendanceSource::Registration,
+            'attendee_type' => $attendeeType,
+            'attendee_id' => $attendeeId,
             'status' => $status,
             'first_name' => $firstName,
             'last_name' => $lastName,
@@ -210,6 +233,42 @@ final class RegistrationService
         ]);
 
         event(new RegistrationCreated($registration));
+
+        return $registration;
+    }
+
+    /**
+     * @param  array<string, mixed>  $participant
+     * @param  array<string, mixed>  $links
+     */
+    private function createWalkInAttendance(Occurrence $occurrence, array $participant, array $links = []): Registration
+    {
+        [$firstName, $lastName] = $this->resolveWalkInParticipantName($participant);
+        $metadata = array_merge(
+            Arr::wrap($links['metadata'] ?? []),
+            Arr::wrap($participant['metadata'] ?? []),
+        );
+        [$attendeeType, $attendeeId] = $this->resolveAttendeeIdentity($participant, $links);
+
+        $registration = Registration::create([
+            'occurrence_id' => $occurrence->id,
+            'attendance_source' => RegistrationAttendanceSource::WalkIn,
+            'attendee_type' => $attendeeType,
+            'attendee_id' => $attendeeId,
+            'status' => RegistrationStatus::CheckedIn,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $this->optionalString($participant, 'email'),
+            'phone' => $this->optionalString($participant, 'phone'),
+            'company' => $this->optionalString($participant, 'company'),
+            'checked_in_at' => now('UTC'),
+            'metadata' => $metadata === [] ? null : $metadata,
+        ]);
+
+        event(new RegistrationCreated($registration));
+        event(new WalkInRecorded($registration, [
+            'source' => 'walk_in',
+        ]));
 
         return $registration;
     }
@@ -228,6 +287,33 @@ final class RegistrationService
         }
 
         $name = $this->requireString($participant, 'name');
+        $segments = preg_split('/\s+/', $name, 2) ?: [];
+
+        return [
+            $segments[0] ?? $name,
+            $segments[1] ?? '',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $participant
+     * @return array{0: string, 1: string}
+     */
+    private function resolveWalkInParticipantName(array $participant): array
+    {
+        $firstName = $this->optionalString($participant, 'first_name');
+        $lastName = $this->optionalString($participant, 'last_name');
+
+        if ($firstName !== null) {
+            return [$firstName, $lastName ?? ''];
+        }
+
+        $name = $this->optionalString($participant, 'name');
+
+        if ($name === null) {
+            return ['Walk-in', 'Attendee'];
+        }
+
         $segments = preg_split('/\s+/', $name, 2) ?: [];
 
         return [
@@ -284,6 +370,15 @@ final class RegistrationService
         $this->ensureOccurrenceHasCapacity($occurrence, $requestedSeats);
     }
 
+    private function ensureOccurrenceCanAcceptWalkIns(Occurrence $occurrence, int $requestedSeats): void
+    {
+        if (! $occurrence->acceptsWalkIns()) {
+            throw new InvalidArgumentException('This event date is not accepting walk-ins.');
+        }
+
+        $this->ensureOccurrenceHasCapacity($occurrence, $requestedSeats);
+    }
+
     private function ensureOccurrenceHasCapacity(Occurrence $occurrence, int $requestedSeats): void
     {
         $capacity = is_int($occurrence->capacity) ? $occurrence->capacity : null;
@@ -328,6 +423,34 @@ final class RegistrationService
         return null;
     }
 
+    /**
+     * @param  array<string, mixed>  $participant
+     * @param  array<string, mixed>  $links
+     * @return array{0: string|null, 1: string|null}
+     */
+    private function resolveAttendeeIdentity(array $participant, array $links): array
+    {
+        $attendee = $links['attendee'] ?? $participant['attendee'] ?? null;
+
+        if ($attendee instanceof Model) {
+            return [$attendee->getMorphClass(), (string) $attendee->getKey()];
+        }
+
+        $attendeeType = $this->optionalString($links, 'attendee_type')
+            ?? $this->optionalString($participant, 'attendee_type');
+        $attendeeId = $this->resolveModelKey($links['attendee_id'] ?? $participant['attendee_id'] ?? null);
+
+        if ($attendeeType === null && $attendeeId === null) {
+            return [null, null];
+        }
+
+        if ($attendeeType !== null && $attendeeId !== null) {
+            return [$attendeeType, $attendeeId];
+        }
+
+        throw new InvalidArgumentException('Both [attendee_type] and [attendee_id] are required when providing attendee identity.');
+    }
+
     private function occurrenceForRegistration(Registration $registration): Occurrence
     {
         $occurrence = $registration->getRelationValue('occurrence');
@@ -350,7 +473,7 @@ final class RegistrationService
 
     private function occurrenceHasEnded(Occurrence $occurrence): bool
     {
-        $now = now();
+        $now = now('UTC');
 
         if ($occurrence->ends_at !== null) {
             return $occurrence->ends_at->lte($now);

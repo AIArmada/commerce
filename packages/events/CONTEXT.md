@@ -10,17 +10,18 @@ family: analytics-and-events
 
 ## Snapshot
 - Composer: `aiarmada/events`
-- Role: Event series, venues, occurrences, attendee registrations, and registration lifecycle rules.
+- Role: Reusable event-domain base with series, organizers, speakers, venues, occurrences, public visibility, attendance, and registration lifecycle rules.
 - Search first: `src/Models`, `src/Actions`, `src/Services`, `src/Events`, `config`, `docs`
-- Related: `filament-events`, `products`, `customers`, `orders`
+- Related: `filament-events`, `products`, `customers`, `orders`, optional media/tag/search adapters
 
 ## Read next
 1. `docs/01-overview.md`
 2. `docs/03-configuration.md`
 3. `docs/04-usage.md`
-4. `docs/99-troubleshooting.md`
-5. `../filament-events/CONTEXT.md` when admin UI changes are involved
-6. `docs/02-installation.md` when setup or publishing changes are involved
+4. `docs/05-invariants.md`
+5. `docs/99-troubleshooting.md`
+6. `../filament-events/CONTEXT.md` when admin UI changes are involved
+7. `docs/02-installation.md` when setup or publishing changes are involved
 
 ## Guardrails
 - Owns models, actions, services, events, calculations, and persistence rules.

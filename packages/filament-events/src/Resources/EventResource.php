@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Enums\EventModerationStatus;
 use AIArmada\Events\Enums\EventStatus;
+use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSeries;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages;
@@ -15,6 +17,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -94,6 +97,10 @@ final class EventResource extends Resource
                                 Textarea::make('description')
                                     ->rows(8)
                                     ->columnSpanFull(),
+
+                                Textarea::make('search_keywords')
+                                    ->rows(2)
+                                    ->columnSpanFull(),
                             ])
                             ->columns(2)
                             ->columnSpan(['lg' => 2]),
@@ -115,6 +122,17 @@ final class EventResource extends Resource
                                     ->required()
                                     ->default(EventStatus::Draft->value),
 
+                                Select::make('moderation_status')
+                                    ->label('Moderation')
+                                    ->options(static::moderationStatusOptions())
+                                    ->required()
+                                    ->default(EventModerationStatus::Approved->value),
+
+                                Select::make('visibility')
+                                    ->options(static::visibilityOptions())
+                                    ->required()
+                                    ->default(EventVisibility::Public->value),
+
                                 TextInput::make('default_timezone')
                                     ->maxLength(64)
                                     ->default('Asia/Kuala_Lumpur'),
@@ -133,6 +151,16 @@ final class EventResource extends Resource
                                     )
                                     ->searchable()
                                     ->preload(),
+
+                                DateTimePicker::make('published_at'),
+
+                                DateTimePicker::make('public_starts_at'),
+
+                                DateTimePicker::make('public_ends_at'),
+
+                                static::jsonTextarea('media_references', 'Media references'),
+
+                                static::jsonTextarea('taxonomy', 'Taxonomy'),
 
                                 KeyValue::make('metadata'),
                             ])
@@ -160,6 +188,17 @@ final class EventResource extends Resource
                     ->formatStateUsing(fn (EventStatus $state): string => $state->label())
                     ->color(fn (EventStatus $state): string => $state->color()),
 
+                Tables\Columns\TextColumn::make('moderation_status')
+                    ->label('Moderation')
+                    ->badge()
+                    ->formatStateUsing(fn (EventModerationStatus $state): string => $state->label())
+                    ->color(fn (EventModerationStatus $state): string => $state->color()),
+
+                Tables\Columns\TextColumn::make('visibility')
+                    ->badge()
+                    ->formatStateUsing(fn (EventVisibility $state): string => $state->label())
+                    ->color(fn (EventVisibility $state): string => $state->color()),
+
                 Tables\Columns\TextColumn::make('occurrences_count')
                     ->label('Runs')
                     ->counts('occurrences')
@@ -179,6 +218,13 @@ final class EventResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options(static::statusOptions()),
+
+                Tables\Filters\SelectFilter::make('moderation_status')
+                    ->label('Moderation')
+                    ->options(static::moderationStatusOptions()),
+
+                Tables\Filters\SelectFilter::make('visibility')
+                    ->options(static::visibilityOptions()),
 
                 Tables\Filters\SelectFilter::make('event_series_id')
                     ->label('Series')
@@ -211,6 +257,15 @@ final class EventResource extends Resource
                             ->badge()
                             ->formatStateUsing(fn (EventStatus $state): string => $state->label())
                             ->color(fn (EventStatus $state): string => $state->color()),
+                        TextEntry::make('moderation_status')
+                            ->label('Moderation')
+                            ->badge()
+                            ->formatStateUsing(fn (EventModerationStatus $state): string => $state->label())
+                            ->color(fn (EventModerationStatus $state): string => $state->color()),
+                        TextEntry::make('visibility')
+                            ->badge()
+                            ->formatStateUsing(fn (EventVisibility $state): string => $state->label())
+                            ->color(fn (EventVisibility $state): string => $state->color()),
                         TextEntry::make('series.name')
                             ->label('Series')
                             ->placeholder('No series'),
@@ -222,12 +277,31 @@ final class EventResource extends Resource
                         TextEntry::make('default_duration_minutes')
                             ->suffix(' minutes')
                             ->placeholder('Not set'),
+                        TextEntry::make('published_at')
+                            ->dateTime()
+                            ->placeholder('Not set'),
+                        TextEntry::make('public_starts_at')
+                            ->dateTime()
+                            ->placeholder('Not set'),
+                        TextEntry::make('public_ends_at')
+                            ->dateTime()
+                            ->placeholder('Not set'),
                         TextEntry::make('summary')
                             ->columnSpanFull()
                             ->placeholder('No summary'),
                         TextEntry::make('description')
                             ->columnSpanFull()
                             ->placeholder('No description'),
+                        TextEntry::make('search_keywords')
+                            ->columnSpanFull()
+                            ->placeholder('No search keywords'),
+                        TextEntry::make('media_references')
+                            ->label('Media references')
+                            ->formatStateUsing(fn (mixed $state): string => static::formatJsonState($state))
+                            ->columnSpanFull(),
+                        TextEntry::make('taxonomy')
+                            ->formatStateUsing(fn (mixed $state): string => static::formatJsonState($state))
+                            ->columnSpanFull(),
                     ])
                     ->columns(3),
             ]);
@@ -237,6 +311,7 @@ final class EventResource extends Resource
     {
         return [
             RelationManagers\OccurrencesRelationManager::class,
+            RelationManagers\SpeakersRelationManager::class,
         ];
     }
 
@@ -263,5 +338,68 @@ final class EventResource extends Resource
         return collect(EventStatus::cases())
             ->mapWithKeys(fn (EventStatus $status): array => [$status->value => $status->label()])
             ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function moderationStatusOptions(): array
+    {
+        return collect(EventModerationStatus::cases())
+            ->mapWithKeys(fn (EventModerationStatus $status): array => [$status->value => $status->label()])
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function visibilityOptions(): array
+    {
+        return collect(EventVisibility::cases())
+            ->mapWithKeys(fn (EventVisibility $visibility): array => [$visibility->value => $visibility->label()])
+            ->all();
+    }
+
+    private static function jsonTextarea(string $name, string $label): Textarea
+    {
+        return Textarea::make($name)
+            ->label($label)
+            ->rows(5)
+            ->formatStateUsing(fn (mixed $state): ?string => static::formatNullableJsonState($state))
+            ->dehydrateStateUsing(fn (?string $state): ?array => static::decodeJsonState($state))
+            ->rules(['nullable', 'json'])
+            ->columnSpanFull();
+    }
+
+    /**
+     * @return array<int|string, mixed>|null
+     */
+    private static function decodeJsonState(?string $state): ?array
+    {
+        if ($state === null || mb_trim($state) === '') {
+            return null;
+        }
+
+        $decoded = json_decode($state, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private static function formatNullableJsonState(mixed $state): ?string
+    {
+        if ($state === null || $state === []) {
+            return null;
+        }
+
+        return static::formatJsonState($state);
+    }
+
+    private static function formatJsonState(mixed $state): string
+    {
+        if (! is_array($state)) {
+            return '';
+        }
+
+        return json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: '';
     }
 }

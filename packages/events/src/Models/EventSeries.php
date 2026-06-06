@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Events\Support\ConfiguredEventModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -59,7 +60,7 @@ class EventSeries extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('events.database.tables.series', 'event_series');
+        return config('events.database.tables.series', 'commerce_event_series');
     }
 
     /**
@@ -87,10 +88,13 @@ class EventSeries extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<Event, $this>
+     * @return HasMany<Model, $this>
      */
     public function events(): HasMany
     {
-        return $this->hasMany(Event::class, 'event_series_id');
+        return $this->hasMany(
+            ConfiguredEventModel::classFor('events.models.event', Event::class),
+            'event_series_id',
+        );
     }
 }

@@ -13,6 +13,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
@@ -95,6 +96,15 @@ final class VenueResource extends Resource
 
                         Section::make('Location')
                             ->schema([
+                                Select::make('location_type')
+                                    ->options([
+                                        'physical' => 'Physical',
+                                        'online' => 'Online',
+                                        'hybrid' => 'Hybrid',
+                                    ])
+                                    ->required()
+                                    ->default('physical'),
+
                                 TextInput::make('line1')
                                     ->maxLength(255),
 
@@ -114,6 +124,19 @@ final class VenueResource extends Resource
                                     ->required()
                                     ->maxLength(2)
                                     ->default('MY'),
+
+                                TextInput::make('latitude')
+                                    ->numeric(),
+
+                                TextInput::make('longitude')
+                                    ->numeric(),
+
+                                TextInput::make('map_url')
+                                    ->url()
+                                    ->columnSpanFull(),
+
+                                TextInput::make('external_id')
+                                    ->maxLength(255),
 
                                 TextInput::make('timezone')
                                     ->maxLength(64)
@@ -138,6 +161,11 @@ final class VenueResource extends Resource
                 Tables\Columns\TextColumn::make('city')
                     ->searchable()
                     ->placeholder('No city'),
+
+                Tables\Columns\TextColumn::make('location_type')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => Str::headline($state ?? 'physical'))
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('country')
                     ->badge()
@@ -188,6 +216,9 @@ final class VenueResource extends Resource
                             ->placeholder('Not set'),
                         TextEntry::make('timezone')
                             ->placeholder('Not set'),
+                        TextEntry::make('location_type')
+                            ->badge()
+                            ->formatStateUsing(fn (?string $state): string => Str::headline($state ?? 'physical')),
                         TextEntry::make('notes')
                             ->columnSpanFull()
                             ->placeholder('No notes'),
@@ -207,6 +238,15 @@ final class VenueResource extends Resource
                         TextEntry::make('postcode')
                             ->placeholder('Not set'),
                         TextEntry::make('country'),
+                        TextEntry::make('latitude')
+                            ->placeholder('Not set'),
+                        TextEntry::make('longitude')
+                            ->placeholder('Not set'),
+                        TextEntry::make('map_url')
+                            ->url(fn (?string $state): ?string => $state)
+                            ->placeholder('Not set'),
+                        TextEntry::make('external_id')
+                            ->placeholder('Not set'),
                     ])
                     ->columns(3),
             ]);

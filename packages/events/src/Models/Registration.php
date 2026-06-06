@@ -9,14 +9,14 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Customers\Models\Customer;
+use AIArmada\Events\Enums\RegistrationAttendanceSource;
 use AIArmada\Events\Enums\RegistrationStatus;
-use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Events\Support\CommerceIntegration;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -31,11 +31,14 @@ use RuntimeException;
  * @property string|null $order_item_id
  * @property string|null $purchaser_customer_id
  * @property string|null $participant_customer_id
+ * @property RegistrationAttendanceSource $attendance_source
+ * @property string|null $attendee_type
+ * @property string|null $attendee_id
  * @property string $code
  * @property RegistrationStatus $status
  * @property string $first_name
  * @property string $last_name
- * @property string $email
+ * @property string|null $email
  * @property string|null $phone
  * @property string|null $company
  * @property Carbon|null $checked_in_at
@@ -61,6 +64,9 @@ class Registration extends Model implements Auditable
         'order_item_id',
         'purchaser_customer_id',
         'participant_customer_id',
+        'attendance_source',
+        'attendee_type',
+        'attendee_id',
         'code',
         'status',
         'first_name',
@@ -76,6 +82,7 @@ class Registration extends Model implements Auditable
     protected function casts(): array
     {
         return [
+            'attendance_source' => RegistrationAttendanceSource::class,
             'status' => RegistrationStatus::class,
             'checked_in_at' => 'datetime',
             'cancelled_at' => 'datetime',
@@ -84,6 +91,7 @@ class Registration extends Model implements Auditable
     }
 
     protected $attributes = [
+        'attendance_source' => 'registration',
         'status' => 'pending',
     ];
 
@@ -100,7 +108,7 @@ class Registration extends Model implements Auditable
 
     public function getTable(): string
     {
-        return config('events.database.tables.registrations', 'event_registrations');
+        return config('events.database.tables.registrations', 'commerce_event_registrations');
     }
 
     /**
@@ -140,10 +148,10 @@ class Registration extends Model implements Auditable
      */
     public function order(): BelongsTo
     {
-        /** @var class-string<Model> $orderModel */
-        $orderModel = config('events.integrations.order_model', Order::class);
-
-        return $this->belongsTo($orderModel, 'order_id');
+        return $this->belongsTo(
+            CommerceIntegration::requireModelClass('order_model', 'orders'),
+            'order_id',
+        );
     }
 
     /**
@@ -151,10 +159,10 @@ class Registration extends Model implements Auditable
      */
     public function orderItem(): BelongsTo
     {
-        /** @var class-string<Model> $orderItemModel */
-        $orderItemModel = config('events.integrations.order_item_model', OrderItem::class);
-
-        return $this->belongsTo($orderItemModel, 'order_item_id');
+        return $this->belongsTo(
+            CommerceIntegration::requireModelClass('order_item_model', 'orders'),
+            'order_item_id',
+        );
     }
 
     /**
@@ -162,10 +170,10 @@ class Registration extends Model implements Auditable
      */
     public function purchaserCustomer(): BelongsTo
     {
-        /** @var class-string<Model> $customerModel */
-        $customerModel = config('events.integrations.customer_model', Customer::class);
-
-        return $this->belongsTo($customerModel, 'purchaser_customer_id');
+        return $this->belongsTo(
+            CommerceIntegration::requireModelClass('customer_model', 'customers'),
+            'purchaser_customer_id',
+        );
     }
 
     /**
@@ -173,10 +181,18 @@ class Registration extends Model implements Auditable
      */
     public function participantCustomer(): BelongsTo
     {
-        /** @var class-string<Model> $customerModel */
-        $customerModel = config('events.integrations.customer_model', Customer::class);
+        return $this->belongsTo(
+            CommerceIntegration::requireModelClass('customer_model', 'customers'),
+            'participant_customer_id',
+        );
+    }
 
-        return $this->belongsTo($customerModel, 'participant_customer_id');
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function attendee(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     public function getFullNameAttribute(): string
