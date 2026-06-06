@@ -9,37 +9,28 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Events\Support\ConfiguredEventModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property string $name
- * @property string $slug
- * @property string $location_type
- * @property string|null $contact_name
- * @property string|null $contact_email
- * @property string|null $contact_phone
- * @property string|null $line1
- * @property string|null $line2
- * @property string|null $city
- * @property string|null $state
- * @property string|null $postcode
- * @property string $country
- * @property string|null $latitude
- * @property string|null $longitude
- * @property string|null $map_url
- * @property string|null $external_id
- * @property string|null $timezone
- * @property string|null $notes
+ * @property string $event_id
+ * @property string|null $speaker_type
+ * @property string|null $speaker_id
+ * @property string|null $display_name
+ * @property string|null $role
+ * @property string|null $biography
+ * @property int|null $order_column
  * @property array<string, mixed>|null $metadata
  */
-class Venue extends Model implements Auditable
+class EventSpeaker extends Model implements Auditable
 {
     use HasCommerceAudit;
     use HasOwner {
@@ -52,44 +43,27 @@ class Venue extends Model implements Auditable
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
     protected $fillable = [
-        'name',
-        'slug',
-        'location_type',
-        'contact_name',
-        'contact_email',
-        'contact_phone',
-        'line1',
-        'line2',
-        'city',
-        'state',
-        'postcode',
-        'country',
-        'latitude',
-        'longitude',
-        'map_url',
-        'external_id',
-        'timezone',
-        'notes',
+        'event_id',
+        'speaker_type',
+        'speaker_id',
+        'display_name',
+        'role',
+        'biography',
+        'order_column',
         'metadata',
     ];
 
     protected function casts(): array
     {
         return [
-            'latitude' => 'decimal:7',
-            'longitude' => 'decimal:7',
+            'order_column' => 'integer',
             'metadata' => 'array',
         ];
     }
 
-    protected $attributes = [
-        'country' => 'MY',
-        'location_type' => 'physical',
-    ];
-
     public function getTable(): string
     {
-        return config('events.database.tables.venues', 'commerce_event_venues');
+        return config('events.database.tables.speakers', 'commerce_event_speakers');
     }
 
     /**
@@ -110,17 +84,39 @@ class Venue extends Model implements Auditable
             $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
         }
 
-        /** @var Builder<Venue> $scoped */
+        /** @var Builder<EventSpeaker> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;
     }
 
     /**
-     * @return HasMany<Occurrence, $this>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
-    public function occurrences(): HasMany
+    public function scopeOrdered(Builder $query): Builder
     {
-        return $this->hasMany(Occurrence::class, 'venue_id');
+        return $query
+            ->orderBy($this->qualifyColumn('order_column'))
+            ->orderBy($this->qualifyColumn('display_name'));
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(
+            ConfiguredEventModel::classFor('events.models.event', Event::class),
+            'event_id',
+        );
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function speaker(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

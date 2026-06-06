@@ -6,19 +6,24 @@ title: Overview
 
 ## Purpose
 
-`aiarmada/events` owns the event-domain layer for Commerce applications: series, reusable event definitions, venues, scheduled occurrences, and attendee registrations.
+`aiarmada/events` owns the reusable event-domain layer for AIArmada applications: public event definitions, series, organizers, speakers, venues / locations, scheduled occurrences, participation modes, attendee registrations, and optional commerce fulfillment.
 
 ## What this package owns
 
-- Event series, event definitions, venues, occurrences, and registrations
-- Registration creation, batch fulfillment, check-in, cancellation, and attendee lifecycle rules
+- Event series, event definitions, organizer links, speaker links, venues / locations, occurrences, and registrations
+- Public event moderation, visibility, publication-window, media-reference, taxonomy, search-payload, and display-timezone seams
+- Registration creation, walk-in attendance, batch fulfillment, check-in, cancellation, and attendee lifecycle rules
 - Occurrence capacity plus registration and check-in opening / closing windows
 - Event-domain actions such as `EnsureOccurrenceAction` for idempotent series / event / venue / occurrence upserts
+- Adapter seams for host event models, host venue models, organizer / speaker identities, attendee identity, lifecycle status rules, search indexing, display timezone, media, taxonomy, and order-item fulfillment
 
 ## What this package does not own
 
 - Product, variant, pricing, inventory, customer, order, or payment domain logic, even when events link to those records
 - Filament admin surfaces; those belong to `aiarmada/filament-events`
+- Application-specific public copy, SEO policy, submission workflow, editorial workflow, recurring schedule generation, or app-specific event semantics
+
+Applications can either use `AIArmada\Events\Models\Event` as their base event model or keep a richer host model as canonical and configure occurrences to point at it through `events.models.event`.
 
 ## Related packages
 
@@ -28,8 +33,8 @@ title: Overview
 
 ## Main models services or surfaces
 
-- **Models** — `EventSeries`, `Event`, `Venue`, `Occurrence`, `Registration`
-- **Enums** — `EventStatus`, `OccurrenceStatus`, `RegistrationStatus`
+- **Models** — `EventSeries`, `Event`, `EventSpeaker`, `Venue`, `Occurrence`, `Registration`
+- **Enums** — `EventStatus`, `EventModerationStatus`, `EventVisibility`, `OccurrenceStatus`, `RegistrationStatus`
 - **Actions** — `EnsureOccurrenceAction` plus order-fulfillment helpers for creating registrations from commerce orders
 - **Services** — `RegistrationService` for single create, batch create, check-in, and cancellation
 
@@ -45,20 +50,71 @@ title: Overview
 - Owner-aware event models powered by `commerce-support`
 - Event series and reusable event topics
 - Venue and scheduled occurrence modeling
+- Organizer and speaker links without requiring a specific CRM or member model
+- Event moderation, visibility, publication windows, media references, taxonomy payloads, and generic search payloads
 - Capacity-aware occurrences with registration and check-in windows
+- Participation modes for no registration, registration-required, walk-in-only, and hybrid events
 - Registration service that enforces sold-out, availability, and lifecycle rules
 - Idempotent upsert flow for syncing series, events, venues, and occurrences
-- Native integration points for products, variants, orders, and customers
+- Collision-resistant default tables such as `commerce_events` and `commerce_event_occurrences`
+- Generic attendee morph support for non-customer attendee identities
+- Display timezone resolver for app/viewer-specific presentation behavior
+- Config-backed lifecycle policy rules for capacity, check-in, and terminal statuses
+- Optional first-party integration points for products, variants, orders, and customers
+
+## Optional commerce integrations
+
+`aiarmada/events` can run as a core event lifecycle package with only `aiarmada/commerce-support` installed.
+
+When `aiarmada/products`, `aiarmada/customers`, and `aiarmada/orders` are installed in the same application, the package automatically enables the first-party commerce features:
+
+- product and variant relationships on events and occurrences
+- customer-backed purchaser and participant relationships on registrations
+- order-item fulfillment into registrations when an application supplies an `EventOrderItemFulfillmentResolver`
+- ended-event order finalization command and check-in completion listener
+
+If those packages are not installed, the core event, occurrence, venue, registration, capacity, and check-in lifecycle still works. Commerce-specific relationship methods throw a clear integration error when called without their matching package.
+
+When the order packages are installed but no fulfillment resolver is configured, order fulfillment intentionally returns no registrations.
 
 ## Core models
 
 | Model | Responsibility |
 | --- | --- |
 | `EventSeries` | Groups related topics under one program or brand |
-| `Event` | Reusable event definition |
-| `Venue` | Physical location details |
+| `Event` | Reusable public event definition with organizer, moderation, visibility, media, taxonomy, and search seams |
+| `EventSpeaker` | Ordered speaker/presenter links for display-only names or app-owned speaker models |
+| `Venue` | Physical, online, or hybrid location details |
 | `Occurrence` | A scheduled run of an event with capacity and registration / check-in windows |
 | `Registration` | One attendee entitlement for one occurrence |
+
+## Public event layer
+
+The package `Event` model is intended to be a reusable base for serious event applications. It includes:
+
+- `organizer_type` / `organizer_id` morphs for institutions, organizations, creators, or other host-owned organizer records
+- ordered `EventSpeaker` links that can point to host speaker models or store display-only speaker names
+- `moderation_status` for pending / approved / rejected review flows
+- `visibility` for public, unlisted, and private records
+- `published_at`, `public_starts_at`, and `public_ends_at` publication windows
+- `media_references` and `taxonomy` JSON payloads for package-neutral references and adapter-backed enrichments
+- `toSearchableArray()` delegated through `EventSearchPayloadResolver`
+- `displayTimezone()` delegated through `EventDisplayTimezoneResolver`
+
+Application-specific submission workflows can sit on top of these primitives without becoming part of the package's core event model.
+
+## Participation modes
+
+Occurrences default to `registration_required`, which preserves the package's original behavior.
+
+| Mode | Value | Registrations | Walk-ins |
+| --- | --- | --- | --- |
+| No attendance tracking | `none` | No | No |
+| Registration required | `registration_required` | Yes | No |
+| Walk-in only | `walk_in_only` | No | Yes |
+| Hybrid | `hybrid` | Yes | Yes |
+
+Hybrid mode is for events where attendees can pre-register but walk-ins can also be recorded at the door. Both registrations and walk-ins share occurrence capacity.
 
 ## Core enums
 
@@ -97,5 +153,6 @@ title: Overview
 - [Installation](02-installation.md)
 - [Configuration](03-configuration.md)
 - [Usage](04-usage.md)
+- [Domain invariants](05-invariants.md)
 - [Troubleshooting](99-troubleshooting.md)
 - [Filament Events overview](../../filament-events/docs/01-overview.md)

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Enums\OccurrenceParticipationMode;
 use AIArmada\Events\Enums\OccurrenceStatus;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\Occurrence;
@@ -89,6 +90,12 @@ final class OccurrenceResource extends Resource
                 ->options(static::statusOptions())
                 ->required()
                 ->default(OccurrenceStatus::Draft->value),
+
+            Select::make('participation_mode')
+                ->label('Participation Mode')
+                ->options(static::participationModeOptions())
+                ->required()
+                ->default(OccurrenceParticipationMode::RegistrationRequired->value),
 
             DateTimePicker::make('starts_at')
                 ->required(),
@@ -196,6 +203,13 @@ final class OccurrenceResource extends Resource
                     ->formatStateUsing(fn (OccurrenceStatus $state): string => $state->label())
                     ->color(fn (OccurrenceStatus $state): string => $state->color()),
 
+                Tables\Columns\TextColumn::make('participation_mode')
+                    ->label('Mode')
+                    ->badge()
+                    ->formatStateUsing(fn (OccurrenceParticipationMode $state): string => $state->label())
+                    ->color(fn (OccurrenceParticipationMode $state): string => $state->color())
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('starts_at')
                     ->label('Starts')
                     ->dateTime('d M Y H:i')
@@ -218,6 +232,10 @@ final class OccurrenceResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options(static::statusOptions()),
+
+                Tables\Filters\SelectFilter::make('participation_mode')
+                    ->label('Participation Mode')
+                    ->options(static::participationModeOptions()),
 
                 Tables\Filters\SelectFilter::make('event_id')
                     ->label('Event')
@@ -269,6 +287,11 @@ final class OccurrenceResource extends Resource
                             ->badge()
                             ->formatStateUsing(fn (OccurrenceStatus $state): string => $state->label())
                             ->color(fn (OccurrenceStatus $state): string => $state->color()),
+                        TextEntry::make('participation_mode')
+                            ->label('Participation Mode')
+                            ->badge()
+                            ->formatStateUsing(fn (OccurrenceParticipationMode $state): string => $state->label())
+                            ->color(fn (OccurrenceParticipationMode $state): string => $state->color()),
                         TextEntry::make('starts_at')
                             ->dateTime('d M Y H:i'),
                         TextEntry::make('ends_at')
@@ -332,6 +355,16 @@ final class OccurrenceResource extends Resource
     {
         return collect(OccurrenceStatus::cases())
             ->mapWithKeys(fn (OccurrenceStatus $status): array => [$status->value => $status->label()])
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function participationModeOptions(): array
+    {
+        return collect(OccurrenceParticipationMode::cases())
+            ->mapWithKeys(fn (OccurrenceParticipationMode $mode): array => [$mode->value => $mode->label()])
             ->all();
     }
 }

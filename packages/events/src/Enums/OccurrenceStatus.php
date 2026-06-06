@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Support\LifecyclePolicy;
+
 enum OccurrenceStatus: string
 {
     case Draft = 'draft';
@@ -36,6 +38,6 @@ enum OccurrenceStatus: string
 
     public function acceptsRegistrations(): bool
     {
-        return in_array($this, [self::Scheduled, self::Live], true);
+        return LifecyclePolicy::occurrenceAcceptsRegistrations($this);
     }
 }
