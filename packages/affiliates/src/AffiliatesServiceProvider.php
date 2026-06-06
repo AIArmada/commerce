@@ -7,6 +7,34 @@ namespace AIArmada\Affiliates;
 use AIArmada\Affiliates\Actions\Affiliates\ResolvePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
+use AIArmada\Affiliates\Models\AffiliateCommissionRule;
+use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateDailyStat;
+use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
+use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Models\AffiliateSupportMessage;
+use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Models\AffiliateTrainingModule;
+use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
+use AIArmada\Affiliates\Models\AffiliateVolumeTier;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\AffiliateService;
@@ -29,6 +57,7 @@ use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -83,6 +112,8 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        $this->registerMorphMap();
+
         Blade::anonymousComponentNamespace('affiliates::components', 'affiliates');
 
         if (
@@ -117,6 +148,40 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         }
 
         $this->registerPublicPageSupport();
+    }
+
+    private function registerMorphMap(): void
+    {
+        Relation::morphMap([
+            'affiliate' => Affiliate::class,
+            'affiliate_attribution' => AffiliateAttribution::class,
+            'affiliate_balance' => AffiliateBalance::class,
+            'affiliate_commission_promotion' => AffiliateCommissionPromotion::class,
+            'affiliate_commission_rule' => AffiliateCommissionRule::class,
+            'affiliate_commission_template' => AffiliateCommissionTemplate::class,
+            'affiliate_conversion' => AffiliateConversion::class,
+            'affiliate_daily_stat' => AffiliateDailyStat::class,
+            'affiliate_fraud_signal' => AffiliateFraudSignal::class,
+            'affiliate_link' => AffiliateLink::class,
+            'affiliate_network' => AffiliateNetwork::class,
+            'affiliate_payout' => AffiliatePayout::class,
+            'affiliate_payout_event' => AffiliatePayoutEvent::class,
+            'affiliate_payout_hold' => AffiliatePayoutHold::class,
+            'affiliate_payout_method' => AffiliatePayoutMethod::class,
+            'affiliate_program' => AffiliateProgram::class,
+            'affiliate_program_creative' => AffiliateProgramCreative::class,
+            'affiliate_program_membership' => AffiliateProgramMembership::class,
+            'affiliate_program_tier' => AffiliateProgramTier::class,
+            'affiliate_rank' => AffiliateRank::class,
+            'affiliate_rank_history' => AffiliateRankHistory::class,
+            'affiliate_support_message' => AffiliateSupportMessage::class,
+            'affiliate_support_ticket' => AffiliateSupportTicket::class,
+            'affiliate_tax_document' => AffiliateTaxDocument::class,
+            'affiliate_touchpoint' => AffiliateTouchpoint::class,
+            'affiliate_training_module' => AffiliateTrainingModule::class,
+            'affiliate_training_progress' => AffiliateTrainingProgress::class,
+            'affiliate_volume_tier' => AffiliateVolumeTier::class,
+        ]);
     }
 
     /**
