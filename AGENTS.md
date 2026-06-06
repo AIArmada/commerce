@@ -169,6 +169,7 @@ Use this file for cross-cutting guidance that is **not already covered** in othe
   - the right fix likely belongs in `commerce-support` or another shared foundation, not in one package-specific patch.
 - When you switch, say so explicitly: name the local pattern you are not copying, explain why, propose the smallest architecture change that fixes the root cause, and list the surfaces that need verification.
 - Stay architecture-first in scope, not in blast radius: prefer one well-placed shared primitive or boundary correction over a broad rewrite.
+- During refactors and reviews, look for opportunities to preserve or add extension seams—hooks, domain events, metadata, contracts, resolvers, and support classes—so the package stays easy to extend without hard-coded branching.
 
 ## 2) Runtime-Extension Safety
 
@@ -346,6 +347,7 @@ When a task changes user behavior (entry points, forms, actions, or meaningful w
 - **Independence**: Packages must work standalone. Prefer `suggest` over hard `require` for optional integrations.
 - **Foundation-first**: Always check `commerce-support` for existing primitives, traits, helpers, and contracts before building custom logic or requiring external packages directly.
 - **Standardize shared capabilities**: If functionality is useful across packages (now or soon), implement it in `commerce-support` so behavior stays consistent and maintainable long term.
+- When a capability may grow variants, prefer stable extension seams—contracts, metadata, hooks, domain events, resolvers, and support classes—over hard-coded branching; put shared seams in `commerce-support` when multiple packages may benefit.
 - **Money & currency**: Treat money as integer minor units plus an explicit currency code. Use `commerce-support` money primitives before rolling your own: `MoneyNormalizer` for normalization, `FormatsMoney` or Akaunting `money(..., ..., false)` for display/value formatting, and package/domain `Money` objects where contracts already expect them. Do **not** hand-roll currency display with raw `number_format()` and string concatenation when a shared formatter is available.
 - **Integration**: When related packages are installed together, auto-enable integrations via `class_exists()` checks in service providers.
 - **DTOs**: Use `spatie/laravel-data`.
@@ -425,7 +427,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4
+- php - 8.5
 
 ## Conventions
 
