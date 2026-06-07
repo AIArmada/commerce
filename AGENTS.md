@@ -185,6 +185,7 @@ If runtime-provided, preserve behavior and fix analysis with a narrow, targeted 
 - Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entrypoints.
 - Keep trivial single-step handlers inline when extraction adds no clarity.
 - Reuse existing actions before creating new ones.
+- During refactors, reviews, or audits, look for repeated orchestration that should become reusable Actions, Services, or Use Cases instead of living in controllers, jobs, or UI handlers.
 
 ## 4) Tracking Review for Behavioral UI Changes
 
@@ -348,6 +349,7 @@ When a task changes user behavior (entry points, forms, actions, or meaningful w
 - **Foundation-first**: Always check `commerce-support` for existing primitives, traits, helpers, and contracts before building custom logic or requiring external packages directly.
 - **Standardize shared capabilities**: If functionality is useful across packages (now or soon), implement it in `commerce-support` so behavior stays consistent and maintainable long term.
 - When a capability may grow variants, prefer stable extension seams—contracts, metadata, hooks, domain events, resolvers, and support classes—over hard-coded branching; put shared seams in `commerce-support` when multiple packages may benefit.
+- During refactors, reviews, or audits, look for repeated orchestration that should become reusable Actions, Services, or Use Cases so the package stays friendly to multiple entrypoints.
 - **Money & currency**: Treat money as integer minor units plus an explicit currency code. Use `commerce-support` money primitives before rolling your own: `MoneyNormalizer` for normalization, `FormatsMoney` or Akaunting `money(..., ..., false)` for display/value formatting, and package/domain `Money` objects where contracts already expect them. Do **not** hand-roll currency display with raw `number_format()` and string concatenation when a shared formatter is available.
 - **Integration**: When related packages are installed together, auto-enable integrations via `class_exists()` checks in service providers.
 - **DTOs**: Use `spatie/laravel-data`.

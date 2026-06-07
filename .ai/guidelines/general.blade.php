@@ -31,6 +31,7 @@ If runtime-provided, preserve behavior and fix analysis with a narrow, targeted 
 - Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entrypoints.
 - Keep trivial single-step handlers inline when extraction adds no clarity.
 - Reuse existing actions before creating new ones.
+- During refactors, reviews, or audits, look for repeated orchestration that should become reusable Actions, Services, or Use Cases instead of living in controllers, jobs, or UI handlers.
 
 ## 4) Tracking Review for Behavioral UI Changes
 When a task changes user behavior (entry points, forms, actions, or meaningful workflow transitions), evaluate whether product tracking should be updated.
