@@ -454,3 +454,126 @@ The main friendliness problem is that the package still falls back to:
 
 That means the right move is not a rewrite.
 The right move is to deepen the seams that already exist so new variants can arrive without editing central branching modules every time.
+
+
+## Refactor tracking
+
+This checklist tracks progress on the refactor plan above. Each item lists a concrete phase/step.
+Agents: claim an item by updating its status. Use `@agent-name` to claim ownership.
+
+Status legend:
+- `[pending]` — not started
+- `[in-progress]` — being worked on
+- `[done]` — completed and verified
+- `[blocked]` — blocked by another item
+
+### Sub-phase 1 — freeze the callback behavior with characterization tests
+
+- [pending] extend `tests/src/Checkout/PaymentFlowTest.php` for parity between redirect success, failure, and cancel flows
+- [pending] add a new focused test file for `ProcessCheckoutPaymentNotification` covering:
+
+### Sub-phase 2 — extract callback-state policy with no orchestration change
+
+- [pending] can this callback type run for this session state?
+- [pending] should this callback be treated as idempotent because the session is already complete?
+- [pending] `PaymentCallbackController`
+- [pending] `ProcessCheckoutPaymentNotification`
+
+### Sub-phase 3 — extract a single locked callback use case
+
+- [pending] locating the session for callback processing
+- [pending] row locking
+- [pending] completed-session short-circuiting
+- [pending] invoking `CheckoutServiceInterface::handlePaymentCallback()`
+- [pending] returning a small outcome object that both HTTP and non-HTTP entrypoints can understand
+- [pending] `PaymentCallbackController`
+- [pending] `ProcessCheckoutWebhook`
+- [pending] `HandleChipPurchaseEventForCheckout`
+- [pending] `ProcessCheckoutPaymentNotification`
+
+### Sub-phase 4 — keep callback payload normalization in one place
+
+- [pending] Extract notification-specific callback-type resolution into its own support module
+- [pending] Keep it separate from gateway-specific payment-status normalization for later CHIP refactor reuse
+
+### Sub-phase 5 — freeze pipeline behavior before extracting the runner
+
+- [pending] full pipeline success
+- [pending] redirect exit after `process_payment`
+- [pending] retry-from-payment behavior
+- [pending] skip behavior for already completed and skippable steps
+- [pending] completion event dispatch count
+- [pending] free-order flow
+- [pending] `tests/src/Checkout/PaymentFlowTest.php`
+- [pending] `tests/src/Checkout/CreateOrderStepTest.php`
+- [pending] `tests/src/Checkout/CheckoutStepRegistryTest.php`
+
+### Sub-phase 6 — extract `RunCheckoutPipeline`
+
+- [pending] `CheckoutService::processCheckout()`
+- [pending] `CheckoutService::continueFromStep()`
+- [pending] the session
+- [pending] an optional starting step identifier or cursor
+- [pending] a completion policy
+
+### Sub-phase 7 — centralize checkout finalization
+
+- [pending] final status transition to `Completed`
+- [pending] dispatching `CheckoutCompleted`
+- [pending] any “only once” guard around completion signaling
+- [pending] the duplicated paths in `CheckoutService`
+- [pending] the free-order branch in `CreateOrderStep`
+
+### Sub-phase 8 — align checkout with the monorepo’s integration-registrar pattern
+
+- [pending] CHIP listener registration
+- [pending] payment processor registration
+- [pending] optional step registration for inventory, tax, and discounts
+
+### Sub-phase 9 — split payment processor registration from gateway resolution
+
+- [pending] `RegisterBuiltInPaymentProcessors`
+- [pending] or a small registrar interface used only inside checkout for now
+
+### Sub-phase 10 — split optional step registration from provider boot logic
+
+- [pending] install/availability checks
+- [pending] config gating
+- [pending] actual step registration or disablement
+
+### Sub-phase 11 — consolidate CHIP support behind shared checkout support classes
+
+- [pending] `ChipPurchasePayloadBuilder`
+- [pending] `ChipPaymentStatusMapper`
+- [pending] `ChipRefundGateway` or similar thin helper
+- [pending] CHIP purchase payload creation
+- [pending] callback status mapping
+- [pending] status-check mapping
+- [pending] refund wiring
+
+### Sub-phase 12 — isolate step-order policy
+
+- [pending] `resolveInventoryStepOrder()`
+- [pending] `enforceStepDependencyOrder()`
+- [pending] `ensureStepPrecedes()`
+
+### Sub-phase 13 — docs and cleanup
+
+- [pending] `docs/05-checkout-steps.md`
+- [pending] `docs/06-payment-gateways.md`
+- [pending] `docs/08-integrations.md`
+- [pending] how callback entrypoints are unified
+- [pending] how integrations register themselves
+- [pending] where custom payment processors should plug in
+- [pending] which behaviors are still package-local versus candidates for `commerce-support`
+- [pending] `tests/src/Checkout/PaymentFlowTest.php`
+- [pending] `tests/src/Checkout/CheckoutServiceProviderTest.php`
+- [pending] `tests/src/Checkout/CheckoutStepRegistryTest.php`
+- [pending] `tests/src/Checkout/CreateOrderStepTest.php`
+- [pending] `tests/src/Checkout/CashierProcessorTest.php`
+- [pending] `ProcessCheckoutPaymentNotification` behavior tests
+- [pending] pipeline runner behavior tests
+- [pending] CHIP shared-support tests
+- [pending] CHIP listener coverage for checkout completion
+- [pending] Signals listener coverage for checkout completion
+
