@@ -568,11 +568,6 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
         return $this->status->isEngageable();
     }
 
-    public function getTitleAttribute(): string
-    {
-        return (string) $this->getAttribute('name');
-    }
-
     public function isRoot(): bool
     {
         return $this->parent_event_id === null;
