@@ -26,10 +26,10 @@ return new class extends Migration
             $table->addColumn($jsonType, 'evidence')->nullable();
 
             $table->string('status', 20)->default('detected');
-            $table->timestamp('detected_at');
-            $table->timestamp('reviewed_at')->nullable();
+            $table->timestampTz('detected_at');
+            $table->timestampTz('reviewed_at')->nullable();
             $table->foreignUuid('reviewed_by')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['affiliate_id', 'detected_at']);
             $table->index(['rule_code', 'severity']);

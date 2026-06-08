@@ -17,10 +17,10 @@ return new class extends Migration
             $table->foreignUuid('affiliate_id');
             $table->string('reason');
             $table->text('notes')->nullable();
-            $table->timestamp('expires_at')->nullable();
+            $table->timestampTz('expires_at')->nullable();
             $table->foreignUuid('placed_by')->nullable();
-            $table->timestamp('released_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('released_at')->nullable();
+            $table->timestampsTz();
 
             $table->index(['affiliate_id', 'released_at']);
         });

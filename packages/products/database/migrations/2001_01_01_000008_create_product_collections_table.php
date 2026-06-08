@@ -34,8 +34,8 @@ return new class extends Migration
             $table->boolean('is_featured')->default(false);
 
             // Scheduling
-            $table->timestamp('published_at')->nullable();
-            $table->timestamp('unpublished_at')->nullable();
+            $table->timestampTz('published_at')->nullable();
+            $table->timestampTz('unpublished_at')->nullable();
 
             // SEO
             $table->string('meta_title')->nullable();
@@ -43,7 +43,7 @@ return new class extends Migration
 
             $table->{$jsonColumnType}('metadata')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['owner_type', 'owner_id', 'slug']);
 

@@ -28,7 +28,7 @@ return new class extends Migration
             $table->text('url')->nullable();
             $table->unsignedInteger('order_column')->nullable();
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['assignable_type', 'assignable_id', 'reference_kind'], 'event_reference_assignments_assignable_kind_index');
             $table->index(['reference_kind', 'source_label'], 'event_reference_assignments_kind_source_index');
@@ -48,7 +48,7 @@ return new class extends Migration
             $table->unsignedInteger('duration_minutes')->nullable();
             $table->unsignedInteger('order_column')->nullable();
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['occurrence_id', 'segment_key'], 'event_agenda_items_occurrence_segment_index');
             $table->index(['occurrence_id', 'order_column'], 'event_agenda_items_occurrence_order_index');

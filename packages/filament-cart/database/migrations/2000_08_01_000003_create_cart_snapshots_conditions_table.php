@@ -38,7 +38,7 @@ return new class extends Migration
             $table->integer('order')->default(0);
             $table->{$jsonType}('attributes')->nullable();
             $table->string('item_id')->nullable()->index(); // Cart item ID this applies to (if item-level)
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Indexes for performance
             $table->index(['cart_id', 'name']);

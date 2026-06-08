@@ -62,9 +62,9 @@ return new class extends Migration
             $table->string('currency', 3)->default('MYR');
 
             // Timestamps
-            $table->timestamp('expires_at')->nullable()->index();
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('expires_at')->nullable()->index();
+            $table->timestampTz('completed_at')->nullable();
+            $table->timestampsTz();
 
             // Indexes for common queries
             $table->index(['status', 'created_at']);

@@ -23,14 +23,14 @@ return new class extends Migration
             $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'jsonb'));
             $table->addColumn($jsonType, 'conditions')->nullable();
 
-            $table->timestamp('starts_at');
-            $table->timestamp('ends_at');
+            $table->timestampTz('starts_at');
+            $table->timestampTz('ends_at');
             $table->integer('max_uses')->nullable();
             $table->integer('current_uses')->default(0);
 
             $table->addColumn($jsonType, 'affiliate_ids')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['starts_at', 'ends_at']);
             $table->index('program_id');

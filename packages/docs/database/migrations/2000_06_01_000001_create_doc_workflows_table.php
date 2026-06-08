@@ -26,7 +26,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->{$jsonColumnType}('rules')->nullable();
             $table->unsignedInteger('priority')->default(0);
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['is_active', 'doc_type', 'priority']);
         });
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->{$jsonColumnType}('conditions')->nullable();
             $table->boolean('is_required')->default(true);
             $table->unsignedInteger('timeout_hours')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['workflow_id', 'order']);
         });

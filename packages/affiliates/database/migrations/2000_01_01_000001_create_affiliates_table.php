@@ -35,8 +35,8 @@ return new class extends Migration
             $table->string('tracking_domain')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamp('activated_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('activated_at')->nullable();
+            $table->timestampsTz();
             $table->index(['status', 'activated_at'], 'affiliates_active_idx');
         });
     }

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['owner_type', 'owner_id', 'is_active']);
             $table->unique(['owner_type', 'owner_id', 'slug']);

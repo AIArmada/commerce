@@ -57,9 +57,9 @@ return new class extends Migration
                 ->comment('Tracks refund amount in minor units.');
             $table->string('failure_reason')->nullable()
                 ->comment('Stores payment failure reason for analytics.');
-            $table->timestamp('failed_at')->nullable()
+            $table->timestampTz('failed_at')->nullable()
                 ->comment('Timestamp when payment failed.');
-            $table->timestamp('refunded_at')->nullable()
+            $table->timestampTz('refunded_at')->nullable()
                 ->comment('Timestamp when payment was refunded.');
 
             // Timestamps
@@ -122,7 +122,7 @@ return new class extends Migration
             $table->nullableMorphs('owner');
 
             // Laravel timestamps for internal use
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Indexes for optimal query performance
             $table->index(['status', 'is_test']);

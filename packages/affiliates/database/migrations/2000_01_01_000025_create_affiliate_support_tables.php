@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('category')->default('general');
             $table->string('priority')->default('normal');
             $table->string('status')->default('open');
-            $table->timestamps();
+            $table->timestampsTz();
         });
 
         Schema::create($messagesTable, function (Blueprint $table): void {
@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('staff_id')->nullable();
             $table->text('message');
             $table->boolean('is_staff_reply')->default(false);
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

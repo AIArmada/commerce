@@ -38,9 +38,9 @@ return new class extends Migration
             $table->string('channel')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamp('occurred_at')->nullable()->index();
-            $table->timestamp('approved_at')->nullable()->index();
-            $table->timestamps();
+            $table->timestampTz('occurred_at')->nullable()->index();
+            $table->timestampTz('approved_at')->nullable()->index();
+            $table->timestampsTz();
 
             $table->index(['affiliate_id', 'status'], 'affiliate_conversions_affiliate_status_idx');
             $table->index(['status', 'occurred_at'], 'affiliate_conversions_status_date_idx');

@@ -32,8 +32,8 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable()->index();
             $table->string('user_agent', 512)->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamp('touched_at')->nullable()->index();
-            $table->timestamps();
+            $table->timestampTz('touched_at')->nullable()->index();
+            $table->timestampsTz();
 
             $table->index(['subject_type', 'subject_identifier'], 'affiliate_touchpoints_subject_idx');
         });

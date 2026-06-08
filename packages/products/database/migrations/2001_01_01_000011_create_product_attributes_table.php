@@ -44,7 +44,7 @@ return new class extends Migration
             // Default value
             $table->text('default_value')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['owner_type', 'owner_id', 'code']);
 

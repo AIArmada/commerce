@@ -43,7 +43,7 @@ return new class extends Migration
 
             $table->{$jsonColumnType}('metadata')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['owner_type', 'owner_id', 'sku']);
 

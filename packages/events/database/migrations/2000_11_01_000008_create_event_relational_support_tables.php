@@ -39,7 +39,7 @@ return new class extends Migration
             $table->string('term_label')->nullable();
             $table->unsignedInteger('order_column')->nullable();
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['assignable_type', 'assignable_id', 'group_key'], 'event_classifications_assignable_group_index');
             $table->index(['group_key', 'term_key'], 'event_classifications_group_term_index');
@@ -59,7 +59,7 @@ return new class extends Migration
             $table->string('visibility')->default('public');
             $table->unsignedInteger('order_column')->nullable();
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['assignable_type', 'assignable_id', 'role_key'], 'event_assets_assignable_role_index');
             $table->index(['role_key', 'visibility'], 'event_assets_role_visibility_index');
@@ -74,7 +74,7 @@ return new class extends Migration
             $table->timestampTz('submitted_at')->nullable();
             $table->text('notes')->nullable();
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['event_id', 'status'], 'event_submissions_event_status_index');
         });
@@ -92,7 +92,7 @@ return new class extends Migration
             $table->{$jsonColumnType}('before_snapshot')->nullable();
             $table->{$jsonColumnType}('after_snapshot')->nullable();
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['event_id', 'decision'], 'event_reviews_event_decision_index');
             $table->index(['event_submission_id', 'decision'], 'event_reviews_submission_decision_index');
@@ -113,7 +113,7 @@ return new class extends Migration
             $table->timestampTz('published_at')->nullable();
             $table->timestampTz('retracted_at')->nullable();
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['event_id', 'change_key'], 'event_change_notices_event_change_index');
             $table->index(['state', 'severity'], 'event_change_notices_state_severity_index');
@@ -131,7 +131,7 @@ return new class extends Migration
             $table->string('status')->default('present');
             $table->timestampTz('checked_in_at')->nullable();
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['occurrence_id', 'status'], 'event_attendance_occurrence_status_index');
             $table->index(['registration_id', 'source'], 'event_attendance_registration_source_index');
@@ -146,7 +146,7 @@ return new class extends Migration
             $table->string('type');
             $table->unsignedInteger('weight')->default(1);
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['event_id', 'type'], 'event_engagements_event_type_index');
             $table->index(['occurrence_id', 'type'], 'event_engagements_occurrence_type_index');

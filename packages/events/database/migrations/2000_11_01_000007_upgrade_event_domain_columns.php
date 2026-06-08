@@ -57,15 +57,15 @@ return new class extends Migration
             }
 
             if (! Schema::hasColumn($tableName, 'published_at')) {
-                $table->timestamp('published_at')->nullable()->index()->after('default_duration_minutes');
+                $table->timestampTz('published_at')->nullable()->index()->after('default_duration_minutes');
             }
 
             if (! Schema::hasColumn($tableName, 'public_starts_at')) {
-                $table->timestamp('public_starts_at')->nullable()->index()->after('published_at');
+                $table->timestampTz('public_starts_at')->nullable()->index()->after('published_at');
             }
 
             if (! Schema::hasColumn($tableName, 'public_ends_at')) {
-                $table->timestamp('public_ends_at')->nullable()->index()->after('public_starts_at');
+                $table->timestampTz('public_ends_at')->nullable()->index()->after('public_starts_at');
             }
 
             if (! Schema::hasColumn($tableName, 'media_references')) {
@@ -123,7 +123,7 @@ return new class extends Migration
                 $table->text('biography')->nullable();
                 $table->unsignedInteger('order_column')->nullable();
                 $table->{$jsonType}('metadata')->nullable();
-                $table->timestamps();
+                $table->timestampsTz();
 
                 $table->index(['event_id', 'order_column']);
                 $table->index(['event_id', 'role_key']);

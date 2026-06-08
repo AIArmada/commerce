@@ -24,13 +24,13 @@ return new class extends Migration
 
             $table->string('commission_type');
             $table->integer('commission_value');
-            $table->timestamp('starts_at')->nullable();
-            $table->timestamp('ends_at')->nullable();
+            $table->timestampTz('starts_at')->nullable();
+            $table->timestampTz('ends_at')->nullable();
             $table->boolean('is_active')->default(true);
 
             $table->addColumn($jsonType, 'metadata')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['program_id', 'is_active', 'priority']);
             $table->index('rule_type');

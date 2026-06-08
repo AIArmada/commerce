@@ -23,7 +23,7 @@ return new class extends Migration
             $table->{$jsonType}('rules');
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableUuidMorphs('owner');
-            $table->timestamps();
+            $table->timestampsTz();
             $table->index(['is_default', 'is_active']);
         });
     }

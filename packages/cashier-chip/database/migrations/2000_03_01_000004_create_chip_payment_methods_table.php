@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('last_four', 4)->nullable();
             $table->boolean('is_default')->default(false);
             $table->{$jsonColumnType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['billable_type', 'billable_id', 'recurring_token'], $tableName . '_billable_token_unique');
             $table->index(['billable_type', 'billable_id', 'is_default'], $tableName . '_billable_default_idx');

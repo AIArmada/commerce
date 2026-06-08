@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->string('status')->default('draft');
-            $table->timestamp('starts_at')->nullable();
-            $table->timestamp('ends_at')->nullable();
+            $table->timestampTz('starts_at')->nullable();
+            $table->timestampTz('ends_at')->nullable();
             $table->boolean('requires_approval')->default(true);
             $table->boolean('is_public')->default(true);
             $table->integer('default_commission_rate_basis_points')->default(1000);
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->addColumn($jsonType, 'eligibility_rules')->nullable();
             $table->addColumn($jsonType, 'metadata')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index('status');
             $table->index(['is_public', 'status']);

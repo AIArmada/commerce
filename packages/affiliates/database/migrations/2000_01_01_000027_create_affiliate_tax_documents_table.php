@@ -22,9 +22,9 @@ return new class extends Migration
             $table->string('currency', 3)->default('USD');
             $table->string('document_path')->nullable();
             $table->text('notes')->nullable();
-            $table->timestamp('generated_at')->nullable();
-            $table->timestamp('sent_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('generated_at')->nullable();
+            $table->timestampTz('sent_at')->nullable();
+            $table->timestampsTz();
 
             $table->index(['affiliate_id', 'tax_year']);
         });

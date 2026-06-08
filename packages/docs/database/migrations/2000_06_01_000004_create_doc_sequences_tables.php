@@ -29,7 +29,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('padding')->default(6);
             $table->boolean('is_active')->default(true);
             $table->nullableUuidMorphs('owner');
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['doc_type', 'is_active'], $sequencesTable . '_type_active_index');
             $table->index('owner_type', $sequencesTable . '_owner_type_index');
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->foreignUuid('doc_sequence_id');
             $table->string('period_key', 20);
             $table->unsignedBigInteger('last_number')->default(0);
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(
                 ['doc_sequence_id', 'period_key'],

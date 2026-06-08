@@ -18,8 +18,8 @@ return new class extends Migration
             $table->foreignUuid('from_rank_id')->nullable();
             $table->foreignUuid('to_rank_id')->nullable();
             $table->string('reason');
-            $table->timestamp('qualified_at');
-            $table->timestamps();
+            $table->timestampTz('qualified_at');
+            $table->timestampsTz();
 
             $table->index(['affiliate_id', 'qualified_at']);
         });

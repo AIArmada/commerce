@@ -31,7 +31,7 @@ return new class extends Migration
 
             $table->nullableMorphs('owner');
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Indexes
             $table->index(['min_quantity', 'max_quantity']);

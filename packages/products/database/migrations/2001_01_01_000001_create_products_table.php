@@ -62,9 +62,9 @@ return new class extends Migration
             $table->{$jsonColumnType}('metadata')->nullable();
 
             // Publishing
-            $table->timestamp('published_at')->nullable();
+            $table->timestampTz('published_at')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['owner_type', 'owner_id', 'slug']);
             $table->unique(['owner_type', 'owner_id', 'sku']);

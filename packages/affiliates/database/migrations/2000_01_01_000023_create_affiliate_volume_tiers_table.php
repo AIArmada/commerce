@@ -20,7 +20,7 @@ return new class extends Migration
             $table->bigInteger('max_volume_minor')->nullable();
             $table->integer('commission_rate_basis_points');
             $table->string('period')->default('monthly');
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index('program_id');
             $table->index('min_volume_minor');

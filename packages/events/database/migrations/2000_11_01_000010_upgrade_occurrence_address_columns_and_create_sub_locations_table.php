@@ -64,7 +64,7 @@ return new class extends Migration
             $table->string('slug');
             $table->text('description')->nullable();
             $table->unsignedInteger('order_column')->nullable()->index();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['owner_type', 'owner_id', 'slug']);
             $table->index(['owner_type', 'owner_id', 'order_column']);

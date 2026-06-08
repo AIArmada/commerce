@@ -18,15 +18,15 @@ return new class extends Migration
             $table->foreignUuid('program_id');
             $table->foreignUuid('tier_id')->nullable();
             $table->string('status')->default('pending');
-            $table->timestamp('applied_at');
-            $table->timestamp('approved_at')->nullable();
-            $table->timestamp('expires_at')->nullable();
+            $table->timestampTz('applied_at');
+            $table->timestampTz('approved_at')->nullable();
+            $table->timestampTz('expires_at')->nullable();
             $table->foreignUuid('approved_by')->nullable();
 
             $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'jsonb'));
             $table->addColumn($jsonType, 'custom_terms')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['affiliate_id', 'program_id']);
             $table->index(['program_id', 'status']);

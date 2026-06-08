@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('timezone', 64)->nullable();
             $table->text('notes')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['owner_type', 'owner_id', 'country']);
             $table->unique(['owner_type', 'owner_id', 'slug']);

@@ -52,7 +52,7 @@ return new class extends Migration
 
             $table->nullableUuidMorphs('owner');
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['owner_scope', 'name']);
 

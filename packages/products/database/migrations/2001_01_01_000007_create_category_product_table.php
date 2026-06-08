@@ -16,7 +16,7 @@ return new class extends Migration
 
             $table->unsignedInteger('position')->default(0);
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->primary(['category_id', 'product_id']);
         });

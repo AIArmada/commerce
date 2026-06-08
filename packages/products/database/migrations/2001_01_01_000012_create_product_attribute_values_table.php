@@ -28,7 +28,7 @@ return new class extends Migration
             // For translatable attributes
             $table->string('locale', 10)->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Unique constraint: one value per attribute per model per locale
             $table->unique(['attribute_id', 'attributable_type', 'attributable_id', 'locale'], 'attr_val_unique');

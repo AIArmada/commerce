@@ -17,7 +17,7 @@ return new class extends Migration
             // Position for ordering products within a collection
             $table->unsignedInteger('position')->default(0);
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->primary(['collection_id', 'product_id']);
             $table->index(['collection_id', 'position']);

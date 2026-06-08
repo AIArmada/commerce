@@ -26,12 +26,12 @@ return new class extends Migration
             $table->unsignedInteger('min_quantity')->default(1);
 
             // Scheduling
-            $table->timestamp('starts_at')->nullable();
-            $table->timestamp('ends_at')->nullable();
+            $table->timestampTz('starts_at')->nullable();
+            $table->timestampTz('ends_at')->nullable();
 
             $table->nullableMorphs('owner');
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Indexes
             $table->index(['priceable_type', 'priceable_id', 'price_list_id']);
