@@ -7,7 +7,7 @@
         "laravel",
         "commerce",
         "events",
-        "speakers",
+        "people",
         "organizers",
         "registrations",
         "attendance",
@@ -27,7 +27,8 @@
     "suggest": {
         "aiarmada/products": "Enables product and variant relationships for event definitions and occurrences.",
         "aiarmada/customers": "Enables customer-backed purchasers and participants for registrations.",
-        "aiarmada/orders": "Enables order-item fulfillment and event order completion sync."
+        "aiarmada/orders": "Enables order-item fulfillment and event order completion sync.",
+        "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing."
     },
     "autoload": {
         "psr-4": {

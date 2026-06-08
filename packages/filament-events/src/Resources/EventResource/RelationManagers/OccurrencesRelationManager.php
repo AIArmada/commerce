@@ -15,6 +15,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class OccurrencesRelationManager extends RelationManager
 {
@@ -31,6 +32,7 @@ final class OccurrencesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['address', 'subLocation']))
             ->recordTitleAttribute('name')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
@@ -47,9 +49,9 @@ final class OccurrencesRelationManager extends RelationManager
                     ->dateTime('d M Y H:i')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('venue.name')
-                    ->label('Venue')
-                    ->placeholder('No venue'),
+                Tables\Columns\TextColumn::make('location_label')
+                    ->label('Location')
+                    ->placeholder('No address'),
 
                 Tables\Columns\TextColumn::make('registrations_count')
                     ->label('Registrations')

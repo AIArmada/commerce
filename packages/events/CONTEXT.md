@@ -10,7 +10,7 @@ family: analytics-and-events
 
 ## Snapshot
 - Composer: `aiarmada/events`
-- Role: Reusable event-domain base with series, organizers, speakers, venues, occurrences, public visibility, attendance, and registration lifecycle rules.
+- Role: Reusable event-domain base with series, organizers, people roles, venues, occurrences, public visibility, attendance, and registration lifecycle rules.
 - Search first: `src/Models`, `src/Actions`, `src/Services`, `src/Events`, `config`, `docs`
 - Related: `filament-events`, `products`, `customers`, `orders`, optional media/tag/search adapters
 

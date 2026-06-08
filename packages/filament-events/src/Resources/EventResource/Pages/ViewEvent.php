@@ -15,6 +15,10 @@ final class ViewEvent extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            EventResource::submitForReviewAction(),
+            EventResource::approveAction(),
+            EventResource::requestChangesAction(),
+            EventResource::rejectEventAction(),
             Actions\EditAction::make(),
         ];
     }

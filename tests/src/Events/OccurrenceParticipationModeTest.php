@@ -18,6 +18,8 @@ it('keeps registration required as the default participation mode', function ():
         'name' => 'Default Registration Event',
         'slug' => 'default-registration-event',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'UTC',
     ]);
 
@@ -104,7 +106,6 @@ it('syncs participation mode through the structured occurrence action', function
             'slug' => 'hybrid-event',
             'default_timezone' => 'UTC',
         ],
-        venue: null,
         occurrence: [
             'starts_at' => '2026-08-21 10:00:00',
             'timezone' => 'UTC',
@@ -123,6 +124,8 @@ function createParticipationModeOccurrence(OccurrenceParticipationMode $mode, ?i
         'name' => 'Participation ' . $mode->value,
         'slug' => 'participation-' . $mode->value . '-' . uniqid(),
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'UTC',
     ]);
 

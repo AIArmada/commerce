@@ -15,7 +15,7 @@ All package options live in `config/events.php`.
     'tables' => [
         'series' => 'event_series',
         'events' => 'events',
-        'speakers' => 'event_speakers',
+            'people' => 'event_speakers',
         'venues' => 'event_venues',
         'occurrences' => 'event_occurrences',
         'registrations' => 'event_registrations',
@@ -37,7 +37,7 @@ Override individual table names for:
 
 - `series`
 - `events`
-- `speakers`
+- `people`
 - `venues`
 - `occurrences`
 - `registrations`
@@ -48,14 +48,14 @@ The defaults are intentionally package-specific to avoid collisions with a host 
 'tables' => [
     'series' => 'event_series',
     'events' => 'events',
-    'speakers' => 'event_speakers',
+        'people' => 'event_speakers',
     'venues' => 'event_venues',
     'occurrences' => 'event_occurrences',
     'registrations' => 'event_registrations',
 ],
 ```
 
-Equivalent environment overrides are available: `EVENTS_TABLE_SERIES`, `EVENTS_TABLE_EVENTS`, `EVENTS_TABLE_SPEAKERS`, `EVENTS_TABLE_VENUES`, `EVENTS_TABLE_OCCURRENCES`, and `EVENTS_TABLE_REGISTRATIONS`.
+Equivalent environment overrides are available: `EVENTS_TABLE_SERIES`, `EVENTS_TABLE_EVENTS`, `EVENTS_TABLE_PEOPLE`, `EVENTS_TABLE_VENUES`, `EVENTS_TABLE_OCCURRENCES`, and `EVENTS_TABLE_REGISTRATIONS`.
 
 ## Models
 
@@ -63,8 +63,7 @@ Equivalent environment overrides are available: `EVENTS_TABLE_SERIES`, `EVENTS_T
 'models' => [
     'event' => \AIArmada\Events\Models\Event::class,
     'organizer' => null,
-    'speaker' => null,
-    'venue' => \AIArmada\Events\Models\Venue::class,
+    'sub_location' => \AIArmada\Events\Models\EventSubLocation::class,
 ],
 ```
 
@@ -74,19 +73,21 @@ The Eloquent model class returned by `Occurrence::event()` and `EventSeries::eve
 
 Set this to a host application's canonical event model when the package should manage occurrences and registrations for a richer public event record.
 
-### `models.venue`
+### `models.sub_location`
 
-The Eloquent model class returned by `Occurrence::venue()`.
+The Eloquent model class used for the shared sub-location pool.
 
-Set this to a host application's venue/location model when the package should reference host venue records.
+Set this to a host application's sub-location model if it needs a custom table or namespace.
+
+### `addresses.models`
+
+List of model classes that the address selector should offer in Filament and other selection surfaces.
+
+Address models must implement `AIArmada\Events\Contracts\EventAddressable` and provide their own address data.
 
 ### `models.organizer`
 
 Optional documentation seam for the host application's organizer model. Organizer links are stored as morph columns on events, so the package does not need this value to resolve the relationship.
-
-### `models.speaker`
-
-Optional documentation seam for the host application's speaker model. Speaker links are stored as morph columns on `EventSpeaker`, so display-only speakers and app-owned speaker records can coexist.
 
 ## Features
 
@@ -278,6 +279,7 @@ The package resolves related models from config so events and registrations can 
     'order_item_model' => class_exists(\AIArmada\Orders\Models\OrderItem::class)
         ? \AIArmada\Orders\Models\OrderItem::class
         : null,
+    'checkout_intent_resolver' => null,
     'order_item_fulfillment_resolver' => null,
 ],
 ```
@@ -288,11 +290,17 @@ When a related package is missing, its config value resolves to `null`. The core
 
 Order fulfillment features are auto-registered only when the AIArmada customers and orders package classes are available.
 
+### `integrations.checkout_intent_resolver`
+
+Set this to a class implementing `AIArmada\Events\Contracts\EventCheckoutIntentResolver` when paid occurrence checkout should use application-specific buyable, pricing, or participant metadata rules.
+
+If it is `null`, the package binds `DefaultEventCheckoutIntentResolver` when the first-party checkout stack is installed. Without that stack, it falls back to `NullEventCheckoutIntentResolver`.
+
 ### `integrations.order_item_fulfillment_resolver`
 
 Set this to a class implementing `AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver` when order items should create event registrations.
 
-If it is `null`, the package binds a no-op resolver and order fulfillment returns an empty registration collection.
+If it is `null`, the package binds `DefaultEventOrderItemFulfillmentResolver` when the first-party order stack is installed. That default resolver fulfills order items carrying event checkout metadata. Without the order stack, the package falls back to the no-op resolver.
 
 ## Record-level occurrence settings
 

@@ -15,11 +15,11 @@ return new class extends Migration
 
         $eventsTable = (string) config('events.database.tables.events', 'events');
         $venuesTable = (string) config('events.database.tables.venues', 'event_venues');
-        $speakersTable = (string) config('events.database.tables.speakers', 'event_speakers');
+        $peopleTable = (string) config('events.database.tables.people', 'event_speakers');
 
         $this->upgradeEventsTable($eventsTable, $jsonType);
         $this->upgradeVenuesTable($venuesTable);
-        $this->createEventSpeakersTable($speakersTable, $jsonType);
+        $this->upgradeEventPeopleTable($peopleTable, $jsonType);
     }
 
     private function upgradeEventsTable(string $tableName, string $jsonType): void
@@ -42,6 +42,14 @@ return new class extends Migration
 
             if (! Schema::hasColumn($tableName, 'moderation_status')) {
                 $table->string('moderation_status', 32)->default('approved')->index()->after('status');
+            }
+
+            if (! Schema::hasColumn($tableName, 'structure')) {
+                $table->string('structure', 32)->default('standalone')->index()->after('moderation_status');
+            }
+
+            if (! Schema::hasColumn($tableName, 'parent_event_id')) {
+                $table->uuid('parent_event_id')->nullable()->index()->after('event_series_id');
             }
 
             if (! Schema::hasColumn($tableName, 'visibility')) {
@@ -99,25 +107,55 @@ return new class extends Migration
         });
     }
 
-    private function createEventSpeakersTable(string $tableName, string $jsonType): void
+    private function upgradeEventPeopleTable(string $tableName, string $jsonType): void
     {
-        if (Schema::hasTable($tableName)) {
+        if (! Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
+                $table->uuid('id')->primary();
+                $table->nullableUuidMorphs('owner');
+                $table->uuid('event_id')->index();
+                $table->nullableUuidMorphs('person');
+                $table->string('display_name')->nullable();
+                $table->string('role')->nullable();
+                $table->string('role_key')->nullable();
+                $table->string('role_label')->nullable();
+                $table->boolean('is_public')->default(true)->index();
+                $table->text('biography')->nullable();
+                $table->unsignedInteger('order_column')->nullable();
+                $table->{$jsonType}('metadata')->nullable();
+                $table->timestamps();
+
+                $table->index(['event_id', 'order_column']);
+                $table->index(['event_id', 'role_key']);
+            });
+
             return;
         }
 
-        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
-            $table->uuid('id')->primary();
-            $table->nullableUuidMorphs('owner');
-            $table->uuid('event_id')->index();
-            $table->nullableUuidMorphs('speaker');
-            $table->string('display_name')->nullable();
-            $table->string('role')->nullable();
-            $table->text('biography')->nullable();
-            $table->unsignedInteger('order_column')->nullable();
-            $table->{$jsonType}('metadata')->nullable();
-            $table->timestamps();
+        Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+            if (! Schema::hasColumn($tableName, 'person_type')) {
+                $table->string('person_type')->nullable()->after('event_id');
+            }
 
-            $table->index(['event_id', 'order_column']);
+            if (! Schema::hasColumn($tableName, 'person_id')) {
+                $table->uuid('person_id')->nullable()->after('person_type');
+            }
+
+            if (! Schema::hasColumn($tableName, 'role_key')) {
+                $table->string('role_key')->nullable()->after('role');
+            }
+
+            if (! Schema::hasColumn($tableName, 'role_label')) {
+                $table->string('role_label')->nullable()->after('role_key');
+            }
+
+            if (! Schema::hasColumn($tableName, 'is_public')) {
+                $table->boolean('is_public')->default(true)->index()->after('role_label');
+            }
+
+            if (! Schema::hasColumn($tableName, 'order_column')) {
+                $table->unsignedInteger('order_column')->nullable()->after('biography');
+            }
         });
     }
 };

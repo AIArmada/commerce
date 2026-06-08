@@ -8,7 +8,7 @@ title: Domain Invariants
 
 `aiarmada/events` is a reusable event-domain, scheduled occurrence, participation, registration, and ticketing lifecycle package.
 
-It is suitable for public event definitions, organizer and speaker links, venues / locations, occurrence dates, capacity, registration windows, walk-in attendance, check-in, cancellation, and commerce order fulfillment.
+It is suitable for public event definitions, organizer and people links, venues / locations, occurrence dates, capacity, registration windows, walk-in attendance, check-in, cancellation, and commerce order fulfillment.
 
 It is not a replacement for app-specific editorial policy. Public copy, SEO policy, recommendations, submission workflows, and app-specific publishing rules should stay in the host application.
 
@@ -24,11 +24,11 @@ The package does not add database-level foreign keys or cascades. Cross-record i
 
 `events.models.event` controls the model returned by `Occurrence::event()` and `EventSeries::events()`.
 
-`events.models.venue` controls the model returned by `Occurrence::venue()`.
+`Occurrence::address()` is polymorphic and stores the actual address model in `address_type` / `address_id`. That model implements `EventAddressable` and returns its own label, lines, and coordinates.
 
-Organizer and speaker links are stored as morphs so package-owned and host-owned identity models can coexist.
+`events.addresses.models` controls which address model classes appear in the Filament UI and other selection surfaces. `Venue` is one default addressable implementation, but host applications can add more address models without changing occurrence storage.
 
-The package ships its own `Event`, `EventSpeaker`, and `Venue` models as defaults. Host applications with richer event or venue records can configure these keys and create occurrences against the host model IDs.
+Organizer and people links are stored as morphs so package-owned and host-owned identity models can coexist.
 
 ## Public Event Visibility
 
@@ -114,9 +114,24 @@ Fresh installs use package-specific tables:
 - `events`
 - `event_speakers`
 - `event_venues`
+- `event_sub_locations`
 - `event_occurrences`
 - `event_registrations`
 
 Existing installs that already use older defaults must pin `events.database.tables.*` to their installed table names before running migrations.
 
 Migrations use UUID primary keys and avoid database-level foreign key constraints or cascades. Schema changes should be forward-safe and should not assume package tables own host application records.
+
+## Auth neutrality
+
+The package never owns user-membership concepts on `Event`. Hosts that need
+team membership, invitations, claims, or public-submission locks implement
+these in their own traits and models. The package exposes enough domain
+events (`EventModerationTransitioned`, `EventChangeNoticePublished`,
+`EventPostponed`, `EventDelayed`, `EventResumed`, `EventCancelled`) for
+hosts to wire their own listeners.
+
+The package's `Event` model will never grow `members()`, `addOrganizer()`,
+`userCanManage()`, `event_user` pivot, `MemberInvitation`, or
+`MembershipClaim`. Any such additions must be made on a host-side model
+that extends or wraps the package model.

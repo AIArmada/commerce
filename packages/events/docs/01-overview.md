@@ -6,16 +6,16 @@ title: Overview
 
 ## Purpose
 
-`aiarmada/events` owns the reusable event-domain layer for AIArmada applications: public event definitions, series, organizers, speakers, venues / locations, scheduled occurrences, participation modes, attendee registrations, and optional commerce fulfillment.
+`aiarmada/events` owns the reusable event-domain layer for AIArmada applications: public event definitions, series, organizers, people roles, venues / locations, scheduled occurrences, participation modes, attendee registrations, and optional commerce fulfillment.
 
 ## What this package owns
 
-- Event series, event definitions, organizer links, speaker links, venues / locations, occurrences, and registrations
+- Event series, event definitions, organizer links, people-role links, venues / locations, occurrences, and registrations
 - Public event moderation, visibility, publication-window, media-reference, taxonomy, search-payload, and display-timezone seams
 - Registration creation, walk-in attendance, batch fulfillment, check-in, cancellation, and attendee lifecycle rules
 - Occurrence capacity plus registration and check-in opening / closing windows
 - Event-domain actions such as `EnsureOccurrenceAction` for idempotent series / event / venue / occurrence upserts
-- Adapter seams for host event models, host venue models, organizer / speaker identities, attendee identity, lifecycle status rules, search indexing, display timezone, media, taxonomy, and order-item fulfillment
+- Adapter seams for host event models, host venue models, organizer / people identities, attendee identity, lifecycle status rules, search indexing, display timezone, media, taxonomy, and order-item fulfillment
 
 ## What this package does not own
 
@@ -33,7 +33,7 @@ Applications can either use `AIArmada\Events\Models\Event` as their base event m
 
 ## Main models services or surfaces
 
-- **Models** — `EventSeries`, `Event`, `EventSpeaker`, `Venue`, `Occurrence`, `Registration`
+- **Models** — `EventSeries`, `Event`, `EventPerson`, `Venue`, `Occurrence`, `Registration`
 - **Enums** — `EventStatus`, `EventModerationStatus`, `EventVisibility`, `OccurrenceStatus`, `RegistrationStatus`
 - **Actions** — `EnsureOccurrenceAction` plus order-fulfillment helpers for creating registrations from commerce orders
 - **Services** — `RegistrationService` for single create, batch create, check-in, and cancellation
@@ -50,7 +50,7 @@ Applications can either use `AIArmada\Events\Models\Event` as their base event m
 - Owner-aware event models powered by `commerce-support`
 - Event series and reusable event topics
 - Venue and scheduled occurrence modeling
-- Organizer and speaker links without requiring a specific CRM or member model
+- Organizer and people links without requiring a specific CRM or member model
 - Event moderation, visibility, publication windows, media references, taxonomy payloads, and generic search payloads
 - Capacity-aware occurrences with registration and check-in windows
 - Participation modes for no registration, registration-required, walk-in-only, and hybrid events
@@ -70,12 +70,13 @@ When `aiarmada/products`, `aiarmada/customers`, and `aiarmada/orders` are instal
 
 - product and variant relationships on events and occurrences
 - customer-backed purchaser and participant relationships on registrations
-- order-item fulfillment into registrations when an application supplies an `EventOrderItemFulfillmentResolver`
+- metadata-driven checkout and order-item fulfillment for paid occurrences
+- optional override resolvers for checkout intent and order-item fulfillment
 - ended-event order finalization command and check-in completion listener
 
 If those packages are not installed, the core event, occurrence, venue, registration, capacity, and check-in lifecycle still works. Commerce-specific relationship methods throw a clear integration error when called without their matching package.
 
-When the order packages are installed but no fulfillment resolver is configured, order fulfillment intentionally returns no registrations.
+When the order and checkout packages are installed, the package can resolve paid-occurrence checkout intents and fulfill matching order items from event checkout metadata. Applications can still override those defaults with their own resolvers.
 
 ## Core models
 
@@ -83,7 +84,7 @@ When the order packages are installed but no fulfillment resolver is configured,
 | --- | --- |
 | `EventSeries` | Groups related topics under one program or brand |
 | `Event` | Reusable public event definition with organizer, moderation, visibility, media, taxonomy, and search seams |
-| `EventSpeaker` | Ordered speaker/presenter links for display-only names or app-owned speaker models |
+| `EventPerson` | Ordered people-role links for display-only names or app-owned person models |
 | `Venue` | Physical, online, or hybrid location details |
 | `Occurrence` | A scheduled run of an event with capacity and registration / check-in windows |
 | `Registration` | One attendee entitlement for one occurrence |
@@ -93,7 +94,7 @@ When the order packages are installed but no fulfillment resolver is configured,
 The package `Event` model is intended to be a reusable base for serious event applications. It includes:
 
 - `organizer_type` / `organizer_id` morphs for institutions, organizations, creators, or other host-owned organizer records
-- ordered `EventSpeaker` links that can point to host speaker models or store display-only speaker names
+- ordered `EventPerson` links that can point to host person models or store display-only person names
 - `moderation_status` for pending / approved / rejected review flows
 - `visibility` for public, unlisted, and private records
 - `published_at`, `public_starts_at`, and `public_ends_at` publication windows

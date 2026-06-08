@@ -76,7 +76,7 @@ Also confirm the occurrence status is listed in `events.lifecycle.occurrence.che
 
 **Fix:** configure a class that implements `AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver`.
 
-**Verify:** resolve `EventOrderItemFulfillmentResolver` from the container and confirm it is your application resolver, not the default no-op resolver.
+**Verify:** resolve `EventOrderItemFulfillmentResolver` from the container and confirm it is either your application resolver or the package default resolver, depending on your intended integration.
 
 ## Package migrations try to create unexpected table names
 

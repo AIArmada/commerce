@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Models\Event as EventModel;
+use AIArmada\Events\Models\EventSubLocation;
 use AIArmada\Events\Models\Venue as VenueModel;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -24,18 +25,33 @@ return [
         'tables' => [
             'series' => env('EVENTS_TABLE_SERIES', $tablePrefix . 'series'),
             'events' => env('EVENTS_TABLE_EVENTS', 'events'),
-            'speakers' => env('EVENTS_TABLE_SPEAKERS', $tablePrefix . 'speakers'),
+            'people' => env('EVENTS_TABLE_PEOPLE', $tablePrefix . 'speakers'),
             'venues' => env('EVENTS_TABLE_VENUES', $tablePrefix . 'venues'),
             'occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'occurrences'),
+            'sub_locations' => env('EVENTS_TABLE_SUB_LOCATIONS', $tablePrefix . 'sub_locations'),
             'registrations' => env('EVENTS_TABLE_REGISTRATIONS', $tablePrefix . 'registrations'),
+            'classifications' => env('EVENTS_TABLE_CLASSIFICATIONS', $tablePrefix . 'classifications'),
+            'assets' => env('EVENTS_TABLE_ASSETS', $tablePrefix . 'assets'),
+            'references' => env('EVENTS_TABLE_REFERENCES', $tablePrefix . 'reference_assignments'),
+            'submissions' => env('EVENTS_TABLE_SUBMISSIONS', $tablePrefix . 'submissions'),
+            'reviews' => env('EVENTS_TABLE_REVIEWS', $tablePrefix . 'reviews'),
+            'change_notices' => env('EVENTS_TABLE_CHANGE_NOTICES', $tablePrefix . 'change_notices'),
+            'agenda_items' => env('EVENTS_TABLE_AGENDA_ITEMS', $tablePrefix . 'agenda_items'),
+            'attendance' => env('EVENTS_TABLE_ATTENDANCE', $tablePrefix . 'attendance'),
+            'engagements' => env('EVENTS_TABLE_ENGAGEMENTS', $tablePrefix . 'engagements'),
         ],
     ],
 
     'models' => [
         'event' => EventModel::class,
         'organizer' => null,
-        'speaker' => null,
-        'venue' => VenueModel::class,
+        'sub_location' => EventSubLocation::class,
+    ],
+
+    'addresses' => [
+        'models' => [
+            VenueModel::class,
+        ],
     ],
 
     'features' => [
@@ -55,6 +71,81 @@ return [
         'occurrence_participation_mode' => env('EVENTS_OCCURRENCE_PARTICIPATION_MODE', 'registration_required'),
         'event_moderation_status' => env('EVENTS_EVENT_MODERATION_STATUS', 'approved'),
         'event_visibility' => env('EVENTS_EVENT_VISIBILITY', 'public'),
+        'event_structure' => env('EVENTS_EVENT_STRUCTURE', 'standalone'),
+        'occurrence_schedule_mode' => env('EVENTS_OCCURRENCE_SCHEDULE_MODE', 'manual'),
+        'occurrence_registration_mode' => env('EVENTS_OCCURRENCE_REGISTRATION_MODE', 'free'),
+        'occurrence_duplicate_strategy' => env('EVENTS_OCCURRENCE_DUPLICATE_STRATEGY', 'per_occurrence'),
+    ],
+
+    'moderation' => [
+        'actions' => [
+            'submit' => [
+                'from' => ['draft', 'pending', 'approved', 'changes_requested', 'rejected'],
+                'to' => 'pending',
+                'note_required' => false,
+                'reason_required' => false,
+            ],
+            'approve' => [
+                'from' => ['pending', 'changes_requested'],
+                'to' => 'approved',
+                'note_required' => false,
+                'reason_required' => false,
+            ],
+            'request_changes' => [
+                'from' => ['pending', 'approved'],
+                'to' => 'changes_requested',
+                'note_required' => true,
+                'reason_required' => true,
+            ],
+            'reject' => [
+                'from' => ['pending', 'approved', 'changes_requested'],
+                'to' => 'rejected',
+                'note_required' => true,
+                'reason_required' => true,
+            ],
+            'cancel' => [
+                'from' => ['pending', 'approved', 'changes_requested', 'rejected'],
+                'to' => 'pending',
+                'note_required' => false,
+                'reason_required' => false,
+            ],
+            'reconsider' => [
+                'from' => ['rejected', 'changes_requested'],
+                'to' => 'pending',
+                'note_required' => false,
+                'reason_required' => false,
+            ],
+            'revert_to_draft' => [
+                'from' => ['pending', 'approved', 'changes_requested', 'rejected'],
+                'to' => 'pending',
+                'note_required' => false,
+                'reason_required' => false,
+            ],
+            'remoderate' => [
+                'from' => ['approved', 'changes_requested', 'rejected'],
+                'to' => 'pending',
+                'note_required' => false,
+                'reason_required' => false,
+            ],
+        ],
+        'reason_codes' => [
+            'approved_for_publish' => [
+                'label' => 'Approved for Publish',
+                'note_required' => false,
+            ],
+            'needs_more_information' => [
+                'label' => 'Needs More Information',
+                'note_required' => true,
+            ],
+            'policy_violation' => [
+                'label' => 'Policy Violation',
+                'note_required' => true,
+            ],
+            'duplicate' => [
+                'label' => 'Duplicate',
+                'note_required' => true,
+            ],
+        ],
     ],
 
     'media' => [
@@ -76,11 +167,38 @@ return [
 
     'search' => [
         'payload_resolver' => null,
+        'engine' => null,
+    ],
+
+    'classifications' => [
+        'resolver' => null,
+    ],
+
+    'assets' => [
+        'resolver' => null,
+    ],
+
+    'references' => [
+        'resolver' => null,
     ],
 
     'timezone' => [
         'default' => env('EVENTS_TIMEZONE', env('APP_TIMEZONE', 'UTC')),
         'display_timezone_resolver' => null,
+    ],
+
+    'slug' => [
+        'source_field' => env('EVENTS_SLUG_SOURCE_FIELD', 'name'),
+        'max_length' => (int) env('EVENTS_SLUG_MAX_LENGTH', 60),
+    ],
+
+    'schedule' => [
+        'resolver' => null,
+    ],
+
+    'change_notices' => [
+        'audience_resolver' => null,
+        'notification_dispatcher' => null,
     ],
 
     'lifecycle' => [
@@ -102,6 +220,7 @@ return [
         'customer_model' => class_exists($customerModel) ? $customerModel : null,
         'order_model' => class_exists($orderModel) ? $orderModel : null,
         'order_item_model' => class_exists($orderItemModel) ? $orderItemModel : null,
+        'checkout_intent_resolver' => null,
         'order_item_fulfillment_resolver' => null,
     ],
 ];

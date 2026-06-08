@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\OccurrenceResource\RelationManagers;
 
 use AIArmada\Events\Enums\RegistrationStatus;
+use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 use AIArmada\FilamentEvents\Resources\RegistrationResource;
 use Filament\Actions\BulkActionGroup;
@@ -16,6 +17,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use RuntimeException;
 
 final class RegistrationsRelationManager extends RelationManager
 {
@@ -59,10 +61,15 @@ final class RegistrationsRelationManager extends RelationManager
                     ->options(RegistrationResource::statusOptions()),
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        return RegistrationResource::normalizeCreateData($data, $this->ownerOccurrence());
+                    }),
             ])
             ->actions([
                 EditAction::make(),
+                RegistrationResource::approveAction(),
+                RegistrationResource::rejectAction(),
                 RegistrationResource::checkInAction(),
                 RegistrationResource::cancelAction(),
                 DeleteAction::make(),
@@ -72,5 +79,19 @@ final class RegistrationsRelationManager extends RelationManager
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private function ownerOccurrence(): Occurrence
+    {
+        $ownerRecord = $this->getOwnerRecord();
+
+        if ($ownerRecord instanceof Occurrence) {
+            return $ownerRecord;
+        }
+
+        throw new RuntimeException(sprintf(
+            'Expected occurrence owner record, got %s.',
+            $ownerRecord::class,
+        ));
     }
 }
