@@ -46,6 +46,7 @@ it('wires registration approval actions and keeps create forms pending for appro
         'slug' => 'filament-approval-event',
         'status' => EventStatus::Active,
         'default_timezone' => 'Asia/Kuala_Lumpur',
+        'registration_required' => true,
     ]);
 
     $occurrence = Occurrence::create([

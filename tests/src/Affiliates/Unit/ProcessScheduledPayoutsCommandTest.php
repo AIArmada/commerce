@@ -169,7 +169,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         AffiliatePayout::create([
             'reference' => 'PAY-PENDING-' . uniqid(),
-            'payee_type' => Affiliate::class,
+            'payee_type' => $this->affiliate->getMorphClass(),
             'payee_id' => $this->affiliate->id,
             'amount_minor' => 5000,
             'currency' => 'USD',
@@ -194,7 +194,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         AffiliatePayout::create([
             'reference' => 'PAY-PROCESSING-' . uniqid(),
-            'payee_type' => Affiliate::class,
+            'payee_type' => $this->affiliate->getMorphClass(),
             'payee_id' => $this->affiliate->id,
             'amount_minor' => 5000,
             'currency' => 'USD',

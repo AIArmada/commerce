@@ -80,7 +80,7 @@ final class TaxDocumentService
         $endDate = Carbon::create($year, 12, 31)->endOfDay();
 
         $affiliateIds = AffiliatePayout::query()
-            ->where('payee_type', Affiliate::class)
+            ->where('payee_type', (new Affiliate)->getMorphClass())
             ->where('status', CompletedPayout::value())
             ->whereBetween('paid_at', [$startDate, $endDate])
             ->groupBy('payee_id')
