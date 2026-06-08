@@ -28,7 +28,7 @@ return new class extends Migration
             $table->text('summary')->nullable();
             $table->longText('description')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['owner_type', 'owner_id', 'status']);
             $table->index(['event_series_id', 'status']);

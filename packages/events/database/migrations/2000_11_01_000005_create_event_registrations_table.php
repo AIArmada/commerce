@@ -29,10 +29,10 @@ return new class extends Migration
             $table->string('email')->index();
             $table->string('phone')->nullable();
             $table->string('company')->nullable();
-            $table->timestamp('checked_in_at')->nullable()->index();
-            $table->timestamp('cancelled_at')->nullable()->index();
+            $table->timestampTz('checked_in_at')->nullable()->index();
+            $table->timestampTz('cancelled_at')->nullable()->index();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['occurrence_id', 'status']);
             $table->index(['owner_type', 'owner_id', 'status']);

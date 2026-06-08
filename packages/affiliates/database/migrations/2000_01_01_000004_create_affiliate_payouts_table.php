@@ -23,9 +23,9 @@ return new class extends Migration
             $table->string('payee_type')->nullable()->index();
             $table->uuid('payee_id')->nullable()->index();
             $table->nullableUuidMorphs('owner');
-            $table->timestamp('scheduled_at')->nullable()->index();
-            $table->timestamp('paid_at')->nullable()->index();
-            $table->timestamps();
+            $table->timestampTz('scheduled_at')->nullable()->index();
+            $table->timestampTz('paid_at')->nullable()->index();
+            $table->timestampsTz();
 
             $table->index(['payee_type', 'payee_id'], 'affiliate_payouts_payee_idx');
 

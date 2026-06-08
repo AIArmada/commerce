@@ -36,7 +36,7 @@ return new class extends Migration
 
             $table->{$jsonColumnType}('metadata')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Unique slug per parent
             $table->unique(['owner_type', 'owner_id', 'parent_id', 'slug']);

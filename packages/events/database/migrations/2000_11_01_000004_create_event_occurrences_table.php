@@ -24,15 +24,15 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('status', 32)->default('draft')->index();
             $table->unsignedInteger('capacity')->nullable();
-            $table->timestamp('starts_at')->index();
-            $table->timestamp('ends_at')->nullable();
+            $table->timestampTz('starts_at')->index();
+            $table->timestampTz('ends_at')->nullable();
             $table->string('timezone', 64);
-            $table->timestamp('registration_opens_at')->nullable();
-            $table->timestamp('registration_closes_at')->nullable();
-            $table->timestamp('check_in_opens_at')->nullable();
-            $table->timestamp('check_in_closes_at')->nullable();
+            $table->timestampTz('registration_opens_at')->nullable();
+            $table->timestampTz('registration_closes_at')->nullable();
+            $table->timestampTz('check_in_opens_at')->nullable();
+            $table->timestampTz('check_in_closes_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['event_id', 'starts_at']);
             $table->index(['status', 'starts_at']);

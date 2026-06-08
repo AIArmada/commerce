@@ -23,7 +23,7 @@ return new class extends Migration
             $table->unsignedInteger('position')->default(0);
             $table->boolean('is_visible')->default(true);
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['product_id', 'position']);
         });

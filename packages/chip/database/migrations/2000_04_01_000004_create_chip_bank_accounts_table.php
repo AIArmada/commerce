@@ -34,9 +34,9 @@ return new class extends Migration
             $table->boolean('is_crediting_account')->default(false);
 
             // API timestamps (DateTime strings)
-            $table->timestamp('created_at'); // Object creation time in UTC
-            $table->timestamp('updated_at'); // Object update time
-            $table->timestamp('deleted_at')->nullable(); // Soft deletion
+            $table->timestampTz('created_at'); // Object creation time in UTC
+            $table->timestampTz('updated_at'); // Object update time
+            $table->timestampTz('deleted_at')->nullable(); // Soft deletion
 
             // Rejection details
             $table->text('rejection_reason')->nullable(); // Why account was rejected

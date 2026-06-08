@@ -29,7 +29,7 @@ return new class extends Migration
             $table->boolean('is_required')->default(false);
             $table->boolean('is_active')->default(true);
             $table->nullableUuidMorphs('owner');
-            $table->timestamps();
+            $table->timestampsTz();
 
         });
 
@@ -42,9 +42,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('quiz_score')->nullable();
             $table->unsignedInteger('quiz_attempts')->default(0);
             $table->string('certificate_url')->nullable();
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamp('quiz_passed_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('completed_at')->nullable();
+            $table->timestampTz('quiz_passed_at')->nullable();
+            $table->timestampsTz();
 
             $table->unique(['affiliate_id', 'module_id']);
         });

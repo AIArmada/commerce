@@ -19,8 +19,8 @@ return new class extends Migration
             $table->text('details');
             $table->boolean('is_verified')->default(false);
             $table->boolean('is_default')->default(false);
-            $table->timestamp('verified_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('verified_at')->nullable();
+            $table->timestampsTz();
 
             $table->index(['affiliate_id', 'is_default']);
         });

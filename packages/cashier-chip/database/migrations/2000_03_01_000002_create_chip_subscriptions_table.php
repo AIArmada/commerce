@@ -33,14 +33,14 @@ return new class extends Migration
                 $table->string('recurring_token')->nullable();
                 $table->string('billing_interval')->default('month');
                 $table->integer('billing_interval_count')->default(1);
-                $table->timestamp('trial_ends_at')->nullable();
-                $table->timestamp('next_billing_at')->nullable();
-                $table->timestamp('ends_at')->nullable();
+                $table->timestampTz('trial_ends_at')->nullable();
+                $table->timestampTz('next_billing_at')->nullable();
+                $table->timestampTz('ends_at')->nullable();
                 $table->string('coupon_id')->nullable();
                 $table->integer('coupon_discount')->nullable();
                 $table->string('coupon_duration')->nullable();
-                $table->timestamp('coupon_applied_at')->nullable();
-                $table->timestamps();
+                $table->timestampTz('coupon_applied_at')->nullable();
+                $table->timestampsTz();
 
                 $table->index(['billable_type', 'billable_id', 'chip_status']);
                 $table->index('type');
@@ -63,7 +63,7 @@ return new class extends Migration
                 $table->string('chip_price')->nullable();
                 $table->integer('quantity')->nullable();
                 $table->integer('unit_amount')->nullable();
-                $table->timestamps();
+                $table->timestampsTz();
 
                 $table->index(['subscription_id', 'chip_price']);
                 $table->index('subscription_id');

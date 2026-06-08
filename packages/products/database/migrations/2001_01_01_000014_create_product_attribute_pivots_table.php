@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignUuid('attribute_id');
             $table->foreignUuid('attribute_group_id');
             $table->unsignedInteger('position')->default(0);
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['attribute_id', 'attribute_group_id'], 'attr_group_unique');
             $table->index('attribute_group_id');
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->foreignUuid('attribute_id');
             $table->foreignUuid('attribute_set_id');
             $table->unsignedInteger('position')->default(0);
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['attribute_id', 'attribute_set_id'], 'attr_set_unique');
             $table->index('attribute_set_id');
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->foreignUuid('attribute_group_id');
             $table->foreignUuid('attribute_set_id');
             $table->unsignedInteger('position')->default(0);
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['attribute_group_id', 'attribute_set_id'], 'group_set_unique');
             $table->index('attribute_set_id');

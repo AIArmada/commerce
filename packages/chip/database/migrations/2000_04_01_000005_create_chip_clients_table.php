@@ -60,7 +60,7 @@ return new class extends Migration
             $table->nullableMorphs('owner');
 
             // Laravel timestamps for internal use
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Indexes for optimal query performance
             $table->index('email');

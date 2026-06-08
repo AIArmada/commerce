@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('to_status', 32)->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->text('notes')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index('created_at');
         });

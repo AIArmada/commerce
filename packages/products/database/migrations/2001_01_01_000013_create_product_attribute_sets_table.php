@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('is_default')->default(false);
             $table->unsignedInteger('position')->default(0);
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['owner_type', 'owner_id', 'code']);
 

@@ -33,8 +33,8 @@ return new class extends Migration
 
             // Settlement and lifecycle timestamps
             $table->date('from_settlement')->nullable();
-            $table->timestamp('created_at');
-            $table->timestamp('updated_at');
+            $table->timestampTz('created_at');
+            $table->timestampTz('updated_at');
 
             // Owner scoping
             $table->nullableMorphs('owner');

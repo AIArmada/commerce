@@ -25,7 +25,7 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->string('chip_customer_id')->index();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['subject_type', 'subject_id']);
         });

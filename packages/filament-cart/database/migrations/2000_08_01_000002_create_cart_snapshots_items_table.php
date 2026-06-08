@@ -28,7 +28,7 @@ return new class extends Migration
             $table->{$jsonType}('attributes')->nullable();
             $table->{$jsonType}('conditions')->nullable();
             $table->string('associated_model')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Indexes for performance
             $table->index(['cart_id', 'item_id']);

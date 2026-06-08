@@ -29,7 +29,7 @@ return new class extends Migration
             $table->addColumn($jsonType, 'benefits')->nullable();
             $table->addColumn($jsonType, 'metadata')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
         });
     }

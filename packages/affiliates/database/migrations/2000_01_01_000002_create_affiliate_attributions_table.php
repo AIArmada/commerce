@@ -37,11 +37,11 @@ return new class extends Migration
             $table->uuid('user_id')->nullable()->index();
             $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamp('first_seen_at')->nullable();
-            $table->timestamp('last_seen_at')->nullable();
-            $table->timestamp('last_cookie_seen_at')->nullable();
-            $table->timestamp('expires_at')->nullable()->index();
-            $table->timestamps();
+            $table->timestampTz('first_seen_at')->nullable();
+            $table->timestampTz('last_seen_at')->nullable();
+            $table->timestampTz('last_cookie_seen_at')->nullable();
+            $table->timestampTz('expires_at')->nullable()->index();
+            $table->timestampsTz();
 
             $table->index(['cart_identifier', 'cart_instance'], 'affiliate_attributions_cart_index');
             $table->index('cookie_value', 'affiliate_attributions_cookie_index');

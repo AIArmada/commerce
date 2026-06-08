@@ -36,7 +36,7 @@ return new class extends Migration
             $table->nullableMorphs('owner');
 
             // Laravel timestamps for internal bookkeeping
-            $table->timestamps();
+            $table->timestampsTz();
 
             // Useful indexes for reporting
             $table->index(['status', 'is_test']);

@@ -27,10 +27,10 @@ return new class extends Migration
                 $table->string('payment_method');
                 $table->string('reference')->nullable();
                 $table->string('transaction_id')->nullable();
-                $table->timestamp('paid_at');
+                $table->timestampTz('paid_at');
                 $table->text('notes')->nullable();
                 $table->{$jsonType}('metadata')->nullable();
-                $table->timestamps();
+                $table->timestampsTz();
 
                 $table->index('doc_id', $paymentsTable . '_doc_id_index');
                 $table->index('paid_at', $paymentsTable . '_paid_at_index');
@@ -50,7 +50,7 @@ return new class extends Migration
                 $table->text('body');
                 $table->boolean('is_active')->default(true);
                 $table->nullableUuidMorphs('owner');
-                $table->timestamps();
+                $table->timestampsTz();
 
                 $table->index(['doc_type', 'trigger'], $emailTemplatesTable . '_type_trigger_index');
                 $table->unique(['owner_type', 'owner_id', 'slug'], $emailTemplatesTable . '_owner_slug_unique');
@@ -70,14 +70,14 @@ return new class extends Migration
                 $table->string('subject');
                 $table->text('body');
                 $table->string('status')->default('queued'); // queued, sent, failed, bounced
-                $table->timestamp('sent_at')->nullable();
-                $table->timestamp('opened_at')->nullable();
-                $table->timestamp('clicked_at')->nullable();
+                $table->timestampTz('sent_at')->nullable();
+                $table->timestampTz('opened_at')->nullable();
+                $table->timestampTz('clicked_at')->nullable();
                 $table->unsignedInteger('open_count')->default(0);
                 $table->unsignedInteger('click_count')->default(0);
                 $table->text('failure_reason')->nullable();
                 $table->{$jsonType}('metadata')->nullable();
-                $table->timestamps();
+                $table->timestampsTz();
 
                 $table->index('doc_id', $emailsTable . '_doc_id_index');
                 $table->index('status', $emailsTable . '_status_index');
@@ -96,7 +96,7 @@ return new class extends Migration
                 $table->{$jsonType}('snapshot');
                 $table->text('change_summary')->nullable();
                 $table->string('changed_by')->nullable();
-                $table->timestamps();
+                $table->timestampsTz();
 
                 $table->unique(
                     ['doc_id', 'version_number'],
@@ -117,10 +117,10 @@ return new class extends Migration
                 $table->foreignUuid('assigned_to')->nullable();
                 $table->string('status')->default('pending'); // pending, approved, rejected
                 $table->text('comments')->nullable();
-                $table->timestamp('approved_at')->nullable();
-                $table->timestamp('rejected_at')->nullable();
-                $table->timestamp('expires_at')->nullable();
-                $table->timestamps();
+                $table->timestampTz('approved_at')->nullable();
+                $table->timestampTz('rejected_at')->nullable();
+                $table->timestampTz('expires_at')->nullable();
+                $table->timestampsTz();
 
                 $table->index('doc_id', $approvalsTable . '_doc_id_index');
                 $table->index('status', $approvalsTable . '_status_index');
@@ -144,9 +144,9 @@ return new class extends Migration
                 $table->{$jsonType}('warnings')->nullable();
                 $table->longText('ubl_xml')->nullable();
                 $table->string('qr_code_url')->nullable();
-                $table->timestamp('submitted_at')->nullable();
-                $table->timestamp('validated_at')->nullable();
-                $table->timestamps();
+                $table->timestampTz('submitted_at')->nullable();
+                $table->timestampTz('validated_at')->nullable();
+                $table->timestampsTz();
 
                 $table->index('doc_id', $einvoiceTable . '_doc_id_index');
                 $table->index('submission_uid', $einvoiceTable . '_submission_uid_index');

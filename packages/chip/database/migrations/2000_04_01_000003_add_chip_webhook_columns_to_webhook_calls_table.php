@@ -85,7 +85,7 @@ return new class extends Migration
             }
 
             if (! Schema::hasColumn('webhook_calls', 'last_retry_at')) {
-                $table->timestamp('last_retry_at')->nullable();
+                $table->timestampTz('last_retry_at')->nullable();
             }
 
             if (! Schema::hasColumn('webhook_calls', 'last_error')) {

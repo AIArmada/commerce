@@ -33,8 +33,8 @@ return new class extends Migration
             $table->string('slug')->nullable(); // Receipt URL slug
 
             // API timestamps (DateTime strings)
-            $table->timestamp('created_at'); // API: created_at
-            $table->timestamp('updated_at'); // API: updated_at
+            $table->timestampTz('created_at'); // API: created_at
+            $table->timestampTz('updated_at'); // API: updated_at
 
             // Owner scoping
             $table->nullableMorphs('owner');

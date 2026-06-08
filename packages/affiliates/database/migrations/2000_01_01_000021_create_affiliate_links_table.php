@@ -33,7 +33,7 @@ return new class extends Migration
             $table->unsignedBigInteger('clicks')->default(0);
             $table->unsignedBigInteger('conversions')->default(0);
             $table->boolean('is_active')->default(true);
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index('affiliate_id');
             $table->index('custom_slug');

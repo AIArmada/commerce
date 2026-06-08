@@ -24,7 +24,7 @@ return new class extends Migration
             $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'jsonb'));
             $table->addColumn($jsonType, 'benefits')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['program_id', 'level']);
             $table->index('program_id');

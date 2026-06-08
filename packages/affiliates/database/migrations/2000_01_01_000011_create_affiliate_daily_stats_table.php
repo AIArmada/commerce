@@ -33,7 +33,7 @@ return new class extends Migration
             $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'jsonb'));
             $table->addColumn($jsonType, 'breakdown')->nullable();
 
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->unique(['affiliate_id', 'date']);
             $table->index(['date', 'revenue_cents']);

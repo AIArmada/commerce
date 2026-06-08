@@ -31,7 +31,7 @@ return new class extends Migration
             $table->string('chip_price')->nullable();
             $table->integer('quantity')->nullable();
             $table->integer('unit_amount')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index(['subscription_id', 'chip_price']);
             $table->index('subscription_id');

@@ -26,8 +26,8 @@ return new class extends Migration
             $table->{$jsonType}('event_hooks');
 
             // API lifecycle timestamps (ISO8601 strings converted to timestamps)
-            $table->timestamp('created_at');
-            $table->timestamp('updated_at');
+            $table->timestampTz('created_at');
+            $table->timestampTz('updated_at');
 
             // Owner scoping
             $table->nullableMorphs('owner');

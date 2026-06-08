@@ -30,7 +30,7 @@ return new class extends Migration
             $table->boolean('is_default')->default(false);
             $table->{$jsonType}('layout');
             $table->{$jsonType}('settings')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index('is_default', $templatesTable . '_is_default_index');
             $table->index('doc_type', $templatesTable . '_doc_type_index');
@@ -48,7 +48,7 @@ return new class extends Migration
             $table->string('status')->default('draft');
             $table->date('issue_date');
             $table->date('due_date')->nullable();
-            $table->timestamp('paid_at')->nullable();
+            $table->timestampTz('paid_at')->nullable();
             $table->decimal('subtotal', 15, 2)->default(0);
             $table->decimal('tax_amount', 15, 2)->default(0);
             $table->decimal('discount_amount', 15, 2)->default(0);
@@ -62,7 +62,7 @@ return new class extends Migration
             $table->{$jsonType}('items')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->string('pdf_path')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index('doc_type', $docsTable . '_doc_type_index');
             $table->index('status', $docsTable . '_status_index');
@@ -77,11 +77,11 @@ return new class extends Migration
             $table->foreignUuid('doc_id');
             $table->string('token_hash', 64)->unique($shareLinksTable . '_token_hash_unique');
             $table->{$jsonType}('allowed_actions');
-            $table->timestamp('expires_at')->nullable();
-            $table->timestamp('revoked_at')->nullable();
+            $table->timestampTz('expires_at')->nullable();
+            $table->timestampTz('revoked_at')->nullable();
             $table->unsignedInteger('access_count')->default(0);
-            $table->timestamp('last_accessed_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('last_accessed_at')->nullable();
+            $table->timestampsTz();
 
             $table->index('doc_id', $shareLinksTable . '_doc_id_index');
             $table->index('expires_at', $shareLinksTable . '_expires_at_index');
@@ -95,7 +95,7 @@ return new class extends Migration
             $table->string('status');
             $table->text('notes')->nullable();
             $table->string('changed_by')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
 
             $table->index('doc_id', $statusTable . '_doc_id_index');
             $table->index('status', $statusTable . '_status_index');

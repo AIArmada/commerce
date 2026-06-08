@@ -33,10 +33,10 @@ return new class extends Migration
             $table->{$jsonType}('items')->nullable();
             $table->{$jsonType}('conditions')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestamp('last_activity_at')->nullable();
-            $table->timestamp('checkout_started_at')->nullable();
-            $table->timestamp('checkout_abandoned_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('last_activity_at')->nullable();
+            $table->timestampTz('checkout_started_at')->nullable();
+            $table->timestampTz('checkout_abandoned_at')->nullable();
+            $table->timestampsTz();
 
             $table->unique(['owner_scope', 'identifier', 'instance'], $tableName . '_owner_scope_identifier_instance_unique');
             $table->index('identifier');
