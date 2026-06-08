@@ -383,6 +383,57 @@ Only move generic registration helpers to `commerce-support` if another package 
 3. Re-check docs for any mention of deprecated wrappers as primary APIs.
 4. Keep `PayoutProcessorInterface` and the integration registrars as the examples to copy when adding new seams elsewhere in the package.
 
+
+
+## Refactor tracking
+
+This checklist tracks progress on the refactor plan above. Each item lists a concrete phase/step.
+Agents: claim an item by updating its status. Use `@agent-name` to claim ownership.
+
+Status legend:
+- `[pending]` — not started
+- `[in-progress]` — being worked on
+- `[done]` — completed and verified
+- `[blocked]` — blocked by another item
+
+### Phase 1 — extract the shared owner batch runner
+
+- [pending] Add a shared owner-batch helper in `packages/commerce-support`.
+- [pending] Move the duplicated owner-loop logic out of these affiliates commands:
+- [pending] Migrate `packages/signals/src/Console/Commands/ProcessSignalAlertsCommand.php` to the same helper.
+- [pending] Add package-scoped tests for explicit-global handling and result reduction.
+
+### Phase 2 — choose the canonical orchestration surface and finish the migration
+
+- [pending] Standardize on the existing `src/Actions` tree as the canonical orchestration surface.
+- [pending] Change `AffiliateRegistrationService` and `AffiliatePayoutService` into explicit compatibility adapters only.
+- [pending] Make `CommissionMaturityService` delegate to `ProcessConversionMaturity` and `MatureConversion`, or remove the duplic...
+- [pending] Update downstream callers:
+- [pending] Update docs so the canonical entrypoint is unambiguous:
+
+### Phase 3 — split `AffiliateService` behind a compatibility facade
+
+- [pending] Add focused Actions for the core workflows under the existing `src/Actions` tree.
+- [pending] Move conversion-specific fan-out into its own action.
+- [pending] Move link creation into its own action.
+- [pending] Move visit/cookie/cart attribution flows into their own actions.
+- [pending] Keep `AffiliateService` methods, but have them delegate to the new actions.
+- [pending] Migrate internal callers one group at a time:
+
+### Phase 4 — add explicit strategy seams for growing variant families
+
+- [pending] Add an `AttributionStrategy` contract and built-in strategies for:
+- [pending] Add a `FraudRule` contract and one class per current rule.
+- [pending] Add a `PerformanceBonusRule` contract and one class per current bonus family.
+- [pending] Register built-ins in the service provider so future extensions can be added without editing the central orchestrator...
+
+### Phase 5 — clean entrypoint duplication and docs drift
+
+- [pending] Remove repeated owner-context checks from `AffiliateApiController` once the route middleware is the source of truth.
+- [pending] Keep `EnsureApiAuthorized` focused on auth only.
+- [pending] Re-check docs for any mention of deprecated wrappers as primary APIs.
+- [pending] Keep `PayoutProcessorInterface` and the integration registrars as the examples to copy when adding new seams elsewher...
+
 ## Suggested verification scope when implementing
 
 Run focused package checks after each phase instead of one giant sweep.

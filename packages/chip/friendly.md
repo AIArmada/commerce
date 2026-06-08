@@ -301,3 +301,53 @@ Success criteria:
 - optional integrations expose explicit interfaces instead of hidden assumptions
 - repeated orchestration is concentrated in reusable Actions or support modules
 - future CHIP event and integration variants can land with higher leverage and better locality
+
+
+## Refactor tracking
+
+This checklist tracks progress on the refactor plan above. Each item lists a concrete phase/step.
+Agents: claim an item by updating its status. Use `@agent-name` to claim ownership.
+
+Status legend:
+- `[pending]` — not started
+- `[in-progress]` — being worked on
+- `[done]` — completed and verified
+- `[blocked]` — blocked by another item
+
+### Phase 0. — Add regression tests first
+
+- [pending] Create `packages/chip/tests` and cover the current webhook, owner, checkout bridge, docs, and send-handler flows befo...
+- [pending] Add tests for live webhook processing, retry, simulator dispatch, and API replay so the future webhook seam has one s...
+- [pending] Add cross-owner regression tests around embedded owner tuples and brand-id resolution.
+- [pending] Add tests for the checkout customer bridge from both checkout-completion and API-sync entrypoints.
+- [pending] Add tests for payment doc generation, refund doc generation, and send completed or rejected handlers.
+
+### Phase 1. — Remove pure duplication with small support modules
+
+- [pending] Add `ChipPaymentStatusMapper` and replace duplicated CHIP-to-`PaymentStatus` matches.
+- [pending] Add `ResolveWebhookPurchaseId` and replace repeated `related_to.type` and `related_to.id` parsing.
+- [pending] Add one owner-tuple support module and replace duplicated `__owner_type` and `__owner_id` parsing and embedding.
+- [pending] Keep behavior unchanged in this phase. The goal is higher locality before changing interfaces.
+
+### Phase 2. — Make webhook ingest a real seam
+
+- [pending] Introduce `DispatchChipWebhookAction` or `ChipWebhookPipeline`.
+- [pending] Move `WebhookReceived` emission and typed dispatch into that one module.
+- [pending] Move send-specific routing behind the same seam instead of giving retries a separate code path.
+- [pending] Make `ProcessChipWebhook`, `WebhookRetryManager`, `WebhookSimulator::dispatch()`, and API replay call the same module.
+- [pending] After all callers are migrated, either keep `WebhookRouter::registerHandler()` as the real extension seam or delete t...
+
+### Phase 3. — Deepen optional integration modules
+
+- [pending] Extract a dedicated checkout customer-bridge module and move session, payload, and subject assumptions into it.
+- [pending] Reuse that bridge from both checkout completion and API sync.
+- [pending] Extract one shared docs-generation Action for the common prelude.
+- [pending] Extract payment-doc and refund-doc builders behind a small document-shaping seam.
+- [pending] Resolve `DocsIntegrationRegistrar` from the container.
+
+### Phase 4. — Deepen batch and send webhook modules
+
+- [pending] Add `WebhookOwnerBatchRunner` and use it from `RetryWebhooksCommand` and `CleanWebhooksCommand`.
+- [pending] Add `HandleSendInstructionWebhookAction` and use it from `SendCompletedHandler` and `SendRejectedHandler`.
+- [pending] Keep command output local. Move only the reusable owner-safe orchestration and send-update logic.
+
