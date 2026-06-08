@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Support;
 
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
@@ -21,6 +25,14 @@ final class CommerceIntegration
             && class_exists(OrderItem::class)
             && interface_exists(OrderServiceInterface::class)
             && class_exists(Processing::class);
+    }
+
+    public static function aiArmadaCheckoutAvailable(): bool
+    {
+        return interface_exists(CartManagerInterface::class)
+            && interface_exists(CheckoutServiceInterface::class)
+            && class_exists(Product::class)
+            && class_exists(Variant::class);
     }
 
     /**

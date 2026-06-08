@@ -10,39 +10,38 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-final class SpeakersRelationManager extends RelationManager
+final class EventClassificationsRelationManager extends RelationManager
 {
-    protected static string $relationship = 'speakers';
+    protected static string $relationship = 'classifications';
 
-    protected static ?string $title = 'Speakers';
+    protected static ?string $title = 'Classifications';
 
     public function form(Schema $schema): Schema
     {
         return $schema
             ->schema([
-                TextInput::make('display_name')
+                TextInput::make('group_key')
                     ->required()
                     ->maxLength(255),
 
-                TextInput::make('role')
+                TextInput::make('term_key')
+                    ->required()
                     ->maxLength(255),
 
-                TextInput::make('speaker_type')
+                TextInput::make('term_label')
                     ->maxLength(255),
 
-                TextInput::make('speaker_id')
+                TextInput::make('source_type')
+                    ->maxLength(255),
+
+                TextInput::make('source_id')
                     ->maxLength(36),
-
-                Textarea::make('biography')
-                    ->rows(4)
-                    ->columnSpanFull(),
 
                 TextInput::make('order_column')
                     ->numeric()
@@ -57,25 +56,33 @@ final class SpeakersRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('display_name')
+            ->recordTitleAttribute('term_label')
             ->columns([
-                Tables\Columns\TextColumn::make('display_name')
-                    ->label('Name')
-                    ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('role')
-                    ->placeholder('No role')
+                Tables\Columns\TextColumn::make('group_key')
+                    ->label('Group')
+                    ->badge()
+                    ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('speaker_type')
-                    ->label('Speaker model')
-                    ->placeholder('Display-only')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('term_key')
+                    ->label('Term')
+                    ->badge()
+                    ->sortable()
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('term_label')
+                    ->label('Label')
+                    ->placeholder('—')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('order_column')
                     ->label('Order')
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('source_type')
+                    ->label('Source')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('order_column')
             ->headerActions([

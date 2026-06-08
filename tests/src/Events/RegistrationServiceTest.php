@@ -12,17 +12,22 @@ use AIArmada\Events\Actions\EnsureOccurrenceAction;
 use AIArmada\Events\Actions\FulfillEventOrderAction;
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
 use AIArmada\Events\Data\EventOrderItemFulfillment;
+use AIArmada\Events\Data\RegistrationStatusData;
 use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\OccurrenceStatus;
 use AIArmada\Events\Enums\RegistrationStatus;
+use AIArmada\Events\Events\RegistrationApproved;
 use AIArmada\Events\Events\RegistrationCancelled;
 use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Events\RegistrationCreated;
+use AIArmada\Events\Events\RegistrationRejected;
 use AIArmada\Events\Models\Event as EventModel;
+use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventSeries;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 use AIArmada\Events\Models\Venue;
+use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -31,6 +36,14 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Event;
 
 it('ensures an occurrence from structured event data', function (): void {
+    $venue = Venue::query()->create([
+        'name' => 'Menara MATRADE, Kuala Lumpur',
+        'slug' => 'menara-matrade-kuala-lumpur',
+        'city' => 'Kuala Lumpur',
+        'country' => 'MY',
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
     $occurrence = app(EnsureOccurrenceAction::class)->handle(
         series: [
             'name' => 'Unfair Advantage',
@@ -41,19 +54,15 @@ it('ensures an occurrence from structured event data', function (): void {
             'name' => 'AI Awakening',
             'slug' => 'ai-awakening',
             'status' => EventStatus::Active,
+
+            'registration_required' => true,
             'default_timezone' => 'Asia/Kuala_Lumpur',
             'default_duration_minutes' => 240,
             'metadata' => [
                 'language_label' => 'Bahasa Melayu',
             ],
         ],
-        venue: [
-            'name' => 'Menara MATRADE, Kuala Lumpur',
-            'slug' => 'menara-matrade-kuala-lumpur',
-            'city' => 'Kuala Lumpur',
-            'country' => 'MY',
-            'timezone' => 'Asia/Kuala_Lumpur',
-        ],
+        address: $venue,
         occurrence: [
             'name' => 'AI Awakening — 5 June 2026',
             'capacity' => 120,
@@ -65,14 +74,17 @@ it('ensures an occurrence from structured event data', function (): void {
         ],
     );
 
-    OwnerContext::withOwner(null, static fn (): mixed => $occurrence->load(['event.series', 'venue']));
+    $event = OwnerContext::withOwner(null, static fn (): EventModel => EventModel::query()
+        ->with('series')
+        ->findOrFail($occurrence->event_id));
+    $address = $occurrence->address()->firstOrFail();
 
     expect($occurrence->name)->toBe('AI Awakening — 5 June 2026')
         ->and($occurrence->capacity)->toBe(120)
         ->and($occurrence->ends_at)->not->toBeNull()
-        ->and($occurrence->event->name)->toBe('AI Awakening')
-        ->and($occurrence->event->series->name)->toBe('Unfair Advantage')
-        ->and($occurrence->venue->name)->toBe('Menara MATRADE, Kuala Lumpur')
+        ->and($event->name)->toBe('AI Awakening')
+        ->and($event->series->name)->toBe('Unfair Advantage')
+        ->and($address->name)->toBe('Menara MATRADE, Kuala Lumpur')
         ->and(data_get($occurrence->metadata, 'preferred_date'))->toBe('2026-06-05');
 
     $sameOccurrence = app(EnsureOccurrenceAction::class)->handle(
@@ -84,14 +96,11 @@ it('ensures an occurrence from structured event data', function (): void {
             'name' => 'AI Awakening',
             'slug' => 'ai-awakening',
         ],
-        venue: [
-            'name' => 'Menara MATRADE, Kuala Lumpur',
-            'slug' => 'menara-matrade-kuala-lumpur',
-        ],
         occurrence: [
             'starts_at' => '2026-06-05 08:45:00',
             'timezone' => 'Asia/Kuala_Lumpur',
         ],
+        address: $venue,
     );
 
     expect($sameOccurrence->id)->toBe($occurrence->id)
@@ -111,6 +120,8 @@ it('creates one confirmed registration per purchased seat for an order item', fu
         'name' => 'AI Awakening',
         'slug' => 'ai-awakening',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 
@@ -124,7 +135,8 @@ it('creates one confirmed registration per purchased seat for an order item', fu
 
     $occurrence = Occurrence::create([
         'event_id' => $event->id,
-        'venue_id' => $venue->id,
+        'address_type' => $venue->getMorphClass(),
+        'address_id' => $venue->id,
         'status' => OccurrenceStatus::Scheduled,
         'starts_at' => now()->addWeek(),
         'ends_at' => now()->addWeek()->addHours(4),
@@ -187,6 +199,107 @@ it('creates one confirmed registration per purchased seat for an order item', fu
     Event::assertDispatched(RegistrationCreated::class, 2);
 });
 
+it('keeps approval-required order registrations pending until they are approved or rejected', function (): void {
+    Event::fake([RegistrationApproved::class, RegistrationRejected::class]);
+
+    $reviewer = User::query()->create([
+        'name' => 'Registration Reviewer',
+        'email' => 'registration-reviewer@example.com',
+        'password' => 'secret',
+    ]);
+
+    $event = EventModel::create([
+        'name' => 'Approval Required Event',
+        'slug' => 'approval-required-event',
+        'status' => EventStatus::Active,
+
+        'registration_required' => true,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'approval_required' => true,
+        'starts_at' => now()->addDays(8),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $purchaser = Customer::create([
+        'first_name' => 'Buyer',
+        'last_name' => 'Example',
+        'email' => 'buyer-approval@example.com',
+        'phone' => '+60123440000',
+    ]);
+
+    $order = Order::create([
+        'order_number' => 'ORD-EVT-' . uniqid(),
+        'status' => Created::class,
+        'currency' => 'MYR',
+        'subtotal' => 19400,
+        'grand_total' => 19400,
+    ]);
+
+    $orderItem = OrderItem::create([
+        'order_id' => $order->id,
+        'name' => 'Approval Required Seat',
+        'quantity' => 2,
+        'unit_price' => 9700,
+        'total' => 19400,
+    ]);
+
+    $registrations = app(RegistrationService::class)->createBatchForOrderItem(
+        $occurrence,
+        $orderItem,
+        [
+            [
+                'name' => 'Pending Participant One',
+                'email' => 'pending-1@example.com',
+            ],
+            [
+                'name' => 'Pending Participant Two',
+                'email' => 'pending-2@example.com',
+            ],
+        ],
+        $purchaser,
+    );
+
+    expect($registrations->every(fn (Registration $registration): bool => $registration->status === RegistrationStatus::Pending))->toBeTrue();
+
+    $registrationStatus = app(EventQueryService::class)->registrationStatus($registrations->first()->fresh(['occurrence']) ?? $registrations->first());
+
+    expect($registrationStatus)->toBeInstanceOf(RegistrationStatusData::class)
+        ->and($registrationStatus->approvalRequired)->toBeTrue();
+
+    $approved = app(RegistrationService::class)->approve(
+        $registrations->first(),
+        $reviewer,
+        ['source' => 'manual_review'],
+    );
+
+    expect($approved->status)->toBe(RegistrationStatus::Confirmed)
+        ->and(data_get($approved->metadata, 'approval_transition'))->toBe('approve')
+        ->and(data_get($approved->metadata, 'approval_context.source'))->toBe('manual_review')
+        ->and(data_get($approved->metadata, 'approval_actor_id'))->toBe((string) $reviewer->getKey());
+
+    $rejected = app(RegistrationService::class)->reject(
+        $registrations->last(),
+        $reviewer,
+        'Eligibility not met',
+        ['source' => 'manual_review'],
+    );
+
+    expect($rejected->status)->toBe(RegistrationStatus::Cancelled)
+        ->and($rejected->cancelled_at)->not->toBeNull()
+        ->and(data_get($rejected->metadata, 'approval_transition'))->toBe('reject')
+        ->and(data_get($rejected->metadata, 'approval_rejection_reason'))->toBe('Eligibility not met')
+        ->and(data_get($rejected->metadata, 'cancellation_reason'))->toBe('Eligibility not met')
+        ->and(data_get($rejected->metadata, 'approval_actor_id'))->toBe((string) $reviewer->getKey());
+
+    Event::assertDispatched(RegistrationApproved::class);
+    Event::assertDispatched(RegistrationRejected::class);
+});
+
 it('creates direct registrations using the occurrence owner even when the ambient owner differs', function (): void {
     $ownerA = User::query()->create([
         'name' => 'Event Owner A',
@@ -206,6 +319,8 @@ it('creates direct registrations using the occurrence owner even when the ambien
         'name' => 'Scoped Direct Registration Event',
         'slug' => 'scoped-direct-registration-event',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]));
 
@@ -233,6 +348,8 @@ it('idempotently creates registrations for an order item', function (): void {
         'name' => 'Prompting for Teams',
         'slug' => 'prompting-for-teams',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 
@@ -283,6 +400,8 @@ it('blocks registrations that would exceed an occurrence capacity', function ():
         'name' => 'Capacity Event',
         'slug' => 'capacity-event',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 
@@ -337,6 +456,8 @@ it('blocks direct registrations that would exceed an occurrence capacity', funct
         'name' => 'Direct Capacity Event',
         'slug' => 'direct-capacity-event',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 
@@ -369,6 +490,8 @@ it('blocks direct registrations when the occurrence is no longer accepting regis
         'name' => 'Closed Registration Event',
         'slug' => 'closed-registration-event',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 
@@ -394,6 +517,8 @@ it('requires explicit global owner context for registrations against global occu
             'name' => 'Global Registration Event',
             'slug' => 'global-registration-event',
             'status' => EventStatus::Active,
+
+            'registration_required' => true,
             'default_timezone' => 'Asia/Kuala_Lumpur',
         ]);
 
@@ -423,6 +548,8 @@ it('fulfills event registrations for matching order items through a resolver', f
         'name' => 'Prompting for Operators',
         'slug' => 'prompting-for-operators',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 
@@ -501,6 +628,8 @@ it('checks in and cancels registrations through the registration service', funct
         'name' => 'Prompting for Founders',
         'slug' => 'prompting-for-founders',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 
@@ -525,7 +654,8 @@ it('checks in and cancels registrations through the registration service', funct
 
     expect($checkedIn->status)->toBe(RegistrationStatus::CheckedIn)
         ->and($checkedIn->checked_in_at)->not->toBeNull()
-        ->and(data_get($checkedIn->metadata, 'check_in_context.source'))->toBe('frontdesk');
+        ->and(data_get($checkedIn->metadata, 'check_in_context.source'))->toBe('frontdesk')
+        ->and(EventAttendance::query()->where('registration_id', $checkedIn->id)->count())->toBe(1);
 
     $cancellable = $service->createForOccurrence($occurrence, [
         'name' => 'Cancelled Guest',
@@ -549,6 +679,8 @@ it('blocks check-in when the occurrence is outside its configured check-in windo
         'name' => 'Windowed Check-In Event',
         'slug' => 'windowed-check-in-event',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 
@@ -573,11 +705,175 @@ it('blocks check-in when the occurrence is outside its configured check-in windo
     expect($registration->fresh()?->checked_in_at)->toBeNull();
 });
 
+it('creates attendance records for walk-ins', function (): void {
+    $event = EventModel::create([
+        'name' => 'Walk In Audit Event',
+        'slug' => 'walk-in-audit-event',
+        'status' => EventStatus::Active,
+
+        'registration_required' => true,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'participation_mode' => 'hybrid',
+        'starts_at' => now()->addDay(),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $registration = app(RegistrationService::class)->recordWalkInForOccurrence($occurrence, [
+        'name' => 'Walk In Guest',
+        'phone' => '+60112233445',
+    ]);
+
+    expect($registration->status)->toBe(RegistrationStatus::CheckedIn)
+        ->and(EventAttendance::query()->where('registration_id', $registration->id)->count())->toBe(1)
+        ->and(EventAttendance::query()->where('registration_id', $registration->id)->value('source'))->toBe('walk_in');
+});
+
+it('waitlists registrations when the occurrence is full and waitlisting is enabled', function (): void {
+    $event = EventModel::create([
+        'name' => 'Waitlist Event',
+        'slug' => 'waitlist-event',
+        'status' => EventStatus::Active,
+
+        'registration_required' => true,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'capacity' => 1,
+        'waitlist_enabled' => true,
+        'starts_at' => now()->addDay(),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    Registration::create([
+        'occurrence_id' => $occurrence->id,
+        'status' => RegistrationStatus::Confirmed,
+        'first_name' => 'Booked',
+        'last_name' => 'Guest',
+        'email' => 'booked@example.com',
+    ]);
+
+    $waitlisted = app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Waitlisted Guest',
+        'email' => 'waitlisted@example.com',
+    ]);
+
+    expect($waitlisted->status)->toBe(RegistrationStatus::Waitlisted);
+});
+
+it('only approves waitlisted registrations when capacity becomes available', function (): void {
+    Event::fake([RegistrationApproved::class, RegistrationCancelled::class]);
+
+    $reviewer = User::query()->create([
+        'name' => 'Waitlist Reviewer',
+        'email' => 'waitlist-reviewer@example.com',
+        'password' => 'secret',
+    ]);
+
+    $event = EventModel::create([
+        'name' => 'Approval Waitlist Event',
+        'slug' => 'approval-waitlist-event',
+        'status' => EventStatus::Active,
+
+        'registration_required' => true,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'capacity' => 1,
+        'waitlist_enabled' => true,
+        'approval_required' => true,
+        'starts_at' => now()->addDays(2),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $booked = Registration::create([
+        'occurrence_id' => $occurrence->id,
+        'status' => RegistrationStatus::Confirmed,
+        'first_name' => 'Booked',
+        'last_name' => 'Guest',
+        'email' => 'booked-waitlist@example.com',
+    ]);
+
+    $waitlisted = app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Waitlisted Approval Guest',
+        'email' => 'waitlisted-approval@example.com',
+    ]);
+
+    expect($waitlisted->status)->toBe(RegistrationStatus::Waitlisted)
+        ->and(fn () => app(RegistrationService::class)->approve($waitlisted, $reviewer))->toThrow(InvalidArgumentException::class, 'sold out');
+
+    app(RegistrationService::class)->cancel($booked, 'Seat released');
+
+    $approved = app(RegistrationService::class)->approve($waitlisted->fresh() ?? $waitlisted, $reviewer, [
+        'source' => 'seat_released',
+    ]);
+
+    expect($approved->status)->toBe(RegistrationStatus::Confirmed)
+        ->and(data_get($approved->metadata, 'approval_transition'))->toBe('approve')
+        ->and(data_get($approved->metadata, 'approval_context.source'))->toBe('seat_released')
+        ->and(data_get($approved->metadata, 'approval_actor_id'))->toBe((string) $reviewer->getKey());
+
+    Event::assertDispatched(RegistrationApproved::class, 1);
+});
+
+it('rejects duplicate registrations for the same occurrence attendee by default', function (): void {
+    $user = User::query()->create([
+        'name' => 'Duplicate Guest',
+        'email' => 'duplicate-guest@example.com',
+        'password' => 'secret',
+    ]);
+
+    $event = EventModel::create([
+        'name' => 'Duplicate Registration Event',
+        'slug' => 'duplicate-registration-event',
+        'status' => EventStatus::Active,
+
+        'registration_required' => true,
+        'default_timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    $occurrence = Occurrence::create([
+        'event_id' => $event->id,
+        'status' => OccurrenceStatus::Scheduled,
+        'duplicate_strategy' => 'per_occurrence',
+        'starts_at' => now()->addDay(),
+        'timezone' => 'Asia/Kuala_Lumpur',
+    ]);
+
+    app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Duplicate Guest',
+        'email' => 'duplicate-guest@example.com',
+        'attendee' => $user,
+    ], [
+        'attendee' => $user,
+    ]);
+
+    expect(fn (): Registration => app(RegistrationService::class)->createForOccurrence($occurrence, [
+        'name' => 'Duplicate Guest',
+        'email' => 'duplicate-guest@example.com',
+        'attendee' => $user,
+    ], [
+        'attendee' => $user,
+    ]))->toThrow(InvalidArgumentException::class, 'already exists');
+});
+
 it('rolls back batch registrations when one participant payload is invalid', function (): void {
     $event = EventModel::create([
         'name' => 'Batch Safety Event',
         'slug' => 'batch-safety-event',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 

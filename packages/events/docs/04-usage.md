@@ -7,12 +7,22 @@ title: Usage
 ## Create or update the event structure
 
 ```php
+use AIArmada\Events\Models\Venue;
 use AIArmada\Events\Actions\EnsureOccurrenceAction;
 use AIArmada\Events\Enums\EventModerationStatus;
 use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Enums\OccurrenceParticipationMode;
 use AIArmada\Events\Enums\OccurrenceStatus;
+
+$venue = Venue::query()->create([
+    'name' => 'MATRADE Hall',
+    'slug' => 'matrade-hall',
+    'location_type' => 'hybrid',
+    'city' => 'Kuala Lumpur',
+    'country' => 'MY',
+    'timezone' => 'Asia/Kuala_Lumpur',
+]);
 
 $occurrence = app(EnsureOccurrenceAction::class)->handle(
     series: [
@@ -34,23 +44,14 @@ $occurrence = app(EnsureOccurrenceAction::class)->handle(
             'topic' => ['ai', 'operations'],
             'audience' => ['founders', 'operators'],
         ],
-        'speakers' => [
+        'people' => [
             [
                 'display_name' => 'Aisha Rahman',
                 'role' => 'Keynote',
             ],
         ],
     ],
-    venue: [
-        'name' => 'MATRADE Hall',
-        'slug' => 'matrade-hall',
-        'location_type' => 'hybrid',
-        'city' => 'Kuala Lumpur',
-        'country' => 'MY',
-        'latitude' => 3.139,
-        'longitude' => 101.6869,
-        'timezone' => 'Asia/Kuala_Lumpur',
-    ],
+    address: $venue,
     occurrence: [
         'name' => 'AI Awakening — Kuala Lumpur',
         'status' => OccurrenceStatus::Scheduled->value,
@@ -67,7 +68,7 @@ $occurrence = app(EnsureOccurrenceAction::class)->handle(
 );
 ```
 
-`EnsureOccurrenceAction` is useful when importing schedules from an external source because it upserts the series, event, venue, and occurrence together.
+`EnsureOccurrenceAction` is useful when importing schedules from an external source because it upserts the series, event, and occurrence together and links them to the selected address model.
 
 ## Public event visibility
 
@@ -92,10 +93,10 @@ $accessibleByDirectLink = Event::query()
 ## Search payloads
 
 ```php
-$payload = $event->load('speakers')->toSearchableArray();
+$payload = $event->load('people')->toSearchableArray();
 ```
 
-By default the payload includes event identity, public status, moderation status, visibility, media, taxonomy, search keywords, and loaded speaker names. Bind `AIArmada\Events\Contracts\EventSearchPayloadResolver` or configure `events.search.payload_resolver` for application-specific search engines.
+By default the payload includes event identity, public status, moderation status, visibility, media, taxonomy, search keywords, and loaded people names. Bind `AIArmada\Events\Contracts\EventSearchPayloadResolver` or configure `events.search.payload_resolver` for application-specific search engines.
 
 ## Display timezone
 
@@ -215,7 +216,7 @@ $registrations = app(RegistrationService::class)->createBatchForOrderItem(
 
 Pending, confirmed, checked-in, and no-show registrations all reserve capacity for the occurrence.
 
-If the commerce packages are not installed, use `createForOccurrence()` for direct event registrations. If the commerce packages are installed but no resolver is configured, order fulfillment returns an empty collection.
+If the commerce packages are not installed, use `createForOccurrence()` for direct event registrations. If the commerce packages are installed and you keep the default resolver, order fulfillment works for order items carrying event checkout metadata. Override the resolver when your application stores that linkage differently.
 
 ## Check in a participant
 
@@ -239,3 +240,217 @@ $cancelled = app(RegistrationService::class)->cancel(
 ```
 
 Cancellation stores the reason in registration metadata and emits the corresponding domain event.
+
+## Event membership (host extension)
+
+The package does not own event-team membership, member invitations, or
+membership claims. Hosts that need these should:
+
+1. Add a `HasEventMembership` trait to their `Event` model (example below).
+2. Emit host-side domain events from inside that trait's methods (e.g.
+   `EventOrganizerAdded`).
+3. Wire any package listeners they want to react to those events.
+
+The package exposes enough domain events
+(`EventModerationTransitioned`, `EventChangeNoticePublished`, `EventPostponed`,
+`EventDelayed`, `EventResumed`, `EventCancelled`) for hosts to wire their own
+listeners.
+
+### Example trait (host-side, not package code)
+
+```php
+use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
+
+trait HasEventMembership
+{
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'event_user')
+            ->withPivot('joined_at')
+            ->withTimestamps();
+    }
+
+    public function memberInvitations(): HasMany
+    {
+        return $this->hasMany(MemberInvitation::class, 'subject_id')
+            ->where('subject_type', self::class);
+    }
+
+    public function addOrganizer(User $user): void
+    {
+        $this->members()->syncWithoutDetaching([
+            $user->id => ['joined_at' => now()],
+        ]);
+
+        Event::dispatch(new EventOrganizerAdded($this, $user, Auth::user()));
+    }
+
+    public function inviteMember(string $email, string $role, ?\Carbon\Carbon $expiresAt = null): MemberInvitation
+    {
+        $invitation = new MemberInvitation([
+            'email' => $email,
+            'role_slug' => $role,
+            'token' => \Illuminate\Support\Str::random(40),
+            'expires_at' => $expiresAt,
+        ]);
+
+        $this->memberInvitations()->save($invitation);
+
+        return $invitation;
+    }
+
+    public function userCanManage(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        if ($user->hasRole('moderator') && $this->is_active) {
+            return true;
+        }
+
+        return $this->members()->where('users.id', $user->id)->exists();
+    }
+}
+```
+
+The package will never:
+- Add `MemberInvitation` / `MembershipClaim` / `event_user` tables.
+- Add `allow_public_event_submission` / `public_submission_locked_at` /
+  `public_submission_locked_by` columns on the package `Event`.
+- Add a `userCanManage()` or `addOrganizer()` method on the package
+  `Event` model.
+- Emit `EventOrganizerAdded` or `EventMemberInvited` events.
+
+Any PR that adds these will fail the `composer lint:genericity` CI
+guardrail (see "Contributing" below).
+
+## Working with the lifecycle state machine
+
+Events have six possible lifecycle states: `Draft`, `Active`, `Postponed`,
+`Delayed`, `Cancelled`, `Archived`. Transitions between them are enforced by
+the package's `updating` boot hook and rejected with
+`AIArmada\Events\Exceptions\InvalidEventStatusTransition` if illegal.
+
+The 11 legal transitions are:
+
+| From | To | Triggered by |
+|---|---|---|
+| `Draft` | `Active` | publish |
+| `Draft` | `Archived` | archive |
+| `Active` | `Postponed` | `EventLifecycleWorkflow::postpone()` |
+| `Active` | `Delayed` | `EventLifecycleWorkflow::delay()` |
+| `Active` | `Cancelled` | `EventLifecycleWorkflow::cancel()` |
+| `Active` | `Archived` | archive |
+| `Postponed` | `Active` | `EventLifecycleWorkflow::resume()` |
+| `Postponed` | `Cancelled` | `EventLifecycleWorkflow::cancel()` |
+| `Delayed` | `Active` | `EventLifecycleWorkflow::resume()` |
+| `Delayed` | `Postponed` | `EventLifecycleWorkflow::postpone()` (when the delay becomes a postponement) |
+| `Delayed` | `Cancelled` | `EventLifecycleWorkflow::cancel()` |
+
+`Cancelled` and `Archived` are terminal. `Postponed` and `Delayed` are
+recoverable.
+
+For most use cases, prefer the workflow service over direct status mutation:
+
+```php
+use AIArmada\Events\Contracts\EventLifecycleWorkflow;
+
+app(EventLifecycleWorkflow::class)->postpone($event, $moderator, 'Speaker is sick');
+app(EventLifecycleWorkflow::class)->delay($event, $moderator, 'Doors not yet open');
+app(EventLifecycleWorkflow::class)->resume($event, $moderator, 'New time confirmed');
+app(EventLifecycleWorkflow::class)->cancel($event, $moderator, 'Weather emergency', 'storm');
+```
+
+Each of these methods:
+- Validates the transition against the policy.
+- Updates the `status` enum.
+- Stamps the `cancelled_at` / `postponed_at` / `delayed_at` timestamp.
+- Stamps the `last_state_change_actor_type`, `last_state_change_actor_id`,
+  `last_state_change_note`, and `last_state_change_at` columns.
+- Dispatches the corresponding `EventPostponed` / `EventDelayed` /
+  `EventResumed` / `EventCancelled` domain event after the database
+  transaction commits.
+
+## Engagement and registration gating by state
+
+A event is **engageable** (saves, going, interested, registration) only
+when its `status` is `Active`. The package enforces this in:
+
+- `RecordEventEngagementAction` — refuses any engagement recording when
+  the parent event is not `Active`.
+- `RegistrationService::createForOccurrence` — refuses registration
+  creation when the parent event is not `Active` (or when the event's
+  `registration_required` is `false`).
+
+This is opt-in: a host that wants to allow registration on `Postponed`
+events can override the `RegistrationService` binding in their adapter.
+
+The `publiclyAccessible()` scope includes `Active`, `Postponed`, `Delayed`,
+`Cancelled`, and `Archived` events (i.e., everything except `Draft`). The
+`publiclyDiscoverable()` scope is stricter: it returns only `Active` events.
+
+## Schedule modes and resolver hooks
+
+`Occurrence.schedule_mode` is a free-form string column. The default is
+`manual` (caller supplies an absolute `starts_at`). For other schedule
+modes (`prayer_relative`, `recurring`, `iCal_import`, etc.), the host
+binds a class implementing `AIArmada\Events\Contracts\EventScheduleResolver`
+via `config(['events.schedule.resolver' => MyResolver::class])`.
+
+When `EnsureOccurrenceAction::handle()` is called and `schedule_mode` is
+non-manual but no `starts_at` is supplied, the package calls the
+configured resolver to compute the materialized timestamps. If no resolver
+is bound, the package throws a `RuntimeException` with a clear message.
+
+```php
+use AIArmada\Events\Contracts\EventScheduleResolver;
+
+class PrayerTimeScheduleResolver implements EventScheduleResolver
+{
+    public function resolve(array $series, array $event, array $location, array $payload): ?array
+    {
+        $key = $payload['schedule_reference_key'] ?? null;
+        $coords = $payload['coordinates'] ?? null;
+        $date = $payload['date'] ?? null;
+
+        // hit Aladhan API, map prayer slot, etc.
+        // return ['starts_at' => $carbon, 'ends_at' => $carbon->addHour(), 'schedule_label' => 'Fajr + 15 minutes'];
+    }
+}
+```
+
+The package never ships a sample resolver — that would leak religion-
+specific vocabulary into a package that must serve any domain with equal
+fidelity.
+
+## Slug source field
+
+By default the package derives the slug from the `name` field of the
+event. Hosts that prefer to read from a different field (e.g., `title`)
+can configure:
+
+```php
+// config/events.php
+return [
+    'slug' => [
+        'source_field' => env('EVENTS_SLUG_SOURCE_FIELD', 'name'),
+        'max_length' => (int) env('EVENTS_SLUG_MAX_LENGTH', 60),
+    ],
+    // ...
+];
+```
+
+The `Event::title` accessor is always available and returns the value of
+the `name` field, so hosts can call `$event->title` without renaming the
+column.
+
+

@@ -16,6 +16,8 @@ final class ViewRegistration extends ViewRecord
     {
         return [
             Actions\EditAction::make(),
+            RegistrationResource::approveAction(),
+            RegistrationResource::rejectAction(),
         ];
     }
 }

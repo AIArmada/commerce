@@ -17,10 +17,12 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->uuid('event_series_id')->nullable()->index();
+            $table->uuid('parent_event_id')->nullable()->index();
             $table->uuid('product_id')->nullable()->index();
             $table->string('name');
             $table->string('slug');
             $table->string('status', 32)->default('draft')->index();
+            $table->string('structure', 32)->default('standalone')->index();
             $table->string('default_timezone', 64)->nullable();
             $table->unsignedInteger('default_duration_minutes')->nullable();
             $table->text('summary')->nullable();
@@ -30,6 +32,8 @@ return new class extends Migration
 
             $table->index(['owner_type', 'owner_id', 'status']);
             $table->index(['event_series_id', 'status']);
+            $table->index(['event_series_id', 'parent_event_id']);
+            $table->index(['parent_event_id', 'structure']);
             $table->unique(['owner_type', 'owner_id', 'slug']);
         });
     }

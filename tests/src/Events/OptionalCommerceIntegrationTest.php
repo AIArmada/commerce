@@ -40,6 +40,8 @@ it('keeps direct occurrence registrations working without commerce integration m
         'name' => 'Core Only Event',
         'slug' => 'core-only-event',
         'status' => EventStatus::Active,
+
+        'registration_required' => true,
         'default_timezone' => 'Asia/Kuala_Lumpur',
     ]);
 

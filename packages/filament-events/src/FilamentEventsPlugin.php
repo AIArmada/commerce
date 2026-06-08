@@ -33,6 +33,7 @@ final class FilamentEventsPlugin implements Plugin
                 Resources\EventResource::class,
                 Resources\OccurrenceResource::class,
                 Resources\VenueResource::class,
+                Resources\EventSubLocationResource::class,
                 Resources\RegistrationResource::class,
             ]);
     }

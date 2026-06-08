@@ -8,14 +8,20 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Enums\RegistrationAttendanceSource;
 use AIArmada\Events\Enums\RegistrationStatus;
+use AIArmada\Events\Events\RegistrationApproved;
 use AIArmada\Events\Events\RegistrationCancelled;
 use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Events\RegistrationCreated;
 use AIArmada\Events\Events\RegistrationMarkedNoShow;
+use AIArmada\Events\Events\RegistrationRefunded;
+use AIArmada\Events\Events\RegistrationRejected;
 use AIArmada\Events\Events\WalkInRecorded;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 use AIArmada\Orders\Models\OrderItem;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -128,6 +134,24 @@ final class RegistrationService
                 'metadata' => $metadata,
             ]);
 
+            EventAttendance::updateOrCreate(
+                [
+                    'registration_id' => $registration->id,
+                    'source' => RegistrationAttendanceSource::Registration->value,
+                ],
+                [
+                    'event_id' => $occurrence->event_id,
+                    'occurrence_id' => $occurrence->id,
+                    'attendee_type' => $registration->attendee_type,
+                    'attendee_id' => $registration->attendee_id,
+                    'recorded_by_type' => OwnerContext::resolve()?->getMorphClass(),
+                    'recorded_by_id' => OwnerContext::resolve()?->getKey(),
+                    'status' => 'present',
+                    'checked_in_at' => $registration->checked_in_at,
+                    'metadata' => $metadata,
+                ],
+            );
+
             event(new RegistrationCheckedIn($registration->refresh(), $context));
 
             return $registration->refresh();
@@ -152,6 +176,102 @@ final class RegistrationService
             ]);
 
             event(new RegistrationCancelled($registration->refresh(), $reason));
+
+            return $registration->refresh();
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function approve(Registration $registration, ?Model $actor = null, array $context = []): Registration
+    {
+        return $this->withRecordOwnerContext($registration, function () use ($registration, $actor, $context): Registration {
+            return DB::transaction(function () use ($registration, $actor, $context): Registration {
+                $lockedRegistration = $this->lockRegistration($registration);
+
+                if ($lockedRegistration->status === RegistrationStatus::Confirmed) {
+                    return $lockedRegistration;
+                }
+
+                if (! in_array($lockedRegistration->status, [RegistrationStatus::Pending, RegistrationStatus::Waitlisted], true)) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Registration %s cannot be approved from status %s.',
+                        $lockedRegistration->id,
+                        $lockedRegistration->status->value,
+                    ));
+                }
+
+                $lockedOccurrence = $this->lockOccurrence($this->occurrenceForRegistration($lockedRegistration));
+                $this->ensureOccurrenceHasCapacity($lockedOccurrence, 1);
+
+                $metadata = $this->buildApprovalMetadata($lockedRegistration, $actor, $context, 'approve');
+
+                $lockedRegistration->update([
+                    'status' => RegistrationStatus::Confirmed,
+                    'metadata' => $metadata,
+                ]);
+
+                event(new RegistrationApproved($lockedRegistration->refresh(), $actor, $context));
+
+                return $lockedRegistration->refresh();
+            });
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function reject(Registration $registration, ?Model $actor = null, ?string $reason = null, array $context = []): Registration
+    {
+        return $this->withRecordOwnerContext($registration, function () use ($registration, $actor, $reason, $context): Registration {
+            if ($registration->status === RegistrationStatus::Cancelled) {
+                return $registration;
+            }
+
+            if (! in_array($registration->status, [RegistrationStatus::Pending, RegistrationStatus::Waitlisted], true)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Registration %s cannot be rejected from status %s.',
+                    $registration->id,
+                    $registration->status->value,
+                ));
+            }
+
+            $metadata = $this->buildApprovalMetadata($registration, $actor, $context, 'reject', $reason);
+
+            $registration->update([
+                'status' => RegistrationStatus::Cancelled,
+                'cancelled_at' => now('UTC'),
+                'metadata' => $metadata,
+            ]);
+
+            event(new RegistrationRejected($registration->refresh(), $reason, $actor, $context));
+
+            return $registration->refresh();
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function refund(Registration $registration, ?string $reason = null, array $context = []): Registration
+    {
+        return $this->withRecordOwnerContext($registration, function () use ($registration, $reason, $context): Registration {
+            if ($registration->status === RegistrationStatus::Refunded) {
+                return $registration;
+            }
+
+            $metadata = array_merge(Arr::wrap($registration->metadata), array_filter([
+                'refund_reason' => $reason,
+                'refund_context' => $context,
+            ], static fn (mixed $value): bool => $value !== null && $value !== '' && $value !== []));
+
+            $registration->update([
+                'status' => RegistrationStatus::Refunded,
+                'metadata' => $metadata,
+            ]);
+
+            event(new RegistrationRefunded($registration->refresh(), $reason, $context));
 
             return $registration->refresh();
         });
@@ -211,10 +331,27 @@ final class RegistrationService
             Arr::wrap($participant['metadata'] ?? []),
         );
 
-        $status = $this->resolveStatus($links);
         [$attendeeType, $attendeeId] = $this->resolveAttendeeIdentity($participant, $links);
+        $this->guardAgainstDuplicateRegistration(
+            $occurrence,
+            $attendeeType,
+            $attendeeId,
+            $email,
+            $phone,
+        );
+
+        $status = $this->resolveStatus($occurrence, $links);
+
+        if ($occurrence->isWaitlistEnabled()) {
+            try {
+                $this->ensureOccurrenceHasCapacity($occurrence, 1);
+            } catch (InvalidArgumentException) {
+                $status = RegistrationStatus::Waitlisted;
+            }
+        }
 
         $registration = Registration::create([
+            'code' => Registration::generateUniqueCode(),
             'occurrence_id' => $occurrence->id,
             'order_id' => $this->resolveModelKey($links['order'] ?? $links['order_id'] ?? null),
             'order_item_id' => $this->resolveModelKey($links['order_item'] ?? $links['order_item_id'] ?? null),
@@ -251,6 +388,7 @@ final class RegistrationService
         [$attendeeType, $attendeeId] = $this->resolveAttendeeIdentity($participant, $links);
 
         $registration = Registration::create([
+            'code' => Registration::generateUniqueCode(),
             'occurrence_id' => $occurrence->id,
             'attendance_source' => RegistrationAttendanceSource::WalkIn,
             'attendee_type' => $attendeeType,
@@ -264,6 +402,24 @@ final class RegistrationService
             'checked_in_at' => now('UTC'),
             'metadata' => $metadata === [] ? null : $metadata,
         ]);
+
+        EventAttendance::updateOrCreate(
+            [
+                'registration_id' => $registration->id,
+                'source' => RegistrationAttendanceSource::WalkIn->value,
+            ],
+            [
+                'event_id' => $occurrence->event_id,
+                'occurrence_id' => $occurrence->id,
+                'attendee_type' => $registration->attendee_type,
+                'attendee_id' => $registration->attendee_id,
+                'recorded_by_type' => OwnerContext::resolve()?->getMorphClass(),
+                'recorded_by_id' => OwnerContext::resolve()?->getKey(),
+                'status' => 'present',
+                'checked_in_at' => $registration->checked_in_at,
+                'metadata' => $registration->metadata,
+            ],
+        );
 
         event(new RegistrationCreated($registration));
         event(new WalkInRecorded($registration, [
@@ -325,23 +481,25 @@ final class RegistrationService
     /**
      * @param  array<string, mixed>  $links
      */
-    private function resolveStatus(array $links): RegistrationStatus
+    private function resolveStatus(Occurrence $occurrence, array $links): RegistrationStatus
     {
         $status = $links['status'] ?? null;
 
         if ($status instanceof RegistrationStatus) {
-            return $status;
+            $resolved = $status;
+        } elseif (is_string($status) && RegistrationStatus::tryFrom($status) instanceof RegistrationStatus) {
+            $resolved = RegistrationStatus::from($status);
+        } elseif (($links['order_item'] ?? $links['order_item_id'] ?? null) !== null) {
+            $resolved = RegistrationStatus::Confirmed;
+        } else {
+            $resolved = RegistrationStatus::Pending;
         }
 
-        if (is_string($status) && RegistrationStatus::tryFrom($status) instanceof RegistrationStatus) {
-            return RegistrationStatus::from($status);
+        if ($occurrence->requiresApproval() && $resolved === RegistrationStatus::Confirmed) {
+            return RegistrationStatus::Pending;
         }
 
-        if (($links['order_item'] ?? $links['order_item_id'] ?? null) !== null) {
-            return RegistrationStatus::Confirmed;
-        }
-
-        return RegistrationStatus::Pending;
+        return $resolved;
     }
 
     private function lockOccurrence(Occurrence $occurrence): Occurrence
@@ -361,17 +519,62 @@ final class RegistrationService
         ));
     }
 
+    private function lockRegistration(Registration $registration): Registration
+    {
+        $lockedRegistration = Registration::query()
+            ->whereKey($registration->getKey())
+            ->lockForUpdate()
+            ->first();
+
+        if ($lockedRegistration instanceof Registration) {
+            return $lockedRegistration;
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Registration %s could not be found.',
+            (string) $registration->getKey(),
+        ));
+    }
+
     private function ensureOccurrenceCanAcceptRegistrations(Occurrence $occurrence, int $requestedSeats): void
     {
+        $event = $occurrence->event;
+
+        if ($event instanceof Event && ! $event->isEngageable()) {
+            throw new InvalidArgumentException(sprintf(
+                'Registrations are not accepted while the event is [%s].',
+                $event->status->value,
+            ));
+        }
+
+        if ($event instanceof Event && (bool) $event->registration_required === false) {
+            throw new InvalidArgumentException('Registrations are not required for this event.');
+        }
+
         if (! $occurrence->acceptsRegistrations()) {
             throw new InvalidArgumentException('This event date is not accepting registrations.');
         }
 
-        $this->ensureOccurrenceHasCapacity($occurrence, $requestedSeats);
+        try {
+            $this->ensureOccurrenceHasCapacity($occurrence, $requestedSeats);
+        } catch (InvalidArgumentException $exception) {
+            if (! $occurrence->isWaitlistEnabled()) {
+                throw $exception;
+            }
+        }
     }
 
     private function ensureOccurrenceCanAcceptWalkIns(Occurrence $occurrence, int $requestedSeats): void
     {
+        $event = $occurrence->event;
+
+        if ($event instanceof Event && ! $event->isEngageable()) {
+            throw new InvalidArgumentException(sprintf(
+                'Walk-ins are not accepted while the event is [%s].',
+                $event->status->value,
+            ));
+        }
+
         if (! $occurrence->acceptsWalkIns()) {
             throw new InvalidArgumentException('This event date is not accepting walk-ins.');
         }
@@ -406,6 +609,73 @@ final class RegistrationService
             'Only %d seat(s) remain for this event date.',
             $remainingSeats,
         ));
+    }
+
+    private function guardAgainstDuplicateRegistration(
+        Occurrence $occurrence,
+        ?string $attendeeType,
+        ?string $attendeeId,
+        ?string $email,
+        ?string $phone,
+    ): void {
+        $duplicateStrategy = mb_strtolower($occurrence->duplicateStrategy());
+
+        if ($duplicateStrategy === 'none') {
+            return;
+        }
+
+        $query = Registration::query()
+            ->whereNotIn('status', [
+                RegistrationStatus::Cancelled->value,
+                RegistrationStatus::Refunded->value,
+            ]);
+
+        if ($duplicateStrategy === 'per_event') {
+            $query->whereHas('occurrence', function (Builder $query) use ($occurrence): void {
+                $query->where('event_id', $occurrence->event_id);
+            });
+        } elseif ($duplicateStrategy === 'per_series') {
+            $seriesId = $occurrence->event()->value('event_series_id');
+
+            if ($seriesId === null) {
+                $query->where('occurrence_id', $occurrence->id);
+            } else {
+                $query->whereHas('occurrence.event', function (Builder $query) use ($seriesId): void {
+                    $query->where('event_series_id', $seriesId);
+                });
+            }
+        } else {
+            $query->where('occurrence_id', $occurrence->id);
+        }
+
+        if ($attendeeType !== null && $attendeeId !== null) {
+            $query->where('attendee_type', $attendeeType)
+                ->where('attendee_id', $attendeeId);
+        } elseif ($email !== null || $phone !== null) {
+            $query->where(function (Builder $query) use ($email, $phone): void {
+                if ($email !== null) {
+                    $query->where('email', $email);
+                }
+
+                if ($phone !== null) {
+                    if ($email !== null) {
+                        $query->orWhere('phone', $phone);
+
+                        return;
+                    }
+
+                    $query->where('phone', $phone);
+                }
+            });
+        } else {
+            return;
+        }
+
+        if (! $query->exists()) {
+            return;
+        }
+
+        throw new InvalidArgumentException('A registration already exists for this attendee on this occurrence.');
     }
 
     private function resolveModelKey(mixed $value): ?string
@@ -484,6 +754,32 @@ final class RegistrationService
         }
 
         return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    private function buildApprovalMetadata(Registration $registration, ?Model $actor, array $context, string $transition, ?string $reason = null): array
+    {
+        $metadata = Arr::wrap($registration->metadata);
+        $metadata['approval_transition'] = $transition;
+
+        if ($context !== []) {
+            $metadata['approval_context'] = $context;
+        }
+
+        if ($reason !== null && mb_trim($reason) !== '') {
+            $metadata['approval_rejection_reason'] = $reason;
+            $metadata['cancellation_reason'] = $reason;
+        }
+
+        if ($actor instanceof Model) {
+            $metadata['approval_actor_type'] = $actor->getMorphClass();
+            $metadata['approval_actor_id'] = (string) $actor->getKey();
+        }
+
+        return $metadata;
     }
 
     /**

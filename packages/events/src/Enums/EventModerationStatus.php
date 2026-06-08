@@ -7,6 +7,7 @@ namespace AIArmada\Events\Enums;
 enum EventModerationStatus: string
 {
     case Pending = 'pending';
+    case ChangesRequested = 'changes_requested';
     case Approved = 'approved';
     case Rejected = 'rejected';
 
@@ -14,6 +15,7 @@ enum EventModerationStatus: string
     {
         return match ($this) {
             self::Pending => 'Pending Review',
+            self::ChangesRequested => 'Changes Requested',
             self::Approved => 'Approved',
             self::Rejected => 'Rejected',
         };
@@ -23,6 +25,7 @@ enum EventModerationStatus: string
     {
         return match ($this) {
             self::Pending => 'warning',
+            self::ChangesRequested => 'warning',
             self::Approved => 'success',
             self::Rejected => 'danger',
         };

@@ -10,7 +10,8 @@ return [
             'events' => 2,
             'occurrences' => 3,
             'venues' => 4,
-            'registrations' => 5,
+            'sub_locations' => 5,
+            'registrations' => 6,
         ],
     ],
 ];

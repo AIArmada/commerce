@@ -17,7 +17,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->nullableUuidMorphs('owner');
             $table->uuid('event_id')->index();
-            $table->uuid('venue_id')->nullable()->index();
+            $table->nullableUuidMorphs('address');
+            $table->foreignUuid('sub_location_id')->nullable()->index();
             $table->uuid('product_id')->nullable()->index();
             $table->uuid('variant_id')->nullable()->index();
             $table->string('name')->nullable();
@@ -34,7 +35,6 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['event_id', 'starts_at']);
-            $table->index(['venue_id', 'starts_at']);
             $table->index(['status', 'starts_at']);
         });
     }
