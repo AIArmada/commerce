@@ -50,7 +50,6 @@ it('blocks conversion status updates when user lacks moderation permissions', fu
         'total_minor' => 10000,
         'value_minor' => 10000,
         'commission_minor' => 1000,
-        'currency' => 'USD',
         'commission_currency' => 'USD',
     ]);
 
@@ -90,7 +89,6 @@ it('updates conversion status when user has affiliate_conversion.update permissi
         'total_minor' => 15000,
         'value_minor' => 15000,
         'commission_minor' => 1500,
-        'currency' => 'USD',
         'commission_currency' => 'USD',
     ]);
 
@@ -134,7 +132,6 @@ it('updates conversion status when user has affiliate.approve permission', funct
         'total_minor' => 12000,
         'value_minor' => 12000,
         'commission_minor' => 1200,
-        'currency' => 'USD',
         'commission_currency' => 'USD',
     ]);
 
@@ -178,7 +175,6 @@ it('clears approved_at when conversion is reset from approved to pending', funct
         'total_minor' => 14000,
         'value_minor' => 14000,
         'commission_minor' => 1400,
-        'currency' => 'USD',
         'commission_currency' => 'USD',
     ]);
 
@@ -226,7 +222,6 @@ it('marks conversion as paid and retains approval timestamp semantics', function
         'total_minor' => 20000,
         'value_minor' => 20000,
         'commission_minor' => 2000,
-        'currency' => 'USD',
         'commission_currency' => 'USD',
     ]);
 
