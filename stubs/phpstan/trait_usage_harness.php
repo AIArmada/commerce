@@ -6,6 +6,7 @@ namespace AIArmada\Commerce\PHPStan\TraitUsageHarness;
 
 use AIArmada\Cart\Concerns\Buyable;
 use AIArmada\Cart\Contracts\BuyableInterface;
+use AIArmada\CommerceSupport\Models\AuthzScope;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasPaymentStatus;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
@@ -15,7 +16,6 @@ use AIArmada\FilamentAuthz\Concerns\HasAuthzScope;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
-use AIArmada\CommerceSupport\Models\AuthzScope;
 use AIArmada\Vouchers\Traits\HasVoucherOwnership;
 use AIArmada\Vouchers\Traits\HasVouchers;
 use Illuminate\Database\Eloquent\Model;
