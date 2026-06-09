@@ -6,7 +6,6 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
-use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 describe('OfferManagementService', function (): void {
