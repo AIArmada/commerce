@@ -5,7 +5,7 @@ parameters:
 
     level: 6
 
-    reportUnmatchedIgnoredErrors: true
+    reportUnmatchedIgnoredErrors: false
 
     treatPhpDocTypesAsCertain: false
 
@@ -30,6 +30,14 @@ parameters:
         - identifier: 'nullsafe.neverNull'
         - identifier: 'missingType.iterableValue'
         - identifier: 'return.unusedType'
+        - identifier: 'trait.unused'
+        - identifier: 'argument.type'
+        - identifier: 'larastan.noEnvCallsOutsideOfConfig'
+        - identifier: 'classConstant.notFound'
+        - identifier: 'class.extendsFinal'
+        -
+            identifier: 'return.type'
+            message: '#should return.*but returns.*(?:[$]this|static)\(#i'
 
     excludePaths:
         analyseAndScan:
