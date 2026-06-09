@@ -8,10 +8,10 @@ use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
-use AIArmada\Inventory\Services\FifoCostService;
-use AIArmada\Inventory\Services\StandardCostService;
-use AIArmada\Inventory\Services\ValuationService;
-use AIArmada\Inventory\Services\WeightedAverageCostService;
+use AIArmada\Inventory\Services\Costing\FifoCostService;
+use AIArmada\Inventory\Services\Costing\StandardCostService;
+use AIArmada\Inventory\Services\Costing\ValuationService;
+use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);

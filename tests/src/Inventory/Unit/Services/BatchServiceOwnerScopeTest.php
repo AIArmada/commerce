@@ -7,7 +7,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\BatchService;
+use AIArmada\Inventory\Services\Batch\BatchService;
 use Illuminate\Database\Eloquent\Model;
 
 function setBatchServiceOwnerResolver(?Model $owner): void

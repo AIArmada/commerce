@@ -7,7 +7,7 @@ use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
-use AIArmada\Inventory\Services\SerialLookupService;
+use AIArmada\Inventory\Services\Serial\SerialLookupService;
 use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Reserved;
 use AIArmada\Inventory\States\SerialStatus;

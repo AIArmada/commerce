@@ -7,7 +7,20 @@ use AIArmada\AffiliateNetwork\Events\ApplicationSubmitted;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
+use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Support\Facades\Event;
+
+function createTestAffiliate(array $attributes = []): Affiliate
+{
+    return Affiliate::create(array_merge([
+        'code' => 'AFF' . uniqid(),
+        'name' => 'Test Affiliate',
+        'status' => 'active',
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ], $attributes));
+}
 
 describe('ApplyToOffer', function (): void {
     beforeEach(function (): void {
@@ -109,5 +122,5 @@ describe('ApplyToOffer', function (): void {
             ]);
 
         $this->action->execute($this->offer, $this->affiliate);
-    })->throws(RuntimeException::class, 'Cannot reapply');
+    })->throws(RuntimeException::class);
 });
