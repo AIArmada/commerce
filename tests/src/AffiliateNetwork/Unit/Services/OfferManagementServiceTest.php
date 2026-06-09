@@ -9,18 +9,6 @@ use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-function createTestAffiliate(array $attributes = []): Affiliate
-{
-    return Affiliate::create(array_merge([
-        'code' => 'AFF' . uniqid(),
-        'name' => 'Test Affiliate',
-        'status' => 'active',
-        'commission_type' => 'percentage',
-        'commission_rate' => 1000,
-        'currency' => 'USD',
-    ], $attributes));
-}
-
 describe('OfferManagementService', function (): void {
     beforeEach(function (): void {
         $this->service = app(OfferManagementService::class);

@@ -7,6 +7,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 }
 
 use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Commerce\Tests\FilamentAuthz\FilamentAuthzTestCase;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -170,6 +171,18 @@ function createSampleConditionData(): array
 function conditionTargetDefinition(string $dsl): array
 {
     return ConditionTarget::from($dsl)->toArray();
+}
+
+function createTestAffiliate(array $attributes = []): Affiliate
+{
+    return Affiliate::create(array_merge([
+        'code' => 'AFF' . uniqid(),
+        'name' => 'Test Affiliate',
+        'status' => 'active',
+        'commission_type' => 'percentage',
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ], $attributes));
 }
 
 beforeEach(function (): void {
