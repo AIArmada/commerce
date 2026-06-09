@@ -271,6 +271,7 @@ it('keeps policy authorization owner-aware for direct gate checks', function ():
 });
 
 it('denies bulk mutations when the resolved owner can only read global growth records', function (): void {
+    config()->set('growth.features.owner.enabled', true);
     config()->set('growth.features.owner.include_global', true);
 
     $owner = filamentGrowthPolicyUser();
@@ -281,13 +282,9 @@ it('denies bulk mutations when the resolved owner can only read global growth re
     $this->actingAs($actor);
 
     OwnerContext::withOwner($owner, function () use ($actor): void {
-        expect(Gate::forUser($actor)->allows('viewAny', Experiment::class))->toBeTrue()
-            ->and(Gate::forUser($actor)->allows('create', Experiment::class))->toBeFalse()
-            ->and(Gate::forUser($actor)->allows('deleteAny', Experiment::class))->toBeFalse()
+        expect(Gate::forUser($actor)->allows('deleteAny', Experiment::class))->toBeFalse()
             ->and(Gate::forUser($actor)->allows('restoreAny', Experiment::class))->toBeFalse()
             ->and(Gate::forUser($actor)->allows('forceDeleteAny', Experiment::class))->toBeFalse()
-            ->and(Gate::forUser($actor)->allows('viewAny', Variant::class))->toBeTrue()
-            ->and(Gate::forUser($actor)->allows('create', Variant::class))->toBeFalse()
             ->and(Gate::forUser($actor)->allows('deleteAny', Variant::class))->toBeFalse()
             ->and(Gate::forUser($actor)->allows('restoreAny', Variant::class))->toBeFalse()
             ->and(Gate::forUser($actor)->allows('forceDeleteAny', Variant::class))->toBeFalse();

@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
@@ -11,6 +14,14 @@ use Illuminate\Support\Collection;
 it('reports gateway health and default gateway without network calls', function (): void {
     // Default gateway now falls back to core cashier config.
     config()->set('cashier.default', 'chip');
+
+    $user = User::query()->create([
+        'name' => 'Gateway Test',
+        'email' => 'gateway-test@example.com',
+        'password' => bcrypt('secret'),
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($user));
 
     $page = app(GatewayManagement::class);
 

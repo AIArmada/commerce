@@ -37,8 +37,8 @@ final class RunChipPurchaseDocGenerationAction
             return;
         }
 
-        $runner = function () use ($purchase, $docData, $docTypeConfigKey): void {
-            if ($this->docExistsForPurchase($purchase, $docTypeConfigKey)) {
+        $runner = function () use ($purchase, $docData, $payload): void {
+            if ($this->docExistsForPayment($purchase, $payload)) {
                 return;
             }
 
@@ -75,18 +75,25 @@ final class RunChipPurchaseDocGenerationAction
         return OwnerContext::fromTypeAndId($ownerType, $ownerId);
     }
 
-    private function docExistsForPurchase(Purchase $purchase, string $docTypeConfigKey): bool
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function docExistsForPayment(Purchase $purchase, array $payload): bool
     {
         if (! class_exists(Doc::class)) {
             return false;
         }
 
-        $docType = config($docTypeConfigKey);
+        $paymentId = $payload['id'] ?? null;
+
+        if (! is_string($paymentId)) {
+            return false;
+        }
 
         return Doc::query()
             ->where('docable_type', $purchase->getMorphClass())
             ->where('docable_id', $purchase->id)
-            ->when(is_string($docType), fn ($q) => $q->where('doc_type', $docType))
+            ->where('metadata->chip_payment_id', $paymentId)
             ->exists();
     }
 }

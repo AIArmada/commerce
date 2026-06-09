@@ -9,7 +9,9 @@ use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Services\PriceCalculator;
+use AIArmada\Pricing\Support\CustomerPriceResolver;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
+use AIArmada\Pricing\Support\SegmentPriceResolver;
 use AIArmada\Pricing\Support\TierResolver;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
@@ -60,6 +62,8 @@ describe('PriceCalculator Service', function (): void {
         $this->calculator = new PriceCalculator(
             new TierResolver,
             new PromotionalPriceResolver(new ApplyPromotionalAdjustment),
+            new CustomerPriceResolver,
+            new SegmentPriceResolver,
         );
     });
 

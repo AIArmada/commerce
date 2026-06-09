@@ -7,7 +7,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\UnifiedSubscription;
-use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use Filament\Actions;

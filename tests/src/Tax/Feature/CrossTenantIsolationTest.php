@@ -9,7 +9,9 @@ use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Services\RateApplier\StandardRateApplier;
 use AIArmada\Tax\Services\TaxCalculator;
+use AIArmada\Tax\Services\ZoneResolver\CompositeZoneResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,7 +80,10 @@ it('blocks cross-tenant reads and writes when owner scoping is enabled', functio
 
     bindTaxOwner($ownerA);
 
-    $calculator = new TaxCalculator;
+    $calculator = new TaxCalculator(
+        new CompositeZoneResolver,
+        new StandardRateApplier,
+    );
 
     $result = $calculator->calculateTax(10000, 'standard', $zoneB->id);
 

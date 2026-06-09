@@ -15,7 +15,7 @@ use AIArmada\FilamentAuthz\Concerns\HasAuthzScope;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
-use AIArmada\FilamentAuthz\Models\AuthzScope;
+use AIArmada\CommerceSupport\Models\AuthzScope;
 use AIArmada\Vouchers\Traits\HasVoucherOwnership;
 use AIArmada\Vouchers\Traits\HasVouchers;
 use Illuminate\Database\Eloquent\Model;

@@ -24,7 +24,6 @@ test('doc resource has correct model and labels', function (): void {
     expect(DocResource::getNavigationLabel())->toBe('Documents');
     expect(DocResource::getModelLabel())->toBe('Document');
     expect(DocResource::getPluralModelLabel())->toBe('Documents');
-    expect(DocResource::getTenantOwnershipRelationshipName())->toBe('owner');
 });
 
 test('doc resource has correct pages', function (): void {

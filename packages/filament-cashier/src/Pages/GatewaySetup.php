@@ -50,7 +50,7 @@ final class GatewaySetup extends Page
                 'name' => __('filament-cashier::gateway.setup.chip.name'),
                 'description' => __('filament-cashier::gateway.setup.chip.description'),
                 'install' => __('filament-cashier::gateway.setup.chip.install'),
-                'available' => class_exists(\AIArmada\CashierChip\Cashier::class),
+                'available' => class_exists(\AIArmada\CashierChip\Billing\Cashier::class),
             ],
         ];
     }

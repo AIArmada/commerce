@@ -20,6 +20,7 @@ use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
 use AIArmada\Chip\Events\PurchaseReleased;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
@@ -177,10 +178,22 @@ describe('ProcessChipWebhook', function (): void {
     });
 
     it('dispatches PayoutSuccess event', function (): void {
+        $sendInstruction = SendInstruction::create([
+            'id' => 99901,
+            'bank_account_id' => 1,
+            'amount' => '500.00',
+            'email' => 'test@example.com',
+            'description' => 'Test Payout',
+            'reference' => 'ref-payout-success',
+            'state' => 'received',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $payload = [
             'event_type' => 'payout.success',
             'type' => 'payout',
-            'id' => 'payout-123',
+            'id' => $sendInstruction->id,
             'status' => 'success',
             'is_test' => true,
             'amount' => 50000,
@@ -200,10 +213,22 @@ describe('ProcessChipWebhook', function (): void {
     });
 
     it('dispatches PayoutFailed event', function (): void {
+        $sendInstruction = SendInstruction::create([
+            'id' => 99902,
+            'bank_account_id' => 1,
+            'amount' => '500.00',
+            'email' => 'test@example.com',
+            'description' => 'Test Payout',
+            'reference' => 'ref-payout-failed',
+            'state' => 'received',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $payload = [
             'event_type' => 'payout.failed',
             'type' => 'payout',
-            'id' => 'payout-123',
+            'id' => $sendInstruction->id,
             'status' => 'failed',
             'is_test' => true,
             'amount' => 50000,

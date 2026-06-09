@@ -30,7 +30,7 @@ test('config check fails when API account is missing', function (): void {
     Config::set('jnt.api_account', null);
 
     $this->artisan(ConfigCheckCommand::class)
-        ->expectsOutput('Configuration validation failed. Please fix the errors above.')
+        ->expectsOutput('✗ Configuration validation: Please fix the errors above.')
         ->assertExitCode(1);
 });
 
@@ -38,7 +38,7 @@ test('config check fails when private key is missing', function (): void {
     Config::set('jnt.private_key', null);
 
     $this->artisan(ConfigCheckCommand::class)
-        ->expectsOutput('Configuration validation failed. Please fix the errors above.')
+        ->expectsOutput('✗ Configuration validation: Please fix the errors above.')
         ->assertExitCode(1);
 });
 
@@ -46,7 +46,7 @@ test('config check fails when private key has invalid format', function (): void
     Config::set('jnt.private_key', 'invalid-key-format');
 
     $this->artisan(ConfigCheckCommand::class)
-        ->expectsOutput('Configuration validation failed. Please fix the errors above.')
+        ->expectsOutput('✗ Configuration validation: Please fix the errors above.')
         ->assertExitCode(1);
 });
 
@@ -54,7 +54,7 @@ test('config check fails when environment is invalid', function (): void {
     Config::set('jnt.environment', 'invalid');
 
     $this->artisan(ConfigCheckCommand::class)
-        ->expectsOutput('Configuration validation failed. Please fix the errors above.')
+        ->expectsOutput('✗ Configuration validation: Please fix the errors above.')
         ->assertExitCode(1);
 });
 
@@ -62,7 +62,7 @@ test('config check fails when base URLs are missing', function (): void {
     Config::set('jnt.base_urls', null);
 
     $this->artisan(ConfigCheckCommand::class)
-        ->expectsOutput('Configuration validation failed. Please fix the errors above.')
+        ->expectsOutput('✗ Configuration validation: Please fix the errors above.')
         ->assertExitCode(1);
 });
 
@@ -73,7 +73,7 @@ test('config check fails when base URLs are invalid', function (): void {
     ]);
 
     $this->artisan(ConfigCheckCommand::class)
-        ->expectsOutput('Configuration validation failed. Please fix the errors above.')
+        ->expectsOutput('✗ Configuration validation: Please fix the errors above.')
         ->assertExitCode(1);
 });
 
@@ -92,6 +92,6 @@ test('config check shows success message when all checks pass', function (): voi
     ]);
 
     $this->artisan(ConfigCheckCommand::class)
-        ->expectsOutput('✓ All checks passed! J&T Express is properly configured.')
+        ->expectsOutput('✓ All checks passed: J&T Express is properly configured.')
         ->assertExitCode(0);
 });

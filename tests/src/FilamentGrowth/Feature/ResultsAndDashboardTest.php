@@ -576,7 +576,7 @@ it('resolves readable global experiment tracked properties on the results page f
 });
 
 it('does not resolve foreign tracked properties on the results page when growth owner scoping is disabled but signals owner scoping remains enabled', function (): void {
-    config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
 
     $ownerA = filamentGrowthOwner();
     $ownerB = filamentGrowthOwner();
@@ -596,7 +596,7 @@ it('does not resolve foreign tracked properties on the results page when growth 
 });
 
 it('does not show dashboard experiment data for foreign tracked properties when growth owner scoping is disabled but signals owner scoping remains enabled', function (): void {
-    config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
 
     $ownerA = filamentGrowthOwner();
     $ownerB = filamentGrowthOwner();
@@ -619,7 +619,7 @@ it('does not show dashboard experiment data for foreign tracked properties when 
 });
 
 it('gates dashboard and results page access when only foreign tracked properties exist', function (): void {
-    config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
 
     $ownerA = filamentGrowthOwner();
     $ownerB = filamentGrowthOwner();
@@ -632,7 +632,7 @@ it('gates dashboard and results page access when only foreign tracked properties
 });
 
 it('clears the selected experiment when the requested experiment is no longer accessible', function (): void {
-    config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
 
     $ownerA = filamentGrowthOwner();
     $ownerB = filamentGrowthOwner();

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\FilamentAuthz\Resources\PermissionResource;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
+use AIArmada\FilamentAuthz\Resources\RoleResource\Schemas\RoleForm;
 use AIArmada\FilamentAuthz\Resources\UserResource;
 use AIArmada\FilamentAuthz\Support\UserAuthzForm;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -195,7 +196,7 @@ it('uses configured role resource scope options', function (): void {
         (string) $scope->getKey() => 'Only Shared Scope',
     ]);
 
-    $options = invokeProtectedStatic(RoleResource::class, 'getScopeOptions');
+    $options = invokeProtectedStatic(RoleForm::class, 'getScopeOptions');
 
     expect($options)->toBe([
         (string) $scope->getKey() => 'Only Shared Scope',

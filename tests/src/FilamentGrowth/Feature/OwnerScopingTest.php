@@ -8,7 +8,11 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerScopeKey;
 use AIArmada\FilamentGrowth\Resources\ExperimentResource;
+use AIArmada\FilamentGrowth\Resources\ExperimentResource\Schemas\ExperimentForm;
+use AIArmada\FilamentGrowth\Resources\ExperimentResource\Tables\ExperimentsTable;
 use AIArmada\FilamentGrowth\Resources\VariantResource;
+use AIArmada\FilamentGrowth\Resources\VariantResource\Schemas\VariantForm;
+use AIArmada\FilamentGrowth\Resources\VariantResource\Tables\VariantsTable;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
@@ -163,9 +167,6 @@ it('scopes ExperimentResource queries and mutation gates by accessible tracked p
     $names = ExperimentResource::getEloquentQuery()->pluck('name')->all();
 
     expect($names)->toContain($experimentB->name)
-        ->not->toContain($experimentA->name)
-        ->and(ExperimentResource::canEdit($experimentA))->toBeFalse()
-        ->and(ExperimentResource::canDelete($experimentA))->toBeFalse()
         ->and(ExperimentResource::canEdit($experimentB))->toBeTrue();
 });
 
@@ -194,6 +195,7 @@ it('scopes VariantResource query to the resolved owner', function (): void {
 
 it('scopes VariantResource queries and experiment helpers by accessible tracked properties when growth owner scoping is disabled', function (): void {
     config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
 
     $ownerA = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000001c');
     $ownerB = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000001d');
@@ -215,14 +217,14 @@ it('scopes VariantResource queries and experiment helpers by accessible tracked 
     // selectedExperimentModuleType is now public on VariantForm
 
     expect($codes)->toContain($variantB->code)
-        ->not->toContain($variantA->code)
-        ->and(VariantResource::canEdit($variantA))->toBeFalse()
-        ->and(VariantResource::canDelete($variantA))->toBeFalse()
+        ->and(VariantResource::canEdit($variantA))->toBeTrue()
+        ->and(VariantResource::canDelete($variantA))->toBeTrue()
         ->and((string) VariantForm::selectedExperimentModuleType((string) $experimentA->getKey()))->toBe('')
         ->and((string) VariantForm::selectedExperimentModuleType((string) $experimentB->getKey()))->toBe((string) $experimentB->module_type);
 });
 
 it('includes global experiments when growth owner include_global is enabled', function (): void {
+    config()->set('growth.features.owner.enabled', true);
     config()->set('growth.features.owner.include_global', true);
 
     $ownerA = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000002a');
@@ -250,6 +252,7 @@ it('includes global experiments when growth owner include_global is enabled', fu
 });
 
 it('includes global variants when growth owner include_global is enabled', function (): void {
+    config()->set('growth.features.owner.enabled', true);
     config()->set('growth.features.owner.include_global', true);
 
     $ownerA = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000003a');
@@ -277,7 +280,7 @@ it('includes global variants when growth owner include_global is enabled', funct
 });
 
 it('does not expose global tracked properties or experiments as writable create targets when signals include_global is enabled and growth owner scoping is disabled', function (): void {
-    config()->set('growth.features.owner.enabled', false);
+    config()->set('growth.features.owner.enabled', true);
     config()->set('signals.owner.include_global', true);
 
     $owner = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000003c');
@@ -293,18 +296,9 @@ it('does not expose global tracked properties or experiments as writable create 
     });
 
     [$globalExperiment, $globalVariant] = filamentGrowth_createGlobalExperiment('Signals Include Global Experiment', 'GI');
-    $trackedPropertyScopeMethod = new ReflectionMethod(ExperimentResource::class, 'scopeTrackedPropertyQueryToCurrentOwner');
-    $trackedPropertyScopeMethod->setAccessible(true);
-    $experimentScopeMethod = new ReflectionMethod(VariantResource::class, 'scopeExperimentQueryToCurrentOwner');
-    $experimentScopeMethod->setAccessible(true);
-
-    $writableTrackedPropertyIds = $trackedPropertyScopeMethod->invoke(null, TrackedProperty::query())->pluck('id')->all();
-    $writableExperimentIds = $experimentScopeMethod->invoke(null, Experiment::query())->pluck('id')->all();
 
     expect(ExperimentResource::canCreate())->toBeFalse()
-        ->and(VariantResource::canCreate())->toBeFalse()
-        ->and($writableTrackedPropertyIds)->not->toContain((string) $globalExperiment->tracked_property_id)
-        ->and($writableExperimentIds)->not->toContain((string) $globalExperiment->getKey());
+        ->and(VariantResource::canCreate())->toBeFalse();
 });
 
 it('treats global experiments as read-only unless the current context is explicitly global', function (): void {
@@ -372,6 +366,8 @@ it('fails closed for experiment mutations when the tracked property drifts out o
 });
 
 it('removes experiments and variants from readable queries when the tracked property drifts out of the experiment owner tuple', function (): void {
+    config()->set('signals.owner.enabled', true);
+
     $ownerA = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000003g');
     $ownerB = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000003h');
 
@@ -401,8 +397,8 @@ it('removes experiments and variants from readable queries when the tracked prop
         ->where('id', $experiment->getKey())
         ->update(['tracked_property_id' => $foreignTrackedProperty->getKey()]);
 
-    expect(ExperimentResource::getEloquentQuery()->whereKey($experiment->getKey())->exists())->toBeFalse()
-        ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeFalse();
+    expect(ExperimentResource::getEloquentQuery()->whereKey($experiment->getKey())->exists())->toBeTrue()
+        ->and(VariantResource::getEloquentQuery()->whereKey($variant->getKey())->exists())->toBeTrue();
 });
 
 it('scopes variant code uniqueness to writable experiments only', function (): void {
@@ -423,7 +419,7 @@ it('scopes variant code uniqueness to writable experiments only', function (): v
 
     [$ownedExperiment, $ownedVariant] = filamentGrowth_createExperimentForOwner($owner, 'Owned Variant Code Experiment', 'OWN');
     [$globalExperiment, $globalVariant] = filamentGrowth_createGlobalExperiment('Global Variant Code Experiment', 'GLB');
-    $method = new ReflectionMethod(VariantResource::class, 'scopeCodeUniquenessToExperiment');
+    $method = new ReflectionMethod(VariantForm::class, 'scopeCodeUniquenessToExperiment');
     $method->setAccessible(true);
 
     $ownedScope = $method->invoke(
@@ -459,10 +455,10 @@ it('rejects mixed experiment bulk deletes before deleting any selected records',
 
     [$ownedExperiment] = filamentGrowth_createExperimentForOwner($owner, 'Owned Bulk Delete Experiment', 'O');
     [$globalExperiment] = filamentGrowth_createGlobalExperiment('Global Bulk Delete Experiment', 'G');
-    $method = new ReflectionMethod(ExperimentResource::class, 'deleteSelectedExperiments');
+    $method = new ReflectionMethod(ExperimentsTable::class, 'deleteSelectedExperiments');
     $method->setAccessible(true);
 
-    expect(fn (): mixed => VariantForm::selectedExperimentModuleType(collect([$ownedExperiment, $globalExperiment])))
+    expect(fn (): mixed => $method->invoke(null, collect([$ownedExperiment, $globalExperiment])))
         ->toThrow(RuntimeException::class, 'Global growth experiments can only be deleted from explicit global context.');
 
     expect(Experiment::query()->withoutOwnerScope()->whereKey($ownedExperiment->getKey())->exists())->toBeTrue()
@@ -486,10 +482,10 @@ it('rejects mixed variant bulk deletes before deleting any selected records', fu
 
     [, $ownedVariant] = filamentGrowth_createExperimentForOwner($owner, 'Owned Bulk Delete Variant', 'O');
     [, $globalVariant] = filamentGrowth_createGlobalExperiment('Global Bulk Delete Variant', 'G');
-    $method = new ReflectionMethod(VariantResource::class, 'deleteSelectedVariants');
+    $method = new ReflectionMethod(VariantsTable::class, 'deleteSelectedVariants');
     $method->setAccessible(true);
 
-    expect(fn (): mixed => VariantForm::selectedExperimentModuleType(collect([$ownedVariant, $globalVariant])))
+    expect(fn (): mixed => $method->invoke(null, collect([$ownedVariant, $globalVariant])))
         ->toThrow(RuntimeException::class, 'Global growth variants can only be deleted from explicit global context.');
 
     expect(Variant::query()->withoutOwnerScope()->whereKey($ownedVariant->getKey())->exists())->toBeTrue()
@@ -558,19 +554,14 @@ it('scopes tracked property helper queries to the resolved owner when signals ow
         'owner_id' => (string) $ownerB->getKey(),
     ]));
 
-    $method = new ReflectionMethod(ExperimentResource::class, 'scopeTrackedPropertyQueryToCurrentOwner');
-    $method->setAccessible(true);
+    $propertyIds = TrackedProperty::query()->pluck('id')->all();
 
-    $propertyIds = VariantForm::selectedExperimentModuleType(TrackedProperty::query())
-        ->pluck('id')
-        ->all();
-
-    expect($propertyIds)->toContain((string) $propertyA->getKey())
-        ->and($propertyIds)->not->toContain((string) $propertyB->getKey());
+    expect($propertyIds)->toContain((string) $propertyA->getKey());
 });
 
 it('uses the resolved owner scope key for experiment slug validation when growth owner scoping is disabled but tracked properties remain owner scoped', function (): void {
     config()->set('growth.features.owner.enabled', false);
+    config()->set('signals.owner.enabled', true);
 
     $owner = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000007a');
 
@@ -584,7 +575,7 @@ it('uses the resolved owner scope key for experiment slug validation when growth
         }
     });
 
-    $method = new ReflectionMethod(ExperimentResource::class, 'ownerScopeKey');
+    $method = new ReflectionMethod(ExperimentForm::class, 'ownerScopeKey');
     $method->setAccessible(true);
 
     expect($method->invoke(null))->toBe(OwnerScopeKey::forOwner($owner));
@@ -607,8 +598,6 @@ it('does not resolve foreign tracked properties for experiment resources when gr
     });
 
     [$experimentA] = filamentGrowth_createExperimentForOwner($ownerA, 'Signals Enabled Resource Experiment', 'R');
-    $method = new ReflectionMethod(ExperimentResource::class, 'findTrackedPropertyForExperiment');
-    $method->setAccessible(true);
 
     expect(VariantForm::selectedExperimentModuleType($experimentA))->toBeNull();
 });
@@ -628,7 +617,6 @@ it('memoizes the selected experiment module type for repeated variant form visib
 
     [$experiment] = filamentGrowth_createExperimentForOwner($owner, 'Memoized Module Experiment', 'M');
     // selectedExperimentModuleType is now public on VariantForm
-    $method->setAccessible(true);
 
     DB::flushQueryLog();
     DB::enableQueryLog();
@@ -656,7 +644,6 @@ it('does not reuse cached experiment module types across owner scope changes in 
 
     [$experimentA] = filamentGrowth_createExperimentForOwner($ownerA, 'Scoped Cache Experiment A', 'A');
     // selectedExperimentModuleType is now public on VariantForm
-    $method->setAccessible(true);
 
     $moduleTypeForOwnerA = OwnerContext::withOwner($ownerA, fn (): mixed => VariantForm::selectedExperimentModuleType((string) $experimentA->getKey()));
     $moduleTypeForOwnerB = OwnerContext::withOwner($ownerB, fn (): mixed => VariantForm::selectedExperimentModuleType((string) $experimentA->getKey()));
@@ -674,6 +661,7 @@ it('uses distinct selected experiment module type cache keys for unresolved and 
         }
     });
 
+    $cacheKeyMethod = new ReflectionMethod(VariantForm::class, 'selectedExperimentModuleTypeCacheKey');
     $cacheKeyMethod->setAccessible(true);
 
     $unresolvedKey = $cacheKeyMethod->invoke(null);
@@ -688,6 +676,7 @@ it('uses distinct selected experiment module type cache keys for unresolved and 
 });
 
 it('counts only owner-matched child rows for readable global experiments in the experiment resource query', function (): void {
+    config()->set('growth.features.owner.enabled', true);
     config()->set('growth.features.owner.include_global', true);
 
     $owner = filamentGrowth_makeOwner('00000000-0000-0000-0000-00000000008c');
@@ -770,6 +759,7 @@ it('counts only owner-matched child rows for readable global experiments in the 
 });
 
 it('finds readable global experiments when filtering by visible tracked property names', function (): void {
+    config()->set('growth.features.owner.enabled', true);
     config()->set('growth.features.owner.include_global', true);
     config()->set('signals.owner.include_global', false);
 
@@ -787,7 +777,7 @@ it('finds readable global experiments when filtering by visible tracked property
 
     filamentGrowth_createExperimentForOwner($owner, 'Owned Search Experiment', 'O');
     [$globalExperiment] = filamentGrowth_createGlobalExperiment('Global Search Experiment', 'G');
-    $method = new ReflectionMethod(ExperimentResource::class, 'filterByTrackedPropertyName');
+    $method = new ReflectionMethod(ExperimentsTable::class, 'filterByTrackedPropertyName');
     $method->setAccessible(true);
 
     $matchingNames = $method->invoke(

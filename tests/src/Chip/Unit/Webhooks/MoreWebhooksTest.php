@@ -12,7 +12,6 @@ use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Webhooks\Handlers\PurchasePaidHandler;
-use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -112,17 +111,13 @@ describe('WebhookRouter', function (): void {
 
 describe('WebhookRetryManager', function (): void {
     it('can be instantiated', function (): void {
-        $enricher = new WebhookEnricher;
-        $router = new WebhookRouter;
-        $manager = new WebhookRetryManager($enricher, $router);
+        $manager = app(WebhookRetryManager::class);
 
         expect($manager)->toBeInstanceOf(WebhookRetryManager::class);
     });
 
     it('determines if webhook should retry', function (): void {
-        $enricher = new WebhookEnricher;
-        $router = new WebhookRouter;
-        $manager = new WebhookRetryManager($enricher, $router);
+        $manager = app(WebhookRetryManager::class);
 
         // Mock webhook with failed status
         $webhook = new Webhook;
@@ -143,9 +138,7 @@ describe('WebhookRetryManager', function (): void {
     });
 
     it('calculates next retry delay', function (): void {
-        $enricher = new WebhookEnricher;
-        $router = new WebhookRouter;
-        $manager = new WebhookRetryManager($enricher, $router);
+        $manager = app(WebhookRetryManager::class);
 
         $webhook = new Webhook;
         $webhook->forceFill(['retry_count' => 0]);
@@ -163,9 +156,7 @@ describe('WebhookRetryManager', function (): void {
     });
 
     it('can set custom backoff schedule', function (): void {
-        $enricher = new WebhookEnricher;
-        $router = new WebhookRouter;
-        $manager = new WebhookRetryManager($enricher, $router);
+        $manager = app(WebhookRetryManager::class);
 
         $result = $manager->setBackoffSchedule([1 => 30, 2 => 120]);
 
@@ -181,7 +172,7 @@ describe('WebhookRetryManager', function (): void {
     it('retries supported dispatcher events without explicit handlers', function (): void {
         Event::fake([WebhookReceived::class, PurchasePendingRefund::class]);
 
-        $manager = new WebhookRetryManager(new WebhookEnricher, new WebhookRouter);
+        $manager = app(WebhookRetryManager::class);
 
         $webhook = Webhook::create([
             'title' => 'Pending refund webhook',
@@ -221,7 +212,7 @@ describe('WebhookRetryManager', function (): void {
 
         $purchaseId = 'purchase-retry-owner-123';
 
-        $manager = new WebhookRetryManager(new WebhookEnricher, new WebhookRouter);
+        $manager = app(WebhookRetryManager::class);
 
         $webhook = OwnerContext::withOwner($owner, function () use ($owner, $purchaseId): Webhook {
             return Webhook::create([

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\Support\InvoiceStatus;
 use AIArmada\Cashier\Support\UnifiedInvoice;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages\ListInvoices;
@@ -27,6 +29,8 @@ if (! function_exists('filamentCashier_setProtectedProperty')) {
 
 it('lists CHIP purchases as unified invoices and applies tabs and filters', function (): void {
     config()->set('cashier.models.billable', User::class);
+
+    CashierChip::useSubscriptionModel(ChipSubscription::class);
 
     $user = User::query()->create([
         'name' => 'Invoice User',

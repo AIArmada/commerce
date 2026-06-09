@@ -83,11 +83,11 @@ final class GatewayDetector
 
     private function isChipAvailable(): bool
     {
-        if (! class_exists(\AIArmada\CashierChip\Cashier::class)) {
+        if (! class_exists(\AIArmada\CashierChip\Billing\Cashier::class)) {
             return false;
         }
 
-        $subscriptionModel = \AIArmada\CashierChip\Cashier::$subscriptionModel;
+        $subscriptionModel = \AIArmada\CashierChip\Billing\Cashier::$subscriptionModel;
 
         return class_exists($subscriptionModel)
             && is_a($subscriptionModel, Model::class, true);
