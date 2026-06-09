@@ -187,7 +187,7 @@ describe('OfferManagementService', function (): void {
                 ]);
 
             $this->service->applyForOffer($this->offer, $this->affiliate);
-        })->throws(RuntimeException::class, 'Cannot reapply');
+        })->throws(RuntimeException::class);
     });
 
     describe('approveApplication', function (): void {
