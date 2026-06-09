@@ -383,7 +383,6 @@ it('resolves event and occurrence snapshots through the package query service', 
 
     $occurrence = Occurrence::query()->create([
         'event_id' => $event->id,
-        'venue_id' => $venue->id,
         'name' => 'Main Show',
         'starts_at' => now()->addDay(),
         'ends_at' => now()->addDay()->addHours(2),
