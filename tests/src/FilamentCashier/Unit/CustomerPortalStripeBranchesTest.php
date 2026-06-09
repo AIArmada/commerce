@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ManagePaymentMethods;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ViewInvoices;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\PaymentMethodsPreviewWidget;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\RecentInvoicesWidget;
-use AIArmada\Cashier\Support\GatewayDetector;
 use Illuminate\Foundation\Auth\User as AuthenticatableUser;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;

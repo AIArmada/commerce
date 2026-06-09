@@ -24,7 +24,6 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
-use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;

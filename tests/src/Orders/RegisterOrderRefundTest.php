@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Actions\RegisterOrderRefund;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
+use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
 
@@ -29,7 +31,7 @@ describe('RegisterOrderRefund', function (): void {
             'gateway' => 'stripe',
             'amount' => 10000,
             'currency' => 'MYR',
-            'status' => \AIArmada\Orders\Enums\PaymentStatus::Completed,
+            'status' => PaymentStatus::Completed,
             'paid_at' => now(),
         ]);
 
@@ -46,7 +48,7 @@ describe('RegisterOrderRefund', function (): void {
     it('throws when order cannot be refunded', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-NOREF-' . uniqid(),
-            'status' => \AIArmada\Orders\States\PendingPayment::class,
+            'status' => PendingPayment::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,

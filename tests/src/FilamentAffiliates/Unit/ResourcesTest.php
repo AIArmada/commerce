@@ -21,6 +21,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
@@ -47,7 +48,6 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource\RelationManagers\MessagesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTouchpointResource;
-use AIArmada\CommerceSupport\Models\Permission;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

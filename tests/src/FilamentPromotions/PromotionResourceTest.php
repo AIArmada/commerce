@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
-use AIArmada\Promotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\EditPromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ListPromotions;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ViewPromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\RelationManagers\IssuedVouchersRelationManager;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionInfolist;
+use AIArmada\Promotions\Models\Promotion;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;

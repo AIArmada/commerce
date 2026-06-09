@@ -21,4 +21,3 @@ it('formats abandoned cart value from the snapshot subtotal column', function ()
 
     expect($method->invoke($widget, $cart))->toBe((string) Money::USD(4321));
 });
-

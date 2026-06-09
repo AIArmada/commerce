@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Actions\CompleteOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Completed;
+use AIArmada\Orders\States\Processing;
 
 beforeEach(function (): void {
     config()->set('orders.owner.enabled', false);
@@ -16,7 +17,7 @@ describe('CompleteOrder', function (): void {
     it('can complete an order and record metadata', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-CMP-ACT-' . uniqid(),
-            'status' => \AIArmada\Orders\States\Processing::class,
+            'status' => Processing::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
@@ -35,7 +36,7 @@ describe('CompleteOrder', function (): void {
     it('merges completion metadata with existing metadata', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-CMP-META-' . uniqid(),
-            'status' => \AIArmada\Orders\States\Processing::class,
+            'status' => Processing::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,

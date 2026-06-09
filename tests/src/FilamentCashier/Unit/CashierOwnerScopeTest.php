@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;

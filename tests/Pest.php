@@ -14,8 +14,8 @@ use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Commerce\Tests\Jnt\JntTestCase;
 use AIArmada\Commerce\Tests\Products\ProductsTestCase;
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 /*
 |--------------------------------------------------------------------------

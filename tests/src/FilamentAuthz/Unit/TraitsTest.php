@@ -6,7 +6,6 @@ use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
 use AIArmada\FilamentAuthz\Concerns\SyncsRolePermissions;
-use AIArmada\FilamentAuthz\Resources\RoleResource\Concerns\HasAuthzFormComponents;
 use Filament\Pages\Page;
 use Filament\Widgets\Widget;
 
@@ -77,4 +76,3 @@ describe('SyncsRolePermissions Trait', function (): void {
         expect(trait_exists(SyncsRolePermissions::class))->toBeTrue();
     });
 });
-

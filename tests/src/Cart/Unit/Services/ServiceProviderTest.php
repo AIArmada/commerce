@@ -8,6 +8,7 @@ use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
@@ -84,7 +85,7 @@ describe('CartServiceProvider', function (): void {
             ->withArgs([CartMigrationService::class, Mockery::type('callable')])
             ->once();
         $app->shouldReceive('singleton')
-            ->withArgs([\AIArmada\Cart\Services\CartMergeStrategyRegistry::class, Mockery::type('callable')])
+            ->withArgs([CartMergeStrategyRegistry::class, Mockery::type('callable')])
             ->once();
 
         $provider = new CartServiceProvider($app);

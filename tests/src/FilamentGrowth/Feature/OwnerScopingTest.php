@@ -218,8 +218,8 @@ it('scopes VariantResource queries and experiment helpers by accessible tracked 
         ->not->toContain($variantA->code)
         ->and(VariantResource::canEdit($variantA))->toBeFalse()
         ->and(VariantResource::canDelete($variantA))->toBeFalse()
-        ->and((string) VariantForm::selectedExperimentModuleType( (string) $experimentA->getKey()))->toBe('')
-        ->and((string) VariantForm::selectedExperimentModuleType( (string) $experimentB->getKey()))->toBe((string) $experimentB->module_type);
+        ->and((string) VariantForm::selectedExperimentModuleType((string) $experimentA->getKey()))->toBe('')
+        ->and((string) VariantForm::selectedExperimentModuleType((string) $experimentB->getKey()))->toBe((string) $experimentB->module_type);
 });
 
 it('includes global experiments when growth owner include_global is enabled', function (): void {
@@ -462,7 +462,7 @@ it('rejects mixed experiment bulk deletes before deleting any selected records',
     $method = new ReflectionMethod(ExperimentResource::class, 'deleteSelectedExperiments');
     $method->setAccessible(true);
 
-    expect(fn (): mixed => VariantForm::selectedExperimentModuleType( collect([$ownedExperiment, $globalExperiment])))
+    expect(fn (): mixed => VariantForm::selectedExperimentModuleType(collect([$ownedExperiment, $globalExperiment])))
         ->toThrow(RuntimeException::class, 'Global growth experiments can only be deleted from explicit global context.');
 
     expect(Experiment::query()->withoutOwnerScope()->whereKey($ownedExperiment->getKey())->exists())->toBeTrue()
@@ -489,7 +489,7 @@ it('rejects mixed variant bulk deletes before deleting any selected records', fu
     $method = new ReflectionMethod(VariantResource::class, 'deleteSelectedVariants');
     $method->setAccessible(true);
 
-    expect(fn (): mixed => VariantForm::selectedExperimentModuleType( collect([$ownedVariant, $globalVariant])))
+    expect(fn (): mixed => VariantForm::selectedExperimentModuleType(collect([$ownedVariant, $globalVariant])))
         ->toThrow(RuntimeException::class, 'Global growth variants can only be deleted from explicit global context.');
 
     expect(Variant::query()->withoutOwnerScope()->whereKey($ownedVariant->getKey())->exists())->toBeTrue()
@@ -561,7 +561,7 @@ it('scopes tracked property helper queries to the resolved owner when signals ow
     $method = new ReflectionMethod(ExperimentResource::class, 'scopeTrackedPropertyQueryToCurrentOwner');
     $method->setAccessible(true);
 
-    $propertyIds = VariantForm::selectedExperimentModuleType( TrackedProperty::query())
+    $propertyIds = VariantForm::selectedExperimentModuleType(TrackedProperty::query())
         ->pluck('id')
         ->all();
 
@@ -610,7 +610,7 @@ it('does not resolve foreign tracked properties for experiment resources when gr
     $method = new ReflectionMethod(ExperimentResource::class, 'findTrackedPropertyForExperiment');
     $method->setAccessible(true);
 
-    expect(VariantForm::selectedExperimentModuleType( $experimentA))->toBeNull();
+    expect(VariantForm::selectedExperimentModuleType($experimentA))->toBeNull();
 });
 
 it('memoizes the selected experiment module type for repeated variant form visibility checks within one request', function (): void {
@@ -633,8 +633,8 @@ it('memoizes the selected experiment module type for repeated variant form visib
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    $firstModuleType = VariantForm::selectedExperimentModuleType( (string) $experiment->getKey());
-    $secondModuleType = VariantForm::selectedExperimentModuleType( (string) $experiment->getKey());
+    $firstModuleType = VariantForm::selectedExperimentModuleType((string) $experiment->getKey());
+    $secondModuleType = VariantForm::selectedExperimentModuleType((string) $experiment->getKey());
 
     $moduleTypeQueryCount = collect(DB::getQueryLog())
         ->filter(function (array $query): bool {
@@ -658,8 +658,8 @@ it('does not reuse cached experiment module types across owner scope changes in 
     // selectedExperimentModuleType is now public on VariantForm
     $method->setAccessible(true);
 
-    $moduleTypeForOwnerA = OwnerContext::withOwner($ownerA, fn (): mixed => VariantForm::selectedExperimentModuleType( (string) $experimentA->getKey()));
-    $moduleTypeForOwnerB = OwnerContext::withOwner($ownerB, fn (): mixed => VariantForm::selectedExperimentModuleType( (string) $experimentA->getKey()));
+    $moduleTypeForOwnerA = OwnerContext::withOwner($ownerA, fn (): mixed => VariantForm::selectedExperimentModuleType((string) $experimentA->getKey()));
+    $moduleTypeForOwnerB = OwnerContext::withOwner($ownerB, fn (): mixed => VariantForm::selectedExperimentModuleType((string) $experimentA->getKey()));
 
     expect($moduleTypeForOwnerA)->toBe((string) $experimentA->module_type)
         ->and($moduleTypeForOwnerB)->toBeNull();
@@ -674,7 +674,6 @@ it('uses distinct selected experiment module type cache keys for unresolved and 
         }
     });
 
-    
     $cacheKeyMethod->setAccessible(true);
 
     $unresolvedKey = $cacheKeyMethod->invoke(null);

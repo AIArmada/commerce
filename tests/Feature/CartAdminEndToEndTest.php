@@ -8,8 +8,6 @@ use AIArmada\Cart\Models\AlertRule;
 use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\Cart\Models\RecoveryTemplate;
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\AlertRuleResource;
 use AIArmada\FilamentCart\Resources\RecoveryCampaignResource;
 use AIArmada\FilamentCart\Resources\RecoveryTemplateResource;

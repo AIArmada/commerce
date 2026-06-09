@@ -21,13 +21,14 @@ declare(strict_types=1);
  * sessions/users via session manipulation for proper testing approach.
  */
 
+use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Support\LoginMigrationCacheKey;
+use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -295,7 +296,7 @@ it('handles user login event automatically when configured', function (): void {
     // Set the cache key for migration (matches getUserIdentifier logic)
     Cache::put(LoginMigrationCacheKey::make('testuser@example.com'), 'guest_session_login_123');
 
-    $listener = new HandleUserLogin(app(MigrateCartOnLoginAction::class), app(\AIArmada\Cart\Support\LoginMigrationIdentifierResolver::class));
+    $listener = new HandleUserLogin(app(MigrateCartOnLoginAction::class), app(LoginMigrationIdentifierResolver::class));
     $event = new Login('web', $this->user, false);
 
     // Check initial state via storage
@@ -356,7 +357,7 @@ it('migrates guest carts into the authenticated owner cart when owner scoping is
 
     Session::shouldReceive('flash')->withAnyArgs()->andReturnTrue();
 
-    $listener = new HandleUserLogin(app(MigrateCartOnLoginAction::class), app(\AIArmada\Cart\Support\LoginMigrationIdentifierResolver::class));
+    $listener = new HandleUserLogin(app(MigrateCartOnLoginAction::class), app(LoginMigrationIdentifierResolver::class));
     $event = new Login('web', $owner, false);
 
     OwnerContext::withOwner($owner, fn () => $listener->handle($event));

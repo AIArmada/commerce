@@ -6,6 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 use AIArmada\FilamentAuthz\Support\AuthzScopeContext;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 describe('OwnerContextTeamResolver', function (): void {
     beforeEach(function (): void {
@@ -15,9 +17,10 @@ describe('OwnerContextTeamResolver', function (): void {
     it('delegates team id resolution to OwnerContext', function (): void {
         $resolver = new OwnerContextTeamResolver;
 
-        $owner = new class extends \Illuminate\Database\Eloquent\Model
+        $owner = new class extends Model
         {
             protected $keyType = 'string';
+
             public $incrementing = false;
         };
         $owner->setAttribute($owner->getKeyName(), 'team-123');
@@ -31,7 +34,7 @@ describe('OwnerContextTeamResolver', function (): void {
         $resolver = new OwnerContextTeamResolver;
         $previousRequest = app()->bound('request') ? app('request') : null;
 
-        $request = new class extends \Illuminate\Http\Request
+        $request = new class extends Request
         {
             public function setUserResolver(callable $resolver): void {}
         };
