@@ -4,17 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\CashierChip\Events\SubscriptionCanceled;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Chip\Events\BillingCancelled;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Model;
 
-/**
- * Listens to chip package BillingCancelled events and handles cashier-chip subscription logic.
- */
 class HandleBillingCancelled
 {
     public function handle(BillingCancelled $event): void
@@ -31,7 +26,6 @@ class HandleBillingCancelled
             return;
         }
 
-        /** @var (Model&BillableContract)|null $billable */
         $billable = (bool) config('cashier-chip.features.owner.enabled', true)
             ? Cashier::findBillableForWebhook($clientId)
             : Cashier::findBillable($clientId);
@@ -51,12 +45,7 @@ class HandleBillingCancelled
         $subscription = $query->first();
 
         if ($subscription) {
-            $subscription->forceFill([
-                'chip_status' => 'canceled',
-                'ends_at' => now(),
-            ])->save();
-
-            SubscriptionCanceled::dispatch($subscription);
+            app(CancelChipSubscription::class)->cancel($subscription);
         }
     }
 }

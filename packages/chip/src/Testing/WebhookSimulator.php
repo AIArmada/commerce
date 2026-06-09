@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Testing;
 
+use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Data\WebhookData;
 use AIArmada\Chip\Enums\WebhookEventType;
@@ -29,7 +30,6 @@ use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
 use AIArmada\Chip\Events\PurchaseReleased;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\Chip\Events\WebhookReceived;
-use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
@@ -37,12 +37,6 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
-/**
- * Comprehensive CHIP webhook simulator for testing.
- *
- * Supports both HTTP POST simulation and direct event dispatching.
- * Can be used standalone or via the SimulatesWebhooks trait.
- */
 final class WebhookSimulator
 {
     private WebhookFactory $factory;
@@ -64,9 +58,6 @@ final class WebhookSimulator
         return new self;
     }
 
-    /**
-     * Create simulator for a specific event type.
-     */
     public static function forEvent(WebhookEventType $eventType): self
     {
         return (new self)->factory(
@@ -74,57 +65,37 @@ final class WebhookSimulator
         );
     }
 
-    /**
-     * Create simulator with a paid webhook.
-     */
     public static function paid(): self
     {
         return (new self)->factory(WebhookFactory::make()->paid());
     }
 
-    /**
-     * Create simulator with a created webhook.
-     */
     public static function created(): self
     {
         return (new self)->factory(WebhookFactory::make()->created());
     }
 
-    /**
-     * Create simulator with a refunded webhook.
-     */
     public static function refunded(): self
     {
         return (new self)->factory(WebhookFactory::make()->refunded());
     }
 
-    /**
-     * Create simulator with a cancelled webhook.
-     */
     public static function cancelled(): self
     {
         return (new self)->factory(WebhookFactory::make()->cancelled());
     }
 
-    /**
-     * Create simulator with an expired webhook.
-     */
     public static function expired(): self
     {
         return (new self)->factory(WebhookFactory::make()->expired());
     }
 
-    /**
-     * Create simulator with a failed webhook.
-     */
     public static function failed(): self
     {
         return (new self)->factory(WebhookFactory::make()->failed());
     }
 
     /**
-     * Fake all webhook events for testing assertions.
-     *
      * @param  array<class-string>|null  $eventsToFake
      */
     public static function fakeEvents(?array $eventsToFake = null): void
@@ -158,8 +129,6 @@ final class WebhookSimulator
     }
 
     /**
-     * Assert that a webhook event was dispatched.
-     *
      * @param  class-string  $eventClass
      */
     public static function assertDispatched(string $eventClass, ?callable $callback = null): void
@@ -168,8 +137,6 @@ final class WebhookSimulator
     }
 
     /**
-     * Assert that a webhook event was not dispatched.
-     *
      * @param  class-string  $eventClass
      */
     public static function assertNotDispatched(string $eventClass): void
@@ -177,17 +144,11 @@ final class WebhookSimulator
         Event::assertNotDispatched($eventClass);
     }
 
-    /**
-     * Disable webhook signature verification for testing.
-     */
     public static function withoutSignatureVerification(): void
     {
         config(['chip.webhooks.verify_signature' => false]);
     }
 
-    /**
-     * Set the webhook factory.
-     */
     public function factory(WebhookFactory $factory): self
     {
         $this->factory = $factory;
@@ -195,9 +156,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set the URL to POST to.
-     */
     public function to(string $url): self
     {
         $this->url = $url;
@@ -205,17 +163,11 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set the webhook URL (alias for to()).
-     */
     public function url(string $url): self
     {
         return $this->to($url);
     }
 
-    /**
-     * Add a custom header.
-     */
     public function withHeader(string $name, string $value): self
     {
         $this->headers[$name] = $value;
@@ -224,8 +176,6 @@ final class WebhookSimulator
     }
 
     /**
-     * Add multiple headers.
-     *
      * @param  array<string, string>  $headers
      */
     public function withHeaders(array $headers): self
@@ -235,9 +185,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set request timeout.
-     */
     public function timeout(int $seconds): self
     {
         $this->timeout = $seconds;
@@ -245,9 +192,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Configure the underlying factory - amount.
-     */
     public function amount(int $amountInCents): self
     {
         $this->factory->amount($amountInCents);
@@ -255,9 +199,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set the reference for the webhook.
-     */
     public function reference(string $reference): self
     {
         $this->factory->reference($reference);
@@ -265,9 +206,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set the purchase ID.
-     */
     public function purchaseId(string $id): self
     {
         $this->factory->purchaseId($id);
@@ -275,9 +213,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set the client ID.
-     */
     public function clientId(string $id): self
     {
         $this->factory->clientId($id);
@@ -285,9 +220,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set customer details.
-     */
     public function customer(string $email, string $name, string $phone = '+60123456789'): self
     {
         $this->factory->customer($email, $name, $phone);
@@ -295,9 +227,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Add a product to the webhook.
-     */
     public function addProduct(string $name, int $priceInCents, string $quantity = '1.0000', string $category = 'product'): self
     {
         $this->factory->addProduct($name, $priceInCents, $quantity, $category);
@@ -305,9 +234,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set the payment method.
-     */
     public function paymentMethod(string $method): self
     {
         $this->factory->paymentMethod($method);
@@ -315,9 +241,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Use FPX payment method.
-     */
     public function fpx(): self
     {
         $this->factory->fpx();
@@ -325,9 +248,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Use card payment method.
-     */
     public function card(): self
     {
         $this->factory->card();
@@ -335,9 +255,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set as test mode.
-     */
     public function isTest(bool $isTest = true): self
     {
         $this->factory->isTest($isTest);
@@ -345,9 +262,6 @@ final class WebhookSimulator
         return $this;
     }
 
-    /**
-     * Set as live mode.
-     */
     public function live(): self
     {
         $this->factory->live();
@@ -356,8 +270,6 @@ final class WebhookSimulator
     }
 
     /**
-     * Apply custom overrides to the payload.
-     *
      * @param  array<string, mixed>  $overrides
      */
     public function with(array $overrides): self
@@ -368,8 +280,6 @@ final class WebhookSimulator
     }
 
     /**
-     * Get the webhook payload that will be sent.
-     *
      * @return array<string, mixed>
      */
     public function getPayload(): array
@@ -377,17 +287,12 @@ final class WebhookSimulator
         return $this->factory->toArray();
     }
 
-    /**
-     * Get the payload as JSON.
-     */
     public function getPayloadJson(): string
     {
         return $this->factory->toJson();
     }
 
     /**
-     * Send the webhook via HTTP POST request.
-     *
      * @throws RuntimeException If URL is not set
      */
     public function send(): Response
@@ -408,8 +313,6 @@ final class WebhookSimulator
     }
 
     /**
-     * Send the webhook and assert the response is successful.
-     *
      * @throws RuntimeException If response is not successful
      */
     public function sendAndAssertSuccess(): Response
@@ -426,8 +329,6 @@ final class WebhookSimulator
     }
 
     /**
-     * Send webhook using a custom HTTP client (useful for Laravel test cases).
-     *
      * @param  callable(string $url, array $payload, array $headers): mixed  $httpClient
      */
     public function sendUsing(callable $httpClient): mixed
@@ -448,32 +349,20 @@ final class WebhookSimulator
 
     /**
      * Dispatch the webhook event directly without HTTP request.
-     * Useful for unit testing listeners.
+     * Uses the unified DispatchChipWebhookAction seam.
      */
     public function dispatch(): void
     {
         $payload = $this->enrichPayloadForRuntime($this->factory->toArray());
         $eventTypeString = $payload['event_type'] ?? 'purchase.paid';
 
-        /** @var WebhookEventDispatcher $dispatcher */
-        $dispatcher = app(WebhookEventDispatcher::class);
+        /** @var DispatchChipWebhookAction $dispatchAction */
+        $dispatchAction = app(DispatchChipWebhookAction::class);
 
-        WebhookReceived::dispatch(
-            $eventTypeString,
-            $payload,
-            $dispatcher->extractPurchase($payload),
-            $dispatcher->extractPayout($payload),
-            $dispatcher->extractBillingTemplateClient($payload),
-            $dispatcher->extractPayment($payload),
-        );
-
-        $dispatcher->dispatch($eventTypeString, $payload);
+        $dispatchAction->execute($eventTypeString, $payload);
     }
 
     /**
-     * Create a simulated HTTP request object.
-     * Useful for testing middleware and controllers directly.
-     *
      * @param  array<string, string>  $headers
      */
     public function toRequest(string $uri = '/chip/webhooks', array $headers = []): Request
@@ -492,25 +381,17 @@ final class WebhookSimulator
         );
     }
 
-    /**
-     * Create a Purchase data object from the payload.
-     */
     public function toPurchase(): PurchaseData
     {
         return PurchaseData::from($this->factory->toArray());
     }
 
-    /**
-     * Create a Webhook data object from the payload.
-     */
     public function toWebhook(): WebhookData
     {
         return WebhookData::from($this->factory->toArray());
     }
 
     /**
-     * Format headers for the request server array.
-     *
      * @param  array<string, string>  $headers
      * @return array<string, string>
      */

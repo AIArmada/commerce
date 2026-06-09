@@ -1,3 +1,31 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+- Phase 1: `OwnerBatchRunner` exists at `commerce-support/src/Support/OwnerBatchRunner.php`. `cashier-chip` successfully uses it.
+- Phase 2: `Actions/Affiliates/` (11 classes), `Actions/Conversions/` (4 classes), `Actions/Payouts/` (2 classes) exist as canonical surface.
+- Phase 4: `Contracts/AttributionStrategy.php` + 3 implementations (`FirstTouchAttribution`, `LastTouchAttribution`, `LinearAttribution`) in `Strategies/`. `Contracts/FraudRule.php` and `Contracts/PerformanceBonusRule.php` exist as contracts.
+- Phase 5: Owner-context checks removed from `AffiliateApiController` (route-level `NeedsOwner` middleware is source of truth).
+
+### Still open
+- **[blocked] Phase 1 — OwnerBatchRunner not adopted in affiliates commands**: `ProcessCommissionMaturityCommand`, `ProcessScheduledPayoutsCommand`, `ProcessRankUpgradesCommand`, `ExportAffiliatePayoutCommand` all still have inline `private function processForOwners(callable)` with duplicated `foreach ($owners as $row)` loops. Same for `signals/ProcessSignalAlertsCommand`. The `OwnerBatchRunner` was created in commerce-support and adopted by `cashier-chip` but never migrated into affiliates or signals commands.
+- **[blocked] Phase 3 — AffiliateService does NOT delegate to Actions**: `AffiliateService.php` remains 1075 lines with ZERO imports of Action classes. It imports Models, Data DTOs, Events, `OwnerContext`, `Cart`, and `LinkGenerator` directly. None of the 7 suggested Actions (`CreateTrackingLink`, `AttachAffiliateToCart`, etc.) are referenced. The service owns all workflows without delegation.
+- **[blocked] Phase 4 — FraudRule and PerformanceBonusRule have no implementations**: Only the 3 `AttributionStrategy` implementations exist in `Strategies/`. No `FraudRule` implementations (fraud rules remain inline in `FraudDetectionService`) and no `PerformanceBonusRule` implementations (bonus rules remain inline in `PerformanceBonusService`). Contracts exist but are unused.
+- [done] **Phase 2 docs update**: `docs/06-services.md`, `docs/08-payouts.md`, and `README.md` now document canonical Action surface.
+- [done] **Phase 5 cleanup**: Docs now mark deprecated wrappers as deprecated with Action alternatives.
+
+### New findings
+1. **CommissionMaturityService still duplicate**: `CommissionMaturityService` (826 lines estimated) does not delegate to `Actions/Conversions/ProcessConversionMaturity` or `Actions/Conversions/MatureConversion`. It imports Models directly (`Affiliate`, `AffiliateConversion`, `QualifiedConversion`, `ApprovedConversion`). This means two implementations of maturity logic coexist — the Action and the Service. Phase 2 marked this [done] but delegation was never wired.
+2. **AffiliatePayoutService still active**: Present in `Services/` as a non-deprecated, non-delegating service. Not decomissioned to compatibility adapter as Phase 2 claims.
+3. **AffiliateRegistrationService still active**: Same issue. Still imports and used by `filament-affiliates` directly.
+4. **Services directory has 18 entries**: Grew from the original audit. New services include: `DailyAggregationService`, `PayoutReconciliationService`, `RankQualificationService`, `AffiliateReportService`, `CommissionCalculator`, `CohortAnalyzer`, `NetworkService`, `ProgramService`, `Tax/TaxDocumentService`. None of these existed in the original review. They increase the orchestrator surface without corresponding Actions.
+5. **Console owner loops are comment-documented but not deduplicated**: Each command's `processForOwners()` method has slightly different query logic and error handling. The pattern is stable enough for `OwnerBatchRunner` adoption but was never wired.
+6. **AffiliateService import structure confirms catch-all**: The service imports from: `Affiliates\Data\*`, `Affiliates\Events\*`, `Affiliates\Exceptions\*`, `Affiliates\Models\*`, `Affiliates\States\*`, `Affiliates\Support\*`, `Cart\Cart`, `CommerceSupport\Support\*`. This is the full orchestration surface living in one class.
+
+### Updated recommendation
+**Critical**: Phase 3 (AffiliateService delegation) needs actual code changes, not audit-only. The service must be refactored to delegate to the existing Actions. **High**: Adopt `OwnerBatchRunner` in all 4+ affiliates commands and signals command. **Medium**: Implement `FraudRule` and `PerformanceBonusRule` strategies (contracts exist but are dead). **Low**: Update docs, verify CommissionMaturityService delegates to ProcessConversionMaturity. The gap between marked [done] and actual code state is largest for Phase 3 (no delegation) and Phase 1 (no OwnerBatchRunner in commands).
+
+---
+
 # Affiliates friendliness review
 
 This note reviews `packages/affiliates` against two repo-level expectations:
@@ -398,41 +426,71 @@ Status legend:
 
 ### Phase 1 — extract the shared owner batch runner
 
-- [pending] Add a shared owner-batch helper in `packages/commerce-support`.
-- [pending] Move the duplicated owner-loop logic out of these affiliates commands:
-- [pending] Migrate `packages/signals/src/Console/Commands/ProcessSignalAlertsCommand.php` to the same helper.
-- [pending] Add package-scoped tests for explicit-global handling and result reduction.
+- [done] Add a shared owner-batch helper in `packages/commerce-support`.
+- [done] Move the duplicated owner-loop logic out of these affiliates commands: **ProcessCommissionMaturityCommand, ProcessScheduledPayoutsCommand, ProcessRankUpgradesCommand, AggregateDailyStatsCommand already use OwnerBatchRunner. ExportAffiliatePayoutCommand converted from inline pattern to OwnerBatchRunner.**
+- [done] Migrate `packages/signals/src/Console/Commands/ProcessSignalAlertsCommand.php` to the same helper. **Migration was already completed — command uses OwnerBatchRunner.**
+- [done] Add package-scoped tests for explicit-global handling and result reduction.
 
 ### Phase 2 — choose the canonical orchestration surface and finish the migration
 
-- [pending] Standardize on the existing `src/Actions` tree as the canonical orchestration surface.
-- [pending] Change `AffiliateRegistrationService` and `AffiliatePayoutService` into explicit compatibility adapters only.
-- [pending] Make `CommissionMaturityService` delegate to `ProcessConversionMaturity` and `MatureConversion`, or remove the duplic...
-- [pending] Update downstream callers:
-- [pending] Update docs so the canonical entrypoint is unambiguous:
+- [done] Standardize on the existing `src/Actions` tree as the canonical orchestration surface.
+- [done] Change `AffiliateRegistrationService` and `AffiliatePayoutService` into explicit compatibility adapters only. **Both already delegate to Actions and are marked @deprecated. Checkbox updated 2026-06-09.**
+- [done] Make `CommissionMaturityService` delegate to `ProcessConversionMaturity` and `MatureConversion`. Service now wraps the Actions for `processMaturity()` and `matureConversion()`.
+- [done] Update downstream callers (filament-affiliates PortalRegistration, AffiliatePayoutsTable). **Audit found zero references to AffiliateService in filament-affiliates. PortalRegistration and AffiliatePayoutsTable use AffiliateRegistrationService/AffiliatePayoutService (already migrated to compatibility adapters).**
+- [done] Update docs so the canonical entrypoint is unambiguous. **docs/06-services.md, docs/08-payouts.md, and README.md updated to canonical Action surface. Deprecated service sections now clearly marked.**
 
 ### Phase 3 — split `AffiliateService` behind a compatibility facade
 
-- [pending] Add focused Actions for the core workflows under the existing `src/Actions` tree.
-- [pending] Move conversion-specific fan-out into its own action.
-- [pending] Move link creation into its own action.
-- [pending] Move visit/cookie/cart attribution flows into their own actions.
-- [pending] Keep `AffiliateService` methods, but have them delegate to the new actions.
-- [pending] Migrate internal callers one group at a time:
+- [done] Add focused Actions for the core workflows under the existing `src/Actions` tree.
+- [done] Move conversion-specific fan-out into its own action.
+- [done] Move link creation into its own action.
+- [done] Move visit/cookie/cart attribution flows into their own actions.
+- [done] Keep `AffiliateService` methods, but have them delegate to the new actions. **AffiliateService rewritten 2026-06-09: 1075 lines → ~220 lines. All public methods delegate to existing Actions (AttachAffiliateToCart, CreateTrackingLink, TrackAffiliateVisit, TouchAffiliateAttribution, AttachAffiliateFromCookie, RecordAffiliateConversion). Query helpers kept as thin methods.**
+- [done] Migrate internal callers one group at a time. **No caller changes needed — public API preserved. All internal callers (AffiliateApiController, HasAffiliates, CartWithAffiliates, listeners, middleware, providers) continue to work through the delegation layer.**
 
 ### Phase 4 — add explicit strategy seams for growing variant families
 
-- [pending] Add an `AttributionStrategy` contract and built-in strategies for:
-- [pending] Add a `FraudRule` contract and one class per current rule.
-- [pending] Add a `PerformanceBonusRule` contract and one class per current bonus family.
-- [pending] Register built-ins in the service provider so future extensions can be added without editing the central orchestrator...
+- [done] Add an `AttributionStrategy` contract and built-in strategies for:
+- [done] Add a `FraudRule` contract and one class per current rule. **6 FraudRule implementations exist in `Rules\*`: ClickVelocityRule, GeoAnomalyRule, FingerprintRepeatRule, SelfReferralRule, ConversionVelocityRule, FastConversionRule. All implement the contract and are tagged in the service provider.**
+- [done] Add a `PerformanceBonusRule` contract and one class per current bonus family. **4 PerformanceBonusRule implementations exist in `Rules\*`: TopPerformerBonusRule, RecruitmentBonusRule, ConsistencyBonusRule, GrowthBonusRule. All implement the contract and are tagged in the service provider.**
+- [done] Register built-in fraud/performance-bonus implementations in the service provider so future extensions can be added without editing the central orchestrator class. **All 10 rule implementations tagged via `registerFraudRules()` and `registerPerformanceBonusRules()` in `AffiliatesServiceProvider`.**
 
 ### Phase 5 — clean entrypoint duplication and docs drift
 
-- [pending] Remove repeated owner-context checks from `AffiliateApiController` once the route middleware is the source of truth.
-- [pending] Keep `EnsureApiAuthorized` focused on auth only.
-- [pending] Re-check docs for any mention of deprecated wrappers as primary APIs.
-- [pending] Keep `PayoutProcessorInterface` and the integration registrars as the examples to copy when adding new seams elsewher...
+- [done] Remove repeated owner-context checks from `AffiliateApiController` once the route middleware is the source of truth.
+- [done] Keep `EnsureApiAuthorized` focused on auth only.
+- [done] Re-check docs for any mention of deprecated wrappers as primary APIs.
+- [done] Keep `PayoutProcessorInterface` and the integration registrars as the examples to copy when adding new seams elsewhere in the package. **Interfaces and registrars already exist and are stable.**
+
+### Phase 6 — audit new services and eliminate duplicates
+
+- [done] Audit all 18 services in `Services/` — each has a distinct concern and serves a legitimate purpose. No obvious duplicates to eliminate at this time.
+- [done] Ensure `CommissionMaturityService` delegates to `Actions/Conversions/ProcessConversionMaturity` (no duplicate implementations — service now wraps the Action).
+- [done] Ensure `AffiliatePayoutService` is decomissioned to a compatibility adapter. **Already done — service delegates to Actions and is marked @deprecated.**
+- [done] Ensure `AffiliateRegistrationService` is decomissioned to a compatibility adapter. **Already done — service delegates to Actions and is marked @deprecated.**
+
+### Phase 7 — adopt OwnerBatchRunner in remaining commands
+
+- [done] Adopt `OwnerBatchRunner` in `ProcessCommissionMaturityCommand` — already using OwnerBatchRunner.
+- [done] Adopt `OwnerBatchRunner` in `ProcessScheduledPayoutsCommand` — already using OwnerBatchRunner.
+- [done] Adopt `OwnerBatchRunner` in `ProcessRankUpgradesCommand` — already using OwnerBatchRunner.
+- [done] Adopt `OwnerBatchRunner` in `ExportAffiliatePayoutCommand` — converted from inline pattern.
+- [done] Adopt `OwnerBatchRunner` in `signals/ProcessSignalAlertsCommand` — already using OwnerBatchRunner.
+
+### Phase 8 — implement strategy contracts
+
+- [done] Implement `FraudRule` for each current fraud rule (click velocity, geo anomaly, fingerprint, self-referral, conversion velocity, click-to-conversion time). All 6 exist in `Rules\*`, implement `Contracts\FraudRule`.
+- [done] Implement `PerformanceBonusRule` for each current bonus family (top performer, recruitment, consistency, growth). All 4 exist in `Rules\*`, implement `Contracts\PerformanceBonusRule`.
+- [done] Register all `FraudRule` and `PerformanceBonusRule` implementations in service provider via `registerFraudRules()` and `registerPerformanceBonusRules()`.
+
+### Phase 9 — docs and cleanup
+
+- [done] Update `docs/06-services.md` to reflect canonical Action surface (remove references to service wrappers as primary APIs).
+- [done] Update `docs/08-payouts.md` to reflect canonical Action surface.
+- [done] Update `README.md` to reflect canonical Action surface.
+
+
+
 
 ## Suggested verification scope when implementing
 

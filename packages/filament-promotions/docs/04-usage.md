@@ -82,16 +82,16 @@ The generated vouchers are one-time use by default and remain linked back to the
 
 ## Promotion Types
 
-The Filament-aware `PromotionType` enum provides UI enhancements:
+The `PromotionType` enum provides display helpers:
 
 ```php
-use AIArmada\FilamentPromotions\Enums\PromotionType;
+use AIArmada\Promotions\Enums\PromotionType;
 
 $type = PromotionType::Percentage;
 
-$type->getLabel();  // "Percentage Off"
-$type->getIcon();   // "heroicon-o-receipt-percent"
-$type->getColor();  // "success"
+$type->label();  // "Percentage Off"
+$type->icon();   // "heroicon-o-receipt-percent"
+$type->color();  // "success"
 ```
 
 ### Type Reference
@@ -181,8 +181,8 @@ public static function getEloquentQuery(): Builder
 {
     $query = parent::getEloquentQuery();
 
-    return OwnerScopedQueries::scopePromotion($query);
+    return PromotionsOwnerScope::applyToOwnedQuery($query);
 }
 ```
 
-To customize the scoping logic, extend `OwnerScopedQueries`.
+To customize the scoping logic, override `getEloquentQuery` in your resource subclass.

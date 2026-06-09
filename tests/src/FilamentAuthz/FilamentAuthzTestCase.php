@@ -6,8 +6,8 @@ namespace AIArmada\Commerce\Tests\FilamentAuthz;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\CommerceSupport\Models\Permission;
+use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\FilamentAuthz\Support\AuthzScopeTeamResolver;
 use DateInterval;
 use Illuminate\Database\Schema\Blueprint;

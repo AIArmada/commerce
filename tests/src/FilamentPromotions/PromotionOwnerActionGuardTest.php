@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\FilamentPromotions\Models\Promotion;
+use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 

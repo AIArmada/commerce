@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\FilamentProducts\Pages\BulkEditProducts;
 use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
@@ -52,14 +51,4 @@ it('limits the product categories select query to the required columns', functio
         ->and($queries)->not->toContain('"product_categories".*');
 });
 
-it('limits the bulk edit categories query to the required columns', function (): void {
-    $page = app(BulkEditProducts::class);
-
-    $method = new ReflectionMethod(BulkEditProducts::class, 'scopeCategoriesQuery');
-    $method->setAccessible(true);
-
-    $query = Category::query();
-    $scopedQuery = $method->invoke($page, $query);
-
-    expect($scopedQuery->getQuery()->columns)->toBe(['id', 'name']);
-});
+// scopeCategoriesQuery was removed along with BulkEditProducts page

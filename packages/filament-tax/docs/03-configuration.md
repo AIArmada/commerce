@@ -317,14 +317,12 @@ Control resource ordering within the Tax group:
 
 ### With filament-authz
 
-The plugin automatically integrates with `filament-authz` when available:
+The plugin automatically integrates with `filament-authz` when available. Permissions are auto-discovered from registered resources:
 
 ```php
-// FilamentTaxAuthz helper checks authorization
-FilamentTaxAuthz::canView('zones');    // tax.zones.view
-FilamentTaxAuthz::canCreate('zones');  // tax.zones.create
-FilamentTaxAuthz::canUpdate('zones');  // tax.zones.update
-FilamentTaxAuthz::canDelete('zones');  // tax.zones.delete
+// filament-authz auto-generates permissions based on registered resources
+// e.g., tax-zone.view, tax-zone.create, tax-zone.update, tax-zone.delete
+auth()->user()->can('tax-zone.view');
 ```
 
 ### Without filament-authz

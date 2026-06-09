@@ -16,21 +16,30 @@ Conversions → Qualified / Holding → Maturity Check → Approved / Available 
 
 ## Creating Payouts
 
-### Using the Service
+### Using Actions (Canonical API)
+
+```php
+use AIArmada\Affiliates\Actions\Payouts\CreatePayout;
+use AIArmada\Affiliates\Actions\Payouts\UpdatePayoutStatus;
+
+// Create payout from conversion IDs
+$payout = CreatePayout::run($conversionIds, [
+    'payee_type' => $affiliate->getMorphClass(),
+    'payee_id' => $affiliate->getKey(),
+    'method' => PayoutMethodType::PayPal,
+    'notes' => 'Monthly payout for January',
+]);
+
+// Update payout status
+UpdatePayoutStatus::run($payout, 'completed', 'Processed successfully');
+```
+
+### Using the Legacy Service (Deprecated)
 
 ```php
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 
 $service = app(AffiliatePayoutService::class);
-
-// Get eligible conversions
-$conversions = $service->getPayableConversions($affiliate);
-
-// Create payout batch
-$payout = $service->createPayout($affiliate, [
-    'method' => PayoutMethodType::PayPal,
-    'notes' => 'Monthly payout for January',
-]);
 
 // The payout includes all eligible approved conversions
 // that have passed the maturity period
@@ -156,6 +165,21 @@ $hasHolds = $affiliate->payoutHolds()
 
 Conversions must mature before payout eligibility:
 
+### Using Actions (Canonical API)
+
+```php
+use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
+use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
+
+// Promote all qualified conversions that have reached maturity
+$results = ProcessConversionMaturity::run();
+
+// Mature a specific conversion
+$conversion = MatureConversion::run($conversion);
+```
+
+### Using the Legacy Service (Deprecated)
+
 ```php
 use AIArmada\Affiliates\Services\CommissionMaturityService;
 
@@ -163,13 +187,6 @@ $service = app(CommissionMaturityService::class);
 
 // Promote qualified conversions that have reached maturity
 $processed = $service->processMaturity();
-
-// Check if specific conversion is mature
-$isMature = $service->isMature($conversion);
-
-// Get maturity date
-$maturesAt = $service->getMaturityDate($conversion);
-// Default: 30 days after conversion (configurable)
 ```
 
 Configure in `config/affiliates.php`:

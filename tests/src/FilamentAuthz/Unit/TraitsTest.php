@@ -78,38 +78,3 @@ describe('SyncsRolePermissions Trait', function (): void {
     });
 });
 
-describe('HasAuthzFormComponents Trait', function (): void {
-    it('exists', function (): void {
-        expect(trait_exists(HasAuthzFormComponents::class))->toBeTrue();
-    });
-
-    it('has getPermissionTabs method', function (): void {
-        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
-
-        expect($reflection->hasMethod('getPermissionTabs'))->toBeTrue();
-    });
-
-    it('has getResourcesTab method', function (): void {
-        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
-
-        expect($reflection->hasMethod('getResourcesTab'))->toBeTrue();
-    });
-
-    it('has getPagesTab method', function (): void {
-        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
-
-        expect($reflection->hasMethod('getPagesTab'))->toBeTrue();
-    });
-
-    it('has getWidgetsTab method', function (): void {
-        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
-
-        expect($reflection->hasMethod('getWidgetsTab'))->toBeTrue();
-    });
-
-    it('has getCustomPermissionsTab method', function (): void {
-        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
-
-        expect($reflection->hasMethod('getCustomPermissionsTab'))->toBeTrue();
-    });
-});

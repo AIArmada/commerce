@@ -4,17 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Model;
 
-/**
- * Listens to chip package PurchaseSubscriptionChargeFailure events.
- */
 class HandleSubscriptionChargeFailure
 {
     public function handle(PurchaseSubscriptionChargeFailure $event): void
@@ -24,7 +18,6 @@ class HandleSubscriptionChargeFailure
         }
 
         $purchase = $event->purchase;
-        $payload = $event->payload;
 
         $clientId = $purchase->getClientId();
 
@@ -32,7 +25,6 @@ class HandleSubscriptionChargeFailure
             return;
         }
 
-        /** @var (Model&BillableContract)|null $billable */
         $billable = (bool) config('cashier-chip.features.owner.enabled', true)
             ? Cashier::findBillableForWebhook($clientId)
             : Cashier::findBillable($clientId);
@@ -41,29 +33,22 @@ class HandleSubscriptionChargeFailure
             return;
         }
 
-        $subscriptionType = $this->getSubscriptionTypeFromPurchase($payload);
+        $subscriptionType = $this->getSubscriptionTypeFromPurchase($event->payload);
 
         if ($subscriptionType === null) {
             return;
         }
 
-        /** @var Subscription|null $subscription */
         $subscription = Cashier::findSubscriptionForWebhook($billable, $subscriptionType);
 
         if ($subscription) {
-            $subscription->forceFill([
-                'chip_status' => 'past_due',
-            ])->save();
+            $reason = $event->payload['failure_reason'] ?? $event->payload['error_message'] ?? 'Subscription charge failed';
 
-            $reason = $payload['failure_reason'] ?? $payload['error_message'] ?? 'Subscription charge failed';
-
-            SubscriptionRenewalFailed::dispatch($subscription, $reason);
+            app(CancelChipSubscription::class)->markPastDue($subscription, $reason);
         }
     }
 
     /**
-     * Extract subscription type from purchase metadata or reference.
-     *
      * @param  array<string, mixed>  $payload
      */
     protected function getSubscriptionTypeFromPurchase(array $payload): ?string

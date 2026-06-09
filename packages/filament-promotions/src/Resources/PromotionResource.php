@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\CreatePromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\EditPromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ListPromotions;
@@ -14,6 +13,7 @@ use AIArmada\FilamentPromotions\Resources\PromotionResource\RelationManagers\Iss
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionForm;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas\PromotionInfolist;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Tables\PromotionsTable;
+use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;

@@ -171,7 +171,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var Builder<Product> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;
@@ -234,7 +234,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     /**
      * Get the product's prices from the pricing package.
      *
-     * @return MorphMany<Price, $this>
+     * @return MorphMany<Model, $this>
      */
     public function prices(): MorphMany
     {

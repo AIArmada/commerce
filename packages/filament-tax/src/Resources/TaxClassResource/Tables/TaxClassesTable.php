@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Resources\TaxClassResource\Tables;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\FilamentTax\Support\FilamentTaxAuthz;
 use AIArmada\Tax\Models\TaxClass;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
@@ -59,27 +58,25 @@ final class TaxClassesTable
                 EditAction::make(),
             ])
             ->toolbarActions([
-                FilamentTaxAuthz::requirePermission(
-                    BulkAction::make('delete')
-                        ->label('Delete Selected')
-                        ->icon(Heroicon::OutlinedTrash)
-                        ->color('danger')
-                        ->requiresConfirmation()
-                        ->action(function ($records): void {
-                            foreach ($records as $record) {
-                                $verified = OwnerWriteGuard::findOrFailForOwner(
-                                    TaxClass::class,
-                                    $record->getKey(),
-                                    includeGlobal: false,
-                                    message: 'Tax class is not accessible in the current owner scope.',
-                                );
+                BulkAction::make('delete')
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.classes.delete') ?? false)
+                    ->label('Delete Selected')
+                    ->icon(Heroicon::OutlinedTrash)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(function ($records): void {
+                        foreach ($records as $record) {
+                            $verified = OwnerWriteGuard::findOrFailForOwner(
+                                TaxClass::class,
+                                $record->getKey(),
+                                includeGlobal: false,
+                                message: 'Tax class is not accessible in the current owner scope.',
+                            );
 
-                                $verified->delete();
-                            }
-                        })
-                        ->deselectRecordsAfterCompletion(),
-                    'tax.classes.delete',
-                ),
+                            $verified->delete();
+                        }
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ]);
     }
 }

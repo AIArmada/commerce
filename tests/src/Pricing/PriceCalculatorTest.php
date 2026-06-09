@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Services\PriceCalculator;
+use AIArmada\Pricing\Support\PromotionalPriceResolver;
+use AIArmada\Pricing\Support\TierResolver;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Carbon\CarbonImmutable;
@@ -54,7 +57,10 @@ class TestPriceableItem implements Priceable
 
 describe('PriceCalculator Service', function (): void {
     beforeEach(function (): void {
-        $this->calculator = new PriceCalculator;
+        $this->calculator = new PriceCalculator(
+            new TierResolver,
+            new PromotionalPriceResolver(new ApplyPromotionalAdjustment),
+        );
     });
 
     describe('calculate base price', function (): void {

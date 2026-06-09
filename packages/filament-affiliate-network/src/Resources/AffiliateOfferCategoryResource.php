@@ -5,26 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources;
 
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\CreateAffiliateOfferCategory;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\EditAffiliateOfferCategory;
 use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Pages\ListAffiliateOfferCategories;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Schemas\AffiliateOfferCategoryForm;
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferCategoryResource\Tables\AffiliateOfferCategoriesTable;
 use BackedEnum;
-use Filament\Actions;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 use UnitEnum;
 
 final class AffiliateOfferCategoryResource extends Resource
@@ -53,102 +44,12 @@ final class AffiliateOfferCategoryResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                Section::make('Category Details')
-                    ->schema([
-                        Select::make('parent_id')
-                            ->label('Parent Category')
-                            ->options(fn (?AffiliateOfferCategory $record) => OwnerContext::withOwner(null, fn () => AffiliateOfferCategory::query()
-                                ->withoutOwnerScope()
-                                ->when($record, fn (Builder $query): Builder => $query->where('id', '!=', $record->id))
-                                ->pluck('name', 'id')))
-                            ->searchable()
-                            ->nullable(),
-
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state ?? ''))),
-
-                        TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(ignoreRecord: true),
-
-                        TextInput::make('icon')
-                            ->maxLength(100)
-                            ->placeholder('heroicon-o-tag'),
-
-                        Textarea::make('description')
-                            ->maxLength(1000)
-                            ->columnSpanFull(),
-
-                        TextInput::make('sort_order')
-                            ->numeric()
-                            ->default(0),
-
-                        Toggle::make('is_active')
-                            ->default(true),
-                    ])
-                    ->columns(2),
-            ]);
+        return AffiliateOfferCategoryForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('slug')
-                    ->searchable()
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('parent.name')
-                    ->label('Parent')
-                    ->sortable()
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('offers_count')
-                    ->label('Offers')
-                    ->counts('offers')
-                    ->sortable(),
-
-                Tables\Columns\IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean(),
-
-                Tables\Columns\TextColumn::make('sort_order')
-                    ->sortable()
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active'),
-
-                Tables\Filters\SelectFilter::make('parent_id')
-                    ->label('Parent')
-                    ->relationship('parent', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->withoutGlobalScope(OwnerScope::class)),
-            ])
-            ->actions([
-                Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
-                ]),
-            ])
-            ->reorderable('sort_order')
-            ->defaultSort('sort_order');
+        return AffiliateOfferCategoriesTable::configure($table);
     }
 
     public static function getRelations(): array

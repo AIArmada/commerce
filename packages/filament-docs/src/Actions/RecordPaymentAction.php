@@ -10,7 +10,6 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -102,8 +101,6 @@ final class RecordPaymentAction
      */
     private static function recordPayment(Doc $record, array $data): void
     {
-        DocsOwnerScope::assertCanMutateDoc($record);
-
         $amount = (float) $data['amount'];
         $remaining = (float) $record->total - self::getTotalPaid($record);
 

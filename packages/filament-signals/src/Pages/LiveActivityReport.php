@@ -4,36 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages;
 
-use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
-use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Services\LiveActivityReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
 use BackedEnum;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Livewire\Attributes\Url;
 
-final class LiveActivityReport extends Page implements HasTable
+final class LiveActivityReport extends ReportPage implements HasTable
 {
-    use FormatsSignalsReportValues;
-    use InteractsWithSignalsDateRange;
     use InteractsWithTable;
-
-    #[Url]
-    public string $dateFrom = '';
-
-    #[Url]
-    public string $dateTo = '';
-
-    #[Url]
-    public string $trackedPropertyId = '';
-
-    #[Url]
-    public string $signalSegmentId = '';
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBolt;
 
@@ -44,16 +26,6 @@ final class LiveActivityReport extends Page implements HasTable
     protected static ?string $slug = 'signals/live-activity';
 
     protected string $view = 'filament-signals::pages.live-activity-report';
-
-    public function mount(): void
-    {
-        $this->initializeDefaultDateRange();
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return config('filament-signals.navigation_group', 'Insights');
-    }
 
     public static function getNavigationSort(): int
     {

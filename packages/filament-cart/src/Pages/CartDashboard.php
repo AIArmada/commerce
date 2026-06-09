@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCart\Pages;
 
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
-use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
+use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use BackedEnum;
 use Filament\Pages\Page;
 use UnitEnum;
@@ -66,7 +66,7 @@ class CartDashboard extends Page
         $widgets = [];
 
         if (config('filament-cart.widgets.stats_overview', true)) {
-            $widgets[] = CartStatsOverviewWidget::class;
+            $widgets[] = CartStatsWidget::class;
         }
 
         return $widgets;

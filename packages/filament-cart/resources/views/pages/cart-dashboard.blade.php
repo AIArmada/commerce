@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <div class="space-y-6">
         {{-- Header Stats --}}
-        @livewire(\AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget::class)
+        @livewire(\AIArmada\FilamentCart\Widgets\CartStatsWidget::class)
         
         {{-- Abandoned Carts Table --}}
         <div class="mt-6">

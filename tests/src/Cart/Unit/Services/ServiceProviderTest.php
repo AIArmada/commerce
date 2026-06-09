@@ -83,6 +83,9 @@ describe('CartServiceProvider', function (): void {
         $app->shouldReceive('singleton')
             ->withArgs([CartMigrationService::class, Mockery::type('callable')])
             ->once();
+        $app->shouldReceive('singleton')
+            ->withArgs([\AIArmada\Cart\Services\CartMergeStrategyRegistry::class, Mockery::type('callable')])
+            ->once();
 
         $provider = new CartServiceProvider($app);
 

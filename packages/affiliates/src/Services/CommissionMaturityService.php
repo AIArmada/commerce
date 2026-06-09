@@ -4,110 +4,56 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
+use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
+use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\QualifiedConversion;
 use Carbon\CarbonInterface;
 
-/**
- * Service for managing commission maturity transitions.
- */
 final class CommissionMaturityService
 {
-    /**
-     * Default maturity period in days.
-     */
     private int $maturityDays;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly ProcessConversionMaturity $processMaturityAction,
+        private readonly MatureConversion $matureConversionAction,
+    ) {
         $this->maturityDays = config('affiliates.payouts.maturity_days', 30);
     }
 
-    /**
-     * Process maturity for all pending commissions.
-     */
     public function processMaturity(): int
     {
-        $matured = 0;
-
-        $conversions = AffiliateConversion::query()
-            ->where('status', QualifiedConversion::value())
-            ->where('occurred_at', '<=', now()->subDays($this->maturityDays))
-            ->with('affiliate')
-            ->get();
-
-        foreach ($conversions as $conversion) {
-            if ($this->matureConversion($conversion)) {
-                $matured++;
-            }
-        }
-
-        return $matured;
+        return $this->processMaturityAction->handle();
     }
 
-    /**
-     * Mature a single conversion.
-     */
     public function matureConversion(AffiliateConversion $conversion): bool
     {
-        if (! $conversion->status->equals(QualifiedConversion::class)) {
-            return false;
-        }
-
-        $maturityDate = $conversion->occurred_at->addDays($this->maturityDays);
-
-        if ($maturityDate->isFuture()) {
-            return false;
-        }
-
-        // Update conversion status
-        $conversion->update([
-            'status' => ApprovedConversion::class,
-            'metadata' => array_merge($conversion->metadata ?? [], [
-                'matured_at' => now()->toIso8601String(),
-            ]),
-        ]);
-
-        return true;
+        return $this->matureConversionAction->handle($conversion);
     }
 
-    /**
-     * Get the maturity date for a conversion.
-     */
     public function getMaturityDate(AffiliateConversion $conversion): CarbonInterface
     {
         return $conversion->occurred_at->addDays($this->maturityDays);
     }
 
-    /**
-     * Check if a conversion is mature.
-     */
     public function isMature(AffiliateConversion $conversion): bool
     {
         return $this->getMaturityDate($conversion)->isPast();
     }
 
-    /**
-     * Get pending maturity amount for an affiliate.
-     */
     public function getPendingMaturity(Affiliate $affiliate): int
     {
         return (int) $affiliate->conversions()
-            ->where('status', QualifiedConversion::value())
+            ->where('status', 'qualified')
             ->sum('commission_minor');
     }
 
-    /**
-     * Get conversions maturing within a period.
-     */
     public function getMaturingWithin(Affiliate $affiliate, int $days): array
     {
         $cutoffDate = now()->subDays($this->maturityDays - $days);
 
         return $affiliate->conversions()
-            ->where('status', QualifiedConversion::value())
+            ->where('status', 'qualified')
             ->where('occurred_at', '>=', $cutoffDate)
             ->get()
             ->map(fn (AffiliateConversion $c) => [

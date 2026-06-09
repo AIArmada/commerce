@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Pages;
 
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyListRecords;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource;
-use AIArmada\FilamentJnt\Resources\Pages\ReadOnlyListRecords;
 use Override;
 
 final class ListJntTrackingEvents extends ReadOnlyListRecords

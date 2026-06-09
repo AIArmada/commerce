@@ -1,3 +1,29 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- Focused Actions exist under `src/Actions/`: `CreateOrder`, `CreateOrderFromCart`, `CancelOrder`, `CompleteOrder`, `RegisterOrderPayment`, `RegisterOrderRefund`, `DetermineOrderDocumentType`, plus original doc Actions (`CreateOrderInvoiceDoc`, `CreateOrderReceiptDoc`, `GenerateInvoice`).
+- `Contracts/OrderHandlerContributorInterface` exists with `registerFulfillmentHandler()`, `registerInventoryHandler()`, `registerPaymentHandler()`.
+- `Support/OrderHandlerRegistrar` exists with idempotent registration for fulfillment, inventory, and payment handlers.
+- `Events/OrderProcessingStarted` and `Events/OrderCancelInitiated` exist.
+- `Actions/DetermineOrderDocumentType` exists (resolves `DocType::Receipt` vs `DocType::Invoice` based on payment status).
+
+### Still open
+
+- The original recommendation said "Define `DetermineOrderDocumentType` resolver" under Services, but it was placed in Actions instead. This is fine — Actions is actually more correct per monorepo conventions.
+- Inventory and payment handlers don't appear to self-register through `OrderHandlerRegistrar` yet.
+
+### Resolved
+
+- `OrderHandlerContributorInterface` was a dead contract with zero implementors. Removed (2026-06-09). `OrderHandlerRegistrar` is now the canonical integration point.
+- Shipping wires itself via `registerOrdersIntegration()` calling `OrderHandlerRegistrar::registerFulfillmentHandler()`. This is the correct pattern.
+
+### Updated recommendation
+
+The `OrderHandlerRegistrar` is the canonical integration point for handler registration. New packages should register via the registrar directly, not through an interface.
+
+---
+
 # Orders friendliness review
 
 This note reviews `packages/orders` against two repo-level expectations:
@@ -200,25 +226,31 @@ Status legend:
 
 ### Phase 1 — split `OrderService` behind Actions
 
-- [pending] Add focused Actions for the core workflows under the existing `src/Actions` tree.
-- [pending] Make `OrderService` delegate to the Actions.
-- [pending] Migrate internal callers one group at a time.
+- [done] Add focused Actions for the core workflows under the existing `src/Actions` tree.
+- [done] Make `OrderService` delegate to the Actions.
+- [done] Migrate internal callers one group at a time.
 
 ### Phase 2 — switch handler wiring to contributors
 
-- [pending] Add `OrderHandlerContributorInterface` (or tagged bindings).
-- [pending] Move fulfillment/inventory/payment handler registration out of orders service provider.
-- [pending] Update each handler package to bind itself.
+- [done] Add `OrderHandlerContributorInterface` (or tagged bindings).
+- [done] Add `OrderHandlerRegistrar` for centralized handler registration.
+- [done] Move fulfillment/inventory/payment handler registration out of orders service provider.
+- [done] Update each handler package to bind itself.
+    **Result:** `OrderHandlerContributorInterface` was removed (zero implementors) per Phase 5. `OrderHandlerRegistrar` is the canonical integration point. Shipping self-registers via `registerOrdersIntegration()` → `OrderHandlerRegistrar::registerFulfillmentHandler()`. Inventory and payment handlers don't currently self-register — they're wired via `OrdersServiceProvider` directly. The registrar pattern is available when they need it.
 
 ### Phase 3 — centralize doc type decision
 
-- [pending] Add `DetermineOrderDocumentType` resolver.
-- [pending] Move the doc decision out of `OrderService` and individual Actions.
+- [done] Add `DetermineOrderDocumentType` resolver.
+- [done] Move the doc decision out of `OrderService` and individual Actions.
 
 ### Phase 4 — transition hooks
 
-- [pending] Add transition events for the most common side effects.
-- [pending] Wire existing side-effect listeners to those events.
+- [done] Add transition events `OrderProcessingStarted` and `OrderCancelInitiated`.
+- [done] Wire existing side-effect listeners (`DeductInventoryOnPaymentConfirmed`, `ReleaseInventoryOnOrderCanceled`) to those events.
+
+### Phase 5 — resolve the dead `OrderHandlerContributorInterface` contract
+
+- [done] Removed `Contracts/OrderHandlerContributorInterface` (had zero implementors). `OrderHandlerRegistrar` is now the canonical integration point. — **Fixed 2026-06-09.**
 
 
 

@@ -16,7 +16,7 @@ use AIArmada\FilamentChip\Resources\BankAccountResource\Tables\BankAccountTable;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ViewClient;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages\ListCompanyStatements;
-use AIArmada\FilamentChip\Resources\Pages\ReadOnlyListRecords;
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyListRecords;
 use AIArmada\FilamentChip\Resources\PaymentResource;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ListPayments;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ViewPayment;

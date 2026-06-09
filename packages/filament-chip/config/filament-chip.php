@@ -33,8 +33,6 @@ return [
     */
     'default_currency' => 'MYR',
 
-    'enforce_owner_scoping' => env('FILAMENT_CHIP_ENFORCE_OWNER_SCOPING', false),
-
     /*
     |--------------------------------------------------------------------------
     | Resources

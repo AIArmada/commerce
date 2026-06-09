@@ -10,7 +10,6 @@ use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -30,7 +29,7 @@ final class FraudAlertWidget extends BaseWidget
     {
         return $table
             ->query(
-                OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
+                AffiliateFraudSignal::query()
                     ->with('affiliate')
                     ->where('status', FraudSignalStatus::Detected)
                     ->latest()

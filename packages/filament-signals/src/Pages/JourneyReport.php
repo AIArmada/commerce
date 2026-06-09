@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages;
 
-use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
-use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Services\JourneyReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -20,24 +17,10 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Livewire\Attributes\Url;
 
-final class JourneyReport extends Page implements HasTable
+final class JourneyReport extends ReportPage implements HasTable
 {
-    use FormatsSignalsReportValues;
     use InteractsWithSavedSignalReportState;
-    use InteractsWithSignalsDateRange;
     use InteractsWithTable;
-
-    #[Url]
-    public string $dateFrom = '';
-
-    #[Url]
-    public string $dateTo = '';
-
-    #[Url]
-    public string $trackedPropertyId = '';
-
-    #[Url]
-    public string $signalSegmentId = '';
 
     #[Url]
     public string $savedReportId = '';
@@ -61,11 +44,6 @@ final class JourneyReport extends Page implements HasTable
     protected function savedReportType(): string
     {
         return 'journeys';
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return config('filament-signals.navigation_group', 'Insights');
     }
 
     public static function getNavigationSort(): int

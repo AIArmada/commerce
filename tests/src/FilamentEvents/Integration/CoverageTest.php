@@ -17,7 +17,7 @@ use AIArmada\Events\Models\EventSubLocation;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 use AIArmada\Events\Models\Venue;
-use AIArmada\Events\Support\EventModerationPolicy;
+use AIArmada\Events\Support\Policy\EventModerationPolicy;
 use AIArmada\FilamentEvents\FilamentEventsPlugin;
 use AIArmada\FilamentEvents\FilamentEventsServiceProvider;
 use AIArmada\FilamentEvents\Resources\EventResource;

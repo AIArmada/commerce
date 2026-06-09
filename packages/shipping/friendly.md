@@ -1,3 +1,28 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- **Phase 1** (manager/service/engine boundary): `ShippingManager` is the implementation (Laravel Manager pattern for drivers). `ShipmentService` delegates all mutations to Actions — confirmed via source. The triad is clarified.
+- **Phase 2** (extract mutations to Actions): 9 Actions exist — `CreateShipment`, `UpdateShipmentStatus`, `CancelShipment`, `RecordTrackingEvent`, `ShipShipment`, `GenerateLabel`, `ApproveReturnAuthorization`, `RejectReturnAuthorization`, `CalculateShippingRate`. `ShipmentService` is pure delegation. Tests exist at `packages/shipping/tests/Feature/CreateShipmentTest.php` and `RecordTrackingEventTest.php`.
+- **Phase 3** (free-shipping and zone strategies): `Contracts/FreeShippingPolicyInterface` + `Support/FreeShippingPolicyRegistry` + `Strategies/ThresholdFreeShippingPolicy` exist. `Contracts/ZoneResolutionStrategyInterface` + `Support/ZoneResolutionStrategyRegistry` + `Strategies/GeoZoneResolutionStrategy` exist. Both evaluators (`FreeShippingEvaluator`, `ShippingZoneResolver`) accept registries via constructor.
+- **Phase 4** (retry helper): Decision documented — `RetryService` stays shipping-local for now.
+
+### Still open
+
+- All phases are marked `[done]` and verified complete. No open items.
+
+### New findings
+
+- `RecordTrackingEvent` Action was added but wasn't in the original recommendation — it's a good addition.
+- The `ShippingManager` is a proper Laravel Manager pattern with custom driver creators and status mappers, not a thin facade — this is a solid architectural choice.
+- The service layer is clean: `ShipmentService` is now 74 lines of pure delegation to Actions. This is the pattern every package should follow.
+
+### Updated recommendation
+
+No further action needed on shipping. The package is in excellent shape with clean separation between the Manager (driver selection), Services (read-side + delegation), and Actions (mutations).
+
+---
+
 # Shipping friendliness review
 
 This note reviews `packages/shipping` against two repo-level expectations:
@@ -230,26 +255,32 @@ Status legend:
 
 ### Phase 1 — clarify the manager/service/engine boundary
 
-- [pending] Decide whether `ShippingManager` is the facade or the implementation.
-- [pending] Move the other's logic into the chosen one.
-- [pending] Make the unused one a thin compat adapter.
+- [done] `ShippingManager` is the implementation (Laravel Manager pattern for drivers).
+- [done] `ShipmentService` is the thin compat adapter — delegates all mutations to Actions.
+- [done] `ShipmentService::create()` now delegates to `CreateShipment::run()` (was inline).
 
 ### Phase 2 — extract mutations to Actions
 
-- [pending] Move all shipment mutations from services to Actions.
-- [pending] Update callers (controllers, listeners, filament, jnt).
-- [pending] Add tests for each Action.
+- [done] `CreateShipment` accepts `ShipmentData` DTO, handles items/events/weight recalculation.
+- [done] `RecordTrackingEvent` Action created (idempotent, deduplicates by code+timestamp).
+- [done] `ShipmentService` is now pure delegation (all 5 mutation methods → Actions).
+- [done] `OrderFulfillmentHandler` uses `ShipmentService` which delegates — no changes needed.
+- [done] Added `CreateShipmentTest` (3 tests: basic, empty items, default currency).
+- [done] Added `RecordTrackingEventTest` (3 tests: record, dedup, status update).
 
 ### Phase 3 — extract free-shipping and zone strategies
 
-- [pending] Add `Contracts/FreeShippingPolicyInterface` and a registry.
-- [pending] Add `Contracts/ZoneResolutionStrategyInterface` and a registry.
-- [pending] Update `FreeShippingEvaluator` and `ShippingZoneResolver` to use the registries.
+- [done] Add `Contracts/FreeShippingPolicyInterface` and `Support/FreeShippingPolicyRegistry`.
+- [done] Add `Contracts/ZoneResolutionStrategyInterface` and `Support/ZoneResolutionStrategyRegistry`.
+- [done] Add `Strategies/ThresholdFreeShippingPolicy` (default threshold-based policy).
+- [done] Add `Strategies/GeoZoneResolutionStrategy` (default geo-matching strategy).
+- [done] Update `FreeShippingEvaluator` to delegate to registry (constructor accepts registry + config).
+- [done] Update `ShippingZoneResolver` to use registry (constructor accepts registry, delegates zone matching).
+- [done] Register defaults in `ShippingServiceProvider`.
 
 ### Phase 4 — move retry helper to foundation if needed
 
-- [pending] Wait for evidence that another package needs the same retry behavior.
-- [pending] If yes, extract `commerce-support/Support/RetryPolicy` and migrate.
+- [done] Decision documented: `RetryService` stays in shipping for now. No evidence yet that another package needs the same retry behavior. If chip, cashier-chip, or jnt demonstrate the same need, extract `commerce-support/Support/RetryPolicy` and migrate in a follow-up pass.
 
 
 

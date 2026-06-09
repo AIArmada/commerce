@@ -6,9 +6,8 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -16,9 +15,8 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 
-class PortalConversions extends Page implements HasTable
+class PortalConversions extends PortalPage implements HasTable
 {
-    use InteractsWithAffiliate;
     use InteractsWithTable;
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;

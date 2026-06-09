@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use Carbon\CarbonImmutable;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\FilamentJnt\Support\NavigationBadgeHelper;
 use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 use UnitEnum;
 
 abstract class BaseJntResource extends Resource
@@ -36,21 +35,7 @@ abstract class BaseJntResource extends Resource
 
     final public static function getNavigationBadge(): ?string
     {
-        if (Filament::auth()?->user() === null) {
-            return null;
-        }
-
-        $owner = (bool) config('jnt.owner.enabled', false) ? OwnerContext::resolve() : null;
-        $ownerKey = $owner instanceof Model
-            ? $owner->getMorphClass() . ':' . (string) $owner->getKey()
-            : 'none';
-
-        $includeGlobal = (bool) config('jnt.owner.include_global', false);
-        $cacheKey = 'filament-jnt:nav-badge:' . static::class . ':' . $ownerKey . ':' . ($includeGlobal ? '1' : '0');
-
-        $count = Cache::remember($cacheKey, CarbonImmutable::now()->addSeconds(30), fn (): int => static::getEloquentQuery()->count());
-
-        return $count > 0 ? (string) $count : null;
+        return NavigationBadgeHelper::getNavigationBadge(static::class, static::getEloquentQuery());
     }
 
     final public static function getNavigationBadgeColor(): ?string
@@ -68,22 +53,11 @@ abstract class BaseJntResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<Model> $query */
-        $query = parent::getEloquentQuery();
-
-        $model = $query->getModel();
-
-        if (! method_exists($model, 'scopeForOwner')) {
-            return $query;
-        }
-
-        if (! (bool) config('jnt.owner.enabled', false)) {
-            return $query;
-        }
-
         $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
-        /** @phpstan-ignore-next-line dynamic scope */
-        return $query->forOwner(includeGlobal: $includeGlobal);
+        return OwnerUiScope::apply(
+            parent::getEloquentQuery(),
+            includeGlobal: $includeGlobal,
+        );
     }
 }

@@ -9,8 +9,8 @@ use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -64,7 +64,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
     {
         return $table
             ->query(
-                OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
+                AffiliatePayout::query()
                     ->where('status', PendingPayout::value())
                     ->with(['affiliate'])
                     ->latest()
@@ -103,7 +103,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('currency')
-                    ->options(fn () => OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
+                    ->options(fn () => AffiliatePayout::query()
                         ->distinct()
                         ->pluck('currency', 'currency')
                         ->toArray()),
@@ -118,9 +118,9 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
-                        $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
+                        $payout = (bool) config('affiliates.owner.enabled', false)
+                            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+                            : AffiliatePayout::findOrFail($record->getKey());
 
                         $result = app(ProcessAffiliatePayout::class)->handle($payout);
 
@@ -153,9 +153,9 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                     ->action(function (AffiliatePayout $record, array $data): void {
                         Gate::authorize('update', $record);
 
-                        $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
+                        $payout = (bool) config('affiliates.owner.enabled', false)
+                            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+                            : AffiliatePayout::findOrFail($record->getKey());
 
                         $fromStatus = $payout->status;
 
@@ -194,9 +194,9 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                         foreach ($records as $record) {
                             Gate::authorize('update', $record);
 
-                            $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                                ->whereKey($record->getKey())
-                                ->firstOrFail();
+                            $payout = (bool) config('affiliates.owner.enabled', false)
+                            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+                            : AffiliatePayout::findOrFail($record->getKey());
 
                             $result = app(ProcessAffiliatePayout::class)->handle($payout);
 
@@ -217,13 +217,13 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
 
     public function getViewData(): array
     {
-        $pending = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
+        $pending = AffiliatePayout::query()
             ->where('status', PendingPayout::value());
 
         return [
             'pendingCount' => $pending->count(),
             'pendingTotal' => $pending->sum('total_minor'),
-            'pendingByCurrency' => OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
+            'pendingByCurrency' => AffiliatePayout::query()
                 ->where('status', PendingPayout::value())
                 ->selectRaw('currency, SUM(total_minor) as total, COUNT(*) as count')
                 ->groupBy('currency')

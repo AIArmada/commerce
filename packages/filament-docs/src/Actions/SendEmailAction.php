@@ -7,7 +7,6 @@ namespace AIArmada\FilamentDocs\Actions;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Services\DocEmailService;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -15,6 +14,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 final class SendEmailAction
@@ -46,12 +46,7 @@ final class SendEmailAction
                     ->label(__('Email Template'))
                     ->options(function (?Doc $record = null): array {
                         /** @var Builder<DocEmailTemplate> $query */
-                        $query = DocEmailTemplate::query();
-
-                        /** @var Builder<DocEmailTemplate> $query */
-                        $query = DocsOwnerScope::apply($query);
-
-                        $query
+                        $query = DocEmailTemplate::query()
                             ->where('is_active', true)
                             ->orderBy('name');
 
@@ -86,25 +81,17 @@ final class SendEmailAction
     private static function sendEmail(Doc $record, array $data): void
     {
         try {
-            DocsOwnerScope::assertCanMutateDoc($record);
-
             $emailService = app(DocEmailService::class);
 
             $template = null;
             if (! empty($data['template_id'])) {
-                /** @var Builder<DocEmailTemplate> $query */
-                $query = DocEmailTemplate::query();
-
-                /** @var Builder<DocEmailTemplate> $query */
-                $query = DocsOwnerScope::apply($query);
-
-                $template = $query
+                $template = DocEmailTemplate::query()
                     ->where('is_active', true)
                     ->where('doc_type', $record->doc_type)
                     ->find($data['template_id']);
 
                 if ($template === null) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'template_id' => __('Invalid email template selection.'),
                     ]);
                 }

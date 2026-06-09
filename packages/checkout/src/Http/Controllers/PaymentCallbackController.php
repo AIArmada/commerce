@@ -5,133 +5,102 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Http\Controllers;
 
 use AIArmada\Checkout\Actions\BuildCheckoutSessionViewData;
-use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
-use AIArmada\Checkout\Data\CheckoutResult;
+use AIArmada\Checkout\Actions\HandleCheckoutPaymentCallback;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Checkout\States\AwaitingPayment;
-use AIArmada\Checkout\States\Completed;
-use AIArmada\Checkout\States\PaymentProcessing;
-use AIArmada\Checkout\States\Pending;
-use AIArmada\Checkout\States\Processing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\DB;
 
 final class PaymentCallbackController extends Controller
 {
     public function __construct(
-        private readonly CheckoutServiceInterface $checkoutService,
+        private readonly HandleCheckoutPaymentCallback $handleCallback,
     ) {}
 
-    /**
-     * Handle successful payment redirect from gateway.
-     */
     public function success(Request $request): RedirectResponse | View
     {
-        $callbackOutcome = $this->processCallbackRequest($request, 'success');
-        $session = $callbackOutcome['session'];
+        $sessionId = $this->resolveSessionId($request);
 
-        if ($session === null) {
+        if ($sessionId === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
-        if ($callbackOutcome['alreadyCompleted']) {
+        $outcome = $this->handleCallback->handle(
+            sessionId: $sessionId,
+            callbackType: 'success',
+        );
+
+        $session = $outcome->session;
+
+        if ($outcome->sessionNotFound) {
+            return $this->respondFailure('Checkout session not found');
+        }
+
+        if ($outcome->alreadyCompleted) {
             return $this->respondSuccess($session);
         }
 
-        $result = $callbackOutcome['result'];
-
-        if ($result?->success) {
+        if ($outcome->result?->success) {
             return $this->respondSuccess($session);
         }
 
-        return $this->respondFailure($result?->message ?? 'Payment verification failed', $session);
+        return $this->respondFailure($outcome->result?->message ?? 'Payment verification failed', $session);
     }
 
-    /**
-     * Handle failed payment redirect from gateway.
-     */
     public function failure(Request $request): RedirectResponse | View
     {
-        $callbackOutcome = $this->processCallbackRequest($request, 'failure');
-        $session = $callbackOutcome['session'];
+        $sessionId = $this->resolveSessionId($request);
 
-        if ($session === null) {
+        if ($sessionId === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
-        if ($callbackOutcome['alreadyCompleted']) {
+        $outcome = $this->handleCallback->handle(
+            sessionId: $sessionId,
+            callbackType: 'failure',
+        );
+
+        $session = $outcome->session;
+
+        if ($outcome->sessionNotFound) {
+            return $this->respondFailure('Checkout session not found');
+        }
+
+        if ($outcome->alreadyCompleted) {
             return $this->respondSuccess($session);
         }
 
         return $this->respondFailure('Payment failed', $session);
     }
 
-    /**
-     * Handle cancelled payment redirect from gateway.
-     */
     public function cancel(Request $request): RedirectResponse | View
     {
-        $callbackOutcome = $this->processCallbackRequest($request, 'cancel');
-        $session = $callbackOutcome['session'];
+        $sessionId = $this->resolveSessionId($request);
 
-        if ($session === null) {
+        if ($sessionId === null) {
             return $this->respondFailure('Checkout session not found');
         }
 
-        if ($callbackOutcome['alreadyCompleted']) {
+        $outcome = $this->handleCallback->handle(
+            sessionId: $sessionId,
+            callbackType: 'cancel',
+        );
+
+        $session = $outcome->session;
+
+        if ($outcome->sessionNotFound) {
+            return $this->respondFailure('Checkout session not found');
+        }
+
+        if ($outcome->alreadyCompleted) {
             return $this->respondSuccess($session);
         }
 
         return $this->respondCancel($session);
     }
 
-    /**
-     * @return array{session: CheckoutSession|null, alreadyCompleted: bool, result: CheckoutResult|null}
-     */
-    private function processCallbackRequest(Request $request, string $callbackType): array
-    {
-        return DB::transaction(function () use ($request, $callbackType): array {
-            $session = $this->resolveSession($request, lockForUpdate: true);
-
-            if ($session === null) {
-                return [
-                    'session' => null,
-                    'alreadyCompleted' => false,
-                    'result' => null,
-                ];
-            }
-
-            if ($session->status instanceof Completed) {
-                return [
-                    'session' => $session,
-                    'alreadyCompleted' => true,
-                    'result' => null,
-                ];
-            }
-
-            $result = match ($callbackType) {
-                'success' => $this->checkoutService->handlePaymentCallback($session, 'success', []),
-                'failure' => $this->shouldProcessPendingCallback($session)
-                    ? $this->checkoutService->handlePaymentCallback($session, 'failure')
-                    : null,
-                'cancel' => $this->shouldProcessPendingCallback($session)
-                    ? $this->checkoutService->handlePaymentCallback($session, 'cancel')
-                    : null,
-                default => null,
-            };
-
-            return [
-                'session' => $session->fresh() ?? $session,
-                'alreadyCompleted' => false,
-                'result' => $result,
-            ];
-        }, 3);
-    }
-
-    private function resolveSession(Request $request, bool $lockForUpdate = false): ?CheckoutSession
+    private function resolveSessionId(Request $request): ?string
     {
         $queryParam = config('checkout.defaults.session_query_param', 'session');
         $sessionId = $request->query($queryParam) ?? $request->query('checkout_session_id');
@@ -140,16 +109,9 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
-        // Intentional cross-tenant lookup: payment gateways redirect back without owner context.
-        // Access is guarded below by hash_equals() on the per-session callback_token stored in payment_data.
-        $sessionQuery = CheckoutSession::withoutOwnerScope()
-            ->whereKey($sessionId);
-
-        if ($lockForUpdate) {
-            $sessionQuery->lockForUpdate();
-        }
-
-        $session = $sessionQuery->first();
+        $session = CheckoutSession::withoutOwnerScope()
+            ->whereKey($sessionId)
+            ->first();
 
         if ($session === null) {
             return null;
@@ -164,20 +126,9 @@ final class PaymentCallbackController extends Controller
             return null;
         }
 
-        return hash_equals($expectedToken, $providedToken) ? $session : null;
+        return hash_equals($expectedToken, $providedToken) ? $sessionId : null;
     }
 
-    private function shouldProcessPendingCallback(CheckoutSession $session): bool
-    {
-        return $session->status instanceof Pending
-            || $session->status instanceof AwaitingPayment
-            || $session->status instanceof PaymentProcessing
-            || $session->status instanceof Processing;
-    }
-
-    /**
-     * Respond to successful payment - either redirect or render view.
-     */
     private function respondSuccess(CheckoutSession $session): RedirectResponse | View
     {
         if ($this->shouldRenderView()) {
@@ -189,9 +140,6 @@ final class PaymentCallbackController extends Controller
         return $this->redirectToOrderSuccess($session);
     }
 
-    /**
-     * Respond to failed payment - either redirect or render view.
-     */
     private function respondFailure(string $message, ?CheckoutSession $session = null): RedirectResponse | View
     {
         if ($this->shouldRenderView()) {
@@ -205,9 +153,6 @@ final class PaymentCallbackController extends Controller
         return $this->redirectToFailure($message, $session);
     }
 
-    /**
-     * Respond to cancelled payment - either redirect or render view.
-     */
     private function respondCancel(?CheckoutSession $session): RedirectResponse | View
     {
         if ($this->shouldRenderView()) {
@@ -230,9 +175,6 @@ final class PaymentCallbackController extends Controller
             ->with('message', 'Payment was cancelled');
     }
 
-    /**
-     * Check if we should render views instead of redirecting.
-     */
     private function shouldRenderView(): bool
     {
         return config('checkout.response_mode', 'redirect') === 'view'

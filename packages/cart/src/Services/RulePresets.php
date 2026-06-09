@@ -6,7 +6,14 @@ namespace AIArmada\Cart\Services;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
-use Carbon\CarbonImmutable;
+
+/**
+ * Convenience presets for common rule definitions.
+ *
+ * Delegates to BuiltInRulesFactory as the canonical rule source.
+ *
+ * @see BuiltInRulesFactory
+ */
 
 /**
  * Pre-built rule presets for common cart validation scenarios.
@@ -36,6 +43,22 @@ use Carbon\CarbonImmutable;
  */
 final class RulePresets
 {
+    private static ?BuiltInRulesFactory $factory = null;
+
+    private static function factory(): BuiltInRulesFactory
+    {
+        if (self::$factory === null) {
+            self::$factory = new BuiltInRulesFactory;
+        }
+
+        return self::$factory;
+    }
+
+    public static function setFactory(?BuiltInRulesFactory $factory): void
+    {
+        self::$factory = $factory;
+    }
+
     // =========================================================================
     // CART VALUE RULES
     // =========================================================================
@@ -48,9 +71,9 @@ final class RulePresets
      */
     public static function minimumCartValue(int $minimumCents): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getRawSubtotalWithoutConditions() >= $minimumCents,
-        ];
+        return $minimumCents !== 0
+            ? self::factory()->createRules('subtotal-at-least', ['amount' => $minimumCents])
+            : self::always();
     }
 
     /**
@@ -61,9 +84,7 @@ final class RulePresets
      */
     public static function maximumCartValue(int $maximumCents): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getRawSubtotalWithoutConditions() < $maximumCents,
-        ];
+        return self::factory()->createRules('subtotal-below', ['amount' => $maximumCents]);
     }
 
     /**
@@ -75,10 +96,7 @@ final class RulePresets
      */
     public static function cartValueBetween(int $minCents, int $maxCents): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getRawSubtotalWithoutConditions() >= $minCents
-                && $cart->getRawSubtotalWithoutConditions() <= $maxCents,
-        ];
+        return self::factory()->createRules('subtotal-between', ['min' => $minCents, 'max' => $maxCents]);
     }
 
     // =========================================================================
@@ -93,9 +111,7 @@ final class RulePresets
      */
     public static function minimumQuantity(int $minimum): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getTotalQuantity() >= $minimum,
-        ];
+        return self::factory()->createRules('min-quantity', ['min' => $minimum]);
     }
 
     /**
@@ -106,9 +122,7 @@ final class RulePresets
      */
     public static function maximumQuantity(int $maximum): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getTotalQuantity() <= $maximum,
-        ];
+        return self::factory()->createRules('max-quantity', ['max' => $maximum]);
     }
 
     /**
@@ -119,9 +133,7 @@ final class RulePresets
      */
     public static function minimumItems(int $minimum): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->countItems() >= $minimum,
-        ];
+        return self::factory()->createRules('min-items', ['min' => $minimum]);
     }
 
     /**
@@ -132,9 +144,7 @@ final class RulePresets
      */
     public static function maximumItems(int $maximum): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->countItems() <= $maximum,
-        ];
+        return self::factory()->createRules('max-items', ['max' => $maximum]);
     }
 
     // =========================================================================
@@ -149,9 +159,7 @@ final class RulePresets
      */
     public static function requireProduct(string $productId): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->has($productId),
-        ];
+        return self::factory()->createRules('has-item', ['id' => $productId]);
     }
 
     /**
@@ -162,9 +170,7 @@ final class RulePresets
      */
     public static function excludeProduct(string $productId): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => ! $cart->has($productId),
-        ];
+        return self::factory()->createRules('missing-item', ['id' => $productId]);
     }
 
     /**
@@ -175,17 +181,7 @@ final class RulePresets
      */
     public static function requireAnyProduct(array $productIds): array
     {
-        return [
-            static function (Cart $cart, ?CartItem $item = null) use ($productIds): bool {
-                foreach ($productIds as $id) {
-                    if ($cart->has($id)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            },
-        ];
+        return self::factory()->createRules('item-list-includes-any', ['ids' => $productIds]);
     }
 
     /**
@@ -196,31 +192,18 @@ final class RulePresets
      */
     public static function requireAllProducts(array $productIds): array
     {
-        return [
-            static function (Cart $cart, ?CartItem $item = null) use ($productIds): bool {
-                foreach ($productIds as $id) {
-                    if (! $cart->has($id)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            },
-        ];
+        return self::factory()->createRules('item-list-includes-all', ['ids' => $productIds]);
     }
 
     /**
      * Require products with specific ID prefix.
      *
-     * @param  string  $prefix  ID prefix (e.g., 'promo-', 'bundle-')
+     * @param  string  $prefix  ID prefix
      * @return array<callable>
      */
     public static function requireProductPrefix(string $prefix): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getItems()
-                ->contains(static fn (CartItem $cartItem): bool => str_starts_with($cartItem->id, $prefix)),
-        ];
+        return self::factory()->createRules('item-id-prefix', ['prefix' => $prefix]);
     }
 
     // =========================================================================
@@ -236,12 +219,7 @@ final class RulePresets
      */
     public static function dateRange(string $startDate, string $endDate): array
     {
-        $start = CarbonImmutable::parse($startDate)->startOfDay();
-        $end = CarbonImmutable::parse($endDate)->endOfDay();
-
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => CarbonImmutable::now()->betweenIncluded($start, $end),
-        ];
+        return self::factory()->createRules('date-window', ['start' => $startDate, 'end' => $endDate]);
     }
 
     /**
@@ -253,24 +231,7 @@ final class RulePresets
      */
     public static function timeWindow(string $startTime, string $endTime): array
     {
-        [$startHour, $startMinute] = array_map('intval', explode(':', $startTime));
-        [$endHour, $endMinute] = array_map('intval', explode(':', $endTime));
-
-        $startMinutes = ($startHour * 60) + $startMinute;
-        $endMinutes = ($endHour * 60) + $endMinute;
-
-        return [
-            static function (Cart $cart, ?CartItem $item = null) use ($startMinutes, $endMinutes): bool {
-                $now = CarbonImmutable::now();
-                $currentMinutes = ($now->hour * 60) + $now->minute;
-
-                if ($startMinutes <= $endMinutes) {
-                    return $currentMinutes >= $startMinutes && $currentMinutes <= $endMinutes;
-                }
-
-                return $currentMinutes >= $startMinutes || $currentMinutes <= $endMinutes;
-            },
-        ];
+        return self::factory()->createRules('time-window', ['start' => $startTime, 'end' => $endTime]);
     }
 
     /**
@@ -280,9 +241,7 @@ final class RulePresets
      */
     public static function requireWeekend(): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => CarbonImmutable::now()->isWeekend(),
-        ];
+        return self::factory()->createRules('day-of-week', ['days' => ['saturday', 'sunday']]);
     }
 
     /**
@@ -292,45 +251,18 @@ final class RulePresets
      */
     public static function requireWeekday(): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => CarbonImmutable::now()->isWeekday(),
-        ];
+        return self::factory()->createRules('day-of-week', ['days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']]);
     }
 
     /**
      * Only valid on specific days of week.
      *
-     * @param  array<int|string>  $days  Day numbers (0=Sunday) or names ('monday', 'tue', etc.)
+     * @param  array<int|string>  $days
      * @return array<callable>
      */
     public static function requireDaysOfWeek(array $days): array
     {
-        $normalized = [];
-
-        foreach ($days as $day) {
-            if (is_numeric($day)) {
-                $normalized[] = ((int) $day) % 7;
-
-                continue;
-            }
-
-            $normalized[] = match (mb_strtolower((string) $day)) {
-                'sun', 'sunday' => 0,
-                'mon', 'monday' => 1,
-                'tue', 'tuesday' => 2,
-                'wed', 'wednesday' => 3,
-                'thu', 'thursday' => 4,
-                'fri', 'friday' => 5,
-                'sat', 'saturday' => 6,
-                default => -1,
-            };
-        }
-
-        $normalized = array_filter($normalized, static fn (int $day): bool => $day >= 0);
-
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => in_array(CarbonImmutable::now()->dayOfWeek, $normalized, true),
-        ];
+        return self::factory()->createRules('day-of-week', ['days' => $days]);
     }
 
     // =========================================================================
@@ -346,21 +278,7 @@ final class RulePresets
      */
     public static function requireCustomerTag(string $tag, string $metadataKey = 'customer_tags'): array
     {
-        return [
-            static function (Cart $cart, ?CartItem $item = null) use ($tag, $metadataKey): bool {
-                $tags = $cart->getMetadata($metadataKey);
-
-                if (is_array($tags)) {
-                    return in_array($tag, $tags, true);
-                }
-
-                if (is_string($tags)) {
-                    return in_array($tag, array_map('trim', explode(',', $tags)), true);
-                }
-
-                return false;
-            },
-        ];
+        return self::factory()->createRules('customer-tag', ['tag' => $tag, 'metadata_key' => $metadataKey]);
     }
 
     /**
@@ -372,23 +290,12 @@ final class RulePresets
      */
     public static function requireAnyCustomerTag(array $tags, string $metadataKey = 'customer_tags'): array
     {
-        return [
-            static function (Cart $cart, ?CartItem $item = null) use ($tags, $metadataKey): bool {
-                $customerTags = $cart->getMetadata($metadataKey);
+        $fallback = self::requireCustomerTag($tags[0], $metadataKey);
 
-                if (is_array($customerTags)) {
-                    return ! empty(array_intersect($tags, $customerTags));
-                }
-
-                if (is_string($customerTags)) {
-                    $customerTagArray = array_map('trim', explode(',', $customerTags));
-
-                    return ! empty(array_intersect($tags, $customerTagArray));
-                }
-
-                return false;
-            },
-        ];
+        return self::any(...array_map(
+            fn (string $tag) => self::requireCustomerTag($tag, $metadataKey),
+            $tags
+        ));
     }
 
     /**
@@ -409,10 +316,7 @@ final class RulePresets
      */
     public static function requireAuthenticated(string $metadataKey = 'user_id'): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->hasMetadata($metadataKey)
-                && $cart->getMetadata($metadataKey) !== null,
-        ];
+        return self::factory()->createRules('metadata-flag-true', ['key' => $metadataKey]);
     }
 
     // =========================================================================
@@ -427,9 +331,7 @@ final class RulePresets
      */
     public static function requireMetadata(string $key): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->hasMetadata($key),
-        ];
+        return self::factory()->createRules('has-metadata', ['key' => $key]);
     }
 
     /**
@@ -441,9 +343,7 @@ final class RulePresets
      */
     public static function requireMetadataValue(string $key, mixed $value): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getMetadata($key) === $value,
-        ];
+        return self::factory()->createRules('metadata-equals', ['key' => $key, 'value' => $value]);
     }
 
     /**
@@ -454,9 +354,7 @@ final class RulePresets
      */
     public static function requireFlag(string $key): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getMetadata($key) === true,
-        ];
+        return self::factory()->createRules('metadata-flag-true', ['key' => $key]);
     }
 
     /**
@@ -467,9 +365,7 @@ final class RulePresets
      */
     public static function blockIfFlag(string $key): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getMetadata($key) !== true,
-        ];
+        return self::factory()->createRules('metadata-not-equals', ['key' => $key, 'value' => true]);
     }
 
     // =========================================================================
@@ -483,9 +379,7 @@ final class RulePresets
      */
     public static function requireNonEmpty(): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => ! $cart->isEmpty(),
-        ];
+        return self::factory()->createRules('has-any-item');
     }
 
     /**
@@ -496,9 +390,7 @@ final class RulePresets
      */
     public static function blockIfConditionExists(string $conditionName): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => ! $cart->getConditions()->has($conditionName),
-        ];
+        return self::not(self::requireCondition($conditionName));
     }
 
     /**
@@ -509,9 +401,7 @@ final class RulePresets
      */
     public static function requireCondition(string $conditionName): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getConditions()->has($conditionName),
-        ];
+        return self::factory()->createRules('cart-condition-exists', ['condition' => $conditionName]);
     }
 
     /**
@@ -522,9 +412,18 @@ final class RulePresets
      */
     public static function blockIfConditionTypeExists(string $conditionType): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => $cart->getConditions()->byType($conditionType)->isEmpty(),
-        ];
+        return self::not(self::requireConditionType($conditionType));
+    }
+
+    /**
+     * Require specific condition type to exist.
+     *
+     * @param  string  $conditionType  Condition type
+     * @return array<callable>
+     */
+    public static function requireConditionType(string $conditionType): array
+    {
+        return self::factory()->createRules('cart-condition-type-exists', ['type' => $conditionType]);
     }
 
     // =========================================================================
@@ -538,9 +437,7 @@ final class RulePresets
      */
     public static function always(): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => true,
-        ];
+        return self::factory()->createRules('always-true');
     }
 
     /**
@@ -550,9 +447,7 @@ final class RulePresets
      */
     public static function never(): array
     {
-        return [
-            static fn (Cart $cart, ?CartItem $item = null): bool => false,
-        ];
+        return self::factory()->createRules('always-false');
     }
 
     /**

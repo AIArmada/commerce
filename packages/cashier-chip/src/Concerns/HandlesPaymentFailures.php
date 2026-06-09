@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
-use AIArmada\CashierChip\Payment;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\CashierChip\Subscription\Subscription;
 
 /**
  * Handles payment failures during subscription operations.

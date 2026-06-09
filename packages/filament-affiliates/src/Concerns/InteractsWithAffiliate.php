@@ -10,8 +10,8 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -39,7 +39,7 @@ trait InteractsWithAffiliate
         }
 
         if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
+            $owner = OwnerUiScope::resolveOwner(Affiliate::class);
             $contactEmail = is_string($user->email ?? null) ? mb_strtolower($user->email) : null;
 
             $this->affiliate = Affiliate::query()

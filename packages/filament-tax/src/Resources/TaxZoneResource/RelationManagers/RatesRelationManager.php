@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers;
 
-use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\Schemas\RatesForm;
-use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\Tables\RatesTable;
+use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Schemas\RatesForm;
+use AIArmada\FilamentTax\Resources\TaxZoneResource\RelationManagers\RatesRelationManager\Tables\RatesTable;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Resources\RelationManagers\RelationManager;

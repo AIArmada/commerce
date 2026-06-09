@@ -1,5 +1,26 @@
 # Filament Promotions friendliness review
 
+## Second pass — 2026-06-09
+
+### Confirmed (actually done)
+
+- **Phase 1**: `src/Models/`, `src/Enums/`, and `src/Support/OwnerScopedQueries.php` all confirmed deleted (glob returns no files). `PromotionResource` imports the domain model from `AIArmada\Promotions\Models\Promotion` directly.
+- **Phase 1**: Voucher-issuance actions (`IssuePromotionVouchersAction`, `IssuePromotionVouchersFromListAction`) remain in the Filament package — these are Filament Action classes wrapping domain logic, which is consistent with the note.
+- **Phase 1**: Uses `PromotionsOwnerScope::applyToOwnedQuery()` from the `promotions` domain package directly — no local owner-scope helper.
+- **Phase 2**: Single `getEloquentQuery()` override in `PromotionResource` (line 125-134) that delegates to `PromotionsOwnerScope::applyToOwnedQuery()`. The "3 refs" = 1 definition + 2 calls from badge methods (`getNavigationBadge` uses `self::getEloquentQuery()`).
+
+### Still open
+
+- None. All original findings resolved and items verified done.
+
+### New findings
+
+- No new issues discovered. Package is the cleanest in the audit set — thin Filament layer over domain models with proper owner-scope delegation.
+
+### Updated recommendation
+
+Package is in good shape. Continue to keep it thin; any new domain logic should go to `promotions` package.
+
 This note reviews `packages/filament-promotions` against two repo-level expectations:
 
 - when a capability may grow variants, prefer stable seams such as contracts, metadata, hooks, domain events, resolvers, and support classes
@@ -150,13 +171,13 @@ Status legend:
 
 ### Phase 1 — strip domain concerns from the Filament package
 
-- [pending] Move `Models/`, `Enums/`, `Support/PromotionPerformanceInsights.php`, and the voucher-issuance Actions to the `promot...
-- [pending] Delete local owner-scope helpers; use `commerce-support`.
+- [done] Move `Models/`, `Enums/`, `Support/PromotionPerformanceInsights.php` to the `promotions` domain package. Voucher-issuance Actions remain in Filament package (they are Filament Action classes wrapping domain `IssueVouchersFromPromotion`); they now consume domain model directly.
+- [done] Delete local owner-scope helpers (`Support/OwnerScopedQueries.php`); `PromotionsOwnerScope` from `promotions` package used directly.
 
 ### Phase 2 — audit `getEloquentQuery` call chain
 
-- [pending] List all overrides.
-- [pending] Consolidate to one.
+- [done] List all overrides. (Single override in PromotionResource: `parent::getEloquentQuery()` → `PromotionsOwnerScope::applyToOwnedQuery()`)
+- [done] Consolidate to one. (Already a single override; 3 refs = 1 definition + 2 calls via `self::getEloquentQuery()` in badge methods)
 
 
 

@@ -4,48 +4,34 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateFromCookie;
+use AIArmada\Affiliates\Actions\Affiliates\AttachAffiliateToCart;
+use AIArmada\Affiliates\Actions\Affiliates\CreateTrackingLink;
+use AIArmada\Affiliates\Actions\Affiliates\TouchAffiliateAttribution;
+use AIArmada\Affiliates\Actions\Affiliates\TrackAffiliateVisit;
+use AIArmada\Affiliates\Actions\Conversions\RecordAffiliateConversion;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\AffiliateData;
-use AIArmada\Affiliates\Events\AffiliateAttributed;
-use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
-use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateProgram;
-use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use AIArmada\Affiliates\States\ApprovedConversion;
-use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
-use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Encryption\DecryptException;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Str;
-use Stringable;
 
 final class AffiliateService
 {
     public function __construct(
-        private readonly CommissionCalculator $commissionCalculator,
-        private readonly Dispatcher $events,
-        private readonly WebhookDispatcher $webhooks,
-        private readonly AttributionModel $attributionModel,
-        private readonly AffiliateLinkGenerator $linkGenerator,
+        private readonly AttachAffiliateToCart $attachAffiliateToCart,
+        private readonly AttachAffiliateFromCookie $attachAffiliateFromCookie,
+        private readonly CreateTrackingLink $createTrackingLink,
+        private readonly TrackAffiliateVisit $trackAffiliateVisit,
+        private readonly TouchAffiliateAttribution $touchAffiliateAttribution,
+        private readonly RecordAffiliateConversion $recordAffiliateConversion,
     ) {}
 
     /**
@@ -59,12 +45,12 @@ final class AffiliateService
             return $query;
         }
 
-        return $query->forOwner($this->resolveOwner());
+        return $query->forOwner();
     }
 
     public function findByCode(string $code): ?Affiliate
     {
-        $normalized = $this->normalizeCode($code);
+        $normalized = mb_trim($code);
         $query = $this->query();
         /** @var Connection $connection */
         $connection = $query->getConnection();
@@ -82,7 +68,7 @@ final class AffiliateService
 
     public function findByCodeWithoutOwnerScope(string $code): ?Affiliate
     {
-        $normalized = $this->normalizeCode($code);
+        $normalized = mb_trim($code);
         $query = Affiliate::query()->withoutOwnerScope();
 
         /** @var Connection $connection */
@@ -101,7 +87,7 @@ final class AffiliateService
 
     public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate
     {
-        $normalized = $this->normalizeCode($voucherCode);
+        $normalized = mb_trim($voucherCode);
         $query = $this->query();
         /** @var Connection $connection */
         $connection = $query->getConnection();
@@ -134,61 +120,7 @@ final class AffiliateService
      */
     public function createTrackingLink(Affiliate $affiliate, string $destinationUrl, array $attributes = []): AffiliateLink
     {
-        if (! $affiliate->isActive()) {
-            throw new AffiliateNotFoundException("Affiliate {$affiliate->code} is not active.");
-        }
-
-        $programId = Arr::get($attributes, 'program_id');
-
-        if (is_string($programId) || is_int($programId)) {
-            /** @var AffiliateProgram $program */
-            $program = OwnerWriteGuard::findOrFailForOwner(
-                AffiliateProgram::class,
-                $programId,
-                includeGlobal: true,
-                message: 'Selected program is not accessible in the current owner scope.',
-            );
-
-            $programId = (string) $program->getKey();
-        }
-
-        $params = Arr::get($attributes, 'params', []);
-
-        if (! is_array($params)) {
-            $params = [];
-        }
-
-        $subjectMetadata = Arr::get($attributes, 'subject_metadata');
-
-        if (! is_array($subjectMetadata)) {
-            $subjectMetadata = null;
-        }
-
-        $trackingUrl = $this->linkGenerator->generate(
-            affiliateCode: $affiliate->code,
-            url: $destinationUrl,
-            params: $params,
-            ttlSeconds: is_int(Arr::get($attributes, 'ttl_seconds')) ? Arr::get($attributes, 'ttl_seconds') : null,
-        );
-
-        return AffiliateLink::query()->create([
-            'affiliate_id' => $affiliate->getKey(),
-            'program_id' => $programId,
-            'destination_url' => $destinationUrl,
-            'tracking_url' => $trackingUrl,
-            'short_url' => Arr::get($attributes, 'short_url'),
-            'custom_slug' => Arr::get($attributes, 'custom_slug'),
-            'campaign' => Arr::get($attributes, 'campaign'),
-            'sub_id' => Arr::get($attributes, 'sub_id'),
-            'sub_id_2' => Arr::get($attributes, 'sub_id_2'),
-            'sub_id_3' => Arr::get($attributes, 'sub_id_3'),
-            'subject_type' => Arr::get($attributes, 'subject_type'),
-            'subject_identifier' => Arr::get($attributes, 'subject_identifier'),
-            'subject_instance' => Arr::get($attributes, 'subject_instance'),
-            'subject_title_snapshot' => Str::limit((string) Arr::get($attributes, 'subject_title_snapshot', ''), 200, ''),
-            'subject_metadata' => $subjectMetadata,
-            'is_active' => (bool) Arr::get($attributes, 'is_active', true),
-        ]);
+        return $this->createTrackingLink->handle($affiliate, $destinationUrl, $attributes);
     }
 
     public function attachToCartByCode(string $code, Cart $cart, array $context = []): ?AffiliateAttributionData
@@ -199,160 +131,39 @@ final class AffiliateService
             return null;
         }
 
-        return $this->attachAffiliate($affiliate, $cart, $context);
+        return $this->attachAffiliateToCart->handle($affiliate, $cart, $context);
     }
 
     public function attachAffiliate(Affiliate $affiliate, Cart $cart, array $context = []): ?AffiliateAttributionData
     {
-        if (! $affiliate->isActive()) {
-            throw new AffiliateNotFoundException("Affiliate {$affiliate->code} is not active.");
-        }
-
-        if ($this->isSelfReferral($affiliate)) {
-            return null;
-        }
-
-        $identifier = $cart->getIdentifier();
-        $instance = $cart->instance();
-
-        $attributionQuery = AffiliateAttribution::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->where('cart_identifier', $identifier)
-            ->where('cart_instance', $instance);
-
-        $this->applyOwnerScope($attributionQuery);
-
-        /** @var AffiliateAttribution|null $attribution */
-        $attribution = $attributionQuery->first();
-
-        $payload = $this->buildAttributionPayload($affiliate, $cart, $context);
-
-        if (! $attribution && isset($payload['cookie_value'])) {
-            $attribution = $this->findAttributionByCookie((string) $payload['cookie_value']);
-        }
-
-        if ($attribution) {
-            $this->fillAttribution($attribution, $payload);
-        } else {
-            if (! isset($payload['cart_instance'])) {
-                $payload['cart_instance'] = 'default';
-            }
-
-            $attribution = new AffiliateAttribution($payload);
-            $attribution->first_seen_at = now();
-        }
-
-        $attribution->last_seen_at = now();
-        if (isset($payload['cookie_value'])) {
-            $attribution->last_cookie_seen_at = now();
-        }
-        $attribution->expires_at = $payload['expires_at'];
-        $attribution->save();
-        $this->recordTouchpoint($attribution, $affiliate, $payload);
-        $this->pruneAttributionOverflow($identifier, $instance, $affiliate->owner_type, $affiliate->owner_id);
-
-        if (config('affiliates.cart.persist_metadata', true)) {
-            $this->persistCartMetadata($cart, $affiliate, $attribution);
-        }
-
-        if ($this->shouldDispatch('dispatch_attributed')) {
-            $this->events?->dispatch(
-                new AffiliateAttributed(
-                    AffiliateData::fromModel($affiliate),
-                    AffiliateAttributionData::fromModel($attribution)
-                )
-            );
-        }
-
-        $attributionData = AffiliateAttributionData::fromModel($attribution);
-
-        if ($this->shouldDispatch('dispatch_webhooks')) {
-            $this->webhooks->dispatch('attribution', $attributionData->toArray());
-        }
-
-        return $attributionData;
+        return $this->attachAffiliateToCart->handle($affiliate, $cart, $context);
     }
 
     public function attachAffiliateFromCookie(Cart $cart, string $cookieValue, array $context = []): ?AffiliateAttributionData
     {
-        $attribution = $this->findAttributionByCookie($cookieValue);
-
-        if (! $attribution || ! $attribution->affiliate || ! $attribution->affiliate->isActive()) {
-            return null;
-        }
-
-        $context = array_merge([
-            'cookie_value' => $cookieValue,
-            'source' => $context['source'] ?? $attribution->source,
-            'medium' => $context['medium'] ?? $attribution->medium,
-            'campaign' => $context['campaign'] ?? $attribution->campaign,
-            'term' => $context['term'] ?? $attribution->term,
-            'content' => $context['content'] ?? $attribution->content,
-            'landing_url' => $context['landing_url'] ?? $attribution->landing_url,
-            'referrer_url' => $context['referrer_url'] ?? $attribution->referrer_url,
-        ], $context);
-
-        return $this->attachAffiliate($attribution->affiliate, $cart, $context);
+        return $this->attachAffiliateFromCookie->handle($cart, $cookieValue, $context);
     }
 
     public function trackVisitByCode(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData
     {
-        $affiliate = $this->findByCode($code);
-
-        if (! $affiliate || ! $affiliate->isActive()) {
-            return null;
-        }
-
-        if ($this->isRateLimited($affiliate, $context)) {
-            return null;
-        }
-
-        if ($this->isSelfReferral($affiliate)) {
-            return null;
-        }
-
-        if ($this->isFingerprintBlocked($affiliate, $context)) {
-            return null;
-        }
-
-        $attribution = $this->storeCookieAttribution($affiliate, $context, $cookieValue);
-
-        return AffiliateAttributionData::fromModel($attribution);
+        return $this->trackAffiliateVisit->handle($code, $context, $cookieValue);
     }
 
     public function touchCookieAttribution(string $cookieValue, array $context = []): ?AffiliateAttributionData
     {
-        $attribution = $this->findAttributionByCookie($cookieValue);
-
-        if (! $attribution) {
-            return null;
-        }
-
-        $attribution->loadMissing('affiliate');
-
-        if (! $attribution->affiliate) {
-            return null;
-        }
-
-        $payload = $this->buildAttributionPayload($attribution->affiliate, null, $context);
-        $this->fillAttribution($attribution, $payload);
-
-        $attribution->last_cookie_seen_at = now();
-        $attribution->save();
-
-        return AffiliateAttributionData::fromModel($attribution);
+        return $this->touchAffiliateAttribution->handle($cookieValue, $context);
     }
 
     public function detachFromCart(Cart $cart): void
     {
-        $cart->removeMetadata($this->metadataKey());
+        $cart->removeMetadata((string) config('affiliates.cart.metadata_key', 'affiliate'));
     }
 
     public function getAttachedAffiliate(Cart $cart): ?AffiliateData
     {
-        $payload = $this->readCartMetadata($cart);
+        $payload = $cart->getMetadata((string) config('affiliates.cart.metadata_key', 'affiliate'));
 
-        if (! $payload) {
+        if (! is_array($payload)) {
             return null;
         }
 
@@ -379,245 +190,7 @@ final class AffiliateService
      */
     public function recordConversion(Cart $cart, array $payload = []): ?AffiliateConversionData
     {
-        $metadata = $this->readCartMetadata($cart);
-
-        if (! $metadata) {
-            return null;
-        }
-
-        $affiliate = $this->resolveAffiliateFromMetadata($metadata);
-
-        if (! $affiliate) {
-            return null;
-        }
-
-        $attribution = $this->resolveAttributionFromMetadata($metadata);
-
-        $subtotalMinor = $this->resolveMinorAmount($payload['subtotal'] ?? null, fn () => $cart->subtotal()->getAmount());
-        $totalMinor = $this->resolveMinorAmount($payload['total'] ?? null, fn () => $cart->total()->getAmount());
-
-        $commissionMinor = $this->resolveMinorAmount(
-            $payload['commission'] ?? null,
-            fn () => $this->commissionCalculator->calculate($affiliate, $subtotalMinor ?? $totalMinor ?? 0)
-        );
-
-        $status = config('affiliates.commissions.default_status', PendingConversion::value());
-        $statusEnum = ConversionStatus::fromString($status);
-        $autoApprove = config('affiliates.commissions.auto_approve', false);
-
-        $touches = $attribution?->touchpoints()->get() ?? collect();
-        $weights = $this->attributionModel->distribute($touches);
-
-        if ($weights === []) {
-            $weights = [$affiliate->getKey() => 1.0];
-        }
-
-        $conversions = [];
-
-        foreach ($weights as $affiliateId => $weight) {
-            $weight = max(0, (float) $weight);
-            $portionCommission = (int) round(($commissionMinor ?? 0) * $weight);
-            $portionRevenue = (int) round(($totalMinor ?? 0) * $weight);
-            $beneficiary = $affiliateId === $affiliate->getKey()
-                ? $affiliate
-                : $this->query()->find($affiliateId);
-
-            $conversion = AffiliateConversion::create([
-                'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
-                'affiliate_code' => $beneficiary?->code ?? $affiliate->code,
-                'affiliate_attribution_id' => $attribution?->getKey(),
-                'subject_type' => $payload['subject_type'] ?? $attribution?->subject_type ?? ($metadata['subject_type'] ?? null),
-                'subject_identifier' => $attribution?->subject_identifier ?? $cart->getIdentifier(),
-                'subject_instance' => $attribution?->subject_instance ?? $cart->instance(),
-                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
-                'cart_identifier' => $cart->getIdentifier(),
-                'cart_instance' => $cart->instance(),
-                'voucher_code' => $metadata['voucher_code'] ?? null,
-                'external_reference' => $payload['external_reference'] ?? $payload['order_reference'] ?? null,
-                'order_reference' => $payload['order_reference'] ?? null,
-                'conversion_type' => $payload['conversion_type'] ?? 'purchase',
-                'subtotal_minor' => $subtotalMinor ?? 0,
-                'value_minor' => $portionRevenue,
-                'total_minor' => $portionRevenue,
-                'commission_minor' => $portionCommission,
-                'commission_currency' => $payload['commission_currency'] ?? $affiliate->currency,
-                'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
-                'channel' => $payload['channel'] ?? null,
-                'metadata' => $this->buildConversionMetadata(
-                    $payload['metadata'] ?? [],
-                    $weight,
-                    $payload['subject_type'] ?? $attribution?->subject_type ?? ($metadata['subject_type'] ?? null),
-                    $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
-                ),
-                'owner_type' => $beneficiary?->owner_type ?? $affiliate->owner_type,
-                'owner_id' => $beneficiary?->owner_id ?? $affiliate->owner_id,
-                'occurred_at' => $payload['occurred_at'] ?? now(),
-                'approved_at' => $autoApprove ? now() : null,
-            ]);
-
-            $conversionData = AffiliateConversionData::fromModel($conversion);
-            $conversions[] = $conversionData;
-
-            if ($this->shouldDispatch('dispatch_conversion')) {
-                $this->events?->dispatch(new AffiliateConversionRecorded($conversionData));
-            }
-
-            if ($this->shouldDispatch('dispatch_webhooks')) {
-                $this->webhooks->dispatch('conversion', $conversionData->toArray());
-            }
-        }
-
-        $this->applyMultiLevelCommissions($conversions, $autoApprove, $statusEnum, $attribution?->getKey());
-
-        return $conversions[0];
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function recordTouchpoint(
-        AffiliateAttribution $attribution,
-        Affiliate $affiliate,
-        array $payload
-    ): void {
-        AffiliateTouchpoint::create([
-            'affiliate_attribution_id' => $attribution->getKey(),
-            'affiliate_id' => $affiliate->getKey(),
-            'affiliate_code' => $affiliate->code,
-            'subject_type' => $payload['subject_type'] ?? $attribution->subject_type,
-            'subject_identifier' => $payload['subject_identifier'] ?? $attribution->subject_identifier,
-            'subject_instance' => $payload['subject_instance'] ?? $attribution->subject_instance,
-            'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution->subject_title_snapshot,
-            'source' => $payload['source'] ?? null,
-            'medium' => $payload['medium'] ?? null,
-            'campaign' => $payload['campaign'] ?? null,
-            'term' => $payload['term'] ?? null,
-            'content' => $payload['content'] ?? null,
-            'owner_type' => $attribution->owner_type ?? $affiliate->owner_type,
-            'owner_id' => $attribution->owner_id ?? $affiliate->owner_id,
-            'metadata' => [
-                'subject_type' => $payload['subject_type'] ?? $attribution->subject_type,
-                'subject_identifier' => $attribution->subject_identifier,
-                'subject_instance' => $attribution->subject_instance,
-                'subject_title_snapshot' => $payload['subject_title_snapshot'] ?? $attribution->subject_title_snapshot,
-                'cart_identifier' => $attribution->cart_identifier,
-                'cart_instance' => $attribution->cart_instance,
-                'utm' => [
-                    'source' => $payload['source'] ?? null,
-                    'medium' => $payload['medium'] ?? null,
-                    'campaign' => $payload['campaign'] ?? null,
-                    'term' => $payload['term'] ?? null,
-                    'content' => $payload['content'] ?? null,
-                ],
-            ],
-            'touched_at' => now(),
-        ]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $context
-     * @return array<string, mixed>
-     */
-    private function buildAttributionPayload(Affiliate $affiliate, ?Cart $cart, array $context): array
-    {
-        $expiresAt = null;
-        $ttl = (int) config('affiliates.tracking.attribution_ttl_days', 30);
-
-        if ($ttl > 0) {
-            $expiresAt = now()->addDays($ttl);
-        }
-
-        $cartIdentifier = $cart?->getIdentifier() ?? ($context['cart_identifier'] ?? null);
-        $cartInstance = $cart?->instance() ?? ($context['cart_instance'] ?? null);
-        $subjectType = $context['subject_type'] ?? Arr::get($context, 'metadata.subject_type');
-        $subjectIdentifier = $context['subject_identifier'] ?? $cartIdentifier;
-        $subjectInstance = $context['subject_instance'] ?? $cartInstance;
-        $subjectTitleSnapshot = $this->normalizeSubjectTitleSnapshot(
-            $context['subject_title_snapshot'] ?? Arr::get($context, 'metadata.subject_title_snapshot')
-        );
-
-        if (! $cartInstance && $cart) {
-            $cartInstance = 'default';
-        }
-
-        if (! $subjectInstance && $cart) {
-            $subjectInstance = 'default';
-        }
-
-        return [
-            'affiliate_id' => $affiliate->getKey(),
-            'affiliate_code' => $affiliate->code,
-            'subject_type' => $subjectType,
-            'subject_identifier' => $subjectIdentifier,
-            'subject_instance' => $subjectInstance,
-            'subject_title_snapshot' => $subjectTitleSnapshot,
-            'cart_identifier' => $cartIdentifier,
-            'cart_instance' => $cartInstance,
-            'cookie_value' => $context['cookie_value'] ?? null,
-            'voucher_code' => $context['voucher_code'] ?? Arr::get($context, 'metadata.voucher_code'),
-            'source' => $context['source'] ?? $context['utm_source'] ?? null,
-            'medium' => $context['medium'] ?? $context['utm_medium'] ?? null,
-            'campaign' => $context['campaign'] ?? $context['utm_campaign'] ?? null,
-            'term' => $context['term'] ?? $context['utm_term'] ?? null,
-            'content' => $context['content'] ?? $context['utm_content'] ?? null,
-            'landing_url' => $context['landing_url'] ?? null,
-            'referrer_url' => $context['referrer_url'] ?? null,
-            'user_agent' => $context['user_agent'] ?? null,
-            'ip_address' => $context['ip_address'] ?? null,
-            'user_id' => $context['user_id'] ?? $this->resolveUserId(),
-            'metadata' => $this->mergeMetadata($context),
-            'owner_type' => $affiliate->owner_type,
-            'owner_id' => $affiliate->owner_id,
-            'expires_at' => $expiresAt,
-        ];
-    }
-
-    private function persistCartMetadata(Cart $cart, Affiliate $affiliate, AffiliateAttribution $attribution): void
-    {
-        $cart->setMetadata($this->metadataKey(), [
-            'affiliate_id' => $affiliate->getKey(),
-            'affiliate_code' => $affiliate->code,
-            'attribution_id' => $attribution->getKey(),
-            'subject_type' => $attribution->subject_type,
-            'subject_identifier' => $attribution->subject_identifier,
-            'subject_instance' => $attribution->subject_instance,
-            'subject_title_snapshot' => $attribution->subject_title_snapshot,
-            'cookie_value' => $attribution->cookie_value,
-            'voucher_code' => $attribution->voucher_code,
-            'source' => $attribution->source,
-            'campaign' => $attribution->campaign,
-            'attached_at' => now()->toIso8601String(),
-        ]);
-    }
-
-    private function storeCookieAttribution(Affiliate $affiliate, array $context, ?string $cookieValue): AffiliateAttribution
-    {
-        $payload = $this->buildAttributionPayload($affiliate, null, $context);
-
-        if (! $cookieValue) {
-            $cookieValue = (string) Str::uuid();
-        }
-
-        $payload['cookie_value'] = $cookieValue;
-
-        $attribution = $this->findAttributionByCookie($cookieValue);
-
-        if ($attribution) {
-            $this->fillAttribution($attribution, $payload);
-        } else {
-            if (! isset($payload['cart_instance'])) {
-                $payload['cart_instance'] = 'default';
-            }
-
-            $attribution = new AffiliateAttribution($payload);
-            $attribution->first_seen_at = now();
-        }
-
-        $attribution->last_cookie_seen_at = now();
-        $attribution->expires_at = $payload['expires_at'];
-        $attribution->save();
-
-        return $attribution;
+        return $this->recordAffiliateConversion->handle($cart, $payload);
     }
 
     private function findAttributionByCookie(?string $cookieValue): ?AffiliateAttribution
@@ -633,8 +206,6 @@ final class AffiliateService
             ->whereIn('cookie_value', $cookieCandidates)
             ->active()
             ->latest('last_cookie_seen_at');
-
-        $this->applyOwnerScope($query);
 
         return $query->first();
     }
@@ -660,416 +231,5 @@ final class AffiliateService
         }
 
         return array_values(array_unique($candidates));
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function fillAttribution(AffiliateAttribution $attribution, array $payload): void
-    {
-        $nullableKeys = ['expires_at'];
-
-        foreach ($payload as $key => $value) {
-            if ($value === null && ! in_array($key, $nullableKeys, true)) {
-                unset($payload[$key]);
-            }
-        }
-
-        if ($payload !== []) {
-            $attribution->fill($payload);
-        }
-    }
-
-    private function readCartMetadata(Cart $cart): ?array
-    {
-        $metadata = $cart->getMetadata($this->metadataKey());
-
-        return is_array($metadata) ? $metadata : null;
-    }
-
-    private function resolveAffiliateFromMetadata(array $metadata): ?Affiliate
-    {
-        if (isset($metadata['affiliate_id'])) {
-            $affiliate = $this->query()->find($metadata['affiliate_id']);
-
-            if ($affiliate instanceof Affiliate) {
-                return $affiliate;
-            }
-        }
-
-        if (isset($metadata['affiliate_code'])) {
-            return $this->findByCode((string) $metadata['affiliate_code']);
-        }
-
-        return null;
-    }
-
-    private function resolveAttributionFromMetadata(array $metadata): ?AffiliateAttribution
-    {
-        if (! isset($metadata['attribution_id'])) {
-            return null;
-        }
-
-        $query = AffiliateAttribution::query()
-            ->whereKey($metadata['attribution_id']);
-
-        $this->applyOwnerScope($query);
-
-        return $query->first();
-    }
-
-    private function resolveMinorAmount(mixed $value, callable $fallback): ?int
-    {
-        if ($value === null) {
-            $resolved = $fallback();
-
-            if ($resolved === null) {
-                return null;
-            }
-
-            return (int) ($resolved instanceof Stringable ? (string) $resolved : $resolved);
-        }
-
-        if ($value instanceof Stringable) {
-            return (int) (string) $value;
-        }
-
-        if (is_numeric($value)) {
-            return (int) $value;
-        }
-
-        return null;
-    }
-
-    private function metadataKey(): string
-    {
-        return (string) config('affiliates.cart.metadata_key', 'affiliate');
-    }
-
-    private function normalizeSubjectTitleSnapshot(mixed $value): ?string
-    {
-        if (! is_string($value) || $value === '') {
-            return null;
-        }
-
-        return Str::limit($value, 200, '');
-    }
-
-    private function normalizeCode(string $code): string
-    {
-        return mb_trim($code);
-    }
-
-    private function shouldDispatch(string $flag): bool
-    {
-        return (bool) config("affiliates.events.{$flag}", true);
-    }
-
-    private function isRateLimited(Affiliate $affiliate, array $context): bool
-    {
-        $config = config('affiliates.tracking.ip_rate_limit', []);
-
-        if (! ($config['enabled'] ?? false)) {
-            return false;
-        }
-
-        $ip = $context['ip_address'] ?? (app()->bound('request') ? request()->ip() : null);
-
-        if (! $ip) {
-            return false;
-        }
-
-        $max = (int) ($config['max'] ?? 0);
-        $decay = (int) ($config['decay_minutes'] ?? 1);
-
-        if ($max <= 0) {
-            return false;
-        }
-
-        /** @var CacheRepository $cache */
-        $cache = Cache::store();
-        $key = sprintf('affiliates:ip-rate:%s:%s', $affiliate->code, $ip);
-
-        $hits = (int) $cache->increment($key);
-
-        if ($hits === 1) {
-            $cache->put($key, $hits, now()->addMinutes($decay));
-        }
-
-        return $hits > $max;
-    }
-
-    private function isSelfReferral(Affiliate $affiliate): bool
-    {
-        if (! config('affiliates.tracking.block_self_referral', false)) {
-            return false;
-        }
-
-        $owner = $this->resolveOwner();
-
-        if (! $owner || ! $affiliate->owner_id || ! $affiliate->owner_type) {
-            return false;
-        }
-
-        return $owner->getMorphClass() === $affiliate->owner_type
-            && $owner->getKey() === $affiliate->owner_id;
-    }
-
-    private function isFingerprintBlocked(Affiliate $affiliate, array $context): bool
-    {
-        $fingerprintConfig = config('affiliates.tracking.fingerprint', []);
-
-        if (! ($fingerprintConfig['enabled'] ?? false)) {
-            return false;
-        }
-
-        $fingerprint = $this->resolveFingerprint($context);
-
-        if (! $fingerprint) {
-            return false;
-        }
-
-        if (! ($fingerprintConfig['block_duplicates'] ?? false)) {
-            return false;
-        }
-
-        return AffiliateAttribution::query()
-            ->where('affiliate_id', $affiliate->getKey())
-            ->where('metadata->fingerprint', $fingerprint)
-            ->active()
-            ->exists();
-    }
-
-    private function resolveUserId(): ?string
-    {
-        if (! app()->bound('request')) {
-            return null;
-        }
-
-        $user = request()->user();
-
-        if ($user && method_exists($user, 'getAuthIdentifier')) {
-            $id = $user->getAuthIdentifier();
-
-            return $id !== null ? (string) $id : null;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    private function resolveFingerprint(array $context): ?string
-    {
-        $fingerprintConfig = config('affiliates.tracking.fingerprint', []);
-
-        if (! ($fingerprintConfig['enabled'] ?? false)) {
-            return null;
-        }
-
-        $ua = $context['user_agent'] ?? (app()->bound('request') ? request()->userAgent() : null);
-        $ip = $context['ip_address'] ?? (app()->bound('request') ? request()->ip() : null);
-
-        if (! $ua && ! $ip) {
-            return null;
-        }
-
-        return hash('sha256', ($ua ?? '') . '|' . ($ip ?? ''));
-    }
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    private function mergeMetadata(array $context): array
-    {
-        $metadata = $context['metadata'] ?? Arr::only($context, ['coupon', 'notes', 'utm']);
-        $fingerprint = $this->resolveFingerprint($context);
-
-        $subjectType = $context['subject_type'] ?? null;
-        $subjectTitleSnapshot = $this->normalizeSubjectTitleSnapshot($context['subject_title_snapshot'] ?? null);
-
-        if ($subjectType && ! isset($metadata['subject_type'])) {
-            $metadata['subject_type'] = $subjectType;
-        }
-
-        if ($subjectTitleSnapshot && ! isset($metadata['subject_title_snapshot'])) {
-            $metadata['subject_title_snapshot'] = $subjectTitleSnapshot;
-        }
-
-        if ($fingerprint) {
-            $metadata['fingerprint'] = $fingerprint;
-        }
-
-        return $metadata;
-    }
-
-    /**
-     * @param  array<string, mixed>  $metadata
-     * @return array<string, mixed>
-     */
-    private function buildConversionMetadata(array $metadata, float $weight, ?string $subjectType, ?string $subjectTitleSnapshot): array
-    {
-        $metadata['weight'] = $weight;
-
-        if ($subjectType && ! isset($metadata['subject_type'])) {
-            $metadata['subject_type'] = $subjectType;
-        }
-
-        if ($subjectTitleSnapshot && ! isset($metadata['subject_title_snapshot'])) {
-            $metadata['subject_title_snapshot'] = $subjectTitleSnapshot;
-        }
-
-        return $metadata;
-    }
-
-    /**
-     * @param  array<int, AffiliateConversionData>  $baseConversions
-     */
-    private function applyMultiLevelCommissions(array $baseConversions, bool $autoApprove, ConversionStatus $statusEnum, ?string $attributionId): void
-    {
-        $config = config('affiliates.payouts.multi_level', []);
-
-        if (! ($config['enabled'] ?? false)) {
-            return;
-        }
-
-        $levels = $config['levels'] ?? [];
-
-        if ($levels === [] || ! is_array($levels)) {
-            return;
-        }
-
-        foreach ($baseConversions as $conversionData) {
-            $affiliate = $this->query()->find($conversionData->affiliateId);
-
-            if (! $affiliate) {
-                continue;
-            }
-
-            $current = $affiliate->parent;
-            $depth = 0;
-
-            foreach ($levels as $share) {
-                $depth++;
-
-                if (! $current) {
-                    break;
-                }
-
-                $portion = (int) round($conversionData->commissionMinor * (float) $share);
-
-                if ($portion > 0) {
-                    $model = AffiliateConversion::create([
-                        'affiliate_id' => $current->getKey(),
-                        'affiliate_code' => $current->code,
-                        'affiliate_attribution_id' => $attributionId,
-                        'subject_type' => $conversionData->subjectType,
-                        'subject_identifier' => $conversionData->subjectIdentifier,
-                        'subject_instance' => $conversionData->subjectInstance,
-                        'subject_title_snapshot' => $conversionData->subjectTitleSnapshot,
-                        'cart_identifier' => $conversionData->cartIdentifier,
-                        'cart_instance' => $conversionData->cartInstance,
-                        'voucher_code' => $conversionData->voucherCode,
-                        'external_reference' => $conversionData->externalReference,
-                        'order_reference' => $conversionData->orderReference,
-                        'conversion_type' => $conversionData->conversionType,
-                        'subtotal_minor' => 0,
-                        'value_minor' => 0,
-                        'total_minor' => 0,
-                        'commission_minor' => $portion,
-                        'commission_currency' => $conversionData->commissionCurrency,
-                        'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
-                        'channel' => 'upline',
-                        'metadata' => [
-                            'upline_of' => $affiliate->getKey(),
-                            'level' => $depth,
-                            'weight' => $share,
-                            'base_conversion' => $conversionData->id,
-                        ],
-                        'owner_type' => $current->owner_type,
-                        'owner_id' => $current->owner_id,
-                        'occurred_at' => now(),
-                        'approved_at' => $autoApprove ? now() : null,
-                    ]);
-
-                    $uplineData = AffiliateConversionData::fromModel($model);
-
-                    if ($this->shouldDispatch('dispatch_conversion')) {
-                        $this->events?->dispatch(new AffiliateConversionRecorded($uplineData));
-                    }
-
-                    if ($this->shouldDispatch('dispatch_webhooks')) {
-                        $this->webhooks->dispatch('conversion', $uplineData->toArray());
-                    }
-                }
-
-                $current = $current->parent;
-            }
-        }
-    }
-
-    private function applyOwnerScope(Builder $query): Builder
-    {
-        if (! config('affiliates.owner.enabled', false)) {
-            return $query;
-        }
-
-        $owner = $this->resolveOwner();
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-        return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
-    }
-
-    private function pruneAttributionOverflow(
-        ?string $cartIdentifier,
-        ?string $cartInstance,
-        ?string $ownerType,
-        ?string $ownerId
-    ): void {
-        $max = (int) config('affiliates.tracking.max_attributions_per_identifier', 0);
-
-        if ($max <= 0 || ! $cartIdentifier) {
-            return;
-        }
-
-        $query = AffiliateAttribution::query()
-            ->where('cart_identifier', $cartIdentifier)
-            ->when($cartInstance, static fn (Builder $builder, string $instance): Builder => $builder->where(
-                'cart_instance',
-                $instance
-            ))
-            ->orderByDesc('last_seen_at');
-
-        if (config('affiliates.owner.enabled', false)) {
-            if ($ownerType && $ownerId) {
-                $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
-            } else {
-                $query->whereNull('owner_type')->whereNull('owner_id');
-            }
-        }
-
-        $ids = $query->pluck('id');
-
-        if ($ids->count() <= $max) {
-            return;
-        }
-
-        $toDelete = $ids->slice($max)->all();
-
-        if ($toDelete !== []) {
-            AffiliateAttribution::query()
-                ->whereIn('id', $toDelete)
-                ->delete();
-        }
-    }
-
-    private function resolveOwner(): ?Model
-    {
-        if (! config('affiliates.owner.enabled', false)) {
-            return null;
-        }
-
-        return OwnerContext::resolve();
     }
 }

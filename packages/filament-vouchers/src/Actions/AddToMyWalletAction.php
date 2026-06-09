@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
@@ -51,8 +52,16 @@ final class AddToMyWalletAction
                     return;
                 }
 
-                if (OwnerScopedQueries::isEnabled()) {
-                    $isVisible = OwnerScopedQueries::vouchers()
+                if (config('vouchers.owner.enabled', false)) {
+                    $voucherQuery = Voucher::query();
+
+                    $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+                        $voucherQuery,
+                        OwnerContext::resolve(),
+                        (bool) config('vouchers.owner.include_global', false),
+                    );
+
+                    $isVisible = $voucherQuery
                         ->whereKey($record->getKey())
                         ->exists();
 

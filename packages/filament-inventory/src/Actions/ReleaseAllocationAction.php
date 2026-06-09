@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
-use AIArmada\Inventory\Facades\InventoryAllocation as InventoryAllocationFacade;
+use AIArmada\Inventory\Actions\ReleaseStock;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -22,7 +22,7 @@ final class ReleaseAllocationAction
             ->modalHeading('Release Allocation')
             ->modalDescription('This will release the allocated inventory back to available stock.')
             ->action(function (InventoryAllocation $record): void {
-                $released = InventoryAllocationFacade::releaseAllocation($record);
+                $released = ReleaseStock::make()->releaseAllocation($record);
 
                 if ($released <= 0) {
                     Notification::make()

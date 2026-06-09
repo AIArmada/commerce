@@ -19,9 +19,7 @@
     },
     "autoload": {
         "psr-4": {
-            "AIArmada\\FilamentPromotions\\": "src/",
-            "AIArmada\\FilamentPromotions\\Database\\Factories\\": "database/factories/",
-            "AIArmada\\FilamentPromotions\\Database\\Seeders\\": "database/seeders/"
+            "AIArmada\\FilamentPromotions\\": "src/"
         }
     },
     "extra": {

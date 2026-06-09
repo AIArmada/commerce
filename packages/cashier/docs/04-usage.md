@@ -46,7 +46,48 @@ default driver everywhere.
 - [Multi-gateway](07-multi-gateway.md) — selecting, mixing, and querying multiple gateways
 - [Webhooks](08-webhooks.md) — gateway webhook ownership and unified events
 
-## 4. Remember what this package does not own
+## 4. Two Billable traits
+
+The package ships two `Billable` traits with different responsibilities:
+
+| Trait | Location | Purpose |
+|---|---|---|
+| `CashierBillable` | `src/Billable.php` (root) | **Gateway management entrypoint** — resolves the active gateway, delegates to `ManagesGateway`. Add this to your model. |
+| `Concerns\Billable` | `src/Concerns/Billable.php` | **Model query helpers** — `getSubscriptions()`, `subscription()`, etc. Re-exported automatically by the root trait. You only need to add the root trait. |
+
+The root `Billable` trait re-exports `Concerns\Billable` via `use`. When you add the root trait to your model, both behaviors are available:
+
+```php
+use AIArmada\Cashier\Billable as CashierBillable;
+
+class User extends Authenticatable
+{
+    use StripeBillable, ChipBillable, CashierBillable;
+}
+```
+
+## 5. Contracts-to-implementations matrix
+
+12 contracts × 2 gateways (Stripe, CHIP) = 24 implementations. Use this matrix to verify a new gateway covers all contracts:
+
+| Contract | Stripe | CHIP |
+|---|---|---|
+| `GatewayContract` | `StripeGateway` | `ChipGateway` |
+| `BillableContract` | Stripe native | Cashier-chip |
+| `CheckoutContract` | `StripeCheckout` | `ChipCheckout` |
+| `CheckoutBuilderContract` | `StripeCheckoutBuilder` | `ChipCheckoutBuilder` |
+| `CustomerContract` | `StripeCustomer` | `ChipCustomer` |
+| `PaymentContract` | `StripePayment` | `ChipPayment` |
+| `PaymentMethodContract` | `StripePaymentMethod` | `ChipPaymentMethod` |
+| `InvoiceContract` | `StripeInvoice` | `ChipInvoice` |
+| `InvoiceLineItemContract` | `StripeInvoiceLineItem` | `ChipInvoiceLineItem` |
+| `SubscriptionContract` | `StripeSubscription` | `ChipSubscription` |
+| `SubscriptionItemContract` | `StripeSubscriptionItem` | `ChipSubscriptionItem` |
+| `SubscriptionBuilderContract` | `StripeSubscriptionBuilder` | `ChipSubscriptionBuilder` |
+
+Every new gateway must implement all 12 contracts. Missing implementations will break at runtime.
+
+## 6. Remember what this package does not own
 
 - `laravel/cashier` still owns Stripe tables, controllers, and Stripe-native features
 - `aiarmada/cashier-chip` still owns CHIP billing persistence and renewals

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Widgets;
 
-use AIArmada\FilamentPromotions\Support\PromotionPerformanceInsights;
+use AIArmada\Promotions\Support\PromotionPerformanceInsights;
 use Filament\Widgets\ChartWidget;
 
 final class TopPromotionsUsageChart extends ChartWidget

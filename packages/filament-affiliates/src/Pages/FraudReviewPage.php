@@ -10,7 +10,6 @@ use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Actions\BulkFraudReviewAction;
 use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -61,7 +60,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
     {
         return $table
             ->query(
-                OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
+                AffiliateFraudSignal::query()
                     ->where('status', FraudSignalStatus::Detected)
                     ->with(['affiliate', 'conversion'])
                     ->latest()
@@ -188,7 +187,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
     public function getViewData(): array
     {
-        $base = OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
+        $base = AffiliateFraudSignal::query()
             ->where('status', FraudSignalStatus::Detected);
 
         return [

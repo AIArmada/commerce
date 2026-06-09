@@ -8,13 +8,14 @@ use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Support\ChipCustomerBridge;
 use Throwable;
 
 class SyncChipRecordsFromApiAction
 {
     public function __construct(
         private readonly StoreWebhookData $storeWebhookData,
-        private readonly LinkChipCustomerFromCheckout $linkChipCustomerFromCheckout,
+        private readonly ChipCustomerBridge $customerBridge,
     ) {}
 
     /**
@@ -51,7 +52,12 @@ class SyncChipRecordsFromApiAction
             $summary['processed']++;
 
             if (! $dryRun && ! $overwriteExisting && Purchase::query()->whereKey($purchaseId)->exists()) {
-                // The command links customers only while re-syncing the CHIP payload; live checkout completion calls the bridge directly.
+                $checkoutSession = $this->customerBridge->findCheckoutSessionByPaymentId($purchaseId);
+
+                if ($checkoutSession !== null) {
+                    $this->linkCustomer($purchaseId, $checkoutSession);
+                }
+
                 $summary['skipped']++;
 
                 continue;
@@ -83,7 +89,7 @@ class SyncChipRecordsFromApiAction
                 }
 
                 $this->storeWebhookData->handle(WebhookReceived::fromPayload($payload));
-                $this->linkChipCustomerFromCheckout->handle($purchaseId, $payload, 'chip_sync_from_api');
+                $this->linkCustomer($purchaseId, null, $payload);
                 $summary['synced']++;
             } catch (Throwable $throwable) {
                 $summary['failed']++;
@@ -96,6 +102,30 @@ class SyncChipRecordsFromApiAction
         }
 
         return $summary;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $payload
+     */
+    private function linkCustomer(string $purchaseId, mixed $checkoutSession, ?array $payload = null): void
+    {
+        if ($checkoutSession === null && $payload === null) {
+            return;
+        }
+
+        if ($checkoutSession !== null) {
+            $this->customerBridge->linkCustomer($checkoutSession, [], 'chip_sync_from_api');
+
+            return;
+        }
+
+        if ($payload !== null) {
+            $session = $this->customerBridge->findCheckoutSessionByPaymentId($purchaseId);
+
+            if ($session !== null) {
+                $this->customerBridge->linkCustomer($session, $payload, 'chip_sync_from_api');
+            }
+        }
     }
 
     /**

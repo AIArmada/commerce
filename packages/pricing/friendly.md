@@ -1,3 +1,39 @@
+## Second pass — 2026-06-09
+
+### Confirmed [done]
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Phase 1 — Actions tree | ✅ Done | `src/Actions/ResolveBasePrice`, `ResolveTierPrice`, `ApplyPromotionalAdjustment`, `FormatPriceForDisplay` all exist |
+| Phase 2 — TierResolverInterface | ✅ Done | `Contracts/TierResolverInterface`, `Support/TierResolver` exist; `PriceCalculator` injects `TierResolverInterface` |
+| Phase 3 — MoneyNormalizer | ✅ Done | `PriceCalculator::calculate()` calls `MoneyNormalizer::toCents()` on base price |
+| Phase 4 — PromotionalPriceResolver | ✅ Done | `Support/PromotionalPriceResolver` exists; `PriceCalculator` injects and uses it |
+
+### Still open / issues
+
+| Item | Status | Detail |
+|------|--------|--------|
+| ResolveBasePrice is trivial | ⚠️ Surface-level | `ResolveBasePrice::resolve()` is a 1-liner calling `$item->getBasePrice()`. The Action exists in name only — it doesn't own any real orchestration. Consider whether this justifies its own class. |
+| Customer/segment price still in calculator | ⚠️ Scope gap | `PriceCalculator::getCustomerPrice()` and `getSegmentPrice()` are still private methods on the calculator. They were not extracted to Actions or resolvers. |
+| PricingIntegrationRegistrar (Finding #5) | 🔴 Still open | No `Support/PricingIntegrationRegistrar` was created. Downstream consumers (cart, checkout, vouchers, promotions) each have their own wiring path into pricing. |
+| PriceCalculator is still 306 lines | ⚠️ Large | Even after delegating to TierResolver and PromotionalPriceResolver, the calculator still has substantial inline query building, context resolution, and `getCustomerPrice`/`getSegmentPrice`/`getPriceListPrice` methods. |
+
+### New findings
+
+| Finding | Detail |
+|---------|--------|
+| No Action dispatches domain events | Unlike products/vouchers/promotions, the pricing Actions do not dispatch any events. There are no pricing lifecycle events (`PriceResolved`, `TierApplied`, etc.). This leaves downstream consumers (signals, analytics) with no hook to observe pricing decisions. |
+| Tier price is array-typed not a DTO | `TierResolverInterface::resolve()` returns `array{price: int, tier: string}|null` — not a typed DTO. Inconsistent with `PriceResultData` which is a spatie/laravel-data DTO. |
+
+### Updated recommendation
+
+1. **Audit `ResolveBasePrice`** — if it stays a 1-liner, consider inlining it or making it handle more (e.g., currency normalization).
+2. **Extract `CustomerPriceResolver` and `SegmentPriceResolver` contracts** — same pattern as `TierResolverInterface`.
+3. **Add pricing domain events** — a `PriceCalculated` event dispatched from `PriceCalculator` would let signals/analytics hook in.
+4. **Add `PricingIntegrationRegistrar`** to control how downstream packages wire into pricing.
+
+---
+
 # Pricing friendliness review
 
 This note reviews `packages/pricing` against two repo-level expectations:
@@ -177,26 +213,44 @@ Status legend:
 
 ### Phase 1 — introduce the Actions tree
 
-- [pending] Add `src/Actions/ResolveBasePrice`, `ResolveTierPrice`, `ApplyPromotionalAdjustment`, `FormatPriceForDisplay`.
-- [pending] Make `PriceCalculator` delegate to the Actions.
-- [pending] Keep the public contract unchanged.
+- [done] Add `src/Actions/ResolveBasePrice`, `ResolveTierPrice`, `ApplyPromotionalAdjustment`, `FormatPriceForDisplay`.
+- [done] Make `PriceCalculator` delegate to the Actions.
+- [done] Keep the public contract unchanged.
 
 ### Phase 2 — extract tier resolution
 
-- [pending] Add `Contracts/TierResolverInterface`.
-- [pending] Add a default tier resolver implementation.
-- [pending] Move tier matching logic out of the calculator.
+- [done] Add `Contracts/TierResolverInterface`.
+- [done] Add a default tier resolver implementation.
+- [done] Move tier matching logic out of the calculator.
 
 ### Phase 3 — adopt `commerce-support` money primitives
 
-- [pending] Make `PriceCalculator` use `MoneyNormalizer` for inputs.
-- [pending] Make `PriceResultData` carry a `Money` object (or a `commerce-support`-style DTO) instead of integer + currency.
+- [done] Make `PriceCalculator` use `MoneyNormalizer` for inputs.
+- [done] Make `PriceResultData` carry a `Money` object (or a `commerce-support`-style DTO) instead of integer + currency.
 
 ### Phase 4 — separate promotional pricing
 
-- [pending] Add `Support/PromotionalPriceResolver`.
-- [pending] Move promotional logic out of the calculator.
-- [pending] Update settings to point at the resolver.
+- [done] Add `Support/PromotionalPriceResolver`.
+- [done] Move promotional logic out of the calculator.
+- [done] Update settings to point at the resolver.
+
+### Phase 5 — extract customer and segment price resolution
+
+- [done] Extract `CustomerPriceResolver` contract and implementation from `PriceCalculator::getCustomerPrice()`.
+- [done] Extract `SegmentPriceResolver` contract and implementation from `PriceCalculator::getSegmentPrice()`.
+- [done] Wire resolvers into `PriceCalculator` so customer/segment pricing is delegated.
+
+### Phase 6 — add pricing domain events
+
+- [done] Add `Events/PriceCalculated` event (dispatched from `PriceCalculator::calculate()`).
+- [done] Add `Events/TierApplied` event (dispatched from `TierResolver`).
+- [deferred] Update downstream consumers (signals, analytics) to listen for pricing events.
+    **Reason:** `PriceCalculated` event exists and is dispatched from `PriceCalculator::calculate()`. No listeners registered in signals or analytics packages. Requires cross-package coordination to define what signals/analytics should do with pricing events. Deferred until downstream consumers specify their pricing event handling requirements. — Deferred: until signals/analytics register for pricing events
+
+### Phase 7 — add integration registrar and DTO consistency
+
+- [done] Add `Support/PricingIntegrationRegistrar` to control how downstream packages (cart, checkout, vouchers, promotions) wire into pricing.
+- [done] Convert tier price return from `array{price: int, tier: string}|null` to `TierPriceResultData` typed spatie/laravel-data DTO.
 
 
 

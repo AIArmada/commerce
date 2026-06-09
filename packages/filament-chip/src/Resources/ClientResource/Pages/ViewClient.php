@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\ClientResource\Pages;
 
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyViewRecord;
 use AIArmada\FilamentChip\Resources\ClientResource;
-use AIArmada\FilamentChip\Resources\Pages\ReadOnlyViewRecord;
 use Override;
 
 final class ViewClient extends ReadOnlyViewRecord

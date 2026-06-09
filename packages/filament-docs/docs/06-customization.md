@@ -70,44 +70,7 @@ class DocsTable
 
 ## Custom Actions
 
-When adding custom actions, keep the package's owner checks in place so tenant isolation stays enforced.
-
-```php
-<?php
-
-namespace App\Filament\Resources\DocResource\Pages;
-
-use AIArmada\Docs\Services\DocService;
-use AIArmada\FilamentDocs\Resources\DocResource\Pages\ViewDoc as BaseViewDoc;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
-use Filament\Actions\Action;
-use Filament\Notifications\Notification;
-
-class ViewDoc extends BaseViewDoc
-{
-    protected function getHeaderActions(): array
-    {
-        return [
-            ...parent::getHeaderActions(),
-
-            Action::make('duplicate')
-                ->icon('heroicon-o-document-duplicate')
-                ->action(function (): void {
-                    DocsOwnerScope::assertCanMutateDoc($this->record);
-
-                    $newDoc = app(DocService::class)->clone($this->record);
-
-                    Notification::make()
-                        ->success()
-                        ->title('Document duplicated')
-                        ->send();
-
-                    $this->redirect(static::$resource::getUrl('edit', ['record' => $newDoc]));
-                }),
-        ];
-    }
-}
-```
+When adding custom actions, owner scoping is automatic via `HasOwner` on the `Doc` model — the `OwnerScope` global scope handles queries and model hooks guard mutations. No manual owner checks are needed.
 
 ## Localization
 

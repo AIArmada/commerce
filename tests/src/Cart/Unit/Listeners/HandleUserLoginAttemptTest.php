@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Support\LoginMigrationCacheKey;
+use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 describe('HandleUserLoginAttempt Coverage Tests', function (): void {
     beforeEach(function (): void {
-        $this->listener = new HandleUserLoginAttempt;
+        $this->listener = new HandleUserLoginAttempt(app(LoginMigrationIdentifierResolver::class));
         Cache::flush();
         Auth::logout();
     });

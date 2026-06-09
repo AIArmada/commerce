@@ -11,7 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Enums\RegistrationAttendanceSource;
 use AIArmada\Events\Enums\RegistrationStatus;
-use AIArmada\Events\Support\CommerceIntegration;
+use AIArmada\Events\Support\Integration\CommerceIntegration;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -129,7 +129,7 @@ class Registration extends Model implements Auditable
             $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
         }
 
-        /** @var Builder<Registration> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;

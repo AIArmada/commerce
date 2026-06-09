@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCashier\Support\InvoiceStatus;
-use AIArmada\FilamentCashier\Support\UnifiedInvoice;
+use AIArmada\Cashier\Support\InvoiceStatus;
+use AIArmada\Cashier\Support\UnifiedInvoice;
 use Carbon\CarbonImmutable;
 
 it('can format amount in USD correctly', function (): void {

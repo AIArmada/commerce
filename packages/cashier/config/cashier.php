@@ -36,6 +36,10 @@ return [
             'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
             'currency' => $stripeCurrency,
             'currency_locale' => $stripeCurrencyLocale,
+            'label' => 'Stripe',
+            'icon' => 'heroicon-o-credit-card',
+            'color' => 'indigo',
+            'dashboard_url' => 'https://dashboard.stripe.com',
         ],
 
         'chip' => [
@@ -43,6 +47,10 @@ return [
             'brand_id' => env('CHIP_BRAND_ID'),
             'currency' => $chipCurrency,
             'currency_locale' => $chipCurrencyLocale,
+            'label' => 'CHIP',
+            'icon' => 'heroicon-o-cube',
+            'color' => 'emerald',
+            'dashboard_url' => 'https://gate.chip-in.asia',
         ],
     ],
 

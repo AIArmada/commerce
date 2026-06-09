@@ -7,6 +7,9 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Actions\RebuildAllSegments;
+use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Services\SegmentationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -100,7 +103,11 @@ it('prevents cross-tenant segment membership changes', function (): void {
         'owner_id' => $ownerA->getKey(),
     ]));
 
-    $service = new SegmentationService;
+    $service = new SegmentationService(
+        new AssignCustomerToSegment,
+        new RemoveCustomerFromSegment,
+        new RebuildAllSegments,
+    );
 
     expect($service->addToSegment($customerB, $segmentA))->toBeFalse();
 

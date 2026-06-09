@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Support;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -81,8 +82,8 @@ final class OwnerTypeRegistry
             return [];
         }
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $owner = OwnerScopedQueries::owner();
+        if (config('vouchers.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
 
             if (! $owner instanceof Model) {
                 return [];
@@ -150,8 +151,8 @@ final class OwnerTypeRegistry
             return null;
         }
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $owner = OwnerScopedQueries::owner();
+        if (config('vouchers.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
 
             if (! $owner instanceof Model) {
                 return null;

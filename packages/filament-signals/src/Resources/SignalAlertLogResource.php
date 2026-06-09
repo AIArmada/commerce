@@ -5,16 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Resources;
 
 use AIArmada\FilamentSignals\Resources\SignalAlertLogResource\Pages;
-use AIArmada\Signals\Actions\MarkSignalAlertAsRead;
-use AIArmada\Signals\Actions\MarkSignalAlertAsUnread;
+use AIArmada\FilamentSignals\Resources\SignalAlertLogResource\Schemas\SignalAlertLogForm;
+use AIArmada\FilamentSignals\Resources\SignalAlertLogResource\Tables\SignalAlertLogTable;
 use AIArmada\Signals\Models\SignalAlertLog;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -49,79 +45,12 @@ final class SignalAlertLogResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->schema([]);
+        return SignalAlertLogForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('title')
-                    ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('severity')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'critical' => 'danger',
-                        'warning' => 'warning',
-                        default => 'info',
-                    }),
-                Tables\Columns\TextColumn::make('alertRule.name')
-                    ->label('Rule')
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('trackedProperty.name')
-                    ->label('Property')
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('metric_value')
-                    ->numeric(decimalPlaces: 2)
-                    ->label('Value'),
-                Tables\Columns\TextColumn::make('threshold_value')
-                    ->numeric(decimalPlaces: 2)
-                    ->label('Threshold'),
-                Tables\Columns\TextColumn::make('channels_notified')
-                    ->badge()
-                    ->separator(',')
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('context.metric_key')
-                    ->label('Context Metric')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('delivery_results')
-                    ->label('Delivery')
-                    ->formatStateUsing(fn (mixed $state): string => is_array($state) ? implode(', ', array_keys($state)) : '')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\IconColumn::make('is_read')
-                    ->boolean(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable(),
-            ])
-            ->defaultSort('created_at', 'desc')
-            ->filters([
-                Tables\Filters\SelectFilter::make('severity')
-                    ->options([
-                        'info' => 'Info',
-                        'warning' => 'Warning',
-                        'critical' => 'Critical',
-                    ]),
-                Tables\Filters\TernaryFilter::make('is_read'),
-            ])
-            ->actions([
-                Action::make('mark_read')
-                    ->label('Mark Read')
-                    ->icon('heroicon-o-check')
-                    ->visible(fn (SignalAlertLog $record): bool => ! $record->is_read)
-                    ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsRead::class)($record)),
-                Action::make('mark_unread')
-                    ->label('Mark Unread')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->visible(fn (SignalAlertLog $record): bool => $record->is_read)
-                    ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsUnread::class)($record)),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+        return SignalAlertLogTable::configure($table);
     }
 
     public static function getPages(): array

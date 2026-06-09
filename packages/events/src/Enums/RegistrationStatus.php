@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
-use AIArmada\Events\Support\LifecyclePolicy;
+use AIArmada\Events\Support\Policy\LifecyclePolicy;
 
 enum RegistrationStatus: string
 {

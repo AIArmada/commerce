@@ -6,6 +6,7 @@ namespace AIArmada\Cart;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
+use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Contracts\Auth\Factory;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -30,17 +31,21 @@ class CartManager implements CartManagerInterface
         private StorageInterface $storage,
         private ?Dispatcher $events = null,
         private bool $eventsEnabled = true,
-        private ?CartConditionResolver $conditionResolver = null
+        private ?CartConditionResolver $conditionResolver = null,
+        private ?CartFactory $cartFactory = null,
     ) {
         $this->conditionResolver ??= app(CartConditionResolver::class);
-
-        $this->currentCart = new Cart(
+        $this->cartFactory ??= new CartFactory(
             storage: $this->storage,
-            identifier: $this->resolveIdentifier(),
+            conditionResolver: $this->conditionResolver,
             events: $this->events,
-            instanceName: $this->currentInstance,
             eventsEnabled: $this->eventsEnabled,
-            conditionResolver: $this->conditionResolver
+        );
+
+        $this->currentCart = $this->cartFactory->make(
+            identifier: $this->resolveIdentifier(),
+            instanceName: $this->currentInstance,
+            events: $this->events,
         );
     }
 
@@ -67,13 +72,10 @@ class CartManager implements CartManagerInterface
      */
     public function getCartInstance(string $name, ?string $identifier = null): Cart
     {
-        return new Cart(
-            storage: $this->storage,
+        return $this->cartFactory->make(
             identifier: $this->resolveIdentifier($identifier),
-            events: $this->events,
             instanceName: $name,
-            eventsEnabled: $this->eventsEnabled,
-            conditionResolver: $this->conditionResolver
+            events: $this->events,
         );
     }
 
@@ -93,13 +95,10 @@ class CartManager implements CartManagerInterface
         if ($this->currentInstance !== $name) {
             $currentIdentifier = $this->currentCart->getIdentifier();
             $this->currentInstance = $name;
-            $this->currentCart = new Cart(
-                storage: $this->storage,
+            $this->currentCart = $this->cartFactory->make(
                 identifier: $currentIdentifier,
-                events: $this->events,
                 instanceName: $name,
-                eventsEnabled: $this->eventsEnabled,
-                conditionResolver: $this->conditionResolver
+                events: $this->events,
             );
         }
 
@@ -112,13 +111,10 @@ class CartManager implements CartManagerInterface
     public function setIdentifier(string $identifier): static
     {
         if ($this->currentCart->getIdentifier() !== $identifier) {
-            $this->currentCart = new Cart(
-                storage: $this->storage,
+            $this->currentCart = $this->cartFactory->make(
                 identifier: $identifier,
-                events: $this->events,
                 instanceName: $this->currentInstance,
-                eventsEnabled: $this->eventsEnabled,
-                conditionResolver: $this->conditionResolver
+                events: $this->events,
             );
         }
 
@@ -136,13 +132,10 @@ class CartManager implements CartManagerInterface
         $defaultIdentifier = $this->resolveIdentifier();
 
         if ($this->currentCart->getIdentifier() !== $defaultIdentifier) {
-            $this->currentCart = new Cart(
-                storage: $this->storage,
+            $this->currentCart = $this->cartFactory->make(
                 identifier: $defaultIdentifier,
-                events: $this->events,
                 instanceName: $this->currentInstance,
-                eventsEnabled: $this->eventsEnabled,
-                conditionResolver: $this->conditionResolver
+                events: $this->events,
             );
         }
 
@@ -161,12 +154,20 @@ class CartManager implements CartManagerInterface
     {
         $scopedStorage = $this->storage->withOwner($owner);
 
+        $scopedFactory = new CartFactory(
+            storage: $scopedStorage,
+            conditionResolver: $this->conditionResolver,
+            events: $this->events,
+            eventsEnabled: $this->eventsEnabled,
+        );
+
         // @phpstan-ignore-next-line
         return new static(
             storage: $scopedStorage,
             events: $this->events,
             eventsEnabled: $this->eventsEnabled,
-            conditionResolver: $this->conditionResolver
+            conditionResolver: $this->conditionResolver,
+            cartFactory: $scopedFactory,
         );
     }
 
@@ -228,9 +229,9 @@ class CartManager implements CartManagerInterface
      */
     public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
     {
-        $migrationService = new Services\CartMigrationService([], $this->storage);
+        $storage = $this->storage->withOwner(null);
 
-        $swapped = $migrationService->swap($oldIdentifier, $newIdentifier, $instance);
+        $swapped = $storage->swapIdentifier($oldIdentifier, $newIdentifier, $instance);
 
         if ($swapped) {
             $this->cartCache = [];

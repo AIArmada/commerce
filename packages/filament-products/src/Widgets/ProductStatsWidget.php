@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Products\Enums\ProductStatus;
-use AIArmada\Products\Models\Category;
-use AIArmada\Products\Models\Collection;
-use AIArmada\Products\Models\Product;
+use AIArmada\FilamentProducts\Support\ProductStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -18,58 +14,34 @@ final class ProductStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        return $this->withResolvedOwnerOrExplicitGlobal(function (): array {
-            $totalProducts = Product::query()->forOwner()->count();
-            $activeProducts = Product::query()->forOwner()->where('status', ProductStatus::Active)->count();
-            $draftProducts = Product::query()->forOwner()->where('status', ProductStatus::Draft)->count();
-            $totalCategories = Category::query()->forOwner()->count();
-            $totalCollections = Collection::query()->forOwner()->where('is_visible', true)->count();
+        $aggregator = app(ProductStatsAggregator::class);
+        $stats = $aggregator->getStats();
 
-            // Calculate weekly trend
-            $lastWeekProducts = Product::query()->forOwner()->where('created_at', '>=', now()->subWeek())->count();
-            $previousWeekProducts = Product::query()->forOwner()
-                ->whereBetween('created_at', [now()->subWeeks(2), now()->subWeek()])
-                ->count();
+        $trendDescription = $stats['trend'] >= 0 ? "{$stats['trend']}% increase" : abs($stats['trend']) . '% decrease';
+        $trendIcon = $stats['trend'] >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down';
+        $trendColor = $stats['trend'] >= 0 ? 'success' : 'danger';
 
-            $trend = $previousWeekProducts > 0
-                ? round((($lastWeekProducts - $previousWeekProducts) / $previousWeekProducts) * 100)
-                : ($lastWeekProducts > 0 ? 100 : 0);
+        return [
+            Stat::make('Total Products', number_format($stats['totalProducts']))
+                ->description($trendDescription . ' from last week')
+                ->descriptionIcon($trendIcon)
+                ->color($trendColor)
+                ->chart([$stats['previousWeekProducts'], $stats['lastWeekProducts']]),
 
-            $trendDescription = $trend >= 0 ? "{$trend}% increase" : abs($trend) . '% decrease';
-            $trendIcon = $trend >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down';
-            $trendColor = $trend >= 0 ? 'success' : 'danger';
+            Stat::make('Active Products', number_format($stats['activeProducts']))
+                ->description(round(($stats['activeProducts'] / max($stats['totalProducts'], 1)) * 100) . '% of total')
+                ->descriptionIcon('heroicon-m-check-circle')
+                ->color('success'),
 
-            return [
-                Stat::make('Total Products', number_format($totalProducts))
-                    ->description($trendDescription . ' from last week')
-                    ->descriptionIcon($trendIcon)
-                    ->color($trendColor)
-                    ->chart([$previousWeekProducts, $lastWeekProducts]),
+            Stat::make('Draft Products', number_format($stats['draftProducts']))
+                ->description('Awaiting publish')
+                ->descriptionIcon('heroicon-m-pencil')
+                ->color('warning'),
 
-                Stat::make('Active Products', number_format($activeProducts))
-                    ->description(round(($activeProducts / max($totalProducts, 1)) * 100) . '% of total')
-                    ->descriptionIcon('heroicon-m-check-circle')
-                    ->color('success'),
-
-                Stat::make('Draft Products', number_format($draftProducts))
-                    ->description('Awaiting publish')
-                    ->descriptionIcon('heroicon-m-pencil')
-                    ->color('warning'),
-
-                Stat::make('Categories', number_format($totalCategories))
-                    ->description("{$totalCollections} collections")
-                    ->descriptionIcon('heroicon-m-folder')
-                    ->color('info'),
-            ];
-        });
-    }
-
-    private function withResolvedOwnerOrExplicitGlobal(callable $callback): mixed
-    {
-        if (OwnerContext::resolve() !== null || OwnerContext::isExplicitGlobal()) {
-            return $callback();
-        }
-
-        return OwnerContext::withOwner(null, static fn (): mixed => $callback());
+            Stat::make('Categories', number_format($stats['totalCategories']))
+                ->description("{$stats['totalCollections']} collections")
+                ->descriptionIcon('heroicon-m-folder')
+                ->color('info'),
+        ];
     }
 }

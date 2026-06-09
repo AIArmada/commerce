@@ -5,26 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Resources;
 
 use AIArmada\FilamentProducts\Resources\AttributeSetResource\Pages;
-use AIArmada\Products\Models\Attribute;
-use AIArmada\Products\Models\AttributeGroup;
+use AIArmada\FilamentProducts\Resources\AttributeSetResource\Schemas\AttributeSetForm;
+use AIArmada\FilamentProducts\Resources\AttributeSetResource\Tables\AttributeSetsTable;
 use AIArmada\Products\Models\AttributeSet;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Forms;
-use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 
-final class AttributeSetResource extends Resource
+final class AttributeSetResource extends BaseAttributeResource
 {
     protected static ?string $model = AttributeSet::class;
 
@@ -32,14 +21,9 @@ final class AttributeSetResource extends Resource
 
     protected static ?string $navigationParentItem = 'Attributes';
 
-    public static function getNavigationGroup(): ?string
+    protected static function navigationSortKey(): string
     {
-        return config('filament-products.navigation.group', 'Catalog');
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return (int) config('filament-products.navigation.resources.attribute_sets', 42);
+        return 'attribute_sets';
     }
 
     /**
@@ -68,130 +52,12 @@ final class AttributeSetResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Section::make(__('filament-products::resources.attribute_sets.sections.basic'))
-                    ->schema([
-                        Forms\Components\TextInput::make('code')
-                            ->label(__('filament-products::resources.attribute_sets.fields.code'))
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(100)
-                            ->alphaDash()
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('code', $state ? Str::slug($state, '_') : '')),
-
-                        Forms\Components\TextInput::make('name')
-                            ->label(__('filament-products::resources.attribute_sets.fields.name'))
-                            ->required()
-                            ->maxLength(255),
-
-                        Forms\Components\Textarea::make('description')
-                            ->label(__('filament-products::resources.attribute_sets.fields.description'))
-                            ->rows(2)
-                            ->maxLength(500),
-
-                        Forms\Components\Toggle::make('is_default')
-                            ->label(__('filament-products::resources.attribute_sets.fields.is_default'))
-                            ->helperText(__('filament-products::resources.attribute_sets.fields.is_default_help'))
-                            ->default(false),
-                    ])
-                    ->columns(2),
-
-                Section::make(__('filament-products::resources.attribute_sets.sections.attributes'))
-                    ->schema([
-                        Forms\Components\Select::make('setAttributes')
-                            ->label(__('filament-products::resources.attribute_sets.fields.attributes'))
-                            ->multiple()
-                            ->relationship(
-                                'setAttributes',
-                                'name',
-                                modifyQueryUsing: function (Builder $query): Builder {
-                                    /** @var Builder<Attribute> $query */
-                                    return $query->forOwner();
-                                }
-                            )
-                            ->preload()
-                            ->searchable(),
-                    ]),
-
-                Section::make(__('filament-products::resources.attribute_sets.sections.groups'))
-                    ->schema([
-                        Forms\Components\Select::make('groups')
-                            ->label(__('filament-products::resources.attribute_sets.fields.groups'))
-                            ->multiple()
-                            ->relationship(
-                                'groups',
-                                'name',
-                                modifyQueryUsing: function (Builder $query): Builder {
-                                    /** @var Builder<AttributeGroup> $query */
-                                    return $query->forOwner();
-                                }
-                            )
-                            ->preload()
-                            ->searchable(),
-                    ]),
-            ]);
+        return AttributeSetForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('code')
-                    ->label(__('filament-products::resources.attribute_sets.fields.code'))
-                    ->searchable()
-                    ->sortable()
-                    ->copyable(),
-
-                Tables\Columns\TextColumn::make('name')
-                    ->label(__('filament-products::resources.attribute_sets.fields.name'))
-                    ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('set_attributes_count')
-                    ->label(__('filament-products::resources.attribute_sets.fields.attributes_count'))
-                    ->counts('setAttributes')
-                    ->badge()
-                    ->alignCenter(),
-
-                Tables\Columns\TextColumn::make('groups_count')
-                    ->label(__('filament-products::resources.attribute_sets.fields.groups_count'))
-                    ->counts('groups')
-                    ->badge()
-                    ->alignCenter(),
-
-                Tables\Columns\IconColumn::make('is_default')
-                    ->label(__('filament-products::resources.attribute_sets.fields.is_default'))
-                    ->boolean()
-                    ->alignCenter(),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('filament-products::resources.attribute_sets.fields.created_at'))
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                Tables\Filters\TernaryFilter::make('is_default')
-                    ->label(__('filament-products::resources.attribute_sets.fields.is_default')),
-            ])
-            ->actions([
-                EditAction::make(),
-                Action::make('setDefault')
-                    ->label(__('filament-products::resources.attribute_sets.actions.set_default'))
-                    ->icon('heroicon-o-star')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->action(fn (AttributeSet $record) => $record->setAsDefault())
-                    ->visible(fn (AttributeSet $record): bool => ! $record->is_default),
-                DeleteAction::make(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+        return AttributeSetsTable::configure($table);
     }
 
     public static function getRelations(): array

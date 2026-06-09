@@ -1,3 +1,26 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+- Phase 1: 5 Actions created: `CancelChipSubscription`, `ChargeChipCustomer`, `CreateChipSubscription`, `RefundChipPayment`, `SyncChipPurchaseStatus`. Orchestration moved out of concerns/listeners.
+- Phase 2: `OwnerBatchRunner` adopted. `RenewSubscriptionsCommand` uses `new OwnerBatchRunner(Subscription::class, [...])`. `WebhookCommand` audited.
+- Phase 3: Entity classes reorganized: `Billing/` (Billable, Cashier, Checkout, CheckoutBuilder, Coupon, Discount, PromotionCode), `Payment/` (Payment, PaymentMethod, PaymentMethodStore, StoredPaymentMethod, InvoicePayment), `Subscription/` (Subscription, SubscriptionBuilder, SubscriptionItem), `Invoice/` (Invoice, InvoiceLineItem). All imports updated.
+- Phase 4: `InteractsWithChip` and `InteractsWithPaymentBehavior` both preserved — audit determined they serve different concerns (Chip = gateway-specific API integration, PaymentBehavior = payment lifecycle handling). Billable model uses both traits.
+- Phase 5: Events expanded from 5 to 9: `PaymentSucceeded`, `PaymentFailed`, `PaymentRefunded`, `SubscriptionCreated`, `SubscriptionCanceled`, `SubscriptionRenewed`, `SubscriptionRenewalFailed`, `SubscriptionResumed`, `SubscriptionUpdated`. Gap analysis complete — cashier-only events (`PaymentEvent`, `SubscriptionEvent`, `SubscriptionTrialEnding`, `WebhookHandled`, `WebhookReceived`) are cashier-layer abstractions, not needed in cashier-chip.
+
+### Resolved (since second pass)
+- **FakeChipClient vs FakeChipCollectService overlap**: ✅ Documented in Phase 6 — each file has `@see` cross-references and a `Testing/README.md` explains when to use each fake (Client = HTTP-layer faking, CollectService = business-logic faking).
+
+### New findings
+1. **OwnerBatchRunner integration is clean but single-use**: Only `RenewSubscriptionsCommand` uses it. `WebhookCommand` was audited but does not iterate per-owner (webhooks are globally received, then dispatched per-owner internally). This is correct. The pattern is ready for future commands.
+2. **Events alignment is solid**: 9 cashier-chip events cover the full CHIP billing lifecycle. The 4 missing events from cashier's 13 are base-class abstractions (`*Event` base classes) and Stripe-only events (`SubscriptionTrialEnding`). No action needed.
+3. **Concerns remain 10 traits**: The Billable model composes 10 concerns. This is dense but each has a single responsibility. If the trait count grows beyond 12, consider splitting Billable into gateway-specific variants.
+4. **Invoice rendering seam is underused**: `Contracts/InvoiceRenderer.php` + `Invoices/DocsInvoiceRenderer.php` is a clean contract but only one implementation. If PDF rendering is on the roadmap, this seam will pay off immediately.
+
+### Updated recommendation
+Document the `FakeChipClient` vs `FakeChipCollectService` distinction in a comment at the top of each file. Monitor concerns count — if trait composition exceeds 12, split Billable into StripeBillable and ChipBillable with a shared base. The package is in good shape overall.
+
+---
+
 # Cashier-Chip friendliness review
 
 This note reviews `packages/cashier-chip` against two repo-level expectations:
@@ -234,32 +257,42 @@ Status legend:
 
 ### Phase 1 — introduce the Actions tree
 
-- [pending] Add `src/Actions/ChargeChipCustomer`, `RefundChipPayment`, `CreateChipSubscription`, `CancelChipSubscription`, `SyncC...
-- [pending] Move orchestration out of concerns, listeners, and entity classes.
-- [pending] Add tests for each Action.
+- [done] Add `src/Actions/ChargeChipCustomer`, `RefundChipPayment`, `CreateChipSubscription`, `CancelChipSubscription`, `SyncChipPurchaseStatus`.
+- [done] Move orchestration out of concerns, listeners, and entity classes.
+- [done] Add tests for each Action.
 
 ### Phase 2 — adopt owner-batch helper
 
-- [pending] Wait for `commerce-support`'s `OwnerBatchRunner`.
-- [pending] Migrate `RenewSubscriptionsCommand`.
-- [pending] Audit `WebhookCommand` for the same pattern.
+- [done] Wait for `commerce-support`'s `OwnerBatchRunner`.
+- [done] Migrate `RenewSubscriptionsCommand`.
+- [done] Audit `WebhookCommand` for the same pattern.
 
 ### Phase 3 — group top-level entity classes
 
-- [pending] Create `Billing/`, `Payment/`, `Subscription/`, `Invoice/` namespaces.
-- [pending] Move entity classes.
-- [pending] Update imports.
+- [done] Create `Billing/`, `Payment/`, `Subscription/`, `Invoice/` namespaces.
+- [done] Move entity classes.
+- [done] Update imports.
 
 ### Phase 4 — audit potential duplicates
 
-- [pending] Compare `InteractsWithChip` to `InteractsWithPaymentBehavior`.
-- [pending] Compare `FakeChipClient` to `FakeChipCollectService`.
-- [pending] Pick the canonical owner for each pair.
+- [done] Compare `InteractsWithChip` to `InteractsWithPaymentBehavior`.
+- [done] Compare `FakeChipClient` to `FakeChipCollectService`.
+- [done] Pick the canonical owner for each pair.
 
 ### Phase 5 — align event coverage with cashier
 
-- [pending] Audit which cashier events are emitted from cashier-chip.
-- [pending] Emit missing events or document the gap.
+- [done] Audit which cashier events are emitted from cashier-chip.
+- [done] Emit missing events or document the gap.
+
+### Phase 6 — document testing fakes
+
+- [done] Document `FakeChipClient` vs `FakeChipCollectService` distinction in docblocks at the top of each file (Client = HTTP-layer faking, CollectService = business-logic faking). Both files already cross-reference each other via `@see` annotations.
+- [done] Add `Testing/README.md` explaining when to use each fake and the relationship between them.
+
+### Phase 7 — monitor concerns growth
+
+- [done] Track concern trait count on `Billable` model — current count is 10 traits, below the 12-threshold.
+- [done] Note: No split needed at this time. Re-evaluate when trait count exceeds 12 (plan for `StripeBillable` and `ChipBillable` variants with shared base).
 
 
 

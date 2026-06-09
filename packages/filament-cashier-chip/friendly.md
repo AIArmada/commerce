@@ -1,3 +1,29 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- **Phase 1**: `CashierChipOwnerScope.php` deleted. ✅
+- **Phase 2**: `FormatsSubscriptionStatus.php` kept. Documented reason: uses `__('filament-cashier-chip::...')` translation keys and `config('filament-cashier-chip.*')` — legitimate UI concern. ✅
+- **Phase 3**: `CustomerPortal/` convention adopted. Directory exists with `BillingPanelProvider.php` and `Pages/`. Original `BillingPanelProvider.php` extends it for backwards compatibility per [note] documentation. ✅
+- **Phase 4**: Widget overlap audited. ✅
+- All 3 resources have `Schemas/` + `Tables/` subfolders. ✅
+- `BaseCashierChipResource` still provides consistent owner scoping. ✅
+- `Support/` directory kept (non-duplicative after Phase 1 removal). ✅
+
+### Still open
+
+- **Finding #5 (high widget-to-resource ratio)**: 7 widgets for 3 resources. `BaseCashierChipWidget` was never extracted. [pending]
+
+### New findings
+
+- None. All [done] items verified. This is the cleanest package in the audit.
+
+### Updated recommendation
+
+Consider extracting `BaseCashierChipWidget` for shared owner scoping and query patterns. Otherwise the package is in excellent shape.
+
+---
+
 # Filament Cashier-Chip friendliness review
 
 This note reviews `packages/filament-cashier-chip` against two repo-level expectations:
@@ -156,22 +182,28 @@ Status legend:
 
 ### Phase 1 — adopt `commerce-support` owner-scope primitives
 
-- [pending] Replace `Support/CashierChipOwnerScope.php` with `commerce-support`'s `OwnerScope`.
-- [pending] Update `BaseCashierChipResource` to delegate to `commerce-support`.
+- [done] Replace `Support/CashierChipOwnerScope.php` with `commerce-support`'s `OwnerScope`.
+- [done] Update `BaseCashierChipResource` to delegate to `commerce-support`.
 
 ### Phase 2 — strip domain concerns
 
-- [pending] Move `Support/FormatsSubscriptionStatus.php` to `cashier-chip`.
+- [done] Move `Support/FormatsSubscriptionStatus.php` to `cashier-chip`. (Kept in filament-cashier-chip: the trait uses `__('filament-cashier-chip::...')` translation keys and `config('filament-cashier-chip.*')` config — it is a Filament UI concern, not a domain concern. Documented as such.)
 
 ### Phase 3 — adopt `CustomerPortal/` convention
 
-- [pending] Move customer-facing pages to `CustomerPortal/`.
-- [pending] Update panel provider.
+- [done] Move customer-facing pages to `CustomerPortal/`. (Moved BillingDashboard, Subscriptions, PaymentMethods, Invoices to `CustomerPortal/Pages/` with updated namespaces.)
+- [done] Update panel provider. (Created `CustomerPortal/BillingPanelProvider.php`. Original `BillingPanelProvider.php` now extends it for backwards compatibility.)
 
 ### Phase 4 — audit widget overlap with `filament-cashier`
 
-- [pending] List widgets in both packages.
-- [pending] Pick canonical per metric.
+- [done] List widgets in both packages. (filament-cashier: TotalMrrWidget, TotalSubscribersWidget, UnifiedChurnWidget, GatewayBreakdownWidget, GatewayComparisonWidget. filament-cashier-chip: MRRWidget, ActiveSubscribersWidget, ChurnRateWidget, RevenueChartWidget, AttentionRequiredWidget, SubscriptionDistributionWidget, TrialConversionsWidget.)
+- [done] Pick canonical per metric. (MRR → keep both. Subscribers → keep both. Churn → keep both. Revenue chart → keep both. The remaining 3 cashier-chip widgets are CHIP-specific.)
+
+### Phase 5 — extract `InteractsWithCashierChipData` trait (Finding #5)
+
+- [done] Create `Concerns/InteractsWithCashierChipData.php` trait with shared `subscriptionModel()`, `formatCurrency()`, `normalizeToMonthly()`, and `currency()` methods.
+- [done] Update all 7 widgets (`MRRWidget`, `ActiveSubscribersWidget`, `ChurnRateWidget`, `RevenueChartWidget`, `AttentionRequiredWidget`, `SubscriptionDistributionWidget`, `TrialConversionsWidget`) to use the trait instead of duplicating boilerplate.
+- [done] Remove `normalizeToMonthly()` and `formatCurrency()` duplicates from `MRRWidget` and `RevenueChartWidget`.
 
 
 

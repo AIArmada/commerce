@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Exceptions;
 
-use AIArmada\CashierChip\Payment;
+use AIArmada\CashierChip\Payment\Payment;
 use Exception;
 
 final class IncompletePayment extends Exception

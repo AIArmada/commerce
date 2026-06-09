@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Products\Concerns\IsAttributeEntity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -43,6 +44,7 @@ class AttributeSet extends Model implements Auditable
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use IsAttributeEntity;
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
@@ -83,7 +85,7 @@ class AttributeSet extends Model implements Auditable
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var Builder<AttributeSet> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;
@@ -145,17 +147,6 @@ class AttributeSet extends Model implements Auditable
     public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
-    }
-
-    /**
-     * Scope to order by position.
-     *
-     * @param  Builder<AttributeSet>  $query
-     * @return Builder<AttributeSet>
-     */
-    public function scopeOrdered(Builder $query): Builder
-    {
-        return $query->orderBy('position');
     }
 
     /**

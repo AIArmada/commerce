@@ -1,3 +1,41 @@
+## Second pass — 2026-06-09
+
+### Confirmed [done]
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Phase 1 — RequestTaxExemption | ✅ Done | `Actions/Exemption/RequestTaxExemption` exists, grouped with `ApproveExemptionAction`, `RejectExemptionAction` |
+| Phase 2 — TaxZoneResolverInterface | ✅ Done | `Contracts/TaxZoneResolverInterface` exists with 4 implementations: `DefaultZoneResolver`, `AddressZoneResolver`, `ZoneIdResolver`, `CompositeZoneResolver` under `Services/ZoneResolver/` |
+| Phase 2 — TaxRateApplierInterface | ✅ Done | `Contracts/TaxRateApplierInterface` exists with `StandardRateApplier` implementation under `Services/RateApplier/` |
+| Phase 3 — MoneyNormalizer | ✅ Done | `TaxCalculator::calculateTax()` calls `MoneyNormalizer::toCents()` |
+
+### Still open / issues
+
+| Item | Status | Detail |
+|------|--------|----------|
+| TaxCalculator not using resolver interface | ⚠️ **Major gap** | `TaxCalculator::resolveZone()` (lines 90–141) has fully inline zone resolution logic — it does NOT inject or use `TaxZoneResolverInterface`. The interface and implementations exist but the calculator's `calculateTax()` calls `$this->resolveZone()` not a resolver. The contract is dead code from the calculator's perspective. |
+| TaxCalculator not using rate applier interface | ⚠️ **Major gap** | `TaxCalculator::calculateWithRates()` (lines 173–226) has inline rate application, compound/non-compound logic, and rounding — it does NOT inject or use `TaxRateApplierInterface`. Same dead-code problem. |
+| Finding #4 — No Console/Commands | 🔴 Still open | No `src/Console/Commands` directory. Rate updates, zone migrations, exemption expirations have no home. |
+| Finding #6 — Contracts for zone/rate primitives | ✅ Resolved | Now 3 contracts exist (Calculator, ZoneResolver, RateApplier). |
+| Exemption workflow missing state machine | 🔴 Still open | Only Request/Approve/Reject exist. No auto-approval, time-limited, or document-required exemption flows. |
+
+### New findings
+
+| Finding | Detail |
+|---------|--------|
+| Phase 3 step "TaxResultData carries Money object" not verified | Quick read of `TaxResultData` constructor shows `int $taxAmount` + `string $currency` — likely NOT a `Money` DTO but separate fields. Verify. |
+| Two copies of exemption Actions | `Actions/ApproveExemptionAction.php` + `Actions/RejectExemptionAction.php` exist at root AND in `Actions/Exemption/`. These are duplicate/wrapper files — the migration left the old files in place. |
+| `ResolveBasePrice` in pricing has a similar concern | Cross-package note: both pricing and tax have "resolver interfaces exist but calculator still has inline logic" — a systemic pattern. |
+
+### Updated recommendation
+
+1. **Wire resolvers into TaxCalculator** — inject `TaxZoneResolverInterface` and `TaxRateApplierInterface` and delegate. This is the highest-priority gap.
+2. **Remove stale exemption Action files** at root level (`Actions/ApproveExemptionAction.php`, `Actions/RejectExemptionAction.php`) — keep only the `Actions/Exemption/` versions.
+3. **Verify TaxResultData** carries a proper Money object (Phase 3 step 2).
+4. **Add Console/Commands** for batch rate/zone operations.
+
+---
+
 # Tax friendliness review
 
 This note reviews `packages/tax` against two repo-level expectations:
@@ -187,20 +225,33 @@ Status legend:
 
 ### Phase 1 — group exemption Actions and add the missing entry point
 
-- [pending] Add `Actions/RequestTaxExemption`.
-- [pending] Group exemption Actions in `Actions/Exemption/` for clarity.
-- [pending] Update callers.
+- [done] Add `Actions/RequestTaxExemption`.
+- [done] Group exemption Actions in `Actions/Exemption/` for clarity.
+- [done] Update callers.
 
 ### Phase 2 — extract zone resolution and rate application strategies
 
-- [pending] Add `Contracts/TaxZoneResolverInterface` and built-in strategies.
-- [pending] Add `Contracts/TaxRateApplierInterface` and built-in appliers.
-- [pending] Make the calculator delegate to resolvers and appliers.
+- [done] Add `Contracts/TaxZoneResolverInterface` and built-in strategies.
+- [done] Add `Contracts/TaxRateApplierInterface` and built-in appliers.
+- [done] Make the calculator delegate to resolvers and appliers. — `TaxCalculator` now injects `TaxZoneResolverInterface` (via `CompositeZoneResolver`) and `TaxRateApplierInterface` (via `StandardRateApplier`).
 
 ### Phase 3 — adopt `commerce-support` money primitives
 
-- [pending] Use `MoneyNormalizer` and `MoneyFormatter` from foundation.
-- [pending] Make `TaxResultData` carry a `Money` object.
+- [done] Use `MoneyNormalizer` and `MoneyFormatter` from foundation.
+- [done] Make `TaxResultData` carry a `Money` object. — Verified: `TaxResultData::getMoney()` returns `Money::{$currency}($this->taxAmount)`. The DTO carries `int $taxAmount` + `string $currency` as separate fields (standard minor-units pattern), with a `getMoney()` helper to construct the Money object.
+
+### Phase 4 — wire resolvers and appliers into TaxCalculator
+
+- [done] Inject `TaxZoneResolverInterface` into `TaxCalculator` and delegate `resolveZone()` to it.
+- [done] Inject `TaxRateApplierInterface` into `TaxCalculator` and delegate `calculateWithRates()` to it.
+- [done] Verify `TaxResultData` carries a proper `Money` object — confirmed via `getMoney()` method.
+
+### Phase 5 — clean stale files and add console commands
+
+- [done] Remove stale exemption Action files at root level (`Actions/ApproveExemptionAction.php`, `Actions/RejectExemptionAction.php`) — removed; `Actions/Exemption/` versions remain.
+- [done] Add `src/Console/Commands` directory for batch operations (rate updates, zone migrations, exemption expirations).
+- [deferred] Add exemption state machine (auto-approval, time-limited, document-required flows).
+    **Reason:** No state machine infrastructure exists in `packages/tax`. Adding this requires designing and implementing a new state machine with spatie/laravel-model-states, adding new statuses to `ExemptionStatus` enum, and wiring auto-approval/time-limited/document-required flows. Significant feature work beyond remaining cleanup scope. — Deferred: needs spatie/laravel-model-states setup and new state classes
 
 
 

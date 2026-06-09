@@ -14,7 +14,6 @@ use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\FilamentDocs\Resources\DocResource;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions;
 use Filament\Forms\Components\CheckboxList;
@@ -47,8 +46,6 @@ final class ViewDoc extends ViewRecord
                 ->modalHeading('Generate PDF')
                 ->modalDescription('This will generate a new PDF for this document. Any existing PDF will be overwritten.')
                 ->action(function (Doc $record): void {
-                    DocsOwnerScope::assertCanMutateDoc($record);
-
                     $docService = app(DocService::class);
                     $docService->generatePdf($record, save: true);
 
@@ -76,8 +73,6 @@ final class ViewDoc extends ViewRecord
                         ->default(CarbonImmutable::now()->addDays((int) config('docs.sharing.default_expiry_days', 30))),
                 ])
                 ->action(function (Doc $record, array $data): void {
-                    DocsOwnerScope::assertCanMutateDoc($record);
-
                     $shareLink = app(DocRenderService::class)->createShareLink($record, new ShareLinkData(
                         allowedActions: $data['allowed_actions'] ?? [ShareLinkAction::View->value],
                         expiresAt: filled($data['expires_at'] ?? null) ? CarbonImmutable::parse($data['expires_at']) : null,
@@ -98,8 +93,6 @@ final class ViewDoc extends ViewRecord
                 ->color('warning')
                 ->requiresConfirmation()
                 ->action(function (Doc $record): void {
-                    DocsOwnerScope::assertCanMutateDoc($record);
-
                     $record->shareLinks()
                         ->whereNull('revoked_at')
                         ->update(['revoked_at' => CarbonImmutable::now()]);
@@ -125,7 +118,6 @@ final class ViewDoc extends ViewRecord
                     ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
                     ->requiresConfirmation()
                     ->action(function (Doc $record): void {
-                        DocsOwnerScope::assertCanMutateDoc($record);
                         $record->markAsSent();
                         Notification::make()->title('Document marked as sent')->success()->send();
                     }),
@@ -137,7 +129,6 @@ final class ViewDoc extends ViewRecord
                     ->visible(fn (Doc $record): bool => $record->canBePaid())
                     ->requiresConfirmation()
                     ->action(function (Doc $record): void {
-                        DocsOwnerScope::assertCanMutateDoc($record);
                         $record->markAsPaid();
                         Notification::make()->title('Document marked as paid')->success()->send();
                     }),
@@ -151,7 +142,6 @@ final class ViewDoc extends ViewRecord
                     ->modalHeading('Cancel Document')
                     ->modalDescription('Are you sure you want to cancel this document? This action cannot be undone.')
                     ->action(function (Doc $record): void {
-                        DocsOwnerScope::assertCanMutateDoc($record);
                         $record->cancel();
                         Notification::make()->title('Document cancelled')->warning()->send();
                     }),
@@ -166,7 +156,6 @@ final class ViewDoc extends ViewRecord
                 ->color('danger')
                 ->requiresConfirmation()
                 ->action(function (Doc $record): void {
-                    DocsOwnerScope::assertCanMutateDoc($record);
                     $record->delete();
                 }),
         ];

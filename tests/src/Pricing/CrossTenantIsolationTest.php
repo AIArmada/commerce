@@ -8,7 +8,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\Pricing\Services\PriceCalculator;
+use AIArmada\Pricing\Support\PromotionalPriceResolver;
+use AIArmada\Pricing\Support\TierResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 
@@ -88,7 +91,10 @@ it('blocks cross-tenant reads and writes for owned price lists/prices', function
 
     bindPricingOwner($ownerA);
 
-    $calculator = new PriceCalculator;
+    $calculator = new PriceCalculator(
+        new TierResolver,
+        new PromotionalPriceResolver(new ApplyPromotionalAdjustment),
+    );
 
     $result = $calculator->calculate($item, 1, ['price_list_id' => $listB->id]);
 

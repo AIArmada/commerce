@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Services;
 
-use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Checkout\Actions\FinalizeCheckoutSession;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
@@ -17,7 +17,6 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\Events\CheckoutCancelled;
-use AIArmada\Checkout\Events\CheckoutCompleted;
 use AIArmada\Checkout\Events\CheckoutFailed;
 use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
 use AIArmada\Checkout\Events\CheckoutStarted;
@@ -28,7 +27,6 @@ use AIArmada\Checkout\Exceptions\InvalidCheckoutStateException;
 use AIArmada\Checkout\Exceptions\PaymentException;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Cancelled;
-use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
@@ -43,11 +41,18 @@ use Throwable;
 
 final class CheckoutService implements CheckoutServiceInterface
 {
+    private readonly RunCheckoutPipeline $pipeline;
+
+    private readonly FinalizeCheckoutSession $finalizer;
+
     public function __construct(
         private readonly CheckoutStepRegistryInterface $stepRegistry,
         private readonly Dispatcher $events,
         private readonly ?PaymentGatewayResolverInterface $paymentResolver = null,
-    ) {}
+    ) {
+        $this->pipeline = new RunCheckoutPipeline($stepRegistry, $events);
+        $this->finalizer = new FinalizeCheckoutSession($events);
+    }
 
     public function startCheckout(string $cartId, ?string $customerId = null): CheckoutSession
     {
@@ -106,40 +111,15 @@ final class CheckoutService implements CheckoutServiceInterface
 
             try {
                 return DB::transaction(function () use ($session) {
-                    foreach ($this->stepRegistry->getOrderedSteps() as $step) {
-                        $stepState = $session->getStepState($step->getIdentifier());
+                    $this->ensureProcessingStatus($session);
 
-                        // Skip already completed steps
-                        if ($stepState === StepStatus::Completed || $stepState === StepStatus::Skipped) {
-                            continue;
-                        }
+                    $pipelineResult = $this->pipeline->run($session);
 
-                        // Check if step can be skipped
-                        if ($step->canSkip($session)) {
-                            $session->setStepState($step->getIdentifier(), StepStatus::Skipped);
-
-                            continue;
-                        }
-
-                        // Process the step
-                        $result = $this->processStepInternal($session, $step);
-
-                        if (! $result->isSuccessful()) {
-                            return CheckoutResult::failed($session, $result->message ?? 'Step failed', $result->errors);
-                        }
-
-                        // Check for payment redirect
-                        if ($step->getIdentifier() === 'process_payment' && $session->payment_redirect_url !== null) {
-                            return CheckoutResult::awaitingPayment($session, $session->payment_redirect_url);
-                        }
+                    if ($pipelineResult->requiresRedirect() || ! $pipelineResult->success) {
+                        return $pipelineResult;
                     }
 
-                    if (! $session->status->is(Completed::class)) {
-                        $session->transitionStatus(Completed::class);
-                    }
-                    $this->events->dispatch(new CheckoutCompleted($session));
-
-                    return CheckoutResult::success($session);
+                    return $this->finalizer->finalize($session);
                 });
             } catch (Throwable $e) {
                 $this->handleCheckoutFailure($session, $e);
@@ -182,7 +162,6 @@ final class CheckoutService implements CheckoutServiceInterface
         }
 
         return $this->withSessionOwnerContext($session, function () use ($session): CheckoutResult {
-            // Reset payment step state
             $session->setStepState('process_payment', StepStatus::Pending);
             $session->update([
                 'payment_redirect_url' => null,
@@ -190,7 +169,6 @@ final class CheckoutService implements CheckoutServiceInterface
             ]);
             $session->transitionStatus(Processing::class);
 
-            // Re-process from payment step
             $paymentStep = $this->stepRegistry->get('process_payment');
             if ($paymentStep === null) {
                 throw CheckoutStepException::stepNotFound('process_payment');
@@ -203,7 +181,6 @@ final class CheckoutService implements CheckoutServiceInterface
             }
 
             if ($result->isSuccessful()) {
-                // Continue with remaining steps
                 return $this->continueFromStep($session, 'process_payment');
             }
 
@@ -218,7 +195,6 @@ final class CheckoutService implements CheckoutServiceInterface
         }
 
         return $this->withSessionOwnerContext($session, function () use ($session): CheckoutSession {
-            // Rollback completed steps in reverse order
             $this->rollbackCompletedSteps($session);
 
             $session->transitionStatus(Cancelled::class);
@@ -238,7 +214,6 @@ final class CheckoutService implements CheckoutServiceInterface
         array $payload = [],
     ): CheckoutResult {
         return $this->withSessionOwnerContext($session, function () use ($session, $callbackType, $payload): CheckoutResult {
-            // Handle cancellation
             if ($callbackType === 'cancel') {
                 if ($session->status->canCancel()) {
                     $this->rollbackCompletedSteps($session);
@@ -249,7 +224,6 @@ final class CheckoutService implements CheckoutServiceInterface
                 return CheckoutResult::failed($session, 'Payment was cancelled');
             }
 
-            // Handle failure
             if ($callbackType === 'failure') {
                 $this->rollbackCompletedSteps($session);
                 $session->transitionStatus(PaymentFailed::class);
@@ -259,7 +233,6 @@ final class CheckoutService implements CheckoutServiceInterface
                 return CheckoutResult::failed($session, 'Payment failed');
             }
 
-            // Handle success - verify payment and complete checkout
             if ($callbackType === 'success') {
                 return $this->verifyAndCompletePayment($session, $payload);
             }
@@ -292,9 +265,6 @@ final class CheckoutService implements CheckoutServiceInterface
         return empty($currentStep->validate($session));
     }
 
-    /**
-     * @return Cart|null
-     */
     private function resolveCart(string $cartId): mixed
     {
         if (! app()->bound(CartManagerInterface::class)) {
@@ -351,11 +321,17 @@ final class CheckoutService implements CheckoutServiceInterface
         return ! empty($steps) ? $steps[0]->getIdentifier() : null;
     }
 
+    private function ensureProcessingStatus(CheckoutSession $session): void
+    {
+        if (! $session->status->is(Processing::class)) {
+            $session->transitionStatus(Processing::class);
+        }
+    }
+
     private function processStepInternal(CheckoutSession $session, CheckoutStepInterface $step): StepResult
     {
         $identifier = $step->getIdentifier();
 
-        // Validate dependencies
         foreach ($step->getDependencies() as $dependency) {
             $depState = $session->getStepState($dependency);
             if ($depState !== StepStatus::Completed && $depState !== StepStatus::Skipped) {
@@ -363,7 +339,6 @@ final class CheckoutService implements CheckoutServiceInterface
             }
         }
 
-        // Validate step
         $errors = $step->validate($session);
         if (! empty($errors)) {
             $session->setStepState($identifier, StepStatus::Failed);
@@ -372,7 +347,6 @@ final class CheckoutService implements CheckoutServiceInterface
             return StepResult::failed($identifier, 'Validation failed', $errors);
         }
 
-        // Execute step
         $session->setStepState($identifier, StepStatus::Processing);
         $session->update(['current_step' => $identifier]);
 
@@ -391,44 +365,13 @@ final class CheckoutService implements CheckoutServiceInterface
 
     private function continueFromStep(CheckoutSession $session, string $fromStep): CheckoutResult
     {
-        $steps = $this->stepRegistry->getOrderedSteps();
-        $startProcessing = false;
+        $pipelineResult = $this->pipeline->run($session, fromStep: $fromStep);
 
-        foreach ($steps as $step) {
-            if ($step->getIdentifier() === $fromStep) {
-                $startProcessing = true;
-
-                continue;
-            }
-
-            if (! $startProcessing) {
-                continue;
-            }
-
-            $stepState = $session->getStepState($step->getIdentifier());
-            if ($stepState === StepStatus::Completed || $stepState === StepStatus::Skipped) {
-                continue;
-            }
-
-            if ($step->canSkip($session)) {
-                $session->setStepState($step->getIdentifier(), StepStatus::Skipped);
-
-                continue;
-            }
-
-            $result = $this->processStepInternal($session, $step);
-
-            if (! $result->isSuccessful()) {
-                return CheckoutResult::failed($session, $result->message ?? 'Step failed', $result->errors);
-            }
+        if ($pipelineResult->requiresRedirect() || ! $pipelineResult->success) {
+            return $pipelineResult;
         }
 
-        if (! $session->status->is(Completed::class)) {
-            $session->transitionStatus(Completed::class);
-        }
-        $this->events->dispatch(new CheckoutCompleted($session));
-
-        return CheckoutResult::success($session);
+        return $this->finalizer->finalize($session);
     }
 
     private function rollbackCompletedSteps(CheckoutSession $session): void
@@ -447,19 +390,12 @@ final class CheckoutService implements CheckoutServiceInterface
 
     private function handleCheckoutFailure(CheckoutSession $session, Throwable $e): void
     {
-        // Release external state (inventory reservations, etc.) that the DB transaction
-        // rollback cannot undo. The in-memory session model still carries the step-state
-        // changes that were fill()ed during the transaction, so the loop correctly
-        // identifies which steps completed before the exception.
         $this->rollbackCompletedSteps($session);
 
         if (! $session->status->isTerminal() && ! $session->status->is(PaymentFailed::class)) {
             $session->transitionStatus(PaymentFailed::class);
         }
 
-        // Log the full exception for diagnostics; persist only a sanitized message to avoid
-        // leaking internal paths, SQL fragments, or stack details into the checkout_sessions table
-        // (and onward to views via BuildCheckoutSessionViewData).
         Log::error('Checkout failure', [
             'session_id' => $session->getKey(),
             'exception' => $e,
@@ -475,7 +411,6 @@ final class CheckoutService implements CheckoutServiceInterface
      */
     private function verifyAndCompletePayment(CheckoutSession $session, array $payload): CheckoutResult
     {
-        // If webhook payload provided, use the gateway processor; otherwise verify with gateway lookup.
         $paymentVerified = false;
         $paymentResult = null;
 
@@ -527,18 +462,15 @@ final class CheckoutService implements CheckoutServiceInterface
         }
 
         if (! $paymentVerified) {
-            // Payment not verified - stay in awaiting state or mark failed
             return CheckoutResult::failed($session, 'Payment could not be verified');
         }
 
         $this->dispatchPaymentCompleted($session);
 
-        // Payment confirmed - mark payment step complete and continue
         $session->setStepState('process_payment', StepStatus::Completed);
         $session->transitionStatus(Processing::class);
-        $session->update(['payment_redirect_url' => null]); // Clear redirect URL
+        $session->update(['payment_redirect_url' => null]);
 
-        // Continue with remaining steps (create_order, etc.)
         return $this->continueFromStep($session, 'process_payment');
     }
 
@@ -589,18 +521,6 @@ final class CheckoutService implements CheckoutServiceInterface
         ));
     }
 
-    /**
-     * Execute a callback within the session's owner context.
-     *
-     * When checkout owner mode is enabled, operations on owned sessions must run
-     * within the correct owner context to satisfy HasOwner save guards. This helper
-     * resolves the session owner and wraps the callback accordingly.
-     *
-     * @template TReturn
-     *
-     * @param  callable(): TReturn  $callback
-     * @return TReturn
-     */
     private function withSessionOwnerContext(CheckoutSession $session, callable $callback): mixed
     {
         /** @var Model|null $owner */

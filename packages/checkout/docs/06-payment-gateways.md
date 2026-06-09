@@ -241,6 +241,8 @@ public function boot(): void
 }
 ```
 
+Built-in processors (cashier, cashier-chip, chip) are registered by `RegisterBuiltInPaymentProcessors` during provider boot. To add a new built-in, extend that registrar instead of editing the provider.
+
 ## Webhook Handling
 
 Each gateway has its own webhook handler. Configure webhooks in your routes:

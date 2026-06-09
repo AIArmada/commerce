@@ -14,10 +14,10 @@ use AIArmada\Events\Contracts\EventRelationalContentSubject;
 use AIArmada\Events\Data\EventAddressData;
 use AIArmada\Events\Enums\OccurrenceParticipationMode;
 use AIArmada\Events\Enums\OccurrenceStatus;
-use AIArmada\Events\Support\CommerceIntegration;
-use AIArmada\Events\Support\ConfiguredEventModel;
-use AIArmada\Events\Support\EventAddressResolver;
-use AIArmada\Events\Support\LifecyclePolicy;
+use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Events\Support\Integration\ConfiguredEventModel;
+use AIArmada\Events\Support\Integration\EventAddressResolver;
+use AIArmada\Events\Support\Policy\LifecyclePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -171,7 +171,7 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
             $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
         }
 
-        /** @var Builder<Occurrence> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;
@@ -198,6 +198,8 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
 
     /**
      * @return BelongsTo<EventSubLocation, $this>
+     *
+     * @phpstan-return BelongsTo<EventSubLocation, $this>
      */
     public function subLocation(): BelongsTo
     {

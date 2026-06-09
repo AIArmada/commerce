@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
@@ -50,7 +49,7 @@ final class ManualRedeemVoucherAction extends Action
         ]);
 
         $this->action(function (Voucher $record, array $data): void {
-            if (OwnerScopedQueries::isEnabled()) {
+            if (config('vouchers.owner.enabled', false)) {
                 /** @var Voucher $record */
                 $record = OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey());
             }

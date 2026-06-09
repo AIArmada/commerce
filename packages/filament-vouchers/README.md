@@ -109,7 +109,7 @@ The plugin provides these dashboard widgets:
 | `VoucherCartStatsWidget` | Cart-specific voucher metrics |
 | `VoucherWalletStatsWidget` | Wallet entry statistics |
 | `VoucherUsageTimelineWidget` | Redemption timeline for a voucher |
-| `AppliedVoucherBadgesWidget` | Shows applied vouchers on a cart |
+| `AppliedVouchersWidget` | Shows applied vouchers on a cart (table view) |
 | `QuickApplyVoucherWidget` | Inline voucher application form |
 | `VoucherSuggestionsWidget` | Smart voucher suggestions for carts |
 | `AppliedVouchersWidget` | Table of applied vouchers on a cart |

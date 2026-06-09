@@ -6,13 +6,11 @@ namespace AIArmada\FilamentCart;
 
 use AIArmada\FilamentCart\Pages\CartDashboard;
 use AIArmada\FilamentCart\Pages\LiveDashboardPage;
-use AIArmada\FilamentCart\Resources\CartConditionResource;
 use AIArmada\FilamentCart\Resources\CartItemResource;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Resources\ConditionResource;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
-use AIArmada\FilamentCart\Widgets\LiveStatsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
@@ -58,7 +56,6 @@ final class FilamentCartPlugin implements Plugin
         $resources = [
             CartResource::class,
             CartItemResource::class,
-            CartConditionResource::class,
             ConditionResource::class,
         ];
 
@@ -99,7 +96,6 @@ final class FilamentCartPlugin implements Plugin
         }
 
         if (config('filament-cart.features.monitoring', true)) {
-            $widgets[] = LiveStatsWidget::class;
             $widgets[] = RecentActivityWidget::class;
         }
 

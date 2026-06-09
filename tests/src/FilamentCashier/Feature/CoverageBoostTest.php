@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Subscription;
-use AIArmada\CashierChip\SubscriptionItem;
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Components\GatewayBadge;
@@ -29,9 +29,9 @@ use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\ListSubscriptions;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\ViewSubscription;
-use AIArmada\FilamentCashier\Support\CurrencyFormatter;
-use AIArmada\FilamentCashier\Support\UnifiedInvoice;
-use AIArmada\FilamentCashier\Support\UnifiedSubscription;
+use AIArmada\Cashier\Support\CurrencyFormatter;
+use AIArmada\Cashier\Support\UnifiedInvoice;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\FilamentCashier\Widgets\GatewayBreakdownWidget;
 use AIArmada\FilamentCashier\Widgets\GatewayComparisonWidget;
 use AIArmada\FilamentCashier\Widgets\TotalMrrWidget;

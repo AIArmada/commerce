@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPricing\Pages;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
@@ -56,25 +57,6 @@ final class PriceSimulator extends Page
         return OwnerContext::resolve();
     }
 
-    /**
-     * @template TModel of Model
-     *
-     * @param  class-string<TModel>  $modelClass
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
-    private function scopeQueryForOwner(string $modelClass, Builder $query, ?Model $owner): Builder
-    {
-        $model = new $modelClass;
-
-        if ($model instanceof Model && method_exists($model, 'scopeForOwner')) {
-            /** @var Builder<TModel> $query */
-            $query = $model->scopeForOwner($query, $owner);
-        }
-
-        return $query;
-    }
-
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -99,10 +81,10 @@ final class PriceSimulator extends Page
                             ->getSearchResultsUsing(function (string $search): array {
                                 $owner = $this->resolveOwner();
 
-                                $query = $this->scopeQueryForOwner(
-                                    Product::class,
+                                $query = OwnerQuery::applyToEloquentBuilder(
                                     Product::query(),
-                                    $owner
+                                    $owner,
+                                    (bool) config('products.features.owner.include_global', false),
                                 );
 
                                 return $query
@@ -127,10 +109,10 @@ final class PriceSimulator extends Page
 
                                 $owner = $this->resolveOwner();
 
-                                $query = $this->scopeQueryForOwner(
-                                    Product::class,
+                                $query = OwnerQuery::applyToEloquentBuilder(
                                     Product::query(),
-                                    $owner
+                                    $owner,
+                                    (bool) config('products.features.owner.include_global', false),
                                 );
 
                                 $product = $query
@@ -156,26 +138,26 @@ final class PriceSimulator extends Page
                             ->getSearchResultsUsing(function (string $search): array {
                                 $owner = $this->resolveOwner();
 
+                                $includeGlobal = (bool) config('products.features.owner.include_global', false);
+
                                 return Variant::query()
                                     ->with('product')
-                                    ->where(function ($query) use ($owner, $search): void {
+                                    ->where(function ($query) use ($owner, $search, $includeGlobal): void {
                                         $query->where('sku', 'like', "%{$search}%")
-                                            ->orWhereHas('product', function ($inner) use ($owner, $search): void {
-                                                $inner = $this->scopeQueryForOwner(
-                                                    Product::class,
+                                            ->orWhereHas('product', function ($inner) use ($owner, $search, $includeGlobal): void {
+                                                OwnerQuery::applyToEloquentBuilder(
                                                     $inner,
-                                                    $owner
-                                                );
-
-                                                $inner
+                                                    $owner,
+                                                    $includeGlobal,
+                                                )
                                                     ->where('name', 'like', "%{$search}%");
                                             });
                                     })
-                                    ->whereHas('product', function ($query) use ($owner): void {
-                                        $query = $this->scopeQueryForOwner(
-                                            Product::class,
+                                    ->whereHas('product', function ($query) use ($owner, $includeGlobal): void {
+                                        OwnerQuery::applyToEloquentBuilder(
                                             $query,
-                                            $owner
+                                            $owner,
+                                            $includeGlobal,
                                         );
                                     })
                                     ->limit(50)
@@ -206,14 +188,16 @@ final class PriceSimulator extends Page
 
                                 $owner = $this->resolveOwner();
 
+                                $includeGlobal = (bool) config('products.features.owner.include_global', false);
+
                                 $variant = Variant::query()
                                     ->with('product')
                                     ->whereKey($value)
-                                    ->whereHas('product', function ($query) use ($owner): void {
-                                        $query = $this->scopeQueryForOwner(
-                                            Product::class,
+                                    ->whereHas('product', function ($query) use ($owner, $includeGlobal): void {
+                                        OwnerQuery::applyToEloquentBuilder(
                                             $query,
-                                            $owner
+                                            $owner,
+                                            $includeGlobal,
                                         );
                                     })
                                     ->first();
@@ -249,7 +233,11 @@ final class PriceSimulator extends Page
 
                                 $owner = $this->resolveOwner();
 
-                                $query = $this->scopeQueryForOwner(Customer::class, Customer::query(), $owner);
+                                $query = OwnerQuery::applyToEloquentBuilder(
+                                    Customer::query(),
+                                    $owner,
+                                    (bool) config('customers.owner.include_global', false),
+                                );
 
                                 return $query
                                     ->where(function (Builder $query) use ($search): void {
@@ -276,7 +264,11 @@ final class PriceSimulator extends Page
 
                                 $owner = $this->resolveOwner();
 
-                                $query = $this->scopeQueryForOwner(Customer::class, Customer::query(), $owner);
+                                $query = OwnerQuery::applyToEloquentBuilder(
+                                    Customer::query(),
+                                    $owner,
+                                    (bool) config('customers.owner.include_global', false),
+                                );
 
                                 $customer = $query
                                     ->whereKey($value)
@@ -326,20 +318,21 @@ final class PriceSimulator extends Page
         // Get the priceable
         $priceable = null;
         if ($data['product_type'] === 'product') {
-            $query = $this->scopeQueryForOwner(
-                Product::class,
+            $query = OwnerQuery::applyToEloquentBuilder(
                 Product::query(),
-                $owner
+                $owner,
+                (bool) config('products.features.owner.include_global', false),
             );
 
             $priceable = $query->find($data['product_id']);
         } else {
+            $includeGlobal = (bool) config('products.features.owner.include_global', false);
             $priceable = Variant::query()
-                ->whereHas('product', function ($query) use ($owner): void {
-                    $query = $this->scopeQueryForOwner(
-                        Product::class,
+                ->whereHas('product', function ($query) use ($owner, $includeGlobal): void {
+                    OwnerQuery::applyToEloquentBuilder(
                         $query,
-                        $owner
+                        $owner,
+                        $includeGlobal,
                     );
                 })
                 ->find($data['variant_id']);
@@ -356,7 +349,11 @@ final class PriceSimulator extends Page
 
         $customerId = Arr::get($data, 'customer_id');
         if (is_string($customerId) && $customerId !== '' && class_exists(Customer::class)) {
-            $query = $this->scopeQueryForOwner(Customer::class, Customer::query(), $owner);
+            $query = OwnerQuery::applyToEloquentBuilder(
+                Customer::query(),
+                $owner,
+                (bool) config('customers.owner.include_global', false),
+            );
             $customer = $query->find($customerId);
         }
 

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentProducts\FilamentProductsPlugin;
-use AIArmada\FilamentProducts\Pages\BulkEditProducts;
-use AIArmada\FilamentProducts\Pages\ImportExportProducts;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource;
 use AIArmada\FilamentProducts\Resources\AttributeResource;
 use AIArmada\FilamentProducts\Resources\AttributeSetResource;
@@ -56,14 +54,6 @@ it('builds relation managers', function (): void {
 
     expect($options->table(makeFilamentProductsTable()))->toBeInstanceOf(Table::class);
     expect($variants->table(makeFilamentProductsTable()))->toBeInstanceOf(Table::class);
-});
-
-it('builds standalone pages', function (): void {
-    $bulk = app(BulkEditProducts::class);
-    $importExport = app(ImportExportProducts::class);
-
-    expect($bulk)->toBeInstanceOf(BulkEditProducts::class);
-    expect($importExport)->toBeInstanceOf(ImportExportProducts::class);
 });
 
 it('builds widgets', function (): void {

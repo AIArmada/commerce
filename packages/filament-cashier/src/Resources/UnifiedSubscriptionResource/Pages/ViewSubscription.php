@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
-use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Actions;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
@@ -156,7 +156,7 @@ final class ViewSubscription extends ViewRecord
         $detector = app(GatewayDetector::class);
 
         if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $sub = CashierOwnerScope::apply(Subscription::query())
+            $sub = OwnerScopedQuery::apply(Subscription::query())
                 ->with('items')
                 ->whereKey($id)
                 ->first();
@@ -167,7 +167,7 @@ final class ViewSubscription extends ViewRecord
 
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $sub = CashierOwnerScope::apply($subscriptionModel::query())
+            $sub = OwnerScopedQuery::apply($subscriptionModel::query())
                 ->with(['billable', 'items'])
                 ->whereKey($id)
                 ->first();

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Fixtures;
 
-use AIArmada\CashierChip\Billable;
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Billable;
+use AIArmada\CashierChip\Billing\Cashier;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;

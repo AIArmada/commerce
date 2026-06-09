@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Schemas;
 
 use AIArmada\CashierChip\Subscription;
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use DateTimeInterface;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -91,7 +90,7 @@ final class CustomerInfolist
                                     $relation = $record->{$relationName}();
 
                                     /** @var Builder<Subscription> $query */
-                                    $query = CashierChipOwnerScope::apply($relation->getQuery());
+                                    $query = $relation->getQuery();
 
                                     return $query->whereActive()->count();
                                 })

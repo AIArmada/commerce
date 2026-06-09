@@ -80,7 +80,7 @@ class AffiliateRank extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<Affiliate, self>
+     * @return HasMany<Affiliate, $this>
      */
     public function affiliates(): HasMany
     {

@@ -6,7 +6,6 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\DocApproval;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -152,12 +151,6 @@ final class ApprovalsRelationManager extends RelationManager
                     ->action(function (DocApproval $record, array $data): void {
                         self::assertUserCanActOnApproval($record);
 
-                        $doc = $record->doc;
-
-                        if ($doc !== null) {
-                            DocsOwnerScope::assertCanMutateDoc($doc);
-                        }
-
                         $record->approve($data['comments'] ?? null);
                     })
                     ->visible(fn (DocApproval $record): bool => $record->isPending() && self::userCanActOnApproval($record)),
@@ -176,12 +169,6 @@ final class ApprovalsRelationManager extends RelationManager
                     ->action(function (DocApproval $record, array $data): void {
                         self::assertUserCanActOnApproval($record);
 
-                        $doc = $record->doc;
-
-                        if ($doc !== null) {
-                            DocsOwnerScope::assertCanMutateDoc($doc);
-                        }
-
                         $record->reject($data['comments']);
                     })
                     ->visible(fn (DocApproval $record): bool => $record->isPending() && self::userCanActOnApproval($record)),
@@ -196,12 +183,6 @@ final class ApprovalsRelationManager extends RelationManager
                         ->action(function (Collection $records): void {
                             /** @var Collection<int|string, DocApproval> $records */
                             $records->each(function (DocApproval $record): void {
-                                $doc = $record->doc;
-
-                                if ($doc !== null) {
-                                    DocsOwnerScope::assertCanMutateDoc($doc);
-                                }
-
                                 $record->delete();
                             });
                         }),

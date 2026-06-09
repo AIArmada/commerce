@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentVouchers\Support\Integrations\FilamentCartBridge;
+use AIArmada\Vouchers\Filament\Integrations\FilamentCartBridge;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use Illuminate\Database\Eloquent\Model;
 

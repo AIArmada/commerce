@@ -46,6 +46,13 @@ interface CheckoutStepRegistryInterface
     public function getOrderedSteps(): array;
 
     /**
+     * Get the current step execution order.
+     *
+     * @return array<string>
+     */
+    public function getOrder(): array;
+
+    /**
      * Set custom step execution order.
      *
      * @param  array<string>  $order  Step identifiers in desired order

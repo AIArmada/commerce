@@ -35,6 +35,16 @@ use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Models\AffiliateTrainingModule;
 use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\Rules\ClickVelocityRule;
+use AIArmada\Affiliates\Rules\ConsistencyBonusRule;
+use AIArmada\Affiliates\Rules\ConversionVelocityRule;
+use AIArmada\Affiliates\Rules\FastConversionRule;
+use AIArmada\Affiliates\Rules\FingerprintRepeatRule;
+use AIArmada\Affiliates\Rules\GeoAnomalyRule;
+use AIArmada\Affiliates\Rules\GrowthBonusRule;
+use AIArmada\Affiliates\Rules\RecruitmentBonusRule;
+use AIArmada\Affiliates\Rules\SelfReferralRule;
+use AIArmada\Affiliates\Rules\TopPerformerBonusRule;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\AffiliateService;
@@ -49,6 +59,9 @@ use AIArmada\Affiliates\Services\PayoutReconciliationService;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\Strategies\FirstTouchAttribution;
+use AIArmada\Affiliates\Strategies\LastTouchAttribution;
+use AIArmada\Affiliates\Strategies\LinearAttribution;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
@@ -102,6 +115,10 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(ProgramService::class);
         $this->app->singleton(CommissionMaturityService::class);
         $this->app->singleton(PayoutReconciliationService::class);
+
+        $this->registerAttributionStrategies();
+        $this->registerFraudRules();
+        $this->registerPerformanceBonusRules();
 
         $this->app->singleton(CartIntegrationRegistrar::class);
         $this->app->singleton(VoucherIntegrationRegistrar::class);
@@ -237,5 +254,36 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
                 $publicReferralContext
             );
         });
+    }
+
+    private function registerAttributionStrategies(): void
+    {
+        $this->app->tag([
+            LastTouchAttribution::class,
+            FirstTouchAttribution::class,
+            LinearAttribution::class,
+        ], 'affiliates.attribution_strategy');
+    }
+
+    private function registerFraudRules(): void
+    {
+        $this->app->tag([
+            ClickVelocityRule::class,
+            GeoAnomalyRule::class,
+            FingerprintRepeatRule::class,
+            SelfReferralRule::class,
+            ConversionVelocityRule::class,
+            FastConversionRule::class,
+        ], 'affiliates.fraud_rule');
+    }
+
+    private function registerPerformanceBonusRules(): void
+    {
+        $this->app->tag([
+            TopPerformerBonusRule::class,
+            RecruitmentBonusRule::class,
+            ConsistencyBonusRule::class,
+            GrowthBonusRule::class,
+        ], 'affiliates.performance_bonus_rule');
     }
 }

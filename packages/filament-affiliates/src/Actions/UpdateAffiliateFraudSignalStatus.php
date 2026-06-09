@@ -7,7 +7,6 @@ namespace AIArmada\FilamentAffiliates\Actions;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\States\RejectedConversion;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,7 +24,7 @@ final class UpdateAffiliateFraudSignalStatus
         Gate::authorize('update', $record);
 
         /** @var AffiliateFraudSignal $signal */
-        $signal = OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
+        $signal = AffiliateFraudSignal::query()
             ->whereKey($record->getKey())
             ->firstOrFail();
 

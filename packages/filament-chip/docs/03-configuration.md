@@ -31,8 +31,6 @@ return [
 
     'default_currency' => 'MYR',
 
-    'enforce_owner_scoping' => true,
-
     'resources' => [
         'navigation_sort' => [
             'purchases' => 10,
@@ -78,11 +76,10 @@ return [
 
 ```php
 'default_currency' => 'MYR',
-'enforce_owner_scoping' => true,
 ```
 
 - `default_currency` is the fallback currency used by UI formatting helpers.
-- `enforce_owner_scoping` hardens resource/page queries to stay owner-scoped when owner mode is enabled upstream.
+- Owner scoping is configured via `config/chip.php` (`chip.owner.enabled`).
 
 ## Resource Navigation Sort
 

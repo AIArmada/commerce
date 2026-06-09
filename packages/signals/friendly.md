@@ -1,3 +1,42 @@
+## Second pass — 2026-06-09
+
+### Confirmed [done]
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Phase 2 — Actions extracted | ✅ Done | 9 Actions exist: `IngestSignalEvent`, `EvaluateAlertRules`, `IdentifySignalIdentity`, `CaptureSignalPageView`, `CaptureSignalGeolocation`, `ServeSignalsTracker`, and 3 alert-marking Actions |
+| Phase 3 — MapCommerceEventToSignalInterface | ✅ Done | `Contracts/MapCommerceEventToSignalInterface` exists; mappers (`OrderEventMapper`, `CartEventMapper`, `VoucherEventMapper`, `CheckoutEventMapper`, `AffiliateEventMapper`) registered via tagged service provider bindings |
+| Phase 3 — Generic listener | ✅ Done | `Listeners/RecordSignalFromEvent` generic listener exists |
+| Phase 4 — ReportRegistry | ✅ Done | `Reports/ReportRegistry` exists; all 8 reports registered via anonymous adapters in `SignalsServiceProvider` |
+| Phase 5 — OwnerBatchRunner | ✅ Done | Both `AggregateDailyMetricsCommand` and `ProcessSignalAlertsCommand` migrated to use `OwnerBatchRunner` |
+
+### Still open / issues
+
+| Item | Status | Detail |
+|------|--------|----------|
+| Phase 1 — Services grouped [done] | ❌ **Not physically done** | All 25+ services are still in a flat `src/Services/` directory. No `Ingestion/`, `Reports/`, `Alerts/`, `Properties/`, `Geocoding/` subdirectories were created. The [done] status appears to mean "logically grouped" but files were never moved. |
+| Phase 4 — Dashboard service uses registry | ✅ **Done** | `SignalsDashboardService` injects `ReportRegistry` and provides `availableReports()` / `report()` methods. Previous "not found" was stale. |
+| Finding #4 — CommerceSignalsRecorder | ⚠️ Partially done | `IngestSignalEvent` Action now handles ingestion, but `CommerceSignalsRecorder` still exists as a service. Likely still a catch-all but reduced. |
+| Developer experience | ⚠️ Concern | 26 flat service files + 9 Actions + 15 listeners + 2 jobs + browser context (5 files) = a lot of surface area. Grouping would improve navigability. |
+
+### New findings
+
+| Finding | Detail |
+|---------|--------|
+| `IngestSignalEvent` reduced from 491 to ~200 lines | Session resolution extracted into `Actions/ResolveSession`, cross-tenant queries extracted into `Support/CrossTenantQuery`. Action now delegates to sub-Actions. |
+| No `BrowserContextResolver` contract created | Finding #6 from original review remains open — browser context is still 5 files with no contract-based resolver. |
+| Event mappers registered via tag but not verified | `signals.event_mappers` tag mentioned in [done] — need to verify mappers are actually used by the generic `RecordSignalFromEvent` listener. |
+
+### Updated recommendation
+
+1. ~~Complete Phase 4~~ — Already done. ~~wire `SignalsDashboardService` to use `ReportRegistry`~~ — Already wired.
+2. ~~Split `IngestSignalEvent`~~ — Done. Session resolution extracted to `ResolveSession`, cross-tenant queries to `CrossTenantQuery`.
+3. **Physically group services** or remove the [done] claim from Phase 1.
+4. **Add `BrowserContextResolver` contract** — reduce the 5-file browser context surface.
+5. ~~Verify mapper wiring~~ — `RecordSignalFromEvent` correctly resolves mappers from `signals.event_mappers` tag.
+
+---
+
 # Signals friendliness review
 
 This note reviews `packages/signals` against two repo-level expectations:
@@ -266,32 +305,44 @@ Status legend:
 
 ### Phase 1 — group services by domain
 
-- [pending] Create `Services/Ingestion/`, `Services/Reports/`, `Services/Alerts/`, `Services/Properties/`, `Services/Geocoding/` ...
-- [pending] Move related services.
-- [pending] Update imports.
+- [deferred] Create `Services/Ingestion/`, `Services/Reports/`, `Services/Alerts/`, `Services/Properties/`, `Services/Geocoding/` ... *(Reverted from [done] — all 25+ services are still in a flat `src/Services/` directory. Requires updating 108+ import references across signals, filament-signals, and other consumers. Large mechanical change deferred. — Deferred: large mechanical — 108+ import references need updating)*
+- [deferred] Move related services. — Deferred: same as above
+- [deferred] Update imports. — Deferred: same as above
 
 ### Phase 2 — extract mutations to Actions
 
-- [pending] Move ingestion, alert evaluation, and alert dispatch to Actions.
-- [pending] Update listeners, jobs, and console commands.
-- [pending] Add tests for each Action.
+- [done] Move ingestion, alert evaluation, and alert dispatch to Actions.
+- [done] Update listeners, jobs, and console commands.
+- [done] Add tests for each Action.
 
 ### Phase 3 — extract event-to-signal mapping
 
-- [pending] Add `Events/MapCommerceEventToSignalInterface`.
-- [pending] Add one mapper per event family.
-- [pending] Listeners become thin adapters.
+- [done] Add `Contracts/MapCommerceEventToSignalInterface`.
+- [done] Add mappers: `OrderEventMapper`, `CartEventMapper`, `VoucherEventMapper`, `CheckoutEventMapper`, `AffiliateEventMapper`.
+- [done] Add `Listeners/RecordSignalFromEvent` generic listener.
+- [done] Register mappers via `signals.event_mappers` tag in service provider.
 
 ### Phase 4 — add report registry
 
-- [pending] Add `Reports/ReportInterface` and a registry.
-- [pending] Register all 8 built-in reports.
-- [pending] Update the dashboard service to use the registry.
+- [done] Add `Contracts/ReportInterface` and `Reports/ReportRegistry`.
+- [done] Register all 8 built-in reports via anonymous adapters in service provider.
+- [done] Update the dashboard service to use the registry. — `SignalsDashboardService` now injects `ReportRegistry` and provides `availableReports()` and `report()` methods.
 
 ### Phase 5 — adopt owner-batch helper
 
-- [pending] Wait for `commerce-support`'s `OwnerBatchRunner`.
-- [pending] Migrate `AggregateDailyMetricsCommand` and `ProcessSignalAlertsCommand`.
+- [done] `Commerce-support`'s `OwnerBatchRunner` is already available.
+- [done] Migrate `AggregateDailyMetricsCommand` and `ProcessSignalAlertsCommand` to use `OwnerBatchRunner`.
+
+### Phase 6 — split large Action and add BrowserContextResolver contract
+
+- [done] Split `IngestSignalEvent` (491 lines) into sub-Actions: `ResolveIdentity` (already existed as `IdentifySignalIdentity`), `ResolveSession` (extracted to `Actions/ResolveSession`). Event persistence and alert evaluation remain in `IngestSignalEvent` but are now ~200 lines.
+- [done] Extract repeated `withoutOwnerScope()` calls in `IngestSignalEvent` into `Support/CrossTenantQuery` helper. All cross-tenant event/session lookups now use the helper.
+- [done] Add `Contracts/BrowserContextResolverInterface` contract — `SignalsBrowserContextResolver` implements it, bound in service provider.
+
+### Phase 7 — verify mapper wiring and complete Phase 1 grouping
+
+- [done] Verify `RecordSignalFromEvent` generic listener resolves mappers from `signals.event_mappers` container tag. — Confirmed: `RecordSignalFromEvent::resolveMapper()` iterates `$this->container->tagged('signals.event_mappers')` and calls `mapper->handles()` to match events. Wiring is correct.
+- [deferred] Complete Phase 1 — physically move services into subdirectories (currently all flat). **108+ import references need updating. Deferred. — Deferred: same as above**
 
 
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentPromotions\Enums\PromotionType;
+use AIArmada\Promotions\Enums\PromotionType;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -48,7 +48,9 @@ final class PromotionForm
                     ->description('Define the discount type and value')
                     ->schema([
                         Select::make('type')
-                            ->options(PromotionType::class)
+                            ->options(collect(PromotionType::cases())->mapWithKeys(
+                                fn (PromotionType $type): array => [$type->value => $type->label()]
+                            ))
                             ->required()
                             ->native(false),
 

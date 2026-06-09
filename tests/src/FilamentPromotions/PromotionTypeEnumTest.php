@@ -2,8 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentPromotions\Enums\PromotionType;
-use AIArmada\Promotions\Enums\PromotionType as BasePromotionType;
+use AIArmada\Promotions\Enums\PromotionType;
 
 describe('PromotionType Enum', function (): void {
     describe('values', function (): void {
@@ -24,91 +23,45 @@ describe('PromotionType Enum', function (): void {
         });
     });
 
-    describe('getLabel', function (): void {
+    describe('label', function (): void {
         it('returns label for Percentage', function (): void {
-            expect(PromotionType::Percentage->getLabel())->toBe('Percentage Off');
+            expect(PromotionType::Percentage->label())->toBe('Percentage Off');
         });
 
         it('returns label for Fixed', function (): void {
-            expect(PromotionType::Fixed->getLabel())->toBe('Fixed Amount');
+            expect(PromotionType::Fixed->label())->toBe('Fixed Amount');
         });
 
         it('returns label for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->getLabel())->toBe('Buy X Get Y');
+            expect(PromotionType::BuyXGetY->label())->toBe('Buy X Get Y');
         });
     });
 
-    describe('getIcon', function (): void {
+    describe('icon', function (): void {
         it('returns icon for Percentage', function (): void {
-            expect(PromotionType::Percentage->getIcon())->toBeString();
+            expect(PromotionType::Percentage->icon())->toBeString();
         });
 
         it('returns icon for Fixed', function (): void {
-            expect(PromotionType::Fixed->getIcon())->toBeString();
+            expect(PromotionType::Fixed->icon())->toBeString();
         });
 
         it('returns icon for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->getIcon())->toBeString();
+            expect(PromotionType::BuyXGetY->icon())->toBeString();
         });
     });
 
-    describe('getColor', function (): void {
+    describe('color', function (): void {
         it('returns success color for Percentage', function (): void {
-            expect(PromotionType::Percentage->getColor())->toBe('success');
+            expect(PromotionType::Percentage->color())->toBe('success');
         });
 
-        it('returns info color for Fixed', function (): void {
-            expect(PromotionType::Fixed->getColor())->toBe('info');
+        it('returns primary color for Fixed', function (): void {
+            expect(PromotionType::Fixed->color())->toBe('primary');
         });
 
         it('returns warning color for BuyXGetY', function (): void {
-            expect(PromotionType::BuyXGetY->getColor())->toBe('warning');
-        });
-    });
-
-    describe('fromBase', function (): void {
-        it('converts Percentage from base', function (): void {
-            $base = BasePromotionType::Percentage;
-            $filament = PromotionType::fromBase($base);
-
-            expect($filament)->toBe(PromotionType::Percentage);
-        });
-
-        it('converts Fixed from base', function (): void {
-            $base = BasePromotionType::Fixed;
-            $filament = PromotionType::fromBase($base);
-
-            expect($filament)->toBe(PromotionType::Fixed);
-        });
-
-        it('converts BuyXGetY from base', function (): void {
-            $base = BasePromotionType::BuyXGetY;
-            $filament = PromotionType::fromBase($base);
-
-            expect($filament)->toBe(PromotionType::BuyXGetY);
-        });
-    });
-
-    describe('toBase', function (): void {
-        it('converts Percentage to base', function (): void {
-            $filament = PromotionType::Percentage;
-            $base = $filament->toBase();
-
-            expect($base)->toBe(BasePromotionType::Percentage);
-        });
-
-        it('converts Fixed to base', function (): void {
-            $filament = PromotionType::Fixed;
-            $base = $filament->toBase();
-
-            expect($base)->toBe(BasePromotionType::Fixed);
-        });
-
-        it('converts BuyXGetY to base', function (): void {
-            $filament = PromotionType::BuyXGetY;
-            $base = $filament->toBase();
-
-            expect($base)->toBe(BasePromotionType::BuyXGetY);
+            expect(PromotionType::BuyXGetY->color())->toBe('warning');
         });
     });
 });

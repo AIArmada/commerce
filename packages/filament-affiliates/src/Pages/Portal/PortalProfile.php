@@ -6,18 +6,15 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
-use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Validation\Rule;
 
-class PortalProfile extends Page
+class PortalProfile extends PortalPage
 {
-    use InteractsWithAffiliate;
-
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUserCircle;
 
     protected static ?int $navigationSort = -1;

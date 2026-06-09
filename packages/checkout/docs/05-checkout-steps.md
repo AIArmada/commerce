@@ -318,9 +318,6 @@ $registry->setOrder([
 Each step dispatches events:
 
 ```php
-// Before step execution
-CheckoutStepStarted::class
-
 // After successful execution
 CheckoutStepCompleted::class
 
@@ -336,4 +333,20 @@ Event::listen(CheckoutStepCompleted::class, function ($event) {
         // Order was just created
     }
 });
+```
+
+## Pipeline Runner
+
+The step loop is extracted into `RunCheckoutPipeline`, which owns step iteration, skip rules, redirect exits, and failure exits. Both `CheckoutService::processCheckout()` and `ContinueFromStep()` delegate to this shared runner instead of duplicating the loop.
+
+## Step Order Policy
+
+Step ordering helpers (`resolveInventoryStepOrder`, `enforceStepDependencyOrder`) are isolated in `CheckoutStepOrderPolicy`, keeping ordering logic out of the service provider.
+
+```php
+use AIArmada\Checkout\Support\CheckoutStepOrderPolicy;
+
+$policy = app(CheckoutStepOrderPolicy::class);
+$normalizedOrder = $policy->normalizeInventoryStepOrder($registry, $registry->getOrder());
+$registry->setOrder($normalizedOrder);
 ```

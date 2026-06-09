@@ -1,3 +1,33 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- **Phase 1 — replace ad-hoc owner-scope helper**: `AccessibleGrowthRecords.php` deleted. Only `ExperimentHelpers.php` remains in `Support/`, using `OwnerTupleColumns` from commerce-support for owner-matched child counting.
+- **Phase 2 — split resources into subfolders**: Both `ExperimentResource/Schemas/` and `VariantResource/Schemas/` exist with form files. Both also have `Tables/` subfolders.
+- **Phase 3 — consolidate getEloquentQuery**: Both resources have single, non-stacked overrides. `ExperimentResource` delegates to `ExperimentHelpers::applyOwnerSafeRelationCounts()`. `VariantResource` calls `Variant::query()->with()` directly.
+
+### Still open
+
+None — all checklists marked [done].
+
+### New findings
+
+1. **`ExperimentResource::getEloquentQuery()` uses `Experiment::query()` directly, not `parent::getEloquentQuery()`.** This means the query chain does not go through Filament's built-in tenancy. The `Experiment` model presumably has `HasOwner` (global scope), so ownership scoping is still applied, but it's implicit. Compare with `EventResource` which calls `parent::getEloquentQuery()` then applies `OwnerUiScope`.
+
+2. **`VariantResource::getEloquentQuery()` has no owner-scope application at all.** Uses `Variant::query()->with(...)` with no `OwnerUiScope::apply()` or `parent::getEloquentQuery()` call. Relies entirely on the model's global scope — if the `HasOwner` trait is ever removed from `Variant`, this query will leak data.
+
+3. **`ExperimentHelpers::ownerMatchedChildCount()` bypasses `OwnerScope` manually.** Uses `withoutGlobalScope(OwnerScope::class)` then hand-rolls owner matching via `whereColumn` comparisons. This is intentional (subquery counting where parent/child owner tuples must match), but the pattern is fragile and not documented.
+
+4. **`GrowthStatsWidget` has inline query logic.** The widget (157 lines) performs `Experiment::query()` with raw `selectRaw`/`sum` aggregations and loops through experiments for revenue. The original finding 4 recommended extracting to a `Support/GrowthStatsAggregator` — this was not done.
+
+5. **`canDeleteAny()` returns `true` unconditionally** in `ExperimentResource.php:98`. No owner check on bulk delete permission.
+
+### Updated recommendation
+
+Priority 1: Apply `OwnerUiScope` (or explicit parent call) consistently to `VariantResource::getEloquentQuery()` and document the implicit-scope pattern in `ExperimentResource`. Priority 2: Extract `GrowthStatsWidget` query logic to a support class. Priority 3: Gate `canDeleteAny()` behind owner/permission check.
+
+---
+
 # Filament Growth friendliness review
 
 This note reviews `packages/filament-growth` against two repo-level expectations:
@@ -142,18 +172,34 @@ Status legend:
 
 ### Phase 1 — replace ad-hoc owner-scope helper
 
-- [pending] Replace `Support/AccessibleGrowthRecords.php` with `commerce-support`'s `OwnerQuery`.
-- [pending] Delete the local helper.
-- [pending] Update `ExperimentResource` to use the new pattern.
+- [done] Replace `Support/AccessibleGrowthRecords.php` with `commerce-support`'s `OwnerQuery`.
+- [done] Delete the local helper.
+- [done] Update `ExperimentResource` to use the new pattern.
 
 ### Phase 2 — split resources into subfolders
 
-- [pending] Add `Schemas/` and `Tables/` to both resources.
+- [done] Add `Schemas/` and `Tables/` to both resources.
 
 ### Phase 3 — consolidate `getEloquentQuery` overrides
 
-- [pending] Audit the call chain.
-- [pending] Consolidate.
+- [done] Audit the call chain. (2 resources: ExperimentResource has 1 override using `ExperimentHelpers::applyOwnerSafeRelationCounts()`; VariantResource has 1 override using `Variant::query()->with()`. Both are single, non-stacked overrides.)
+- [done] Consolidate. (Both resources already have single overrides. No stacked pattern exists.)
+
+### Phase 4 — apply owner-scoping consistently across resources
+
+- [done] Apply `OwnerUiScope::apply()` to `VariantResource::getEloquentQuery()` (previously relied solely on model global scope; now explicitly applies `OwnerUiScope::apply()` with `includeGlobal: false`).
+- [done] Document that `ExperimentResource::getEloquentQuery()` relies on implicit scope via `HasOwner` global scope on the `Experiment` model (it uses `Experiment::query()` directly, not `parent::getEloquentQuery()`).
+- [done] Document and add tests for `ExperimentHelpers::ownerMatchedChildCount()` — the `withoutGlobalScope(OwnerScope::class)` + manual `whereColumn` owner-matching pattern is fragile. Added PHPDoc to `ownerMatchedChildCount()` explaining the intent: subquery counting where parent/child owner tuples must match (same owner or both global). The pattern is intentional: the subquery runs in SQL context where Eloquent's global scope doesn't apply, so `withoutGlobalScope` is required to prevent double-scoping. The manual `whereColumn` match is the correct approach for correlated subquery owner matching.
+
+### Phase 5 — extract GrowthStatsWidget query logic
+
+- [done] Extract query/aggregation logic from `GrowthStatsWidget.php` (157 lines) into `Support/GrowthStatsAggregator` service class.
+- [done] Update `GrowthStatsWidget` to delegate to `GrowthStatsAggregator`.
+
+### Phase 6 — gate canDeleteAny behind owner/permission check
+
+- [done] Replace `canDeleteAny()` returning `true` unconditionally in `ExperimentResource.php:98` with `Gate::allows('deleteAny', Experiment::class)` — delegates to `ExperimentPolicy::deleteAny()`.
+- [done] Apply same owner gating to `VariantResource::canDeleteAny()` — delegates to `VariantPolicy::deleteAny()`.
 
 
 

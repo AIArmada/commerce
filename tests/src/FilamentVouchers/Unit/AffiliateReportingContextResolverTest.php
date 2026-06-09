@@ -12,7 +12,7 @@ use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentVouchers\Support\AffiliateReportingContextResolver;
+use AIArmada\Vouchers\Support\AffiliateReportingContextResolver;
 use AIArmada\FilamentVouchers\Widgets\VoucherUsageTimelineWidget;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Vouchers\Enums\VoucherType;

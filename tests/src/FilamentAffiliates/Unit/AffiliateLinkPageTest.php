@@ -12,7 +12,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
-use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\CommerceSupport\Models\Permission;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 

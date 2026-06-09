@@ -4,16 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Actions;
 
-use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
-use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
-use AIArmada\Checkout\States\AwaitingPayment;
-use AIArmada\Checkout\States\Completed;
-use AIArmada\Checkout\States\PaymentProcessing;
-use AIArmada\Checkout\States\Pending;
-use AIArmada\Checkout\States\Processing;
+use AIArmada\Checkout\Support\CheckoutNotificationCallbackResolver;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,7 +15,8 @@ final class ProcessCheckoutPaymentNotification
     use AsAction;
 
     public function __construct(
-        private readonly CheckoutServiceInterface $checkoutService,
+        private readonly HandleCheckoutPaymentCallback $handleCallback,
+        private readonly CheckoutNotificationCallbackResolver $callbackResolver,
     ) {}
 
     /**
@@ -40,51 +34,52 @@ final class ProcessCheckoutPaymentNotification
             return;
         }
 
-        $callbackType ??= $this->resolveCallbackType($payload);
+        $callbackType ??= $this->callbackResolver->resolveCallbackType($payload);
 
         if ($callbackType === null) {
             return;
         }
 
-        DB::transaction(function () use ($callbackType, $context, $expectedGateways, $payload, $sessionId): void {
-            $session = CheckoutSession::withoutOwnerScope()
-                ->whereKey($sessionId)
-                ->lockForUpdate()
-                ->first();
+        if ($expectedGateways !== [] && ! $this->gatewayMatches($sessionId, $expectedGateways, $context)) {
+            return;
+        }
 
-            if ($session === null) {
-                Log::warning('Checkout payment notification session not found', $this->logContext($context, [
-                    'session_id' => $sessionId,
-                ]));
+        $this->handleCallback->handle(
+            sessionId: $sessionId,
+            callbackType: $callbackType,
+            payload: $payload,
+        );
+    }
 
-                return;
-            }
+    /**
+     * @param  array<int, string>  $expectedGateways
+     * @param  array<string, mixed>  $context
+     */
+    private function gatewayMatches(string $sessionId, array $expectedGateways, array $context): bool
+    {
+        $session = CheckoutSession::withoutOwnerScope()
+            ->whereKey($sessionId)
+            ->first();
 
-            if ($session->status instanceof Completed) {
-                return;
-            }
+        if ($session === null) {
+            Log::warning('Checkout payment notification session not found for gateway check', $this->logContext($context, [
+                'session_id' => $sessionId,
+            ]));
 
-            if ($expectedGateways !== [] && ! in_array((string) $session->selected_payment_gateway, $expectedGateways, true)) {
-                Log::info('Checkout payment notification ignored for unexpected payment gateway', $this->logContext($context, [
-                    'session_id' => $sessionId,
-                    'selected_payment_gateway' => $session->selected_payment_gateway,
-                    'expected_gateways' => $expectedGateways,
-                ]));
+            return false;
+        }
 
-                return;
-            }
+        if (! in_array((string) $session->selected_payment_gateway, $expectedGateways, true)) {
+            Log::info('Checkout payment notification ignored for unexpected payment gateway', $this->logContext($context, [
+                'session_id' => $sessionId,
+                'selected_payment_gateway' => $session->selected_payment_gateway,
+                'expected_gateways' => $expectedGateways,
+            ]));
 
-            if (! $this->canHandleCallback($session, $callbackType)) {
-                Log::info('Checkout payment notification ignored for session in unexpected state', $this->logContext($context, [
-                    'session_id' => $sessionId,
-                    'status' => $session->status->name(),
-                ]));
+            return false;
+        }
 
-                return;
-            }
-
-            $this->checkoutService->handlePaymentCallback($session, $callbackType, $payload);
-        });
+        return true;
     }
 
     /**
@@ -117,53 +112,6 @@ final class ProcessCheckoutPaymentNotification
         }
 
         return null;
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function resolveCallbackType(array $payload): ?string
-    {
-        return match ($this->extractPaymentStatus($payload)) {
-            PaymentStatus::Completed => 'success',
-            PaymentStatus::Failed => 'failure',
-            PaymentStatus::Cancelled => 'cancel',
-            default => null,
-        };
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function extractPaymentStatus(array $payload): PaymentStatus
-    {
-        $status = Arr::get($payload, 'status') ?? Arr::get($payload, 'data.object.status');
-
-        return match ($status) {
-            'paid', 'completed', 'succeeded', 'complete' => PaymentStatus::Completed,
-            'pending', 'created', 'processing' => PaymentStatus::Pending,
-            'failed', 'error', 'payment_failed' => PaymentStatus::Failed,
-            'cancelled', 'canceled', 'expired' => PaymentStatus::Cancelled,
-            'refunded' => PaymentStatus::Refunded,
-            default => PaymentStatus::Processing,
-        };
-    }
-
-    private function canHandleCallback(CheckoutSession $session, string $callbackType): bool
-    {
-        $isInPaymentState = $session->status instanceof AwaitingPayment
-            || $session->status instanceof PaymentProcessing
-            || $session->status instanceof Processing;
-
-        if ($callbackType === 'success') {
-            return $isInPaymentState;
-        }
-
-        if ($callbackType === 'failure' || $callbackType === 'cancel') {
-            return $isInPaymentState || $session->status instanceof Pending;
-        }
-
-        return false;
     }
 
     /**

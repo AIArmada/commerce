@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
+use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 use Illuminate\Database\Eloquent\Model;
 
 it('resolves the current owner from the resolver and supports overrides', function (): void {

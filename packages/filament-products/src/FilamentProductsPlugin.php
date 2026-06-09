@@ -66,17 +66,8 @@ final class FilamentProductsPlugin implements Plugin
      */
     private function getPages(): array
     {
-        $pages = [];
-
-        if (config('filament-products.features.bulk_edit', true)) {
-            $pages[] = Pages\BulkEditProducts::class;
-        }
-
-        if (config('filament-products.features.import_export', true)) {
-            $pages[] = Pages\ImportExportProducts::class;
-        }
-
-        return $pages;
+        // Bulk edit and import/export are now Table header actions on ProductResource
+        return [];
     }
 
     public function boot(Panel $panel): void

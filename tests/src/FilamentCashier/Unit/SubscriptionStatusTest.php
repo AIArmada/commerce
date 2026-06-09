@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCashier\Support\SubscriptionStatus;
+use AIArmada\Cashier\Support\SubscriptionStatus;
 
 it('has all expected status cases', function (): void {
     $cases = SubscriptionStatus::cases();

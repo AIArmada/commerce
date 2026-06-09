@@ -8,6 +8,8 @@ use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerInterface;
+use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\Target;
 use AIArmada\Cart\Contracts\CartConditionConvertible;
 use AIArmada\Cart\Events\CartConditionAdded;
@@ -19,7 +21,21 @@ use Traversable;
 
 trait ManagesConditions
 {
+    private ?ConditionTypeHandlerRegistry $conditionTypeHandlerRegistry = null;
+
     abstract public function invalidatePipelineCache(): void;
+
+    public function setConditionTypeHandlerRegistry(ConditionTypeHandlerRegistry $registry): void
+    {
+        $this->conditionTypeHandlerRegistry = $registry;
+    }
+
+    private function getHandlerForType(string $type): ?ConditionTypeHandlerInterface
+    {
+        return $this->conditionTypeHandlerRegistry?->has($type)
+            ? $this->conditionTypeHandlerRegistry->get($type)
+            : null;
+    }
 
     /**
      * Add condition to cart
@@ -320,14 +336,8 @@ trait ManagesConditions
     }
 
     /**
-     * Add a shipping condition (shopping-cart style)
-     * Shipping is applied to the total (after discounts and taxes)
-     *
-     * @param  string  $name  The name of the shipping condition
-     * @param  string|int|float  $value  The shipping fee: int for cents (800 = $8.00), float for dollars (8.00 = $8.00), string for operator-prefixed ('800', '+8.00', '10%')
-     * @param  ConditionTarget|string|array<string, mixed>|null  $target  Optional target definition or DSL string
-     * @param  string  $method  The shipping method identifier (e.g. 'standard', 'express')
-     * @param  array<string, mixed>  $attributes  Additional attributes to store with the condition
+     * @param  ConditionTarget|string|array<string, mixed>|null  $target
+     * @param  array<string, mixed>  $attributes
      */
     public function addShipping(
         string $name,
@@ -336,21 +346,18 @@ trait ManagesConditions
         string $method = 'standard',
         array $attributes = []
     ): static {
-        // Ensure value is prefixed with + if it's a string and doesn't start with an operator
         if (is_string($value) && ! preg_match('/^[+\-*\/%]/', $value)) {
             $value = '+' . $value;
         }
 
-        // Merge the attributes with the shipping method
         $shippingAttributes = array_merge($attributes, [
             'method' => $method,
             'description' => $name,
         ]);
 
-        // Remove any existing shipping conditions first
-        $this->removeShipping();
+        $handler = $this->getHandlerForType('shipping');
+        $handler?->beforeAdd($this, $shippingAttributes);
 
-        // Create and add the condition - shipping is applied to total
         $condition = new CartCondition(
             name: $name,
             type: 'shipping',
@@ -366,32 +373,32 @@ trait ManagesConditions
         return $this;
     }
 
-    /**
-     * Remove all shipping conditions from the cart
-     */
     public function removeShipping(): void
     {
-        // Get all conditions
-        $conditions = $this->getConditions();
+        $handler = $this->getHandlerForType('shipping');
 
-        // Find and remove shipping conditions
-        foreach ($conditions as $condition) {
+        if ($handler !== null) {
+            $handler->remove($this);
+
+            return;
+        }
+
+        foreach ($this->getConditions() as $condition) {
             if ($condition->getType() === 'shipping') {
                 $this->removeCondition($condition->getName());
             }
         }
     }
 
-    /**
-     * Get the current shipping condition if any
-     */
     public function getShipping(): ?CartCondition
     {
-        // Get all conditions
-        $conditions = $this->getConditions();
+        $handler = $this->getHandlerForType('shipping');
 
-        // Find the first shipping condition
-        foreach ($conditions as $condition) {
+        if ($handler !== null) {
+            return $handler->get($this);
+        }
+
+        foreach ($this->getConditions() as $condition) {
             if ($condition->getType() === 'shipping') {
                 return $condition;
             }

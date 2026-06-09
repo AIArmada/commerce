@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Webhooks;
 
-use AIArmada\Chip\Events\WebhookReceived;
+use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
@@ -17,31 +17,19 @@ use RuntimeException;
 use Spatie\WebhookClient\Models\WebhookCall;
 use Throwable;
 
-/**
- * Process CHIP webhook events using spatie/laravel-webhook-client.
- *
- * This job handles incoming CHIP webhooks and dispatches the appropriate events
- * using the centralized WebhookEventDispatcher service.
- *
- * @property WebhookCall $webhookCall
- */
 class ProcessChipWebhook extends CommerceWebhookProcessor
 {
-    /**
-     * Process the webhook event.
-     *
-     * @param  array<string, mixed>  $payload
-     */
     protected function processEvent(string $eventType, array $payload): void
     {
         $dispatcher = app(WebhookEventDispatcher::class);
+        $dispatchAction = app(DispatchChipWebhookAction::class);
 
         $owner = $this->resolveOwner($payload);
         if ((bool) config('chip.owner.enabled', false) && $owner === null) {
             throw new RuntimeException('Owner resolution failed');
         }
 
-        $executor = function () use ($eventType, $payload, $dispatcher): void {
+        $executor = function () use ($eventType, $payload, $dispatchAction): void {
             $idempotencyKey = $this->generateIdempotencyKey($eventType, $payload);
 
             if ($this->isDuplicateWebhook($idempotencyKey)) {
@@ -52,16 +40,7 @@ class ProcessChipWebhook extends CommerceWebhookProcessor
             $webhook = $this->storeWebhookRecord($eventType, $payload, $idempotencyKey);
 
             try {
-                WebhookReceived::dispatch(
-                    $eventType,
-                    $payload,
-                    $dispatcher->extractPurchase($payload),
-                    $dispatcher->extractPayout($payload),
-                    $dispatcher->extractBillingTemplateClient($payload),
-                    $dispatcher->extractPayment($payload),
-                );
-
-                $dispatcher->dispatch($eventType, $payload);
+                $dispatchAction->execute($eventType, $payload);
 
                 $processingTime = (microtime(true) - $startTime) * 1000;
                 $webhook?->markProcessed($processingTime);

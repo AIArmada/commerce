@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Listeners;
 
-use AIArmada\Chip\Actions\LinkChipCustomerFromCheckout;
+use AIArmada\Chip\Support\ChipCustomerBridge;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 
 final class LinkChipCustomerFromCheckoutCompletion
 {
     public function __construct(
-        private readonly LinkChipCustomerFromCheckout $linkChipCustomerFromCheckout,
+        private readonly ChipCustomerBridge $customerBridge,
     ) {}
 
     public function handle(object $event): void
@@ -45,10 +45,10 @@ final class LinkChipCustomerFromCheckoutCompletion
         }
 
         $this->handleWithinSessionOwnerContext($session, function () use ($payload, $session): void {
-            $this->linkChipCustomerFromCheckout->handleForCheckoutSession(
-                checkoutSession: $session,
-                payload: $payload,
-                source: 'checkout_completed',
+            $this->customerBridge->linkCustomer(
+                $session,
+                $payload,
+                'checkout_completed',
             );
         });
     }

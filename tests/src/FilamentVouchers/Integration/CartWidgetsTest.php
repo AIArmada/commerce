@@ -8,7 +8,6 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
@@ -86,37 +85,6 @@ it('covers cart-related widgets and voucher suggestions', function (): void {
     $collection = $queryMethod->invoke($tableWidget);
 
     expect($collection)->toBeIterable();
-
-    $badges = app(AppliedVoucherBadgesWidget::class);
-    $badges->record = $cart;
-
-    $applied = $badges->getAppliedVouchers();
-    expect($applied)->not->toBeEmpty();
-
-    // Cover status detection branches.
-    $statusMethod = new ReflectionMethod(AppliedVoucherBadgesWidget::class, 'determineVoucherStatus');
-
-    $expired = new stdClass;
-    $expired->end_date = now()->subDay();
-
-    expect($statusMethod->invoke($badges, $expired))->toBe('expired');
-
-    $limitReached = new class
-    {
-        public int $usage_limit = 10;
-
-        public function getRemainingUses(): int
-        {
-            return 0;
-        }
-    };
-
-    expect($statusMethod->invoke($badges, $limitReached))->toBe('limit_reached');
-
-    $action = $badges->removeVoucherAction('APPLIED');
-    $badges->record = null;
-    $fn = $action->getActionFunction();
-    $fn?->__invoke();
 
     $quick = app(QuickApplyVoucherWidget::class);
     $quick->voucherCode = 'CODE';

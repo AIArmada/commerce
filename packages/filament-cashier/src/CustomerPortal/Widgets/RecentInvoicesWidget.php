@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
-use AIArmada\FilamentCashier\Support\CurrencyFormatter;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\CurrencyFormatter;
+use AIArmada\Cashier\Support\GatewayDetector;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
 use ReflectionMethod;

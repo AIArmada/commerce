@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
@@ -97,8 +99,16 @@ final class RedemptionTrendChart extends ChartWidget
             default => 'DATE(used_at)',
         };
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $usageQuery->whereIn('voucher_id', OwnerScopedQueries::voucherIds());
+        if (config('vouchers.owner.enabled', false)) {
+            $voucherQuery = Voucher::query()->select('id');
+
+            $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+                $voucherQuery,
+                OwnerContext::resolve(),
+                (bool) config('vouchers.owner.include_global', false),
+            );
+
+            $usageQuery->whereIn('voucher_id', $voucherQuery);
         }
 
         /** @var Collection<string, object{date: string, count: int}> $redemptions */

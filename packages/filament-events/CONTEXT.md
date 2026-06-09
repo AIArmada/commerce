@@ -26,3 +26,6 @@ family: analytics-and-events
 - Owns Filament resources, pages, widgets, tables, forms, and panel/plugin glue.
 - Keep event-domain rules, persistence, and state transitions in `events`.
 - Revalidate submitted IDs server-side; UI scoping is not authorization.
+
+## Owner scoping
+- `includeGlobal: false` is used consistently across all resources (EventResource, EventSeriesResource, OccurrenceResource, RegistrationResource, EventSubLocationResource, VenueResource). Global event rows are intentionally not visible in the Filament panel. Owner-scoped resources rely on `OwnerUiScope::apply()` with `includeGlobal: false` in `getEloquentQuery()`.

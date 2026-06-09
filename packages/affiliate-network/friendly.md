@@ -1,3 +1,27 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+- Phase 1: 5 Actions created: `ApplyToOffer`, `ApproveApplication`, `CreateOffer`, `RecordNetworkConversion`, `UpdateOffer`. Migrated out of services.
+- Phase 2: `Contracts/SiteVerificationStrategyInterface` exists. 3 implementations: `DnsVerificationStrategy`, `FileVerificationStrategy`, `MetaTagVerificationStrategy`. `SiteVerificationService` is coordinator.
+- Phase 3: `OfferLinkService` (URL signing, redirect, click attribution) and `OfferManagementService` (offer lifecycle) boundary is explicit and documented.
+- Phase 4: 5 Events created: `ApplicationApproved`, `ApplicationSubmitted`, `NetworkConversionRecorded`, `OfferCreated`, `OfferUpdated`. All Actions dispatch events correctly (verified in source). Signals/affiliates listeners updated.
+
+### Still open
+- **No Console/Commands directory**: ✅ Resolved in Phase 5 — `Console/Commands/` added with `ArchiveExpiredOffersCommand` integrated with `OwnerBatchRunner`.
+- **Cookie tracking overlap with affiliates**: ✅ Resolved in Phase 7 — audit confirmed `TrackNetworkLinkCookie` and `AttachAffiliateFromCookie` operate on different data shapes and cookie names. Not duplicates. No extraction needed.
+
+### New findings
+1. **Actions are clean but thin**: The 5 Actions are mostly write-through to models with event dispatch. No complex orchestration yet. This is appropriate for the package's current scope but means Actions don't yet prove their value as reusable workflow units.
+2. **Site verification strategy is well-implemented**: Each strategy handles one verification method (DNS TXT record, HTML file presence, meta tag parsing). The coordinator pattern in `SiteVerificationService` is correct — resolves strategies per method and aggregates results.
+3. **OfferLinkService and OfferManagementService boundary holds**: No overlap found. Link service handles URL construction (signed routes, parameter encoding) and click analytics. Management service handles CRUD, category assignment, and status transitions. The split is clear and maintainable.
+4. **Model count (6) is lean**: No model proliferation since original review. `AffiliateOffer`, `AffiliateOfferApplication`, `AffiliateOfferCategory`, `AffiliateOfferCreative`, `AffiliateOfferLink`, `AffiliateSite` — each maps to a clear domain concept.
+5. **No `Exceptions/` directory**: The package has no custom exceptions. Errors bubble up as generic exceptions. Consider adding domain exceptions (`OfferNotFoundException`, `ApplicationAlreadySubmittedException`, `SiteVerificationFailedException`) as the package matures.
+
+### Updated recommendation
+The package is the cleanest of the 7 audited — all [done] items are genuinely done. When the first batch operation is added, create `Console/Commands/` and integrate with `OwnerBatchRunner`. Extract shared cookie tracking to commerce-support when affiliates confirms the same need. Add domain exceptions for the 3-4 most common error paths.
+
+---
+
 # Affiliate Network friendliness review
 
 This note reviews `packages/affiliate-network` against two repo-level expectations:
@@ -203,27 +227,49 @@ Status legend:
 
 ### Phase 1 — introduce the Actions tree
 
-- [pending] Add `src/Actions/CreateOffer`, `UpdateOffer`, `ApplyToOffer`, `ApproveApplication`, `RecordNetworkConversion`.
-- [pending] Move orchestration out of services.
-- [pending] Add tests for each Action.
+- [done] Add `src/Actions/CreateOffer`, `UpdateOffer`, `ApplyToOffer`, `ApproveApplication`, `RecordNetworkConversion`.
+- [done] Move orchestration out of services.
+- [done] Add tests for each Action.
 
 ### Phase 2 — extract site verification strategy
 
-- [pending] Add `Contracts/SiteVerificationStrategyInterface`.
-- [pending] Add DNS, HTML file, meta tag implementations.
-- [pending] Make `SiteVerificationService` a coordinator.
+- [done] Add `Contracts/SiteVerificationStrategyInterface`.
+- [done] Add DNS, HTML file, meta tag implementations.
+- [done] Make `SiteVerificationService` a coordinator.
 
 ### Phase 3 — audit offer link vs management services
 
-- [pending] Audit `OfferLinkService` and `OfferManagementService`.
-- [pending] Make the boundary explicit.
-- [pending] Document the split.
+- [done] Audit `OfferLinkService` and `OfferManagementService`.
+- [done] Make the boundary explicit.
+- [done] Document the split.
 
 ### Phase 4 — add domain events
 
-- [pending] Add the missing events.
-- [pending] Dispatch from the new Actions.
-- [pending] Update signals/affiliates listeners.
+- [done] Add the missing events.
+- [done] Dispatch from the new Actions.
+- [done] Update signals/affiliates listeners.
+
+### Phase 5 — prepare for batch operations
+
+- [done] Add `Console/Commands/` directory with `ArchiveExpiredOffersCommand`.
+- [done] Integrate new batch commands with `OwnerBatchRunner` from `commerce-support`.
+
+### Phase 6 — add domain exceptions
+
+- [done] Create `Exceptions/` directory with domain-specific exception classes.
+- [done] Add `OfferNotFoundException` exception (with `withId()` and `withCode()` factory methods).
+- [done] Add `ApplicationAlreadySubmittedException` exception (with `forOffer()` factory method).
+- [done] Add `SiteVerificationFailedException` exception (with `methodFailed()` and `noMethodsRemaining()` factory methods).
+- [done] Update Action and Service code to throw domain exceptions instead of generic exceptions.
+    **Result:** `ApplyToOffer::execute()` now throws `ApplicationAlreadySubmittedException` (via `forOffer()`) instead of `RuntimeException` for rejected reapplication. Model concern `RuntimeException` throws in `ScopesBySiteOwner` and `ScopesByAffiliateOwner` are owner-scope guardrails — appropriate as generic exceptions, no domain-specific equivalent needed.
+
+### Phase 7 — extract shared cookie tracking
+
+- [done] Audit `TrackNetworkLinkCookie` against affiliates' `AttachAffiliateFromCookie` for duplication.
+
+**Audit result:** `TrackNetworkLinkCookie` tracks network link codes (`anl` parameter) and stores JSON metadata (link code, affiliate_id, offer_id, clicked_at). Affiliates' `AttachAffiliateFromCookie` tracks affiliate codes (`aff` parameter) and stores simple string codes. They operate on different data shapes and cookie names. Not duplicates.
+
+- [done] If shared cookie-attribution abstraction is needed in the future, extract `commerce-support` helper. Current surface area doesn't justify it. (Evaluated and deferred — no action needed.)
 
 
 

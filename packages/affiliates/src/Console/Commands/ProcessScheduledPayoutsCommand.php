@@ -11,9 +11,7 @@ use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -39,80 +37,17 @@ final class ProcessScheduledPayoutsCommand extends Command
             $this->warn('Running in dry-run mode - no changes will be made.');
         }
 
-        $result = $this->processForOwners($dryRun, $affiliateId, (int) $minAmount);
+        $runner = new OwnerBatchRunner(
+            Affiliate::class,
+            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
+        );
+
+        $result = $runner->run(fn (): array => $this->processScoped($dryRun, $affiliateId, (int) $minAmount))
+            ?? ['processed' => 0, 'skipped' => 0, 'errors' => 0];
 
         $this->outputSummary($result['processed'], $result['skipped'], $result['errors']);
 
         return $result['errors'] > 0 ? self::FAILURE : self::SUCCESS;
-    }
-
-    /**
-     * @return array{processed: int, skipped: int, errors: int}
-     */
-    private function processForOwners(bool $dryRun, ?string $affiliateId, int $minAmount): array
-    {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return $this->processScoped($dryRun, $affiliateId, $minAmount);
-        }
-
-        $owner = OwnerContext::resolve();
-        if ($owner !== null) {
-            return $this->processScoped($dryRun, $affiliateId, $minAmount);
-        }
-
-        $columns = OwnerTupleColumns::forModelClass(Affiliate::class);
-
-        $owners = Affiliate::query()
-            ->withoutOwnerScope()
-            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
-            ->distinct()
-            ->get();
-
-        if ($owners->isEmpty()) {
-            return OwnerContext::withOwner(null, fn (): array => $this->processScoped($dryRun, $affiliateId, $minAmount));
-        }
-
-        $totals = [
-            'processed' => 0,
-            'skipped' => 0,
-            'errors' => 0,
-        ];
-
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-        if ($includeGlobal) {
-            config()->set('affiliates.owner.include_global', false);
-        }
-
-        $processedGlobal = false;
-
-        try {
-            foreach ($owners as $row) {
-                $parsed = OwnerTupleParser::fromRow($row, $columns);
-
-                if ($parsed->isExplicitGlobal()) {
-                    if ($processedGlobal) {
-                        continue;
-                    }
-
-                    $processedGlobal = true;
-                }
-
-                $result = OwnerContext::withOwner(
-                    $parsed->toOwnerModel(),
-                    fn (): array => $this->processScoped($dryRun, $affiliateId, $minAmount)
-                );
-
-                $totals['processed'] += $result['processed'];
-                $totals['skipped'] += $result['skipped'];
-                $totals['errors'] += $result['errors'];
-            }
-        } finally {
-            if ($includeGlobal) {
-                config()->set('affiliates.owner.include_global', true);
-            }
-        }
-
-        return $totals;
     }
 
     /**

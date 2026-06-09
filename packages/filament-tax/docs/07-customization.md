@@ -348,18 +348,15 @@ public static function getPages(): array
 
 ### Custom Permission Names
 
+Customize permissions via `filament-authz` config:
+
 ```php
-namespace App\Support;
-
-use AIArmada\FilamentTax\Support\FilamentTaxAuthz;
-
-class TaxAuthorization extends FilamentTaxAuthz
-{
-    protected static function getPermissionPrefix(): string
-    {
-        return 'commerce.tax'; // commerce.tax.zones.view instead of tax.zones.view
-    }
-}
+// config/filament-authz.php
+return [
+    'resources' => [
+        'prefix' => 'commerce.tax',
+    ],
+];
 ```
 
 ### Gate-based Authorization

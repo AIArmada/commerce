@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithBillable;
-use AIArmada\FilamentCashierChip\Pages\PaymentMethods;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\PaymentMethods;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;

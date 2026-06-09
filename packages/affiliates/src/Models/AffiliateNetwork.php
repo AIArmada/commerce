@@ -279,7 +279,7 @@ class AffiliateNetwork extends Model implements Auditable
     }
 
     /**
-     * @return BelongsTo<Affiliate, self>
+     * @return BelongsTo<Affiliate, $this>
      */
     public function ancestor(): BelongsTo
     {
@@ -287,7 +287,7 @@ class AffiliateNetwork extends Model implements Auditable
     }
 
     /**
-     * @return BelongsTo<Affiliate, self>
+     * @return BelongsTo<Affiliate, $this>
      */
     public function descendant(): BelongsTo
     {

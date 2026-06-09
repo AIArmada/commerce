@@ -31,7 +31,7 @@ The `aiarmada/filament-tax` package is the Filament admin adapter for `aiarmada/
 - **Resources** — `TaxZoneResource`, `TaxClassResource`, `TaxRateResource`, `TaxExemptionResource`
 - **Pages** — `ManageTaxSettings`
 - **Widgets** — `TaxStatsWidget`, `ExpiringExemptionsWidget`, `ZoneCoverageWidget`
-- **Actions and support** — `DownloadTaxExemptionCertificateAction`, `FilamentTaxAuthz`
+- **Actions and support** — `DownloadTaxExemptionCertificateAction`
 
 ## Owner scoping and security notes
 
@@ -117,8 +117,6 @@ filament-tax/
 │   │   ├── TaxClassResource/
 │   │   ├── TaxRateResource/
 │   │   └── TaxExemptionResource/
-│   ├── Support/
-│   │   └── FilamentTaxAuthz.php   # Authorization helper
 │   ├── Widgets/
 │   │   ├── TaxStatsWidget.php
 │   │   ├── ExpiringExemptionsWidget.php

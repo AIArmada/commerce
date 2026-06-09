@@ -13,7 +13,6 @@ use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocResource;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -57,7 +56,7 @@ final class AgingReportPage extends Page implements HasTable
     {
         return $table
             ->query(
-                DocsOwnerScope::applyToDocs(Doc::query())
+                Doc::query()
                     ->whereIn('status', [
                         DocStatus::normalize(Pending::class),
                         DocStatus::normalize(Sent::class),
@@ -198,7 +197,7 @@ final class AgingReportPage extends Page implements HasTable
      */
     public function getAgingSummary(): array
     {
-        $docs = DocsOwnerScope::applyToDocs(Doc::query())
+        $docs = Doc::query()
             ->select(['id', 'due_date', 'total'])
             ->whereIn('status', [
                 DocStatus::normalize(Pending::class),

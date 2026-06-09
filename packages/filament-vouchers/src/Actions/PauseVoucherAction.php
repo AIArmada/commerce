@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\Paused;
@@ -29,7 +28,7 @@ final class PauseVoucherAction extends Action
         $this->visible(fn (Voucher $record): bool => $record->status instanceof Active);
 
         $this->action(function (Voucher $record): void {
-            if (OwnerScopedQueries::isEnabled()) {
+            if (config('vouchers.owner.enabled', false)) {
                 /** @var Voucher $record */
                 $record = OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey());
             }

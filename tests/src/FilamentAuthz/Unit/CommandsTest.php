@@ -8,8 +8,8 @@ use AIArmada\FilamentAuthz\Console\GeneratePoliciesCommand;
 use AIArmada\FilamentAuthz\Console\SeederCommand;
 use AIArmada\FilamentAuthz\Console\SuperAdminCommand;
 use AIArmada\FilamentAuthz\Console\SyncAuthzCommand;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\CommerceSupport\Models\Permission;
+use AIArmada\CommerceSupport\Models\Role;
 
 describe('GeneratePoliciesCommand', function (): void {
     it('exists', function (): void {

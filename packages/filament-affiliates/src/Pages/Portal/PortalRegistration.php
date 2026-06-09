@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse;
 use Filament\Auth\Pages\Register as FilamentRegister;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class PortalRegistration extends FilamentRegister
 {
+    use InteractsWithAffiliate;
+
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.registration';
 

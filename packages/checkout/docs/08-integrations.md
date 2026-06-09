@@ -311,3 +311,39 @@ Or disable the corresponding checkout steps:
     ],
 ],
 ```
+
+## Integration Registration Architecture
+
+Optional integrations and payment processors are now registered through dedicated registrar classes instead of accumulating in `CheckoutServiceProvider`:
+
+| Registrar | Responsibility |
+|-----------|---------------|
+| `RegisterBuiltInPaymentProcessors` | Registers cashier, cashier-chip, and chip payment processors |
+| `RegisterCheckoutOptionalSteps` | Registers inventory, tax, and discount steps based on package availability and config |
+| `ChipIntegrationRegistrar` | Listens to CHIP purchase events and forwards them to the callback flow |
+
+### Adding a new integration
+
+```php
+// In your own service provider
+$registry = app(CheckoutStepRegistryInterface::class);
+$registry->register('my_custom_step', new MyCustomStep());
+```
+
+### Callback flow
+
+All callback entrypoints (redirect controller, webhook, CHIP events) converge on `HandleCheckoutPaymentCallback`, which owns session locking, completed-session short-circuiting, and delegation to `CheckoutServiceInterface::handlePaymentCallback()`.
+
+- `PaymentCallbackController` — validates callback tokens, then calls `HandleCheckoutPaymentCallback`
+- `ProcessCheckoutPaymentNotification` — extracts session from webhook payload, then calls `HandleCheckoutPaymentCallback`
+- `HandleChipPurchaseEventForCheckout` — resolves callback type from CHIP event, delegates to `ProcessCheckoutPaymentNotification`
+
+### CHIP support classes
+
+CHIP-specific logic is consolidated in shared support classes used by both `ChipProcessor` and `CashierChipProcessor`:
+
+| Class | Purpose |
+|-------|---------|
+| `ChipPurchasePayloadBuilder` | Builds the CHIP purchase payload from `PaymentRequest` and `CheckoutSession` |
+| `ChipPaymentStatusMapper` | Normalizes CHIP status strings to `PaymentStatus` enum |
+| `ChipRefundGateway` | Handles CHIP refund calls |

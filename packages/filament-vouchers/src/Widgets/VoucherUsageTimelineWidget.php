@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
-use AIArmada\FilamentVouchers\Support\AffiliateReportingContextResolver;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Support\AffiliateReportingContextResolver;
 use Carbon\Carbon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
@@ -50,8 +51,16 @@ final class VoucherUsageTimelineWidget extends Widget
             return collect();
         }
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $isVisible = OwnerScopedQueries::vouchers()
+        if (config('vouchers.owner.enabled', false)) {
+            $voucherQuery = Voucher::query();
+
+            $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+                $voucherQuery,
+                OwnerContext::resolve(),
+                (bool) config('vouchers.owner.include_global', false),
+            );
+
+            $isVisible = $voucherQuery
                 ->whereKey($this->record->getKey())
                 ->exists();
 
@@ -88,8 +97,16 @@ final class VoucherUsageTimelineWidget extends Widget
             ];
         }
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $isVisible = OwnerScopedQueries::vouchers()
+        if (config('vouchers.owner.enabled', false)) {
+            $voucherQuery = Voucher::query();
+
+            $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+                $voucherQuery,
+                OwnerContext::resolve(),
+                (bool) config('vouchers.owner.include_global', false),
+            );
+
+            $isVisible = $voucherQuery
                 ->whereKey($this->record->getKey())
                 ->exists();
 

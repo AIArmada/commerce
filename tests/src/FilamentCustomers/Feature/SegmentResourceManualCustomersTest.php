@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
-use AIArmada\FilamentCustomers\Resources\SegmentResource;
+use AIArmada\FilamentCustomers\Resources\SegmentResource\Schemas\SegmentForm;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -62,7 +62,7 @@ it('syncManualCustomers rejects syncing when the segment record is outside curre
         'owner_id' => $ownerB->getKey(),
     ]));
 
-    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => SegmentResource::syncManualCustomers($segmentOutsideScope, [
+    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => SegmentForm::syncManualCustomers($segmentOutsideScope, [
         $customerInScope->id,
     ])))->toThrow(HttpException::class);
 });

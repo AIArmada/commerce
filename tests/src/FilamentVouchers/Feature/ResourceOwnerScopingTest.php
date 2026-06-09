@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentVouchers\Models\Voucher as FilamentVoucher;
+use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;

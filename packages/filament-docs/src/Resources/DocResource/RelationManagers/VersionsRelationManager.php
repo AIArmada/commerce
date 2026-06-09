@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\Docs\Models\DocVersion;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
@@ -53,8 +52,6 @@ final class VersionsRelationManager extends RelationManager
                             throw new NotFoundHttpException('Document not found.');
                         }
 
-                        DocsOwnerScope::assertCanAccessDoc($doc);
-
                         return view('filament-docs::partials.version-snapshot', [
                             'snapshot' => $record->snapshot,
                         ]);
@@ -72,7 +69,6 @@ final class VersionsRelationManager extends RelationManager
                             throw new NotFoundHttpException('Document not found.');
                         }
 
-                        DocsOwnerScope::assertCanMutateDoc($doc);
                         $record->restore();
                         $this->dispatch('refresh');
                     }),

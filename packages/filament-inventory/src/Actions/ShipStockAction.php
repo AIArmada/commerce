@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
+use AIArmada\Inventory\Actions\ShipInventory;
 use AIArmada\Inventory\Exceptions\InsufficientStockException;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -91,8 +91,6 @@ final class ShipStockAction
                     return;
                 }
 
-                $inventoryService = app(InventoryService::class);
-
                 $reason = null;
                 $parts = array_filter([
                     $data['order_number'] ?? null,
@@ -104,7 +102,7 @@ final class ShipStockAction
                 }
 
                 try {
-                    $movement = $inventoryService->ship(
+                    $movement = ShipInventory::run(
                         model: $record,
                         locationId: $locationId,
                         quantity: (int) $data['quantity'],

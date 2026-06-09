@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Commands;
 
-use AIArmada\Chip\Models\Webhook;
+use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -22,59 +19,17 @@ final class RetryWebhooksCommand extends Command
 
     protected $description = 'Retry failed webhooks with exponential backoff';
 
-    public function handle(WebhookRetryManager $retryManager): int
+    public function handle(WebhookRetryManager $retryManager, WebhookOwnerBatchRunner $batchRunner): int
     {
         $limit = max(0, (int) $this->option('limit'));
 
-        if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
-            $owners = Webhook::query()
-                ->withoutOwnerScope()
-                ->select(['owner_type', 'owner_id'])
-                ->distinct()
-                ->orderBy('owner_type')
-                ->orderBy('owner_id')
-                ->get();
+        $totals = $batchRunner->run(function (?Model $_owner, ?int $remainingLimit = null) use ($retryManager): array {
+            return $this->processRetries($retryManager, $remainingLimit ?? $this->option('limit'));
+        }, $limit);
 
-            if ($owners->isEmpty()) {
-                $result = OwnerContext::withOwner(null, fn (): array => $this->processRetries($retryManager, $limit));
+        $this->info("Retry complete: {$totals['succeeded']} succeeded, {$totals['failed']} failed.");
 
-                $this->info("Retry complete: {$result['succeeded']} succeeded, {$result['failed']} failed.");
-
-                return $result['failed'] > 0 ? self::FAILURE : self::SUCCESS;
-            }
-
-            $totals = [
-                'processed' => 0,
-                'succeeded' => 0,
-                'failed' => 0,
-            ];
-
-            foreach ($owners as $row) {
-                $remainingLimit = $limit - $totals['processed'];
-
-                if ($remainingLimit <= 0) {
-                    break;
-                }
-
-                $owner = $this->resolveOwnerFromRow($row);
-
-                $result = OwnerContext::withOwner($owner, fn (): array => $this->processRetries($retryManager, $remainingLimit));
-
-                $totals['processed'] += $result['processed'];
-                $totals['succeeded'] += $result['succeeded'];
-                $totals['failed'] += $result['failed'];
-            }
-
-            $this->info("Retry complete: {$totals['succeeded']} succeeded, {$totals['failed']} failed.");
-
-            return $totals['failed'] > 0 ? self::FAILURE : self::SUCCESS;
-        }
-
-        $result = $this->processRetries($retryManager, $limit);
-
-        $this->info("Retry complete: {$result['succeeded']} succeeded, {$result['failed']} failed.");
-
-        return $result['failed'] > 0 ? self::FAILURE : self::SUCCESS;
+        return $totals['failed'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
     /**
@@ -150,10 +105,5 @@ final class RetryWebhooksCommand extends Command
             'succeeded' => $succeeded,
             'failed' => $failed,
         ];
-    }
-
-    private function resolveOwnerFromRow(object $row): ?Model
-    {
-        return OwnerTupleParser::fromRow($row, OwnerTupleColumns::forModelClass(Webhook::class))->toOwnerModel();
     }
 }

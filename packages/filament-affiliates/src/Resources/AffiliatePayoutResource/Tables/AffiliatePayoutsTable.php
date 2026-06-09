@@ -12,9 +12,9 @@ use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
@@ -72,9 +72,9 @@ final class AffiliatePayoutsTable
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
-                        $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
+                        $payout = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+            : AffiliatePayout::findOrFail($record->getKey());
 
                         app(AffiliatePayoutService::class)->updateStatus($payout, CompletedPayout::value());
                     }),
@@ -88,9 +88,9 @@ final class AffiliatePayoutsTable
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
-                        $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
+                        $payout = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+            : AffiliatePayout::findOrFail($record->getKey());
 
                         app(AffiliatePayoutService::class)->updateStatus($payout, ProcessingPayout::value());
                     }),
@@ -104,9 +104,9 @@ final class AffiliatePayoutsTable
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
-                        $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
+                        $payout = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+            : AffiliatePayout::findOrFail($record->getKey());
 
                         app(AffiliatePayoutService::class)->updateStatus($payout, FailedPayout::value());
                     }),
@@ -118,9 +118,9 @@ final class AffiliatePayoutsTable
                     ->action(function (AffiliatePayout $record) {
                         Gate::authorize('export', $record);
 
-                        $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
+                        $payout = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+            : AffiliatePayout::findOrFail($record->getKey());
 
                         return app(PayoutExportService::class)->download($payout);
                     }),

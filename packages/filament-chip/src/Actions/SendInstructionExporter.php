@@ -9,6 +9,10 @@ use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 
+/**
+ * Filament-only exporter — depends on Filament\Actions\Exports\Exporter.
+ * Not suitable for domain-level reuse (chip/Exports/).
+ */
 class SendInstructionExporter extends Exporter
 {
     protected static ?string $model = SendInstruction::class;

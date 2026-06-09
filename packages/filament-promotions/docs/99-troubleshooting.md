@@ -47,7 +47,7 @@ php artisan package:discover --ansi
 Verify promotions exist:
 
 ```php
-use AIArmada\FilamentPromotions\Models\Promotion;
+use AIArmada\Promotions\Models\Promotion;
 
 Promotion::all();
 ```
@@ -71,7 +71,7 @@ If owner scoping is enabled, verify the current owner context:
 Debug the resource query:
 
 ```php
-use AIArmada\FilamentPromotions\Resources\PromotionResource;
+use AIArmada\FilamentPromotions\Resources\PromotionResource as PromotionResource;
 
 $query = PromotionResource::getEloquentQuery();
 dump($query->toSql(), $query->getBindings());
@@ -79,29 +79,18 @@ dump($query->toSql(), $query->getBindings());
 
 ## Type Enum Issues
 
-### Wrong Enum Class
+### Using the PromotionType Enum
 
-Ensure you're using the Filament-aware enum:
+The domain `PromotionType` enum provides display helpers:
 
 ```php
-// Correct - Filament version with HasColor/HasIcon/HasLabel
-use AIArmada\FilamentPromotions\Enums\PromotionType;
-
-// Wrong - Base version without UI contracts
 use AIArmada\Promotions\Enums\PromotionType;
-```
 
-### Convert Between Enums
+$type = PromotionType::Percentage;
 
-```php
-use AIArmada\FilamentPromotions\Enums\PromotionType as FilamentType;
-use AIArmada\Promotions\Enums\PromotionType as BaseType;
-
-$baseType = BaseType::Percentage;
-$filamentType = FilamentType::fromBase($baseType);
-
-$filamentType = FilamentType::Fixed;
-$baseType = $filamentType->toBase();
+$type->label();  // "Percentage Off"
+$type->icon();   // "heroicon-o-receipt-percent"
+$type->color();  // "success"
 ```
 
 ## Widget Not Displaying

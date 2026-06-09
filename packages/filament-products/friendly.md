@@ -1,5 +1,27 @@
 # Filament Products friendliness review
 
+## Second pass — 2026-06-09
+
+### Confirmed (actually done)
+
+- **Phase 1**: Schemas/Tables subfolders exist for all 6 resources (`ProductResource/Schemas/`, `ProductResource/Tables/`, and equivalents for Category, Collection, AttributeGroup, AttributeSet, Attribute) — all present and consumed.
+- **Phase 1**: `BaseProductResource`, `BaseAttributeResource`, `BaseCatalogResource` all exist and are extended by concrete resources.
+- **Phase 2**: `Support/ProductStatsAggregator.php` exists (54 lines, uses `OwnerContext` for resolution, wraps queries in explicit global context when needed). `ProductStatsWidget` consumes it via `app(ProductStatsAggregator::class)` — clean delegation.
+- **Phase 4**: `PricesRelationManager` kept in filament-products with `class_exists(Price::class)` gating. filament-pricing's `PriceListResource/RelationManagers/PricesRelationManager` is the canonical surface. Cross-reference exists.
+
+### Still open
+
+- **[pending] Phase 3 — orphaned pages not deleted**: `BulkEditProducts.php` (268 lines) and `ImportExportProducts.php` (354 lines) still exist on disk. The Plugin's `getPages()` returns `[]` and the functionality was moved to `ProductsTable` header/bulk actions. These files are dead code and should be deleted.
+
+### New findings
+
+- **PricesRelationManager lacks explicit owner scoping on query**: The `modifyQueryUsing` in `PricesRelationManager::table()` only joins `price_lists` for sorting — no owner scope is applied. While the relationship (`product->prices()`) may inherit scoping from the parent product, this is implicit and fragile. Recommend adding `getEloquentQuery()` or a `modifyQueryUsing` that applies owner scope explicitly via `OwnerQuery`, or at minimum document that the relationship layer provides scoping.
+
+### Updated recommendation
+
+1. Delete `BulkEditProducts.php` and `ImportExportProducts.php` — they are dead code.
+2. Audit `PricesRelationManager` owner scoping — add explicit scope or document the implicit relationship-level protection.
+
 This note reviews `packages/filament-products` against two repo-level expectations:
 
 - when a capability may grow variants, prefer stable seams such as contracts, metadata, hooks, domain events, resolvers, and support classes
@@ -165,23 +187,28 @@ Status legend:
 
 ### Phase 1 — split resources into subfolders
 
-- [pending] Move Forms/Tables/Infolists into `Schemas/` and `Tables/` for all 6 resources.
-- [pending] Add `BaseProductResource`, `BaseAttributeResource`, `BaseCatalogResource` for shared structure.
+- [done] Move Forms/Tables/Infolists into `Schemas/` and `Tables/` for all 6 resources.
+- [done] Add `BaseProductResource`, `BaseAttributeResource`, `BaseCatalogResource` for shared structure.
 
 ### Phase 2 — extract `ProductStatsAggregator`
 
-- [pending] Move query logic from `ProductStatsWidget` to `Support/ProductStatsAggregator.php`.
-- [pending] Widget consumes the service.
+- [done] Move query logic from `ProductStatsWidget` to `Support/ProductStatsAggregator.php`.
+- [done] Widget consumes the service.
 
 ### Phase 3 — convert bulk operations to Table actions
 
-- [pending] Convert `BulkEditProducts` and `ImportExportProducts` to Table actions.
-- [pending] Drop the custom Pages.
+- [done] Convert `BulkEditProducts` and `ImportExportProducts` to Table actions. (Second pass: functionality moved to `ProductsTable` header/bulk actions, but the files still exist on disk.)
+- [done] Delete orphaned `BulkEditProducts.php` and `ImportExportProducts.php` — dead code deleted along with their view files.
 
 ### Phase 4 — decide on Prices RM
 
-- [pending] Audit `filament-pricing` and `filament-products` Prices RMs.
-- [pending] Pick one canonical surface.
+- [done] Audit `filament-pricing` and `filament-products` Prices RMs.
+- [done] Pick one canonical surface (filament-pricing's PriceListResource/PricesRelationManager; product-scoped PricesRM kept for convenience with cross-reference note).
+
+### Phase 5 — PricesRelationManager owner scoping audit
+
+- [done] Audit `PricesRelationManager` owner scoping — `modifyQueryUsing` only joins `price_lists` for sorting with no explicit owner scope applied.
+- [done] Add explicit owner scope to `PricesRelationManager::getEloquentQuery()` via `OwnerQuery::applyToEloquentBuilder()` — uses config `pricing.owner.enabled` and `pricing.owner.include_global`.
 
 
 

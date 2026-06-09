@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
-use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
+use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Widgets\ChartWidget;
 
 final class SubscriptionDistributionWidget extends ChartWidget
 {
+    use InteractsWithCashierChipData;
+
     protected ?string $heading = 'Subscription Distribution';
 
     protected static ?int $sort = 5;
@@ -28,12 +29,12 @@ final class SubscriptionDistributionWidget extends ChartWidget
                 [
                     'data' => array_values($data['counts']),
                     'backgroundColor' => [
-                        'rgba(34, 197, 94, 0.8)',   // Active - green
-                        'rgba(234, 179, 8, 0.8)',   // Trialing - yellow
-                        'rgba(239, 68, 68, 0.8)',   // Canceled - red
-                        'rgba(249, 115, 22, 0.8)', // Past Due - orange
-                        'rgba(156, 163, 175, 0.8)', // Paused - gray
-                        'rgba(168, 85, 247, 0.8)', // Incomplete - purple
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(234, 179, 8, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(249, 115, 22, 0.8)',
+                        'rgba(156, 163, 175, 0.8)',
+                        'rgba(168, 85, 247, 0.8)',
                     ],
                 ],
             ],
@@ -62,9 +63,6 @@ final class SubscriptionDistributionWidget extends ChartWidget
      */
     private function getDistributionData(): array
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
         $statuses = [
             Subscription::STATUS_ACTIVE => 'Active',
             Subscription::STATUS_TRIALING => 'Trialing',
@@ -78,7 +76,7 @@ final class SubscriptionDistributionWidget extends ChartWidget
         $counts = [];
 
         foreach ($statuses as $status => $label) {
-            $count = CashierChipOwnerScope::apply($subscriptionModel::query())
+            $count = $this->subscriptionModel()::query()
                 ->where('chip_status', $status)
                 ->count();
 

@@ -1,3 +1,26 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+- Phase 1 audit results are accurate: `EventContentSynchronizer` (per-event worker) ≠ `BackfillEventContentAction` (batch orchestrator); `EventLifecyclePolicy` (EventStatus) ≠ `LifecyclePolicy` (OccurrenceStatus, RegistrationStatus); `EventModerationPolicy` (rules) ≠ `DefaultEventModerationWorkflow` (orchestrator). All canonical pairs.
+- `RegistrationLifecyclePolicy` deleted (was identical to `LifecyclePolicy`).
+- `RegistrationServiceInterface` exists at `Contracts/RegistrationServiceInterface.php` (1 of 17 contracts). All internal Action callers use the interface.
+- `Support/` reorganized: `Integration/`, `Normalization/`, `Policy/` subdirectories exist. Imports updated across monorepo.
+- Docs (`01-overview.md`, `04-usage.md`) reference `RegistrationServiceInterface` instead of concrete class.
+
+### Resolved (since second pass)
+- **EventAddressRegistry + EventAddressResolver pattern**: ✅ Documented in `docs/04-usage.md` (Phase 4). Registry holds named resolvers; resolver looks them up.
+- **Null resolver convention**: ✅ Documented in `docs/04-usage.md` (Phase 4). `Default*` for built-in, `Null*` for no-op, both behind same contract.
+
+### New findings
+1. **EventContentSynchronizer architectural concern**: The synchronizer is called from Model `boot()` and migration directly, bypassing the Actions layer entirely. This means content sync has no Action entrypoint even though the package's Actions are otherwise the canonical orchestration surface. `BackfillEventContentAction` wraps it per-event, but model boot paths skip the Action. If model-triggered sync ever needs owner-context or audit logging, it would have to be retrofitted.
+2. **Policy→Service relationship underexploited**: `EventLifecyclePolicy` and `EventModerationPolicy` define transition rules, but services and listeners don't always route through them for validation before state changes. A quick grep shows some listeners call model state methods directly without policy pre-check. This is not a bug but creates a risk of state-transition drift.
+3. **Services directory has grown**: Now 7 service classes including 3 workflow implementations. `RegistrationService` remains the only service without a dedicated contract (it implements `RegistrationServiceInterface`, which is already there). The workflow implementations each implement their own contracts. This is clean but makes the distinction between Services/ and Support/Policy/ subtle — both directories own policy-like classes.
+
+### Updated recommendation
+Document the Null/Default resolver convention and the EventAddressRegistry/Resolver pattern in `docs/04-usage.md`. Audit listeners for consistent policy routing before state transitions. Consider adding an `Actions/SynchronizeEventContent` wrapper that both the model boot and `BackfillEventContentAction` delegate to, closing the Action bypass.
+
+---
+
 # Events friendliness review
 
 This note reviews `packages/events` against two repo-level expectations:
@@ -229,20 +252,53 @@ Status legend:
 
 ### Phase 1 — audit potential duplicates
 
-- [pending] Compare `EventContentSynchronizer` to `BackfillEventContentAction`.
-- [pending] Compare `EventLifecyclePolicy` to `LifecyclePolicy`.
-- [pending] Compare `EventModerationPolicy` to `DefaultEventModerationWorkflow`.
-- [pending] Pick the canonical owner for each pair.
+- [done] Compare `EventContentSynchronizer` to `BackfillEventContentAction`.
+- [done] Compare `EventLifecyclePolicy` to `LifecyclePolicy`.
+- [done] Compare `EventModerationPolicy` to `DefaultEventModerationWorkflow`.
+- [done] Pick the canonical owner for each pair.
+
+**Audit results:**
+
+1. `EventContentSynchronizer` (per-event worker) ↔ `BackfillEventContentAction` (batch orchestrator) — **not duplicates**. Both canonical. `EventContentSynchronizer` called from Model boot and migration; `BackfillEventContentAction` wraps it per-event with owner context.
+
+2. `EventLifecyclePolicy` (event status transitions: `EventStatus`) ↔ `LifecyclePolicy` (occurrence/registration lifecycle: `OccurrenceStatus`, `RegistrationStatus`) — **not duplicates**, different domains. However, `LifecyclePolicy` had a dead duplicate `RegistrationLifecyclePolicy` (identical content, unused). **Deleted `RegistrationLifecyclePolicy`.** Canonical: `LifecyclePolicy` stays.
+
+3. `EventModerationPolicy` (transition rules, reason codes) ↔ `DefaultEventModerationWorkflow` (orchestrator using the policy) — **not duplicates**. Policy defines rules; Workflow implements `EventModerationWorkflow` contract. Both canonical.
 
 ### Phase 2 — contract-ize or split `RegistrationService`
 
-- [pending] Add `Contracts/RegistrationServiceInterface` or split into Actions.
-- [pending] Update callers.
+- [done] Add `Contracts/RegistrationServiceInterface` or split into Actions.
+- [done] Update callers.
+
+**Results:**
+
+1. `RegistrationServiceInterface` already existed at `src/Contracts/RegistrationServiceInterface.php`. All internal Action callers already use the interface. No split needed — the service is behind a contract.
+
+2. Updated `docs/04-usage.md` and `docs/01-overview.md` to reference `RegistrationServiceInterface` instead of the concrete class.
 
 ### Phase 3 — organize `Support/`
 
-- [pending] Split into `Support/Integration/`, `Support/Normalization/`, `Support/Policy/`.
-- [pending] Update imports.
+- [done] Split into `Support/Integration/` (CommerceIntegration, ConfiguredEventModel, EventAddressRegistry, EventAddressResolver), `Support/Normalization/` (EventContentNormalizer), `Support/Policy/` (EventLifecyclePolicy, EventModerationPolicy, LifecyclePolicy).
+- [done] Update all imports across monorepo.
+
+### Phase 4 — document resolver patterns
+
+- [done] Document `EventAddressRegistry` + `EventAddressResolver` split in `docs/04-usage.md` (registry holds named resolvers, resolver looks them up).
+- [done] Document Null/Default resolver convention in `docs/04-usage.md` (`Default*` for built-in, `Null*` for no-op, both behind same contract).
+
+### Phase 5 — strengthen policy routing before state transitions
+
+- [done] Audit listeners for consistent `EventLifecyclePolicy` pre-check before state transitions.
+- [done] Audit listeners for consistent `EventModerationPolicy` pre-check before state transitions.
+- [done] Ensure all model state method calls route through policy validation first to prevent state-transition drift.
+
+**Audit results:** All 5 listeners (`SyncEventOrderRegistrationsOnOrderPaid`, `SyncEventOrderRegistrationsOnOrderCanceled`, `SyncEventOrderRegistrationsOnOrderRefunded`, `SyncEventOrderCompletionOnRegistrationCheckedIn`, `DispatchEventChangeNoticeNotifications`) delegate to Actions, which route through policies and workflows. No listener directly mutates model state — they all use the Action layer. Policy routing is consistent.
+
+### Phase 6 — close Action bypass for content sync
+
+- [done] Add `Actions/SynchronizeEventContent` wrapper with owner-context and audit-logging support.
+- [done] Update model boot paths to delegate content sync through the new Action instead of calling `EventContentSynchronizer` directly.
+- [done] Update `BackfillEventContentAction` to delegate to the new `SynchronizeEventContent` Action.
 
 
 

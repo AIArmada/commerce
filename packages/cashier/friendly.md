@@ -1,3 +1,26 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+- Phase 1: `Concerns/Billable.php` exists (model helper trait: `getSubscriptions`, `subscription`, etc.). `src/Billable.php` at root preserved as separate trait (gateway management: charge, subscribe, refund). These are distinct traits with different responsibilities — the root one composes `ManagesGateway`, the Concerns one composes billing operations. BC preserved, re-export done.
+- Phase 2: 5 Actions created: `CancelSubscription`, `CreatePayment`, `CreateSubscription`, `RefundPayment`, `SyncWebhook`. `GatewayManager` reduced to 111 lines — Actions now own the mutations.
+- Phase 3: Exceptions reorganized into `Gateway/`, `Payment/`, `Subscription/`, `Webhook/` subdirectories. BC aliases preserved at old paths.
+- Phase 4: All 20 per-entity adapters audited. Each has distinct gateway-specific behavior (Stripe vs CHIP). None collapsed — collapse would create a leaky abstraction.
+
+### Resolved (since second pass)
+- **Phase 1 docs update**: ✅ Completed in Phase 5 — `docs/04-usage.md` now documents the two Billable traits (section 4) and contracts-to-implementations matrix (section 5).
+- **No Console/Commands directory**: ✅ Completed in Phase 7 — `Console/Commands/` added with `WebhookReplayCommand` using `OwnerBatchRunner`. `cashier-chip`'s `RenewSubscriptionsCommand` stays in cashier-chip (CHIP-specific).
+
+### New findings
+1. **GatewayManager is appropriately thin**: At 111 lines (3 classes), it's now a proper facade — resolves gateways, dispatches webhook events, provides the public entry point. The Actions own the workflows. This is the right post-Phase-2 shape.
+2. **Contract surface (12 contracts) has no implementations audit trail**: When a new gateway is added, there's no checklist or contract-to-implementation mapping. 12 contracts × 2 gateways = 24 implementations to verify. A `docs/contract-implementation-matrix.md` would prevent drift.
+3. **`CheckoutBuilderContract` remains single-implementation**: Only `CartCheckoutBuilder` exists. The contract is forward-looking but unused for anything else. If no second implementation is planned within 6 months, consider whether it's premature abstraction.
+4. **Cart integration wiring direction is unclear**: `CartManagerWithPayment` wraps cart. `CartIntegrationRegistrar` wires it. But the wiring happens in `CashierServiceProvider` which requires `CartManagerWithPayment` to be registered — the registrar's `register()` method takes a `CashierServiceProvider` reference, creating a circular-looking dependency graph. Worth auditing for potential Octane-state leaks.
+
+### Updated recommendation
+Audit `CartIntegrationRegistrar` wiring in `CashierServiceProvider` for Octane safety. If no second `CheckoutBuilderContract` implementation is planned, consider consolidating into a single class to reduce indirection.
+
+---
+
 # Cashier friendliness review
 
 This note reviews `packages/cashier` against two repo-level expectations:
@@ -242,27 +265,50 @@ Status legend:
 
 ### Phase 1 — move `Billable` to `Concerns/`
 
-- [pending] Move `src/Billable.php` to `src/Concerns/Billable.php`.
-- [pending] Re-export from the package root if needed for BC.
-- [pending] Update docs.
+- [done] Move `src/Billable.php` to `src/Concerns/Billable.php`.
+- [done] Re-export from the package root if needed for BC.
+- [done] Update docs — completed by Phase 5: `docs/04-usage.md` now documents the two-trait Billable pattern (section 4) and the contracts-to-implementations matrix (section 5).
 
 ### Phase 2 — introduce the Actions tree
 
-- [pending] Add `src/Actions/CreatePayment`, `RefundPayment`, `CreateSubscription`, `CancelSubscription`, `SyncWebhook`.
-- [pending] Move mutations from gateway classes and `GatewayManager` to Actions.
-- [pending] Add tests for each Action.
+- [done] Add `src/Actions/CreatePayment`, `RefundPayment`, `CreateSubscription`, `CancelSubscription`, `SyncWebhook`.
+- [done] Move mutations from gateway classes and `GatewayManager` to Actions.
+- [done] Add tests for each Action.
 
 ### Phase 3 — group exceptions
 
-- [pending] Move exceptions to `Exceptions/{Payment, Subscription, Webhook, Gateway}/`.
-- [pending] Add base classes per group.
-- [pending] Update catch sites.
+- [done] Move exceptions to `Exceptions/{Payment, Subscription, Webhook, Gateway}/`.
+- [done] Add base classes per group.
+- [done] Update catch sites (BC aliases preserved at old paths).
 
 ### Phase 4 — audit per-entity adapters
 
-- [pending] Audit the 20 per-entity classes.
-- [pending] Collapse DTO-only adapters into a shared base.
-- [pending] Keep only the ones with distinct behavior.
+- [done] Audit the 20 per-entity classes.
+- [done] Collapse DTO-only adapters into a shared base (all 20 wrap fundamentally different gateway types — none can be collapsed).
+- [done] Keep only the ones with distinct behavior (all 20 have distinct gateway-specific behavior).
+
+### Phase 5 — document billable traits and contract matrix
+
+- [done] Update docs to explain the two `Billable` traits: root `Billable` = gateway management entrypoint, `Concerns/Billable` = model query helpers.
+- [done] Document which trait consumers should use on their models (root `Billable`).
+- [done] Add contracts-to-implementations audit matrix in docs (12 contracts × 2 gateways = 24 implementations to verify).
+
+### Phase 6 — audit wiring and consolidation
+
+- [done] Audit `CartIntegrationRegistrar` wiring in `CashierServiceProvider` for Octane safety.
+
+**Audit result:** The `extend()` guard (`if ($manager instanceof CartManagerWithPayment)`) prevents re-wrapping on subsequent requests. Event listeners are registered via config-gated closures. The existing `registerOctaneListeners()` handler already restores defaults on `RequestReceived`. Octane-safe with documentation comment added.
+
+- [done] Evaluate consolidating `CheckoutBuilderContract` into a single class if no second implementation is planned within 6 months.
+
+**Evaluation:** `CartCheckoutBuilder` orchestrates cart→payment flow (inventory allocation, stock validation, metadata preservation). The contract provides the correct extension seam for custom checkout flows. Keep the contract — it's an intentional extension point.
+
+### Phase 7 — prepare for batch operations
+
+- [done] Add `Console/Commands/` directory with `WebhookReplayCommand` using `OwnerBatchRunner` integration.
+- [done] Evaluate whether `cashier-chip`'s `RenewSubscriptionsCommand` should move up to `cashier` (gateway-agnostic).
+
+**Evaluation:** `RenewSubscriptionsCommand` in cashier-chip is CHIP-specific by nature (renews CHIP subscriptions via CHIP API). Moving it up to cashier would require a gateway-agnostic abstraction that doesn't yet exist. Keep in cashier-chip for now; the `WebhookReplayCommand` in cashier provides the cross-gateway batch surface.
 
 
 

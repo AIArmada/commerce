@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
 use DateTimeInterface;
 use Filament\Widgets\ChartWidget;
 use Laravel\Cashier\Subscription;
@@ -113,7 +113,7 @@ final class GatewayComparisonWidget extends ChartWidget
         $detector = app(GatewayDetector::class);
 
         if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            return CashierOwnerScope::apply(Subscription::query())
+            return OwnerScopedQuery::apply(Subscription::query())
                 ->whereBetween('created_at', [$start, $end])
                 ->where(function ($query) use ($end): void {
                     $query->whereNull('ends_at')
@@ -125,7 +125,7 @@ final class GatewayComparisonWidget extends ChartWidget
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
 
-            return CashierOwnerScope::apply($subscriptionModel::query())
+            return OwnerScopedQuery::apply($subscriptionModel::query())
                 ->whereBetween('created_at', [$start, $end])
                 ->where(function ($query) use ($end): void {
                     $query->whereNull('ends_at')

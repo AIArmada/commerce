@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Events\Actions\SynchronizeEventContent;
 use AIArmada\Events\Contracts\EventDisplayTimezoneResolver;
 use AIArmada\Events\Contracts\EventRelationalContentSubject;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
@@ -17,9 +18,8 @@ use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\EventStructure;
 use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Exceptions\InvalidEventStatusTransition;
-use AIArmada\Events\Services\EventContentSynchronizer;
-use AIArmada\Events\Support\CommerceIntegration;
-use AIArmada\Events\Support\ConfiguredEventModel;
+use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Events\Support\Integration\ConfiguredEventModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -141,6 +141,11 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
         'structure' => 'standalone',
     ];
 
+    public function getTitleAttribute(): string
+    {
+        return $this->name;
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $event): void {
@@ -189,7 +194,7 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
                 return;
             }
 
-            app(EventContentSynchronizer::class)->sync($event);
+            app(SynchronizeEventContent::class)->handle($event, 'model_saved');
         });
     }
 
@@ -216,7 +221,7 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
             $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
         }
 
-        /** @var Builder<Event> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;

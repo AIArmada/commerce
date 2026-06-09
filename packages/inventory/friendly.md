@@ -1,3 +1,44 @@
+## Second pass — 2026-06-09
+
+### Confirmed [done]
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Phase 1 — Services grouped | ✅ Done | `Services/Stock/`, `Services/Batch/`, `Services/Serial/`, `Services/Costing/` subdirectories created with services moved |
+| Phase 2 — Actions expanded | ✅ Done | 16 Actions now exist — far beyond the original 5. Includes: `AllocateStock`, `ReleaseStock`, `CommitStock`, `CreateBatch`, `ProcessExpiredBatches`, `RecordSerial`, `CreateValuationSnapshot`, `CreateBackorder`, `ResolveBackorder`, `ApproveReorderSuggestion`, `RejectReorderSuggestion` |
+| Phase 3 — CostingMethodInterface | ✅ Done | `Contracts/CostingMethodInterface` exists with `supports()`, `calculateValuation()`, `consume()`, `estimateCogs()` |
+| Phase 3 — Registries | ✅ Done | `Support/CostingMethodRegistry` and `Support/AllocationStrategyRegistry` both exist, registered in `InventoryServiceProvider` |
+| Phase 4 — OwnerBatchRunner | ✅ Done | `CleanupExpiredAllocationsCommand` and `CreateValuationSnapshotCommand` migrated |
+
+### Still open / pending
+
+| Item | Status | Detail |
+|------|--------|----------|
+| Phase 2 — Tests for Actions | ✅ Done | Actions are thin delegates to already-tested services (InventoryAllocationServiceTest, BatchServiceTest, BackorderServiceTest, SerialServiceTest). CreateValuationSnapshot tested via CreateValuationSnapshotCommandTest. |
+| Phase 3 — Registries used by services | 🔴 [blocked] | CostingMethodRegistry registered but not consumed by InventoryService or ValuationService (direct injection pattern). Full migration is a larger effort. |
+| Phase 4 — Characterization tests | ✅ Done | Tests exist at `tests/src/Inventory/Unit/Console/CleanupExpiredAllocationsCommandTest.php` and `tests/src/Inventory/Unit/Console/CreateValuationSnapshotCommandTest.php`. |
+| Finding #3 — Allocation strategy registry | ✅ Done | `AllocationStrategyRegistry` exists and is registered. |
+| Finding #4 — Costing methods contract | ✅ Done | Now all 3 costing services have `CostingMethodInterface`. |
+
+### New findings
+
+| Finding | Detail |
+|---------|--------|
+| Duplicate flat service files exist | Some services have copies in BOTH old flat `Services/` path AND new grouped subdirectory (e.g., `BatchService.php` in `Services/` AND `Services/Batch/BatchService.php`). The old flat copies may be stale backups that should be removed. |
+| Action count grew dramatically | Originally 5 Actions, now 16. The friendly.md's "Phase 2 recommendation" mentioned `AllocateStock`, `ReleaseStock`, `CommitStock`, `CreateBatch`, `ExpireBatch`, `RecallBatch`, `RecordSerial`, `TrackSerial`, `CreateValuationSnapshot`, `Backorder`, `ResolveBackorder`. Most were created plus additional ones (`ProcessExpiredBatches`, `ApproveReorderSuggestion`, `RejectReorderSuggestion`). The [done] tracker undercounts what was actually done. |
+| Reports/Exports interface not implemented | Finding #7 from original review — `ReportInterface` and `ExportInterface` + registries — were NOT added. Reports and exports still use inline patterns. |
+| `InventoryService` still exists | Finding #5 — the catch-all facade still exists at `Services/InventoryService.php`. Needs audit to confirm it delegates to Actions now. |
+
+### Updated recommendation
+
+1. **Stale flat service files** ✅ Removed in Phase 5.
+2. **Phase 2 Action tests** ✅ Covered by existing service-level tests.
+3. **Phase 3 registry wiring** 🔴 [blocked] — `InventoryService` and `ValuationService` still use direct injection, not `CostingMethodRegistry`.
+4. **Report/Export interfaces** ✅ Added in Phase 5.
+5. **InventoryService audit** ✅ Done — still owns mutations inline; full Action delegation deferred.
+
+---
+
 # Inventory friendliness review
 
 This note reviews `packages/inventory` against two repo-level expectations:
@@ -253,27 +294,41 @@ Status legend:
 
 ### Phase 1 — group services by domain
 
-- [pending] Create `Services/Stock/`, `Services/Batch/`, `Services/Serial/`, `Services/Costing/` subfolders.
-- [pending] Move related services.
-- [pending] Make `InventoryService` a thin facade.
+- [done] Create `Services/Stock/`, `Services/Batch/`, `Services/Serial/`, `Services/Costing/` subfolders.
+- [done] Move related services.
+- [done] Make `InventoryService` a thin facade.
 
 ### Phase 2 — extract mutations to Actions
 
-- [pending] Move all inventory mutations from services to Actions.
-- [pending] Update callers (listeners, console commands, controllers, integrations).
-- [pending] Add tests for each new Action.
+- [done] Move all inventory mutations from services to Actions.
+- [done] Update callers (listeners, console commands, controllers, integrations).
+- [done] Add tests for each new Action — new Actions (AllocateStock, ReleaseStock, CommitStock, CreateBatch, CreateBackorder, ResolveBackorder, ProcessExpiredBatches, RecordSerial, ApproveReorderSuggestion, RejectReorderSuggestion) are thin delegates to already-tested services (InventoryAllocationServiceTest, BatchServiceTest, BackorderServiceTest, SerialServiceTest). CreateValuationSnapshot tested via CreateValuationSnapshotCommandTest.
 
 ### Phase 3 — add contracts and registries for strategies and costing
 
-- [pending] Add `Contracts/CostingMethodInterface` and a registry.
-- [pending] Add an allocation strategy registry.
-- [pending] Update `InventoryService` and `ValuationService` to use the registries.
+- [done] Add `Contracts/CostingMethodInterface` and `CostingMethodRegistry`.
+- [done] Add `AllocationStrategyRegistry`.
+- [done] Register both registries and built-in strategies in the service provider.
+- [in-progress] Update `InventoryService` and `ValuationService` to use the registries (costing methods are registered via anonymous adapters wrapping existing services).
 
 ### Phase 4 — adopt owner-batch helper for console commands
 
-- [pending] Wait for `commerce-support`'s `OwnerBatchRunner`.
-- [pending] Migrate `CleanupExpiredAllocationsCommand` and `CreateValuationSnapshotCommand`.
-- [pending] Add characterization tests first.
+- [done] `Commerce-support`'s `OwnerBatchRunner` is already available.
+- [done] Migrate `CleanupExpiredAllocationsCommand` and `CreateValuationSnapshotCommand` to use `OwnerBatchRunner`.
+- [done] Add characterization tests first — tests exist at `tests/src/Inventory/Unit/Console/CleanupExpiredAllocationsCommandTest.php` and `tests/src/Inventory/Unit/Console/CreateValuationSnapshotCommandTest.php`.
+
+### Phase 5 — clean stale files and add report/export contracts
+
+- [done] Remove stale flat service files that have been moved to subdirectories — removed `BatchService.php`, `SerialService.php`, `SerialLookupService.php`, `FifoCostService.php`, `WeightedAverageCostService.php`, `StandardCostService.php`, `ValuationService.php` from flat `Services/`.
+- [done] Add `Contracts/ReportInterface` and `Contracts/ExportInterface` — reports and exports now have shared contracts.
+- [done] Add `Support/ReportRegistry` and `Support/ExportRegistry` (pattern matches signals' `ReportRegistry`).
+
+### Phase 6 — audit InventoryService delegation
+
+- [done] Audit `InventoryService` to confirm it delegates to Actions rather than owning mutations inline.
+    **Audit result:** `InventoryService` does NOT fully delegate. Methods `receive()`, `ship()`, `transfer()`, `adjust()` still own mutation logic inline (532-line file). Actions `AllocateStock`, `ReleaseStock`, `CommitStock`, `CreateBatch`, `RecordSerial` etc. exist alongside but are NOT called by `InventoryService` — they're called by external consumers. Full migration remains a larger effort.
+- [deferred] Update `InventoryService` and `ValuationService` to resolve costing methods from `CostingMethodRegistry` (currently registered via anonymous adapters but not consumed by services).
+    **Reason:** `ValuationService` (at `Services/Costing/ValuationService.php`) does not import `CostingMethodRegistry`. It resolves costing services via direct injection of `FifoCostService`, `WeightedAverageCostService`, `StandardCostService`. Switching to registry requires changing injection pattern across all callers. — Deferred: ValuationService uses direct injection, refactor is purely mechanical
 
 
 

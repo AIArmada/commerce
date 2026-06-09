@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\FilamentCashierPlugin;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
 use Illuminate\Support\Collection;
 
 beforeEach(function (): void {

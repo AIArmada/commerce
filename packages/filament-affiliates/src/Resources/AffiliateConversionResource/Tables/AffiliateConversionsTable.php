@@ -10,12 +10,12 @@ use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
+use AIArmada\Affiliates\Support\Integrations\CartBridge;
+use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
-use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
-use AIArmada\FilamentAffiliates\Support\Integrations\VoucherBridge;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -132,9 +132,9 @@ final class AffiliateConversionsTable
     {
         Gate::authorize('update', $record);
 
-        $conversion = OwnerScopedQuery::throughAffiliate(AffiliateConversion::query())
-            ->whereKey($record->getKey())
-            ->firstOrFail();
+        $conversion = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(AffiliateConversion::class, $record->getKey())
+            : AffiliateConversion::findOrFail($record->getKey());
 
         $statusClass = ConversionStatus::resolveStateClassFor($status, $conversion);
 

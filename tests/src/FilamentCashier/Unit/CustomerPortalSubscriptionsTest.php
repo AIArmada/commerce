@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Cashier as CashierChip;
-use AIArmada\CashierChip\Subscription as ChipSubscription;
-use AIArmada\CashierChip\SubscriptionItem as ChipSubscriptionItem;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
+use AIArmada\CashierChip\Subscription\SubscriptionItem as ChipSubscriptionItem;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\BillingOverview;

@@ -36,7 +36,7 @@ Applications can either use `AIArmada\Events\Models\Event` as their base event m
 - **Models** — `EventSeries`, `Event`, `EventPerson`, `Venue`, `Occurrence`, `Registration`
 - **Enums** — `EventStatus`, `EventModerationStatus`, `EventVisibility`, `OccurrenceStatus`, `RegistrationStatus`
 - **Actions** — `EnsureOccurrenceAction` plus order-fulfillment helpers for creating registrations from commerce orders
-- **Services** — `RegistrationService` for single create, batch create, check-in, and cancellation
+- **Services** — `RegistrationService` (behind `RegistrationServiceInterface`) for single create, batch create, check-in, and cancellation
 
 ## Owner scoping and security notes
 

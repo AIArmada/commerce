@@ -11,7 +11,6 @@ use AIArmada\FilamentCart\FilamentCartServiceProvider;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
-use AIArmada\FilamentCart\Resources\CartConditionResource;
 use AIArmada\FilamentCart\Resources\CartItemResource;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Resources\ConditionResource;
@@ -124,8 +123,7 @@ it('scopes filament-cart snapshots and child resources by resolved owner', funct
     expect(CartItemResource::getEloquentQuery()->withoutConditions()->count())->toBe(1);
     expect(CartItemResource::getEloquentQuery()->withoutConditions()->first()?->cart_id)->toBe($cartA->id);
 
-    expect(CartConditionResource::getEloquentQuery()->count())->toBe(1);
-    expect(CartConditionResource::getEloquentQuery()->first()?->cart_id)->toBe($cartA->id);
+    expect(CartCondition::query()->whereIn('cart_id', CartSnapshot::query()->forOwner(includeGlobal: CartSnapshot::includeGlobalRecords())->select('id'))->count())->toBe(1);
 });
 
 it('treats shared global conditions as read-only in tenant contexts', function (): void {
@@ -230,5 +228,5 @@ it('includes global snapshot rows across resources when include_global is enable
 
     expect(CartResource::getEloquentQuery()->count())->toBe(2);
     expect(CartItemResource::getEloquentQuery()->count())->toBe(2);
-    expect(CartConditionResource::getEloquentQuery()->count())->toBe(2);
+    expect(CartCondition::query()->whereIn('cart_id', CartSnapshot::query()->forOwner(includeGlobal: CartSnapshot::includeGlobalRecords())->select('id'))->count())->toBe(2);
 });

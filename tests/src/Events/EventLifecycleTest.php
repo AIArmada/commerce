@@ -18,7 +18,7 @@ use AIArmada\Events\Models\Event as EventModel;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
 use AIArmada\Events\Services\RegistrationService;
-use AIArmada\Events\Support\EventLifecyclePolicy;
+use AIArmada\Events\Support\Policy\EventLifecyclePolicy;
 use Illuminate\Support\Facades\Event as EventFacade;
 
 it('enumerates the six lifecycle states with correct helpers', function (): void {

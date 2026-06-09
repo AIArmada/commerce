@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
+use AIArmada\Inventory\Actions\TransferInventory;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -65,8 +65,6 @@ final class TransferStockAction
                     ->placeholder('Optional notes for this transfer...'),
             ])
             ->action(function (Model $record, array $data): void {
-                $inventoryService = app(InventoryService::class);
-
                 $fromLocationId = (string) $data['from_location_id'];
                 $toLocationId = (string) $data['to_location_id'];
 
@@ -97,7 +95,7 @@ final class TransferStockAction
                 }
 
                 try {
-                    $movement = $inventoryService->transfer(
+                    $movement = TransferInventory::run(
                         model: $record,
                         fromLocationId: $fromLocationId,
                         toLocationId: $toLocationId,

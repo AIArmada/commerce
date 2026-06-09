@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Customers\Actions\AssignCustomerToSegment;
+use AIArmada\Customers\Actions\RebuildAllSegments;
+use AIArmada\Customers\Actions\RemoveCustomerFromSegment;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;
@@ -11,7 +14,11 @@ use Illuminate\Support\Facades\Event;
 
 describe('SegmentationService', function (): void {
     beforeEach(function (): void {
-        $this->service = new SegmentationService;
+        $this->service = new SegmentationService(
+            new AssignCustomerToSegment,
+            new RemoveCustomerFromSegment,
+            new RebuildAllSegments,
+        );
     });
 
     describe('Instantiation', function (): void {

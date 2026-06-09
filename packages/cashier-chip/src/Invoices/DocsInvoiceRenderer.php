@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Invoices;
 
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
-use AIArmada\CashierChip\Invoice;
+use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Services\DocService;
 

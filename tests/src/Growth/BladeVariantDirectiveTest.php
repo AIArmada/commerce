@@ -6,7 +6,7 @@ require_once __DIR__ . '/PresentationTestSupport.php';
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
-use AIArmada\Growth\Support\ExperimentContextManager;
+use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use Illuminate\Support\Facades\Blade;
 
 it('renders the matching blade variant branch when directives are enabled', function (): void {

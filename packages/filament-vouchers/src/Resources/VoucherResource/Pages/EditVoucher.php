@@ -8,9 +8,9 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 final class EditVoucher extends EditRecord
 {
@@ -40,7 +40,7 @@ final class EditVoucher extends EditRecord
         $data = parent::mutateFormDataBeforeSave($data);
 
         $record = $this->getRecord();
-        $data = OwnerScopedQueries::enforceOwnerOnUpdate($record, $data);
+        $data = $this->enforceOwnerOnUpdate($record, $data);
 
         return $this->persistConditionTargetDefinition($data);
     }
@@ -81,5 +81,31 @@ final class EditVoucher extends EditRecord
     private function persistConditionTargetDefinition(array $data): array
     {
         return ConditionTargetFormData::persist($data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function enforceOwnerOnUpdate(Model $record, array $data): array
+    {
+        if (! config('vouchers.owner.enabled', false)) {
+            return $data;
+        }
+
+        $existingOwnerType = $record->getAttribute('owner_type');
+        $existingOwnerId = $record->getAttribute('owner_id');
+
+        if ($existingOwnerType === null || $existingOwnerId === null) {
+            $data['owner_type'] = null;
+            $data['owner_id'] = null;
+
+            return $data;
+        }
+
+        $data['owner_type'] = (string) $existingOwnerType;
+        $data['owner_id'] = (string) $existingOwnerId;
+
+        return $data;
     }
 }

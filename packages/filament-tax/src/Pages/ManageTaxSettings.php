@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Pages;
 
-use AIArmada\FilamentTax\Support\FilamentTaxAuthz;
+use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\Tax\Settings\TaxSettings;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -22,6 +22,8 @@ use UnitEnum;
  */
 final class ManageTaxSettings extends Page
 {
+    use HasPageAuthz;
+
     public ?array $data = [];
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-receipt-percent';
@@ -43,9 +45,9 @@ final class ManageTaxSettings extends Page
         return __('Tax Settings');
     }
 
-    public static function canAccess(): bool
+    public static function authzPermission(): ?string
     {
-        return FilamentTaxAuthz::check('tax.settings.manage');
+        return 'tax.settings.manage';
     }
 
     public function mount(): void
@@ -132,7 +134,7 @@ final class ManageTaxSettings extends Page
 
     public function save(): void
     {
-        if (! FilamentTaxAuthz::check('tax.settings.manage')) {
+        if (! (auth()->user()?->can('tax.settings.manage') ?? false)) {
             Notification::make()
                 ->title(__('Unauthorized'))
                 ->danger()

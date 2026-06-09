@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCashierChip\Pages\BillingDashboard;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\BillingDashboard;
 use Filament\Pages\Page;
 
 it('extends filament page', function (): void {

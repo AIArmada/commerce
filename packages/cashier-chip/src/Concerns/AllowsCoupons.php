@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Concerns;
 
-use AIArmada\CashierChip\Coupon;
+use AIArmada\CashierChip\Billing\Coupon;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;

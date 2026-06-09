@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\FilamentPromotions\Models\Promotion;
-use AIArmada\FilamentVouchers\Models\Voucher;
+use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherInfolist;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\VouchersTable;
 use AIArmada\Vouchers\Enums\VoucherType;

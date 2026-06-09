@@ -52,7 +52,7 @@ final class DocTrackingController extends Controller
             return $fallback;
         }
 
-        $candidate = trim($url);
+        $candidate = mb_trim($url);
 
         if ($candidate === '' || str_starts_with($candidate, '//')) {
             return $fallback;
@@ -66,7 +66,7 @@ final class DocTrackingController extends Controller
             return $fallback;
         }
 
-        $scheme = strtolower((string) parse_url($candidate, PHP_URL_SCHEME));
+        $scheme = mb_strtolower((string) parse_url($candidate, PHP_URL_SCHEME));
 
         if (! in_array($scheme, ['http', 'https'], true)) {
             return $fallback;
@@ -79,7 +79,7 @@ final class DocTrackingController extends Controller
     {
         $fallback = config('app.url', '/');
 
-        if (! is_string($fallback) || trim($fallback) === '') {
+        if (! is_string($fallback) || mb_trim($fallback) === '') {
             return '/';
         }
 

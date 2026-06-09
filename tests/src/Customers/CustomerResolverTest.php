@@ -7,11 +7,13 @@ use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Actions\CreateCustomer;
+use AIArmada\Customers\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Services\CustomerResolver;
 
 describe('CustomerResolver', function (): void {
     it('does not resolve a non-guest customer by email for unauthenticated checkouts', function (): void {
-        $resolver = new CustomerResolver;
+        $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
         $existing = Customer::query()->create([
             'first_name' => 'Registered',
@@ -45,7 +47,7 @@ describe('CustomerResolver', function (): void {
     });
 
     it('resolves existing guest customer by email for unauthenticated checkouts', function (): void {
-        $resolver = new CustomerResolver;
+        $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
         $guest = Customer::query()->create([
             'first_name' => 'Guest',
@@ -77,7 +79,7 @@ describe('CustomerResolver', function (): void {
     });
 
     it('syncs purchaser company onto an existing guest customer resolved by email', function (): void {
-        $resolver = new CustomerResolver;
+        $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
         $guest = Customer::query()->create([
             'first_name' => 'Existing',
@@ -108,7 +110,7 @@ describe('CustomerResolver', function (): void {
     });
 
     it('merges segment and group memberships into the target customer', function (): void {
-        $resolver = new CustomerResolver;
+        $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
         $source = Customer::query()->create([
             'first_name' => 'Source',
@@ -150,7 +152,7 @@ describe('CustomerResolver', function (): void {
     });
 
     it('preserves multi-word names and purchaser company when creating a guest customer', function (): void {
-        $resolver = new CustomerResolver;
+        $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
         $resolved = $resolver->resolve(
             user: null,
@@ -172,7 +174,7 @@ describe('CustomerResolver', function (): void {
     });
 
     it('promotes an existing guest customer by email when the authenticated user has no customer yet', function (): void {
-        $resolver = new CustomerResolver;
+        $resolver = new CustomerResolver(new CreateCustomer, new UpdateCustomerProfile);
 
         $email = 'promote-existing-guest-' . uniqid() . '@example.com';
 

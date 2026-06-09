@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
-use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
+use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
 
 final class RevenueChartWidget extends ChartWidget
 {
+    use InteractsWithCashierChipData;
+
     protected ?string $heading = 'Revenue Trend (Last 12 Months)';
 
     protected static ?int $sort = 4;
@@ -52,7 +53,7 @@ final class RevenueChartWidget extends ChartWidget
 
     protected function getOptions(): array
     {
-        $currency = config('cashier-chip.currency', 'MYR');
+        $currency = $this->currency();
 
         return [
             'plugins' => [
@@ -80,9 +81,6 @@ final class RevenueChartWidget extends ChartWidget
         $mrr = [];
         $newRevenue = [];
 
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $labels[] = $date->format('M Y');
@@ -90,8 +88,7 @@ final class RevenueChartWidget extends ChartWidget
             $startOfMonth = $date->copy()->startOfMonth();
             $endOfMonth = $date->copy()->endOfMonth();
 
-            // Calculate MRR for the month
-            $monthMrr = CashierChipOwnerScope::apply($subscriptionModel::query())
+            $monthMrr = $this->subscriptionModel()::query()
                 ->where('chip_status', Subscription::STATUS_ACTIVE)
                 ->where('created_at', '<=', $endOfMonth)
                 ->where(function ($query) use ($startOfMonth): void {
@@ -110,8 +107,7 @@ final class RevenueChartWidget extends ChartWidget
 
             $mrr[] = (int) ($monthMrr / 100);
 
-            // Calculate new subscriptions revenue
-            $newSubscriptionsRevenue = CashierChipOwnerScope::apply($subscriptionModel::query())
+            $newSubscriptionsRevenue = $this->subscriptionModel()::query()
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->with('items')
                 ->get()
@@ -131,18 +127,5 @@ final class RevenueChartWidget extends ChartWidget
             'mrr' => $mrr,
             'new_revenue' => $newRevenue,
         ];
-    }
-
-    private function normalizeToMonthly(int $amount, string $interval, int $count): int
-    {
-        $multiplier = match ($interval) {
-            'day' => 30 / $count,
-            'week' => 4.33 / $count,
-            'month' => 1 / $count,
-            'year' => 1 / (12 * $count),
-            default => 1,
-        };
-
-        return (int) round($amount * $multiplier);
     }
 }

@@ -104,7 +104,7 @@ class AffiliateProgram extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateProgramTier, self>
+     * @return HasMany<AffiliateProgramTier, $this>
      */
     public function tiers(): HasMany
     {
@@ -112,7 +112,7 @@ class AffiliateProgram extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateCommissionRule, self>
+     * @return HasMany<AffiliateCommissionRule, $this>
      */
     public function commissionRules(): HasMany
     {
@@ -120,7 +120,7 @@ class AffiliateProgram extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateCommissionPromotion, self>
+     * @return HasMany<AffiliateCommissionPromotion, $this>
      */
     public function commissionPromotions(): HasMany
     {
@@ -128,7 +128,7 @@ class AffiliateProgram extends Model implements Auditable
     }
 
     /**
-     * @return BelongsToMany<Affiliate, self>
+     * @return BelongsToMany<Affiliate, $this, AffiliateProgramMembership, 'pivot'>
      */
     public function affiliates(): BelongsToMany
     {
@@ -141,7 +141,7 @@ class AffiliateProgram extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateProgramCreative, self>
+     * @return HasMany<AffiliateProgramCreative, $this>
      */
     public function creatives(): HasMany
     {
@@ -149,7 +149,7 @@ class AffiliateProgram extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateProgramMembership, self>
+     * @return HasMany<AffiliateProgramMembership, $this>
      */
     public function memberships(): HasMany
     {

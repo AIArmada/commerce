@@ -7,13 +7,21 @@ namespace AIArmada\Checkout\Integrations\Payment;
 use AIArmada\Checkout\Contracts\PaymentProcessorInterface;
 use AIArmada\Checkout\Data\PaymentRequest;
 use AIArmada\Checkout\Data\PaymentResult;
-use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Checkout\Support\ChipPaymentStatusMapper;
+use AIArmada\Checkout\Support\ChipPurchasePayloadBuilder;
+use AIArmada\Checkout\Support\ChipRefundGateway;
 use AIArmada\Chip\Facades\Chip;
 use Throwable;
 
 final class ChipProcessor implements PaymentProcessorInterface
 {
+    public function __construct(
+        private readonly ChipPurchasePayloadBuilder $payloadBuilder,
+        private readonly ChipPaymentStatusMapper $statusMapper,
+        private readonly ChipRefundGateway $refundGateway,
+    ) {}
+
     public function getIdentifier(): string
     {
         return 'chip';
@@ -37,27 +45,9 @@ final class ChipProcessor implements PaymentProcessorInterface
     public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
     {
         try {
-            $purchase = Chip::createPurchase([
-                'purchase' => [
-                    'products' => [
-                        [
-                            'name' => $request->description ?? "Checkout {$session->id}",
-                            'price' => $request->amount,
-                            'quantity' => 1,
-                        ],
-                    ],
-                    'currency' => $request->currency,
-                ],
-                'client' => [
-                    'email' => $request->customerEmail,
-                    'full_name' => $request->customerName,
-                    'phone' => $request->customerPhone,
-                ],
-                'reference' => $session->id,
-                'success_redirect' => $request->successUrl,
-                'failure_redirect' => $request->failureUrl,
-                'cancel_redirect' => $request->cancelUrl,
-            ]);
+            $purchase = Chip::createPurchase(
+                $this->payloadBuilder->build($session, $request),
+            );
 
             $checkoutUrl = $purchase->checkout_url;
             $purchaseId = $purchase->id;
@@ -82,16 +72,7 @@ final class ChipProcessor implements PaymentProcessorInterface
     {
         try {
             $paymentId = $payload['id'] ?? null;
-            $status = $payload['status'] ?? 'unknown';
-
-            $paymentStatus = match ($status) {
-                'paid', 'completed' => PaymentStatus::Completed,
-                'pending', 'created' => PaymentStatus::Pending,
-                'failed', 'error' => PaymentStatus::Failed,
-                'cancelled', 'expired' => PaymentStatus::Cancelled,
-                'refunded' => PaymentStatus::Refunded,
-                default => PaymentStatus::Processing,
-            };
+            $paymentStatus = $this->statusMapper->fromCallbackPayload($payload);
 
             return new PaymentResult(
                 status: $paymentStatus,
@@ -112,19 +93,7 @@ final class ChipProcessor implements PaymentProcessorInterface
 
     public function refund(string $paymentId, int $amount, ?string $reason = null): PaymentResult
     {
-        try {
-            $refund = Chip::refundPurchase($paymentId, $amount);
-
-            return new PaymentResult(
-                status: PaymentStatus::Refunded,
-                paymentId: $paymentId,
-                amount: $amount,
-                message: 'Refund processed successfully',
-                gatewayResponse: (array) $refund,
-            );
-        } catch (Throwable $e) {
-            return PaymentResult::failed("Refund failed: {$e->getMessage()}", [], $paymentId);
-        }
+        return $this->refundGateway->refund($paymentId, $amount, $reason);
     }
 
     public function checkStatus(string $paymentId): PaymentResult
@@ -132,17 +101,10 @@ final class ChipProcessor implements PaymentProcessorInterface
         try {
             $purchase = Chip::getPurchase($paymentId);
 
-            $status = match ($purchase->status) {
-                'paid', 'completed' => PaymentStatus::Completed,
-                'pending', 'created' => PaymentStatus::Pending,
-                'failed', 'error' => PaymentStatus::Failed,
-                'cancelled', 'expired' => PaymentStatus::Cancelled,
-                'refunded' => PaymentStatus::Refunded,
-                default => PaymentStatus::Processing,
-            };
+            $paymentStatus = $this->statusMapper->fromPurchaseStatus($purchase->status);
 
             return new PaymentResult(
-                status: $status,
+                status: $paymentStatus,
                 paymentId: $paymentId,
                 transactionId: $purchase->reference_generated,
                 amount: $purchase->purchase->total->getAmount(),

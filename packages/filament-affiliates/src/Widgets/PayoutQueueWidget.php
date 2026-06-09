@@ -7,9 +7,9 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAffiliates\Actions\ProcessAffiliatePayout;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
@@ -32,7 +32,7 @@ final class PayoutQueueWidget extends BaseWidget
     {
         return $table
             ->query(
-                OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
+                AffiliatePayout::query()
                     ->with('affiliate')
                     ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
                     ->orderBy('scheduled_at')
@@ -73,9 +73,9 @@ final class PayoutQueueWidget extends BaseWidget
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
-                        $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                            ->whereKey($record->getKey())
-                            ->firstOrFail();
+                        $payout = (bool) config('affiliates.owner.enabled', false)
+                    ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+                    : AffiliatePayout::findOrFail($record->getKey());
 
                         $result = app(ProcessAffiliatePayout::class)->handle($payout);
 
@@ -108,7 +108,7 @@ final class PayoutQueueWidget extends BaseWidget
 
     protected function getTableHeading(): ?string
     {
-        $pendingCount = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
+        $pendingCount = AffiliatePayout::query()
             ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
             ->count();
 

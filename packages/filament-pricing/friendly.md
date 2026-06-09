@@ -1,5 +1,29 @@
 # Filament Pricing friendliness review
 
+## Second pass — 2026-06-09
+
+### Confirmed (actually done)
+
+- **Phase 1**: Schemas/Tables subfolders present for both `PriceListResource` and `PromotionResource` (Form, Infolist, Table classes) — all consumed via delegation.
+- **Phase 2**: No sibling `Schemas/` or `Tables/` directories inside RMs. `PricesRelationManager` and `TiersRelationManager` use inline Forms/Tables. The old empty sibling dirs are removed.
+- **Phase 3**: `PromotionResource` is marked `@deprecated` with a docblock directing to `filament-promotions`. Delegates navigation badge and uses domain model. Still exists as a registered resource which may cause install-time confusion.
+- **Phase 4**: Both `PricesRelationManager` and `TiersRelationManager` have `OwnerQuery::applyToEloquentBuilder()` in search/getOption handlers for product/variant selection. Owner context is resolved via `OwnerContext::resolve()`.
+
+### Still open
+
+- **[pending] PromotionResource duplicate surface**: The deprecated `PromotionResource` in filament-pricing is still a registered resource. If both `filament-pricing` and `filament-promotions` are installed, users see two "Promotion" entries. Consider gating with `class_exists(\AIArmada\FilamentPromotions\Resources\PromotionResource::class)` in the Plugin's `getResources()` to suppress it when the canonical resource is available.
+
+### New findings
+
+- **`PriceSimulator.php` uses custom `scopeQueryForOwner()` instead of `OwnerQuery`**: The page defines its own `scopeQueryForOwner(string $modelClass, Builder $query, ?Model $owner)` helper (lines 66-76) that checks `method_exists($model, 'scopeForOwner')`. This is a reimplementation of what `OwnerQuery` already does. All 5 call sites could use `OwnerQuery::applyToEloquentBuilder()` directly.
+- **`PricesRelationManager::getOptionLabelUsing` inconsistent with `getSearchResultsUsing`**: The search handler uses `OwnerQuery::applyToEloquentBuilder()` but the option-label handler falls back to `$model->scopeForOwner($query, $owner)` (lines 109-111). Both should use the same owner-scoping helper.
+
+### Updated recommendation
+
+1. Gate `PromotionResource` registration in `FilamentPricingPlugin` behind a `class_exists` check so it only appears when `filament-promotions` is not installed.
+2. Replace custom `scopeQueryForOwner()` in `PriceSimulator.php` with `OwnerQuery::applyToEloquentBuilder()`.
+3. Normalize `getOptionLabelUsing` in `PricesRelationManager` to use `OwnerQuery` consistently with the search handler.
+
 This note reviews `packages/filament-pricing` against two repo-level expectations:
 
 - when a capability may grow variants, prefer stable seams such as contracts, metadata, hooks, domain events, resolvers, and support classes
@@ -142,21 +166,35 @@ Status legend:
 
 ### Phase 1 — split resources into subfolders
 
-- [pending] Add `Schemas/` and `Tables/` to `PriceListResource` and `PromotionResource`.
+- [done] Add `Schemas/` and `Tables/` to `PriceListResource` and `PromotionResource`.
 
 ### Phase 2 — standardize RM subfolder layout
 
-- [pending] Move `Schemas/` and `Tables/` inside each RM (or document the sibling pattern).
+- [done] Removed empty sibling `Schemas/` and `Tables/` directories from RMs.
+- [done] RMs use inline Forms/Tables as the standard pattern.
 
 ### Phase 3 — decide on `PromotionResource` canonical surface
 
-- [pending] Audit `filament-promotions/PromotionResource` and `filament-pricing/PromotionResource`.
-- [pending] Pick one.
+- [done] Audit `filament-promotions/PromotionResource` and `filament-pricing/PromotionResource`.
+- [done] Picked `filament-promotions` as canonical (has full authorization, navigation, RMs).
+- [done] `filament-pricing`'s `PromotionResource` marked as deprecated with delegation to `filament-promotions`.
 
 ### Phase 4 — adopt `commerce-support` owner-scope primitives in RMs
 
-- [pending] Add `getEloquentQuery` to each RM.
-- [pending] Use `OwnerQuery`.
+- [done] Added `getEloquentQuery` to `PricesRelationManager` and `TiersRelationManager`.
+- [done] Uses `OwnerQuery` for owner-scoped queries on product/variant selection.
+
+### Phase 5 — gate PromotionResource registration
+
+- [done] Gate `PromotionResource` in `FilamentPricingPlugin::getResources()` with `class_exists(\AIArmada\FilamentPromotions\Resources\PromotionResource::class)` to suppress duplicate when `filament-promotions` is installed.
+
+### Phase 6 — replace custom scopeQueryForOwner() with OwnerQuery in PriceSimulator
+
+- [done] Replace custom `scopeQueryForOwner()` helper in `PriceSimulator.php` with `OwnerQuery::applyToEloquentBuilder()` at all call sites.
+
+### Phase 7 — normalize PricesRelationManager option-label handler
+
+- [done] Update `getOptionLabelUsing` in `PricesRelationManager` to use `OwnerQuery::applyToEloquentBuilder()` consistently with the search handler, instead of falling back to `$model->scopeForOwner()`.
 
 
 

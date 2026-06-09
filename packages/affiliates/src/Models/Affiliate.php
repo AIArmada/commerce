@@ -172,7 +172,7 @@ class Affiliate extends Model implements Auditable
     }
 
     /**
-     * @return BelongsToMany<AffiliateProgram, $this>
+     * @return BelongsToMany<AffiliateProgram, $this, AffiliateProgramMembership, 'pivot'>
      */
     public function programs(): BelongsToMany
     {

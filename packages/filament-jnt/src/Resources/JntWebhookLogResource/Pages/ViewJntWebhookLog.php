@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Pages;
 
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyViewRecord;
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource;
-use AIArmada\FilamentJnt\Resources\Pages\ReadOnlyViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Override;
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Concerns;
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Invoice;
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Collection;
 use RuntimeException;

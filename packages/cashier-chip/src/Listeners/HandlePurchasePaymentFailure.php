@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Events\PaymentFailed;
+use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 
-/**
- * Listens to chip package PurchasePaymentFailure events and handles cashier-chip billing logic.
- */
 class HandlePurchasePaymentFailure
 {
     public function handle(PurchasePaymentFailure $event): void
@@ -23,7 +18,6 @@ class HandlePurchasePaymentFailure
         }
 
         $purchase = $event->purchase;
-        $payload = $event->payload;
 
         $clientId = $purchase->getClientId();
 
@@ -31,7 +25,6 @@ class HandlePurchasePaymentFailure
             return;
         }
 
-        /** @var Model|null $billable */
         $billable = (bool) config('cashier-chip.features.owner.enabled', true)
             ? Cashier::findBillableForWebhook($clientId)
             : Cashier::findBillable($clientId);
@@ -40,60 +33,6 @@ class HandlePurchasePaymentFailure
             return;
         }
 
-        // Dispatch cashier-chip payment failed event
-        PaymentFailed::dispatch($billable, $purchase->toArray());
-
-        // Handle subscription payment failure
-        if ($subscriptionType = $this->getSubscriptionTypeFromPurchase($payload)) {
-            $this->handleSubscriptionPaymentFailure($billable, $subscriptionType);
-        }
-    }
-
-    /**
-     * Handle a subscription payment failure.
-     */
-    protected function handleSubscriptionPaymentFailure(object $billable, string $subscriptionType): void
-    {
-        if (! $billable instanceof Model) {
-            return;
-        }
-
-        $subscription = Cashier::findSubscriptionForWebhook($billable, $subscriptionType);
-
-        if ($subscription) {
-            $subscription->forceFill([
-                'chip_status' => 'past_due',
-            ])->save();
-        }
-    }
-
-    /**
-     * Extract subscription type from purchase metadata or reference.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    protected function getSubscriptionTypeFromPurchase(array $payload): ?string
-    {
-        $metadata = Arr::get($payload, 'metadata');
-
-        if (! is_array($metadata)) {
-            $metadata = Arr::get($payload, 'purchase.metadata', []);
-        }
-
-        $subscriptionType = $metadata['subscription_type'] ?? null;
-
-        if (is_string($subscriptionType) && $subscriptionType !== '') {
-            return $subscriptionType;
-        }
-
-        $reference = Arr::get($payload, 'reference')
-            ?? Arr::get($payload, 'purchase.reference')
-            ?? '';
-
-        if (preg_match('/Subscription (\w+)/', $reference, $matches)) {
-            return $matches[1];
-        }
-
-        return null;
+        app(SyncChipPurchaseStatus::class)->syncFailed($billable, $purchase, $event->payload);
     }
 }

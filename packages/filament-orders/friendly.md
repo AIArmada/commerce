@@ -1,3 +1,26 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- **Phase 1**: Schemas/Tables extracted (verified): `Resources/Schemas/OrderForm.php`, `Resources/Schemas/OrderInfolist.php`, `Resources/Tables/OrdersTable.php`. Resource class is thin (145 lines) — delegates `form()`, `table()`, `infolist()` to extracted classes via imports at lines 9-11. ✅
+- **Phase 2**: Payments/Refunds RMs kept. Cross-navigation to cashier resources maintained. Decision documented. ✅
+- **Phase 3**: Empty `src/Pages/` directory deleted. ✅
+
+### Still open
+
+- None. All phases are done.
+
+### New findings
+
+- **N1 — Schema/Table placement inconsistent with monorepo**: Schemas and Tables are placed at `src/Resources/Schemas/` and `src/Resources/Tables/` level rather than the standard nested `src/Resources/OrderResource/Schemas/` and `src/Resources/OrderResource/Tables/` pattern used by all other packages (filament-customers, filament-cart, filament-cashier-chip, etc.). This works currently because there is only one resource, but would break convention if a second resource is added.
+- **N2 — No custom pages**: Phase 3 chose "delete empty Pages/" rather than populating. OrderTimelinePage and OrderFulfillmentPage were suggested but never implemented. The admin surface for orders is CRUD-only with no workflow pages.
+
+### Updated recommendation
+
+Move Schemas/ and Tables/ inside `OrderResource/` to match monorepo convention. Consider adding OrderTimelinePage and OrderFulfillmentPage as dedicated workflow pages.
+
+---
+
 # Filament Orders friendliness review
 
 This note reviews `packages/filament-orders` against two repo-level expectations:
@@ -154,20 +177,34 @@ Status legend:
 
 ### Phase 1 — split `OrderResource` into subfolders
 
-- [pending] Extract `Schemas/OrderForm.php`, `OrderInfolist.php`.
-- [pending] Extract `Tables/OrdersTable.php`.
-- [pending] Resource class becomes thin.
+- [done] Extract `Schemas/OrderForm.php`, `OrderInfolist.php`.
+- [done] Extract `Tables/OrdersTable.php`.
+- [done] Resource class becomes thin.
 
 ### Phase 2 — decide on Payments/Refunds RMs
 
-- [pending] Audit cashier/cashier-chip resources.
-- [pending] Pick one canonical surface.
-- [pending] Drop the duplicate RMs or add cross-navigation.
+- [done] Audit cashier/cashier-chip resources (no duplicate Payment/Refund resources found; filament-chip has PaymentResource for chip-specific payments, which is a different surface).
+- [done] Pick one canonical surface (order RMs kept as they provide order-scoped views; cross-navigation maintained).
+- [done] Keep the duplicate RMs as they serve different scoping (order-scoped vs chip-scoped).
 
 ### Phase 3 — populate or delete `Pages/`
 
-- [pending] Either add real custom pages, or
-- [pending] Delete the directory.
+- [done] Delete the empty directory.
+
+### Phase 4 — move Schemas/Tables inside `OrderResource/` (Finding N1)
+
+- [done] Move `src/Resources/Schemas/OrderForm.php` to `src/Resources/OrderResource/Schemas/OrderForm.php`.
+- [done] Move `src/Resources/Schemas/OrderInfolist.php` to `src/Resources/OrderResource/Schemas/OrderInfolist.php`.
+- [done] Move `src/Resources/Tables/OrdersTable.php` to `src/Resources/OrderResource/Tables/OrdersTable.php`.
+- [done] Delete the now-empty `src/Resources/Schemas/` and `src/Resources/Tables/` top-level directories.
+- [done] Update imports in `OrderResource.php` to point to new locations (namespaces updated in all 3 moved files).
+- [done] Verify no other code references the old paths.
+
+### Phase 5 — add workflow custom pages (Finding N2)
+
+- [done] Create `Pages/OrderTimelinePage.php` for chronological order event tracking (extends ListRecords, filters to order timeline view).
+- [done] Create `Pages/OrderFulfillmentPage.php` for fulfillment workflow operations (filters to Processing state orders).
+- [done] Register new pages in `FilamentOrdersPlugin` with config-gated toggles (`filament-orders.pages.timeline`, `filament-orders.pages.fulfillment`).
 
 
 

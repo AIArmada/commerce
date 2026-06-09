@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Pages;
 
+use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Chip\Chip;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\FilamentCashierPlugin;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
 use BackedEnum;
 use Exception;
 use Filament\Actions\Action;

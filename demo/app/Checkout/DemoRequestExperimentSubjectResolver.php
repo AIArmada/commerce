@@ -8,7 +8,7 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Growth\Contracts\RequestExperimentSubjectResolver;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Support\Http\DefaultRequestExperimentSubjectResolver;
-use AIArmada\Growth\Support\RequestExperimentSubjects;
+use AIArmada\Growth\Support\Request\RequestExperimentSubjects;
 use Illuminate\Http\Request;
 use Throwable;
 

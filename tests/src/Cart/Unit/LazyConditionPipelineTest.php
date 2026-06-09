@@ -3,9 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Collections\CartConditionCollection;
+use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Enums\ConditionScope;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelinePhaseContext;
 use AIArmada\Cart\Conditions\Pipeline\LazyConditionPipeline;
+use AIArmada\Cart\Conditions\Pipeline\Resolvers\ConditionScopeResolverInterface;
 use Tests\Support\Cart\InMemoryStorage;
 
 it('returns correct subtotal with lazy evaluation', function (): void {
@@ -156,4 +162,60 @@ it('handles empty cart', function (): void {
 
     expect($pipeline->getSubtotal())->toBe(0);
     expect($pipeline->getTotal())->toBe(0);
+});
+
+it('respects custom phase processors with lazy evaluation', function (): void {
+    $storage = new InMemoryStorage;
+    $cart = new Cart($storage, 'test-custom-processor', events: null);
+    $cart->add('item1', 'Product 1', 1000, 2);
+
+    $context = ConditionPipelineContext::fromCart($cart);
+
+    $pipeline = LazyConditionPipeline::fromContext($context, function (ConditionPipeline $p): void {
+        $p->registerPhaseProcessor(ConditionPhase::CART_SUBTOTAL, function (ConditionPipelinePhaseContext $ctx): int {
+            return $ctx->baseAmount + 500;
+        });
+    });
+
+    expect($pipeline->getSubtotal())->toBe(2500);
+    expect($pipeline->getTotal())->toBe(2500);
+});
+
+it('respects custom scope resolvers with lazy evaluation', function (): void {
+    $storage = new InMemoryStorage;
+    $cart = new Cart($storage, 'test-custom-scope', events: null);
+    $cart->add('item1', 'Product 1', 1000, 2);
+    $cart->addCondition(new CartCondition('discount', 'fixed', 'cart@cart_subtotal/aggregate', '-200'));
+
+    $context = ConditionPipelineContext::fromCart($cart);
+
+    $pipeline = LazyConditionPipeline::fromContext($context, function (ConditionPipeline $p): void {
+        $p->registerScopeResolver(
+            ConditionScope::CART,
+            new class implements ConditionScopeResolverInterface
+            {
+                public function supports(ConditionScope $scope): bool
+                {
+                    return $scope === ConditionScope::CART;
+                }
+
+                public function resolve(
+                    ConditionPipelinePhaseContext $context,
+                    ConditionScope $scope,
+                    CartConditionCollection $conditions,
+                    int $baseAmount,
+                ): int {
+                    return $baseAmount - 200;
+                }
+
+                public function getScope(): ConditionScope
+                {
+                    return ConditionScope::CART;
+                }
+            }
+        );
+    });
+
+    expect($pipeline->getSubtotal())->toBe(1800);
+    expect($pipeline->getTotal())->toBe(1800);
 });

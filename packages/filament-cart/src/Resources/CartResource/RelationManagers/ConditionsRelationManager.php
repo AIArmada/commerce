@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCart\Resources\CartResource\RelationManagers;
 
 use AIArmada\FilamentCart\Actions\ApplyConditionAction;
 use AIArmada\FilamentCart\Actions\RemoveConditionAction;
-use AIArmada\FilamentCart\Resources\CartConditionResource;
+use AIArmada\FilamentCart\Resources\ConditionResource\Tables\ConditionsTable;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
 
@@ -14,11 +14,9 @@ final class ConditionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'cartConditions';
 
-    protected static ?string $relatedResource = CartConditionResource::class;
-
     public function table(Table $table): Table
     {
-        return CartConditionResource::table($table)
+        return ConditionsTable::configure($table)
             ->headerActions([
                 ApplyConditionAction::make(),
                 ApplyConditionAction::makeCustom(),

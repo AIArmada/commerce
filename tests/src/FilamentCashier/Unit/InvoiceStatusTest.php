@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCashier\Support\InvoiceStatus;
+use AIArmada\Cashier\Support\InvoiceStatus;
 
 it('has all expected status cases', function (): void {
     $cases = InvoiceStatus::cases();

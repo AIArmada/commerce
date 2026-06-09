@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
-use AIArmada\FilamentVouchers\Models\Voucher;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\CreateVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\EditVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\ListVouchers;
@@ -15,7 +16,7 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource\RelationManagers\WalletE
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherForm;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherInfolist;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\VouchersTable;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
+use AIArmada\Vouchers\Models\Voucher;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -125,10 +126,20 @@ final class VoucherResource extends Resource
         /** @var Builder<Voucher> $query */
         $query = parent::getEloquentQuery();
 
-        /** @var Builder<Voucher> $scoped */
-        $scoped = OwnerScopedQueries::scopeVoucherLike($query);
+        if (config('vouchers.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
 
-        return $scoped;
+            /** @var Builder<Voucher> $scoped */
+            $scoped = OwnerQuery::applyToEloquentBuilder(
+                $query,
+                $owner,
+                (bool) config('vouchers.owner.include_global', false),
+            );
+
+            return $scoped;
+        }
+
+        return $query;
     }
 
     public static function getNavigationBadgeColor(): string

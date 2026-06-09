@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip;
 
+use AIArmada\Chip\Actions\DispatchChipWebhookAction;
+use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
+use AIArmada\Chip\Actions\RunChipPurchaseDocGenerationAction;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
@@ -19,8 +22,12 @@ use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipCustomerDirectory;
 use AIArmada\Chip\Services\ChipSendService;
+use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Services\WebhookService;
+use AIArmada\Chip\Support\BuildChipDocData;
+use AIArmada\Chip\Support\ChipCustomerBridge;
 use AIArmada\Chip\Support\DocsIntegrationRegistrar;
+use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -74,6 +81,8 @@ final class ChipServiceProvider extends PackageServiceProvider
         $this->registerClients();
         $this->registerGateway();
         $this->registerMiddleware();
+        $this->registerActions();
+        $this->registerSupport();
     }
 
     protected function configureSpatieWebhookClient(): void
@@ -169,7 +178,8 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     protected function bootDocsIntegration(): void
     {
-        $registrar = new DocsIntegrationRegistrar;
+        /** @var DocsIntegrationRegistrar $registrar */
+        $registrar = $this->app->make(DocsIntegrationRegistrar::class);
         $registrar->register();
     }
 
@@ -242,11 +252,26 @@ final class ChipServiceProvider extends PackageServiceProvider
             return new WebhookService;
         });
 
-        $this->app->singleton(Services\WebhookEventDispatcher::class);
+        $this->app->singleton(WebhookEventDispatcher::class);
 
         $this->app->alias(ChipCollectService::class, 'chip.collect');
         $this->app->alias(ChipSendService::class, 'chip.send');
         $this->app->alias(WebhookService::class, 'chip.webhook');
+    }
+
+    protected function registerActions(): void
+    {
+        $this->app->singleton(DispatchChipWebhookAction::class);
+        $this->app->singleton(HandleSendInstructionWebhookAction::class);
+        $this->app->singleton(RunChipPurchaseDocGenerationAction::class);
+        $this->app->singleton(BuildChipDocData::class);
+    }
+
+    protected function registerSupport(): void
+    {
+        $this->app->singleton(ChipCustomerBridge::class);
+        $this->app->singleton(WebhookOwnerBatchRunner::class);
+        $this->app->singleton(DocsIntegrationRegistrar::class);
     }
 
     protected function registerClients(): void
@@ -306,8 +331,6 @@ final class ChipServiceProvider extends PackageServiceProvider
             );
         });
 
-        // Register as the default PaymentGatewayInterface if no other is bound
-        // This allows other packages to swap it with their own implementation
         if (! $this->app->bound(PaymentGatewayInterface::class)) {
             $this->app->bind(PaymentGatewayInterface::class, ChipGateway::class);
         }
