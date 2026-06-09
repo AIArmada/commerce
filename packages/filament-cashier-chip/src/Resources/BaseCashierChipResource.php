@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -43,13 +46,38 @@ abstract class BaseCashierChipResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
-        $model = $query->getModel();
 
-        if (method_exists($model, 'scopeForOwner')) {
-            return $model->scopeForOwner($query);
+        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+            return $query;
         }
 
-        return $query;
+        $owner = OwnerContext::resolve();
+
+        $includeGlobal = (bool) config('cashier-chip.features.owner.include_global', false);
+        $model = $query->getModel();
+
+        if ($model === null) {
+            return $query;
+        }
+
+        $ownerTypeColumn = 'owner_type';
+        $ownerIdColumn = 'owner_id';
+
+        if (method_exists($model, 'ownerScopeConfig')) {
+            $config = $model->ownerScopeConfig();
+            $ownerTypeColumn = $config->ownerTypeColumn;
+            $ownerIdColumn = $config->ownerIdColumn;
+        }
+
+        $query->withoutGlobalScope(OwnerScope::class);
+
+        return OwnerQuery::applyToEloquentBuilder(
+            $query,
+            $owner,
+            $includeGlobal,
+            $ownerTypeColumn,
+            $ownerIdColumn,
+        );
     }
 
     protected static function pollingInterval(): string
