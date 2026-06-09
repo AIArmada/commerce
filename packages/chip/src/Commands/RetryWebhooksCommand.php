@@ -24,7 +24,7 @@ final class RetryWebhooksCommand extends Command
         $limit = max(0, (int) $this->option('limit'));
 
         $totals = $batchRunner->run(function (?Model $_owner, ?int $remainingLimit = null) use ($retryManager): array {
-            return $this->processRetries($retryManager, $remainingLimit ?? $this->option('limit'));
+            return $this->processRetries($retryManager, $remainingLimit ?? (int) $this->option('limit'));
         }, $limit);
 
         $this->info("Retry complete: {$totals['succeeded']} succeeded, {$totals['failed']} failed.");

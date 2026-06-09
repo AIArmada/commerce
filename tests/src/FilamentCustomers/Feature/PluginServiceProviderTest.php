@@ -12,6 +12,8 @@ use Filament\Panel;
 use Illuminate\Support\ServiceProvider;
 
 it('FilamentCustomersPlugin registers resources and widgets', function (): void {
+    config()->set('filament-customers.features.merge_customers', false);
+
     $plugin = FilamentCustomersPlugin::make();
 
     expect($plugin->getId())->toBe('filament-customers');

@@ -6,9 +6,12 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Events\Data\OccurrenceDetailData;
+use AIArmada\Events\Enums\OccurrenceParticipationMode;
 use AIArmada\Events\Enums\OccurrenceStatus;
 use AIArmada\Events\Models\EventSubLocation;
 use AIArmada\Events\Models\Occurrence;
+use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Support\Integration\EventAddressRegistry;
 use AIArmada\FilamentEvents\Resources\OccurrenceResource\Pages;
 use AIArmada\FilamentEvents\Resources\OccurrenceResource\RelationManagers;
@@ -220,6 +223,21 @@ final class OccurrenceResource extends Resource
         }
 
         return (string) $subLocation->getKey();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function participationModeOptions(): array
+    {
+        return collect(OccurrenceParticipationMode::cases())
+            ->mapWithKeys(fn (OccurrenceParticipationMode $mode): array => [$mode->value => $mode->label()])
+            ->all();
+    }
+
+    public static function snapshot(Occurrence $occurrence): OccurrenceDetailData
+    {
+        return app(EventQueryService::class)->occurrence($occurrence);
     }
 
     /**

@@ -10,7 +10,7 @@ use AIArmada\Chip\Webhooks\WebhookRouter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 
-final class DispatchChipWebhookAction
+class DispatchChipWebhookAction
 {
     public function __construct(
         private readonly WebhookEnricher $enricher,

@@ -6,10 +6,13 @@ use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
+use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Schemas\SubscriptionForm;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
@@ -82,20 +85,22 @@ it('builds customer options, plans, payment methods, and can create a subscripti
     $schema = Schema::make($livewire);
     expect($page->form($schema))->toBeInstanceOf(Schema::class);
 
-    $customerOptions = filamentCashier_invokeProtectedMethod($page, 'getCustomerOptions');
+    $customerOptions = SubscriptionForm::getCustomerOptions();
     expect($customerOptions)->toBeArray()->toHaveKey((string) $user->getKey());
 
-    expect(filamentCashier_invokeProtectedMethod($page, 'getPlansForGateway', [null]))->toBe([]);
+    expect(SubscriptionForm::getPlansForGateway(null))->toBe([]);
+
+    CashierChip::useSubscriptionModel(ChipSubscription::class);
 
     config()->set('cashier.gateways.chip.plans', [
         'plan_a' => 'Plan A',
         'plan_b' => 'Plan B',
     ]);
 
-    $plans = filamentCashier_invokeProtectedMethod($page, 'getPlansForGateway', ['chip']);
+    $plans = SubscriptionForm::getPlansForGateway('chip');
     expect($plans)->toBeArray()->toHaveKey('plan_a')->toHaveKey('plan_b');
 
-    $paymentMethods = filamentCashier_invokeProtectedMethod($page, 'getPaymentMethodsForBillable', [(string) $user->getKey(), 'chip']);
+    $paymentMethods = SubscriptionForm::getPaymentMethodsForBillable((string) $user->getKey(), 'chip');
     expect($paymentMethods)->toBeArray()->toHaveKey('chip_pm_1')->toHaveKey('chip_pm_2');
 
     $gateway = Mockery::mock(GatewayContract::class);
@@ -150,6 +155,8 @@ it('builds customer options, plans, payment methods, and can create a subscripti
 
 it('rejects creating a subscription with an inaccessible payment method id', function (): void {
     config()->set('cashier.models.billable', ChipBillableUser::class);
+
+    CashierChip::useSubscriptionModel(ChipSubscription::class);
 
     $user = ChipBillableUser::query()->create([
         'name' => 'Portal User 2',

@@ -28,7 +28,7 @@ test('order create command creates order with command-line options', function ()
         '--item-qty' => 1,
         '--weight' => 1.5,
     ])
-        ->expectsOutput('✓ Order created successfully!')
+        ->expectsOutput('✓ Order created successfully')
         ->assertExitCode(0);
 });
 

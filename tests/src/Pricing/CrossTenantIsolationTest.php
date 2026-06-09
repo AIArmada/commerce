@@ -10,7 +10,9 @@ use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Services\PriceCalculator;
+use AIArmada\Pricing\Support\CustomerPriceResolver;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
+use AIArmada\Pricing\Support\SegmentPriceResolver;
 use AIArmada\Pricing\Support\TierResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
@@ -94,6 +96,8 @@ it('blocks cross-tenant reads and writes for owned price lists/prices', function
     $calculator = new PriceCalculator(
         new TierResolver,
         new PromotionalPriceResolver(new ApplyPromotionalAdjustment),
+        new CustomerPriceResolver,
+        new SegmentPriceResolver,
     );
 
     $result = $calculator->calculate($item, 1, ['price_list_id' => $listB->id]);

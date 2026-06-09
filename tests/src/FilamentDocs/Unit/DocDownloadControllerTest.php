@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Docs\Http\Controllers\DocDownloadController;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocRenderService;
-use AIArmada\FilamentDocs\Http\Controllers\DocDownloadController;
 use Illuminate\Support\Facades\Storage;
 use Spatie\LaravelPdf\Facades\Pdf;
 use Spatie\LaravelPdf\PdfBuilder;

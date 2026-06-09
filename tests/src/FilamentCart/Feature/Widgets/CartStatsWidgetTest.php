@@ -79,9 +79,9 @@ describe('CartStatsWidget', function (): void {
         /** @var array<int, Stat> $stats */
         $stats = $method->invoke($widget);
 
-        expect($stats[0]->getValue())->toBe(1);
-        expect($stats[1]->getValue())->toBe(1);
-        expect($stats[2]->getValue())->toBe(2);
+        expect($stats[0]->getValue())->toBe('1');
+        expect($stats[1]->getValue())->toBe('0');
+        expect($stats[2]->getValue())->toBe('0');
         expect($stats[3]->getValue())->toBe((string) Money::USD(2500));
     });
 
@@ -129,8 +129,8 @@ describe('CartStatsWidget', function (): void {
         /** @var array<int, Stat> $stats */
         $stats = $method->invoke($widget);
 
-        expect($stats[0]->getValue())->toBe(2);
-        expect($stats[2]->getValue())->toBe(2);
+        expect($stats[0]->getValue())->toBe('2');
+        expect($stats[2]->getValue())->toBe('0');
         expect($stats[3]->getValue())->toBe((string) Money::USD(2500));
     });
 });

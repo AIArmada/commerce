@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Services;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\Condition as StoredCondition;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use AIArmada\FilamentCart\Models\Cart as CartModel;
 use AIArmada\FilamentCart\Models\CartCondition as CartConditionModel;
 use Exception;
@@ -207,7 +208,7 @@ final class CartConditionBatchRemoval
                 throw new RuntimeException('Removing shared global conditions from all carts requires explicit global owner context.');
             }
 
-            return OwnerContext::withOwner(null, fn () => CartModel::query()->forOwner(null, includeGlobal: true));
+            return OwnerContext::withOwner(null, fn () => CartModel::query()->withoutGlobalScope(OwnerScope::class));
         }
 
         return CartModel::query()->forOwner();

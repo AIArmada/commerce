@@ -25,7 +25,7 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->calculator = new TaxCalculator;
+        $this->calculator = $this->app->make(TaxCalculator::class);
     }
 
     protected function tearDown(): void
@@ -419,14 +419,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $this->assertEquals(800, $result->taxAmount);
     }
 
-    public function test_zone_resolution_disabled_via_spatie_settings(): void
+    public function test_zone_resolution_disabled_via_config(): void
     {
-        $mockZoneSettings = Mockery::mock(TaxZoneSettings::class);
-        $mockZoneSettings->autoDetectZone = false;
-        $mockZoneSettings->fallbackBehavior = 'zero';
-        $mockZoneSettings->defaultZoneId = null;
-
-        $this->app->instance(TaxZoneSettings::class, $mockZoneSettings);
+        config(['tax.features.zone_resolution.use_customer_address' => false]);
 
         $zone = TaxZone::create([
             'name' => 'Manual Zone',
@@ -450,28 +445,24 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $this->assertEquals(0, $result->taxAmount);
     }
 
-    public function test_fallback_zone_via_spatie_settings(): void
+    public function test_fallback_zone_via_config(): void
     {
         $fallbackZone = TaxZone::create([
-            'name' => 'Spatie Fallback',
-            'code' => 'SPATIE',
+            'name' => 'Fallback',
+            'code' => 'FALLBACK',
             'is_active' => true,
         ]);
 
         TaxRate::create([
             'zone_id' => $fallbackZone->id,
-            'name' => 'Spatie Rate',
+            'name' => 'Fallback Rate',
             'rate' => 550,
             'tax_class' => 'standard',
             'is_active' => true,
         ]);
 
-        $mockZoneSettings = Mockery::mock(TaxZoneSettings::class);
-        $mockZoneSettings->autoDetectZone = false;
-        $mockZoneSettings->fallbackBehavior = 'zero';
-        $mockZoneSettings->defaultZoneId = $fallbackZone->id;
-
-        $this->app->instance(TaxZoneSettings::class, $mockZoneSettings);
+        config(['tax.features.zone_resolution.use_customer_address' => false]);
+        config(['tax.features.zone_resolution.fallback_zone_id' => $fallbackZone->id]);
 
         $result = $this->calculator->calculateTax(10000, 'standard');
 
@@ -479,15 +470,9 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $this->assertEquals($fallbackZone->id, $result->zoneId);
     }
 
-    public function test_billing_address_priority_via_spatie_settings(): void
+    public function test_billing_address_priority_via_config(): void
     {
-        $mockSettings = Mockery::mock(TaxSettings::class);
-        $mockSettings->enabled = true;
-        $mockSettings->pricesIncludeTax = false;
-        $mockSettings->shippingTaxable = true;
-        $mockSettings->taxBasedOnShippingAddress = false;
-
-        $this->app->instance(TaxSettings::class, $mockSettings);
+        config(['tax.features.zone_resolution.address_priority' => 'billing']);
 
         $sgZone = TaxZone::create([
             'name' => 'Singapore',
@@ -527,14 +512,10 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
         $this->assertEquals(900, $result->taxAmount);
     }
 
-    public function test_unknown_zone_behavior_error_via_spatie_settings(): void
+    public function test_unknown_zone_behavior_error_via_config(): void
     {
-        $mockZoneSettings = Mockery::mock(TaxZoneSettings::class);
-        $mockZoneSettings->autoDetectZone = false;
-        $mockZoneSettings->fallbackBehavior = 'error';
-        $mockZoneSettings->defaultZoneId = null;
-
-        $this->app->instance(TaxZoneSettings::class, $mockZoneSettings);
+        config(['tax.features.zone_resolution.use_customer_address' => false]);
+        config(['tax.features.zone_resolution.unknown_zone_behavior' => 'error']);
 
         $this->expectException(TaxZoneNotFoundException::class);
 

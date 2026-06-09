@@ -151,13 +151,13 @@ it('covers the filament-cashier public surface', function (): void {
     config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
     config()->set('cashier-chip.features.owner.include_global', false);
 
-    config()->set('filament-cashier.gateways.stripe', [
+    config()->set('cashier.gateways.stripe', [
         'label' => 'Stripe',
         'icon' => 'heroicon-o-credit-card',
         'color' => 'info',
         'dashboard_url' => 'https://example.test/stripe',
     ]);
-    config()->set('filament-cashier.gateways.chip', [
+    config()->set('cashier.gateways.chip', [
         'label' => 'CHIP',
         'icon' => 'heroicon-o-credit-card',
         'color' => 'warning',

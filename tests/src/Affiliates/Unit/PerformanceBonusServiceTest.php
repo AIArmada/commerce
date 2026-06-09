@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Rules\GrowthBonusRule;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
@@ -458,10 +459,9 @@ describe('PerformanceBonusService', function (): void {
                 'occurred_at' => now()->startOfMonth()->addDay(),
             ]);
 
-            $reflection = new ReflectionMethod(PerformanceBonusService::class, 'calculateGrowthBonuses');
-            $reflection->setAccessible(true);
+            $rule = app(GrowthBonusRule::class);
 
-            $bonuses = $reflection->invoke($this->service, now()->startOfMonth(), now()->endOfMonth());
+            $bonuses = $rule->calculate(now()->startOfMonth()->toImmutable(), now()->endOfMonth()->toImmutable());
 
             expect($bonuses)->toBeArray()
                 ->toHaveCount(0);

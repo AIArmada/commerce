@@ -6,6 +6,8 @@ namespace AIArmada\Affiliates\Http\Controllers;
 
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -20,6 +22,12 @@ final class AffiliateApiController extends Controller
 
     public function summary(string $code): JsonResponse
     {
+        $response = $this->requireOwnerContext();
+
+        if ($response !== null) {
+            return $response;
+        }
+
         $affiliate = $this->affiliates->findByCode($code);
 
         if (! $affiliate) {
@@ -31,6 +39,12 @@ final class AffiliateApiController extends Controller
 
     public function links(string $code, Request $request): JsonResponse
     {
+        $response = $this->requireOwnerContext();
+
+        if ($response !== null) {
+            return $response;
+        }
+
         $affiliate = $this->affiliates->findByCode($code);
 
         if (! $affiliate) {
@@ -74,6 +88,12 @@ final class AffiliateApiController extends Controller
 
     public function creatives(string $code): JsonResponse
     {
+        $response = $this->requireOwnerContext();
+
+        if ($response !== null) {
+            return $response;
+        }
+
         $affiliate = $this->affiliates->findByCode($code);
 
         if (! $affiliate) {
@@ -85,5 +105,23 @@ final class AffiliateApiController extends Controller
         return response()->json([
             'creatives' => $creatives,
         ]);
+    }
+
+    private function requireOwnerContext(): ?JsonResponse
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return null;
+        }
+
+        try {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                OwnerContext::resolve(),
+                'Owner context required',
+            );
+
+            return null;
+        } catch (NoCurrentOwnerException $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 }

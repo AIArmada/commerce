@@ -7,7 +7,7 @@ namespace AIArmada\FilamentCashier\Support;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\UnifiedSubscription;
-use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;

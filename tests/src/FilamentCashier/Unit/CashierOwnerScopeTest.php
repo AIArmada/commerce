@@ -9,6 +9,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
+use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Schemas\SubscriptionForm;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -317,7 +318,7 @@ it('blocks selecting a cross-tenant customer when an owner context exists', func
         'payment_method' => null,
     ]]))->toThrow(AuthorizationException::class);
 
-    expect(filamentCashier_invokeProtectedMethod($page, 'getCustomerOptions'))
+    expect(SubscriptionForm::getCustomerOptions())
         ->toBeArray()
         ->toHaveKey((string) $billableA->getKey())
         ->not->toHaveKey((string) $billableB->getKey());

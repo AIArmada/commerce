@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ManagePaymentMethods;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ViewInvoices;
@@ -11,6 +13,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 it('formats and returns customer portal invoices and payment methods when CHIP is available', function (): void {
+    CashierChip::useSubscriptionModel(ChipSubscription::class);
+
     $user = ChipBillableUser::query()->create([
         'name' => 'Portal User',
         'email' => 'portal-invoices@example.com',

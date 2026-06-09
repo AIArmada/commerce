@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Request;
 
@@ -94,11 +95,10 @@ describe('AffiliateApiController', function (): void {
             expect($response->getStatusCode())->toBe(404);
         });
 
-        test('requires owner context when owner scoping is enabled', function (): void {
+        test('blocks summary when owner context is not available', function (): void {
             config()->set('affiliates.owner.enabled', true);
             config()->set('affiliates.owner.include_global', false);
-
-            OwnerContext::setForRequest(null);
+            app()->forgetInstance(OwnerResolverInterface::class);
 
             $response = $this->controller->summary($this->affiliate->code);
 
@@ -213,8 +213,7 @@ describe('AffiliateApiController', function (): void {
         test('requires owner context when owner scoping is enabled', function (): void {
             config()->set('affiliates.owner.enabled', true);
             config()->set('affiliates.owner.include_global', false);
-
-            OwnerContext::setForRequest(null);
+            app()->forgetInstance(OwnerResolverInterface::class);
 
             $request = Request::create('/api/affiliates/links', 'POST');
 
@@ -267,8 +266,7 @@ describe('AffiliateApiController', function (): void {
         test('requires owner context when owner scoping is enabled', function (): void {
             config()->set('affiliates.owner.enabled', true);
             config()->set('affiliates.owner.include_global', false);
-
-            OwnerContext::setForRequest(null);
+            app()->forgetInstance(OwnerResolverInterface::class);
 
             $response = $this->controller->creatives($this->affiliate->code);
 

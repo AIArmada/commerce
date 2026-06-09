@@ -22,8 +22,8 @@ test('health check passes with valid configuration', function (): void {
     ]);
 
     $this->artisan(HealthCheckCommand::class)
-        ->expectsOutput('🔍 J&T Express API Health Check')
-        ->expectsOutput('✅ All systems operational')
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('✓ All systems operational')
         ->assertExitCode(0);
 });
 
@@ -31,8 +31,8 @@ test('health check fails when API account is missing', function (): void {
     Config::set('jnt.api_account', null);
 
     $this->artisan(HealthCheckCommand::class)
-        ->expectsOutput('🔍 J&T Express API Health Check')
-        ->expectsOutput('❌ Some systems are experiencing issues')
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('✗ Some systems are experiencing issues')
         ->assertExitCode(1);
 });
 
@@ -40,8 +40,8 @@ test('health check fails when private key is missing', function (): void {
     Config::set('jnt.private_key', null);
 
     $this->artisan(HealthCheckCommand::class)
-        ->expectsOutput('🔍 J&T Express API Health Check')
-        ->expectsOutput('❌ Some systems are experiencing issues')
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('✗ Some systems are experiencing issues')
         ->assertExitCode(1);
 });
 
@@ -49,8 +49,8 @@ test('health check fails when base URLs are missing', function (): void {
     Config::set('jnt.base_urls', []);
 
     $this->artisan(HealthCheckCommand::class)
-        ->expectsOutput('🔍 J&T Express API Health Check')
-        ->expectsOutput('❌ Some systems are experiencing issues')
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('✗ Some systems are experiencing issues')
         ->assertExitCode(1);
 });
 
@@ -60,8 +60,8 @@ test('health check shows warning when API is unreachable but configuration is va
     ]);
 
     $this->artisan(HealthCheckCommand::class)
-        ->expectsOutput('🔍 J&T Express API Health Check')
-        ->expectsOutput('✅ All systems operational')
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('✓ All systems operational')
         ->assertExitCode(0);
 });
 
@@ -71,12 +71,12 @@ test('health check displays configuration details in verbose mode', function ():
     ]);
 
     $this->artisan(HealthCheckCommand::class, ['--verbose' => true])
-        ->expectsOutput('🔍 J&T Express API Health Check')
-        ->expectsOutput('⚙️  Configuration Status')
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('Configuration Status')
         ->expectsOutput('   Environment: testing')
         ->expectsOutput('   API Account: Configured')
         ->expectsOutput('   Private Key: Configured')
-        ->expectsOutput('✅ All systems operational')
+        ->expectsOutput('✓ All systems operational')
         ->assertExitCode(0);
 });
 
@@ -85,11 +85,11 @@ test('health check shows missing configuration in verbose mode', function (): vo
     Config::set('jnt.private_key', null);
 
     $this->artisan(HealthCheckCommand::class, ['--verbose' => true])
-        ->expectsOutput('🔍 J&T Express API Health Check')
-        ->expectsOutput('⚙️  Configuration Status')
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('Configuration Status')
         ->expectsOutput('   API Account: Missing')
         ->expectsOutput('   Private Key: Missing')
-        ->expectsOutput('❌ Some systems are experiencing issues')
+        ->expectsOutput('✗ Some systems are experiencing issues')
         ->assertExitCode(1);
 });
 
@@ -101,7 +101,7 @@ test('health check handles production environment', function (): void {
     ]);
 
     $this->artisan(HealthCheckCommand::class)
-        ->expectsOutput('🔍 J&T Express API Health Check')
-        ->expectsOutput('   ❌ Health checks are disabled for production environment')
+        ->expectsOutput('J&T Express API Health Check')
+        ->expectsOutput('Health checks are disabled for production environment')
         ->assertExitCode(1);
 });

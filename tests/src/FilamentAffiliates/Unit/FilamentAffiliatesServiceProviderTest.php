@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Support\Integrations\CartBridge;
+use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 use AIArmada\FilamentAffiliates\Policies\AffiliateConversionPolicy;
 use AIArmada\FilamentAffiliates\Policies\AffiliatePayoutPolicy;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
-use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
-use AIArmada\FilamentAffiliates\Support\Integrations\VoucherBridge;
 
 it('registers plugin as singleton', function (): void {
     $plugin1 = app(FilamentAffiliatesPlugin::class);

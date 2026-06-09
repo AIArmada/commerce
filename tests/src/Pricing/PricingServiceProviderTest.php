@@ -5,7 +5,9 @@ declare(strict_types=1);
 use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
 use AIArmada\Pricing\PricingServiceProvider;
 use AIArmada\Pricing\Services\PriceCalculator;
+use AIArmada\Pricing\Support\CustomerPriceResolver;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
+use AIArmada\Pricing\Support\SegmentPriceResolver;
 use AIArmada\Pricing\Support\TierResolver;
 
 describe('PricingServiceProvider', function (): void {
@@ -41,6 +43,8 @@ describe('PricingServiceProvider', function (): void {
             $calculator = new PriceCalculator(
                 new TierResolver,
                 new PromotionalPriceResolver(new ApplyPromotionalAdjustment),
+                new CustomerPriceResolver,
+                new SegmentPriceResolver,
             );
 
             expect($calculator)->toBeInstanceOf(PriceCalculator::class);
@@ -50,6 +54,8 @@ describe('PricingServiceProvider', function (): void {
             $calculator = new PriceCalculator(
                 new TierResolver,
                 new PromotionalPriceResolver(new ApplyPromotionalAdjustment),
+                new CustomerPriceResolver,
+                new SegmentPriceResolver,
             );
 
             expect(method_exists($calculator, 'calculate'))->toBeTrue();

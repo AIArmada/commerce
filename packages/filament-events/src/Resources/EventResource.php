@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Data\EventDetailData;
 use AIArmada\Events\Data\EventReviewSchemaData;
+use AIArmada\Events\Enums\EventModerationStatus;
 use AIArmada\Events\Enums\EventStatus;
+use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Support\Policy\EventModerationPolicy;
@@ -139,6 +142,31 @@ final class EventResource extends Resource
     public static function rejectEventAction(): Action
     {
         return RejectEventAction::make();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function moderationStatusOptions(): array
+    {
+        return collect(EventModerationStatus::cases())
+            ->mapWithKeys(fn (EventModerationStatus $status): array => [$status->value => $status->label()])
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function visibilityOptions(): array
+    {
+        return collect(EventVisibility::cases())
+            ->mapWithKeys(fn (EventVisibility $visibility): array => [$visibility->value => $visibility->label()])
+            ->all();
+    }
+
+    public static function snapshot(Event $event): EventDetailData
+    {
+        return app(EventQueryService::class)->detail($event);
     }
 
     /**

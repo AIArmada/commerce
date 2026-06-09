@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources;
 
-use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Tables\SubscriptionsTable;

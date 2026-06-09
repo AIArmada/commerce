@@ -12,6 +12,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
 use AIArmada\Pricing\Models\Price;
+use AIArmada\Products\Actions\UpdateProductStatus;
 use AIArmada\Products\Contracts\Buyable;
 use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Contracts\Priceable;
@@ -762,7 +763,7 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
         });
 
         static::updated(function (Product $product): void {
-            if ($product->wasChanged('status')) {
+            if ($product->wasChanged('status') && ! UpdateProductStatus::isHandlingStatusChange()) {
                 /** @var ProductStatus|null $oldStatus */
                 $oldStatus = $product->getOriginal('status');
                 $newStatus = $product->status;

@@ -316,6 +316,9 @@ describe('ShipmentService', function (): void {
         $this->manager = Mockery::mock(ShippingManager::class);
         $this->manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
 
+        // Bind the mock so the delegated Actions resolve it from the container
+        app()->instance(ShippingManager::class, $this->manager);
+
         // Create service with mocked manager
         $service = new ShipmentService($this->manager);
 
@@ -402,6 +405,8 @@ describe('ShipmentService', function (): void {
 
         $this->manager = Mockery::mock(ShippingManager::class);
         $this->manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
+
+        app()->instance(ShippingManager::class, $this->manager);
 
         $service = new ShipmentService($this->manager);
 

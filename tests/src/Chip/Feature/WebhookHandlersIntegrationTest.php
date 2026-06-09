@@ -77,32 +77,32 @@ describe('Webhook Handlers Integration', function (): void {
 
     describe('Handler class structure', function (): void {
         it('PurchasePaidHandler extends WebhookHandler', function (): void {
-            $handler = new PurchasePaidHandler;
+            $handler = app(PurchasePaidHandler::class);
             expect($handler)->toBeInstanceOf(WebhookHandler::class);
         });
 
         it('PurchaseCancelledHandler extends WebhookHandler', function (): void {
-            $handler = new PurchaseCancelledHandler;
+            $handler = app(PurchaseCancelledHandler::class);
             expect($handler)->toBeInstanceOf(WebhookHandler::class);
         });
 
         it('PaymentFailedHandler extends WebhookHandler', function (): void {
-            $handler = new PaymentFailedHandler;
+            $handler = app(PaymentFailedHandler::class);
             expect($handler)->toBeInstanceOf(WebhookHandler::class);
         });
 
         it('PurchaseRefundedHandler extends WebhookHandler', function (): void {
-            $handler = new PurchaseRefundedHandler;
+            $handler = app(PurchaseRefundedHandler::class);
             expect($handler)->toBeInstanceOf(WebhookHandler::class);
         });
 
         it('SendCompletedHandler extends WebhookHandler', function (): void {
-            $handler = new SendCompletedHandler;
+            $handler = app(SendCompletedHandler::class);
             expect($handler)->toBeInstanceOf(WebhookHandler::class);
         });
 
         it('SendRejectedHandler extends WebhookHandler', function (): void {
-            $handler = new SendRejectedHandler;
+            $handler = app(SendRejectedHandler::class);
             expect($handler)->toBeInstanceOf(WebhookHandler::class);
         });
     });
@@ -111,7 +111,7 @@ describe('Webhook Handlers Integration', function (): void {
         it('PurchasePaidHandler skips when no local purchase exists', function (): void {
             $payload = createPayload('purchase.paid', ['status' => 'paid']);
 
-            $handler = new PurchasePaidHandler;
+            $handler = app(PurchasePaidHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -121,7 +121,7 @@ describe('Webhook Handlers Integration', function (): void {
         it('PurchaseCancelledHandler skips when no local purchase exists', function (): void {
             $payload = createPayload('purchase.cancelled', ['status' => 'cancelled']);
 
-            $handler = new PurchaseCancelledHandler;
+            $handler = app(PurchaseCancelledHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -131,7 +131,7 @@ describe('Webhook Handlers Integration', function (): void {
         it('PaymentFailedHandler skips when no local purchase exists', function (): void {
             $payload = createPayload('purchase.payment_failure', ['status' => 'failed']);
 
-            $handler = new PaymentFailedHandler;
+            $handler = app(PaymentFailedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -141,7 +141,7 @@ describe('Webhook Handlers Integration', function (): void {
         it('PurchaseRefundedHandler skips when no local purchase exists', function (): void {
             $payload = createPayload('payment.refunded', ['status' => 'refunded']);
 
-            $handler = new PurchaseRefundedHandler;
+            $handler = app(PurchaseRefundedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -155,7 +155,7 @@ describe('Webhook Handlers Integration', function (): void {
                 'status' => 'success',
             ]);
 
-            $handler = new SendCompletedHandler;
+            $handler = app(SendCompletedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -169,7 +169,7 @@ describe('Webhook Handlers Integration', function (): void {
                 'status' => 'failed',
             ]);
 
-            $handler = new SendRejectedHandler;
+            $handler = app(SendRejectedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -179,7 +179,7 @@ describe('Webhook Handlers Integration', function (): void {
 
     describe('Handler method signatures', function (): void {
         it('PurchasePaidHandler has handle method with EnrichedWebhookPayload', function (): void {
-            $handler = new PurchasePaidHandler;
+            $handler = app(PurchasePaidHandler::class);
             $reflection = new ReflectionMethod($handler, 'handle');
             $params = $reflection->getParameters();
 
@@ -188,7 +188,7 @@ describe('Webhook Handlers Integration', function (): void {
         });
 
         it('PurchasePaidHandler returns WebhookResult', function (): void {
-            $handler = new PurchasePaidHandler;
+            $handler = app(PurchasePaidHandler::class);
             $reflection = new ReflectionMethod($handler, 'handle');
             $returnType = $reflection->getReturnType();
 
@@ -318,7 +318,7 @@ describe('Webhook Handlers Integration', function (): void {
             $purchase = createTestPurchase(['status' => 'created']);
             $payload = createPayloadWithPurchase('purchase.paid', $purchase, ['status' => 'paid']);
 
-            $handler = new PurchasePaidHandler;
+            $handler = app(PurchasePaidHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -336,7 +336,7 @@ describe('Webhook Handlers Integration', function (): void {
             $purchase = createTestPurchase(['status' => 'created']);
             $payload = createPayloadWithPurchase('purchase.cancelled', $purchase, ['status' => 'cancelled']);
 
-            $handler = new PurchaseCancelledHandler;
+            $handler = app(PurchaseCancelledHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -354,7 +354,7 @@ describe('Webhook Handlers Integration', function (): void {
             $purchase = createTestPurchase(['status' => 'pending']);
             $payload = createPayloadWithPurchase('purchase.payment_failure', $purchase, ['status' => 'failed']);
 
-            $handler = new PaymentFailedHandler;
+            $handler = app(PaymentFailedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -380,7 +380,7 @@ describe('Webhook Handlers Integration', function (): void {
                 ],
             ]);
 
-            $handler = new PurchaseRefundedHandler;
+            $handler = app(PurchaseRefundedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -432,7 +432,7 @@ describe('Webhook Handlers Integration', function (): void {
                 ],
             ]);
 
-            $handler = new PurchaseRefundedHandler;
+            $handler = app(PurchaseRefundedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class)
@@ -475,7 +475,7 @@ describe('Webhook Handlers Integration', function (): void {
                 clientId: 'client-123',
             );
 
-            $handler = new SendCompletedHandler;
+            $handler = app(SendCompletedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);
@@ -517,7 +517,7 @@ describe('Webhook Handlers Integration', function (): void {
                 clientId: 'client-123',
             );
 
-            $handler = new SendRejectedHandler;
+            $handler = app(SendRejectedHandler::class);
             $result = $handler->handle($payload);
 
             expect($result)->toBeInstanceOf(WebhookResult::class);

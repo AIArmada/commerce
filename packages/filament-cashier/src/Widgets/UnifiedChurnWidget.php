@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
-use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Laravel\Cashier\Subscription;
