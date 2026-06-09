@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Models\Permission;
+use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\FilamentAuthz\Console\Concerns\Prohibitable;
 use AIArmada\FilamentAuthz\Console\DiscoverCommand;
 use AIArmada\FilamentAuthz\Console\GeneratePoliciesCommand;
 use AIArmada\FilamentAuthz\Console\SeederCommand;
 use AIArmada\FilamentAuthz\Console\SuperAdminCommand;
 use AIArmada\FilamentAuthz\Console\SyncAuthzCommand;
-use AIArmada\CommerceSupport\Models\Permission;
-use AIArmada\CommerceSupport\Models\Role;
 
 describe('GeneratePoliciesCommand', function (): void {
     it('exists', function (): void {

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAuthz\Http\Controllers\ImpersonateController;
 use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\FilamentAuthz\Http\Controllers\ImpersonateController;
 use AIArmada\FilamentAuthz\Services\ImpersonateManager;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Foundation\Auth\User as Authenticatable;

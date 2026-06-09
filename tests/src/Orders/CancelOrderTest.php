@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Actions\CancelOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
+use AIArmada\Orders\States\PendingPayment;
 
 beforeEach(function (): void {
     config()->set('orders.owner.enabled', false);
@@ -16,7 +17,7 @@ describe('CancelOrder', function (): void {
     it('can cancel an order and record reason', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-CXL-ACT-' . uniqid(),
-            'status' => \AIArmada\Orders\States\PendingPayment::class,
+            'status' => PendingPayment::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,

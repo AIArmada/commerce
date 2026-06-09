@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Shipping\Actions\CancelShipment;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\States\Cancelled;
-use AIArmada\Shipping\States\Draft;
 use AIArmada\Shipping\States\Pending;
 use AIArmada\Shipping\States\Shipped;
 
@@ -21,7 +21,7 @@ describe('CancelShipment Action', function (): void {
             'destination_address' => ['name' => 'Dest'],
         ]);
 
-        $action = new CancelShipment(app(\AIArmada\Shipping\ShippingManager::class));
+        $action = new CancelShipment(app(ShippingManager::class));
         $cancelled = $action->handle($shipment, 'Customer request');
 
         expect($cancelled->status)->toBeInstanceOf(Cancelled::class);

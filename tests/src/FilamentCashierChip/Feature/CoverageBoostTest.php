@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\BillingDashboard;
 use AIArmada\FilamentCashierChip\FilamentCashierChipPlugin;
 use AIArmada\FilamentCashierChip\FilamentCashierChipServiceProvider;
-use AIArmada\FilamentCashierChip\CustomerPortal\Pages\BillingDashboard;
 use AIArmada\FilamentCashierChip\Resources\BaseCashierChipResource;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages\ListCustomers;

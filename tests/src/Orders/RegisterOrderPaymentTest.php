@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Actions\RegisterOrderPayment;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
 
 beforeEach(function (): void {
@@ -16,7 +17,7 @@ describe('RegisterOrderPayment', function (): void {
     it('can register a payment and transition order', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-PAY-ACT-' . uniqid(),
-            'status' => \AIArmada\Orders\States\PendingPayment::class,
+            'status' => PendingPayment::class,
             'currency' => 'MYR',
             'subtotal' => 10000,
             'grand_total' => 10000,
@@ -36,7 +37,7 @@ describe('RegisterOrderPayment', function (): void {
     it('records payment with metadata', function (): void {
         $order = Order::create([
             'order_number' => 'ORD-PAY-META-' . uniqid(),
-            'status' => \AIArmada\Orders\States\PendingPayment::class,
+            'status' => PendingPayment::class,
             'currency' => 'MYR',
             'subtotal' => 5000,
             'grand_total' => 5000,

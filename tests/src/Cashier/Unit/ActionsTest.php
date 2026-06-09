@@ -19,6 +19,7 @@ use AIArmada\Cashier\Events\SubscriptionCanceled;
 use AIArmada\Cashier\Events\SubscriptionCreated;
 use AIArmada\Cashier\Events\WebhookHandled;
 use AIArmada\Cashier\Events\WebhookReceived;
+use AIArmada\Cashier\Exceptions\PaymentFailedException;
 use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use Illuminate\Support\Facades\Event;
@@ -77,7 +78,7 @@ describe('Actions', function (): void {
             Event::fake();
 
             expect(fn () => CreatePayment::run($this->billable, 5000, 'pm_test'))
-                ->toThrow(\AIArmada\Cashier\Exceptions\PaymentFailedException::class);
+                ->toThrow(PaymentFailedException::class);
 
             Event::assertDispatched(PaymentFailed::class);
         });

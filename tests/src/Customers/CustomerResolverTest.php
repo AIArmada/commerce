@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Customers\Actions\CreateCustomer;
+use AIArmada\Customers\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Customers\Models\Segment;
-use AIArmada\Customers\Actions\CreateCustomer;
-use AIArmada\Customers\Actions\UpdateCustomerProfile;
 use AIArmada\Customers\Services\CustomerResolver;
 
 describe('CustomerResolver', function (): void {
