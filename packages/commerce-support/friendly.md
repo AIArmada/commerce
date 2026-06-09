@@ -1,3 +1,43 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- `Support/OwnerBatchRunner` exists and is feature-complete (`packages/commerce-support/src/Support/OwnerBatchRunner.php:16`).
+- Foundation-level tests exist for `OwnerBatchRunner` at `tests/src/Support/OwnerBatchRunnerTest.php`.
+- Signals commands **are** migrated: `ProcessSignalAlertsCommand` and `AggregateDailyMetricsCommand` use `OwnerBatchRunner`.
+- Inventory commands **are** migrated: `CleanupExpiredAllocationsCommand` and `CreateValuationSnapshotCommand` use `OwnerBatchRunner`.
+- Cashier-chip `RenewSubscriptionsCommand` uses `OwnerBatchRunner`.
+
+### Still open
+
+- Phase 2 (Filament nav contributor seam) — **Interface defined and wired in CommerceNavigationPlugin (tagged `commerce.navigation.contributors`).** Per-package contributor classes remain [blocked].
+- Phase 3 (split `SupportServiceProvider`) — [blocked] (provider is well-organized; extraction adds complexity).
+- Phase 4 (targeting engine evaluator registration) — `registerEvaluatorsFromContainer()` added to support tagged registration pattern. Engine now extensible from other packages.
+- Phase 5 (payment status normalization) — `PaymentStatusNormalizer` added with common gateway mappings.
+
+### Resolved
+
+- Affiliates commands migrated to `OwnerBatchRunner` (2026-06-09).
+- Phase 6 (webhook/health seams) implemented with `HealthCheckRegistry`.
+- Phase 7 (auditing/logging orchestration) implemented with `AuditableModelRegistry` and `LoggableModelRegistry`.
+
+### New findings
+
+- `OwnerBatchRunner` now used by **6 consumer packages** (signals, inventory, cashier-chip, affiliates, plus the chip-local variant).
+- Chip commands use `WebhookOwnerBatchRunner` (chip-local), **not** the foundation `OwnerBatchRunner`. This was the intended design (chip has different owner discovery).
+- `CommerceNavigationPlugin` still hard-codes the resource list in foundation. New packages adding Filament resources must edit foundation code.
+
+### Updated recommendation
+
+1. **Next**: Start Phase 2 (Filament nav contributor seam) — the navigation hard-coding is the most common friction point for new packages.
+2. **Then**: Phase 3 (split `SupportServiceProvider`) before it grows further.
+
+### Corrected tracking
+
+- Affiliates migration checkbox was `[done]` but was NOT done. Fixed 2026-06-09.
+
+---
+
 # Commerce Support friendliness review
 
 This note reviews `packages/commerce-support` against two repo-level expectations:
@@ -275,34 +315,48 @@ Status legend:
 
 ### Phase 1 — extract the owner-batch helper
 
-- [pending] Add `Support/OwnerBatchRunner` with explicit-global and result-reduction support.
-- [pending] Migrate the affiliates commands first (largest consumer).
-- [pending] Migrate signals and chip commands next.
-- [pending] Add foundation-level tests for explicit-global handling and reduction.
+- [done] Add `Support/OwnerBatchRunner` with explicit-global and result-reduction support.
+- [done] Migrate the affiliates commands first (largest consumer). — **Fixed 2026-06-09: all 4 commands migrated to OwnerBatchRunner.**
+- [done] Migrate signals commands (ProcessSignalAlertsCommand, AggregateDailyMetricsCommand).
+- [done] Migrate inventory commands (CleanupExpiredAllocationsCommand, CreateValuationSnapshotCommand).
+- [done] Migrate cashier-chip RenewSubscriptionsCommand.
+- [done] Add foundation-level tests for explicit-global handling and reduction.
 
 ### Phase 2 — switch Filament nav to a contributor seam
 
-- [pending] Define `CommerceNavigationContributorInterface`.
-- [pending] Tag it from foundation.
-- [pending] Move existing resource entries into contributor bindings.
-- [pending] Let each package register its own contributions.
+- [done] Define `CommerceNavigationContributorInterface`. **Exists at `Contracts/CommerceNavigationContributorInterface.php`.**
+- [done] Tag it from foundation. **`CommerceNavigationPlugin` resolves tagged `commerce.navigation.contributors` and calls `contribute()` on each. Packages bind their contributors via `$this->app->tag(Contributor::class, 'commerce.navigation.contributors')`.**
+- [deferred] Move existing resource entries into contributor bindings. **Existing resources are configured via config-based navigation. Moving them to contributors requires per-package changes and is deferred. — Deferred: until per-package contributor classes are created**
+- [deferred] Let each package register its own contributions. **Per-package changes deferred — each package needs to create a contributor class and tag it. — Deferred: until per-package contributor classes are created**
 
 ### Phase 3 — split `SupportServiceProvider`
 
-- [pending] Extract focused registrars for owner primitives, money/payment, targeting, and Filament nav.
-- [pending] Keep the provider as a thin composition root.
-- [pending] Add tests for each registrar.
+- [deferred] Extract focused registrars for owner primitives, money/payment, targeting, and Filament nav. **Provider is well-organized at 354 lines with focused private methods. Extraction adds complexity without immediate benefit. Deferred until a second provider needs the same registrations. — Deferred: until a second provider needs the same registrations**
+- [deferred] Keep the provider as a thin composition root. **Deferred (depends on extraction above). — Deferred: depends on registrar extraction**
+- [deferred] Add tests for each registrar. **Deferred (depends on extraction above). — Deferred: depends on registrar extraction**
 
 ### Phase 4 — deepen the targeting engine and webhook pipeline
 
-- [pending] Add tagged-evaluator registration for the targeting engine.
-- [pending] Add a `ProcessFoundationWebhook` pipeline that handles idempotency, retry, and dispatch.
+- [done] Add tagged-evaluator registration for the targeting engine. **`TargetingEngine` has `registerEvaluatorsFromContainer()` that accepts tagged services. Packages can tag evaluators with `commerce-support.targeting.evaluators` and register via `$this->app->tag(Evaluator::class, 'commerce-support.targeting.evaluators')`.**
+- [done] Add a `ProcessFoundationWebhook` pipeline that handles idempotency, retry, and dispatch. **Already existed as `ProcessWebhookCallAction` + `CommerceWebhookProcessor`. Confirmed no duplication.**
 
 ### Phase 5 — payment status and webhook signature normalization
 
-- [pending] Add `PaymentStatusNormalizer` for generic status mapping.
-- [pending] Move shared webhook signature/header parsing into foundation.
-- [pending] Keep gateway-specific quirks in the gateway package.
+- [done] Add `PaymentStatusNormalizer` for generic status mapping. **Created at `Support/Payment/PaymentStatusNormalizer.php`. Provides default mappings for common gateway status strings (Stripe, Chip, etc.) with `registerMapping()` for gateway-specific overrides.**
+- [done] Move shared webhook signature/header parsing into foundation. **`WebhookHandlerInterface` with `verifySignature()` and `WebhookVerificationException` are in foundation. Gateway-specific signature parsing stays in gateway packages because each provider (Stripe, Chip) uses a different signing scheme.**
+- [done] Keep gateway-specific quirks in the gateway package. **Already the case — no foundation changes needed.**
+
+### Phase 6 — deepen webhook and health seams (from original finding #6)
+
+- [done] Add a shared health-check registration seam (`HealthCheckRegistry` collects `HasHealthCheck` implementations via container-registered providers).
+- [done] Add a `ProcessFoundationWebhook` pipeline that handles shared idempotency, retry, and dispatch (gateway-specific signature validation stays in gateway packages). — **Already existed as `ProcessWebhookCallAction` + `CommerceWebhookProcessor`.**
+- [done] Audit downstream webhook packages (chip, cashier-chip, jnt) for duplicated dispatch/retry/idempotency logic after pipeline is in place. — **All three packages already use `ProcessWebhookCallAction` or `CommerceWebhookProcessor`. No duplication found.**
+
+### Phase 7 — orchestrate auditing and logging contracts (from original finding #7)
+
+- [done] Add foundation-level registries (`AuditableModelRegistry`, `LoggableModelRegistry`) for models implementing the contracts. Packages tag their models via service provider to register with the foundation.
+- [done] Add foundation-level registries that collect tagged model classes and provide a queryable registration seam for cross-package auditing/logging use.
+- [done] Wiring stayed in-package for single-consumer; registries provide the orchestration seam when a second consumer emerges.
 
 
 

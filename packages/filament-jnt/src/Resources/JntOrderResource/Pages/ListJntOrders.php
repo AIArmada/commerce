@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Pages;
 
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyListRecords;
 use AIArmada\FilamentJnt\Resources\JntOrderResource;
-use AIArmada\FilamentJnt\Resources\Pages\ReadOnlyListRecords;
 use Override;
 
 final class ListJntOrders extends ReadOnlyListRecords

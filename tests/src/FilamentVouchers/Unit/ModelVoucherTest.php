@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\FilamentVouchers\Models\Voucher as FilamentVoucher;
+use AIArmada\Vouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\States\Active;

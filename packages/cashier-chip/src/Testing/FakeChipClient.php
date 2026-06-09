@@ -7,68 +7,36 @@ namespace AIArmada\CashierChip\Testing;
 use Illuminate\Support\Str;
 
 /**
- * Fake CHIP client for testing purposes.
+ * Fake CHIP client for testing CHIP API calls directly.
  *
- * This class provides mock responses for CHIP API calls,
- * allowing tests to run without real API credentials.
+ * CANONICAL data store for test doubles. Provides low-level mock
+ * responses for every CHIP API endpoint using plain arrays.
+ *
+ * @see FakeChipCollectService wraps this client to provide the
+ * same interface as the real ChipCollectService with typed DTOs.
  */
 class FakeChipClient
 {
-    /**
-     * Storage for created clients.
-     *
-     * @var array<string, array<string, mixed>>
-     */
     protected array $clients = [];
 
-    /**
-     * Storage for created purchases.
-     *
-     * @var array<string, array<string, mixed>>
-     */
     protected array $purchases = [];
 
-    /**
-     * Storage for recurring tokens.
-     *
-     * @var array<string, array<string, array<string, mixed>>>
-     */
     protected array $recurringTokens = [];
 
-    /**
-     * Storage for webhooks.
-     *
-     * @var array<string, array<string, mixed>>
-     */
     protected array $webhooks = [];
 
-    /**
-     * The brand ID for the fake client.
-     */
     protected string $brandId;
 
-    /**
-     * Create a new fake CHIP client instance.
-     */
     public function __construct(string $brandId = 'test-brand-id')
     {
         $this->brandId = $brandId;
     }
 
-    /**
-     * Get the brand ID.
-     */
     public function getBrandId(): string
     {
         return $this->brandId;
     }
 
-    /**
-     * Create a new client.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
     public function createClient(array $data): array
     {
         $id = 'cli_' . Str::random(20);
@@ -105,22 +73,11 @@ class FakeChipClient
         return $client;
     }
 
-    /**
-     * Get a client by ID.
-     *
-     * @return array<string, mixed>|null
-     */
     public function getClient(string $clientId): ?array
     {
         return $this->clients[$clientId] ?? null;
     }
 
-    /**
-     * List all clients.
-     *
-     * @param  array<string, mixed>  $filters
-     * @return array<string, mixed>
-     */
     public function listClients(array $filters = []): array
     {
         $clients = array_values($this->clients);
@@ -135,12 +92,6 @@ class FakeChipClient
         ];
     }
 
-    /**
-     * Update a client.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>|null
-     */
     public function updateClient(string $clientId, array $data): ?array
     {
         if (! isset($this->clients[$clientId])) {
@@ -153,20 +104,11 @@ class FakeChipClient
         return $this->clients[$clientId];
     }
 
-    /**
-     * Delete a client.
-     */
     public function deleteClient(string $clientId): void
     {
         unset($this->clients[$clientId]);
     }
 
-    /**
-     * Create a new purchase.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
     public function createPurchase(array $data): array
     {
         $id = 'pur_' . Str::random(20);
@@ -216,21 +158,11 @@ class FakeChipClient
         return $purchase;
     }
 
-    /**
-     * Get a purchase by ID.
-     *
-     * @return array<string, mixed>|null
-     */
     public function getPurchase(string $purchaseId): ?array
     {
         return $this->purchases[$purchaseId] ?? null;
     }
 
-    /**
-     * Cancel a purchase.
-     *
-     * @return array<string, mixed>|null
-     */
     public function cancelPurchase(string $purchaseId): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -243,11 +175,6 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
-    /**
-     * Refund a purchase.
-     *
-     * @return array<string, mixed>|null
-     */
     public function refundPurchase(string $purchaseId, ?int $amount = null): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -261,11 +188,6 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
-    /**
-     * Charge a purchase with a recurring token.
-     *
-     * @return array<string, mixed>|null
-     */
     public function chargePurchase(string $purchaseId, string $recurringToken): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -284,11 +206,6 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
-    /**
-     * Capture a purchase.
-     *
-     * @return array<string, mixed>|null
-     */
     public function capturePurchase(string $purchaseId, ?int $amount = null): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -302,11 +219,6 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
-    /**
-     * Release a purchase.
-     *
-     * @return array<string, mixed>|null
-     */
     public function releasePurchase(string $purchaseId): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -319,11 +231,6 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
-    /**
-     * Mark a purchase as paid.
-     *
-     * @return array<string, mixed>|null
-     */
     public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -340,9 +247,6 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
-    /**
-     * Delete a recurring token from a purchase.
-     */
     public function deleteRecurringToken(string $purchaseId): void
     {
         if (isset($this->purchases[$purchaseId])) {
@@ -350,12 +254,6 @@ class FakeChipClient
         }
     }
 
-    /**
-     * Get available payment methods.
-     *
-     * @param  array<string, mixed>  $filters
-     * @return array<string, mixed>
-     */
     public function getPaymentMethods(array $filters = []): array
     {
         return [
@@ -379,19 +277,11 @@ class FakeChipClient
         ];
     }
 
-    /**
-     * Get public key.
-     */
     public function getPublicKey(): string
     {
         return "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0...(fake)\n-----END PUBLIC KEY-----";
     }
 
-    /**
-     * Get account balance.
-     *
-     * @return array<string, mixed>
-     */
     public function getAccountBalance(): array
     {
         return [
@@ -402,12 +292,6 @@ class FakeChipClient
         ];
     }
 
-    /**
-     * Get account turnover.
-     *
-     * @param  array<string, mixed>  $filters
-     * @return array<string, mixed>
-     */
     public function getAccountTurnover(array $filters = []): array
     {
         return [
@@ -417,12 +301,6 @@ class FakeChipClient
         ];
     }
 
-    /**
-     * Add a recurring token to a client.
-     *
-     * @param  array<string, mixed>|null  $data
-     * @return array<string, mixed>
-     */
     public function addRecurringToken(string $clientId, ?array $data = null): array
     {
         $tokenId = 'tok_' . Str::random(20);
@@ -460,40 +338,21 @@ class FakeChipClient
         return $token;
     }
 
-    /**
-     * List recurring tokens for a client.
-     *
-     * @return array<int, array<string, mixed>>
-     */
     public function listClientRecurringTokens(string $clientId): array
     {
         return array_values($this->recurringTokens[$clientId] ?? []);
     }
 
-    /**
-     * Get a specific recurring token for a client.
-     *
-     * @return array<string, mixed>|null
-     */
     public function getClientRecurringToken(string $clientId, string $tokenId): ?array
     {
         return $this->recurringTokens[$clientId][$tokenId] ?? null;
     }
 
-    /**
-     * Delete a recurring token from a client.
-     */
     public function deleteClientRecurringToken(string $clientId, string $tokenId): void
     {
         unset($this->recurringTokens[$clientId][$tokenId]);
     }
 
-    /**
-     * Create a webhook.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
     public function createWebhook(array $data): array
     {
         $id = 'whk_' . Str::random(20);
@@ -512,22 +371,11 @@ class FakeChipClient
         return $webhook;
     }
 
-    /**
-     * Get a webhook by ID.
-     *
-     * @return array<string, mixed>|null
-     */
     public function getWebhook(string $webhookId): ?array
     {
         return $this->webhooks[$webhookId] ?? null;
     }
 
-    /**
-     * Update a webhook.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>|null
-     */
     public function updateWebhook(string $webhookId, array $data): ?array
     {
         if (! isset($this->webhooks[$webhookId])) {
@@ -539,20 +387,11 @@ class FakeChipClient
         return $this->webhooks[$webhookId];
     }
 
-    /**
-     * Delete a webhook.
-     */
     public function deleteWebhook(string $webhookId): void
     {
         unset($this->webhooks[$webhookId]);
     }
 
-    /**
-     * List all webhooks.
-     *
-     * @param  array<string, mixed>  $filters
-     * @return array<string, mixed>
-     */
     public function listWebhooks(array $filters = []): array
     {
         return [
@@ -561,13 +400,6 @@ class FakeChipClient
         ];
     }
 
-    /**
-     * Simulate a payment being completed.
-     *
-     * This is useful for testing webhook handling.
-     *
-     * @return array<string, mixed>|null
-     */
     public function simulatePaymentComplete(string $purchaseId, ?string $recurringToken = null): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -588,11 +420,6 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
-    /**
-     * Simulate a payment failure.
-     *
-     * @return array<string, mixed>|null
-     */
     public function simulatePaymentFailure(string $purchaseId, string $reason = 'Payment declined'): ?array
     {
         if (! isset($this->purchases[$purchaseId])) {
@@ -610,39 +437,21 @@ class FakeChipClient
         return $this->purchases[$purchaseId];
     }
 
-    /**
-     * Get all stored clients.
-     *
-     * @return array<string, array<string, mixed>>
-     */
     public function getClients(): array
     {
         return $this->clients;
     }
 
-    /**
-     * Get all stored purchases.
-     *
-     * @return array<string, array<string, mixed>>
-     */
     public function getPurchases(): array
     {
         return $this->purchases;
     }
 
-    /**
-     * Get all stored recurring tokens.
-     *
-     * @return array<string, array<string, array<string, mixed>>>
-     */
     public function getRecurringTokens(): array
     {
         return $this->recurringTokens;
     }
 
-    /**
-     * Reset all stored data.
-     */
     public function reset(): void
     {
         $this->clients = [];
@@ -651,11 +460,6 @@ class FakeChipClient
         $this->webhooks = [];
     }
 
-    /**
-     * Calculate total from products.
-     *
-     * @param  array<int, array<string, mixed>>  $products
-     */
     protected function calculateTotal(array $products): int
     {
         $total = 0;

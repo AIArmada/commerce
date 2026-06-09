@@ -7,8 +7,8 @@ use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
 use AIArmada\Commerce\Tests\Fixtures\Models\User as FixtureUser;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -98,7 +98,7 @@ it('scopes user_id queries to current owner billables', function (): void {
         }
     });
 
-    $records = CashierOwnerScope::apply(TenantRecord::query())
+    $records = OwnerScopedQuery::apply(TenantRecord::query())
         ->orderBy('name')
         ->pluck('name')
         ->all();
@@ -153,7 +153,7 @@ it('fails closed when billable supports owner scoping but no owner context exist
 
     // No OwnerResolver binding here: OwnerContext::resolve() returns null.
     // Since the billable model supports owner scoping, this must fail closed.
-    $records = CashierOwnerScope::apply(TenantRecord::query())
+    $records = OwnerScopedQuery::apply(TenantRecord::query())
         ->pluck('name')
         ->all();
 
@@ -199,7 +199,7 @@ it('fails closed without throwing for owner-scoped models when no owner context 
         }
     });
 
-    $count = CashierOwnerScope::apply(TenantBillableUser::query())->count();
+    $count = OwnerScopedQuery::apply(TenantBillableUser::query())->count();
 
     expect($count)->toBe(0);
 });
@@ -243,7 +243,7 @@ it('fails closed for owner-scoped target models even when billable model is not 
         }
     });
 
-    $count = CashierOwnerScope::apply(TenantBillableUser::query())->count();
+    $count = OwnerScopedQuery::apply(TenantBillableUser::query())->count();
 
     expect($count)->toBe(0);
 });

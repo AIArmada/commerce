@@ -73,7 +73,6 @@ class EventSubLocation extends Model implements Auditable
             $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
         }
 
-        /** @var Builder<EventSubLocation> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;

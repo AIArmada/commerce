@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier;
 
+use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Pages\BillingDashboard;
 use AIArmada\FilamentCashier\Pages\GatewayManagement;
 use AIArmada\FilamentCashier\Pages\GatewaySetup;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Widgets\GatewayBreakdownWidget;
 use AIArmada\FilamentCashier\Widgets\GatewayComparisonWidget;
 use AIArmada\FilamentCashier\Widgets\TotalMrrWidget;

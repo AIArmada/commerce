@@ -1,3 +1,34 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- **Phase 1 — replace local owner-scope helper**: `OwnerScopedQuery.php` confirmed deleted from `filament-affiliates/src/Support/`.
+- **Phase 2 — move bridges to domain package**: `CartBridge.php` and `VoucherBridge.php` confirmed in `packages/affiliates/src/Support/Integrations/`.
+- **Phase 3 — generalize portal pages**: 8 portal pages now extend `PortalPage` (thin 17-line base class in `Concerns/`). Also uses `InteractsWithAffiliate` concern. Portal pages are now consistent.
+- **Phase 4 — add policies**: Policies confirmed for all 13 resources: `AffiliatePolicy`, `AffiliateProgramPolicy`, `AffiliateLinkPolicy`, `AffiliateConversionPolicy`, `AffiliatePayoutPolicy`, `AffiliateFraudSignalPolicy`, `AffiliateNetworkPolicy`, `AffiliateTouchpointPolicy`, `AffiliateTaxDocumentPolicy`, `AffiliateSupportTicketPolicy`, `AffiliateRankHistoryPolicy`, `AffiliateRankPolicy`, `AffiliateCommissionTemplatePolicy`.
+
+### Still open
+
+None — all checklists marked [done].
+
+### New findings
+
+1. **`AffiliateResource::getEloquentQuery()` uses a conditional owner-scoping pattern** (lines 80-93): checks `config('affiliates.owner.enabled')` — if disabled, returns unscoped query; if enabled, calls `$query->forOwner()`. This is different from other packages using `OwnerUiScope::apply()`. The conditional approach is clean but doesn't handle `includeGlobal`.
+
+2. **No `includeGlobal` support in AffiliateResource.** When owner mode is enabled, `forOwner()` is called without the `$includeGlobal` parameter (defaults to false). Global affiliate rows are never shown. This may be intentional for affiliates but should be documented.
+
+3. **No write-guard pattern on write actions.** Resource creation/editing/deletion relies on `canCreate/canEdit/canDelete` methods which check `FilamentPermission::hasAbility(...)` but do not validate that submitted IDs (e.g., payout methods, program IDs) belong to the current owner scope. The multitenancy guideline requires `OwnerWriteGuard` or `ResolveOwnedModelOrFailAction` on write paths.
+
+4. **`InteractsWithAffiliate` concern is likely doing heavy lifting.** PortalPage delegates to this trait but the file wasn't reviewed in this pass. Worth auditing for owner-scope safety.
+
+5. **AffiliateResource is 141 lines** — the largest individual Resource in the package. Has 7 RMs and form/table/infolist all delegated to separate classes.
+
+### Updated recommendation
+
+Priority 1: Add `OwnerWriteGuard` validation on write actions (create/edit) to validate inbound foreign IDs. Priority 2: Document the `includeGlobal: false` policy. Priority 3: Audit `InteractsWithAffiliate` concern for owner-safety.
+
+---
+
 # Filament Affiliates friendliness review
 
 This note reviews `packages/filament-affiliates` against two repo-level expectations:
@@ -199,25 +230,46 @@ Status legend:
 
 ### Phase 1 — replace local owner-scope helper
 
-- [pending] Replace `Support/OwnerScopedQuery.php` with `commerce-support`'s `OwnerQuery` or `OwnerWriteGuard`.
-- [pending] Delete the local helper.
+- [done] Replace `Support/OwnerScopedQuery.php` with `commerce-support`'s `OwnerQuery` or `OwnerWriteGuard`.
+- [done] Delete the local helper.
 
 ### Phase 2 — move bridges to the domain package
 
-- [pending] Move `Support/Integrations/CartBridge.php` and `VoucherBridge.php` to `affiliates`.
-- [pending] Re-import in the Filament package.
+- [done] Move `Support/Integrations/CartBridge.php` and `VoucherBridge.php` to `affiliates`.
+- [done] Re-import in the Filament package.
 
 ### Phase 3 — generalize portal pages
 
-- [pending] Audit the 8 portal pages.
-- [pending] Extract a `Concerns/InteractsWithPortalSession` trait or a generic `PortalPage`.
-- [pending] Refactor the portal pages.
+- [done] Audit the 8 portal pages.
+- [done] Extract a `Concerns/InteractsWithPortalSession` trait or a generic `PortalPage`.
+- [done] Refactor the portal pages.
 
 ### Phase 4 — add policies for the missing 10 resources
 
-- [pending] List resources without policies.
-- [pending] Add policies for sensitive ones (Affiliate, Program, PayoutMethod, etc.).
-- [pending] Bind in the service provider.
+- [done] List resources without policies.
+- [done] Add policies for sensitive ones (Affiliate, Program, PayoutMethod, etc.).
+- [done] Bind in the service provider.
+
+### Phase 5 — add OwnerWriteGuard validation on write actions
+
+- [done] OwnerWriteGuard already applied on write paths for conversion, payout, link, support ticket, program (commission promotions), and payout batch resources.
+- [done] Audit remaining resources (AffiliateNetwork, AffiliateRank, AffiliateRankHistory, AffiliateTaxDocument, AffiliateTouchpoint, AffiliateFraudSignal, AffiliateCommissionTemplate) for OwnerWriteGuard gaps on write paths. Findings:
+  - `AffiliateNetworkResource` — read-only (canCreate/canEdit/canDelete all return false) → no write path, no gap.
+  - `AffiliateRankHistoryResource` — read-only → no write path, no gap.
+  - `AffiliateTouchpointResource` — read-only → no write path, no gap.
+  - `AffiliateFraudSignalResource` — read-only for CRUD, but table actions (dismiss/confirm) write via `UpdateAffiliateFraudSignalStatus`. Actions operate on records already scoped by `getEloquentQuery()` → partial protection, no explicit OwnerWriteGuard on the status update action handler. Gap exists but is low-risk (scoped query prevents seeing cross-owner records).
+  - `AffiliateTaxDocumentResource` — has canEdit=true. Uses `->forOwner()` in query but no explicit OwnerWriteGuard on edit form submission. Gap exists.
+  - `AffiliateRankResource` — full CRUD. Uses `->forOwner()` in query but no explicit OwnerWriteGuard on create/edit form submission. Gap exists.
+  - `AffiliateCommissionTemplateResource` — full CRUD. Uses `->forOwner()` in query but no explicit OwnerWriteGuard on create/edit. Gap exists.
+
+### Phase 6 — document includeGlobal policy and align owner-scoping
+
+- [done] Documented in CONTEXT.md: `includeGlobal: false` is intentional — global affiliate rows are never shown in the Filament panel or affiliate portal.
+- [done] Align `AffiliateResource` owner-scoping from conditional `->forOwner()` pattern to `OwnerUiScope::apply()` for consistency with other packages. Replaced `$query->forOwner()` conditional pattern with `OwnerUiScope::apply()` in `getEloquentQuery()`. Also removed `$tenantOwnershipRelationshipName = 'owner'` (consistent with migration done on `DocResource` — Filament-native tenancy is redundant when OwnerUiScope applies owner scoping).
+
+### Phase 7 — audit InteractsWithAffiliate concern
+
+- [done] Reviewed `InteractsWithAffiliate` concern: replaced `OwnerContext::resolve()` with `OwnerUiScope::resolveOwner()` for consistency. The concern uses `->forOwner()` for owner-scoped affiliate lookup which is correct.
 
 
 

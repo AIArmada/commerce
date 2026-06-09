@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\DB;
  * - Checkout orchestration (cart → payment → success/failure)
  * - Payment event handling (clear cart on success, release inventory on failure)
  * - Cart metadata preservation for payment context
+ *
+ * Octane safety: The extend() guard ($manager instanceof CartManagerWithPayment)
+ * prevents re-wrapping on subsequent requests. Event listeners are registered
+ * via config-gated closures and are safe for long-lived workers.
  */
 final class CartIntegrationRegistrar
 {

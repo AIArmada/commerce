@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Pages;
 
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersFromListAction;
-use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
 use AIArmada\FilamentPromotions\Widgets\PromotionStatsWidget;
 use AIArmada\FilamentPromotions\Widgets\TopPromotionsUsageChart;
+use AIArmada\Promotions\Models\Promotion;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 

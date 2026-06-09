@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -105,10 +107,18 @@ final class VoucherWalletStatsWidget extends BaseWidget
         /** @var Builder<VoucherWallet> $query */
         $query = VoucherWallet::query();
 
-        if (! OwnerScopedQueries::isEnabled()) {
+        if (! config('vouchers.owner.enabled', false)) {
             return $query;
         }
 
-        return $query->whereIn('voucher_id', OwnerScopedQueries::voucherIds());
+        $voucherQuery = Voucher::query()->select('id');
+
+        $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+            $voucherQuery,
+            OwnerContext::resolve(),
+            (bool) config('vouchers.owner.include_global', false),
+        );
+
+        return $query->whereIn('voucher_id', $voucherQuery);
     }
 }

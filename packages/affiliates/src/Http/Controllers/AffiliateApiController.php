@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Http\Controllers;
 
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -21,15 +20,6 @@ final class AffiliateApiController extends Controller
 
     public function summary(string $code): JsonResponse
     {
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-            if ($owner === null && ! $includeGlobal) {
-                return response()->json(['message' => 'Owner context required'], 400);
-            }
-        }
-
         $affiliate = $this->affiliates->findByCode($code);
 
         if (! $affiliate) {
@@ -41,15 +31,6 @@ final class AffiliateApiController extends Controller
 
     public function links(string $code, Request $request): JsonResponse
     {
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-            if ($owner === null && ! $includeGlobal) {
-                return response()->json(['message' => 'Owner context required'], 400);
-            }
-        }
-
         $affiliate = $this->affiliates->findByCode($code);
 
         if (! $affiliate) {
@@ -93,15 +74,6 @@ final class AffiliateApiController extends Controller
 
     public function creatives(string $code): JsonResponse
     {
-        if ((bool) config('affiliates.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-
-            if ($owner === null && ! $includeGlobal) {
-                return response()->json(['message' => 'Owner context required'], 400);
-            }
-        }
-
         $affiliate = $this->affiliates->findByCode($code);
 
         if (! $affiliate) {

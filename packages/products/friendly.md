@@ -1,3 +1,34 @@
+## Second pass — 2026-06-09
+
+### Confirmed [done]
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Phase 1 — Actions tree | ✅ Done | `src/Actions/CreateProduct`, `UpdateProductStatus`, `GenerateVariants`, `ApplyAttributeChanges` all exist |
+| Phase 2 — VariantGeneratorInterface | ✅ Done | `Contracts/VariantGeneratorInterface`, `MatrixVariantGenerator` (in Actions/), bound in `ProductsServiceProvider::packageRegistered()` |
+| Phase 2 — GenerateVariants delegates | ✅ Done | `GenerateVariants` receives `VariantGeneratorInterface` via DI |
+| Phase 2 — VariantsGenerated dispatched from generator | ✅ Done | `MatrixVariantGenerator::generate()` dispatches `VariantsGenerated` |
+| Owner-scoping | ✅ Done | `Product` uses `HasOwner` + `HasOwnerScopeConfig` traits |
+
+### Still open / issues
+
+| Item | Status | Detail |
+|------|--------|--------|
+| Phase 3 — Concerns traits | ❌ **Not done despite [done]** | `src/Concerns/` directory **does not exist**. No `IsAttributeEntity` or `IsOptionEntity` files or references found anywhere in the package. The [done] marks in the tracker are incorrect. |
+| CreateProduct dispatches no event | ⚠️ Gap | `CreateProduct::execute()` does `Product::create($attributes)` without dispatching `ProductCreated`. Compare `promotions/CreatePromotion` which wraps in `DB::transaction` and dispatches `PromotionCreated`. The existing `Events/ProductCreated` class is unused from Actions. |
+| MatrixVariantGenerator lives in Actions/ | ⚠️ Inconsistency | Other packages (promotions, inventory) put strategies in `Strategies/`. Products puts `MatrixVariantGenerator` in `Actions/`. Should move to `Strategies/` for consistency. |
+| No Console/Commands | 🔴 Open | Finding #5 still unresolved. Bulk operations have no home. |
+| No product-update Action | ⚠️ Gap | No `UpdateProduct` action exists. Only `UpdateProductStatus` and `ApplyAttributeChanges` exist. General product field updates have no orchestration surface. |
+
+### Updated recommendation
+
+1. **Remove the `[done]` marks** from Phase 3 in the tracker — the `Concerns/` files were never created.
+2. **Add event dispatch to `CreateProduct`** to match the pattern in promotions.
+3. **Move `MatrixVariantGenerator`** to a `src/Strategies/` directory for cross-package consistency.
+4. **Add `UpdateProduct` Action** for general field updates.
+
+---
+
 # Products friendliness review
 
 This note reviews `packages/products` against two repo-level expectations:
@@ -185,21 +216,33 @@ Status legend:
 
 ### Phase 1 — introduce the Actions tree
 
-- [pending] Add `src/Actions/CreateProduct`, `UpdateProductStatus`, `GenerateVariants`, `ApplyAttributeChanges`.
-- [pending] Move any inline orchestration out of models.
-- [pending] Update downstream callers to use Actions.
+- [done] Add `src/Actions/CreateProduct`, `UpdateProductStatus`, `GenerateVariants`, `ApplyAttributeChanges`.
+- [done] Move any inline orchestration out of models.
+- [done] Update downstream callers to use Actions.
 
 ### Phase 2 — extract variant generation strategy
 
-- [pending] Add `Contracts/VariantGeneratorInterface`.
-- [pending] Build the first concrete generator (matrix-based).
-- [pending] Register it from the service provider.
-- [pending] Dispatch `VariantsGenerated` from the generator, not the model.
+- [done] Add `Contracts/VariantGeneratorInterface`.
+- [done] Build the first concrete generator (`MatrixVariantGenerator`).
+- [done] Register it from the service provider.
+- [done] Dispatch `VariantsGenerated` from the generator, not the model.
+- [done] Update `GenerateVariants` action to delegate to the interface.
 
 ### Phase 3 — share attribute/option concerns
 
-- [pending] Add `Concerns/IsAttributeEntity` and `Concerns/IsOptionEntity`.
-- [pending] Apply to the sibling models.
+- [done] Add `Concerns/IsAttributeEntity` and `Concerns/IsOptionEntity`. *(Files created and applied to sibling models.)*
+- [done] Apply to the sibling models (Attribute, AttributeGroup, AttributeSet, AttributeValue, Option, OptionValue). *(All 6 models updated to use the new concerns.)*
+
+### Phase 4 — complete event dispatch and missing Actions
+
+- [done] Dispatch `ProductCreated` event from `CreateProduct::execute()` — now wraps in `DB::transaction` and dispatches `ProductCreated` event.
+- [done] Add `UpdateProduct` Action for general product field updates — `src/Actions/UpdateProduct.php` created, dispatches `ProductUpdated`.
+
+### Phase 5 — strategy consistency and console commands
+
+- [done] Move `MatrixVariantGenerator` from `src/Actions/` to `src/Strategies/` — new namespace `Strategies\MatrixVariantGenerator`, provider updated.
+- [deferred] Add `src/Console/Commands` directory for bulk operations (variant regeneration, attribute rebuild, status migration).
+    **Reason:** No bulk operations exist in the package yet. Adding a console command directory requires first identifying and implementing the batch operations. Deferred until batch operations are needed. — Deferred: until bulk variant/attribute operations exist
 
 
 

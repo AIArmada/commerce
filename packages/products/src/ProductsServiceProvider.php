@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products;
 
+use AIArmada\Products\Contracts\VariantGeneratorInterface;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;
 use AIArmada\Products\Models\AttributeSet;
@@ -16,6 +17,7 @@ use AIArmada\Products\Policies\AttributeSetPolicy;
 use AIArmada\Products\Policies\CategoryPolicy;
 use AIArmada\Products\Policies\CollectionPolicy;
 use AIArmada\Products\Policies\ProductPolicy;
+use AIArmada\Products\Strategies\MatrixVariantGenerator;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -30,6 +32,11 @@ final class ProductsServiceProvider extends PackageServiceProvider
             ->hasTranslations()
             ->runsMigrations()
             ->discoversMigrations();
+    }
+
+    public function packageRegistered(): void
+    {
+        $this->app->bind(VariantGeneratorInterface::class, MatrixVariantGenerator::class);
     }
 
     public function bootingPackage(): void

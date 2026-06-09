@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Cashier as CashierChip;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
-use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Subscription;
@@ -90,7 +90,7 @@ final class GatewayBreakdownWidget extends ChartWidget
             if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
                 $stripeRevenue = 0;
 
-                $stripeQuery = CashierOwnerScope::apply(Subscription::query())
+                $stripeQuery = OwnerScopedQuery::apply(Subscription::query())
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
@@ -118,7 +118,7 @@ final class GatewayBreakdownWidget extends ChartWidget
                 $subscriptionModel = CashierChip::$subscriptionModel;
                 $chipRevenue = 0;
 
-                $chipQuery = CashierOwnerScope::apply($subscriptionModel::query())
+                $chipQuery = OwnerScopedQuery::apply($subscriptionModel::query())
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')

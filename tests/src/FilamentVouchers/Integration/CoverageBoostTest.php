@@ -9,7 +9,7 @@ use AIArmada\FilamentVouchers\Actions\ApplyVoucherToCartAction;
 use AIArmada\FilamentVouchers\Actions\BulkGenerateVouchersAction;
 use AIArmada\FilamentVouchers\Actions\ManualRedeemVoucherAction;
 use AIArmada\FilamentVouchers\Actions\PauseVoucherAction;
-use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
+use AIArmada\Vouchers\Filament\Extensions\CartVoucherActions;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use AIArmada\FilamentVouchers\Pages\StackingConfigurationPage;
 use AIArmada\FilamentVouchers\Pages\TargetingConfigurationPage;
@@ -29,7 +29,6 @@ use AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Pages\ListVoucherUs
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Tables\VoucherUsagesTable;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource\Tables\VoucherWalletsTable;
-use AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget;
 use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\RedemptionTrendChart;
@@ -123,7 +122,6 @@ it('builds resources, schemas, tables, relation managers, pages, widgets, and ac
     foreach ([
         VoucherStatsWidget::class,
         RedemptionTrendChart::class,
-        AppliedVoucherBadgesWidget::class,
         AppliedVouchersWidget::class,
         QuickApplyVoucherWidget::class,
         VoucherSuggestionsWidget::class,

@@ -2,42 +2,43 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
 use AIArmada\Cart\Listeners\HandleUserLogin;
-use AIArmada\Cart\Services\CartMigrationService;
-use AIArmada\Cart\Support\LoginMigrationCacheKey;
+use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use Illuminate\Auth\Events\Login;
-use Illuminate\Support\Facades\Cache;
 
 describe('HandleUserLogin', function (): void {
-    it('pulls old session id from cache and triggers migration on login', function (): void {
+    it('triggers migration action on login when cached session exists', function (): void {
         $user = (object) ['email' => 'test@example.com'];
-        $oldSessionId = 'old-session-123';
-        $cacheKey = LoginMigrationCacheKey::make($user->email);
 
-        Cache::put($cacheKey, $oldSessionId);
-
-        $migrationResult = (object) [
-            'success' => true,
-            'itemsMerged' => 2,
-            'conflicts' => [],
-            'message' => 'Cart migrated!',
-        ];
-
-        $migrationService = Mockery::instanceMock(CartMigrationService::class);
-        $migrationService->shouldReceive('migrateGuestCartForUser')
-            ->with($user, 'default', $oldSessionId)
-            ->andReturn($migrationResult)
+        $identifierResolver = Mockery::mock(new LoginMigrationIdentifierResolver);
+        $identifierResolver->shouldReceive('resolveFromUser')
+            ->with($user)
+            ->andReturn(['test@example.com'])
+            ->once();
+        $identifierResolver->shouldReceive('findCachedSessionId')
+            ->with(['test@example.com'])
+            ->andReturn('old-session-123')
             ->once();
 
-        $listener = new HandleUserLogin($migrationService);
+        $migrationAction = Mockery::mock(MigrateCartOnLoginAction::class);
+        $migrationAction->shouldReceive('execute')
+            ->with($user, 'default', 'old-session-123')
+            ->andReturn([
+                'success' => true,
+                'itemsMerged' => 2,
+                'message' => 'Cart migrated!',
+            ])
+            ->once();
+
+        $listener = new HandleUserLogin($migrationAction, $identifierResolver);
 
         $listener->handle(new Login('web', $user, false));
 
-        expect(Cache::has($cacheKey))->toBeFalse();
         expect(session('cart_migration'))->toMatchArray([
             'items_merged' => 2,
             'has_conflicts' => false,
-            'conflicts' => [],
+            'conflicts' => collect(),
             'message' => 'Cart migrated!',
         ]);
     });
@@ -48,31 +49,34 @@ describe('HandleUserLogin', function (): void {
             'username' => 'testuser',
         ];
 
-        $oldSessionId = 'old-session-username';
-        Cache::put(LoginMigrationCacheKey::make($user->username), $oldSessionId);
-
-        $migrationResult = (object) [
-            'success' => true,
-            'itemsMerged' => 1,
-            'conflicts' => [],
-            'message' => 'Cart migrated by username!',
-        ];
-
-        $migrationService = Mockery::instanceMock(CartMigrationService::class);
-        $migrationService->shouldReceive('migrateGuestCartForUser')
-            ->with($user, 'default', $oldSessionId)
-            ->andReturn($migrationResult)
+        $identifierResolver = Mockery::mock(new LoginMigrationIdentifierResolver);
+        $identifierResolver->shouldReceive('resolveFromUser')
+            ->with($user)
+            ->andReturn(['test@example.com', 'testuser'])
+            ->once();
+        $identifierResolver->shouldReceive('findCachedSessionId')
+            ->with(['test@example.com', 'testuser'])
+            ->andReturn('old-session-username')
             ->once();
 
-        $listener = new HandleUserLogin($migrationService);
+        $migrationAction = Mockery::mock(MigrateCartOnLoginAction::class);
+        $migrationAction->shouldReceive('execute')
+            ->with($user, 'default', 'old-session-username')
+            ->andReturn([
+                'success' => true,
+                'itemsMerged' => 1,
+                'message' => 'Cart migrated by username!',
+            ])
+            ->once();
+
+        $listener = new HandleUserLogin($migrationAction, $identifierResolver);
 
         $listener->handle(new Login('web', $user, false));
 
-        expect(Cache::has(LoginMigrationCacheKey::make($user->username)))->toBeFalse();
         expect(session('cart_migration'))->toMatchArray([
             'items_merged' => 1,
             'has_conflicts' => false,
-            'conflicts' => [],
+            'conflicts' => collect(),
             'message' => 'Cart migrated by username!',
         ]);
     });

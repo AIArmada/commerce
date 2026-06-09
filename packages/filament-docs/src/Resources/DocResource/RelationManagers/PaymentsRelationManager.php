@@ -6,7 +6,6 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -103,12 +102,6 @@ final class PaymentsRelationManager extends RelationManager
             ->recordActions([
                 EditAction::make()
                     ->mutateFormDataUsing(function (array $data, DocPayment $record): array {
-                        $doc = $record->doc;
-
-                        if ($doc !== null) {
-                            DocsOwnerScope::assertCanMutateDoc($doc);
-                        }
-
                         return $this->mutatePaymentData($data, $record);
                     }),
                 Action::make('delete')
@@ -117,12 +110,6 @@ final class PaymentsRelationManager extends RelationManager
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(function (DocPayment $record): void {
-                        $doc = $record->doc;
-
-                        if ($doc !== null) {
-                            DocsOwnerScope::assertCanMutateDoc($doc);
-                        }
-
                         $record->delete();
                     }),
             ])
@@ -136,12 +123,6 @@ final class PaymentsRelationManager extends RelationManager
                         ->action(function (Collection $records): void {
                             /** @var Collection<int|string, DocPayment> $records */
                             $records->each(function (DocPayment $record): void {
-                                $doc = $record->doc;
-
-                                if ($doc !== null) {
-                                    DocsOwnerScope::assertCanMutateDoc($doc);
-                                }
-
                                 $record->delete();
                             });
                         }),

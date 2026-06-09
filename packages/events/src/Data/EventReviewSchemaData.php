@@ -6,7 +6,7 @@ namespace AIArmada\Events\Data;
 
 use AIArmada\Events\Enums\EventModerationStatus;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Support\EventModerationPolicy;
+use AIArmada\Events\Support\Policy\EventModerationPolicy;
 use Spatie\LaravelData\Data;
 
 final class EventReviewSchemaData extends Data

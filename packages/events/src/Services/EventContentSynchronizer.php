@@ -8,7 +8,7 @@ use AIArmada\Events\Contracts\EventAssetResolver;
 use AIArmada\Events\Contracts\EventClassificationResolver;
 use AIArmada\Events\Contracts\EventReferenceResolver;
 use AIArmada\Events\Contracts\EventRelationalContentSubject;
-use AIArmada\Events\Support\EventContentNormalizer;
+use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 

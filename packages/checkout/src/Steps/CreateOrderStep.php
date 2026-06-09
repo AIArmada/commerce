@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Steps;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Checkout\Actions\FinalizeCheckoutSession;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
-use AIArmada\Checkout\Events\CheckoutCompleted;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Integrations\VouchersAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
@@ -129,7 +129,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         if ($isFreeOrder) {
             try {
-                CheckoutCompleted::dispatch($session);
+                app(FinalizeCheckoutSession::class)->finalize($session);
             } catch (Throwable $e) {
                 Log::error('Free order fulfillment failed', [
                     'order_id' => $order->id,

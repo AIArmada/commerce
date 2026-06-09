@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\FilamentVouchers\Services\VoucherStatsAggregator;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentVouchers\Support\VoucherStatsAggregator;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
@@ -13,7 +14,7 @@ use AIArmada\Vouchers\States\Expired;
 uses(TestCase::class);
 
 beforeEach(function (): void {
-    $active = Voucher::create([
+    $active = OwnerContext::withOwner(null, static fn (): Voucher => Voucher::create([
         'code' => 'ACTIVE-10',
         'name' => 'Active Voucher',
         'type' => VoucherType::Fixed,
@@ -22,9 +23,9 @@ beforeEach(function (): void {
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
-    ]);
+    ]));
 
-    Voucher::create([
+    OwnerContext::withOwner(null, static fn (): Voucher => Voucher::create([
         'code' => 'UPCOMING-15',
         'name' => 'Upcoming Voucher',
         'type' => VoucherType::Percentage,
@@ -33,9 +34,9 @@ beforeEach(function (): void {
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->addDay(),
-    ]);
+    ]));
 
-    Voucher::create([
+    OwnerContext::withOwner(null, static fn (): Voucher => Voucher::create([
         'code' => 'EXPIRED-5',
         'name' => 'Expired Voucher',
         'type' => VoucherType::Fixed,
@@ -44,7 +45,7 @@ beforeEach(function (): void {
         'status' => Expired::class,
         'allows_manual_redemption' => false,
         'expires_at' => now()->subDay(),
-    ]);
+    ]));
 
     VoucherUsage::create([
         'voucher_id' => $active->id,
@@ -66,7 +67,7 @@ beforeEach(function (): void {
 it('aggregates voucher overview metrics', function (): void {
     $aggregator = app(VoucherStatsAggregator::class);
 
-    $stats = $aggregator->overview();
+    $stats = OwnerContext::withOwner(null, static fn () => $aggregator->overview());
 
     expect($stats['total'])->toBe(3);
     expect($stats['active'])->toBe(2);

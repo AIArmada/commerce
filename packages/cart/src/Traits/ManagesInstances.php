@@ -39,6 +39,10 @@ trait ManagesInstances
      */
     public function setInstance(string $name): static
     {
+        if (isset($this->cartFactory)) {
+            return $this->cartFactory->cloneForInstance($this, $name);
+        }
+
         return new static(
             $this->storage,
             $this->identifier,

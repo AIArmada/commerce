@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\CashierChip\Cashier as CashierChip;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Laravel\Cashier\Subscription;
@@ -29,12 +29,12 @@ final class UnifiedChurnWidget extends StatsOverviewWidget
 
         // Count Stripe cancellations
         if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $canceledThisMonth += CashierOwnerScope::apply(Subscription::query())
+            $canceledThisMonth += OwnerScopedQuery::apply(Subscription::query())
                 ->whereNotNull('ends_at')
                 ->where('ends_at', '>=', $startOfMonth)
                 ->count();
 
-            $canceledLastMonth += CashierOwnerScope::apply(Subscription::query())
+            $canceledLastMonth += OwnerScopedQuery::apply(Subscription::query())
                 ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfLastMonth, $endOfLastMonth])
                 ->count();
@@ -43,12 +43,12 @@ final class UnifiedChurnWidget extends StatsOverviewWidget
         // Count CHIP cancellations
         if ($detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $canceledThisMonth += CashierOwnerScope::apply($subscriptionModel::query())
+            $canceledThisMonth += OwnerScopedQuery::apply($subscriptionModel::query())
                 ->whereNotNull('ends_at')
                 ->where('ends_at', '>=', $startOfMonth)
                 ->count();
 
-            $canceledLastMonth += CashierOwnerScope::apply($subscriptionModel::query())
+            $canceledLastMonth += OwnerScopedQuery::apply($subscriptionModel::query())
                 ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfLastMonth, $endOfLastMonth])
                 ->count();

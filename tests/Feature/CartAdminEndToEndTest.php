@@ -10,9 +10,7 @@ use AIArmada\Cart\Models\RecoveryTemplate;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Resources\AlertRuleResource;
-use AIArmada\FilamentCart\Resources\CartConditionResource;
 use AIArmada\FilamentCart\Resources\RecoveryCampaignResource;
 use AIArmada\FilamentCart\Resources\RecoveryTemplateResource;
 use Livewire\Livewire;
@@ -314,97 +312,6 @@ describe('Alert Rules End-to-End', function (): void {
             ->callTableAction('toggle_active', $rule);
 
         expect($rule->fresh()->is_active)->toBeFalse();
-    });
-});
-
-describe('Cart Conditions End-to-End', function (): void {
-    it('can render cart conditions list page', function (): void {
-        $this->actingAsAdmin();
-
-        Livewire::test(CartConditionResource\Pages\ListCartConditions::class)
-            ->assertSuccessful();
-    });
-
-    it('can view cart conditions grouped by cart', function (): void {
-        $this->actingAsAdmin();
-
-        $cart = Cart::factory()->create();
-        $condition = CartCondition::create([
-            'cart_id' => $cart->id,
-            'name' => 'Holiday Discount',
-            'type' => 'discount',
-            'target' => 'subtotal',
-            'value' => '-10',
-        ]);
-
-        Livewire::test(CartConditionResource\Pages\ListCartConditions::class)
-            ->assertSuccessful()
-            ->assertCanSeeTableRecords([$condition]);
-    });
-
-    it('can view a single cart condition details', function (): void {
-        $this->actingAsAdmin();
-
-        $cart = Cart::factory()->create();
-        $condition = CartCondition::create([
-            'cart_id' => $cart->id,
-            'name' => 'Promo Code ABC',
-            'type' => 'discount',
-            'target' => 'subtotal',
-            'value' => '-15',
-        ]);
-
-        Livewire::test(CartConditionResource\Pages\ViewCartCondition::class, [
-            'record' => $condition->id,
-        ])
-            ->assertSuccessful()
-            ->assertSee($condition->name)
-            ->assertSee('Promo Code ABC');
-    });
-
-    it('filters conditions by cart owner scope', function (): void {
-        $this->actingAsAdmin();
-
-        config(['filament-cart.owner.enabled' => true]);
-
-        $userA = $this->createUser();
-        $userB = $this->createUser();
-
-        $cartA = Cart::factory()->create([
-            'owner_type' => $userA->getMorphClass(),
-            'owner_id' => $userA->id,
-        ]);
-
-        $cartB = Cart::factory()->create([
-            'owner_type' => $userB->getMorphClass(),
-            'owner_id' => $userB->id,
-        ]);
-
-        $conditionA = CartCondition::create([
-            'cart_id' => $cartA->id,
-            'name' => 'Owner A Discount',
-            'type' => 'discount',
-            'target' => 'subtotal',
-            'value' => '-10',
-        ]);
-
-        $conditionB = CartCondition::create([
-            'cart_id' => $cartB->id,
-            'name' => 'Owner B Discount',
-            'type' => 'discount',
-            'target' => 'subtotal',
-            'value' => '-20',
-        ]);
-
-        // Set owner context to userA
-        OwnerContext::withOwner($userA, function () use ($conditionA, $conditionB): void {
-            Livewire::test(CartConditionResource\Pages\ListCartConditions::class)
-                ->assertSuccessful()
-                ->assertCanSeeTableRecords([$conditionA])
-                ->assertCanNotSeeTableRecords([$conditionB]);
-        });
-
-        config(['filament-cart.owner.enabled' => false]);
     });
 });
 

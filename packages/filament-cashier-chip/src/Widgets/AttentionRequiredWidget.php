@@ -4,47 +4,45 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
-use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
+use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 final class AttentionRequiredWidget extends BaseWidget
 {
+    use InteractsWithCashierChipData;
+
     protected static ?int $sort = 7;
 
     protected function getStats(): array
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
         $now = now();
         $inThreeDays = $now->copy()->addDays(3);
 
-        $trialsEndingSoon = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $trialsEndingSoon = $this->subscriptionModel()::query()
             ->whereNotNull('trial_ends_at')
             ->where('trial_ends_at', '>=', $now)
             ->where('trial_ends_at', '<=', $inThreeDays)
             ->where('chip_status', Subscription::STATUS_TRIALING)
             ->count();
 
-        $pastDue = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $pastDue = $this->subscriptionModel()::query()
             ->where('chip_status', Subscription::STATUS_PAST_DUE)
             ->count();
 
-        $gracePeriodEnding = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $gracePeriodEnding = $this->subscriptionModel()::query()
             ->whereNotNull('ends_at')
             ->where('ends_at', '>=', $now)
             ->where('ends_at', '<=', $inThreeDays)
             ->count();
 
-        $incomplete = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $incomplete = $this->subscriptionModel()::query()
             ->where('chip_status', Subscription::STATUS_INCOMPLETE)
             ->count();
 
-        $unpaid = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $unpaid = $this->subscriptionModel()::query()
             ->where('chip_status', Subscription::STATUS_UNPAID)
             ->count();
 

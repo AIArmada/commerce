@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Products\Concerns\IsAttributeEntity;
 use AIArmada\Products\Enums\AttributeType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -57,6 +58,7 @@ class Attribute extends Model implements Auditable
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use IsAttributeEntity;
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
@@ -119,7 +121,7 @@ class Attribute extends Model implements Auditable
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var Builder<Attribute> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;
@@ -278,17 +280,6 @@ class Attribute extends Model implements Auditable
     public function scopeVisibleOnFront(Builder $query): Builder
     {
         return $query->where('is_visible_on_front', true);
-    }
-
-    /**
-     * Scope to order by position.
-     *
-     * @param  Builder<Attribute>  $query
-     * @return Builder<Attribute>
-     */
-    public function scopeOrdered(Builder $query): Builder
-    {
-        return $query->orderBy('position');
     }
 
     protected static function booted(): void

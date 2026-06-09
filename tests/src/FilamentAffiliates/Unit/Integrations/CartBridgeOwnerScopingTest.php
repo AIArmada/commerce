@@ -9,7 +9,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
+use AIArmada\Affiliates\Support\Integrations\CartBridge;
 use AIArmada\FilamentCart\Models\Cart;
 use Illuminate\Support\Str;
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
 use Filament\Actions\Action;
@@ -77,15 +77,12 @@ final class SyncTrackingAction
             return true;
         }
 
-        if ($record->owner_type === null || $record->owner_id === null) {
-            return OwnerContext::isExplicitGlobal();
+        try {
+            OwnerWriteGuard::findOrFailForOwner(JntOrder::class, $record->getKey());
+
+            return true;
+        } catch (Throwable) {
+            return false;
         }
-
-        $owner = OwnerContext::resolve();
-
-        return JntOrder::query()
-            ->forOwner($owner, false)
-            ->whereKey($record->getKey())
-            ->exists();
     }
 }

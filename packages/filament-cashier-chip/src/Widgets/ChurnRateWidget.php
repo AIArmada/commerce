@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
-use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
+use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 final class ChurnRateWidget extends BaseWidget
 {
+    use InteractsWithCashierChipData;
+
     protected static ?int $sort = 3;
 
     protected function getStats(): array
@@ -36,14 +37,10 @@ final class ChurnRateWidget extends BaseWidget
 
     private function calculateChurnRate(): float
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();
 
-        // Subscribers at start of month
-        $startCount = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $startCount = $this->subscriptionModel()::query()
             ->where('created_at', '<', $startOfMonth)
             ->where(function ($query) use ($startOfMonth): void {
                 $query->whereNull('ends_at')
@@ -56,8 +53,7 @@ final class ChurnRateWidget extends BaseWidget
             return 0.0;
         }
 
-        // Churned this month (subscriptions that ended)
-        $churned = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $churned = $this->subscriptionModel()::query()
             ->whereNotNull('ends_at')
             ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
             ->count();
@@ -67,13 +63,10 @@ final class ChurnRateWidget extends BaseWidget
 
     private function calculatePreviousChurnRate(): float
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
         $startOfMonth = now()->subMonth()->startOfMonth();
         $endOfMonth = now()->subMonth()->endOfMonth();
 
-        $startCount = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $startCount = $this->subscriptionModel()::query()
             ->where('created_at', '<', $startOfMonth)
             ->where(function ($query) use ($startOfMonth): void {
                 $query->whereNull('ends_at')
@@ -85,7 +78,7 @@ final class ChurnRateWidget extends BaseWidget
             return 0.0;
         }
 
-        $churned = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $churned = $this->subscriptionModel()::query()
             ->whereNotNull('ends_at')
             ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
             ->count();
@@ -116,7 +109,6 @@ final class ChurnRateWidget extends BaseWidget
             return Heroicon::Minus;
         }
 
-        // For churn, lower is better, so inverted logic
         return $diff > 0 ? Heroicon::ArrowTrendingUp : Heroicon::ArrowTrendingDown;
     }
 
@@ -139,14 +131,12 @@ final class ChurnRateWidget extends BaseWidget
     private function getChurnChart(): array
     {
         $chart = [];
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
 
         for ($i = 5; $i >= 0; $i--) {
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
-            $startCount = CashierChipOwnerScope::apply($subscriptionModel::query())
+            $startCount = $this->subscriptionModel()::query()
                 ->where('created_at', '<', $startOfMonth)
                 ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
@@ -160,7 +150,7 @@ final class ChurnRateWidget extends BaseWidget
                 continue;
             }
 
-            $churned = CashierChipOwnerScope::apply($subscriptionModel::query())
+            $churned = $this->subscriptionModel()::query()
                 ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
                 ->count();

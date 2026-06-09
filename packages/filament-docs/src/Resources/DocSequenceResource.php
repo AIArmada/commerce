@@ -9,7 +9,6 @@ use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Models\DocSequence;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -28,7 +27,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
@@ -217,7 +215,6 @@ final class DocSequenceResource extends Resource
                         ->action(function (Collection $records): void {
                             /** @var Collection<int|string, DocSequence> $records */
                             $records->each(function (DocSequence $record): void {
-                                DocsOwnerScope::assertCanMutateRecord($record, 'Sequence not found.');
                                 $record->delete();
                             });
                         }),
@@ -247,19 +244,5 @@ final class DocSequenceResource extends Resource
     public static function getNavigationSort(): ?int
     {
         return config('filament-docs.resources.navigation_sort.sequences', 90);
-    }
-
-    /**
-     * @return Builder<DocSequence>
-     */
-    public static function getEloquentQuery(): Builder
-    {
-        /** @var Builder<DocSequence> $query */
-        $query = parent::getEloquentQuery();
-
-        /** @var Builder<DocSequence> $query */
-        $query = DocsOwnerScope::apply($query);
-
-        return $query;
     }
 }

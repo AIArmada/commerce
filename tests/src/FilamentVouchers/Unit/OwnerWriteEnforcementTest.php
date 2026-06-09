@@ -7,7 +7,6 @@ use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
@@ -23,21 +22,21 @@ it('forces owner columns on create when owner mode enabled', function (): void {
         'password' => 'secret',
     ]);
 
-    $ownerB = User::query()->create([
-        'name' => 'Owner B',
-        'email' => 'owner-b-write@example.com',
-        'password' => 'secret',
-    ]);
-
     app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
-    $data = OwnerScopedQueries::enforceOwnerOnCreate([
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
+    $voucher = Voucher::query()->create([
+        'code' => 'OWNER-FORCED-1',
+        'name' => 'Owner Forced Voucher',
+        'type' => VoucherType::Fixed,
+        'value' => 1000,
+        'currency' => 'USD',
+        'status' => Active::class,
+        'allows_manual_redemption' => true,
+        'starts_at' => now()->subDay(),
     ]);
 
-    expect($data['owner_type'])->toBe($ownerA->getMorphClass());
-    expect($data['owner_id'])->toBe((string) $ownerA->getKey());
+    expect($voucher->owner_type)->toBe($ownerA->getMorphClass());
+    expect((string) $voucher->owner_id)->toBe((string) $ownerA->getKey());
 });
 
 it('keeps global rows global on update when owner mode enabled', function (): void {
@@ -60,13 +59,14 @@ it('keeps global rows global on update when owner mode enabled', function (): vo
         'starts_at' => now()->subDay(),
     ]));
 
-    $data = OwnerScopedQueries::enforceOwnerOnUpdate($voucher, [
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => (string) $ownerA->getKey(),
-    ]);
+    expect($voucher->owner_type)->toBeNull();
+    expect($voucher->owner_id)->toBeNull();
 
-    expect($data['owner_type'])->toBeNull();
-    expect($data['owner_id'])->toBeNull();
+    // Attempting to update owner fields on a global row should throw
+    $voucher->owner_type = $ownerA->getMorphClass();
+    $voucher->owner_id = (string) $ownerA->getKey();
+
+    expect(fn () => $voucher->save())->toThrow(InvalidArgumentException::class);
 });
 
 it('prevents changing ownership on update when owner mode enabled', function (): void {
@@ -95,15 +95,15 @@ it('prevents changing ownership on update when owner mode enabled', function ():
         'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => (string) $ownerA->getKey(),
     ]);
 
-    $data = OwnerScopedQueries::enforceOwnerOnUpdate($voucher, [
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => (string) $ownerB->getKey(),
-    ]);
+    expect($voucher->owner_type)->toBe($ownerA->getMorphClass());
+    expect((string) $voucher->owner_id)->toBe((string) $ownerA->getKey());
 
-    expect($data['owner_type'])->toBe($ownerA->getMorphClass());
-    expect($data['owner_id'])->toBe((string) $ownerA->getKey());
+    // Attempting to change the owner should preserve original and throw
+    $voucher->refresh();
+    $voucher->owner_type = $ownerB->getMorphClass();
+    $voucher->owner_id = (string) $ownerB->getKey();
+
+    expect(fn () => $voucher->save())->toThrow(InvalidArgumentException::class);
 });

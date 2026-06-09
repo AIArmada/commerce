@@ -7,11 +7,14 @@ namespace AIArmada\Cart;
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineResult;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
+use AIArmada\Cart\Services\CartFactory;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Traits\CalculatesTotals;
 use AIArmada\Cart\Traits\DispatchesEvents;
@@ -42,6 +45,12 @@ final class Cart
 
     private ?ConditionProviderRegistry $conditionProviderRegistry = null;
 
+    private ?CartFactory $cartFactory = null;
+
+    private ?ConditionPipelineFactory $pipelineFactory = null;
+
+    private ?ConditionTypeHandlerRegistry $conditionTypeHandlerRegistry = null;
+
     public function __construct(
         private StorageInterface $storage,
         private string $identifier,
@@ -50,6 +59,9 @@ final class Cart
         private bool $eventsEnabled = true,
         ?CartConditionResolver $conditionResolver = null,
         ?ConditionProviderRegistry $conditionProviderRegistry = null,
+        ?CartFactory $cartFactory = null,
+        ?ConditionPipelineFactory $pipelineFactory = null,
+        ?ConditionTypeHandlerRegistry $conditionTypeHandlerRegistry = null,
     ) {
         $this->conditionResolver = $conditionResolver
             ?? (function_exists('app') ? app(CartConditionResolver::class) : new CartConditionResolver);
@@ -58,6 +70,22 @@ final class Cart
             $this->conditionProviderRegistry = $conditionProviderRegistry;
         } elseif (function_exists('app') && app()->bound(ConditionProviderRegistry::class)) {
             $this->conditionProviderRegistry = app(ConditionProviderRegistry::class);
+        }
+
+        if ($cartFactory !== null) {
+            $this->cartFactory = $cartFactory;
+        }
+
+        if ($pipelineFactory !== null) {
+            $this->pipelineFactory = $pipelineFactory;
+        }
+
+        if ($conditionTypeHandlerRegistry !== null) {
+            $this->conditionTypeHandlerRegistry = $conditionTypeHandlerRegistry;
+            $this->setConditionTypeHandlerRegistry($conditionTypeHandlerRegistry);
+        } elseif (function_exists('app') && app()->bound(ConditionTypeHandlerRegistry::class)) {
+            $this->conditionTypeHandlerRegistry = app(ConditionTypeHandlerRegistry::class);
+            $this->setConditionTypeHandlerRegistry($this->conditionTypeHandlerRegistry);
         }
     }
 
@@ -81,6 +109,10 @@ final class Cart
             return $this;
         }
 
+        if ($this->cartFactory !== null) {
+            return $this->cartFactory->cloneForIdentifier($this, $identifier);
+        }
+
         return new static(
             $this->storage,
             $identifier,
@@ -99,6 +131,16 @@ final class Cart
     public function getConditionProviderRegistry(): ?ConditionProviderRegistry
     {
         return $this->conditionProviderRegistry;
+    }
+
+    public function getEvents(): ?Dispatcher
+    {
+        return $this->events;
+    }
+
+    public function isEventsEnabled(): bool
+    {
+        return $this->eventsEnabled;
     }
 
     /**
@@ -196,7 +238,7 @@ final class Cart
      */
     public function evaluateConditionPipeline(?callable $configure = null): ConditionPipelineResult
     {
-        $pipeline = new ConditionPipeline;
+        $pipeline = $this->pipelineFactory?->createEager() ?? new ConditionPipeline;
 
         if ($configure !== null) {
             $configure($pipeline);

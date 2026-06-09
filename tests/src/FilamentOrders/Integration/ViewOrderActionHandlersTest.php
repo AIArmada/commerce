@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\FilamentOrders\Resources\OrderResource\Pages\ViewOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;

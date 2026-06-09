@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Data;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use Akaunting\Money\Money;
 use Spatie\LaravelData\Data;
 
-/**
- * Data Transfer Object representing a calculated price result.
- */
 final class PriceResultData extends Data
 {
     public function __construct(
@@ -26,35 +24,44 @@ final class PriceResultData extends Data
         public array $breakdown = [],
     ) {}
 
-    /**
-     * Check if the final price has a discount.
-     */
     public function hasDiscount(): bool
     {
         return $this->discountAmount > 0;
     }
 
-    /**
-     * Get the savings as formatted string.
-     */
     public function getFormattedSavings(): string
     {
         return MoneyFormatter::formatMinor($this->discountAmount, $this->currency);
     }
 
-    /**
-     * Get the final price as formatted string.
-     */
     public function getFormattedFinalPrice(): string
     {
         return MoneyFormatter::formatMinor($this->finalPrice, $this->currency);
     }
 
-    /**
-     * Get the original price as formatted string.
-     */
     public function getFormattedOriginalPrice(): string
     {
         return MoneyFormatter::formatMinor($this->originalPrice, $this->currency);
+    }
+
+    public function getMoney(): Money
+    {
+        $currency = $this->currency;
+
+        return Money::{$currency}($this->finalPrice);
+    }
+
+    public function getSavingsMoney(): Money
+    {
+        $currency = $this->currency;
+
+        return Money::{$currency}($this->discountAmount);
+    }
+
+    public function getOriginalMoney(): Money
+    {
+        $currency = $this->currency;
+
+        return Money::{$currency}($this->originalPrice);
     }
 }

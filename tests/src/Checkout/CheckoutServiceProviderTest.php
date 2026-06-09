@@ -12,6 +12,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Services\CheckoutService;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
 use AIArmada\Checkout\Services\PaymentGatewayResolver;
+use AIArmada\Checkout\Support\CheckoutStepOrderPolicy;
 use AIArmada\Checkout\Support\ChipIntegrationRegistrar;
 use AIArmada\Checkout\Support\HandleChipPurchaseEventForCheckout;
 use AIArmada\Chip\Events\PurchaseCancelled;
@@ -311,29 +312,23 @@ describe('CheckoutServiceProvider', function (): void {
 
 function resolveInventoryStepOrder(CheckoutServiceProvider $provider, array $order): array
 {
-    $method = new ReflectionMethod($provider, 'enforceStepDependencyOrder');
-    $method->setAccessible(true);
+    $policy = app(CheckoutStepOrderPolicy::class);
 
-    /** @var array<string> $dependencySafeOrder */
-    $dependencySafeOrder = $method->invoke($provider, $order);
+    $dependencySafeOrder = $policy->enforceStepDependencyOrder($order);
 
-    $inventoryMethod = new ReflectionMethod($provider, 'resolveInventoryStepOrder');
-    $inventoryMethod->setAccessible(true);
+    $resolvedOrder = $policy->resolveInventoryStepOrder($dependencySafeOrder);
 
-    /** @var array<string> $resolvedOrder */
-    $resolvedOrder = $inventoryMethod->invoke($provider, $dependencySafeOrder);
-
-    /** @var array<string> $resolvedOrder */
-    $resolvedOrder = $method->invoke($provider, $resolvedOrder);
-
-    return $resolvedOrder;
+    return $policy->enforceStepDependencyOrder($resolvedOrder);
 }
 
 function invokeInventoryStepNormalizer(CheckoutServiceProvider $provider): void
 {
-    $method = new ReflectionMethod($provider, 'normalizeInventoryStepOrder');
-    $method->setAccessible(true);
-    $method->invoke($provider);
+    $registry = app(CheckoutStepRegistryInterface::class);
+    $order = $registry->getOrder();
+    if (! empty($order)) {
+        $normalizedOrder = app(CheckoutStepOrderPolicy::class)->normalizeInventoryStepOrder($registry, $order);
+        $registry->setOrder($normalizedOrder);
+    }
 }
 
 function invokeStepConfigurationValidator(CheckoutServiceProvider $provider): void

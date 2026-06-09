@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
@@ -22,21 +23,20 @@ use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\VersionsRelatio
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocForm;
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocInfolist;
 use AIArmada\FilamentDocs\Resources\DocResource\Tables\DocsTable;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use UnitEnum;
 
 final class DocResource extends Resource
 {
     protected static ?string $model = Doc::class;
-
-    protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
@@ -116,20 +116,42 @@ final class DocResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()
-            ->whereIn('status', [DocStatus::normalize(Pending::class), DocStatus::normalize(Overdue::class)])
-            ->count();
+        $counts = self::cachedBadgeCounts();
+        $total = $counts['pending'] + $counts['overdue'];
 
-        return $count > 0 ? (string) $count : null;
+        return $total > 0 ? (string) $total : null;
     }
 
     public static function getNavigationBadgeColor(): string
     {
-        $overdueCount = static::getEloquentQuery()
-            ->where('status', DocStatus::normalize(Overdue::class))
-            ->count();
+        $counts = self::cachedBadgeCounts();
 
-        return $overdueCount > 0 ? 'danger' : 'warning';
+        return $counts['overdue'] > 0 ? 'danger' : 'warning';
+    }
+
+    /**
+     * @return array{pending: int, overdue: int}
+     */
+    private static function cachedBadgeCounts(): array
+    {
+        return Cache::remember(
+            'filament-docs:nav-badge:counts',
+            CarbonImmutable::now()->addSeconds(30),
+            function (): array {
+                $pendingStatus = DocStatus::normalize(Pending::class);
+                $overdueStatus = DocStatus::normalize(Overdue::class);
+
+                $row = static::getEloquentQuery()
+                    ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_count', [$pendingStatus])
+                    ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as overdue_count', [$overdueStatus])
+                    ->first();
+
+                return [
+                    'pending' => (int) ($row?->getAttribute('pending_count') ?? 0),
+                    'overdue' => (int) ($row?->getAttribute('overdue_count') ?? 0),
+                ];
+            }
+        );
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null
@@ -150,6 +172,6 @@ final class DocResource extends Resource
         /** @var Builder<Doc> $query */
         $query = parent::getEloquentQuery();
 
-        return DocsOwnerScope::applyToDocs($query);
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 }

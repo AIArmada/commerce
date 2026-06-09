@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages;
 
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyListRecords;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource;
-use AIArmada\FilamentChip\Resources\Pages\ReadOnlyListRecords;
 use Override;
 
 final class ListCompanyStatements extends ReadOnlyListRecords

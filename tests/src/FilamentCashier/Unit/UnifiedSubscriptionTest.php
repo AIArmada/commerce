@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCashier\Support\SubscriptionStatus;
-use AIArmada\FilamentCashier\Support\UnifiedSubscription;
+use AIArmada\Cashier\Support\SubscriptionStatus;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 

@@ -10,7 +10,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Actions\UpdateAffiliateFraudSignalStatus;
-use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\CommerceSupport\Models\Permission;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;

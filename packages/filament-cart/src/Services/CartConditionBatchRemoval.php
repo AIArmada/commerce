@@ -207,7 +207,7 @@ final class CartConditionBatchRemoval
                 throw new RuntimeException('Removing shared global conditions from all carts requires explicit global owner context.');
             }
 
-            return CartModel::query()->withoutOwnerScope();
+            return OwnerContext::withOwner(null, fn () => CartModel::query()->forOwner(null, includeGlobal: true));
         }
 
         return CartModel::query()->forOwner();

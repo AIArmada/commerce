@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages;
 
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyViewRecord;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource;
-use AIArmada\FilamentChip\Resources\Pages\ReadOnlyViewRecord;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;

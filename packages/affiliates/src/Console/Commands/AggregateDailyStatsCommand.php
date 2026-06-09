@@ -7,9 +7,7 @@ namespace AIArmada\Affiliates\Console\Commands;
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\DailyAggregationService;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -35,7 +33,12 @@ final class AggregateDailyStatsCommand extends Command
 
         $this->info("Aggregating stats for {$date->toDateString()}...");
 
-        $count = $this->processForOwners(fn (): int => $service->aggregate($date));
+        $runner = new OwnerBatchRunner(
+            Affiliate::class,
+            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
+        );
+
+        $count = $runner->run(fn (): int => $service->aggregate($date)) ?? 0;
 
         $this->info("Aggregated stats for {$count} affiliates.");
 
@@ -56,64 +59,15 @@ final class AggregateDailyStatsCommand extends Command
 
         $this->info("Backfilling stats from {$from->toDateString()} to {$to->toDateString()}...");
 
-        $totalProcessed = $this->processForOwners(fn (): int => $service->backfill($from, $to));
+        $runner = new OwnerBatchRunner(
+            Affiliate::class,
+            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
+        );
+
+        $totalProcessed = $runner->run(fn (): int => $service->backfill($from, $to)) ?? 0;
 
         $this->info("Backfill complete. Processed {$totalProcessed} affiliate-days.");
 
         return self::SUCCESS;
-    }
-
-    private function processForOwners(callable $callback): int
-    {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return (int) $callback();
-        }
-
-        $owner = OwnerContext::resolve();
-        if ($owner !== null) {
-            return (int) $callback();
-        }
-
-        $columns = OwnerTupleColumns::forModelClass(Affiliate::class);
-
-        $owners = Affiliate::query()
-            ->withoutOwnerScope()
-            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
-            ->distinct()
-            ->get();
-
-        if ($owners->isEmpty()) {
-            return (int) OwnerContext::withOwner(null, $callback);
-        }
-
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-        if ($includeGlobal) {
-            config()->set('affiliates.owner.include_global', false);
-        }
-
-        $total = 0;
-        $processedGlobal = false;
-
-        try {
-            foreach ($owners as $row) {
-                $parsed = OwnerTupleParser::fromRow($row, $columns);
-
-                if ($parsed->isExplicitGlobal()) {
-                    if ($processedGlobal) {
-                        continue;
-                    }
-
-                    $processedGlobal = true;
-                }
-
-                $total += (int) OwnerContext::withOwner($parsed->toOwnerModel(), $callback);
-            }
-        } finally {
-            if ($includeGlobal) {
-                config()->set('affiliates.owner.include_global', true);
-            }
-        }
-
-        return $total;
     }
 }

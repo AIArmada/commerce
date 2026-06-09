@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
+use AIArmada\Promotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\EditPromotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ListPromotions;
 use AIArmada\FilamentPromotions\Resources\PromotionResource\Pages\ViewPromotion;
@@ -20,7 +20,7 @@ use Livewire\Component as LivewireComponent;
 
 describe('PromotionResource', function (): void {
     describe('model', function (): void {
-        it('uses the Filament Promotion model', function (): void {
+        it('uses the domain Promotion model', function (): void {
             expect(PromotionResource::getModel())->toBe(Promotion::class);
         });
     });

@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
-use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
+use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 final class TrialConversionsWidget extends BaseWidget
 {
+    use InteractsWithCashierChipData;
+
     protected static ?int $sort = 6;
 
     protected function getStats(): array
@@ -42,14 +43,10 @@ final class TrialConversionsWidget extends BaseWidget
 
     private function calculateConversionRate(): float
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();
 
-        // Trials that ended this month
-        $trialsEnded = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $trialsEnded = $this->subscriptionModel()::query()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
             ->count();
@@ -58,8 +55,7 @@ final class TrialConversionsWidget extends BaseWidget
             return 0.0;
         }
 
-        // Trials that converted (still active after trial ended)
-        $converted = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $converted = $this->subscriptionModel()::query()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
             ->where('chip_status', Subscription::STATUS_ACTIVE)
@@ -71,13 +67,10 @@ final class TrialConversionsWidget extends BaseWidget
 
     private function calculatePreviousConversionRate(): float
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
         $startOfMonth = now()->subMonth()->startOfMonth();
         $endOfMonth = now()->subMonth()->endOfMonth();
 
-        $trialsEnded = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $trialsEnded = $this->subscriptionModel()::query()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
             ->count();
@@ -86,7 +79,7 @@ final class TrialConversionsWidget extends BaseWidget
             return 0.0;
         }
 
-        $converted = CashierChipOwnerScope::apply($subscriptionModel::query())
+        $converted = $this->subscriptionModel()::query()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
             ->where('chip_status', Subscription::STATUS_ACTIVE)
@@ -98,10 +91,7 @@ final class TrialConversionsWidget extends BaseWidget
 
     private function getActiveTrialsCount(): int
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
-        return CashierChipOwnerScope::apply($subscriptionModel::query())
+        return $this->subscriptionModel()::query()
             ->whereOnTrial()
             ->count();
     }
@@ -151,14 +141,12 @@ final class TrialConversionsWidget extends BaseWidget
     private function getConversionChart(): array
     {
         $chart = [];
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
 
         for ($i = 5; $i >= 0; $i--) {
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
-            $trialsEnded = CashierChipOwnerScope::apply($subscriptionModel::query())
+            $trialsEnded = $this->subscriptionModel()::query()
                 ->whereNotNull('trial_ends_at')
                 ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
                 ->count();
@@ -169,7 +157,7 @@ final class TrialConversionsWidget extends BaseWidget
                 continue;
             }
 
-            $converted = CashierChipOwnerScope::apply($subscriptionModel::query())
+            $converted = $this->subscriptionModel()::query()
                 ->whereNotNull('trial_ends_at')
                 ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
                 ->where('chip_status', Subscription::STATUS_ACTIVE)

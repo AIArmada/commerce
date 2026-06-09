@@ -109,7 +109,7 @@ Rate limiting and consent
 
 Payout batches
 
-Use `AffiliatePayoutService` to group conversions into payout batches for exports or provider handoff. Conversions are linked via `affiliate_payout_id`, and payout records store aggregate totals and schedule/paid timestamps.
+Use `Actions/Payouts/CreatePayout` and `Actions/Payouts/UpdatePayoutStatus` to manage payout batches for exports or provider handoff. The legacy `AffiliatePayoutService` is retained as a compatibility adapter only. Conversions are linked via `affiliate_payout_id`, and payout records store aggregate totals and schedule/paid timestamps.
 Multi-level uplines are supported via `parent_affiliate_id` on affiliates and `payouts.multi_level.*` config to define commission shares per level.
 
 Webhook + link utilities

@@ -6,7 +6,6 @@ namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Tables;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Actions\DownloadTaxExemptionCertificateAction;
-use AIArmada\FilamentTax\Support\FilamentTaxAuthz;
 use AIArmada\Tax\Enums\ExemptionStatus;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Support\TaxOwnerScope;
@@ -138,121 +137,109 @@ final class TaxExemptionsTable
                 ActionGroup::make([
                     ViewAction::make(),
                     EditAction::make(),
-                    FilamentTaxAuthz::requirePermission(
-                        Action::make('download_certificate')
-                            ->label('Download Certificate')
-                            ->icon(Heroicon::OutlinedArrowDownTray)
-                            ->visible(fn (TaxExemption $record): bool => filled($record->document_path))
-                            ->action(function (TaxExemption $record): mixed {
-                                try {
-                                    return app(DownloadTaxExemptionCertificateAction::class)->execute($record);
-                                } catch (NotFoundHttpException) {
-                                    Notification::make()
-                                        ->title('Certificate document not found')
-                                        ->danger()
-                                        ->send();
+                    Action::make('download_certificate')
+                        ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.download') ?? false)
+                        ->label('Download Certificate')
+                        ->icon(Heroicon::OutlinedArrowDownTray)
+                        ->visible(fn (TaxExemption $record): bool => filled($record->document_path))
+                        ->action(function (TaxExemption $record): mixed {
+                            try {
+                                return app(DownloadTaxExemptionCertificateAction::class)->execute($record);
+                            } catch (NotFoundHttpException) {
+                                Notification::make()
+                                    ->title('Certificate document not found')
+                                    ->danger()
+                                    ->send();
 
-                                    return null;
-                                }
-                            }),
-                        'tax.exemptions.download',
-                    ),
-                    FilamentTaxAuthz::requirePermission(
-                        Action::make('approve')
-                            ->label('Approve')
-                            ->icon(Heroicon::OutlinedCheckBadge)
-                            ->color('success')
-                            ->visible(fn (TaxExemption $record): bool => $record->status === ExemptionStatus::Pending)
-                            ->requiresConfirmation()
-                            ->action(fn (TaxExemption $record) => $record->approve())
-                            ->successNotificationTitle('Exemption approved'),
-                        'tax.exemptions.approve',
-                    ),
-                    FilamentTaxAuthz::requirePermission(
-                        Action::make('renew')
-                            ->label('Renew')
-                            ->icon(Heroicon::OutlinedArrowPath)
-                            ->color('warning')
-                            ->form([
-                                DatePicker::make('new_expires_at')
-                                    ->label('New Expiry Date')
-                                    ->required()
-                                    ->native(false)
-                                    ->after('today'),
-                            ])
-                            ->action(function (TaxExemption $record, array $data): void {
-                                $record->update(['expires_at' => $data['new_expires_at']]);
-                            })
-                            ->successNotificationTitle('Exemption renewed'),
-                        'tax.exemptions.renew',
-                    ),
+                                return null;
+                            }
+                        }),
+                    Action::make('approve')
+                        ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.approve') ?? false)
+                        ->label('Approve')
+                        ->icon(Heroicon::OutlinedCheckBadge)
+                        ->color('success')
+                        ->visible(fn (TaxExemption $record): bool => $record->status === ExemptionStatus::Pending)
+                        ->requiresConfirmation()
+                        ->action(fn (TaxExemption $record) => $record->approve())
+                        ->successNotificationTitle('Exemption approved'),
+                    Action::make('renew')
+                        ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.renew') ?? false)
+                        ->label('Renew')
+                        ->icon(Heroicon::OutlinedArrowPath)
+                        ->color('warning')
+                        ->form([
+                            DatePicker::make('new_expires_at')
+                                ->label('New Expiry Date')
+                                ->required()
+                                ->native(false)
+                                ->after('today'),
+                        ])
+                        ->action(function (TaxExemption $record, array $data): void {
+                            $record->update(['expires_at' => $data['new_expires_at']]);
+                        })
+                        ->successNotificationTitle('Exemption renewed'),
                     DeleteAction::make(),
                 ]),
             ])
             ->toolbarActions([
-                FilamentTaxAuthz::requirePermission(
-                    BulkAction::make('approve')
-                        ->label('Approve Selected')
-                        ->icon(Heroicon::OutlinedCheckBadge)
-                        ->color('success')
-                        ->requiresConfirmation()
-                        ->action(function ($records): void {
-                            foreach ($records as $record) {
-                                $verified = OwnerWriteGuard::findOrFailForOwner(
-                                    TaxExemption::class,
-                                    $record->getKey(),
-                                    includeGlobal: false,
-                                    message: 'Tax exemption is not accessible in the current owner scope.',
-                                );
+                BulkAction::make('approve')
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.approve') ?? false)
+                    ->label('Approve Selected')
+                    ->icon(Heroicon::OutlinedCheckBadge)
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function ($records): void {
+                        foreach ($records as $record) {
+                            $verified = OwnerWriteGuard::findOrFailForOwner(
+                                TaxExemption::class,
+                                $record->getKey(),
+                                includeGlobal: false,
+                                message: 'Tax exemption is not accessible in the current owner scope.',
+                            );
 
-                                $verified->approve();
-                            }
-                        })
-                        ->deselectRecordsAfterCompletion(),
-                    'tax.exemptions.approve',
-                ),
-                FilamentTaxAuthz::requirePermission(
-                    BulkAction::make('reject')
-                        ->label('Reject Selected')
-                        ->icon(Heroicon::OutlinedXCircle)
-                        ->color('danger')
-                        ->requiresConfirmation()
-                        ->action(function ($records): void {
-                            foreach ($records as $record) {
-                                $verified = OwnerWriteGuard::findOrFailForOwner(
-                                    TaxExemption::class,
-                                    $record->getKey(),
-                                    includeGlobal: false,
-                                    message: 'Tax exemption is not accessible in the current owner scope.',
-                                );
+                            $verified->approve();
+                        }
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                BulkAction::make('reject')
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.reject') ?? false)
+                    ->label('Reject Selected')
+                    ->icon(Heroicon::OutlinedXCircle)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(function ($records): void {
+                        foreach ($records as $record) {
+                            $verified = OwnerWriteGuard::findOrFailForOwner(
+                                TaxExemption::class,
+                                $record->getKey(),
+                                includeGlobal: false,
+                                message: 'Tax exemption is not accessible in the current owner scope.',
+                            );
 
-                                $verified->reject('Bulk rejected');
-                            }
-                        })
-                        ->deselectRecordsAfterCompletion(),
-                    'tax.exemptions.reject',
-                ),
-                FilamentTaxAuthz::requirePermission(
-                    BulkAction::make('delete')
-                        ->label('Delete Selected')
-                        ->icon(Heroicon::OutlinedTrash)
-                        ->color('danger')
-                        ->requiresConfirmation()
-                        ->action(function ($records): void {
-                            foreach ($records as $record) {
-                                $verified = OwnerWriteGuard::findOrFailForOwner(
-                                    TaxExemption::class,
-                                    $record->getKey(),
-                                    includeGlobal: false,
-                                    message: 'Tax exemption is not accessible in the current owner scope.',
-                                );
+                            $verified->reject('Bulk rejected');
+                        }
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                BulkAction::make('delete')
+                    ->authorize(fn (): bool => auth()->user()?->can('tax.exemptions.delete') ?? false)
+                    ->label('Delete Selected')
+                    ->icon(Heroicon::OutlinedTrash)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(function ($records): void {
+                        foreach ($records as $record) {
+                            $verified = OwnerWriteGuard::findOrFailForOwner(
+                                TaxExemption::class,
+                                $record->getKey(),
+                                includeGlobal: false,
+                                message: 'Tax exemption is not accessible in the current owner scope.',
+                            );
 
-                                $verified->delete();
-                            }
-                        })
-                        ->deselectRecordsAfterCompletion(),
-                    'tax.exemptions.delete',
-                ),
+                            $verified->delete();
+                        }
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ]);
     }
 }

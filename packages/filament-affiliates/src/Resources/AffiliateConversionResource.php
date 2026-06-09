@@ -10,7 +10,6 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Pages\List
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Pages\ViewAffiliateConversion;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas\AffiliateConversionInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -26,22 +25,7 @@ final class AffiliateConversionResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<AffiliateConversion> $query */
-        $query = parent::getEloquentQuery();
-
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            /** @var Builder<Model> $unscopedQuery */
-            $unscopedQuery = $query;
-
-            return $unscopedQuery;
-        }
-
-        $scopedQuery = OwnerScopedQuery::throughAffiliate($query);
-
-        /** @var Builder<Model> $modelQuery */
-        $modelQuery = $scopedQuery;
-
-        return $modelQuery;
+        return parent::getEloquentQuery();
     }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedReceiptPercent;

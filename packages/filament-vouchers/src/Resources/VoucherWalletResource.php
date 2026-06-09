@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource\Pages\ListVoucherWallets;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource\Tables\VoucherWalletsTable;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -56,11 +58,19 @@ final class VoucherWalletResource extends Resource
         /** @var Builder<VoucherWallet> $query */
         $query = parent::getEloquentQuery();
 
-        if (! OwnerScopedQueries::isEnabled()) {
+        if (! config('vouchers.owner.enabled', false)) {
             return $query;
         }
 
-        return $query->whereIn('voucher_id', OwnerScopedQueries::voucherIds());
+        $voucherQuery = Voucher::query()->select('id');
+
+        $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+            $voucherQuery,
+            OwnerContext::resolve(),
+            (bool) config('vouchers.owner.include_global', false),
+        );
+
+        return $query->whereIn('voucher_id', $voucherQuery);
     }
 
     public static function getNavigationBadgeColor(): string

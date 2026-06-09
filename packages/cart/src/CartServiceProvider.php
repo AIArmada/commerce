@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
 use AIArmada\Cart\Conditions\ConditionPresets;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
+use AIArmada\Cart\Conditions\Handlers\ShippingConditionHandler;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartConditionResolver;
+use AIArmada\Cart\Services\CartFactory;
+use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
@@ -50,8 +58,11 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->app->alias(ConditionProviderRegistry::class, 'cart.condition_providers');
 
         $this->registerStorage();
+        $this->registerFactories();
+        $this->registerConditionTypeHandlers();
         $this->registerCartManager();
         $this->registerMigrationService();
+        $this->registerActions();
     }
 
     public function bootingPackage(): void
@@ -142,7 +153,8 @@ final class CartServiceProvider extends PackageServiceProvider
                 storage: $app->make('cart.storage'),
                 events: $app->make(Dispatcher::class),
                 eventsEnabled: config('cart.events', true),
-                conditionResolver: $app->make(CartConditionResolver::class)
+                conditionResolver: $app->make(CartConditionResolver::class),
+                cartFactory: $app->make(CartFactory::class),
             );
         });
 
@@ -150,10 +162,56 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->app->alias('cart', Contracts\CartManagerInterface::class);
     }
 
+    protected function registerConditionTypeHandlers(): void
+    {
+        $this->app->singleton(ConditionTypeHandlerRegistry::class, function () {
+            $registry = new ConditionTypeHandlerRegistry;
+            $registry->register(new ShippingConditionHandler);
+
+            return $registry;
+        });
+    }
+
+    protected function registerFactories(): void
+    {
+        $this->app->singleton(CartFactory::class, fn ($app) => new CartFactory(
+            storage: $app->make('cart.storage'),
+            conditionResolver: $app->make(CartConditionResolver::class),
+            conditionProviderRegistry: $app->make(ConditionProviderRegistry::class),
+            conditionTypeHandlerRegistry: $app->make(ConditionTypeHandlerRegistry::class),
+            events: $app->make(Dispatcher::class),
+            eventsEnabled: config('cart.events', true),
+        ));
+
+        $this->app->singleton(ConditionPipelineFactory::class);
+    }
+
     protected function registerMigrationService(): void
     {
         $this->app->singleton(CartMigrationService::class, fn () => new CartMigrationService(
             config('cart.migration', []),
+        ));
+
+        $this->app->singleton(CartMergeStrategyRegistry::class, function () {
+            $registry = new CartMergeStrategyRegistry;
+            $registry->registerBuiltIns();
+
+            return $registry;
+        });
+    }
+
+    protected function registerActions(): void
+    {
+        $this->app->bind(MigrateGuestCartToUserAction::class, fn ($app) => new MigrateGuestCartToUserAction(
+            storage: null,
+            strategyRegistry: $app->make(CartMergeStrategyRegistry::class),
+        ));
+
+        $this->app->singleton(LoginMigrationIdentifierResolver::class);
+
+        $this->app->bind(MigrateCartOnLoginAction::class, fn ($app) => new MigrateCartOnLoginAction(
+            migrationAction: $app->make(MigrateGuestCartToUserAction::class),
+            identifierResolver: $app->make(LoginMigrationIdentifierResolver::class),
         ));
     }
 

@@ -8,7 +8,7 @@ use AIArmada\Events\Models\Event as EventModel;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 use AIArmada\Events\Services\RegistrationService;
-use AIArmada\Events\Support\CommerceIntegration;
+use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Orders\Models\Order;
 
 it('detects first party order fulfillment support when commerce packages are installed', function (): void {

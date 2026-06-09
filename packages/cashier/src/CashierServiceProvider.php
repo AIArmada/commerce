@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier;
 
+use AIArmada\Cashier\Console\Commands\WebhookReplayCommand;
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\CommerceSupport\Support\ConditionalMigrationLoader;
 use Laravel\Octane\Events\RequestReceived;
 use Spatie\LaravelPackageTools\Package;
@@ -24,7 +27,10 @@ final class CashierServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('cashier')
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasCommands([
+                WebhookReplayCommand::class,
+            ]);
     }
 
     public function packageRegistered(): void
@@ -34,6 +40,10 @@ final class CashierServiceProvider extends PackageServiceProvider
         });
 
         $this->app->alias(GatewayManager::class, 'cashier');
+
+        // Register gateway detector and owner-scoped query
+        $this->app->singleton(GatewayDetector::class);
+        $this->app->singleton(OwnerScopedQuery::class);
 
         // Register cart integration
         $this->app->singleton(CartIntegrationRegistrar::class);

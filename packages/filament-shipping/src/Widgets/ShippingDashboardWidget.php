@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerScope;
-use AIArmada\Shipping\Enums\ShipmentStatus;
-use AIArmada\Shipping\Models\ReturnAuthorization;
-use AIArmada\Shipping\Models\Shipment;
-use Carbon\CarbonImmutable;
+use AIArmada\FilamentShipping\Support\ShippingStatsAggregator;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -19,129 +14,33 @@ class ShippingDashboardWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
+        $aggregator = app(ShippingStatsAggregator::class);
+
         return [
-            Stat::make('Pending Shipments', $this->getPendingCount())
+            Stat::make('Pending Shipments', $aggregator->getPendingCount())
                 ->description('Awaiting shipping')
                 ->icon('heroicon-o-clock')
                 ->color('warning'),
 
-            Stat::make('In Transit', $this->getInTransitCount())
+            Stat::make('In Transit', $aggregator->getInTransitCount())
                 ->description('Currently shipping')
                 ->icon('heroicon-o-truck')
                 ->color('info'),
 
-            Stat::make('Delivered Today', $this->getDeliveredTodayCount())
+            Stat::make('Delivered Today', $aggregator->getDeliveredTodayCount())
                 ->description('Successful deliveries')
                 ->icon('heroicon-o-check-circle')
                 ->color('success'),
 
-            Stat::make('Exceptions', $this->getExceptionsCount())
+            Stat::make('Exceptions', $aggregator->getExceptionsCount())
                 ->description('Need attention')
                 ->icon('heroicon-o-exclamation-triangle')
                 ->color('danger'),
 
-            Stat::make('Pending Returns', $this->getPendingReturnsCount())
+            Stat::make('Pending Returns', $aggregator->getPendingReturnsCount())
                 ->description('Awaiting approval')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('warning'),
         ];
-    }
-
-    protected function getPendingCount(): int
-    {
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->where('status', ShipmentStatus::Pending)
-            ->count();
-    }
-
-    protected function getInTransitCount(): int
-    {
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->whereIn('status', [
-                ShipmentStatus::Shipped,
-                ShipmentStatus::InTransit,
-                ShipmentStatus::OutForDelivery,
-            ])
-            ->count();
-    }
-
-    protected function getDeliveredTodayCount(): int
-    {
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->where('status', ShipmentStatus::Delivered)
-            ->whereDate('delivered_at', CarbonImmutable::today())
-            ->count();
-    }
-
-    protected function getExceptionsCount(): int
-    {
-        $query = Shipment::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->whereIn('status', [
-                ShipmentStatus::Exception,
-                ShipmentStatus::DeliveryFailed,
-            ])
-            ->count();
-    }
-
-    protected function getPendingReturnsCount(): int
-    {
-        $query = ReturnAuthorization::query()->withoutGlobalScope(OwnerScope::class);
-
-        if ((bool) config('shipping.features.owner.enabled', false)) {
-            $owner = OwnerContext::resolve();
-            if ($owner === null) {
-                return 0;
-            }
-
-            $query->forOwner($owner, includeGlobal: (bool) config('shipping.features.owner.include_global', false));
-        }
-
-        return $query
-            ->where('status', 'pending')
-            ->count();
     }
 }

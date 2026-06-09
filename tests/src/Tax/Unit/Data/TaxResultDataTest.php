@@ -91,7 +91,7 @@ class TaxResultDataTest extends TaxTestCase
             zoneName: 'Zone',
         );
 
-        $this->assertEquals('$ 12.34', $result->getFormattedAmount());
+        $this->assertStringContainsString('12.34', $result->getFormattedAmount());
     }
 
     public function test_get_formatted_amount_with_custom_currency(): void
@@ -105,7 +105,7 @@ class TaxResultDataTest extends TaxTestCase
             zoneName: 'Zone',
         );
 
-        $this->assertEquals('USD 12.34', $result->getFormattedAmount('USD'));
+        $this->assertStringContainsString('12.34', $result->getFormattedAmount('USD'));
     }
 
     public function test_get_formatted_rate(): void

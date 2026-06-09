@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\PurchaseResource\Pages;
 
-use AIArmada\FilamentChip\Resources\Pages\ReadOnlyListRecords;
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyListRecords;
 use AIArmada\FilamentChip\Resources\PurchaseResource;
 use Override;
 

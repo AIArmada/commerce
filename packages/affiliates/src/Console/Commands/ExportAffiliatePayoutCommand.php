@@ -6,9 +6,7 @@ namespace AIArmada\Affiliates\Console\Commands;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\ConversionStatus;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Illuminate\Console\Command;
 use League\Csv\Writer;
 use SplTempFileObject;
@@ -22,9 +20,16 @@ final class ExportAffiliatePayoutCommand extends Command
     public function handle(): int
     {
         $reference = $this->argument('payout');
-        $payout = $this->resolvePayout($reference);
+        $path = $this->option('path') ?: storage_path('payouts/' . $reference . '.csv');
 
-        if (! $payout) {
+        $runner = new OwnerBatchRunner(
+            AffiliatePayout::class,
+            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
+        );
+
+        $payout = $runner->run(fn (): ?AffiliatePayout => $this->queryPayout((string) $reference));
+
+        if (! $payout instanceof AffiliatePayout) {
             $this->error('Payout not found.');
 
             return self::FAILURE;
@@ -43,73 +48,12 @@ final class ExportAffiliatePayoutCommand extends Command
             ]);
         }
 
-        $path = $this->option('path') ?: storage_path("payouts/{$payout->reference}.csv");
         @mkdir(dirname($path), recursive: true);
         file_put_contents($path, $csv->toString());
 
         $this->info("Exported payout to {$path}");
 
         return self::SUCCESS;
-    }
-
-    private function resolvePayout(string $reference): ?AffiliatePayout
-    {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return $this->queryPayout($reference);
-        }
-
-        $owner = OwnerContext::resolve();
-        if ($owner !== null) {
-            return $this->queryPayout($reference);
-        }
-
-        $columns = OwnerTupleColumns::forModelClass(AffiliatePayout::class);
-
-        $owners = AffiliatePayout::query()
-            ->withoutOwnerScope()
-            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
-            ->distinct()
-            ->get();
-
-        if ($owners->isEmpty()) {
-            return OwnerContext::withOwner(null, fn (): ?AffiliatePayout => $this->queryPayout($reference));
-        }
-
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-        if ($includeGlobal) {
-            config()->set('affiliates.owner.include_global', false);
-        }
-
-        $processedGlobal = false;
-
-        try {
-            foreach ($owners as $row) {
-                $parsed = OwnerTupleParser::fromRow($row, $columns);
-
-                if ($parsed->isExplicitGlobal()) {
-                    if ($processedGlobal) {
-                        continue;
-                    }
-
-                    $processedGlobal = true;
-                }
-
-                $payout = OwnerContext::withOwner(
-                    $parsed->toOwnerModel(),
-                    fn (): ?AffiliatePayout => $this->queryPayout($reference)
-                );
-
-                if ($payout !== null) {
-                    return $payout;
-                }
-            }
-        } finally {
-            if ($includeGlobal) {
-                config()->set('affiliates.owner.include_global', true);
-            }
-        }
-
-        return null;
     }
 
     private function queryPayout(string $reference): ?AffiliatePayout

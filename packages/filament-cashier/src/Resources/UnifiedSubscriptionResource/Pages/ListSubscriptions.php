@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
+use AIArmada\Cashier\Models\UnifiedSubscriptionRecord;
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\SubscriptionStatus;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Cashier as CashierChip;
-use AIArmada\FilamentCashier\Models\UnifiedSubscriptionRecord;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
-use AIArmada\FilamentCashier\Support\SubscriptionStatus;
-use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -159,7 +159,7 @@ final class ListSubscriptions extends ListRecords
             && class_exists(Subscription::class)
             && Schema::hasTable((new Subscription)->getTable())
         ) {
-            $stripeSubscriptions = CashierOwnerScope::apply(Subscription::query())
+            $stripeSubscriptions = OwnerScopedQuery::apply(Subscription::query())
                 ->with(['user', 'items'])
                 ->where('user_id', $userId)
                 ->orderByDesc('created_at')
@@ -172,7 +172,7 @@ final class ListSubscriptions extends ListRecords
         // Collect from CHIP if available
         if ($detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $chipSubscriptions = CashierOwnerScope::apply($subscriptionModel::query())
+            $chipSubscriptions = OwnerScopedQuery::apply($subscriptionModel::query())
                 ->with(['billable', 'items'])
                 ->where('billable_type', $user->getMorphClass())
                 ->where('billable_id', (string) $user->getKey())

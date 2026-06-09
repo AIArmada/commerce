@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\CommerceSupport\Support\ConnectionDriver;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\Voucher;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -87,8 +88,12 @@ final class VoucherCartStatsWidget extends BaseWidget
 
             $cartQuery = $cartModel::query();
 
-            if (OwnerScopedQueries::isEnabled()) {
-                $cartQuery = OwnerScopedQueries::scopeVoucherLike($cartQuery);
+            if (config('vouchers.owner.enabled', false)) {
+                $cartQuery = OwnerQuery::applyToEloquentBuilder(
+                    $cartQuery,
+                    OwnerContext::resolve(),
+                    (bool) config('vouchers.owner.include_global', false),
+                );
             }
 
             return $cartQuery

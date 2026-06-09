@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -99,8 +100,12 @@ final class AppliedVouchersWidget extends BaseWidget
             return collect([]);
         }
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $isVisible = OwnerScopedQueries::scopeVoucherLike(Cart::query())
+        if (config('vouchers.owner.enabled', false)) {
+            $isVisible = OwnerQuery::applyToEloquentBuilder(
+                Cart::query(),
+                OwnerContext::resolve(),
+                (bool) config('vouchers.owner.include_global', false),
+            )
                 ->whereKey($this->record->getKey())
                 ->exists();
 

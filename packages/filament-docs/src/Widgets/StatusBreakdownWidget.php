@@ -14,7 +14,6 @@ use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Refunded;
 use AIArmada\Docs\States\Sent;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Widgets\ChartWidget;
 
 final class StatusBreakdownWidget extends ChartWidget
@@ -25,7 +24,7 @@ final class StatusBreakdownWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $docs = DocsOwnerScope::applyToDocs(Doc::query());
+        $docs = Doc::query();
 
         /** @var array<int, class-string<DocStatus>> $statuses */
         $statuses = [

@@ -55,7 +55,7 @@ use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventContentSynchronizer;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\RegistrationService;
-use AIArmada\Events\Support\CommerceIntegration;
+use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Orders\Events\OrderCanceled;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;

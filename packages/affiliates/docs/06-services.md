@@ -4,55 +4,53 @@ title: Services Reference
 
 # Services Reference
 
-The package includes specialized services for affiliate management. Resolve them from the container and treat the public methods documented here as the stable surface.
+## Canonical API: Actions
+
+The canonical orchestration surface for affiliates is the `Actions` tree. Prefer these over direct service calls:
+
+### Affiliates Actions (`Actions/Affiliates/`)
+
+| Action | Purpose |
+|--------|---------|
+| `ApproveAffiliate::run($affiliate)` | Approve a pending affiliate |
+| `AttachAffiliateToCart::run($affiliate, $cart, $context)` | Attach an affiliate to a cart |
+| `AttachAffiliateFromCookie::run($cart, $cookieValue, $context)` | Attach from cookie tracking |
+| `CapturePublicAffiliateReferral::run($request)` | Capture public referral |
+| `CreateAffiliate::run($data, $owner)` | Create a new affiliate |
+| `CreateTrackingLink::run($affiliate, $url, $attributes)` | Create a tracking link |
+| `GenerateAffiliateCode::run($name)` | Generate a unique code |
+| `RejectAffiliate::run($affiliate)` | Reject an affiliate |
+| `ResolvePublicAffiliateReferralContext::run($request)` | Resolve referral context |
+| `TouchAffiliateAttribution::run($cookieValue, $context)` | Touch cookie attribution |
+| `TrackAffiliateVisit::run($code, $context, $cookieValue)` | Track a visit by code |
+
+### Conversions Actions (`Actions/Conversions/`)
+
+| Action | Purpose |
+|--------|---------|
+| `AllocateUplineCommissions::run($conversions, $config)` | Distribute upline commissions |
+| `MatureConversion::run($conversion)` | Mature a single conversion |
+| `ProcessConversionMaturity::run()` | Process batch maturity |
+| `RecordAffiliateConversion::run($cart, $payload)` | Record a conversion |
+
+### Payouts Actions (`Actions/Payouts/`)
+
+| Action | Purpose |
+|--------|---------|
+| `CreatePayout::run($conversionIds, $attributes)` | Create a payout batch |
+| `UpdatePayoutStatus::run($payout, $status, $notes, $metadata)` | Update payout status |
+
+---
+
+## Legacy Services (Deprecated)
+
+The package also includes specialized services. These are kept as compatibility adapters. **Prefer Actions for new code.**
 
 ## AffiliateService
 
+> Deprecated: Prefer individual Actions (`CreateTrackingLink`, `AttachAffiliateToCart`, `TrackAffiliateVisit`, `TouchAffiliateAttribution`, `RecordAffiliateConversion`, etc.). `AffiliateService` is kept as a compatibility facade.
+
 The primary service for affiliate operations.
-
-```php
-use AIArmada\Affiliates\Services\AffiliateService;
-
-$service = app(AffiliateService::class);
-```
-
-### Methods
-
-```php
-// Query affiliates (owner-scoped)
-$query = $service->query();
-
-// Find by code
-$affiliate = $service->findByCode('PARTNER42');
-
-// Find without owner scope (for cross-tenant lookups)
-$affiliate = $service->findByCodeWithoutOwnerScope('PARTNER42');
-
-// Find by default voucher code
-$affiliate = $service->findByDefaultVoucherCode('SUMMER20');
-
-// Attach to cart
-$attribution = $service->attachToCartByCode('PARTNER42', $cart, [
-    'source' => 'instagram',
-]);
-
-// Attach affiliate directly
-$attribution = $service->attachAffiliate($affiliate, $cart, $context);
-
-// Track visit by code (cookie-based)
-$attribution = $service->trackVisitByCode('PARTNER42', $context, $cookieValue);
-
-// Touch existing cookie attribution
-$service->touchCookieAttribution($cookieValue, $context);
-
-// Record conversion
-$conversion = $service->recordConversion($cart, [
-    'external_reference' => 'ORD-123',
-    'order_reference' => 'ORD-123', // compatibility alias
-    'value_minor' => 15000,
-    'total_minor' => 15000, // compatibility alias
-]);
-```
 
 ## CommissionCalculator
 
@@ -88,32 +86,22 @@ $bonus = $calculator->getVolumeTierBonus($affiliate, $periodVolume);
 
 ## CommissionMaturityService
 
+> Deprecated: Prefer `Actions/Conversions/ProcessConversionMaturity` and `Actions/Conversions/MatureConversion`.
+> `CommissionMaturityService` is kept as a compatibility adapter until all downstream callers migrate.
+
 Manages the maturity window that promotes qualified conversions into approved, payout-eligible conversions.
 
 ```php
 use AIArmada\Affiliates\Services\CommissionMaturityService;
 
 $service = app(CommissionMaturityService::class);
-
-// Promote qualified conversions that have reached the maturity date
-$processed = $service->processMaturity();
-
-// Check if conversion is mature
-$isMature = $service->isMature($conversion);
-
-// Get maturity date
-$maturesAt = $service->getMaturityDate($conversion);
-
-// Sum qualified commission still in the maturity window
-$pendingMinor = $service->getPendingMaturity($affiliate);
-
-// List conversions maturing soon
-$upcoming = $service->getMaturingWithin($affiliate, 7);
 ```
 
 Only conversions in the `Qualified` state are processed by the maturity service.
 
 ## AffiliatePayoutService
+
+> Deprecated: Prefer `Actions/Payouts/*` actions. `AffiliatePayoutService` is kept as a compatibility adapter until all downstream callers migrate.
 
 Handles payout batch creation and processing.
 
@@ -280,6 +268,8 @@ $service->upgradeTier($membership, $newTier);
 ```
 
 ## AffiliateRegistrationService
+
+> Deprecated: Prefer `Actions/Affiliates/RegisterAffiliate`. `AffiliateRegistrationService` is kept as a compatibility adapter until all downstream callers migrate.
 
 Handles affiliate self-registration.
 

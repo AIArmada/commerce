@@ -90,11 +90,15 @@ trait HasLazyPipeline
     protected function getLazyPipeline(): LazyConditionPipeline
     {
         if ($this->lazyPipeline === null || ! $this->lazyPipeline->isCached()) {
-            // Ensure dynamic conditions are evaluated before building pipeline
             $this->evaluateDynamicConditionsIfDirty();
 
             $context = ConditionPipelineContext::fromCart($this);
-            $this->lazyPipeline = new LazyConditionPipeline($context);
+
+            if (isset($this->pipelineFactory)) {
+                $this->lazyPipeline = $this->pipelineFactory->createLazy($context);
+            } else {
+                $this->lazyPipeline = new LazyConditionPipeline($context);
+            }
         }
 
         return $this->lazyPipeline;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
-use AIArmada\FilamentCashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\GatewayDetector;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Log;
 use Throwable;

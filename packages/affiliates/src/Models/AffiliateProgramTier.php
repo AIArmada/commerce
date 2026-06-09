@@ -69,7 +69,7 @@ class AffiliateProgramTier extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateProgramMembership, self>
+     * @return HasMany<AffiliateProgramMembership, $this>
      */
     public function memberships(): HasMany
     {

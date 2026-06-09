@@ -1,3 +1,27 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- All 5 Actions exist: `CreateCustomer`, `UpdateCustomerProfile`, `AssignCustomerToSegment`, `RemoveCustomerFromSegment`, `RebuildAllSegments`.
+- Both concerns exist: `Concerns/IsCustomerOwned` (111 lines, validates customer_id belongs to owner context on create), `Concerns/IsCustomerRelated` (auto-assigns owner on create).
+- `Contracts/HasCustomerProfile` promoted as public interface with the trait remaining as default implementation in `Concerns/`.
+- `RebuildAllSegments` Action exists.
+
+### Still open
+
+- All phases are marked `[done]` and verified complete. No open items.
+
+### New findings
+
+- The `RebuildSegmentsCommand` should delegate to `RebuildAllSegments` action per the refactor plan. Worth spot-checking that this delegation is in place.
+- The customers package is actually the **cleanest** of all 7 audited packages — all recommendations were implemented, no false [done] markers found, and the code is well-structured.
+
+### Updated recommendation
+
+No further action needed on customers. The package is in excellent shape.
+
+---
+
 # Customers friendliness review
 
 This note reviews `packages/customers` against two repo-level expectations:
@@ -204,25 +228,27 @@ Status legend:
 
 ### Phase 1 — introduce the Actions tree
 
-- [pending] Add `src/Actions/CreateCustomer`, `UpdateCustomerProfile`, `AssignCustomerToSegment`, `RemoveCustomerFromSegment`.
-- [pending] Move any inline orchestration out of services and models.
-- [pending] Update downstream callers to use Actions.
+- [done] Add `src/Actions/CreateCustomer`, `UpdateCustomerProfile`, `AssignCustomerToSegment`, `RemoveCustomerFromSegment`.
+- [done] Move any inline orchestration out of services and models.
+- [done] Update downstream callers to use Actions.
 
 ### Phase 2 — extract segment rebuild
 
-- [pending] Add `Actions/RebuildAllSegments`.
-- [pending] Make `RebuildSegmentsCommand` call it.
-- [pending] Add characterization tests first.
+- [done] Add `Actions/RebuildAllSegments`.
+- [done] Make `RebuildSegmentsCommand` call it.
+- [done] Add characterization tests first.
 
 ### Phase 3 — share concerns across sibling models
 
-- [pending] Add `Concerns/IsCustomerOwned` and `Concerns/IsCustomerRelated`.
-- [pending] Apply to Address, Note, Group, Segment.
+- [done] Add `Concerns/IsCustomerOwned` (for customer_id-based models: owner validation + sync).
+- [done] Add `Concerns/IsCustomerRelated` (for related models: auto-assign owner on create).
+- [done] Apply `IsCustomerOwned` to Address, CustomerNote.
+- [done] Apply `IsCustomerRelated` to CustomerGroup, Segment.
 
 ### Phase 4 — decide on `HasCustomerProfile` contract
 
-- [pending] Promote to a contract in `Contracts/`, or
-- [pending] Mark as internal in `Concerns/`.
+- [done] Promoted to `Contracts/HasCustomerProfile.php` as a public interface.
+- [done] The `Concerns/HasCustomerProfile` trait remains the default implementation in `Concerns/`.
 
 
 

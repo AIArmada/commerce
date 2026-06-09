@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
 use AIArmada\Growth\Facades\Growth;
 use AIArmada\Growth\Livewire\Concerns\InteractsWithExperimentContext;
-use AIArmada\Growth\Support\ExperimentContextManager;
+use AIArmada\Growth\Support\Context\ExperimentContextManager;
 
 it('returns null when no experiment context is available on the request', function (): void {
     expect(experiment())->toBeNull()

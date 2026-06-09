@@ -10,7 +10,6 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocResource;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -24,7 +23,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
@@ -83,14 +81,9 @@ final class PendingApprovalsPage extends Page implements HasTable
         }
 
         $query = DocApproval::query()
-            ->tap(function (Builder $query): void {
-                DocsOwnerScope::apply($query);
-            })
             ->where('assigned_to', $userId)
             ->where('status', DocApprovalStatus::Pending)
-            ->whereHas('doc', function (Builder $docQuery): void {
-                DocsOwnerScope::applyToDocs($docQuery);
-            });
+            ->whereHas('doc');
 
         return $query->count();
     }
@@ -144,9 +137,6 @@ final class PendingApprovalsPage extends Page implements HasTable
                 SelectFilter::make('doc_type')
                     ->label(__('Document Type'))
                     ->options(fn (): array => Doc::query()
-                        ->tap(function (Builder $query): void {
-                            DocsOwnerScope::applyToDocs($query);
-                        })
                         ->distinct()
                         ->pluck('doc_type', 'doc_type')
                         ->toArray()),
@@ -166,7 +156,7 @@ final class PendingApprovalsPage extends Page implements HasTable
                         self::assertCanActOnApproval($record);
 
                         $record->update([
-                                'status' => DocApprovalStatus::Approved,
+                            'status' => DocApprovalStatus::Approved,
                             'approved_at' => CarbonImmutable::now(),
                             'comments' => $data['comments'] ?? null,
                         ]);
@@ -192,7 +182,7 @@ final class PendingApprovalsPage extends Page implements HasTable
                         self::assertCanActOnApproval($record);
 
                         $record->update([
-                                'status' => DocApprovalStatus::Rejected,
+                            'status' => DocApprovalStatus::Rejected,
                             'rejected_at' => CarbonImmutable::now(),
                             'comments' => $data['comments'],
                         ]);
@@ -226,16 +216,11 @@ final class PendingApprovalsPage extends Page implements HasTable
         }
 
         $query = DocApproval::query()
-            ->tap(function (Builder $query): void {
-                DocsOwnerScope::apply($query);
-            })
             ->with(['doc', 'requestedBy'])
             ->where('assigned_to', $userId)
             ->where('status', DocApprovalStatus::Pending);
 
-        return $query->whereHas('doc', function (Builder $docQuery): void {
-            DocsOwnerScope::applyToDocs($docQuery);
-        });
+        return $query->whereHas('doc');
     }
 
     /**
@@ -261,13 +246,8 @@ final class PendingApprovalsPage extends Page implements HasTable
 
         $doc = Doc::query()
             ->whereKey($approval->doc_id)
-            ->tap(function (Builder $query): void {
-                DocsOwnerScope::applyToDocs($query);
-            })
             ->first();
 
         abort_if(! $doc instanceof Doc, 404);
-
-        DocsOwnerScope::assertCanMutateDoc($doc);
     }
 }

@@ -6,13 +6,13 @@ require_once __DIR__ . '/PresentationTestSupport.php';
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Actions\ResolveExperimentAssignment;
-use AIArmada\Growth\Actions\ResolveReadableExperimentBySlug;
 use AIArmada\Growth\Enums\ExperimentStatus;
+use AIArmada\Growth\Support\ExperimentResolver;
 use AIArmada\Growth\Http\Middleware\ResolveExperiment;
 use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
-use AIArmada\Growth\Support\ExperimentContextManager;
+use AIArmada\Growth\Support\Context\ExperimentContextManager;
 use AIArmada\Signals\Support\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -254,6 +254,6 @@ it('returns authorization exception when slug is not readable and owner scopes a
     config()->set('growth.features.owner.enabled', false);
     config()->set('signals.owner.enabled', false);
 
-    expect(fn (): mixed => app(ResolveReadableExperimentBySlug::class)->handle('missing-slug'))
-        ->toThrow(AuthorizationException::class, 'Growth experiment is not accessible in the current owner scope.');
+    expect(fn (): mixed => app(ExperimentResolver::class)->resolveBySlug('missing-slug'))
+        ->toThrow(InvalidArgumentException::class, 'Growth experiment is not accessible in the current owner scope.');
 });

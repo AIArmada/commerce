@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Events;
 
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

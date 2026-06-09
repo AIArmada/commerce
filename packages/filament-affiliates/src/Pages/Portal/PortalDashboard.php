@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
-use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 
-class PortalDashboard extends Page
+class PortalDashboard extends PortalPage
 {
-    use InteractsWithAffiliate;
-
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedHome;
 
     protected static ?int $navigationSort = -2;

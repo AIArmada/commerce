@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;

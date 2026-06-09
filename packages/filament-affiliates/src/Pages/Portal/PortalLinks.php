@@ -5,21 +5,18 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
-use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use InvalidArgumentException;
 use Livewire\Attributes\Computed;
 
-class PortalLinks extends Page
+class PortalLinks extends PortalPage
 {
-    use InteractsWithAffiliate;
-
     public string $targetUrl = '';
 
     public ?string $generatedLink = null;

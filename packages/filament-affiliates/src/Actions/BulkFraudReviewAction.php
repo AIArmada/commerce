@@ -6,7 +6,6 @@ namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\BulkAction;
 use Filament\Forms;
 use Illuminate\Database\Eloquent\Collection;
@@ -61,7 +60,7 @@ final class BulkFraudReviewAction extends BulkAction
                 Gate::authorize('update', $record);
 
                 /** @var AffiliateFraudSignal $signal */
-                $signal = OwnerScopedQuery::throughAffiliate(AffiliateFraudSignal::query())
+                $signal = AffiliateFraudSignal::query()
                     ->whereKey($record->getKey())
                     ->firstOrFail();
 

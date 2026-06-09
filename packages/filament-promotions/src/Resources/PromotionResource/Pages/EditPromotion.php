@@ -6,8 +6,8 @@ namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Pages;
 
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
-use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
+use AIArmada\Promotions\Models\Promotion;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;

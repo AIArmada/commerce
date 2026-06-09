@@ -6,8 +6,6 @@ use AIArmada\Commerce\Tests\FilamentProducts\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentProducts\Pages\BulkEditProducts;
-use AIArmada\FilamentProducts\Pages\ImportExportProducts;
 use AIArmada\FilamentProducts\Resources\AttributeGroupResource\Pages\ListAttributeGroups;
 use AIArmada\FilamentProducts\Resources\AttributeResource\Pages\ListAttributes;
 use AIArmada\FilamentProducts\Resources\AttributeSetResource\Pages\ListAttributeSets;
@@ -186,12 +184,8 @@ it('covers widget query logic with owner scoping', function (): void {
     expect($catB->getKey())->not->toBeNull();
 });
 
-it('covers basic table building on standalone pages', function (): void {
-    $page = app(BulkEditProducts::class);
-    expect($page->table(makeProductsTable()))->toBeInstanceOf(Table::class);
-
-    $importPage = app(ImportExportProducts::class);
-    expect($importPage->getImportFormProperty())->toBeInstanceOf(Schema::class);
+it('products table builds correctly', function (): void {
+    expect(makeProductsTable())->toBeInstanceOf(Table::class);
 });
 
 it('renders product stats in explicit global context when no owner is resolved', function (): void {

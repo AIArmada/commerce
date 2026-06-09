@@ -165,7 +165,7 @@ class AffiliateAttribution extends Model
     }
 
     /**
-     * @return HasMany<AffiliateConversion, self>
+     * @return HasMany<AffiliateConversion, $this>
      */
     public function conversions(): HasMany
     {
@@ -173,7 +173,7 @@ class AffiliateAttribution extends Model
     }
 
     /**
-     * @return HasMany<AffiliateTouchpoint, self>
+     * @return HasMany<AffiliateTouchpoint, $this>
      */
     public function touchpoints(): HasMany
     {

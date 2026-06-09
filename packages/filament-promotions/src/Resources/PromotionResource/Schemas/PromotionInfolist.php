@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentPromotions\Models\Promotion;
+use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Infolists\Components\IconEntry;

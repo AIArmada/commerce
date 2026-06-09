@@ -21,7 +21,7 @@ use AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Pages\ListJntWebhookLog
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Pages\ViewJntWebhookLog;
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Schemas\JntWebhookLogInfolist;
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Tables\JntWebhookLogTable;
-use AIArmada\FilamentJnt\Resources\Pages\ReadOnlyListRecords;
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyListRecords;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;

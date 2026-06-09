@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\CommerceSupport\Models\Permission;
+use AIArmada\CommerceSupport\Models\Role;
 use Illuminate\Support\Facades\Gate;
 
 beforeEach(function (): void {

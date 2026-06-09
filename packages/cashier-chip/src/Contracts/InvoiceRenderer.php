@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Contracts;
 
-use AIArmada\CashierChip\Invoice;
+use AIArmada\CashierChip\Invoice\Invoice;
 
 interface InvoiceRenderer
 {

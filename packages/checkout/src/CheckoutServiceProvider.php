@@ -13,25 +13,21 @@ use AIArmada\Checkout\Exceptions\MissingPaymentGatewayException;
 use AIArmada\Checkout\Services\CheckoutService;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
 use AIArmada\Checkout\Services\PaymentGatewayResolver;
-use AIArmada\Checkout\Steps\ApplyDiscountsStep;
 use AIArmada\Checkout\Steps\CalculatePricingStep;
 use AIArmada\Checkout\Steps\CalculateShippingStep;
-use AIArmada\Checkout\Steps\CalculateTaxStep;
 use AIArmada\Checkout\Steps\CreateOrderStep;
 use AIArmada\Checkout\Steps\DispatchDocumentGenerationStep;
 use AIArmada\Checkout\Steps\PersistCustomerStep;
 use AIArmada\Checkout\Steps\ProcessPaymentStep;
-use AIArmada\Checkout\Steps\ReserveInventoryStep;
 use AIArmada\Checkout\Steps\ResolveCustomerStep;
 use AIArmada\Checkout\Steps\ValidateCartStep;
+use AIArmada\Checkout\Support\CheckoutStepOrderPolicy;
 use AIArmada\Checkout\Support\ChipIntegrationRegistrar;
+use AIArmada\Checkout\Support\RegisterBuiltInPaymentProcessors;
+use AIArmada\Checkout\Support\RegisterCheckoutOptionalSteps;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
-use AIArmada\Inventory\InventoryServiceProvider;
-use AIArmada\Promotions\PromotionsServiceProvider;
-use AIArmada\Tax\TaxServiceProvider;
-use AIArmada\Vouchers\VouchersServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
@@ -51,12 +47,10 @@ final class CheckoutServiceProvider extends PackageServiceProvider
             ->runsMigrations()
             ->discoversMigrations();
 
-        // Conditionally register views
         if (config('checkout.views.enabled', true)) {
             $package->hasViews('checkout');
         }
 
-        // Conditionally register routes
         if (config('checkout.routes.enabled', true)) {
             $package->hasRoute('checkout');
         }
@@ -144,32 +138,13 @@ final class CheckoutServiceProvider extends PackageServiceProvider
                 config('checkout.payment.gateway_priority', ['chip', 'cashier-chip', 'cashier']),
             );
 
-            $this->registerPaymentProcessors($resolver);
+            app(RegisterBuiltInPaymentProcessors::class)->register($resolver);
 
             return $resolver;
         });
 
         $this->app->alias(PaymentGatewayResolver::class, PaymentGatewayResolverInterface::class);
         $this->app->alias(PaymentGatewayResolver::class, 'checkout.payment');
-    }
-
-    protected function registerPaymentProcessors(PaymentGatewayResolver $resolver): void
-    {
-        // Registration order does not control resolution order.
-        // Resolution follows checkout.payment.gateway_priority (default: chip → cashier-chip → cashier).
-        $gateways = (array) config('checkout.payment.gateways', []);
-
-        if (class_exists(GatewayManager::class) && ($gateways['cashier']['enabled'] ?? true)) {
-            $resolver->register('cashier', $this->app->make(Integrations\Payment\CashierProcessor::class));
-        }
-
-        if (class_exists(Cashier::class) && ($gateways['cashier-chip']['enabled'] ?? true)) {
-            $resolver->register('cashier-chip', $this->app->make(Integrations\Payment\CashierChipProcessor::class));
-        }
-
-        if (class_exists(Chip::class) && ($gateways['chip']['enabled'] ?? true)) {
-            $resolver->register('chip', $this->app->make(Integrations\Payment\ChipProcessor::class));
-        }
     }
 
     protected function registerCheckoutService(): void
@@ -188,8 +163,6 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     {
         $registry = $this->app->make(CheckoutStepRegistryInterface::class);
 
-        // Core steps - use lazy factory closures to defer CartManager resolution
-        // until steps are actually executed (after session middleware has run)
         $registry->registerLazy('validate_cart', fn () => $this->app->make(ValidateCartStep::class));
         $registry->registerLazy('resolve_customer', fn () => $this->app->make(ResolveCustomerStep::class));
         $registry->registerLazy('calculate_pricing', fn () => $this->app->make(CalculatePricingStep::class));
@@ -206,139 +179,15 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     {
         $registry = $this->app->make(CheckoutStepRegistryInterface::class);
 
-        // Inventory integration (optional)
-        if ($this->hasInventoryPackage() && config('checkout.integrations.inventory.enabled', true)) {
-            // Bind InventoryAdapter so it can be injected into ReserveInventoryStep
-            $this->app->singleton(Integrations\InventoryAdapter::class);
-            $registry->register('reserve_inventory', new ReserveInventoryStep(
-                inventoryAdapter: $this->app->make(Integrations\InventoryAdapter::class),
-                stepRegistry: $registry,
-            ));
-        } else {
-            $registry->disable('reserve_inventory');
-        }
-
-        // Tax integration (optional)
-        if ($this->hasTaxPackage() && config('checkout.integrations.tax.enabled', true)) {
-            $registry->register('calculate_tax', new CalculateTaxStep(
-                taxAdapter: $this->app->make(Integrations\TaxAdapter::class),
-            ));
-        } else {
-            $registry->disable('calculate_tax');
-        }
-
-        // Discounts integration (promotions + vouchers, optional)
-        if ($this->hasDiscountPackages() && $this->isDiscountsEnabled()) {
-            $registry->register('apply_discounts', new ApplyDiscountsStep(
-                promotionsAdapter: $this->app->make(Integrations\PromotionsAdapter::class),
-                vouchersAdapter: $this->app->make(Integrations\VouchersAdapter::class),
-            ));
-        } else {
-            $registry->disable('apply_discounts');
-        }
+        app(RegisterCheckoutOptionalSteps::class)->register($registry);
 
         $this->registerChipIntegration();
-        $this->normalizeInventoryStepOrder();
-    }
 
-    protected function normalizeInventoryStepOrder(): void
-    {
-        $registry = $this->app->make(CheckoutStepRegistryInterface::class);
-
-        $configuredOrder = method_exists($registry, 'getOrder')
-            ? $registry->getOrder()
-            : array_map(
-                static fn (Contracts\CheckoutStepInterface $step): string => $step->getIdentifier(),
-                $registry->getOrderedSteps(),
-            );
-
-        if (! is_array($configuredOrder) || $configuredOrder === []) {
-            return;
+        $order = $registry->getOrder();
+        if (! empty($order)) {
+            $normalizedOrder = app(CheckoutStepOrderPolicy::class)->normalizeInventoryStepOrder($registry, $order);
+            $registry->setOrder($normalizedOrder);
         }
-
-        $normalizedOrder = $configuredOrder;
-
-        if (
-            $registry->has('process_payment')
-            && $registry->has('reserve_inventory')
-            && $registry->isEnabled('process_payment')
-            && $registry->isEnabled('reserve_inventory')
-        ) {
-            $normalizedOrder = $this->resolveInventoryStepOrder($normalizedOrder);
-        }
-
-        $registry->setOrder($this->enforceStepDependencyOrder($normalizedOrder));
-    }
-
-    /**
-     * @param  array<int, mixed>  $configuredOrder
-     * @return array<string>
-     */
-    protected function resolveInventoryStepOrder(array $configuredOrder): array
-    {
-        if (! in_array('reserve_inventory', $configuredOrder, true)) {
-            return array_values(array_filter($configuredOrder, 'is_string'));
-        }
-
-        $order = array_values(array_filter(
-            $configuredOrder,
-            static fn (mixed $identifier): bool => is_string($identifier) && $identifier !== 'reserve_inventory',
-        ));
-
-        $processPaymentPosition = array_search('process_payment', $order, true);
-
-        if ($processPaymentPosition === false) {
-            return array_values(array_filter($configuredOrder, 'is_string'));
-        }
-
-        $reserveBeforePayment = config('checkout.integrations.inventory.reserve_before_payment', true);
-        $inventoryPosition = $reserveBeforePayment ? $processPaymentPosition : $processPaymentPosition + 1;
-
-        array_splice($order, $inventoryPosition, 0, ['reserve_inventory']);
-
-        return $order;
-    }
-
-    /**
-     * @param  array<int, mixed>  $configuredOrder
-     * @return array<string>
-     */
-    protected function enforceStepDependencyOrder(array $configuredOrder): array
-    {
-        $order = array_values(array_filter($configuredOrder, 'is_string'));
-
-        return $this->ensureStepPrecedes($order, 'persist_customer', 'create_order');
-    }
-
-    /**
-     * @param  array<string>  $order
-     * @return array<string>
-     */
-    protected function ensureStepPrecedes(array $order, string $requiredBefore, string $dependent): array
-    {
-        $beforePosition = array_search($requiredBefore, $order, true);
-        $dependentPosition = array_search($dependent, $order, true);
-
-        if ($beforePosition === false || $dependentPosition === false || $beforePosition < $dependentPosition) {
-            return $order;
-        }
-
-        $order = array_values(array_filter(
-            $order,
-            static fn (string $identifier): bool => $identifier !== $requiredBefore,
-        ));
-
-        $dependentPosition = array_search($dependent, $order, true);
-
-        if ($dependentPosition === false) {
-            $order[] = $requiredBefore;
-
-            return $order;
-        }
-
-        array_splice($order, $dependentPosition, 0, [$requiredBefore]);
-
-        return $order;
     }
 
     protected function validateOwnerConfiguration(): void
@@ -419,14 +268,12 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     protected function validatePaymentGatewayConfiguration(): void
     {
-        // Skip validation when the payment step is explicitly disabled (e.g. free-order-only flows).
         $stepEnabled = config('checkout.steps.enabled.process_payment', true);
 
         if (! $stepEnabled) {
             return;
         }
 
-        // Check if at least one payment package exists
         $hasCashier = class_exists(GatewayManager::class);
         $hasCashierChip = class_exists(Cashier::class);
         $hasChip = class_exists(Chip::class);
@@ -434,28 +281,6 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         if (! $hasCashier && ! $hasCashierChip && ! $hasChip) {
             throw MissingPaymentGatewayException::noGatewayInstalled();
         }
-    }
-
-    protected function hasInventoryPackage(): bool
-    {
-        return class_exists(InventoryServiceProvider::class);
-    }
-
-    protected function hasTaxPackage(): bool
-    {
-        return class_exists(TaxServiceProvider::class);
-    }
-
-    protected function hasDiscountPackages(): bool
-    {
-        return class_exists(PromotionsServiceProvider::class)
-            || class_exists(VouchersServiceProvider::class);
-    }
-
-    protected function isDiscountsEnabled(): bool
-    {
-        return config('checkout.integrations.promotions.enabled', true)
-            || config('checkout.integrations.vouchers.enabled', true);
     }
 
     protected function registerChipIntegration(): void

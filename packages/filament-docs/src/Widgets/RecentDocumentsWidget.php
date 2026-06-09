@@ -7,7 +7,6 @@ namespace AIArmada\FilamentDocs\Widgets;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\FilamentDocs\Resources\DocResource;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -28,7 +27,7 @@ final class RecentDocumentsWidget extends BaseWidget
     {
         return $table
             ->query(
-                DocsOwnerScope::applyToDocs(Doc::query())
+                Doc::query()
                     ->latest()
                     ->limit(10)
             )

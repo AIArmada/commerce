@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Components;
 
-use AIArmada\FilamentCashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\GatewayDetector;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 

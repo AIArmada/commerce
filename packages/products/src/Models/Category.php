@@ -107,7 +107,7 @@ class Category extends Model implements Auditable, HasMedia
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var Builder<Category> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;

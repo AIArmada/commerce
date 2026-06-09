@@ -9,10 +9,6 @@ declare(strict_types=1);
 // the underlying action closures (carrier calls, DB writes, notifications).
 
 use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
-use AIArmada\FilamentShipping\Actions\BulkCancelAction;
-use AIArmada\FilamentShipping\Actions\BulkPrintLabelsAction;
-use AIArmada\FilamentShipping\Actions\BulkShipAction;
-use AIArmada\FilamentShipping\Actions\BulkSyncTrackingAction;
 use AIArmada\FilamentShipping\Actions\CancelShipmentAction;
 use AIArmada\FilamentShipping\Actions\PrintLabelAction;
 use AIArmada\FilamentShipping\Actions\RejectReturnAction;
@@ -29,12 +25,13 @@ describe('Actions namespace', function (): void {
         expect(file_exists($actionsPath . '/PrintLabelAction.php'))->toBeTrue();
         expect(file_exists($actionsPath . '/CancelShipmentAction.php'))->toBeTrue();
         expect(file_exists($actionsPath . '/SyncTrackingAction.php'))->toBeTrue();
-        expect(file_exists($actionsPath . '/BulkShipAction.php'))->toBeTrue();
-        expect(file_exists($actionsPath . '/BulkPrintLabelsAction.php'))->toBeTrue();
-        expect(file_exists($actionsPath . '/BulkCancelAction.php'))->toBeTrue();
-        expect(file_exists($actionsPath . '/BulkSyncTrackingAction.php'))->toBeTrue();
         expect(file_exists($actionsPath . '/ApproveReturnAction.php'))->toBeTrue();
         expect(file_exists($actionsPath . '/RejectReturnAction.php'))->toBeTrue();
+
+        expect(file_exists($actionsPath . '/BulkShipAction.php'))->toBeFalse();
+        expect(file_exists($actionsPath . '/BulkPrintLabelsAction.php'))->toBeFalse();
+        expect(file_exists($actionsPath . '/BulkCancelAction.php'))->toBeFalse();
+        expect(file_exists($actionsPath . '/BulkSyncTrackingAction.php'))->toBeFalse();
     });
 
     it('configures per-record shipment actions', function (): void {
@@ -52,15 +49,15 @@ describe('Actions namespace', function (): void {
         }
     });
 
-    it('configures bulk shipment actions', function (): void {
-        $actions = [
-            BulkShipAction::make(),
-            BulkPrintLabelsAction::make(),
-            BulkCancelAction::make(),
-            BulkSyncTrackingAction::make(),
+    it('provides bulk action factory on collapsed actions', function (): void {
+        $bulkActions = [
+            ShipAction::bulkAction(),
+            PrintLabelAction::bulkAction(),
+            CancelShipmentAction::bulkAction(),
+            SyncTrackingAction::bulkAction(),
         ];
 
-        foreach ($actions as $action) {
+        foreach ($bulkActions as $action) {
             expect($action)->toBeInstanceOf(BulkAction::class);
             expect($action->getName())->not()->toBeNull();
             expect($action->getLabel())->not()->toBeEmpty();

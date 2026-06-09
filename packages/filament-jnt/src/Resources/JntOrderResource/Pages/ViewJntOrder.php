@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntOrderResource\Pages;
 
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyViewRecord;
 use AIArmada\FilamentJnt\Actions\CancelOrderAction;
-use AIArmada\FilamentJnt\Actions\PrintAwbAction;
+use AIArmada\FilamentJnt\Actions\PrintAwbTableAction;
 use AIArmada\FilamentJnt\Actions\SyncTrackingAction;
 use AIArmada\FilamentJnt\Resources\JntOrderResource;
-use AIArmada\FilamentJnt\Resources\Pages\ReadOnlyViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Override;
 
@@ -33,7 +33,7 @@ final class ViewJntOrder extends ReadOnlyViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            PrintAwbAction::make(),
+            PrintAwbTableAction::make(),
             SyncTrackingAction::make(),
             CancelOrderAction::make(),
         ];

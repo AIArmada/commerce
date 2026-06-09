@@ -8,7 +8,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Policies\AffiliatePayoutPolicy;
-use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\CommerceSupport\Models\Permission;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {

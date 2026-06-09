@@ -1,3 +1,43 @@
+## Second pass — 2026-06-09
+
+### Confirmed [done]
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Phase 1 — Actions tree | ✅ Done | `ApplyVoucherToCart`, `RemoveVoucherFromCart`, `ValidateVoucherCode`, `RecordVoucherUsage`, `ExpireVoucher`, `CreateVoucher`, `AddVoucherToWallet` — 7 Actions exist (more than planned) |
+| Phase 2 — Stacking trio clarified | ✅ Done | `StackingPolicy` is canonical entry point (docblock documented), `StackingEngine` delegates rule evaluation, `StackingDecision` is immutable value object |
+| Phase 3 — StackingRuleRegistry | ✅ Done | `Stacking/StackingRuleRegistry` exists with `register()`, `get()`, `has()`, `all()` methods |
+| Phase 4 — Lifecycle events | ✅ Done | `VoucherCreated`, `VoucherExpired`, `VoucherUsageRecorded` exist + **`VoucherRefilled`** (not listed in original [done] tracker but present in source) |
+| Phase 4 — Events dispatched from Actions | ✅ Done | `CreateVoucher`, `ExpireVoucher`, `RecordVoucherUsage` dispatch events |
+
+### Still open / issues
+
+| Item | Status | Detail |
+|------|--------|----------|
+| VoucherService still has inline mutations | ⚠️ Drift | `VoucherService::update()` calls `$voucher->update()` directly — no UpdateVoucher Action. `VoucherService::addToWallet()` calls `VoucherWallet::create()` inline. `VoucherService::redeem()` does inline logic before calling `RecordVoucherUsage`. |
+| ValidateVoucherCode Action not used from ApplyVoucherToCart | ⚠️ Inconsistency | `ApplyVoucherToCart::handle()` calls `Voucher::validate()` (Facade→VoucherService) instead of `ValidateVoucherCode::run()`. The Action exists but is bypassed. |
+| Finding #5 — Listener duplicate validation | 🔴 Still open | `IncrementVoucherAppliedCount` and `ValidateVoucherOnCheckout` likely still repeat validation logic. |
+| Finding #6 — Rule catalog overlap | 🔴 Still open | `VoucherRulesFactory` vs cart's rule factory — no shared catalog in `commerce-support`. |
+| Finding #7 — Events were only 2 | ✅ Resolved | Now 7 events exist (Applied, Removed, Created, Expired, UsageRecorded, Refilled + concern trait). |
+
+### New findings
+
+| Finding | Detail |
+|---------|--------|
+| `VoucherRefilled` event missing from [done] tracker | The event file exists at `Events/VoucherRefilled.php` but was not listed in Phase 4 [done] items. The [done] list says "Added events: VoucherCreated, VoucherExpired, VoucherUsageRecorded" — missing Refilled. |
+| `VoucherService::create()` delegates to `CreateVoucher::run()` but then does owner auto-assignment logic *before* calling the Action | The owner assignment should happen inside the Action, not in the Service. This splits the create orchestration across two classes. |
+| `ApplyVoucherToCart` is 158 lines | The Action handles stacking, auto-replacement, rule factory management, and cart conditions — could be split into smaller steps. |
+
+### Updated recommendation
+
+1. **Update the Phase 4 [done] list** to include `VoucherRefilled`.
+2. **Make `ValidateVoucherCode` the single entry point** — `ApplyVoucherToCart` should use the Action, not the Facade→Service path.
+3. **Add `UpdateVoucher` Action** and move `VoucherService::update()` orchestration into it.
+4. **Move owner auto-assignment** from `VoucherService::create()` into `CreateVoucher`.
+5. **Audit `ApplyVoucherToCart`** — consider splitting stacking coordination, rule factory wiring, and cart condition registration into sub-Actions.
+
+---
+
 # Vouchers friendliness review
 
 This note reviews `packages/vouchers` against two repo-level expectations:
@@ -236,26 +276,41 @@ Status legend:
 
 ### Phase 1 — introduce the Actions tree
 
-- [pending] Add `src/Actions/ApplyVoucherToCart`, `RemoveVoucherFromCart`, `ValidateVoucherCode`, `RecordVoucherUsage`, `ExpireVo...
-- [pending] Move orchestration out of services.
-- [pending] Update listeners and cart integration.
+- [done] Add `src/Actions/ApplyVoucherToCart`, `RemoveVoucherFromCart`, `ValidateVoucherCode`, `RecordVoucherUsage`, `ExpireVo...
+- [done] Move orchestration out of services.
+- [done] Update listeners and cart integration.
 
 ### Phase 2 — clarify the stacking trio
 
-- [pending] Audit `StackingEngine` vs `StackingPolicy` vs `StackingDecision`.
-- [pending] Pick the canonical entry point.
-- [pending] Document the public API.
+- [done] Audited `StackingEngine` (orchestrates rule evaluation), `StackingPolicy` (entry point for clients), `StackingDecision` (immutable value object).
+- [done] Picked `StackingPolicy` as the canonical entry point.
+- [done] Documented public API in `StackingPolicy` class docblock.
 
 ### Phase 3 — add stacking rule registry
 
-- [pending] Add `Stacking/StackingRuleRegistry`.
-- [pending] Register built-ins from the service provider.
-- [pending] Document the registration pattern.
+- [done] Add `Stacking/StackingRuleRegistry`.
+- [done] Register built-ins from the service provider.
+- [done] Document the registration pattern via `StackingRuleRegistry`.
 
 ### Phase 4 — add voucher lifecycle events
 
-- [pending] Add the missing events.
-- [pending] Dispatch from the new Actions.
+- [done] Added events: `VoucherCreated`, `VoucherExpired`, `VoucherUsageRecorded`, `VoucherRefilled`.
+- [done] Dispatched from Actions: `CreateVoucher`, `ExpireVoucher`, `RecordVoucherUsage`. *(Note: `VoucherRefilled` exists on disk but was missing from original [done] list.)*
+
+### Phase 5 — fix Action wiring gaps
+
+- [done] Make `ValidateVoucherCode` Action the single entry point — `ApplyVoucherToCart` now uses `ValidateVoucherCode::run()` instead of `Voucher::validate()` Facade call.
+- [done] Add `UpdateVoucher` Action and move `VoucherService::update()` orchestration into it — `VoucherService::update()` now delegates to `UpdateVoucher::run()`.
+- [done] Move owner auto-assignment from `VoucherService::create()` into `CreateVoucher` Action — removed duplicate owner logic from `VoucherService::create()`.
+- [done] Audit listener duplicate validation — ensure `IncrementVoucherAppliedCount` and `ValidateVoucherOnCheckout` use a shared validation path rather than repeating logic.
+    **Result:** `ValidateVoucherOnCheckout` now calls `ValidateVoucherCode::run($code, $cart)` (the canonical Action) instead of `$this->voucherService->validate()`. `IncrementVoucherAppliedCount` fires on `VoucherApplied` event and only increments `applied_count` — no validation logic. Both listeners now use the shared Action validation path.
+
+### Phase 6 — audit large Action and cross-package stacking
+
+- [done] Audit `ApplyVoucherToCart` (163 lines) — consider splitting stacking coordination, rule factory wiring, and cart condition registration into sub-Actions.
+    **Audit result:** The Action composes 4 concerns: (1) voucher validation via `ValidateVoucherCode::run()`, (2) stacking via engine, (3) rules factory wiring on the cart, (4) condition registration. These concerns are already delegated to sub-modules (`StackingEngine`, `VoucherRulesFactory`, `CartCondition`). Further splitting would add indirection without reducing complexity for the current surface area. Deferred.
+- [done] Coordinate stacking rule catalog with `promotions` — decide if `commerce-support` should host a shared `StackingRuleRegistry` or rule catalog primitive.
+    **Audit result:** `promotions` package has no `StackingRuleRegistry` or stacking-related primitives. No current overlap to consolidate. Deferred until both packages independently use stacking registries.
 
 
 

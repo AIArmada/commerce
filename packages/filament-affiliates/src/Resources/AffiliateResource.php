@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\CreateAffiliate;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\EditAffiliate;
@@ -31,8 +32,6 @@ use UnitEnum;
 final class AffiliateResource extends Resource
 {
     protected static ?string $model = Affiliate::class;
-
-    protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUsers;
 
@@ -74,22 +73,10 @@ final class AffiliateResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        /** @var Builder<Affiliate> $query */
+        /** @var Builder $query */
         $query = parent::getEloquentQuery();
 
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            /** @var Builder<Model> $unscopedQuery */
-            $unscopedQuery = $query;
-
-            return $unscopedQuery;
-        }
-
-        $scopedQuery = $query->forOwner();
-
-        /** @var Builder<Model> $modelQuery */
-        $modelQuery = $scopedQuery;
-
-        return $modelQuery;
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPromotions\Resources\PromotionResource\RelationManagers;
 
-use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
+use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;

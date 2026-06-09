@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\States\Active;
@@ -13,6 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 final class BulkGenerateVouchersAction extends Action
@@ -88,9 +89,7 @@ final class BulkGenerateVouchersAction extends Action
             $count = (int) $data['count'];
             $created = 0;
 
-            // Enforce owner on every generated voucher so none are accidentally created
-            // as global records when owner mode is enabled.
-            $ownerDefaults = OwnerScopedQueries::enforceOwnerOnCreate([]);
+            $ownerDefaults = $this->enforceOwnerOnCreate([]);
 
             for ($i = 0; $i < $count; $i++) {
                 $code = mb_strtoupper($data['prefix']) . '-' . mb_strtoupper(Str::random(6));
@@ -114,6 +113,31 @@ final class BulkGenerateVouchersAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function enforceOwnerOnCreate(array $data): array
+    {
+        if (! config('vouchers.owner.enabled', false)) {
+            return $data;
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if (! $owner instanceof Model) {
+            $data['owner_type'] = null;
+            $data['owner_id'] = null;
+
+            return $data;
+        }
+
+        $data['owner_type'] = $owner->getMorphClass();
+        $data['owner_id'] = (string) $owner->getKey();
+
+        return $data;
     }
 
     public static function getDefaultName(): ?string

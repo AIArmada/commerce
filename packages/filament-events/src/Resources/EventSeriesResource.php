@@ -7,25 +7,14 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Models\EventSeries;
 use AIArmada\FilamentEvents\Resources\EventSeriesResource\Pages;
+use AIArmada\FilamentEvents\Resources\EventSeriesResource\Schemas\EventSeriesForm;
+use AIArmada\FilamentEvents\Resources\EventSeriesResource\Schemas\EventSeriesInfolist;
+use AIArmada\FilamentEvents\Resources\EventSeriesResource\Tables\EventSeriesTable;
 use BackedEnum;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
-use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
-use Filament\Infolists\Components\IconEntry;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 
 final class EventSeriesResource extends Resource
 {
@@ -66,97 +55,17 @@ final class EventSeriesResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Section::make('Series')
-                    ->schema([
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn (Set $set, ?string $state): mixed => $set('slug', Str::slug($state ?? ''))),
-
-                        TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(ignoreRecord: true),
-
-                        Textarea::make('description')
-                            ->rows(4)
-                            ->columnSpanFull(),
-
-                        Toggle::make('is_active')
-                            ->label('Active')
-                            ->default(true),
-
-                        KeyValue::make('metadata')
-                            ->columnSpanFull(),
-                    ])
-                    ->columns(2),
-            ]);
+        return EventSeriesForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable()
-                    ->sortable()
-                    ->description(fn (EventSeries $record): string => $record->slug),
-
-                Tables\Columns\IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('events_count')
-                    ->label('Events')
-                    ->counts('events')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime('d M Y')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->defaultSort('created_at', 'desc')
-            ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active'),
-            ])
-            ->actions([
-                ViewAction::make(),
-                EditAction::make(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+        return EventSeriesTable::configure($table);
     }
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Section::make('Series')
-                    ->schema([
-                        TextEntry::make('name'),
-                        TextEntry::make('slug')
-                            ->copyable(),
-                        IconEntry::make('is_active')
-                            ->label('Active')
-                            ->boolean(),
-                        TextEntry::make('events_count')
-                            ->label('Events')
-                            ->state(fn (EventSeries $record): int => $record->events()->count()),
-                        TextEntry::make('description')
-                            ->columnSpanFull()
-                            ->placeholder('No description'),
-                    ])
-                    ->columns(4),
-            ]);
+        return EventSeriesInfolist::configure($schema);
     }
 
     public static function getPages(): array

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers;
 
-use AIArmada\FilamentVouchers\Services\VoucherStatsAggregator;
-use AIArmada\FilamentVouchers\Support\Integrations\FilamentCartBridge;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
+use AIArmada\FilamentVouchers\Support\VoucherStatsAggregator;
+use AIArmada\Vouchers\Filament\Integrations\FilamentCartBridge;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
@@ -60,11 +60,6 @@ final class FilamentVouchersServiceProvider extends PackageServiceProvider
         Livewire::component(
             'a-i-armada.filament-vouchers.widgets.voucher-cart-stats-widget',
             Widgets\VoucherCartStatsWidget::class
-        );
-
-        Livewire::component(
-            'a-i-armada.filament-vouchers.widgets.applied-voucher-badges-widget',
-            Widgets\AppliedVoucherBadgesWidget::class
         );
 
         Livewire::component(

@@ -7,30 +7,16 @@ namespace AIArmada\FilamentCustomers\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
+use AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas\CustomerForm;
+use AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas\CustomerInfolist;
+use AIArmada\FilamentCustomers\Resources\CustomerResource\Tables\CustomersTable;
 use BackedEnum;
-use Carbon\CarbonImmutable;
-use Filament\Actions\BulkAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
-use Filament\Facades\Filament;
-use Filament\Forms;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Gate;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use UnitEnum;
 
 class CustomerResource extends Resource
@@ -67,258 +53,17 @@ class CustomerResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Group::make()
-                    ->schema([
-                        Section::make('Customer Information')
-                            ->schema([
-                                Forms\Components\TextInput::make('first_name')
-                                    ->label('First Name')
-                                    ->required()
-                                    ->maxLength(100),
-
-                                Forms\Components\TextInput::make('last_name')
-                                    ->label('Last Name')
-                                    ->required()
-                                    ->maxLength(100),
-
-                                Forms\Components\TextInput::make('email')
-                                    ->label('Email')
-                                    ->email()
-                                    ->required()
-                                    ->unique(ignoreRecord: true, modifyRuleUsing: function ($rule) {
-                                        $owner = OwnerUiScope::resolveOwner(Customer::class);
-                                        if ($owner !== null) {
-                                            return $rule
-                                                ->where('owner_type', $owner->getMorphClass())
-                                                ->where('owner_id', $owner->getKey());
-                                        }
-
-                                        return $rule
-                                            ->whereNull('owner_type')
-                                            ->whereNull('owner_id');
-                                    })
-                                    ->maxLength(255),
-
-                                Forms\Components\TextInput::make('phone')
-                                    ->label('Phone')
-                                    ->tel()
-                                    ->maxLength(20),
-
-                                Forms\Components\TextInput::make('company')
-                                    ->label('Company')
-                                    ->maxLength(255),
-                            ])
-                            ->columns(2),
-
-                        Section::make('Preferences')
-                            ->schema([
-                                Forms\Components\Toggle::make('accepts_marketing')
-                                    ->label('Accepts Marketing')
-                                    ->helperText('Customer has opted in for marketing emails'),
-                            ])
-                            ->columns(2),
-                    ])
-                    ->columnSpan(['lg' => 2]),
-
-                Group::make()
-                    ->schema([
-                        Section::make('Status')
-                            ->schema([
-                                Forms\Components\Select::make('status')
-                                    ->label('Status')
-                                    ->options(
-                                        collect(CustomerStatus::cases())
-                                            ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
-                                    )
-                                    ->required()
-                                    ->default('active'),
-                            ]),
-
-                        Section::make('Segments')
-                            ->schema([
-                                Forms\Components\Select::make('segments')
-                                    ->label('Segments')
-                                    ->relationship(
-                                        name: 'segments',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)
-                                            ->where('is_automatic', false),
-                                    )
-                                    ->multiple()
-                                    ->preload()
-                                    ->searchable()
-                                    ->helperText('Manual segment assignment')
-                                    ->saveRelationshipsUsing(function (Customer $record, ?array $state): void {
-                                        static::syncManualSegments($record, $state);
-                                    }),
-                            ]),
-                    ])
-                    ->columnSpan(['lg' => 1]),
-            ])
-            ->columns(3);
+        return CustomerForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('full_name')
-                    ->label('Customer')
-                    ->searchable(['first_name', 'last_name'])
-                    ->sortable()
-                    ->description(fn ($record) => $record->email),
-
-                Tables\Columns\TextColumn::make('status')
-                    ->label('Status')
-                    ->badge()
-                    ->formatStateUsing(fn ($state) => $state->label())
-                    ->color(fn ($state) => $state->color()),
-
-                Tables\Columns\TextColumn::make('company')
-                    ->label('Company')
-                    ->placeholder('—')
-                    ->searchable()
-                    ->toggleable(),
-
-                Tables\Columns\IconColumn::make('accepts_marketing')
-                    ->label('Marketing')
-                    ->boolean()
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('segments.name')
-                    ->label('Segments')
-                    ->badge()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Joined')
-                    ->dateTime('d M Y')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->defaultSort('created_at', 'desc')
-            ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->options(
-                        collect(CustomerStatus::cases())
-                            ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
-                    ),
-
-                Tables\Filters\TernaryFilter::make('accepts_marketing')
-                    ->label('Accepts Marketing'),
-
-                Tables\Filters\SelectFilter::make('segments')
-                    ->options(static fn (): array => OwnerUiScope::apply(Segment::query(), includeGlobal: false)
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all())
-                    ->query(static function (Builder $query, array $data): Builder {
-                        $values = array_values(array_filter($data['values'] ?? []));
-
-                        if ($values === []) {
-                            return $query;
-                        }
-
-                        return $query->whereHas('segments', static function (Builder $segmentQuery) use ($values): void {
-                            OwnerUiScope::apply($segmentQuery, includeGlobal: false)
-                                ->whereKey($values);
-                        });
-                    })
-                    ->multiple()
-                    ->preload(),
-
-                Tables\Filters\Filter::make('recent')
-                    ->label('New (Last 30 days)')
-                    ->query(fn ($query) => $query->where('created_at', '>=', CarbonImmutable::now()->subDays(30))),
-            ])
-            ->actions([
-                ViewAction::make(),
-                EditAction::make(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    BulkAction::make('opt_in_marketing')
-                        ->label('Opt-In Marketing')
-                        ->icon('heroicon-o-bell')
-                        ->action(function (Collection $records): void {
-                            $user = Filament::auth()->user();
-                            abort_unless($user !== null, 403);
-
-                            $records->each(function (Customer $record) use ($user): void {
-                                Gate::forUser($user)->authorize('update', $record);
-                                $record->optInMarketing();
-                            });
-                        }),
-                    BulkAction::make('opt_out_marketing')
-                        ->label('Opt-Out Marketing')
-                        ->icon('heroicon-o-bell-slash')
-                        ->action(function (Collection $records): void {
-                            $user = Filament::auth()->user();
-                            abort_unless($user !== null, 403);
-
-                            $records->each(function (Customer $record) use ($user): void {
-                                Gate::forUser($user)->authorize('update', $record);
-                                $record->optOutMarketing();
-                            });
-                        }),
-                ]),
-            ]);
+        return CustomersTable::configure($table);
     }
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Section::make('Customer Overview')
-                    ->schema([
-                        TextEntry::make('full_name')
-                            ->label('Name'),
-                        TextEntry::make('email')
-                            ->label('Email')
-                            ->copyable(),
-                        TextEntry::make('phone')
-                            ->label('Phone')
-                            ->copyable(),
-                        TextEntry::make('company')
-                            ->label('Company')
-                            ->placeholder('Not set'),
-                        TextEntry::make('status')
-                            ->label('Status')
-                            ->badge()
-                            ->formatStateUsing(fn ($state) => $state->label())
-                            ->color(fn ($state) => $state->color()),
-                    ])
-                    ->columns(4),
-
-                Section::make('Preferences')
-                    ->schema([
-                        TextEntry::make('accepts_marketing')
-                            ->label('Accepts Marketing')
-                            ->formatStateUsing(fn ($state) => $state ? 'Yes' : 'No')
-                            ->badge()
-                            ->color(fn ($state) => $state ? 'success' : 'gray'),
-                    ])
-                    ->columns(1),
-
-                Section::make('Activity')
-                    ->schema([
-                        TextEntry::make('created_at')
-                            ->label('Customer Since')
-                            ->dateTime(),
-                    ])
-                    ->columns(1),
-
-                Section::make('Segments')
-                    ->schema([
-                        TextEntry::make('segments.name')
-                            ->label('Assigned Segments')
-                            ->badge()
-                            ->placeholder('No segments'),
-                    ]),
-            ]);
+        return CustomerInfolist::configure($schema);
     }
 
     public static function getRelations(): array
@@ -342,51 +87,5 @@ class CustomerResource extends Resource
     public static function getGloballySearchableAttributes(): array
     {
         return ['first_name', 'last_name', 'email', 'phone', 'company'];
-    }
-
-    /**
-     * @param  array<int, mixed>|null  $state
-     *
-     * @throws HttpException
-     */
-    public static function syncManualSegments(Customer $record, ?array $state): void
-    {
-        $owner = static::ensureRecordOwnerScope($record);
-
-        $ids = array_values(array_filter($state ?? []));
-
-        $allowedManualSegmentIds = Segment::query()
-            ->forOwner($owner, includeGlobal: false)
-            ->where('is_automatic', false)
-            ->whereKey($ids)
-            ->pluck('id')
-            ->all();
-
-        abort_unless(array_diff($ids, $allowedManualSegmentIds) === [], 403);
-
-        $automaticSegmentIds = $record->segments()
-            ->where('is_automatic', true)
-            ->pluck('id')
-            ->all();
-
-        $record->segments()->sync(array_values(array_unique([
-            ...$automaticSegmentIds,
-            ...$allowedManualSegmentIds,
-        ])));
-    }
-
-    protected static function ensureRecordOwnerScope(Customer $record): ?Model
-    {
-        $owner = OwnerUiScope::resolveOwner(Customer::class);
-
-        if ($owner === null) {
-            abort_unless($record->owner_type === null && $record->owner_id === null, 403);
-
-            return null;
-        }
-
-        abort_unless($record->belongsToOwner($owner), 403);
-
-        return $owner;
     }
 }

@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Events\Support\ConfiguredEventModel;
+use AIArmada\Events\Support\Integration\ConfiguredEventModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -96,7 +96,7 @@ class EventPerson extends Model implements Auditable
             $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
         }
 
-        /** @var Builder<EventPerson> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;
@@ -104,6 +104,8 @@ class EventPerson extends Model implements Auditable
 
     /**
      * @return BelongsTo<Event, $this>
+     *
+     * @phpstan-return BelongsTo<Event, $this>
      */
     public function event(): BelongsTo
     {

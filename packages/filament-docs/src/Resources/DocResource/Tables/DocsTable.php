@@ -13,7 +13,6 @@ use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
 use AIArmada\FilamentDocs\Exports\DocExporter;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -157,7 +156,6 @@ final class DocsTable
                         ->label('Generate PDF')
                         ->icon(Heroicon::OutlinedDocumentArrowDown)
                         ->action(function (Doc $record): void {
-                            DocsOwnerScope::assertCanMutateDoc($record);
                             app(DocService::class)->generatePdf($record, save: true);
                             Notification::make()->title('PDF generated')->success()->send();
                         }),
@@ -169,7 +167,6 @@ final class DocsTable
                         ->icon(Heroicon::OutlinedPaperAirplane)
                         ->visible(fn (Doc $record): bool => self::canMarkAsSent($record))
                         ->action(function (Doc $record): void {
-                            DocsOwnerScope::assertCanMutateDoc($record);
                             $record->markAsSent();
                             Notification::make()->title('Marked as sent')->success()->send();
                         }),
@@ -180,7 +177,6 @@ final class DocsTable
                         ->color('success')
                         ->visible(fn (Doc $record): bool => $record->canBePaid())
                         ->action(function (Doc $record): void {
-                            DocsOwnerScope::assertCanMutateDoc($record);
                             $record->markAsPaid();
                             Notification::make()->title('Marked as paid')->success()->send();
                         }),
@@ -191,7 +187,6 @@ final class DocsTable
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Doc $record): void {
-                            DocsOwnerScope::assertCanMutateDoc($record);
                             $record->delete();
                         }),
                 ])
@@ -206,7 +201,6 @@ final class DocsTable
                         $docService = app(DocService::class);
                         /** @var Collection<int|string, Doc> $records */
                         $records->each(function (Doc $record) use ($docService): void {
-                            DocsOwnerScope::assertCanMutateDoc($record);
                             $docService->generatePdf($record, save: true);
                         });
                         Notification::make()->title('PDFs generated for ' . count($records) . ' documents')->success()->send();
@@ -218,7 +212,6 @@ final class DocsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Doc> $records */
                         $records->each(function (Doc $record): void {
-                            DocsOwnerScope::assertCanMutateDoc($record);
                             $record->markAsSent();
                         });
                         Notification::make()->title('Documents marked as sent')->success()->send();
@@ -232,7 +225,6 @@ final class DocsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Doc> $records */
                         $records->each(function (Doc $record): void {
-                            DocsOwnerScope::assertCanMutateDoc($record);
                             $record->delete();
                         });
                     }),

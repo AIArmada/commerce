@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -43,7 +42,14 @@ abstract class BaseCashierChipResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return CashierChipOwnerScope::apply(parent::getEloquentQuery());
+        $query = parent::getEloquentQuery();
+        $model = $query->getModel();
+
+        if (method_exists($model, 'scopeForOwner')) {
+            return $model->scopeForOwner($query);
+        }
+
+        return $query;
     }
 
     protected static function pollingInterval(): string

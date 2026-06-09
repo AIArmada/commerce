@@ -5,32 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\FilamentSignals\Pages;
 
 use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSavedSignalReportState;
-use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Services\RetentionReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\Url;
 
-final class RetentionReport extends Page
+final class RetentionReport extends ReportPage
 {
     use InteractsWithSavedSignalReportState;
-    use InteractsWithSignalsDateRange;
-
-    #[Url]
-    public string $dateFrom = '';
-
-    #[Url]
-    public string $dateTo = '';
-
-    #[Url]
-    public string $trackedPropertyId = '';
-
-    #[Url]
-    public string $signalSegmentId = '';
 
     #[Url]
     public string $savedReportId = '';
@@ -54,11 +39,6 @@ final class RetentionReport extends Page
     protected function savedReportType(): string
     {
         return 'retention';
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return config('filament-signals.navigation_group', 'Insights');
     }
 
     public static function getNavigationSort(): int

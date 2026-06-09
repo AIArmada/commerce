@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Pages;
 
-use AIArmada\FilamentCart\Widgets\LiveStatsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;
 use BackedEnum;
 use Filament\Pages\Page;
@@ -46,9 +45,7 @@ class LiveDashboardPage extends Page
 
     protected function getHeaderWidgets(): array
     {
-        return [
-            LiveStatsWidget::class,
-        ];
+        return [];
     }
 
     protected function getFooterWidgets(): array

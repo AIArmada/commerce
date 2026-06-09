@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
+use AIArmada\Inventory\Actions\ReceiveInventory;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -85,8 +85,6 @@ final class ReceiveStockAction
                     return;
                 }
 
-                $inventoryService = app(InventoryService::class);
-
                 $reason = null;
                 if (isset($data['purchase_order']) || isset($data['supplier'])) {
                     $parts = array_filter([
@@ -96,7 +94,7 @@ final class ReceiveStockAction
                     $reason = implode(' - ', $parts);
                 }
 
-                $movement = $inventoryService->receive(
+                $movement = ReceiveInventory::run(
                     model: $record,
                     locationId: $locationId,
                     quantity: (int) $data['quantity'],

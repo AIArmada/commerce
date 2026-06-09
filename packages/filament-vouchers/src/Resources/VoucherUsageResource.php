@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Pages\ListVoucherUsages;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Tables\VoucherUsagesTable;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -56,11 +58,19 @@ final class VoucherUsageResource extends Resource
         /** @var Builder<VoucherUsage> $query */
         $query = parent::getEloquentQuery();
 
-        if (! OwnerScopedQueries::isEnabled()) {
+        if (! config('vouchers.owner.enabled', false)) {
             return $query;
         }
 
-        return $query->whereIn('voucher_id', OwnerScopedQueries::voucherIds());
+        $voucherQuery = Voucher::query()->select('id');
+
+        $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+            $voucherQuery,
+            OwnerContext::resolve(),
+            (bool) config('vouchers.owner.include_global', false),
+        );
+
+        return $query->whereIn('voucher_id', $voucherQuery);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Tables;
 
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use DateTimeInterface;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
@@ -83,7 +82,7 @@ final class CustomerTable
                         /** @var Relation $relation */
                         $relation = $record->{$relationName}();
 
-                        return CashierChipOwnerScope::apply($relation->getQuery())->count();
+                        return $relation->getQuery()->count();
                     })
                     ->badge()
                     ->color(fn (int $state): string => $state > 0 ? 'success' : 'gray'),
@@ -150,7 +149,7 @@ final class CustomerTable
 
                         return $query->whereHas(
                             $relationName,
-                            fn (Builder $subscriptionsQuery): Builder => CashierChipOwnerScope::apply($subscriptionsQuery),
+                            fn (Builder $subscriptionsQuery): Builder => $subscriptionsQuery,
                         );
                     }),
 

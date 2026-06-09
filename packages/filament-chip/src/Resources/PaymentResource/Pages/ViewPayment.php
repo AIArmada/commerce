@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\PaymentResource\Pages;
 
-use AIArmada\FilamentChip\Resources\Pages\ReadOnlyViewRecord;
+use AIArmada\CommerceSupport\Filament\Pages\ReadOnlyViewRecord;
 use AIArmada\FilamentChip\Resources\PaymentResource;
 use Override;
 

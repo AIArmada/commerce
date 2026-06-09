@@ -6,9 +6,7 @@ namespace AIArmada\Affiliates\Console\Commands;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\CommissionMaturityService;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleColumns;
-use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
+use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
 use Illuminate\Console\Command;
 
 final class ProcessCommissionMaturityCommand extends Command
@@ -36,64 +34,15 @@ final class ProcessCommissionMaturityCommand extends Command
             return self::SUCCESS;
         }
 
-        $matured = $this->processForOwners(fn (): int => $this->maturityService->processMaturity());
+        $runner = new OwnerBatchRunner(
+            Affiliate::class,
+            ['enabled' => 'affiliates.owner.enabled', 'include_global' => 'affiliates.owner.include_global'],
+        );
+
+        $matured = $runner->run(fn (): int => $this->maturityService->processMaturity()) ?? 0;
 
         $this->info("Matured {$matured} conversions.");
 
         return self::SUCCESS;
-    }
-
-    private function processForOwners(callable $callback): int
-    {
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            return (int) $callback();
-        }
-
-        $owner = OwnerContext::resolve();
-        if ($owner !== null) {
-            return (int) $callback();
-        }
-
-        $columns = OwnerTupleColumns::forModelClass(Affiliate::class);
-
-        $owners = Affiliate::query()
-            ->withoutOwnerScope()
-            ->select([$columns->ownerTypeColumn, $columns->ownerIdColumn])
-            ->distinct()
-            ->get();
-
-        if ($owners->isEmpty()) {
-            return (int) OwnerContext::withOwner(null, $callback);
-        }
-
-        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
-        if ($includeGlobal) {
-            config()->set('affiliates.owner.include_global', false);
-        }
-
-        $total = 0;
-        $processedGlobal = false;
-
-        try {
-            foreach ($owners as $row) {
-                $parsed = OwnerTupleParser::fromRow($row, $columns);
-
-                if ($parsed->isExplicitGlobal()) {
-                    if ($processedGlobal) {
-                        continue;
-                    }
-
-                    $processedGlobal = true;
-                }
-
-                $total += (int) OwnerContext::withOwner($parsed->toOwnerModel(), $callback);
-            }
-        } finally {
-            if ($includeGlobal) {
-                config()->set('affiliates.owner.include_global', true);
-            }
-        }
-
-        return $total;
     }
 }

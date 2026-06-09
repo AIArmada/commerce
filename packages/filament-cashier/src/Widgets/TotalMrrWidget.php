@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\Cashier\Support\CurrencyFormatter;
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Cashier as CashierChip;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
-use AIArmada\FilamentCashier\Support\CurrencyFormatter;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
-use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Collection;
@@ -71,7 +71,7 @@ final class TotalMrrWidget extends StatsOverviewWidget
             $detector = app(GatewayDetector::class);
 
             if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-                $stripeQuery = CashierOwnerScope::apply(Subscription::query())
+                $stripeQuery = OwnerScopedQuery::apply(Subscription::query())
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
@@ -94,7 +94,7 @@ final class TotalMrrWidget extends StatsOverviewWidget
 
             if ($detector->isAvailable('chip')) {
                 $subscriptionModel = CashierChip::$subscriptionModel;
-                $chipQuery = CashierOwnerScope::apply($subscriptionModel::query())
+                $chipQuery = OwnerScopedQuery::apply($subscriptionModel::query())
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')

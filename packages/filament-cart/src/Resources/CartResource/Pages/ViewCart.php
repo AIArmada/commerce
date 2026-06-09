@@ -10,7 +10,7 @@ use AIArmada\FilamentCart\Services\CartDownloadService;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentCart\Services\OwnerActionGuard;
 use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
-use AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget;
+use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use Filament\Actions;
@@ -121,8 +121,8 @@ final class ViewCart extends ViewRecord
         $widgets = [];
 
         // Add voucher widgets if filament-vouchers is available
-        if (class_exists(AppliedVoucherBadgesWidget::class)) {
-            $widgets[] = AppliedVoucherBadgesWidget::class;
+        if (class_exists(AppliedVouchersWidget::class)) {
+            $widgets[] = AppliedVouchersWidget::class;
         }
 
         return $widgets;

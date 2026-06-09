@@ -98,24 +98,24 @@ use AIArmada\FilamentVouchers\Widgets\VoucherCartStatsWidget;
 
 These widgets require `aiarmada/filament-cart` to be installed.
 
-### AppliedVoucherBadgesWidget
+### AppliedVouchersWidget
 
-Displays badges for vouchers applied to a cart:
+Displays vouchers applied to a cart:
 
 ```php
-use AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget;
+use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 
 protected function getHeaderWidgets(): array
 {
     return [
-        AppliedVoucherBadgesWidget::class,
+        AppliedVouchersWidget::class,
     ];
 }
 ```
 
 Features:
-- Color-coded status badges
-- Remove voucher action
+- Table view of applied vouchers
+- Copyable voucher codes
 - Graceful fallback when cart package unavailable
 
 ### QuickApplyVoucherWidget

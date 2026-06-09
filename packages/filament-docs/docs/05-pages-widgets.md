@@ -32,7 +32,7 @@ Supported interactions:
 
 ## Widgets
 
-All shipped widgets apply owner scoping through `DocsOwnerScope`.
+All shipped widgets inherit owner scoping automatically from the `OwnerScope` global scope registered by the `HasOwner` trait on the `Doc` model.
 
 ### DocStatsWidget
 

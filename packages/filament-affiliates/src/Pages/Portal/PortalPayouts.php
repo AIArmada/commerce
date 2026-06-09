@@ -7,9 +7,8 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
-use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
+use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -18,9 +17,8 @@ use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 
-class PortalPayouts extends Page implements HasTable
+class PortalPayouts extends PortalPage implements HasTable
 {
-    use InteractsWithAffiliate;
     use InteractsWithTable;
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBanknotes;

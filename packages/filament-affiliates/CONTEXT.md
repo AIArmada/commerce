@@ -26,3 +26,8 @@ family: growth-and-incentives
 - Owns Filament resources, pages, widgets, tables, forms, panel/plugin glue, and portal UI behavior.
 - Keep domain rules, persistence, and state transitions in `affiliates`.
 - Revalidate submitted IDs server-side; UI scoping is not authorization.
+
+## Owner scoping
+- `includeGlobal: false` is the default. Global affiliate rows are intentionally not visible in the Filament panel or affiliate portal.
+- `AffiliateResource::getEloquentQuery()` uses conditional owner-scoping: when `config('affiliates.owner.enabled')` is false, returns unscoped query; when enabled, calls `->forOwner()` without includeGlobal.
+- OwnerWriteGuard is applied on write paths across conversion, payout, link, and support ticket resources.

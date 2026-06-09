@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
-use AIArmada\FilamentVouchers\Services\VoucherStatsAggregator;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
+use AIArmada\FilamentVouchers\Support\VoucherStatsAggregator;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;

@@ -18,6 +18,7 @@ use Throwable;
 /**
  * @property string|null $url
  * @property string|null $event
+ * @property string|null $event_type
  * @property string $status
  * @property array<string>|null $events
  * @property array<string, mixed>|null $payload

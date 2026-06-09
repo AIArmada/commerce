@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
-use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
+use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 final class MRRWidget extends BaseWidget
 {
+    use InteractsWithCashierChipData;
+
     protected static ?int $sort = 1;
 
     protected function getStats(): array
@@ -37,10 +38,7 @@ final class MRRWidget extends BaseWidget
 
     private function calculateMRR(): int
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
-        return CashierChipOwnerScope::apply($subscriptionModel::query())
+        return $this->subscriptionModel()::query()
             ->whereActive()
             ->with('items')
             ->get()
@@ -51,7 +49,6 @@ final class MRRWidget extends BaseWidget
                     $subscription->billing_interval_count ?? 1
                 );
 
-                // Apply discount if any
                 if ($subscription->hasDiscount()) {
                     $monthlyAmount -= ($subscription->coupon_discount ?? 0);
                 }
@@ -62,10 +59,7 @@ final class MRRWidget extends BaseWidget
 
     private function calculatePreviousMRR(): int
     {
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
-
-        return CashierChipOwnerScope::apply($subscriptionModel::query())
+        return $this->subscriptionModel()::query()
             ->where('chip_status', Subscription::STATUS_ACTIVE)
             ->where('created_at', '<', now()->subMonth())
             ->with('items')
@@ -77,19 +71,6 @@ final class MRRWidget extends BaseWidget
                     $subscription->billing_interval_count ?? 1
                 );
             });
-    }
-
-    private function normalizeToMonthly(int $amount, string $interval, int $count): int
-    {
-        $multiplier = match ($interval) {
-            'day' => 30 / $count,
-            'week' => 4.33 / $count,
-            'month' => 1 / $count,
-            'year' => 1 / (12 * $count),
-            default => 1,
-        };
-
-        return (int) round($amount * $multiplier);
     }
 
     /**
@@ -136,15 +117,13 @@ final class MRRWidget extends BaseWidget
     private function getMRRChart(): array
     {
         $chart = [];
-        /** @var class-string<Subscription> $subscriptionModel */
-        $subscriptionModel = Cashier::$subscriptionModel;
 
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $startOfMonth = $date->copy()->startOfMonth();
             $endOfMonth = $date->copy()->endOfMonth();
 
-            $monthMrr = CashierChipOwnerScope::apply($subscriptionModel::query())
+            $monthMrr = $this->subscriptionModel()::query()
                 ->where('chip_status', Subscription::STATUS_ACTIVE)
                 ->where('created_at', '<=', $endOfMonth)
                 ->where(function ($query) use ($startOfMonth): void {
@@ -165,13 +144,5 @@ final class MRRWidget extends BaseWidget
         }
 
         return $chart;
-    }
-
-    private function formatCurrency(int $amount): string
-    {
-        $currency = config('cashier-chip.currency', 'MYR');
-        $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
-
-        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision, '.', ',');
     }
 }

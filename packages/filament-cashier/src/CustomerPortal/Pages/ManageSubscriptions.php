@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
-use AIArmada\FilamentCashier\Support\UnifiedSubscription;
+use AIArmada\FilamentCashier\Support\CustomerSubscriptionsQuery;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -56,67 +57,12 @@ final class ManageSubscriptions extends Page
             return collect();
         }
 
-        $userIdentifier = $this->resolveAuthIdentifier($user);
+        $query = app(CustomerSubscriptionsQuery::class);
+        $result = $query->getForUser($user, $this->perGatewayLimit, fetchExtra: true);
 
-        if ($userIdentifier === null) {
-            return collect();
-        }
+        $this->hasMoreSubscriptions = $result['hasMore'];
 
-        $subscriptions = collect();
-        $detector = app(GatewayDetector::class);
-        $limit = max(1, $this->perGatewayLimit);
-        $fetchLimit = $limit + 1;
-
-        $hasMoreStripe = false;
-        $hasMoreChip = false;
-
-        // Get Stripe subscriptions for this user
-        if (
-            $detector->isAvailable('stripe')
-            && class_exists(Subscription::class)
-            && Schema::hasTable((new Subscription)->getTable())
-        ) {
-            $stripeModels = CashierOwnerScope::apply(Subscription::query())
-                ->with('items')
-                ->where('user_id', $userIdentifier)
-                ->orderByDesc('created_at')
-                ->limit($fetchLimit)
-                ->get()
-                ->values();
-
-            $hasMoreStripe = $stripeModels->count() > $limit;
-
-            $stripeSubscriptions = $stripeModels
-                ->take($limit)
-                ->map(fn ($sub) => UnifiedSubscription::fromStripe($sub));
-
-            $subscriptions = $subscriptions->merge($stripeSubscriptions);
-        }
-
-        // Get CHIP subscriptions for this user
-        if ($detector->isAvailable('chip')) {
-            $subscriptionModel = CashierChip::$subscriptionModel;
-            $chipModels = CashierOwnerScope::apply($subscriptionModel::query())
-                ->with(['billable', 'items'])
-                ->where('billable_type', $user->getMorphClass())
-                ->where('billable_id', (string) $user->getKey())
-                ->orderByDesc('created_at')
-                ->limit($fetchLimit)
-                ->get()
-                ->values();
-
-            $hasMoreChip = $chipModels->count() > $limit;
-
-            $chipSubscriptions = $chipModels
-                ->take($limit)
-                ->map(fn ($sub) => UnifiedSubscription::fromChip($sub));
-
-            $subscriptions = $subscriptions->merge($chipSubscriptions);
-        }
-
-        $this->hasMoreSubscriptions = $hasMoreStripe || $hasMoreChip;
-
-        return $subscriptions->sortByDesc('createdAt')->values();
+        return $result['items'];
     }
 
     public function loadMoreSubscriptions(int $increment = self::DEFAULT_LOAD_MORE_INCREMENT): void
@@ -256,7 +202,7 @@ final class ManageSubscriptions extends Page
             && class_exists(Subscription::class)
             && Schema::hasTable((new Subscription)->getTable())
         ) {
-            $sub = CashierOwnerScope::apply(Subscription::query())
+            $sub = OwnerScopedQuery::apply(Subscription::query())
                 ->with('items')
                 ->where('user_id', $userId)
                 ->whereKey($id)
@@ -269,7 +215,7 @@ final class ManageSubscriptions extends Page
 
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $sub = CashierOwnerScope::apply($subscriptionModel::query())
+            $sub = OwnerScopedQuery::apply($subscriptionModel::query())
                 ->with(['billable', 'items'])
                 ->where('billable_type', $user->getMorphClass())
                 ->where('billable_id', (string) $user->getKey())

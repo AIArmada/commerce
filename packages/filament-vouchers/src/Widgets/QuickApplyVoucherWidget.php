@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
@@ -77,8 +78,12 @@ final class QuickApplyVoucherWidget extends Widget implements HasForms
             return;
         }
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $isVisible = OwnerScopedQueries::scopeVoucherLike(Cart::query())
+        if (config('vouchers.owner.enabled', false)) {
+            $isVisible = OwnerQuery::applyToEloquentBuilder(
+                Cart::query(),
+                OwnerContext::resolve(),
+                (bool) config('vouchers.owner.include_global', false),
+            )
                 ->whereKey($this->record->getKey())
                 ->exists();
 

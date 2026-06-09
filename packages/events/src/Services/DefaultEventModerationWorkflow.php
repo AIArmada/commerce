@@ -11,7 +11,7 @@ use AIArmada\Events\Events\EventSubmissionCreated;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventReview;
 use AIArmada\Events\Models\EventSubmission;
-use AIArmada\Events\Support\EventModerationPolicy;
+use AIArmada\Events\Support\Policy\EventModerationPolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;

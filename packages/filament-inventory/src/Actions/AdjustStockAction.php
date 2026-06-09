@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
+use AIArmada\Inventory\Actions\AdjustInventory;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -84,9 +84,7 @@ final class AdjustStockAction
                     return;
                 }
 
-                $inventoryService = app(InventoryService::class);
-
-                $movement = $inventoryService->adjust(
+                $movement = AdjustInventory::run(
                     model: $record,
                     locationId: $locationId,
                     newQuantity: (int) $data['new_quantity'],

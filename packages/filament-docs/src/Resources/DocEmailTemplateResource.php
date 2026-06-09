@@ -9,7 +9,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -31,9 +30,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
@@ -210,8 +209,6 @@ final class DocEmailTemplateResource extends Resource
                 Action::make('duplicate')
                     ->icon('heroicon-o-document-duplicate')
                     ->action(function (DocEmailTemplate $record): void {
-                        DocsOwnerScope::assertCanMutateRecord($record, 'Email template not found.');
-
                         $new = $record->replicate();
                         $new->name = $record->name . ' (Copy)';
                         $new->slug = $record->slug . '-copy-' . CarbonImmutable::now()->timestamp;
@@ -228,7 +225,6 @@ final class DocEmailTemplateResource extends Resource
                         ->action(function (Collection $records): void {
                             /** @var Collection<int|string, DocEmailTemplate> $records */
                             $records->each(function (DocEmailTemplate $record): void {
-                                DocsOwnerScope::assertCanMutateRecord($record, 'Email template not found.');
                                 $record->delete();
                             });
                         }),
@@ -260,20 +256,6 @@ final class DocEmailTemplateResource extends Resource
         return config('filament-docs.resources.navigation_sort.email_templates', 91);
     }
 
-    /**
-     * @return Builder<DocEmailTemplate>
-     */
-    public static function getEloquentQuery(): Builder
-    {
-        /** @var Builder<DocEmailTemplate> $query */
-        $query = parent::getEloquentQuery();
-
-        /** @var Builder<DocEmailTemplate> $query */
-        $query = DocsOwnerScope::apply($query);
-
-        return $query;
-    }
-
     private static function scopeUniqueRuleToOwner(Unique $rule): Unique
     {
         if (! (bool) config('docs.owner.enabled', false)) {
@@ -285,14 +267,14 @@ final class DocEmailTemplateResource extends Resource
 
         if ($owner instanceof Model) {
             if ($includeGlobal) {
-                return $rule->where(function (\Illuminate\Database\Query\Builder $query) use ($owner): void {
+                return $rule->where(function (Builder $query) use ($owner): void {
                     $query
-                        ->where(function (\Illuminate\Database\Query\Builder $ownerQuery) use ($owner): void {
+                        ->where(function (Builder $ownerQuery) use ($owner): void {
                             $ownerQuery
                                 ->where('owner_type', $owner->getMorphClass())
                                 ->where('owner_id', (string) $owner->getKey());
                         })
-                        ->orWhere(function (\Illuminate\Database\Query\Builder $globalQuery): void {
+                        ->orWhere(function (Builder $globalQuery): void {
                             $globalQuery->whereNull('owner_type')->whereNull('owner_id');
                         });
                 });

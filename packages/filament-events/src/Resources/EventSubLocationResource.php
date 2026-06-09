@@ -7,22 +7,14 @@ namespace AIArmada\FilamentEvents\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Models\EventSubLocation;
 use AIArmada\FilamentEvents\Resources\EventSubLocationResource\Pages;
+use AIArmada\FilamentEvents\Resources\EventSubLocationResource\Schemas\EventSubLocationForm;
+use AIArmada\FilamentEvents\Resources\EventSubLocationResource\Schemas\EventSubLocationInfolist;
+use AIArmada\FilamentEvents\Resources\EventSubLocationResource\Tables\EventSubLocationTable;
 use BackedEnum;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 
 final class EventSubLocationResource extends Resource
 {
@@ -56,90 +48,17 @@ final class EventSubLocationResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Section::make('Sub-location')
-                    ->schema([
-                        TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn (Set $set, ?string $state): mixed => $set('slug', Str::slug($state ?? ''))),
-
-                        TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(ignoreRecord: true),
-
-                        Textarea::make('description')
-                            ->rows(4)
-                            ->columnSpanFull(),
-
-                        TextInput::make('order_column')
-                            ->numeric()
-                            ->minValue(0),
-                    ])
-                    ->columns(2),
-            ]);
+        return EventSubLocationForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable()
-                    ->sortable()
-                    ->description(fn (EventSubLocation $record): string => $record->slug),
-
-                Tables\Columns\TextColumn::make('order_column')
-                    ->label('Order')
-                    ->sortable()
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('occurrences_count')
-                    ->label('Occurrences')
-                    ->counts('occurrences')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime('d M Y')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->defaultSort('order_column')
-            ->actions([
-                ViewAction::make(),
-                EditAction::make(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+        return EventSubLocationTable::configure($table);
     }
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema
-            ->schema([
-                Section::make('Sub-location')
-                    ->schema([
-                        TextEntry::make('name'),
-                        TextEntry::make('slug')
-                            ->copyable(),
-                        TextEntry::make('order_column')
-                            ->label('Order')
-                            ->placeholder('Not set'),
-                        TextEntry::make('occurrences_count')
-                            ->label('Occurrences')
-                            ->state(fn (EventSubLocation $record): int => $record->occurrences()->count()),
-                        TextEntry::make('description')
-                            ->columnSpanFull()
-                            ->placeholder('No description'),
-                    ])
-                    ->columns(4),
-            ]);
+        return EventSubLocationInfolist::configure($schema);
     }
 
     public static function getPages(): array

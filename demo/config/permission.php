@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
-use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
+use AIArmada\CommerceSupport\Models\Permission;
+use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
 
 return [
 

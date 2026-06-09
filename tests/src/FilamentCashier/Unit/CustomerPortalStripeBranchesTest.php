@@ -6,7 +6,7 @@ use AIArmada\FilamentCashier\CustomerPortal\Pages\ManagePaymentMethods;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\ViewInvoices;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\PaymentMethodsPreviewWidget;
 use AIArmada\FilamentCashier\CustomerPortal\Widgets\RecentInvoicesWidget;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\GatewayDetector;
 use Illuminate\Foundation\Auth\User as AuthenticatableUser;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;

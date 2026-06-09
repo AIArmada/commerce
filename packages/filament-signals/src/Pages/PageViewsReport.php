@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages;
 
-use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Services\PageViewReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -21,9 +19,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-final class PageViewsReport extends Page implements HasTable
+final class PageViewsReport extends ReportPage implements HasTable
 {
-    use FormatsSignalsReportValues;
     use InteractsWithTable;
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
@@ -35,11 +32,6 @@ final class PageViewsReport extends Page implements HasTable
     protected static ?string $slug = 'signals/page-views';
 
     protected string $view = 'filament-signals::pages.page-views-report';
-
-    public static function getNavigationGroup(): ?string
-    {
-        return config('filament-signals.navigation_group', 'Insights');
-    }
 
     public static function getNavigationSort(): int
     {

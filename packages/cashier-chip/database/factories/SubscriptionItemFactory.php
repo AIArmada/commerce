@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Database\Factories;
 
-use AIArmada\CashierChip\Subscription;
-use AIArmada\CashierChip\SubscriptionItem;
+use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Products\Concerns\IsOptionEntity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -43,6 +44,7 @@ class Option extends Model implements Auditable
     }
     use HasOwnerScopeConfig;
     use HasUuids;
+    use IsOptionEntity;
     use LogsCommerceActivity;
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
@@ -91,7 +93,7 @@ class Option extends Model implements Auditable
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var Builder<Option> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;

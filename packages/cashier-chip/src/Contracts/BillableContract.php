@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Contracts;
 
-use AIArmada\CashierChip\Payment;
-use AIArmada\CashierChip\PaymentMethod;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Payment\Payment;
+use AIArmada\CashierChip\Payment\PaymentMethod;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Chip\Data\ClientData;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -47,6 +47,8 @@ interface BillableContract
     public function chargeWithRecurringToken(int $amount, ?string $recurringToken = null, array $options = []): Payment;
 
     public function defaultPaymentMethod(): ?PaymentMethod;
+
+    public function hasDefaultPaymentMethod(): bool;
 
     public function updateDefaultPaymentMethod(string $paymentMethodId): static;
 

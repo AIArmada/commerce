@@ -1,3 +1,26 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+- 4 old `Resolve*Experiment*` Actions are gone. Actions directory reduced from 10 to 6 classes.
+- `Support/ExperimentResolver.php` exists at `Support/` root, provides strategy+key parameterization.
+- Three resolve Actions replaced (`ResolveAccessibleExperiment`, `ResolveReadableExperiment`, `ResolveExperimentAssignment`) with resolver-based calls.
+- Phase 2 audit accurate: `BuildExperimentSignalProperties` (low-level, takes Assignment→signal array) and `ProjectExperimentContextIntoSignalProperties` (high-level, composes Build + resolves assignments from source model) are not duplicates.
+- `Support/` reorganized: `Context/` (ExperimentContext, ExperimentContextManager), `Request/` (RequestExperimentSubjects). Imports updated.
+
+### Resolved (since second pass)
+- **No Console/Commands directory**: ✅ Added in Phase 5 — `RecomputeExperimentAssignmentsCommand` and `ArchiveExperimentsCommand`, both integrated with `OwnerBatchRunner`.
+- **ExperimentResolver location inconsistency**: ✅ Fixed in Phase 4 — `ExperimentResolver` moved to `Support/Context/` with BC re-export preserved.
+
+### New findings
+1. **Single contract surface is thin but intentional**: Only 1 contract (`RequestExperimentSubjectResolver`) exists. This is not a gap — the package is deliberately small (3 models, 6 Actions, 1 contract). Adding contracts prematurely would over-engineer. The `ExperimentResolver` substitution already proves the package can absorb variants without new contracts.
+2. **ResolveExperimentPreset is a leftover edge case**: `Actions/ResolveExperimentPreset.php` survived the collapse (it's not a pair with anything). Audit whether it should also route through `ExperimentResolver`. Currently it operates on "presets" which may be a distinct concept from accessible/readable experiment resolution.
+3. **Livewire concern remains single-entry**: `Livewire/Concerns/InteractsWithExperimentContext.php` imports the context directly via the Facade. If the context resolution path changes, this concern needs manual update. A contract-backed resolver would make this extension-safe.
+
+### Updated recommendation
+All Phase 4 and Phase 5 items completed — `ExperimentResolver` moved to `Support/Context/`, `ResolveExperimentPreset` audited and kept, `Console/Commands/` added with two batch commands. No further action needed on this pass.
+
+---
+
 # Growth friendliness review
 
 This note reviews `packages/growth` against two repo-level expectations:
@@ -199,20 +222,40 @@ Status legend:
 
 ### Phase 1 — collapse the four Resolve Actions
 
-- [pending] Add `Support/ExperimentResolver` with strategy and key parameters.
-- [pending] Replace the four Actions with thin adapters or remove them.
-- [pending] Update callers.
+- [done] Add `Support/ExperimentResolver` with strategy and key parameters.
+- [done] Replace the four Actions with thin adapters or remove them.
+- [done] Update callers.
 
 ### Phase 2 — audit signal properties Actions
 
-- [pending] Compare `BuildExperimentSignalProperties` to `ProjectExperimentContextIntoSignalProperties`.
-- [pending] Pick the canonical owner.
-- [pending] Document the relationship.
+- [done] Compare `BuildExperimentSignalProperties` to `ProjectExperimentContextIntoSignalProperties`.
+- [done] Pick the canonical owner.
+- [done] Document the relationship.
+
+**Audit results:**
+
+1. `BuildExperimentSignalProperties` is the low-level builder — takes an `Assignment` and produces a signal property array (`experiment_id`, `experiment_slug`, `variant_id`, `variant_code`, `assignment_id`, `module_type`).
+2. `ProjectExperimentContextIntoSignalProperties` is the high-level orchestrator — composes `BuildExperimentSignalProperties`, resolves assignments and identities for a source model, and merges experiment context into tracked property events.
+3. **Not duplicates.** Build is the primitive; Project wraps it with signal-enrichment orchestration. The dependency is directional: `Project → Build`.
 
 ### Phase 3 — organize `Support/`
 
-- [pending] Consider grouping by domain.
-- [pending] Update imports.
+- [done] Group into `Support/Context/` (ExperimentContext, ExperimentContextManager) and `Support/Request/` (RequestExperimentSubjects).
+- [done] Update all imports across monorepo.
+
+### Phase 4 — resolve location and edge cases
+
+- [done] Move `ExperimentResolver.php` from `Support/` root into `Support/Context/` for consistency with `ExperimentContext`. BC re-export preserved at old path.
+- [done] Audit `ResolveExperimentPreset` to confirm it is a genuinely distinct concept from other experiment resolution Actions (not collapsible into `ExperimentResolver`).
+
+**Audit result:** `ResolveExperimentPreset` works with `ExperimentModuleType` enums and their preset configurations (module type, goal event, winner metric, settings). `ExperimentResolver` resolves `Experiment` models by ID/slug with owner scoping. The two classes solve entirely different problems and cannot be collapsed.
+
+- [done] Update all imports across monorepo after `ExperimentResolver` move (6 files in growth package updated).
+
+### Phase 5 — prepare for batch operations
+
+- [done] Add `Console/Commands/` directory with `RecomputeExperimentAssignmentsCommand` and `ArchiveExperimentsCommand`.
+- [done] Integrate new batch commands with `OwnerBatchRunner` from `commerce-support`. Registered in `GrowthServiceProvider`.
 
 
 

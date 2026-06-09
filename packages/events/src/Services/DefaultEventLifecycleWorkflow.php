@@ -11,7 +11,7 @@ use AIArmada\Events\Events\EventDelayed;
 use AIArmada\Events\Events\EventPostponed;
 use AIArmada\Events\Events\EventResumed;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Support\EventLifecyclePolicy;
+use AIArmada\Events\Support\Policy\EventLifecyclePolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;

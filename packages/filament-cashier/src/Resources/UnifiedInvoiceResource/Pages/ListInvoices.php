@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 
+use AIArmada\Cashier\Models\UnifiedInvoiceRecord;
+use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\OwnerScopedQuery;
+use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\FilamentCashier\Models\UnifiedInvoiceRecord;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
-use AIArmada\FilamentCashier\Support\CashierOwnerScope;
-use AIArmada\FilamentCashier\Support\GatewayDetector;
-use AIArmada\FilamentCashier\Support\UnifiedInvoice;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Tables\Table;
@@ -139,7 +139,7 @@ final class ListInvoices extends ListRecords
             return $invoices;
         }
 
-        $users = CashierOwnerScope::apply($billableModel::query())
+        $users = OwnerScopedQuery::apply($billableModel::query())
             ->whereKey($userId)
             ->limit(1)
             ->get();
@@ -162,7 +162,7 @@ final class ListInvoices extends ListRecords
 
         // Collect CHIP invoices/purchases
         if ($detector->isAvailable('chip') && class_exists(Purchase::class)) {
-            $chipPurchases = CashierOwnerScope::apply(Purchase::query())
+            $chipPurchases = OwnerScopedQuery::apply(Purchase::query())
                 ->where('metadata->billable_type', $user->getMorphClass())
                 ->where('metadata->billable_id', (string) $user->getKey())
                 ->orderByDesc('created_at')

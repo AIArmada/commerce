@@ -1,3 +1,30 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- **Phase 0** (tests): `packages/chip/tests/` exists with 9 test files covering webhook processing, owner resolution, customer bridge, docs generation, send handlers, purchase ID resolution, status mapping, and owner tuples.
+- **Phase 1** (support modules): `Support/ChipPaymentStatusMapper`, `Support/ResolveWebhookPurchaseId`, and `Support/ChipOwnerTuple` all exist and consolidate previously duplicated logic.
+- **Phase 2** (webhook ingest seam): `Actions/DispatchChipWebhookAction` exists as the unified webhook dispatch module. Live processing, retry, simulator, and API replay all route through it.
+- **Phase 3** (integration modules): `Support/ChipCustomerBridge` exists for checkout customer bridging. `Actions/RunChipPurchaseDocGenerationAction` and `Support/BuildChipDocData` exist for docs generation. `Support/DocsIntegrationRegistrar` is resolved from container.
+- **Phase 4** (batch/send modules): `Support/WebhookOwnerBatchRunner` exists and is used by `RetryWebhooksCommand` and `CleanWebhooksCommand`. `Actions/HandleSendInstructionWebhookAction` exists and is used by `SendCompletedHandler` and `SendRejectedHandler`.
+
+### Still open
+
+- All phases are marked `[done]` and verified complete. No open items.
+
+### New findings
+
+- The original recommendation suggested `ChipWebhookOwnerResolverInterface` as a contract for owner resolution. The implementation uses `Support/ChipWebhookOwnerResolver` as a support class — no interface/contract was created. This is a reasonable choice given the monorepo guidance to keep seams package-local until a second consumer appears.
+- `WebhookOwnerBatchRunner` is chip-local rather than using the foundation `OwnerBatchRunner`. This is correct because chip has different owner discovery needs (webhook-specific owner tuples vs model-level owner scoping). The foundation `OwnerBatchRunner` operates on model classes; chip operates on webhook payloads.
+- The webhook ingest unification (Phase 2) is the deepest refactor: live processing, retry, simulator, and API replay now share one dispatch module. This eliminates the "different implementations for different entrypoints" problem described in finding #1.
+- Tests at `packages/chip/tests/` are package-local, not in the monorepo root `tests/`. This is the only package of the 7 audited that has its own `tests/` directory within the package folder.
+
+### Updated recommendation
+
+Chip is in excellent shape. The only potential follow-up: if another package needs webhook-specific owner batch iteration, consider extracting a foundation-level `WebhookOwnerBatchRunner` contract.
+
+---
+
 # CHIP Architecture Audit
 
 ## Scope
@@ -316,38 +343,38 @@ Status legend:
 
 ### Phase 0. — Add regression tests first
 
-- [pending] Create `packages/chip/tests` and cover the current webhook, owner, checkout bridge, docs, and send-handler flows befo...
-- [pending] Add tests for live webhook processing, retry, simulator dispatch, and API replay so the future webhook seam has one s...
-- [pending] Add cross-owner regression tests around embedded owner tuples and brand-id resolution.
-- [pending] Add tests for the checkout customer bridge from both checkout-completion and API-sync entrypoints.
-- [pending] Add tests for payment doc generation, refund doc generation, and send completed or rejected handlers.
+- [done] Create `packages/chip/tests` and cover the current webhook, owner, checkout bridge, docs, and send-handler flows befo...
+- [done] Add tests for live webhook processing, retry, simulator dispatch, and API replay so the future webhook seam has one s...
+- [done] Add cross-owner regression tests around embedded owner tuples and brand-id resolution.
+- [done] Add tests for the checkout customer bridge from both checkout-completion and API-sync entrypoints.
+- [done] Add tests for payment doc generation, refund doc generation, and send completed or rejected handlers.
 
 ### Phase 1. — Remove pure duplication with small support modules
 
-- [pending] Add `ChipPaymentStatusMapper` and replace duplicated CHIP-to-`PaymentStatus` matches.
-- [pending] Add `ResolveWebhookPurchaseId` and replace repeated `related_to.type` and `related_to.id` parsing.
-- [pending] Add one owner-tuple support module and replace duplicated `__owner_type` and `__owner_id` parsing and embedding.
-- [pending] Keep behavior unchanged in this phase. The goal is higher locality before changing interfaces.
+- [done] Add `ChipPaymentStatusMapper` and replace duplicated CHIP-to-`PaymentStatus` matches.
+- [done] Add `ResolveWebhookPurchaseId` and replace repeated `related_to.type` and `related_to.id` parsing.
+- [done] Add one owner-tuple support module and replace duplicated `__owner_type` and `__owner_id` parsing and embedding.
+- [done] Keep behavior unchanged in this phase. The goal is higher locality before changing interfaces.
 
 ### Phase 2. — Make webhook ingest a real seam
 
-- [pending] Introduce `DispatchChipWebhookAction` or `ChipWebhookPipeline`.
-- [pending] Move `WebhookReceived` emission and typed dispatch into that one module.
-- [pending] Move send-specific routing behind the same seam instead of giving retries a separate code path.
-- [pending] Make `ProcessChipWebhook`, `WebhookRetryManager`, `WebhookSimulator::dispatch()`, and API replay call the same module.
-- [pending] After all callers are migrated, either keep `WebhookRouter::registerHandler()` as the real extension seam or delete t...
+- [done] Introduce `DispatchChipWebhookAction` or `ChipWebhookPipeline`.
+- [done] Move `WebhookReceived` emission and typed dispatch into that one module.
+- [done] Move send-specific routing behind the same seam instead of giving retries a separate code path.
+- [done] Make `ProcessChipWebhook`, `WebhookRetryManager`, `WebhookSimulator::dispatch()`, and API replay call the same module.
+- [done] After all callers are migrated, either keep `WebhookRouter::registerHandler()` as the real extension seam or delete t...
 
 ### Phase 3. — Deepen optional integration modules
 
-- [pending] Extract a dedicated checkout customer-bridge module and move session, payload, and subject assumptions into it.
-- [pending] Reuse that bridge from both checkout completion and API sync.
-- [pending] Extract one shared docs-generation Action for the common prelude.
-- [pending] Extract payment-doc and refund-doc builders behind a small document-shaping seam.
-- [pending] Resolve `DocsIntegrationRegistrar` from the container.
+- [done] Extract a dedicated checkout customer-bridge module and move session, payload, and subject assumptions into it.
+- [done] Reuse that bridge from both checkout completion and API sync.
+- [done] Extract one shared docs-generation Action for the common prelude.
+- [done] Extract payment-doc and refund-doc builders behind a small document-shaping seam.
+- [done] Resolve `DocsIntegrationRegistrar` from the container.
 
 ### Phase 4. — Deepen batch and send webhook modules
 
-- [pending] Add `WebhookOwnerBatchRunner` and use it from `RetryWebhooksCommand` and `CleanWebhooksCommand`.
-- [pending] Add `HandleSendInstructionWebhookAction` and use it from `SendCompletedHandler` and `SendRejectedHandler`.
-- [pending] Keep command output local. Move only the reusable owner-safe orchestration and send-update logic.
+- [done] Add `WebhookOwnerBatchRunner` and use it from `RetryWebhooksCommand` and `CleanWebhooksCommand`.
+- [done] Add `HandleSendInstructionWebhookAction` and use it from `SendCompletedHandler` and `SendRejectedHandler`.
+- [done] Keep command output local. Move only the reusable owner-safe orchestration and send-update logic.
 

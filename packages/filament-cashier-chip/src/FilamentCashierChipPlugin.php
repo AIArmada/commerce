@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip;
 
-use AIArmada\FilamentCashierChip\Pages\BillingDashboard;
-use AIArmada\FilamentCashierChip\Pages\Invoices;
-use AIArmada\FilamentCashierChip\Pages\PaymentMethods;
-use AIArmada\FilamentCashierChip\Pages\Subscriptions;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\BillingDashboard;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Invoices;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\PaymentMethods;
+use AIArmada\FilamentCashierChip\CustomerPortal\Pages\Subscriptions;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;

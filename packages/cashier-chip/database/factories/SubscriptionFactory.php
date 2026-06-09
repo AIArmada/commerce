@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Database\Factories;
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Subscription\Subscription;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;

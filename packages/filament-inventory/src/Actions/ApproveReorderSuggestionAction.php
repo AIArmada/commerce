@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
+use AIArmada\Inventory\Actions\ApproveReorderSuggestion;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -51,7 +52,7 @@ final class ApproveReorderSuggestionAction
                     }
                 }
 
-                $approved = $record->approve(Auth::id());
+                $approved = ApproveReorderSuggestion::run($record, Auth::id());
 
                 if (! $approved) {
                     Notification::make()

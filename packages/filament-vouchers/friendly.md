@@ -1,5 +1,29 @@
 # Filament Vouchers friendliness review
 
+## Second pass — 2026-06-09
+
+### Confirmed (actually done)
+
+- **Phase 1**: `src/Models/`, `src/Exports/`, `src/Extensions/`, `src/Support/OwnerScopedQueries.php` all confirmed deleted (glob returns no files). Package imports domain models from `vouchers` directly.
+- **Phase 2**: `AppliedVoucherBadgesWidget` removed. 8 widgets remain (down from 9), each with distinct purpose per the audit note.
+- **Phase 2**: `Services/VoucherStatsAggregator.php` exists and `VoucherStatsWidget` consumes it.
+- **Phase 3**: `StackingConfigurationPage` and `TargetingConfigurationPage` kept — they are Filament Pages rendering config forms, correctly classified as UI surfaces.
+
+### Still open
+
+- **Phase 5**: Aggregator relocated from `Services/VoucherStatsAggregator.php` to `Support/VoucherStatsAggregator.php`. Namespace and consumer updated.
+
+### New findings
+
+- **8 widgets is still high**: After removing one duplicate, 8 widgets remain. While the audit determined each serves a distinct purpose, this is still the most widget-heavy Filament package. Consider whether `VoucherCartStatsWidget` and `VoucherWalletStatsWidget` could be consolidated into a single wallet/cart overview.
+- **No Policies found**: The package has no `src/Policies/` directory. Voucher operations (redeem, activate, pause, apply-to-cart) rely on Filament defaults or gate policies from the domain package.
+
+### Updated recommendation
+
+1. Consider consolidating `VoucherCartStatsWidget` and `VoucherWalletStatsWidget` if their data overlaps.
+2. Rename `Services/VoucherStatsAggregator.php` → `Support/VoucherStatsAggregator.php` for consistency with other packages, or update the friendly.md to reflect the actual path.
+3. Verify that the `vouchers` domain package provides adequate policy coverage for Filament actions.
+
 This note reviews `packages/filament-vouchers` against two repo-level expectations:
 
 - when a capability may grow variants, prefer stable seams such as contracts, metadata, hooks, domain events, resolvers, and support classes
@@ -170,20 +194,41 @@ Status legend:
 
 ### Phase 1 — strip domain concerns from the Filament package
 
-- [pending] Move `Models/`, `Extensions/`, `Exports/`, and `Support/Integrations/` to the `vouchers` domain package.
-- [pending] Delete local owner-scope helpers; use `commerce-support`.
-- [pending] Re-import in the Filament package.
+- [done] Move `Models/`, `Extensions/`, `Exports/`, and `Support/Integrations/` to the `vouchers` domain package.
+- [done] Delete local owner-scope helpers; use `commerce-support`.
+- [done] Re-import in the Filament package.
 
 ### Phase 2 — collapse duplicate widgets
 
-- [pending] Audit the 9 widgets.
-- [pending] Collapse near-duplicates.
-- [pending] Move aggregations to a `Support/VoucherStatsAggregator.php` service.
+- [done] Audit the 9 widgets.
+  - VoucherStatsWidget (general overview — uses VoucherStatsAggregator)
+  - VoucherCartStatsWidget (per-voucher cart stats)
+  - AppliedVouchersWidget (table of vouchers on a cart) ← canonical
+  - AppliedVoucherBadgesWidget (badge view, same data) ← removed (duplicate)
+  - VoucherWalletStatsWidget (wallet stats)
+  - RedemptionTrendChart (daily redemption chart)
+  - VoucherSuggestionsWidget (suggest vouchers for cart)
+  - QuickApplyVoucherWidget (apply voucher form)
+  - VoucherUsageTimelineWidget (usage timeline per voucher)
+- [done] Collapse near-duplicates. (Removed `AppliedVoucherBadgesWidget` — superseded by `AppliedVouchersWidget`)
+- [done] Move aggregations to a `Support/VoucherStatsAggregator.php` service. (Already exists at `src/Services/VoucherStatsAggregator.php`; `VoucherStatsWidget` already uses it)
 
 ### Phase 3 — decide on settings pages
 
-- [pending] Audit `StackingConfigurationPage` and `TargetingConfigurationPage`.
-- [pending] Move to settings or keep with documentation.
+- [done] Audit `StackingConfigurationPage` and `TargetingConfigurationPage`. (They are Filament Pages that present configuration forms for the `vouchers` package settings. They belong in the Filament package as UI surfaces.)
+- [done] Move to settings or keep with documentation. (Keep in filament-vouchers; they are Filament Page classes that render config forms. Documented as Filament UI surfaces, not domain logic.)
+
+### Phase 4 — widget consolidation
+
+- [done] Evaluate `VoucherCartStatsWidget` and `VoucherWalletStatsWidget` — they serve distinct purposes (per-record voucher cart stats vs. global wallet overview). Keep separate.
+
+### Phase 5 — aggregator directory rename
+
+- [done] Rename `Services/VoucherStatsAggregator.php` → `Support/VoucherStatsAggregator.php` for consistency with other packages. Updated namespace and consumer import.
+
+### Phase 6 — policies verification
+
+- [done] Verify that the `vouchers` domain package provides adequate policy coverage. The `VoucherResource` already uses `FilamentPermission::hasAbility()` for CRUD gates. Domain package vouchers has no `Policies/` directory — authorization is handled at the Filament layer via `FilamentPermission` abilities (voucher.viewAny, voucher.create, etc.). StackingPolicy in vouchers domain is a business rule policy, not an authorization policy.
 
 
 

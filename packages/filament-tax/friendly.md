@@ -1,5 +1,27 @@
 # Filament Tax friendliness review
 
+## Second pass — 2026-06-09
+
+### Confirmed (actually done)
+
+- **Phase 1**: `composer.json` has `aiarmada/commerce-support: self.version` and `aiarmada/filament-authz: self.version` in `require`. Both aligned with monorepo conventions.
+- **Phase 2**: `src/Support/FilamentTaxAuthz.php` confirmed deleted (glob returns no files). Authorization now uses `filament-authz` package.
+- **Phase 3**: RM subfolder layout standardized — `RatesRelationManager/Schemas/RatesForm.php` and `RatesRelationManager/Tables/RatesTable.php` are children of the RM directory. `RatesRelationManager.php` delegates to these via `RatesForm::configure()` and `RatesTable::configure()`.
+
+### Still open
+
+- None. All original findings are resolved.
+
+### New findings
+
+- **`RatesRelationManager::getTableQuery()` properly scoped** (line 30-36): uses `TaxOwnerScope::applyToOwnedQuery()` from the `tax` domain package. This is the correct pattern — domain-owned scoping, consumed by the Filament RM.
+- **`DownloadTaxExemptionCertificateAction` still a Filament Action**: The original finding (#4) questioned whether this should be a route download. The file exists at `src/Actions/DownloadTaxExemptionCertificateAction.php`. If it's composing with other Filament actions (e.g., confirmation modals, notifications), keeping it as an Action is fine. Otherwise, a route download would be lighter.
+- No other new issues. Package is clean with proper domain/Filament separation.
+
+### Updated recommendation
+
+Package is in good shape. Evaluate whether `DownloadTaxExemptionCertificateAction` truly needs to be a Filament Action or can be a simpler route download.
+
 This note reviews `packages/filament-tax` against two repo-level expectations:
 
 - when a capability may grow variants, prefer stable seams such as contracts, metadata, hooks, domain events, resolvers, and support classes
@@ -143,18 +165,22 @@ Status legend:
 
 ### Phase 1 — add `commerce-support` to composer
 
-- [pending] Add `aiarmada/commerce-support: self.version` to `require`.
-- [pending] Run `composer update`.
+- [done] Add `aiarmada/commerce-support: self.version` to `require`.
+- [done] Run `composer update`.
 
 ### Phase 2 — adopt `filament-authz`
 
-- [pending] Replace `Support/FilamentTaxAuthz.php` with `filament-authz` calls.
-- [pending] Delete the local class.
+- [done] Replace `Support/FilamentTaxAuthz.php` with `filament-authz` calls.
+- [done] Delete the local class.
 
 ### Phase 3 — standardize RM subfolder layout
 
-- [pending] Pick the standard pattern (Schemas/Tables inside each RM).
-- [pending] Refactor `TaxZoneResource/RelationManagers/`.
+- [done] Pick the standard pattern (Schemas/Tables inside each RM).
+- [done] Refactor `TaxZoneResource/RelationManagers/`.
+
+### Phase 4 — DownloadTaxExemptionCertificateAction evaluation
+
+- [done] Evaluate `DownloadTaxExemptionCertificateAction` — it is used as a Filament table action in `TaxExemptionsTable.php` (line 140-156), composing with `authorize()` gate, `visible()` check, and `Notification` handling on error. This is the correct pattern — keep as Filament Action. A route download would lose the Filament-native composition (authorization, visibility, notifications).
 
 
 

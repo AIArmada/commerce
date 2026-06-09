@@ -119,7 +119,7 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
             $includeGlobalToScope = (bool) config('products.features.owner.include_global', false);
         }
 
-        /** @var Builder<Variant> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
 
         return $scoped;

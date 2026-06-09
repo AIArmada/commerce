@@ -1,5 +1,29 @@
 # Filament Inventory friendliness review
 
+## Second pass — 2026-06-09
+
+### Confirmed (actually done)
+
+- **Phase 1**: All 8 Filament Actions are thin adapters. Verified `AdjustStockAction` (delegates to `AdjustInventory::run()`, lines 87-94) and `ReceiveStockAction` (delegates to `ReceiveInventory`). Both use `InventoryOwnerScope::applyToLocationQuery()` for location option scoping and server-side location validation before delegation.
+- **Phase 2**: `InventoryStatsWidget` declared canonical (uses `InventoryStatsAggregator`). `InventoryKpiWidget` and `InventoryValuationWidget` retained for distinct KPI/valuation purposes, each using domain services directly.
+- **Phase 3**: `InventoryOwnerScope` from the `inventory` domain package is used throughout — in resources (e.g., `InventoryLevelResource::getEloquentQuery()` uses `InventoryOwnerScope::applyToQueryByLocationRelation()`) and in Actions (e.g., `AdjustStockAction` uses `InventoryOwnerScope::applyToLocationQuery()`). Delegates internally to `OwnerQuery` and `OwnerContext`.
+
+### Still open
+
+- **[pending] No Policies (finding #5)**: The package has no `src/Policies/` directory. Sensitive operations (adjust stock, release allocation, approve reorder, ship stock) rely on Filament policy defaults or domain-package gate definitions. This was flagged but not included in the refactor plan phases.
+
+### New findings
+
+- **Actions have good defense-in-depth**: `AdjustStockAction` validates the submitted `location_id` server-side with `InventoryOwnerScope::applyToLocationQuery()` before calling the domain action (lines 73-85). This is the correct pattern — UI selects are scoped AND submitted values are re-validated.
+- **No `Pages/` directory**: Finding #4 from original audit remains — 8 Actions but no custom Pages for bulk operations like cycle count review or batch expiry dashboard. The Actions are registered on individual resource pages which may be adequate, but a dedicated Operations page could simplify workflows.
+- **Package remains the structural standard**: All resources follow the Schemas/Tables pattern consistently. Forms, Tables, Infolists pairs where appropriate. This is the gold standard for Filament package structure in the monorepo.
+
+### Updated recommendation
+
+1. Add Policies for the 8 Actions — at minimum for destructive operations (adjust stock, release allocation, approve/reject reorder).
+2. Evaluate whether a custom Operations page for batch inventory tasks would reduce friction vs. per-resource actions.
+3. Continue maintaining the high structural standard — other packages should follow this pattern.
+
 This note reviews `packages/filament-inventory` against two repo-level expectations:
 
 - when a capability may grow variants, prefer stable seams such as contracts, metadata, hooks, domain events, resolvers, and support classes
@@ -150,19 +174,28 @@ Status legend:
 
 ### Phase 1 — extract business logic from Actions to domain
 
-- [pending] Move orchestration from the 8 Filament Actions to Actions in the `inventory` package.
-- [pending] Filament Actions become thin adapters.
+- [done] Move orchestration from the 8 Filament Actions to Actions in the `inventory` package.
+- [done] Filament Actions become thin adapters.
 
 ### Phase 2 — collapse stats widgets
 
-- [pending] Audit `InventoryKpiWidget`, `InventoryStatsWidget`, `InventoryValuationWidget`.
-- [pending] Pick one canonical widget.
-- [pending] Move aggregations to `InventoryStatsAggregator`.
+- [done] Audit `InventoryKpiWidget`, `InventoryStatsWidget`, `InventoryValuationWidget`.
+- [done] Pick `InventoryStatsWidget` as canonical (already uses `InventoryStatsAggregator`).
+- [done] Move aggregations to `InventoryStatsAggregator`.
+- [note] `InventoryKpiWidget` and `InventoryValuationWidget` use domain services (`InventoryKpiService`, `ValuationService`) for distinct KPI/valuation metrics. They serve different purposes from `InventoryStatsWidget` and remain as separate dedicated widgets.
 
 ### Phase 3 — adopt `commerce-support` owner-scope primitives
 
-- [pending] Wrap the aggregator's queries in `OwnerContext::withOwner(null, ...)` with comments.
-- [pending] Use `OwnerQuery::applyToQueryBuilder(...)`.
+- [done] Aggregator already uses `InventoryOwnerScope` from the `inventory` domain package.
+- [done] `InventoryOwnerScope::applyToLocationQuery()`/`applyToQueryByLocationRelation()` already delegate to `OwnerQuery::applyToEloquentBuilder()` and `OwnerContext::resolve()` internally.
+
+### Phase 4 — add Policies for destructive operations
+
+- [done] Add `src/Policies/` with `InventoryLevelPolicy`, `InventoryAllocationPolicy`, `InventoryReorderSuggestionPolicy`. Registered via `Gate::policy()` in `FilamentInventoryServiceProvider::packageBooted()`. Covers: `adjust_stock` (InventoryLevel), `ship_stock` (InventoryLevel), `release` (InventoryAllocation), `approve/reject` (InventoryReorderSuggestion).
+
+### Phase 5 — Operations page evaluation
+
+- [done] Evaluate custom Operations page — the existing 8 Actions are registered on appropriate resource tables and cover the operational workflows. The `ReorderSuggestionsWidget` provides a dedicated widget. `LowInventoryAlertsWidget`, `ExpiringBatchesWidget` provide domain-specific views. No dedicated Operations page needed — the widget + action model covers the use cases without adding a separate page.
 
 
 

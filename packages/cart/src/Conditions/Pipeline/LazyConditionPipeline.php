@@ -172,37 +172,29 @@ final class LazyConditionPipeline
     {
         $targetKey = $targetPhase->value;
 
-        // Return memoized result if available and fresh
         if (! $this->isStale && isset($this->memoizedAmounts[$targetKey])) {
             return $this->memoizedAmounts[$targetKey];
         }
 
-        // If we have a full result cached and it's fresh, use it
         if (! $this->isStale && $this->fullResult !== null) {
             return $this->extractAmountFromFullResult($targetPhase);
         }
 
-        // Need to compute - check if we can do partial evaluation
         if ($this->canDoPartialEvaluation($targetPhase)) {
             return $this->evaluatePartially($targetPhase);
         }
 
-        // Fall back to full evaluation
         return $this->extractAmountFromFullResult($targetPhase);
     }
 
-    /**
-     * Check if partial evaluation is beneficial for the target phase.
-     */
     private function canDoPartialEvaluation(ConditionPhase $targetPhase): bool
     {
-        // Partial evaluation is beneficial for early phases
-        // For GRAND_TOTAL, full evaluation is just as efficient
         return $targetPhase !== ConditionPhase::GRAND_TOTAL;
     }
 
     /**
-     * Evaluate only up to the target phase.
+     * Evaluate only up to the target phase, delegating to the eager pipeline's
+     * resolver stack (phase processors + scope resolvers).
      */
     private function evaluatePartially(ConditionPhase $targetPhase): int
     {
@@ -210,7 +202,6 @@ final class LazyConditionPipeline
         $amount = $this->context->initialAmount();
 
         foreach ($this->phasesInOrder() as $phase) {
-            // Check if we already have this phase memoized
             if (! $this->isStale && isset($this->memoizedAmounts[$phase->value])) {
                 $amount = $this->memoizedAmounts[$phase->value];
 
@@ -229,9 +220,8 @@ final class LazyConditionPipeline
                 $this->context
             );
 
-            $finalAmount = $this->resolvePhaseAmount($phaseContext);
+            $finalAmount = $this->pipeline->resolvePhaseAmount($phaseContext);
 
-            // Cache this phase result
             $this->memoizedPhases[$phase->value] = new ConditionPhaseResult(
                 $phase,
                 $amount,
@@ -243,7 +233,6 @@ final class LazyConditionPipeline
 
             $amount = $finalAmount;
 
-            // Stop if we've reached the target
             if ($phase === $targetPhase) {
                 $this->isStale = false;
 
@@ -294,25 +283,6 @@ final class LazyConditionPipeline
         }
 
         return $this->memoizedAmounts[$phase->value] ?? $result->total();
-    }
-
-    /**
-     * Resolve amount for a single phase (delegated computation).
-     */
-    private function resolvePhaseAmount(ConditionPipelinePhaseContext $context): int
-    {
-        if ($context->isEmpty()) {
-            return $context->baseAmount;
-        }
-
-        // Apply conditions in scope order
-        $amount = $context->baseAmount;
-
-        foreach ($context->conditions as $condition) {
-            $amount = $condition->apply($amount);
-        }
-
-        return $amount;
     }
 
     /**

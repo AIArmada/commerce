@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
-use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
-use AIArmada\FilamentCart\Widgets\LiveStatsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\Widget;
@@ -20,18 +18,8 @@ describe('Widgets Instantiation', function (): void {
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
-    it('can instantiate CartStatsOverviewWidget', function (): void {
-        $widget = new CartStatsOverviewWidget;
-        expect($widget)->toBeInstanceOf(StatsOverviewWidget::class);
-    });
-
     it('can instantiate CartStatsWidget', function (): void {
         $widget = new CartStatsWidget;
-        expect($widget)->toBeInstanceOf(StatsOverviewWidget::class);
-    });
-
-    it('can instantiate LiveStatsWidget', function (): void {
-        $widget = new LiveStatsWidget;
         expect($widget)->toBeInstanceOf(StatsOverviewWidget::class);
     });
 
@@ -55,7 +43,6 @@ describe('Widgets Instantiation', function (): void {
         expect($widgets)
             ->toContain(AbandonedCartsWidget::class)
             ->not->toContain(CartStatsWidget::class)
-            ->not->toContain(LiveStatsWidget::class)
             ->not->toContain(RecentActivityWidget::class);
     });
 

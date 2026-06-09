@@ -13,8 +13,9 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
-use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\CommerceSupport\Models\Permission;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
@@ -134,7 +135,7 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
         expect(fn () => $reject?->call([
             'record' => $payoutB,
             'data' => ['reason' => 'Cross-tenant attempt'],
-        ]))->toThrow(ModelNotFoundException::class);
+        ]))->toThrow(AuthorizationException::class);
 
         $fraudTable = $fraudPage->table(Table::make($fraudPage));
         $approve = $fraudTable->getAction('approve');

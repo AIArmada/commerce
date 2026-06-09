@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Concerns;
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Subscription;
-use AIArmada\CashierChip\SubscriptionBuilder;
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Contracts\Database\Eloquent\Builder;

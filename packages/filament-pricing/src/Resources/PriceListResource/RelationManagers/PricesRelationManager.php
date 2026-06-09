@@ -103,12 +103,11 @@ final class PricesRelationManager extends RelationManager
                         }
 
                         /** @var Builder<Model> $query */
-                        $query = $type::query();
-
-                        $model = new $type;
-                        if (method_exists($model, 'scopeForOwner')) {
-                            $query = $model->scopeForOwner($query, $owner);
-                        }
+                        $query = OwnerQuery::applyToEloquentBuilder(
+                            $type::query(),
+                            $owner,
+                            (bool) config('products.features.owner.include_global', false),
+                        );
 
                         $record = $query
                             ->whereKey($value)

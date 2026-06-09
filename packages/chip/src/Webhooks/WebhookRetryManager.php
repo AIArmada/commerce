@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Webhooks;
 
+use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\WebhookResult;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -12,30 +13,23 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
-/**
- * Manages webhook retry logic with exponential backoff.
- */
 class WebhookRetryManager
 {
     /**
      * @var array<int, int> Backoff schedule in seconds: [attempt => delay]
      */
     protected array $backoffSchedule = [
-        1 => 60,        // 1 minute
-        2 => 300,       // 5 minutes
-        3 => 900,       // 15 minutes
-        4 => 3600,      // 1 hour
-        5 => 14400,     // 4 hours
+        1 => 60,
+        2 => 300,
+        3 => 900,
+        4 => 3600,
+        5 => 14400,
     ];
 
     public function __construct(
-        protected WebhookEnricher $enricher,
-        protected WebhookRouter $router,
+        protected DispatchChipWebhookAction $dispatchAction,
     ) {}
 
-    /**
-     * Check if the webhook should be retried.
-     */
     public function shouldRetry(Webhook $webhook): bool
     {
         if ($webhook->status !== 'failed') {
@@ -45,9 +39,6 @@ class WebhookRetryManager
         return $webhook->retry_count < count($this->backoffSchedule);
     }
 
-    /**
-     * Get the next retry delay in seconds.
-     */
     public function getNextRetryDelay(Webhook $webhook): int
     {
         $nextAttempt = $webhook->retry_count + 1;
@@ -55,25 +46,17 @@ class WebhookRetryManager
         return $this->backoffSchedule[$nextAttempt] ?? $this->backoffSchedule[5];
     }
 
-    /**
-     * Retry processing a failed webhook.
-     */
     public function retry(Webhook $webhook): WebhookResult
     {
         $retryOwner = $this->resolveRetryOwner($webhook);
 
-        $executeRetry = function () use ($webhook): WebhookResult {
+        $executeRetry = function () use ($webhook, $retryOwner): WebhookResult {
             $webhook->increment('retry_count');
             $webhook->update(['last_retry_at' => now()]);
 
             try {
-                $payload = $webhook->payload;
-                $enriched = $this->enricher->enrich($webhook->event, $payload);
-                $owner = $enriched->owner;
-
-                $result = $owner instanceof Model
-                    ? OwnerContext::withOwner($owner, fn (): WebhookResult => $this->router->route($webhook->event, $enriched))
-                    : $this->router->route($webhook->event, $enriched);
+                $payload = is_array($webhook->payload) ? $webhook->payload : [];
+                $result = $this->dispatchAction->execute($webhook->event, $payload, $retryOwner ?? null);
 
                 if ($result->isSuccess()) {
                     $webhook->update([
@@ -105,8 +88,6 @@ class WebhookRetryManager
     }
 
     /**
-     * Get all webhooks that should be retried.
-     *
      * @return Collection<int, Webhook>
      */
     public function getRetryableWebhooks(): Collection
@@ -123,8 +104,6 @@ class WebhookRetryManager
     }
 
     /**
-     * Set a custom backoff schedule.
-     *
      * @param  array<int, int>  $schedule
      */
     public function setBackoffSchedule(array $schedule): self

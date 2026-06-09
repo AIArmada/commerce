@@ -7,8 +7,8 @@ namespace AIArmada\FilamentPromotions\Resources\PromotionResource\Tables;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentPromotions\Actions\IssuePromotionVouchersAction;
-use AIArmada\FilamentPromotions\Enums\PromotionType;
-use AIArmada\FilamentPromotions\Models\Promotion;
+use AIArmada\Promotions\Enums\PromotionType;
+use AIArmada\Promotions\Models\Promotion;
 use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -99,7 +99,9 @@ final class PromotionsTable
             ->defaultSort('priority', 'desc')
             ->filters([
                 SelectFilter::make('type')
-                    ->options(PromotionType::class)
+                    ->options(collect(PromotionType::cases())->mapWithKeys(
+                        fn (PromotionType $type): array => [$type->value => $type->label()]
+                    ))
                     ->native(false),
 
                 TernaryFilter::make('is_active')

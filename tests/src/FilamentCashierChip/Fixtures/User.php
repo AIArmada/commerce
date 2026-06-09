@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures;
 
-use AIArmada\CashierChip\Billable;
+use AIArmada\CashierChip\Billing\Billable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable

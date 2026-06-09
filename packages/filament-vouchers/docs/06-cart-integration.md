@@ -112,15 +112,15 @@ class EditCart extends BaseEditCart
 
 Add voucher widgets to cart detail pages. See [Widgets](05-widgets.md) for full documentation.
 
-### Applied Voucher Badges
+### Applied Vouchers Table
 
 ```php
-use AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget;
+use AIArmada\FilamentVouchers\Widgets\AppliedVouchersWidget;
 
 protected function getHeaderWidgets(): array
 {
     return [
-        AppliedVoucherBadgesWidget::class,
+        AppliedVouchersWidget::class,
     ];
 }
 ```

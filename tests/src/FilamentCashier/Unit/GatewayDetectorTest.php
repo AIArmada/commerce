@@ -2,8 +2,25 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCashier\Support\GatewayDetector;
+use AIArmada\Cashier\Support\GatewayDetector;
 use Illuminate\Support\Collection;
+
+beforeEach(function (): void {
+    config()->set('cashier.gateways', [
+        'stripe' => [
+            'label' => 'Stripe',
+            'icon' => 'heroicon-o-credit-card',
+            'color' => 'indigo',
+            'dashboard_url' => 'https://dashboard.stripe.com',
+        ],
+        'chip' => [
+            'label' => 'CHIP',
+            'icon' => 'heroicon-o-cube',
+            'color' => 'emerald',
+            'dashboard_url' => 'https://gate.chip-in.asia',
+        ],
+    ]);
+});
 
 it('can be instantiated', function (): void {
     $detector = new GatewayDetector;
@@ -84,7 +101,6 @@ it('returns gateway options as array', function (): void {
 it('checks if specific gateway is available', function (): void {
     $detector = new GatewayDetector;
 
-    // Returns boolean regardless of actual availability
     expect($detector->isAvailable('stripe'))->toBeBool();
     expect($detector->isAvailable('chip'))->toBeBool();
     expect($detector->isAvailable('nonexistent'))->toBe(false);

@@ -4,13 +4,36 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates;
 
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\Support\Integrations\CartBridge;
+use AIArmada\Affiliates\Support\Integrations\VoucherBridge;
+use AIArmada\FilamentAffiliates\Policies\AffiliateCommissionTemplatePolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateConversionPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateFraudSignalPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateLinkPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateNetworkPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliatePayoutPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliatePolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateProgramPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateRankHistoryPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateRankPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateSupportTicketPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateTaxDocumentPolicy;
+use AIArmada\FilamentAffiliates\Policies\AffiliateTouchpointPolicy;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
-use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
-use AIArmada\FilamentAffiliates\Support\Integrations\VoucherBridge;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
@@ -47,8 +70,18 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
             }
         });
 
-        Gate::policy(AffiliatePayout::class, Policies\AffiliatePayoutPolicy::class);
-        Gate::policy(AffiliateFraudSignal::class, Policies\AffiliateFraudSignalPolicy::class);
-        Gate::policy(AffiliateConversion::class, Policies\AffiliateConversionPolicy::class);
+        Gate::policy(Affiliate::class, AffiliatePolicy::class);
+        Gate::policy(AffiliateConversion::class, AffiliateConversionPolicy::class);
+        Gate::policy(AffiliateFraudSignal::class, AffiliateFraudSignalPolicy::class);
+        Gate::policy(AffiliatePayout::class, AffiliatePayoutPolicy::class);
+        Gate::policy(AffiliateProgram::class, AffiliateProgramPolicy::class);
+        Gate::policy(AffiliateLink::class, AffiliateLinkPolicy::class);
+        Gate::policy(AffiliateNetwork::class, AffiliateNetworkPolicy::class);
+        Gate::policy(AffiliateCommissionTemplate::class, AffiliateCommissionTemplatePolicy::class);
+        Gate::policy(AffiliateRank::class, AffiliateRankPolicy::class);
+        Gate::policy(AffiliateRankHistory::class, AffiliateRankHistoryPolicy::class);
+        Gate::policy(AffiliateSupportTicket::class, AffiliateSupportTicketPolicy::class);
+        Gate::policy(AffiliateTaxDocument::class, AffiliateTaxDocumentPolicy::class);
+        Gate::policy(AffiliateTouchpoint::class, AffiliateTouchpointPolicy::class);
     }
 }

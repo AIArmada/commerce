@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
@@ -46,8 +47,12 @@ final class VoucherSuggestionsWidget extends Widget
             return collect();
         }
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $isVisible = OwnerScopedQueries::scopeVoucherLike(Cart::query())
+        if (config('vouchers.owner.enabled', false)) {
+            $isVisible = OwnerQuery::applyToEloquentBuilder(
+                Cart::query(),
+                OwnerContext::resolve(),
+                (bool) config('vouchers.owner.include_global', false),
+            )
                 ->whereKey($this->record->getKey())
                 ->exists();
 
@@ -63,8 +68,12 @@ final class VoucherSuggestionsWidget extends Widget
             // Get active vouchers
             $voucherQuery = Voucher::query();
 
-            if (OwnerScopedQueries::isEnabled()) {
-                $voucherQuery = OwnerScopedQueries::scopeVoucherLike($voucherQuery);
+            if (config('vouchers.owner.enabled', false)) {
+                $voucherQuery = OwnerQuery::applyToEloquentBuilder(
+                    $voucherQuery,
+                    OwnerContext::resolve(),
+                    (bool) config('vouchers.owner.include_global', false),
+                );
             }
 
             $vouchers = $voucherQuery
@@ -161,8 +170,12 @@ final class VoucherSuggestionsWidget extends Widget
             return;
         }
 
-        if (OwnerScopedQueries::isEnabled()) {
-            $isVisible = OwnerScopedQueries::scopeVoucherLike(Cart::query())
+        if (config('vouchers.owner.enabled', false)) {
+            $isVisible = OwnerQuery::applyToEloquentBuilder(
+                Cart::query(),
+                OwnerContext::resolve(),
+                (bool) config('vouchers.owner.include_global', false),
+            )
                 ->whereKey($this->record->getKey())
                 ->exists();
 

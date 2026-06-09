@@ -96,7 +96,7 @@ class AffiliatePayout extends Model implements Auditable
     /**
      * Polymorphic payee (typically an Affiliate).
      *
-     * @return MorphTo<Model, self>
+     * @return MorphTo<Model, $this>
      */
     public function payee(): MorphTo
     {
@@ -106,7 +106,7 @@ class AffiliatePayout extends Model implements Auditable
     /**
      * Alias relation for payee when it is an Affiliate.
      *
-     * @return MorphTo<Affiliate, self>
+     * @return MorphTo<Model, $this>
      */
     public function affiliate(): MorphTo
     {
@@ -114,7 +114,7 @@ class AffiliatePayout extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliateConversion, self>
+     * @return HasMany<AffiliateConversion, $this>
      */
     public function conversions(): HasMany
     {
@@ -122,7 +122,7 @@ class AffiliatePayout extends Model implements Auditable
     }
 
     /**
-     * @return HasMany<AffiliatePayoutEvent, self>
+     * @return HasMany<AffiliatePayoutEvent, $this>
      */
     public function events(): HasMany
     {

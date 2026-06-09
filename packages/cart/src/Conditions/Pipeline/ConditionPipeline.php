@@ -84,7 +84,7 @@ final class ConditionPipeline
         return $phases;
     }
 
-    private function resolvePhaseAmount(ConditionPipelinePhaseContext $context): int
+    public function resolvePhaseAmount(ConditionPipelinePhaseContext $context): int
     {
         $processor = $this->phaseProcessors[$context->phase->value] ?? null;
 

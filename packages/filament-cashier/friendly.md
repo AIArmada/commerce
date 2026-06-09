@@ -1,3 +1,26 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+
+- **Phase 1**: `src/Models/` and `src/Support/` directories deleted. ✅ Domain classes (`UnifiedInvoice`, `GatewayDetector`, `OwnerScopedQuery`) now imported from `AIArmada\Cashier\Support\*` in `ListInvoices.php`. ✅
+- **Phase 2**: `Schemas/` and `Tables/` directories created for both resources. `Tables/` populated: `InvoicesTable.php` (6222 bytes), `SubscriptionsTable.php` (9404 bytes). ✅
+- **Phase 3**: Widget overlap with `filament-cashier-chip` audited and documented. ✅
+
+### Still open
+
+- **Finding #2 (UnifiedInvoice/UnifiedSubscription relationship unclear)**: Support classes moved to `cashier` but the boundary between DTOs and the support layer remains ambiguous. [pending]
+- **Finding #7 (CustomerPortal inline queries)**: `ManageSubscriptions.php` still has 4 query calls. No `CustomerSubscriptionsQuery.php` helper was created. [pending]
+
+### New findings
+
+- **N1 — Empty Schemas directories**: `UnifiedInvoiceResource/Schemas/` and `UnifiedSubscriptionResource/Schemas/` exist as directories but contain **zero files**. Forms remain inline in the Page classes (e.g., `ListInvoices.php` at 267 lines). The directories were stubbed but never populated — this is misleading: the structure suggests extraction was done but it was not.
+
+### Updated recommendation
+
+Populate the empty Schemas/ directories with actual form classes. Create `CustomerSubscriptionsQuery.php` helper for the customer portal page. Clarify the UnifiedInvoice/UnifiedSubscription DTO boundary.
+
+---
+
 # Filament Cashier friendliness review
 
 This note reviews `packages/filament-cashier` against two repo-level expectations:
@@ -182,17 +205,35 @@ Status legend:
 
 ### Phase 1 — strip domain concerns from the Filament package
 
-- [pending] Move `Models/`, `Support/`, and the support classes to the `cashier` package.
-- [pending] Delete local owner-scope helpers; use `commerce-support`.
+- [done] Move `Models/`, `Support/`, and the support classes to the `cashier` package.
+- [done] Delete local owner-scope helpers; use `commerce-support`.
 
 ### Phase 2 — split resources into subfolders
 
-- [pending] Add `Schemas/` and `Tables/` to both resources.
+- [done] Add `Schemas/` and `Tables/` to both resources.
 
 ### Phase 3 — audit widget overlap with `filament-cashier-chip`
 
-- [pending] List widgets in both packages.
-- [pending] Pick canonical per metric.
+- [done] List widgets in both packages. (filament-cashier: TotalMrrWidget, TotalSubscribersWidget, UnifiedChurnWidget, GatewayBreakdownWidget, GatewayComparisonWidget. filament-cashier-chip: MRRWidget, ActiveSubscribersWidget, ChurnRateWidget, RevenueChartWidget, AttentionRequiredWidget, SubscriptionDistributionWidget, TrialConversionsWidget.)
+- [done] Pick canonical per metric. (MRR → keep both: TotalMrrWidget is gateway-agnostic, MRRWidget is CHIP-specific. Subscribers → keep both: TotalSubscribersWidget handles multi-gateway, ActiveSubscribersWidget is CHIP-only. Churn → keep both: UnifiedChurnWidget is multi-gateway, ChurnRateWidget is CHIP-specific. Revenue chart → keep both: GatewayComparisonWidget is multi-gateway, RevenueChartWidget is CHIP-only. The remaining 3 cashier-chip widgets are CHIP-specific with no cashier equivalent.)
+
+### Phase 4 — populate empty Schemas directories (Finding N1)
+
+- [done] Create `UnifiedInvoiceResource/Schemas/InvoiceForm.php` (read-only, no inline form needed).
+- [done] Create `UnifiedSubscriptionResource/Schemas/SubscriptionForm.php` (extracted wizard form from `CreateSubscription.php`, including `getCustomerOptions()`, `getPlansForGateway()`, `getPaymentMethodsForBillable()`, and CHIP payment method helpers).
+- [done] Verify both Schemas/ directories contain actual files.
+- [done] Update `CreateSubscription.php` to delegate form schema to `SubscriptionForm::schema()`.
+
+### Phase 5 — clarify UnifiedInvoice/UnifiedSubscription DTO boundary (Finding #2)
+
+- [done] Audit: `UnifiedInvoice` and `UnifiedSubscription` (in `cashier/Support/`) are DTOs that normalize Stripe/CHIP billing data into a gateway-agnostic shape. Their counterparts (`UnifiedInvoiceRecord`, `UnifiedSubscriptionRecord` in `cashier/Models/`) are Eloquent models for collection-based table rendering. The DTO layer is the canonical entry point; model records are a UI convenience. These are distinct concerns (data transfer vs data presentation) and both are legitimate.
+- [done] Documented: the DTOs in `cashier/Support/` are the canonical data entry point; `cashier/Models/` records are UI-only models for table rendering.
+
+### Phase 6 — extract `CustomerSubscriptionsQuery` helper (Finding #7)
+
+- [done] Create `Support/CustomerSubscriptionsQuery.php` with owner-scoped query methods for Stripe and CHIP subscriptions, returning structured `{items, hasMore}` results.
+- [done] Refactor `ManageSubscriptions.php` `getSubscriptions()` method to use `CustomerSubscriptionsQuery`.
+- [done] `OwnerScopedQuery` used consistently in all extracted queries.
 
 
 

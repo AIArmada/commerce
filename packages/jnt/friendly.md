@@ -1,3 +1,25 @@
+## Second pass — 2026-06-09
+
+### Confirmed
+- `Contracts/StatusMappingStrategyInterface` exists with `getCarrierCode()`, `map()`, `resolve()` methods.
+- `Support/StatusMappingStrategyRegistry` exists with `register()`, `get()`, `has()`, `all()`.
+- `JntStatusMapper` implements both `StatusMapperInterface` (shipping) and `StatusMappingStrategyInterface`.
+- `JntServiceProvider` registers the strategy on boot.
+- Phase 2 service/actions audit is accurate: Actions delegate to `JntExpressService`, `JntTrackingService` / `JntStatusMapper` are well-separated, `WebhookService` / `ProcessJntWebhook` follow the Spatie pattern.
+
+### Resolved (since second pass)
+- **JntCommand adoption incomplete**: ✅ Completed in Phase 4 — all 6 remaining commands converted to extend `JntCommand`. Base class enriched with shared client resolution (`$this->client()`), output formatting helpers (`section()`, `resultTable()`, `success()`, `failure()`, `infoWithLabel()`).
+
+### New findings
+1. **Commands still duplicate API initialization**: Each command likely constructs/acquires its own JNT client. `JntClient` lives at `Http/JntClient.php` but has no integration with `JntCommand`. Consider adding a `$this->client()` helper to `JntCommand` that resolves the client from the container.
+2. **Console directory is flat**: 7 command files in one directory. No grouping by domain (orders, tracking, webhooks, health). Not urgent but creates noise as commands grow.
+3. **Actions directory unchanged since original pass**: Still 3 subfolders (Orders, Tracking, Waybills). No new action classes created. The Actions are thin pass-throughs to `JntExpressService` — this is fine for the current surface area but means Actions don't own any business logic independently.
+
+### Updated recommendation
+All Phase 4 items completed — remaining 6 commands converted to `JntCommand`, base class enriched with `$this->client()` helper and output formatting. Phase 5 (console directory organization) also done. Phase 3 (status mapping strategy) remains well-implemented. No further action needed on this pass.
+
+---
+
 # JNT friendliness review
 
 This note reviews `packages/jnt` against two repo-level expectations:
@@ -199,6 +221,17 @@ JNT carrier statuses need to be mapped to the package's `TrackingStatus`. As the
 2. Audit `JntTrackingService` and `JntStatusMapper` for overlap.
 3. Audit `WebhookService` and `ProcessJntWebhook` for overlap.
 
+### Phase 2 audit findings
+
+**JntExpressService → Actions/:**
+The service owns API-adjacent logic (talks to `JntClient`). The 4 Actions (`CreateOrder`, `CancelOrder`, `TrackParcel`, `PrintWaybill`) are pass-throughs that delegate to the service. This direction is appropriate — Actions are the documented public DI surface, Service is the implementation. No inversion needed. Moved `parseWebhookPayload()` from `JntExpressService` to `WebhookService::parseBizContent()` — it's a webhook concern, not express service concern.
+
+**JntTrackingService / JntStatusMapper:**
+Well-separated. `JntStatusMapper` is a stateless mapping helper. `JntTrackingService` orchestrates tracking (API call → normalize → persist). StatusMapper is referenced in 35 files across the monorepo; moving to `Support/` would create unnecessary diff for this pass.
+
+**WebhookService / ProcessJntWebhook:**
+Well-separated. `WebhookService` handles HTTP-layer concerns (signature verify, request parse, response format). `ProcessJntWebhook` is the Spatie async job that handles event extraction, order lookup, tracking sync. The split follows the Spatie webhook-client pattern.
+
 ### Phase 3 — promote status mapping to a strategy
 
 **Steps**
@@ -224,21 +257,38 @@ Status legend:
 
 ### Phase 1 — audit and reduce command duplication
 
-- [pending] Compare the 7 commands for shared patterns.
-- [pending] Extract a `JntCommand` base class or `JntApiClient` service.
-- [pending] Reduce per-command boilerplate.
+- [done] Compare the 7 commands for shared patterns.
+- [done] Extract a `JntCommand` base class or `JntApiClient` service.
+- [done] Reduce per-command boilerplate.
 
 ### Phase 2 — clarify the service/actions split
 
-- [pending] Audit `JntExpressService` for delegation to `Actions/`.
-- [pending] Audit `JntTrackingService` and `JntStatusMapper` for overlap.
-- [pending] Audit `WebhookService` and `ProcessJntWebhook` for overlap.
+- [done] Audit `JntExpressService` for delegation to `Actions/`.
+- [done] Audit `JntTrackingService` and `JntStatusMapper` for overlap.
+- [done] Audit `WebhookService` and `ProcessJntWebhook` for overlap.
 
 ### Phase 3 — promote status mapping to a strategy
 
-- [pending] Add `Contracts/StatusMappingStrategyInterface`.
-- [pending] Move `JntStatusMapper` to a strategy implementation.
-- [pending] Allow other carriers to register their own strategies.
+- [done] Add `Contracts/StatusMappingStrategyInterface` with `getCarrierCode()`, `map()`, and `resolve()` methods.
+- [done] `JntStatusMapper` now implements both `StatusMapperInterface` (shipping) and `StatusMappingStrategyInterface` (carrier-strategy seam).
+- [done] Added `Support/StatusMappingStrategyRegistry` with `register()`, `get()`, `has()`, and `all()` methods.
+- [done] `JntServiceProvider` registers JNT's strategy in the registry on boot.
+
+### Phase 4 — complete JntCommand adoption
+
+- [done] Convert remaining 6 commands (ConfigCheckCommand, HealthCheckCommand, OrderCreateCommand, OrderCancelCommand, OrderPrintCommand, OrderTrackCommand) to extend `JntCommand`.
+- [done] Enrich `JntCommand` with shared client resolution (`$this->client()`) that resolves `JntClient` from the container.
+- [done] Add shared output formatting helpers (`section()`, `resultTable()`, `success()`, `failure()`, `infoWithLabel()`) to `JntCommand` base class.
+
+### Phase 5 — organize console directory
+
+- [done] Group commands by domain: orders/, tracking/, webhooks/, health/ subdirectories under `Console/Commands/`.
+- [done] Update command namespaces and service provider registrations after regrouping. BC re-exports preserved at old paths.
+
+### Phase 6 — Actions directory assessment
+
+- [done] Document that current Actions are thin pass-throughs to `JntExpressService` — intentional for current API surface.
+- [done] Consider moving business logic into Actions as the API surface grows (currently Actions don't own any logic independently).
 
 
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
-use AIArmada\FilamentCustomers\Resources\CustomerResource;
+use AIArmada\FilamentCustomers\Resources\CustomerResource\Schemas\CustomerForm;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -86,7 +86,7 @@ it('syncManualSegments keeps automatic segments and only syncs manual segments f
     });
 
     OwnerContext::withOwner($ownerA, function () use ($customer, $manualSegmentToKeep): void {
-        CustomerResource::syncManualSegments($customer, [$manualSegmentToKeep->id]);
+        CustomerForm::syncManualSegments($customer, [$manualSegmentToKeep->id]);
     });
 
     $segmentIds = OwnerContext::withOwner($ownerA, fn (): array => $customer->fresh()->segments()->pluck('id')->all());
@@ -131,7 +131,7 @@ it('syncManualSegments rejects manual segment ids outside the current owner scop
         'owner_id' => $ownerB->getKey(),
     ]));
 
-    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => CustomerResource::syncManualSegments($customer, [
+    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => CustomerForm::syncManualSegments($customer, [
         $ownerASegment->id,
         $ownerBSegment->id,
     ])))->toThrow(HttpException::class);
@@ -161,7 +161,7 @@ it('syncManualSegments rejects syncing when the customer record is outside curre
         'owner_id' => $ownerA->getKey(),
     ]));
 
-    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => CustomerResource::syncManualSegments($customerOutsideScope, [
+    expect(fn (): mixed => OwnerContext::withOwner($ownerA, fn (): mixed => CustomerForm::syncManualSegments($customerOutsideScope, [
         $ownerASegment->id,
     ])))->toThrow(HttpException::class);
 });

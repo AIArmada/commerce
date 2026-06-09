@@ -148,9 +148,9 @@ $publicEvent = $occurrence->event;
 ## Create a single registration
 
 ```php
-use AIArmada\Events\Services\RegistrationService;
+use AIArmada\Events\Contracts\RegistrationServiceInterface;
 
-$registration = app(RegistrationService::class)->createForOccurrence(
+$registration = app(RegistrationServiceInterface::class)->createForOccurrence(
     $occurrence,
     [
         'name' => 'Saif Fil',
@@ -173,9 +173,9 @@ Use `attendee` when the attendee identity is not necessarily an AIArmada custome
 Walk-ins are available for `walk_in_only` and `hybrid` occurrences.
 
 ```php
-use AIArmada\Events\Services\RegistrationService;
+use AIArmada\Events\Contracts\RegistrationServiceInterface;
 
-$walkIn = app(RegistrationService::class)->recordWalkInForOccurrence(
+$walkIn = app(RegistrationServiceInterface::class)->recordWalkInForOccurrence(
     $occurrence,
     [
         'name' => 'Walk In Guest',
@@ -202,9 +202,9 @@ Configure an order-item fulfillment resolver before relying on automatic order f
 ```
 
 ```php
-use AIArmada\Events\Services\RegistrationService;
+use AIArmada\Events\Contracts\RegistrationServiceInterface;
 
-$registrations = app(RegistrationService::class)->createBatchForOrderItem(
+$registrations = app(RegistrationServiceInterface::class)->createBatchForOrderItem(
     $occurrence,
     $orderItem,
     $participants,
@@ -221,7 +221,7 @@ If the commerce packages are not installed, use `createForOccurrence()` for dire
 ## Check in a participant
 
 ```php
-$checkedIn = app(RegistrationService::class)->checkIn($registration, [
+$checkedIn = app(RegistrationServiceInterface::class)->checkIn($registration, [
     'source' => 'frontdesk',
 ]);
 ```
@@ -233,7 +233,7 @@ The allowed check-in statuses and occurrence statuses are configurable under `ev
 ## Cancel a registration
 
 ```php
-$cancelled = app(RegistrationService::class)->cancel(
+$cancelled = app(RegistrationServiceInterface::class)->cancel(
     $registration,
     'Participant cannot attend',
 );
@@ -322,6 +322,48 @@ trait HasEventMembership
 }
 ```
 
+## Resolver patterns
+
+The package uses two resolver conventions consistently:
+
+### EventAddressRegistry + EventAddressResolver (registry-and-resolver)
+
+The registry (`EventAddressRegistry`) holds **which** address models are available (reads config, validates they implement `EventAddressable`). The resolver (`EventAddressResolver`) looks up address data and formats it for display. This split keeps configuration separate from presentation:
+
+```php
+use AIArmada\Events\Support\Integration\EventAddressRegistry;
+use AIArmada\Events\Support\Integration\EventAddressResolver;
+
+// Registry — knows what models are available
+$models = EventAddressRegistry::options(); // [Venue::class => 'Venue']
+
+// Resolver — formats address data
+$data = app(EventAddressResolver::class)->data($venue);
+$label = app(EventAddressResolver::class)->label($venue);
+$lines = app(EventAddressResolver::class)->lines($venue);
+```
+
+New address models only need to implement `EventAddressable` and be added to `events.addresses.models`. No resolver changes needed.
+
+### Null/Default resolver convention
+
+For optional integrations, the package ships two implementations per contract:
+
+| Pattern | Purpose | When to use |
+|---|---|---|
+| `Default*` | Built-in behavior | A working implementation ships with the package |
+| `Null*` | No-op fallback | The feature may not be installed |
+
+Both implement the same contract. The service provider binds `Default*` when the integration package is detected and `Null*` otherwise. Example contracts with Null variants:
+
+- `EventChangeNoticeNotificationDispatcher` — `NullEventChangeNoticeNotificationDispatcher`
+- `EventCheckoutIntentResolver` — `NullEventCheckoutIntentResolver`
+- `EventOrderItemFulfillmentResolver` — `NullEventOrderItemFulfillmentResolver`
+- `EventReferenceResolver` — `NullEventReferenceResolver`
+- `EventScheduleResolver` — `NullEventScheduleResolver`
+
+When adding a new resolver, follow the same pattern: create the contract, a `Default*` implementation, and a `Null*` implementation. The provider binding is the single place that decides which one is active.
+
 The package will never:
 - Add `MemberInvitation` / `MembershipClaim` / `event_user` tables.
 - Add `allow_public_event_submission` / `public_submission_locked_at` /
@@ -392,7 +434,7 @@ when its `status` is `Active`. The package enforces this in:
   `registration_required` is `false`).
 
 This is opt-in: a host that wants to allow registration on `Postponed`
-events can override the `RegistrationService` binding in their adapter.
+events can override the `RegistrationServiceInterface` binding in their adapter.
 
 The `publiclyAccessible()` scope includes `Active`, `Postponed`, `Delayed`,
 `Cancelled`, and `Archived` events (i.e., everything except `Draft`). The

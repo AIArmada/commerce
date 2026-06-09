@@ -4,32 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Pages;
 
-use AIArmada\FilamentSignals\Pages\Concerns\FormatsSignalsReportValues;
-use AIArmada\FilamentSignals\Pages\Concerns\InteractsWithSignalsDateRange;
 use AIArmada\Signals\Services\GoalsReportService;
 use AIArmada\Signals\Services\SignalSegmentReportFilter;
 use BackedEnum;
-use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Livewire\Attributes\Url;
 
-final class GoalsReport extends Page
+final class GoalsReport extends ReportPage
 {
-    use FormatsSignalsReportValues;
-    use InteractsWithSignalsDateRange;
-
-    #[Url]
-    public string $dateFrom = '';
-
-    #[Url]
-    public string $dateTo = '';
-
-    #[Url]
-    public string $trackedPropertyId = '';
-
-    #[Url]
-    public string $signalSegmentId = '';
-
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTrophy;
 
     protected static ?string $navigationLabel = 'Goals';
@@ -39,16 +20,6 @@ final class GoalsReport extends Page
     protected static ?string $slug = 'signals/goals';
 
     protected string $view = 'filament-signals::pages.goals-report';
-
-    public function mount(): void
-    {
-        $this->initializeDefaultDateRange();
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return config('filament-signals.navigation_group', 'Insights');
-    }
 
     public static function getNavigationSort(): int
     {

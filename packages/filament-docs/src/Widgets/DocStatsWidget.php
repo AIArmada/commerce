@@ -11,7 +11,6 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Paid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
-use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -20,7 +19,7 @@ final class DocStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $docs = DocsOwnerScope::applyToDocs(Doc::query());
+        $docs = Doc::query();
 
         $totalDocs = (clone $docs)->count();
         $draftCount = (clone $docs)->where('status', DocStatus::normalize(Draft::class))->count();

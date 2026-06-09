@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Events\PaymentSucceeded;
+use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 
-/**
- * Listens to chip package PurchasePaid events and handles cashier-chip billing logic.
- */
 class HandlePurchasePaid
 {
     public function handle(PurchasePaid $event): void
@@ -23,7 +18,6 @@ class HandlePurchasePaid
         }
 
         $purchase = $event->purchase;
-        $payload = $event->payload;
 
         $clientId = $purchase->getClientId();
 
@@ -31,7 +25,6 @@ class HandlePurchasePaid
             return;
         }
 
-        /** @var Model|null $billable */
         $billable = (bool) config('cashier-chip.features.owner.enabled', true)
             ? Cashier::findBillableForWebhook($clientId)
             : Cashier::findBillable($clientId);
@@ -40,93 +33,6 @@ class HandlePurchasePaid
             return;
         }
 
-        // Dispatch cashier-chip payment succeeded event
-        PaymentSucceeded::dispatch($billable, $purchase->toArray());
-
-        // Handle recurring token if present
-        if ($recurringToken = $purchase->recurring_token) {
-            $this->handleRecurringToken($billable, $recurringToken, $payload);
-        }
-
-        // Handle subscription charge if this is a subscription payment
-        if ($subscriptionType = $this->getSubscriptionTypeFromPurchase($payload)) {
-            $this->handleSubscriptionPayment($billable, $subscriptionType);
-        }
-    }
-
-    /**
-     * Handle recurring token from a purchase.
-     *
-     * @param  array<string, mixed>  $purchase
-     */
-    protected function handleRecurringToken(object $billable, string $recurringToken, array $purchase): void
-    {
-        $transactionData = $purchase['transaction_data'] ?? [];
-        $extra = $transactionData['extra'] ?? [];
-        $card = $purchase['card'] ?? [];
-
-        Cashier::paymentMethodStore()->saveForBillable(
-            $billable,
-            $recurringToken,
-            attributes: [
-                'type' => $transactionData['payment_method'] ?? 'card',
-                'brand' => $card['brand'] ?? $extra['card_brand'] ?? $transactionData['payment_method'] ?? 'card',
-                'last_four' => $card['last_4'] ?? $extra['card_last_4'] ?? null,
-                'metadata' => $purchase,
-            ],
-            makeDefault: ! $billable->hasDefaultPaymentMethod(),
-        );
-    }
-
-    /**
-     * Handle a subscription payment success.
-     */
-    protected function handleSubscriptionPayment(object $billable, string $subscriptionType): void
-    {
-        if (! $billable instanceof Model) {
-            return;
-        }
-
-        $subscription = Cashier::findSubscriptionForWebhook($billable, $subscriptionType);
-
-        if ($subscription) {
-            $interval = $subscription->billing_interval ?? 'month';
-            $count = $subscription->billing_interval_count ?? 1;
-
-            $subscription->forceFill([
-                'chip_status' => 'active',
-                'next_billing_at' => now()->add($interval, $count),
-            ])->save();
-        }
-    }
-
-    /**
-     * Extract subscription type from purchase metadata or reference.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    protected function getSubscriptionTypeFromPurchase(array $payload): ?string
-    {
-        $metadata = Arr::get($payload, 'metadata');
-
-        if (! is_array($metadata)) {
-            $metadata = Arr::get($payload, 'purchase.metadata', []);
-        }
-
-        $subscriptionType = $metadata['subscription_type'] ?? null;
-
-        if (is_string($subscriptionType) && $subscriptionType !== '') {
-            return $subscriptionType;
-        }
-
-        $reference = Arr::get($payload, 'reference')
-            ?? Arr::get($payload, 'purchase.reference')
-            ?? '';
-
-        if (preg_match('/Subscription (\w+)/', $reference, $matches)) {
-            return $matches[1];
-        }
-
-        return null;
+        app(SyncChipPurchaseStatus::class)->syncPaid($billable, $purchase, $event->payload);
     }
 }

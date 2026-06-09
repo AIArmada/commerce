@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\States\PendingPayout;
-use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use Filament\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -35,9 +35,9 @@ final class BulkPayoutAction extends BulkAction
 
                 Gate::authorize('update', $record);
 
-                $payout = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                    ->whereKey($record->getKey())
-                    ->firstOrFail();
+                $payout = (bool) config('affiliates.owner.enabled', false)
+                    ? OwnerWriteGuard::findOrFailForOwner(AffiliatePayout::class, $record->getKey())
+                    : AffiliatePayout::findOrFail($record->getKey());
 
                 if (! $payout->status->equals(PendingPayout::class)) {
                     continue;

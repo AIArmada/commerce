@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPromotions\Widgets;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use AIArmada\FilamentPromotions\Support\PromotionPerformanceInsights;
+use AIArmada\Promotions\Support\PromotionPerformanceInsights;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 

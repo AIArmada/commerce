@@ -114,14 +114,13 @@ class MarkAbandonedCartsCommand extends Command
     ): int {
         $columns = OwnerTupleColumns::forModelClass(Cart::class);
 
-        $owners = Cart::query()
-            ->withoutOwnerScope()
+        $owners = OwnerContext::withOwner(null, fn () => Cart::query()
             ->select([
                 $columns->ownerTypeColumn . ' as owner_type',
                 $columns->ownerIdColumn . ' as owner_id',
             ])
             ->distinct()
-            ->get();
+            ->get());
 
         $ownerBatches = [];
         $totalCandidates = 0;
