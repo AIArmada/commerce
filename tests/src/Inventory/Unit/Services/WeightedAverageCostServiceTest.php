@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryCostLayer;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\WeightedAverageCostService;
+use AIArmada\Inventory\Services\Costing\WeightedAverageCostService;
 
 class WeightedAverageCostServiceTest extends InventoryTestCase
 {

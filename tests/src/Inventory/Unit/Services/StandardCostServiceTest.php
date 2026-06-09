@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryStandardCost;
-use AIArmada\Inventory\Services\StandardCostService;
+use AIArmada\Inventory\Services\Costing\StandardCostService;
 
 class StandardCostServiceTest extends InventoryTestCase
 {

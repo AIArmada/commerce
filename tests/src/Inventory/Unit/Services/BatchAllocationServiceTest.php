@@ -7,7 +7,7 @@ use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\BatchAllocationService;
-use AIArmada\Inventory\Services\BatchService;
+use AIArmada\Inventory\Services\Batch\BatchService;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();
