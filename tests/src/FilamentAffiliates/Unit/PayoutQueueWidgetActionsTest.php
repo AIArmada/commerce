@@ -47,7 +47,7 @@ it('processes a payout via the queue widget action', function (): void {
         'affiliate_id' => $affiliate->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '12345678'],
-        'is_verified' => true,
+        'verified_at' => now(),
         'is_default' => true,
     ]);
 
@@ -99,7 +99,7 @@ it('blocks queue widget payout action when user lacks payout update permission',
         'affiliate_id' => $affiliate->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '12345678'],
-        'is_verified' => true,
+        'verified_at' => now(),
         'is_default' => true,
     ]);
 
