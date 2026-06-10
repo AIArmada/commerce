@@ -11,8 +11,8 @@ use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Affiliates\States\ProcessingPayout;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('AffiliatePayout Model', function (): void {
     beforeEach(function (): void {
