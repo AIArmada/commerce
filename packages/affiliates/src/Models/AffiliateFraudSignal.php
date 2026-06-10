@@ -70,8 +70,8 @@ class AffiliateFraudSignal extends Model implements Auditable
         'evidence' => 'array',
         'detected_at' => 'immutable_datetime',
         'reviewed_at' => 'immutable_datetime',
-            'dismissed_at' => 'immutable_datetime',
-            'confirmed_at' => 'immutable_datetime',
+        'dismissed_at' => 'immutable_datetime',
+        'confirmed_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string
