@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\src\Events;
 
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventEngagement;
 use AIArmada\Events\Actions\RecordEventEngagementAction;
-use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Events\Models\Event;
 
 it('records a saved engagement', function (): void {
     $event = Event::factory()->create(['status' => 'active']);

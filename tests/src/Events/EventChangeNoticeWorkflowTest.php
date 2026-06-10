@@ -6,7 +6,6 @@ namespace Tests\src\Events;
 
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Services\DefaultEventChangeNoticeWorkflow;
-use AIArmada\Commerce\Tests\TestCase;
 
 it('creates a change notice', function (): void {
     $event = Event::factory()->create();

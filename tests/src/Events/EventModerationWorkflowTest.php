@@ -6,7 +6,6 @@ namespace Tests\src\Events;
 
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
-use AIArmada\Commerce\Tests\TestCase;
 
 it('submits an event for review', function (): void {
     $event = Event::factory()->create(['moderation_status' => 'draft', 'status' => 'draft']);
