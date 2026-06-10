@@ -21,6 +21,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Services\VoucherService;
 use Akaunting\Money\Money;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use DateTimeZone;
@@ -57,15 +58,20 @@ use LogicException;
  * @property string|null $recurring_token
  * @property string $billing_interval
  * @property int $billing_interval_count
- * @property Carbon|null $trial_ends_at
- * @property Carbon|null $next_billing_at
- * @property Carbon|null $ends_at
+ * @property CarbonImmutable|null $trial_ends_at
+ * @property CarbonImmutable|null $next_billing_at
+ * @property CarbonImmutable|null $ends_at
+ * @property CarbonImmutable|null $canceled_at
+ * @property CarbonImmutable|null $paused_at
+ * @property CarbonImmutable|null $past_due_at
+ * @property CarbonImmutable|null $trial_started_at
+ * @property CarbonImmutable|null $renewed_at
  * @property string|null $coupon_id
  * @property int|null $coupon_discount
  * @property string|null $coupon_duration
- * @property Carbon|null $coupon_applied_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property CarbonImmutable|null $coupon_applied_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property-read Model&BillableContract $customer
@@ -637,7 +643,7 @@ class Subscription extends Model
             throw new InvalidArgumentException("Extending a subscription's trial requires a date in the future.");
         }
 
-        $this->trial_ends_at = Carbon::instance($date);
+        $this->trial_ends_at = CarbonImmutable::instance($date);
         $this->save();
 
         return $this;
@@ -708,6 +714,7 @@ class Subscription extends Model
             $this->ends_at = $this->next_billing_at ?? Carbon::now();
         }
 
+        $this->canceled_at = now();
         $this->save();
 
         return $this;
@@ -721,12 +728,13 @@ class Subscription extends Model
     public function cancelAt(DateTimeInterface | int $endsAt)
     {
         if ($endsAt instanceof DateTimeInterface) {
-            $endsAt = Carbon::instance($endsAt);
+            $endsAt = CarbonImmutable::instance($endsAt);
         } else {
-            $endsAt = Carbon::createFromTimestamp($endsAt);
+            $endsAt = CarbonImmutable::createFromTimestamp($endsAt);
         }
 
         $this->ends_at = $endsAt;
+        $this->canceled_at = now();
         $this->save();
 
         return $this;
@@ -754,7 +762,8 @@ class Subscription extends Model
     {
         $this->fill([
             'chip_status' => self::STATUS_CANCELED,
-            'ends_at' => Carbon::now(),
+            'ends_at' => now(),
+            'canceled_at' => now(),
         ])->save();
     }
 
@@ -777,6 +786,7 @@ class Subscription extends Model
         $this->fill([
             'chip_status' => self::STATUS_ACTIVE,
             'ends_at' => null,
+            'canceled_at' => null,
         ])->save();
 
         return $this;
@@ -1107,6 +1117,7 @@ class Subscription extends Model
     {
         $this->fill([
             'chip_status' => self::STATUS_PAUSED,
+            'paused_at' => now(),
         ])->save();
 
         return $this;
@@ -1121,6 +1132,7 @@ class Subscription extends Model
     {
         $this->fill([
             'chip_status' => self::STATUS_ACTIVE,
+            'paused_at' => null,
         ])->save();
 
         return $this;
@@ -1227,6 +1239,12 @@ class Subscription extends Model
             }
         });
 
+        static::creating(function (self $subscription): void {
+            if ($subscription->trial_ends_at !== null && $subscription->trial_started_at === null) {
+                $subscription->trial_started_at = CarbonImmutable::now();
+            }
+        });
+
         static::deleting(function (Subscription $subscription): void {
             $subscription->items()->delete();
         });
@@ -1253,12 +1271,17 @@ class Subscription extends Model
     protected function casts(): array
     {
         return [
-            'ends_at' => 'datetime',
+            'ends_at' => 'immutable_datetime',
+            'canceled_at' => 'immutable_datetime',
+            'paused_at' => 'immutable_datetime',
+            'past_due_at' => 'immutable_datetime',
+            'trial_started_at' => 'immutable_datetime',
+            'renewed_at' => 'immutable_datetime',
             'quantity' => 'integer',
-            'trial_ends_at' => 'datetime',
-            'next_billing_at' => 'datetime',
+            'trial_ends_at' => 'immutable_datetime',
+            'next_billing_at' => 'immutable_datetime',
             'coupon_discount' => 'integer',
-            'coupon_applied_at' => 'datetime',
+            'coupon_applied_at' => 'immutable_datetime',
         ];
     }
 

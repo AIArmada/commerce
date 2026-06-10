@@ -18,6 +18,7 @@ it('affiliate-network core models are auditable and activity loggable', function
         AffiliateOfferApplication::class,
         AffiliateOfferCategory::class,
         AffiliateOfferCreative::class,
+        AffiliateOfferLink::class,
         AffiliateSite::class,
     ];
 
@@ -30,10 +31,4 @@ it('affiliate-network core models are auditable and activity loggable', function
     }
 });
 
-it('affiliate offer link intentionally avoids model-level audit/activity due click-volume hot path', function (): void {
-    $traits = class_uses_recursive(AffiliateOfferLink::class);
 
-    expect($traits)->not->toContain(HasCommerceAudit::class)
-        ->and($traits)->not->toContain(LogsCommerceActivity::class)
-        ->and(in_array(Auditable::class, class_implements(AffiliateOfferLink::class), true))->toBeFalse();
-});

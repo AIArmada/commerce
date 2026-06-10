@@ -85,6 +85,41 @@ final class SubscriptionTable
                     ->placeholder('—')
                     ->color(fn (Subscription $record): string => $record->onGracePeriod() ? 'warning' : 'danger'),
 
+                TextColumn::make('canceled_at')
+                    ->label('Canceled At')
+                    ->dateTime(config('filament-cashier-chip.tables.date_format', 'Y-m-d H:i:s'))
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('paused_at')
+                    ->label('Paused At')
+                    ->dateTime(config('filament-cashier-chip.tables.date_format', 'Y-m-d H:i:s'))
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('past_due_at')
+                    ->label('Past Due At')
+                    ->dateTime(config('filament-cashier-chip.tables.date_format', 'Y-m-d H:i:s'))
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('trial_started_at')
+                    ->label('Trial Started')
+                    ->dateTime(config('filament-cashier-chip.tables.date_format', 'Y-m-d H:i:s'))
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('renewed_at')
+                    ->label('Last Renewed')
+                    ->dateTime(config('filament-cashier-chip.tables.date_format', 'Y-m-d H:i:s'))
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('billing_interval')
                     ->label('Interval')
                     ->badge()

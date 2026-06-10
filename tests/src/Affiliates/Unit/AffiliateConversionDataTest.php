@@ -9,6 +9,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 
 test('AffiliateConversionData constructor sets properties', function (): void {
     $occurredAt = Carbon::now();
@@ -119,7 +120,7 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
     expect($data->commissionCurrency)->toBe('USD');
     expect($data->conversionType)->toBe('registration');
     expect($data->status->equals(ApprovedConversion::class))->toBeTrue();
-    expect($data->occurredAt)->toBeInstanceOf(Carbon::class);
+    expect($data->occurredAt)->toBeInstanceOf(CarbonInterface::class);
     expect($data->ownerType)->toBe('users');
     expect($data->ownerId)->toBe('owner-1');
     expect($data->metadata)->toBe(['key' => 'value']);

@@ -24,6 +24,7 @@ return new class extends Migration
         DB::statement("UPDATE {$tableName} SET hidden_at = updated_at WHERE is_visible = false");
 
         Schema::table($tableName, function (Blueprint $table): void {
+            $table->dropIndex(['type', 'is_visible']);
             $table->dropColumn('is_visible');
 
             $table->index('status');

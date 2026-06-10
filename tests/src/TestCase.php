@@ -1313,6 +1313,8 @@ abstract class TestCase extends Orchestra
             // Timestamps
             $table->timestamp('expires_at')->nullable()->index();
             $table->timestamp('completed_at')->nullable();
+            $table->timestamp('cancelled_at')->nullable()->index();
+            $table->timestamp('payment_failed_at')->nullable();
             $table->timestamps();
 
             // Indexes for common queries

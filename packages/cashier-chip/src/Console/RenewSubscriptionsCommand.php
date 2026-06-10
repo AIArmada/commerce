@@ -115,6 +115,7 @@ class RenewSubscriptionsCommand extends Command
                                 $subscription->billing_interval ?? 'month',
                                 $subscription->billing_interval_count ?? 1
                             ),
+                            'renewed_at' => now(),
                         ])->save();
                     }
 
@@ -187,6 +188,7 @@ class RenewSubscriptionsCommand extends Command
     {
         $subscription->forceFill([
             'chip_status' => Subscription::STATUS_PAST_DUE,
+            'past_due_at' => now(),
         ])->save();
     }
 

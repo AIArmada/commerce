@@ -349,7 +349,7 @@ test('AffiliatePayoutMethod verify sets is_verified and verified_at', function (
 
     $method->verify();
 
-    expect($method->fresh()->is_verified)->toBeTrue();
+    expect($method->fresh()->isVerified())->toBeTrue();
     expect($method->fresh()->verified_at)->not->toBeNull();
 });
 

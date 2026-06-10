@@ -43,19 +43,19 @@ describe('AffiliateOffer Model', function (): void {
 
     describe('isActive', function (): void {
         test('returns true for active status', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
 
             expect($offer->isActive())->toBeTrue();
         });
 
         test('returns false for non-active status', function (): void {
-            $offer = AffiliateOffer::factory()->paused()->forSite($this->site)->create();
+            $offer = AffiliateOffer::factory()->draft()->forSite($this->site)->create();
 
             expect($offer->isActive())->toBeFalse();
         });
 
         test('returns false when starts_at is in future', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
                 'starts_at' => now()->addDays(1),
             ]);
 
@@ -63,7 +63,7 @@ describe('AffiliateOffer Model', function (): void {
         });
 
         test('returns false when ends_at is in past', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
                 'ends_at' => now()->subDays(1),
             ]);
 
@@ -71,7 +71,7 @@ describe('AffiliateOffer Model', function (): void {
         });
 
         test('returns true within date range', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
                 'starts_at' => now()->subDays(1),
                 'ends_at' => now()->addDays(1),
             ]);

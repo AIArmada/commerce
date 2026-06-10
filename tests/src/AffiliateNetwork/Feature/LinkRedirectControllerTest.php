@@ -14,7 +14,7 @@ describe('affiliate network redirect route', function (): void {
             'domain' => 'merchant.example',
         ]);
 
-        $this->offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
+        $this->offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
             'landing_url' => 'https://merchant.example/offers/spring',
         ]);
 

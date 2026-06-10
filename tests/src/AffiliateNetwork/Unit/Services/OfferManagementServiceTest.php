@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
@@ -42,26 +45,16 @@ describe('OfferManagementService', function (): void {
                 'name' => 'Test Offer',
             ]);
 
-            expect($offer->status)->toBe(AffiliateOffer::STATUS_PENDING);
-        });
-
-        test('creates offer with active status when approval not required', function (): void {
-            config(['affiliate-network.offers.require_approval' => false]);
-
-            $offer = $this->service->createOffer($this->site, [
-                'name' => 'Test Offer',
-            ]);
-
-            expect($offer->status)->toBe(AffiliateOffer::STATUS_ACTIVE);
+            expect($offer->status)->toBe(OfferStatus::Draft);
         });
 
         test('creates offer with explicit status', function (): void {
             $offer = $this->service->createOffer($this->site, [
                 'name' => 'Test Offer',
-                'status' => AffiliateOffer::STATUS_DRAFT,
+                'status' => OfferStatus::Draft,
             ]);
 
-            expect($offer->status)->toBe(AffiliateOffer::STATUS_DRAFT);
+            expect($offer->status)->toBe(OfferStatus::Draft);
         });
 
         test('creates offer with all optional fields', function (): void {
@@ -90,7 +83,7 @@ describe('OfferManagementService', function (): void {
 
     describe('applyForOffer', function (): void {
         beforeEach(function (): void {
-            $this->offer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+            $this->offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $this->affiliate = createTestAffiliate();
         });
 
@@ -102,7 +95,7 @@ describe('OfferManagementService', function (): void {
             expect($application)->toBeInstanceOf(AffiliateOfferApplication::class);
             expect($application->offer_id)->toBe($this->offer->id);
             expect($application->affiliate_id)->toBe($this->affiliate->id);
-            expect($application->status)->toBe(AffiliateOfferApplication::STATUS_PENDING);
+            expect($application->status)->toBe(ApplicationStatus::Pending);
         });
 
         test('creates approved application for offer not requiring approval', function (): void {
@@ -110,7 +103,7 @@ describe('OfferManagementService', function (): void {
 
             $application = $this->service->applyForOffer($this->offer, $this->affiliate);
 
-            expect($application->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+            expect($application->status)->toBe(ApplicationStatus::Approved);
             expect($application->reviewed_at)->not->toBeNull();
         });
 
@@ -119,7 +112,7 @@ describe('OfferManagementService', function (): void {
 
             $application = $this->service->applyForOffer($this->offer, $this->affiliate);
 
-            expect($application->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+            expect($application->status)->toBe(ApplicationStatus::Approved);
         });
 
         test('includes reason in application', function (): void {
@@ -158,7 +151,7 @@ describe('OfferManagementService', function (): void {
             $application = $this->service->applyForOffer($this->offer, $this->affiliate);
 
             expect($application->id)->toBe($existing->id);
-            expect($application->status)->toBe(AffiliateOfferApplication::STATUS_PENDING);
+            expect($application->status)->toBe(ApplicationStatus::Pending);
             expect($application->rejection_reason)->toBeNull();
         });
 
@@ -183,7 +176,7 @@ describe('OfferManagementService', function (): void {
 
             $approved = $this->service->approveApplication($application, 'admin@example.com');
 
-            expect($approved->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+            expect($approved->status)->toBe(ApplicationStatus::Approved);
             expect($approved->reviewed_by)->toBe('admin@example.com');
             expect($approved->reviewed_at)->not->toBeNull();
         });
@@ -193,7 +186,7 @@ describe('OfferManagementService', function (): void {
 
             $approved = $this->service->approveApplication($application);
 
-            expect($approved->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+            expect($approved->status)->toBe(ApplicationStatus::Approved);
             expect($approved->reviewed_by)->toBeNull();
         });
 
@@ -216,7 +209,7 @@ describe('OfferManagementService', function (): void {
                 'admin@example.com'
             );
 
-            expect($rejected->status)->toBe(AffiliateOfferApplication::STATUS_REJECTED);
+            expect($rejected->status)->toBe(ApplicationStatus::Rejected);
             expect($rejected->rejection_reason)->toBe('Does not meet requirements');
             expect($rejected->reviewed_by)->toBe('admin@example.com');
             expect($rejected->reviewed_at)->not->toBeNull();
@@ -241,7 +234,7 @@ describe('OfferManagementService', function (): void {
                 'admin@example.com'
             );
 
-            expect($revoked->status)->toBe(AffiliateOfferApplication::STATUS_REVOKED);
+            expect($revoked->status)->toBe(ApplicationStatus::Revoked);
             expect($revoked->rejection_reason)->toBe('Violated terms');
         });
 
@@ -256,7 +249,7 @@ describe('OfferManagementService', function (): void {
 
     describe('isApprovedForOffer', function (): void {
         test('returns true when approved', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $affiliate = createTestAffiliate();
 
             AffiliateOfferApplication::factory()
@@ -271,7 +264,7 @@ describe('OfferManagementService', function (): void {
         });
 
         test('returns false when pending', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $affiliate = createTestAffiliate();
 
             AffiliateOfferApplication::factory()
@@ -286,7 +279,7 @@ describe('OfferManagementService', function (): void {
         });
 
         test('returns false when no application', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
             $affiliate = createTestAffiliate();
 
             $result = $this->service->isApprovedForOffer($offer, $affiliate);
@@ -299,9 +292,9 @@ describe('OfferManagementService', function (): void {
         test('returns only active approved offers', function (): void {
             $affiliate = createTestAffiliate();
 
-            $activeOffer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
-            $pausedOffer = AffiliateOffer::factory()->paused()->forSite($this->site)->create();
-            $notApplied = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+            $activeOffer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
+            $pausedOffer = AffiliateOffer::factory()->archived()->forSite($this->site)->create();
+            $notApplied = AffiliateOffer::factory()->published()->forSite($this->site)->create();
 
             AffiliateOfferApplication::factory()
                 ->forOffer($activeOffer)
@@ -324,8 +317,8 @@ describe('OfferManagementService', function (): void {
 
     describe('resolvePublicOfferOrFail', function (): void {
         test('returns active public offer', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
-                'is_public' => true,
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+                'visibility' => OfferVisibility::Public,
             ]);
 
             $resolved = $this->service->resolvePublicOfferOrFail($offer->id);
@@ -334,8 +327,8 @@ describe('OfferManagementService', function (): void {
         });
 
         test('fails for non public offer', function (): void {
-            $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
-                'is_public' => false,
+            $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+                'visibility' => OfferVisibility::Private,
             ]);
 
             $this->service->resolvePublicOfferOrFail($offer->id);
@@ -343,8 +336,8 @@ describe('OfferManagementService', function (): void {
 
         test('fails for non active offer', function (): void {
             $offer = AffiliateOffer::factory()->forSite($this->site)->create([
-                'status' => AffiliateOffer::STATUS_DRAFT,
-                'is_public' => true,
+                'status' => OfferStatus::Draft,
+                'visibility' => OfferVisibility::Public,
             ]);
 
             $this->service->resolvePublicOfferOrFail($offer->id);

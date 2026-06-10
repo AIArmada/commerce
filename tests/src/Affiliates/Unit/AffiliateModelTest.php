@@ -23,7 +23,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Event;
 
 describe('Affiliate Model - Owner Scopes', function (): void {
@@ -546,7 +547,7 @@ describe('Affiliate Model - Casts', function (): void {
             'activated_at' => now(),
         ]);
 
-        expect($affiliate->activated_at)->toBeInstanceOf(Carbon::class);
+        expect($affiliate->activated_at)->toBeInstanceOf(CarbonInterface::class);
     });
 });
 

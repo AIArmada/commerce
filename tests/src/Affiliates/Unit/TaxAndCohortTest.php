@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
@@ -82,7 +83,7 @@ test('TaxDocumentService markDocumentAsSent updates status', function (): void {
 
     $updated = $service->markDocumentAsSent($document);
 
-    expect($updated->status)->toBe('sent');
+    expect($updated->status)->toBe(TaxDocumentStatus::Sent);
     expect($updated->sent_at)->not->toBeNull();
 });
 

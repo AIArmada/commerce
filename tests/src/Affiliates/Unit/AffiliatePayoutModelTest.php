@@ -13,7 +13,8 @@ use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 
 describe('AffiliatePayout Model', function (): void {
     beforeEach(function (): void {
@@ -204,7 +205,7 @@ describe('AffiliatePayout Model', function (): void {
             'scheduled_at' => $scheduledAt,
         ]);
 
-        expect($payout->scheduled_at)->toBeInstanceOf(Carbon::class);
+        expect($payout->scheduled_at)->toBeInstanceOf(CarbonInterface::class);
     });
 
     it('casts paid_at as datetime', function (): void {
@@ -220,7 +221,7 @@ describe('AffiliatePayout Model', function (): void {
             'paid_at' => $paidAt,
         ]);
 
-        expect($payout->paid_at)->toBeInstanceOf(Carbon::class);
+        expect($payout->paid_at)->toBeInstanceOf(CarbonInterface::class);
     });
 
     it('cascade deletes events on delete', function (): void {

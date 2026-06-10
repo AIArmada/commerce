@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -85,6 +86,6 @@ test('AffiliateAttribution refreshLastSeen updates last_seen_at', function (): v
 
     $attribution->refresh();
 
-    expect($attribution->last_seen_at)->toBeInstanceOf(Carbon::class);
+    expect($attribution->last_seen_at)->toBeInstanceOf(CarbonImmutable::class);
     expect($attribution->last_seen_at->isToday())->toBeTrue();
 });
