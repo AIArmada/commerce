@@ -49,7 +49,6 @@ describe('JntOrder model', function (): void {
         $casts = $order->getCasts();
 
         expect($casts['package_quantity'])->toBe('integer');
-        expect($casts['has_problem'])->toBe('boolean');
         expect($casts['pickup_start_at'])->toBe('datetime');
         expect($casts['sender'])->toBe('array');
         expect($casts['receiver'])->toBe('array');
@@ -67,10 +66,10 @@ describe('JntOrder model', function (): void {
 
     it('checks if order has problem', function (): void {
         $order = new JntOrder;
-        $order->has_problem = false;
+        $order->problem_at = null;
         expect($order->hasProblem())->toBeFalse();
 
-        $order->has_problem = true;
+        $order->problem_at = now();
         expect($order->hasProblem())->toBeTrue();
     });
 

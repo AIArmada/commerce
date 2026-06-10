@@ -17,6 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
@@ -48,9 +49,11 @@ final class SegmentsTable
                     ->label('Auto')
                     ->boolean(),
 
-                IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean(),
+                TextColumn::make('deactivated_at')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state === null ? 'Active' : 'Deactivated')
+                    ->color(fn ($state) => $state === null ? 'success' : 'danger'),
 
                 TextColumn::make('priority')
                     ->label('Priority')
@@ -76,8 +79,14 @@ final class SegmentsTable
                     ->trueLabel('Automatic')
                     ->falseLabel('Manual'),
 
-                TernaryFilter::make('is_active')
-                    ->label('Active'),
+                TernaryFilter::make('deactivated_at')
+                    ->label('Status')
+                    ->trueLabel('Active')
+                    ->falseLabel('Deactivated')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNull('deactivated_at'),
+                        false: fn (Builder $query) => $query->whereNotNull('deactivated_at'),
+                    ),
             ])
             ->actions([
                 ViewAction::make(),

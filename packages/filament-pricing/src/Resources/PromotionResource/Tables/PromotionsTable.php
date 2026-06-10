@@ -8,11 +8,11 @@ use AIArmada\FilamentPricing\Resources\PromotionResource;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
 use Filament\Actions;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 final class PromotionsTable
 {
@@ -46,9 +46,11 @@ final class PromotionsTable
                         : $state
                     ),
 
-                IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean(),
+                TextColumn::make('deactivated_at')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state === null ? 'Active' : 'Deactivated')
+                    ->color(fn ($state) => $state === null ? 'success' : 'danger'),
 
                 TextColumn::make('starts_at')
                     ->label('Starts')
@@ -68,8 +70,14 @@ final class PromotionsTable
                             ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
                     ),
 
-                TernaryFilter::make('is_active')
-                    ->label('Active'),
+                TernaryFilter::make('deactivated_at')
+                    ->label('Status')
+                    ->trueLabel('Active')
+                    ->falseLabel('Deactivated')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNull('deactivated_at'),
+                        false: fn (Builder $query) => $query->whereNotNull('deactivated_at'),
+                    ),
             ])
             ->actions([
                 Actions\ViewAction::make(),

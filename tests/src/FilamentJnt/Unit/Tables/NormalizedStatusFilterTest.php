@@ -17,7 +17,7 @@ it('ignores invalid normalized_status values for the orders table filter', funct
         'customer_code' => 'CUST',
         'tracking_number' => null,
         'delivered_at' => null,
-        'has_problem' => false,
+        'problem_at' => null,
     ]);
 
     JntOrder::query()->create([
@@ -25,7 +25,7 @@ it('ignores invalid normalized_status values for the orders table filter', funct
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-FILTER-2',
         'delivered_at' => now(),
-        'has_problem' => false,
+        'problem_at' => null,
     ]);
 
     $query = JntOrderTable::applyNormalizedStatusFilter(JntOrder::query(), 'not-a-real-status');
