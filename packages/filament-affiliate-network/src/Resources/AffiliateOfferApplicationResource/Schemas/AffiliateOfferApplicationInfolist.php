@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferApplicationResource\Schemas;
 
 use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
-use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;

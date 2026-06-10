@@ -6,7 +6,6 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Sch
 
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
-use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Support\AffiliateNetworkOptionsProvider;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;

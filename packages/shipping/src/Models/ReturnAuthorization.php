@@ -10,8 +10,10 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\States\ReturnAuthorizationState\ReturnAuthorizationStatus;
+use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCancelled;
+use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCompleted;
+use AIArmada\Shipping\States\ReturnAuthorizationState\RmaReceived;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -150,17 +152,17 @@ class ReturnAuthorization extends Model implements Auditable
 
     public function isReceived(): bool
     {
-        return $this->status instanceof \AIArmada\Shipping\States\ReturnAuthorizationState\RmaReceived;
+        return $this->status instanceof RmaReceived;
     }
 
     public function isCompleted(): bool
     {
-        return $this->status instanceof \AIArmada\Shipping\States\ReturnAuthorizationState\RmaCompleted;
+        return $this->status instanceof RmaCompleted;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status instanceof \AIArmada\Shipping\States\ReturnAuthorizationState\RmaCancelled;
+        return $this->status instanceof RmaCancelled;
     }
 
     public function isExpired(): bool

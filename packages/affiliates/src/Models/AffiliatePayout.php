@@ -88,10 +88,10 @@ class AffiliatePayout extends Model implements Auditable
     protected $casts = [
         'status' => PayoutStatus::class,
         'metadata' => 'array',
-            'scheduled_at' => 'immutable_datetime',
-            'paid_at' => 'immutable_datetime',
-            'failed_at' => 'immutable_datetime',
-            'cancelled_at' => 'immutable_datetime',
+        'scheduled_at' => 'immutable_datetime',
+        'paid_at' => 'immutable_datetime',
+        'failed_at' => 'immutable_datetime',
+        'cancelled_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string

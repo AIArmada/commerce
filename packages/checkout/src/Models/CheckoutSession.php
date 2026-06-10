@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Models;
 
 use AIArmada\Checkout\Enums\StepStatus;
-use AIArmada\Checkout\States\CheckoutState;
 use AIArmada\Checkout\States\Cancelled;
+use AIArmada\Checkout\States\CheckoutState;
 use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -222,6 +222,7 @@ class CheckoutSession extends Model
         foreach ($timestampMap as $class => $column) {
             if (is_a($stateClass, $class, true)) {
                 $updates[$column] = CarbonImmutable::now();
+
                 break;
             }
         }
@@ -238,7 +239,7 @@ class CheckoutSession extends Model
 
         $this->forceFill(['status' => $stateClass]);
 
-        foreach ($timestampMap as $class => $column) {
+        foreach ($timestampMap as $column) {
             if (array_key_exists($column, $updates)) {
                 $this->{$column} = $updates[$column];
             }
