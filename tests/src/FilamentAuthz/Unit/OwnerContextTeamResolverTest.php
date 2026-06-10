@@ -34,13 +34,7 @@ describe('OwnerContextTeamResolver', function (): void {
         $resolver = new OwnerContextTeamResolver;
         $previousRequest = app()->bound('request') ? app('request') : null;
 
-        $request = new class extends Request
-        {
-            public function setUserResolver(callable $resolver): void {}
-        };
-        $request->setMethod('GET');
-        $request->server->set('REQUEST_URI', '/');
-        $request->server->set('SERVER_PROTOCOL', 'HTTP/1.1');
+        $request = Request::create('/');
 
         app()->instance('request', $request);
 
