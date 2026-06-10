@@ -82,7 +82,7 @@ it('adds reusable public event domain columns and people links', function (): vo
         ->and(Schema::hasColumn('event_speakers', 'person_id'))->toBeTrue()
         ->and(Schema::hasColumn('event_speakers', 'role_key'))->toBeTrue()
         ->and(Schema::hasColumn('event_speakers', 'role_label'))->toBeTrue()
-        ->and(Schema::hasColumn('event_speakers', 'is_public'))->toBeTrue()
+        ->and(Schema::hasColumn('event_speakers', 'visibility'))->toBeTrue()
         ->and(Schema::hasColumn('event_speakers', 'speaker_type'))->toBeFalse()
         ->and(Schema::hasColumn('event_speakers', 'speaker_id'))->toBeFalse()
         ->and((new EventPerson)->getTable())->toBe('event_speakers');
@@ -108,7 +108,7 @@ it('supports parent child hierarchies and generic people assignments', function 
                     'display_name' => 'Host Speaker',
                     'role_key' => 'host',
                     'role_label' => 'Host',
-                    'is_public' => true,
+                    'visibility' => 'public',
                 ],
             ],
         ],
@@ -141,7 +141,7 @@ it('supports parent child hierarchies and generic people assignments', function 
             ->and($childEvent->people)->toHaveCount(1)
             ->and($childEvent->people->first()?->role_key)->toBe('host')
             ->and($childEvent->people->first()?->role_label)->toBe('Host')
-            ->and($childEvent->people->first()?->is_public)->toBeTrue()
+            ->and($childEvent->people->first()?->visibility)->toBe(EventVisibility::Public)
             ->and($childEvent->people->first()?->person)->toBeNull()
             ->and($standalone->isStandalone())->toBeTrue()
             ->and(EventModel::query()->rootEvents()->orderBy('slug')->pluck('slug')->all())->toBe([
@@ -424,7 +424,7 @@ it('exposes configurable search payload and timezone display contracts', functio
         'display_name' => 'Search Speaker',
         'role_key' => 'speaker',
         'role_label' => 'Speaker',
-        'is_public' => true,
+        'visibility' => EventVisibility::Public,
         'order_column' => 1,
     ]);
 
@@ -705,7 +705,7 @@ it('returns stable query and read models from the canonical discovery service', 
         'display_name' => 'Discovery Speaker',
         'role_key' => 'speaker',
         'role_label' => 'Speaker',
-        'is_public' => true,
+        'visibility' => EventVisibility::Public,
         'order_column' => 1,
     ]);
 
@@ -883,7 +883,7 @@ it('releases change notices through lifecycle events and blocks replacement cycl
     $notice->save();
 
     EventFacade::assertDispatched(EventChangeNoticeRetracted::class, static function (EventChangeNoticeRetracted $event): bool {
-        return $event->notice->state === 'retracted';
+        return $event->notice->status === 'retracted';
     });
 
     EventChangeNotice::query()->create([

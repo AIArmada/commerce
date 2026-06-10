@@ -539,12 +539,14 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
 
     public function startsAtForDisplay(?Model $viewer = null): Carbon
     {
-        return $this->starts_at->copy()->setTimezone($this->displayTimezone($viewer));
+        return Carbon::instance($this->starts_at)->setTimezone($this->displayTimezone($viewer));
     }
 
     public function endsAtForDisplay(?Model $viewer = null): ?Carbon
     {
-        return $this->ends_at?->copy()->setTimezone($this->displayTimezone($viewer));
+        return $this->ends_at !== null
+            ? Carbon::instance($this->ends_at)->setTimezone($this->displayTimezone($viewer))
+            : null;
     }
 
     private function resolvedParticipationMode(): OccurrenceParticipationMode

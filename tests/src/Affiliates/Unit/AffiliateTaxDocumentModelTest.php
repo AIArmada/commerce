@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\States\Active;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 describe('AffiliateTaxDocument Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -32,7 +33,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         expect($doc)->toBeInstanceOf(AffiliateTaxDocument::class)
             ->and($doc->document_type)->toBe('1099')
             ->and($doc->tax_year)->toBe(2024)
-            ->and($doc->status)->toBe('pending')
+            ->and($doc->status)->toBe(TaxDocumentStatus::Pending)
             ->and($doc->total_amount_minor)->toBe(500000);
     });
 
@@ -102,7 +103,7 @@ describe('AffiliateTaxDocument Model', function (): void {
             'generated_at' => '2025-01-15 10:30:00',
         ]);
 
-        expect($doc->generated_at)->toBeInstanceOf(Carbon::class)
+        expect($doc->generated_at)->toBeInstanceOf(CarbonImmutable::class)
             ->and($doc->generated_at->format('Y-m-d'))->toBe('2025-01-15');
     });
 
@@ -127,7 +128,7 @@ describe('AffiliateTaxDocument Model', function (): void {
             'sent_at' => '2025-01-16 09:00:00',
         ]);
 
-        expect($doc->sent_at)->toBeInstanceOf(Carbon::class)
+        expect($doc->sent_at)->toBeInstanceOf(CarbonImmutable::class)
             ->and($doc->sent_at->format('Y-m-d'))->toBe('2025-01-16');
     });
 
@@ -191,8 +192,8 @@ describe('AffiliateTaxDocument Model', function (): void {
             'currency' => 'USD',
         ]);
 
-        expect($pendingDoc->status)->toBe('pending')
-            ->and($sentDoc->status)->toBe('sent');
+        expect($pendingDoc->status)->toBe(TaxDocumentStatus::Pending)
+            ->and($sentDoc->status)->toBe(TaxDocumentStatus::Sent);
     });
 
     it('casts numeric fields as integers', function (): void {

@@ -11,7 +11,7 @@ use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('AffiliateFraudSignal Model', function (): void {
     beforeEach(function (): void {
@@ -332,7 +332,7 @@ describe('AffiliateFraudSignal Model', function (): void {
             'detected_at' => '2024-06-15 10:30:00',
         ]);
 
-        expect($signal->detected_at)->toBeInstanceOf(Carbon::class);
+        expect($signal->detected_at)->toBeInstanceOf(CarbonImmutable::class);
         expect($signal->detected_at->format('Y-m-d'))->toBe('2024-06-15');
     });
 
