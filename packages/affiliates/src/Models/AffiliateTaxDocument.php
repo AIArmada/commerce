@@ -19,7 +19,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $affiliate_id
  * @property string $document_type
  * @property int $tax_year
- * @property string $status
+ * @property TaxDocumentStatus $status
  * @property int $total_amount_minor
  * @property string $currency
  * @property string|null $document_path
