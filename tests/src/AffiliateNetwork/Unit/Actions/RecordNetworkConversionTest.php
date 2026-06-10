@@ -14,7 +14,7 @@ describe('RecordNetworkConversion', function (): void {
     beforeEach(function (): void {
         $this->action = app(RecordNetworkConversion::class);
         $this->site = AffiliateSite::factory()->verified()->create();
-        $this->offer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+        $this->offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
         $this->affiliate = Affiliate::create([
             'code' => 'AFF' . uniqid(),
             'name' => 'Test Affiliate',

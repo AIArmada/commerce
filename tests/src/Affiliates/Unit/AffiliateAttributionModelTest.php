@@ -11,6 +11,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\PendingConversion;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 
 describe('AffiliateAttribution Model', function (): void {
@@ -174,10 +175,10 @@ describe('AffiliateAttribution Model', function (): void {
             'expires_at' => $now->copy()->addDays(30),
         ]);
 
-        expect($attribution->first_seen_at)->toBeInstanceOf(Carbon::class)
-            ->and($attribution->last_seen_at)->toBeInstanceOf(Carbon::class)
-            ->and($attribution->last_cookie_seen_at)->toBeInstanceOf(Carbon::class)
-            ->and($attribution->expires_at)->toBeInstanceOf(Carbon::class);
+        expect($attribution->first_seen_at)->toBeInstanceOf(CarbonImmutable::class)
+            ->and($attribution->last_seen_at)->toBeInstanceOf(CarbonImmutable::class)
+            ->and($attribution->last_cookie_seen_at)->toBeInstanceOf(CarbonImmutable::class)
+            ->and($attribution->expires_at)->toBeInstanceOf(CarbonImmutable::class);
     });
 
     it('scopes active attributions without expiration', function (): void {

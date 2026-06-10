@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 
 describe('AffiliateCommissionPromotion Model', function (): void {
@@ -308,8 +309,8 @@ describe('AffiliateCommissionPromotion Model', function (): void {
             'ends_at' => '2024-12-31 23:59:59',
         ]);
 
-        expect($promotion->starts_at)->toBeInstanceOf(Carbon::class);
-        expect($promotion->ends_at)->toBeInstanceOf(Carbon::class);
+        expect($promotion->starts_at)->toBeInstanceOf(CarbonImmutable::class);
+        expect($promotion->ends_at)->toBeInstanceOf(CarbonImmutable::class);
         expect($promotion->starts_at->format('Y-m-d'))->toBe('2024-12-01');
         expect($promotion->ends_at->format('Y-m-d'))->toBe('2024-12-31');
     });

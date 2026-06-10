@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\States\Active;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 
 test('AffiliateAttributionData constructor sets properties', function (): void {
     $expiresAt = Carbon::tomorrow();
@@ -97,7 +98,7 @@ test('AffiliateAttributionData fromModel creates data from attribution', functio
     expect($data->source)->toBe('google');
     expect($data->medium)->toBe('cpc');
     expect($data->campaign)->toBe('summer');
-    expect($data->expiresAt)->toBeInstanceOf(Carbon::class);
+    expect($data->expiresAt)->toBeInstanceOf(CarbonInterface::class);
     expect($data->ownerType)->toBe('users');
     expect($data->ownerId)->toBe('owner-1');
     expect($data->metadata)->toBe(['key' => 'value']);

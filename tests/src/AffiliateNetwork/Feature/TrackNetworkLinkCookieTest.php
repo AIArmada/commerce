@@ -16,7 +16,7 @@ describe('TrackNetworkLinkCookie middleware', function (): void {
             'domain' => 'cookie.example',
         ]);
 
-        $this->offer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+        $this->offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
 
         $this->affiliate = Affiliate::create([
             'code' => 'AFF' . uniqid(),

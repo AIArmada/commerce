@@ -207,15 +207,14 @@ describe('AffiliateLink Model', function (): void {
             ->and(data_get($link->subject_metadata, 'subject_id'))->toBe('sku-123');
     });
 
-    it('casts is_active as boolean', function (): void {
+    it('has isEnabled true by default when deactivated_at is null', function (): void {
         $link = AffiliateLink::create([
             'affiliate_id' => $this->affiliate->id,
             'destination_url' => 'https://example.com/product',
             'tracking_url' => 'https://track.example.com/go/' . $this->affiliate->code,
-            'is_active' => true,
         ]);
 
-        expect($link->is_active)->toBeBool()->toBeTrue();
+        expect($link->isEnabled())->toBeTrue();
     });
 
     it('casts clicks and conversions as integers', function (): void {

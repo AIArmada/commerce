@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 
 describe('AffiliateProgramMembership Model', function (): void {
@@ -280,9 +281,9 @@ describe('AffiliateProgramMembership Model', function (): void {
             'expires_at' => '2025-06-01 23:59:59',
         ]);
 
-        expect($membership->applied_at)->toBeInstanceOf(Carbon::class);
-        expect($membership->approved_at)->toBeInstanceOf(Carbon::class);
-        expect($membership->expires_at)->toBeInstanceOf(Carbon::class);
+        expect($membership->applied_at)->toBeInstanceOf(CarbonImmutable::class);
+        expect($membership->approved_at)->toBeInstanceOf(CarbonImmutable::class);
+        expect($membership->expires_at)->toBeInstanceOf(CarbonImmutable::class);
     });
 
     test('uses correct table name from config', function (): void {

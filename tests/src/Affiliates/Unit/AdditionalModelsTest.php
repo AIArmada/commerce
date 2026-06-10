@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateLink;
@@ -391,7 +392,7 @@ test('AffiliateProgram isActive returns false when ends_at is in past', function
 test('AffiliateProgram isOpen returns true when active and public', function (): void {
     $program = new AffiliateProgram([
         'status' => ProgramStatus::Active,
-        'is_public' => true,
+        'visibility' => ProgramVisibility::Public,
     ]);
 
     expect($program->isOpen())->toBeTrue();
@@ -400,7 +401,7 @@ test('AffiliateProgram isOpen returns true when active and public', function ():
 test('AffiliateProgram isOpen returns false when not public', function (): void {
     $program = new AffiliateProgram([
         'status' => ProgramStatus::Active,
-        'is_public' => false,
+        'visibility' => ProgramVisibility::Private,
     ]);
 
     expect($program->isOpen())->toBeFalse();
@@ -448,7 +449,7 @@ test('AffiliateProgram scopePublic filters correctly', function (): void {
         'name' => 'Public Program',
         'slug' => 'public-program',
         'status' => ProgramStatus::Active,
-        'is_public' => true,
+        'visibility' => ProgramVisibility::Public,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
         'cookie_lifetime_days' => 30,
@@ -458,7 +459,7 @@ test('AffiliateProgram scopePublic filters correctly', function (): void {
         'name' => 'Private Program',
         'slug' => 'private-program',
         'status' => ProgramStatus::Active,
-        'is_public' => false,
+        'visibility' => ProgramVisibility::Private,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
         'cookie_lifetime_days' => 30,

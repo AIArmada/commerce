@@ -17,7 +17,7 @@ describe('OfferLinkService', function (): void {
         $this->site = AffiliateSite::factory()->verified()->create([
             'domain' => 'example.com',
         ]);
-        $this->offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
+        $this->offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
             'landing_url' => 'https://example.com/landing',
         ]);
         $this->affiliate = Affiliate::create([
@@ -241,7 +241,7 @@ describe('OfferLinkService', function (): void {
                 'domain' => 'owned-link.example',
             ]));
 
-            $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->active()->forSite($site)->create([
+            $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->published()->forSite($site)->create([
                 'landing_url' => 'https://owned-link.example/offers/tenant',
             ]));
 

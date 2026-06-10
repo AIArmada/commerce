@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Actions\ApproveApplication;
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Events\ApplicationApproved;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -20,7 +21,7 @@ describe('ApproveApplication', function (): void {
 
         $approved = $this->action->execute($application, 'admin@example.com');
 
-        expect($approved->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+        expect($approved->status)->toBe(ApplicationStatus::Approved);
         expect($approved->reviewed_by)->toBe('admin@example.com');
         expect($approved->reviewed_at)->not->toBeNull();
 
@@ -42,7 +43,7 @@ describe('ApproveApplication', function (): void {
 
         $approved = $this->action->execute($application);
 
-        expect($approved->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+        expect($approved->status)->toBe(ApplicationStatus::Approved);
         expect($approved->reviewed_by)->toBeNull();
     });
 

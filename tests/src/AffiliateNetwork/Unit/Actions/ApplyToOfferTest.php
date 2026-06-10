@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Actions\ApplyToOffer;
 use AIArmada\AffiliateNetwork\Events\ApplicationSubmitted;
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
@@ -13,7 +14,7 @@ describe('ApplyToOffer', function (): void {
     beforeEach(function (): void {
         $this->action = app(ApplyToOffer::class);
         $this->site = AffiliateSite::factory()->verified()->create();
-        $this->offer = AffiliateOffer::factory()->active()->forSite($this->site)->create();
+        $this->offer = AffiliateOffer::factory()->published()->forSite($this->site)->create();
         $this->affiliate = createTestAffiliate();
     });
 
@@ -27,7 +28,7 @@ describe('ApplyToOffer', function (): void {
         expect($application)->toBeInstanceOf(AffiliateOfferApplication::class);
         expect($application->offer_id)->toBe($this->offer->id);
         expect($application->affiliate_id)->toBe($this->affiliate->id);
-        expect($application->status)->toBe(AffiliateOfferApplication::STATUS_PENDING);
+        expect($application->status)->toBe(ApplicationStatus::Pending);
 
         Event::assertDispatched(ApplicationSubmitted::class);
     });
@@ -37,7 +38,7 @@ describe('ApplyToOffer', function (): void {
 
         $application = $this->action->execute($this->offer, $this->affiliate);
 
-        expect($application->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+        expect($application->status)->toBe(ApplicationStatus::Approved);
         expect($application->reviewed_at)->not->toBeNull();
     });
 
@@ -46,7 +47,7 @@ describe('ApplyToOffer', function (): void {
 
         $application = $this->action->execute($this->offer, $this->affiliate);
 
-        expect($application->status)->toBe(AffiliateOfferApplication::STATUS_APPROVED);
+        expect($application->status)->toBe(ApplicationStatus::Approved);
     });
 
     test('includes reason in application', function (): void {
@@ -93,7 +94,7 @@ describe('ApplyToOffer', function (): void {
         $application = $this->action->execute($this->offer, $this->affiliate);
 
         expect($application->id)->toBe($existing->id);
-        expect($application->status)->toBe(AffiliateOfferApplication::STATUS_PENDING);
+        expect($application->status)->toBe(ApplicationStatus::Pending);
         expect($application->rejection_reason)->toBeNull();
     });
 

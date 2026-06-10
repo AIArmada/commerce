@@ -14,7 +14,7 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.programs', 'affiliate_programs');
 
-        Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+        Schema::table($tableName, function (Blueprint $table): void {
             $table->string('visibility', 32)->default('private')->after('status');
             $table->timestampTz('paused_at')->nullable()->after('ends_at');
             $table->timestampTz('archived_at')->nullable()->after('paused_at');
