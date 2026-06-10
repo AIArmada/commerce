@@ -7,8 +7,6 @@ namespace Tests\src\Events;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
-use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
-use AIArmada\Commerce\Tests\TestCase;
 
 beforeEach(function (): void {
     config(['events.features.owner.enabled' => true]);
