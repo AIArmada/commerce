@@ -205,7 +205,7 @@ describe('ReturnAuthorization Model', function (): void {
         ReturnAuthorization::create([
             'owner_type' => 'TestOwner',
             'owner_id' => 'test-owner-123',
-            'status' => 'pending',
+            'status' => RmaPending::class,
             'type' => 'refund',
             'reason' => 'defective',
         ]);
@@ -213,27 +213,26 @@ describe('ReturnAuthorization Model', function (): void {
         ReturnAuthorization::create([
             'owner_type' => 'TestOwner',
             'owner_id' => 'test-owner-123',
-            'status' => 'approved',
+            'status' => RmaApproved::class,
             'type' => 'refund',
-            'reason' => 'defective',
+            'reason' => 'exchange',
         ]);
 
         ReturnAuthorization::create([
             'owner_type' => 'TestOwner',
             'owner_id' => 'test-owner-123',
-            'status' => 'completed',
             'type' => 'refund',
-            'reason' => 'defective',
+            'reason' => 'damaged',
         ]);
 
-        $pending = ReturnAuthorization::pending()->get();
-        $approved = ReturnAuthorization::approved()->get();
+        $pendingResults = ReturnAuthorization::pending()->get();
+        $approvedResults = ReturnAuthorization::approved()->get();
 
-        expect($pending)->toHaveCount(1);
-        expect($pending->first()->status)->toBeInstanceOf(RmaPending::class);
+        expect($pendingResults)->toHaveCount(1);
+        expect($pendingResults->first()->status)->toBeInstanceOf(RmaPending::class);
 
-        expect($approved)->toHaveCount(1);
-        expect($approved->first()->status)->toBeInstanceOf(RmaApproved::class);
+        expect($approvedResults)->toHaveCount(1);
+        expect($approvedResults->first()->status)->toBeInstanceOf(RmaApproved::class);
     });
 
     it('cascades delete to items', function (): void {

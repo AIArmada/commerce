@@ -195,8 +195,8 @@ it('covers the filament-cashier public surface', function (): void {
     if (! SchemaFacade::hasTable('cashier_chip_subscriptions')) {
         SchemaFacade::create('cashier_chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('user_id');
             $table->nullableMorphs('owner');
+            $table->uuidMorphs('billable');
             $table->string('type');
             $table->string('chip_id')->unique();
             $table->string('chip_status');
@@ -249,7 +249,8 @@ it('covers the filament-cashier public surface', function (): void {
     $chipSubscriptionId = (string) Str::uuid();
     Subscription::query()->create([
         'id' => $chipSubscriptionId,
-        'user_id' => $dbUser->getKey(),
+        'billable_type' => $dbUser->getMorphClass(),
+        'billable_id' => $dbUser->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $chipSubscriptionId,
         'chip_status' => Subscription::STATUS_ACTIVE,

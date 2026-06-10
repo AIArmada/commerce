@@ -92,9 +92,7 @@ class ReturnAuthorization extends Model implements Auditable
     /**
      * @var array<string, mixed>
      */
-    protected $attributes = [
-        'status' => 'draft',
-    ];
+    protected $attributes = [];
 
     public static function generateRmaNumber(): string
     {

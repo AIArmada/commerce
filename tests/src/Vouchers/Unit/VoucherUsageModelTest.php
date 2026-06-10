@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -100,7 +101,7 @@ describe('VoucherUsage Model', function (): void {
             ->and($usage->metadata)->toBeArray()
             ->and($usage->metadata)->toHaveKey('order_id')
             ->and($usage->target_definition)->toBeArray()
-            ->and($usage->used_at)->toBeInstanceOf(Carbon::class);
+            ->and($usage->used_at)->toBeInstanceOf(CarbonImmutable::class);
     });
 
     it('stores notes correctly', function (): void {

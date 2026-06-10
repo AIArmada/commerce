@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Tax\Enums\ExemptionStatus;
 use AIArmada\Tax\Enums\ZoneType;
 use AIArmada\Tax\Models\TaxClass;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
 use Illuminate\Support\Carbon;
 
 describe('TaxZone Model', function (): void {
@@ -241,12 +241,12 @@ describe('TaxExemption Model', function (): void {
                 'exemptable_id' => 'customer-uuid-' . uniqid(),
                 'certificate_number' => 'TAX-EXEMPT-001',
                 'reason' => 'Non-profit organization',
-                'status' => ExemptionStatus::Approved,
+                'status' => ApprovedState::class,
             ]);
 
             expect($exemption)->toBeInstanceOf(TaxExemption::class)
                 ->and($exemption->certificate_number)->toBe('TAX-EXEMPT-001')
-                ->and($exemption->status)->toBe(ExemptionStatus::Approved);
+                ->and($exemption->status)->toBeInstanceOf(ApprovedState::class);
         });
 
         it('can set exemption expiration', function (): void {
@@ -255,7 +255,7 @@ describe('TaxExemption Model', function (): void {
                 'exemptable_id' => 'cust-' . uniqid(),
                 'certificate_number' => 'CERT-001',
                 'reason' => 'Tax exempt organization',
-                'status' => ExemptionStatus::Approved,
+                'status' => ApprovedState::class,
                 'expires_at' => Carbon::now()->addYear(),
             ]);
 

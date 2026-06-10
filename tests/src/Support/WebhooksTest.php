@@ -23,7 +23,9 @@ beforeEach(function (): void {
         $table->json('headers')->nullable();
         $table->json('payload')->nullable();
         $table->text('exception')->nullable();
+        $table->string('status', 50)->default('pending');
         $table->timestamp('processed_at')->nullable();
+        $table->timestampTz('failed_at')->nullable();
         $table->timestamps();
     });
 });
