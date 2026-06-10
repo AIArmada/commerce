@@ -11,7 +11,6 @@ use AIArmada\Inventory\States\Available;
 use AIArmada\Inventory\States\Reserved;
 use AIArmada\Inventory\States\SerialStatus;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Serialized Product']);
