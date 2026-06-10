@@ -14,7 +14,6 @@ use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Carbon;
 
 describe('AffiliateConversion Model', function (): void {
     beforeEach(function (): void {

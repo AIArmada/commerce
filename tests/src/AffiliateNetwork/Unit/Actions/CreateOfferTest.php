@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Actions\CreateOffer;
-use AIArmada\AffiliateNetwork\Events\OfferCreated;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Events\OfferCreated;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use Illuminate\Support\Facades\Event;
