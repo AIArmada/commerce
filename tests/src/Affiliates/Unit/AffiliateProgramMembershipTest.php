@@ -11,7 +11,6 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Carbon;
 
 describe('AffiliateProgramMembership Model', function (): void {
     beforeEach(function (): void {

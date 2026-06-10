@@ -30,5 +30,3 @@ it('affiliate-network core models are auditable and activity loggable', function
             ->and(in_array(Auditable::class, class_implements($model), true))->toBeTrue();
     }
 });
-
-
