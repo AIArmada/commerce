@@ -35,7 +35,11 @@ final class DocStatusHistory extends Model implements Auditable
     use HasUuids;
     use LogsCommerceActivity;
 
+    public const UPDATED_AT = null;
+
     protected static string $ownerScopeConfigKey = 'docs.owner';
+
+    public $timestamps = false;
 
     protected $fillable = [
         'doc_id',

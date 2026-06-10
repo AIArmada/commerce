@@ -211,6 +211,13 @@ it('normalizes action-written occurrence timestamps to UTC while preserving the 
 });
 
 it('no-ops order fulfillment when no event checkout metadata is present', function (): void {
+    $tableName = (new OrderItem)->getTable();
+    if (! Schema::hasColumn($tableName, 'status')) {
+        Schema::table($tableName, function (Illuminate\Database\Schema\Blueprint $table): void {
+            $table->string('status', 30)->default('active');
+        });
+    }
+
     $order = Order::query()->create([
         'order_number' => 'ORD-EVT-' . uniqid(),
         'status' => Created::class,

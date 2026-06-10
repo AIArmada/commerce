@@ -807,12 +807,17 @@ abstract class TestCase extends Orchestra
             $table->integer('position')->default(0);
             $table->boolean('is_visible')->default(true);
             $table->boolean('is_featured')->default(false);
+            $table->string('status')->default('active');
+            $table->string('visibility')->default('catalog');
+            $table->timestampTz('hidden_at')->nullable();
+            $table->timestampTz('archived_at')->nullable();
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
             $table->json('metadata')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->timestamps();
             $table->softDeletes();
+            $table->index(['is_visible', 'position']);
         });
 
         Schema::create('product_collections', function (Blueprint $table): void {
@@ -1188,6 +1193,11 @@ abstract class TestCase extends Orchestra
             $table->integer('tax_amount')->default(0);
             $table->integer('total')->default(0);
             $table->string('currency')->default('MYR');
+            $table->string('status', 30)->default('active')->index();
+            $table->timestampTz('shipped_at')->nullable();
+            $table->timestampTz('delivered_at')->nullable();
+            $table->timestampTz('returned_at')->nullable();
+            $table->timestampTz('canceled_at')->nullable();
             $table->json('options')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();

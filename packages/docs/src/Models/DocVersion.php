@@ -38,6 +38,8 @@ final class DocVersion extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'docs.owner';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'doc_id',
         'version_number',

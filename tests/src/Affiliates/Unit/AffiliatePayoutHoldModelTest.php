@@ -7,7 +7,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('AffiliatePayoutHold Model', function (): void {
     it('can be created with required fields', function (): void {
@@ -168,7 +168,7 @@ describe('AffiliatePayoutHold Model', function (): void {
             'expires_at' => '2024-12-31 23:59:59',
         ]);
 
-        expect($hold->expires_at)->toBeInstanceOf(Carbon::class)
+        expect($hold->expires_at)->toBeInstanceOf(CarbonImmutable::class)
             ->and($hold->expires_at->format('Y-m-d'))->toBe('2024-12-31');
     });
 

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
@@ -37,8 +39,8 @@ describe('AffiliateMarketplacePage', function (): void {
     });
 
     test('applying for offer requiring approval creates an application', function (): void {
-        $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
-            'is_public' => true,
+        $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+            'visibility' => OfferVisibility::Public,
             'requires_approval' => true,
         ]);
 
@@ -58,8 +60,8 @@ describe('AffiliateMarketplacePage', function (): void {
     });
 
     test('applying for offer without approval requirement generates a link instead of an application', function (): void {
-        $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
-            'is_public' => true,
+        $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+            'visibility' => OfferVisibility::Public,
             'requires_approval' => false,
             'landing_url' => 'https://marketplace.example/offers/direct',
         ]);
@@ -80,8 +82,8 @@ describe('AffiliateMarketplacePage', function (): void {
     });
 
     test('disabled affiliates cannot apply for offers', function (): void {
-        $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
-            'is_public' => true,
+        $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+            'visibility' => OfferVisibility::Public,
             'requires_approval' => true,
         ]);
 
@@ -105,8 +107,8 @@ describe('AffiliateMarketplacePage', function (): void {
     });
 
     test('unapproved affiliate cannot call generateLink directly for offer requiring approval', function (): void {
-        $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
-            'is_public' => true,
+        $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+            'visibility' => OfferVisibility::Public,
             'requires_approval' => true,
         ]);
 
@@ -121,8 +123,8 @@ describe('AffiliateMarketplacePage', function (): void {
     });
 
     test('approved affiliate can call generateLink for offer requiring approval', function (): void {
-        $offer = AffiliateOffer::factory()->active()->forSite($this->site)->create([
-            'is_public' => true,
+        $offer = AffiliateOffer::factory()->published()->forSite($this->site)->create([
+            'visibility' => OfferVisibility::Public,
             'requires_approval' => true,
             'landing_url' => 'https://marketplace.example/approved',
         ]);
@@ -130,7 +132,7 @@ describe('AffiliateMarketplacePage', function (): void {
         AffiliateOfferApplication::create([
             'offer_id' => $offer->id,
             'affiliate_id' => $this->affiliate->id,
-            'status' => AffiliateOfferApplication::STATUS_APPROVED,
+            'status' => ApplicationStatus::Approved,
         ]);
 
         $this->actingAs($this->user);
@@ -160,8 +162,8 @@ describe('AffiliateMarketplacePage', function (): void {
             'domain' => 'tenant-marketplace.example',
         ]));
 
-        $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->active()->forSite($site)->create([
-            'is_public' => true,
+        $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->published()->forSite($site)->create([
+            'visibility' => OfferVisibility::Public,
             'requires_approval' => true,
         ]));
 
@@ -204,8 +206,8 @@ describe('AffiliateMarketplacePage', function (): void {
             'domain' => 'tenant-links.example',
         ]));
 
-        $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->active()->forSite($site)->create([
-            'is_public' => true,
+        $offer = OwnerContext::withOwner($owner, fn () => AffiliateOffer::factory()->published()->forSite($site)->create([
+            'visibility' => OfferVisibility::Public,
             'requires_approval' => true,
             'landing_url' => 'https://tenant-links.example/approved',
         ]));
@@ -223,7 +225,7 @@ describe('AffiliateMarketplacePage', function (): void {
         OwnerContext::withOwner($owner, fn () => AffiliateOfferApplication::create([
             'offer_id' => $offer->id,
             'affiliate_id' => $affiliate->id,
-            'status' => AffiliateOfferApplication::STATUS_APPROVED,
+            'status' => ApplicationStatus::Approved,
         ]));
 
         $this->actingAs($ownedUser);

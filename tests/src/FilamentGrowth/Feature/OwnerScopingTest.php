@@ -724,7 +724,6 @@ it('counts only owner-matched child rows for readable global experiments in the 
         'traffic_percentage' => 100,
         'position' => 99,
         'is_control' => false,
-        'is_active' => true,
         'settings' => json_encode([]),
         'created_at' => $timestamp,
         'updated_at' => $timestamp,

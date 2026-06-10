@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
@@ -32,7 +33,7 @@ beforeEach(function (): void {
         'name' => 'Test Program',
         'slug' => 'test-program-' . uniqid(),
         'status' => ProgramStatus::Active,
-        'is_public' => true,
+        'visibility' => ProgramVisibility::Public,
         'requires_approval' => false,
         'commission_type' => CommissionType::Percentage,
     ]);
@@ -52,7 +53,7 @@ describe('ProgramService', function (): void {
                 'name' => 'Inactive Program',
                 'slug' => 'inactive-program-' . uniqid(),
                 'status' => ProgramStatus::Draft,
-                'is_public' => true,
+                'visibility' => ProgramVisibility::Public,
             ]);
 
             $result = $this->service->getAvailablePrograms();
@@ -65,7 +66,7 @@ describe('ProgramService', function (): void {
                 'name' => 'Private Program',
                 'slug' => 'private-program-' . uniqid(),
                 'status' => ProgramStatus::Active,
-                'is_public' => false,
+                'visibility' => ProgramVisibility::Private,
             ]);
 
             $result = $this->service->getAvailablePrograms();
@@ -135,7 +136,7 @@ describe('ProgramService', function (): void {
                 'name' => 'Foreign Program',
                 'slug' => 'foreign-program-' . uniqid(),
                 'status' => ProgramStatus::Active,
-                'is_public' => true,
+                'visibility' => ProgramVisibility::Public,
                 'requires_approval' => false,
                 'commission_type' => CommissionType::Percentage,
             ]));
@@ -246,7 +247,7 @@ describe('ProgramService', function (): void {
                     'name' => 'Scoped Program',
                     'slug' => 'scoped-program-' . uniqid(),
                     'status' => ProgramStatus::Active,
-                    'is_public' => true,
+                    'visibility' => ProgramVisibility::Public,
                     'requires_approval' => false,
                     'commission_type' => CommissionType::Percentage,
                 ]);
@@ -259,7 +260,7 @@ describe('ProgramService', function (): void {
                     'name' => 'Foreign Tier Program',
                     'slug' => 'foreign-tier-program-' . uniqid(),
                     'status' => ProgramStatus::Active,
-                    'is_public' => true,
+                    'visibility' => ProgramVisibility::Public,
                     'requires_approval' => false,
                     'commission_type' => CommissionType::Percentage,
                 ])->getKey(),
