@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Data;
 
-use AIArmada\Events\Models\EventAgendaItem;
+use AIArmada\Events\Models\EventAgenda;
 use Spatie\LaravelData\Data;
 
 final class EventAgendaItemData extends Data
@@ -25,7 +25,7 @@ final class EventAgendaItemData extends Data
         public readonly ?array $metadata = null,
     ) {}
 
-    public static function fromAgendaItem(EventAgendaItem $agendaItem): self
+    public static function fromAgendaItem(EventAgenda $agendaItem): self
     {
         return new self(
             id: $agendaItem->id,

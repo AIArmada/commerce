@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Contracts\EventAddressable;
 use AIArmada\Events\Data\EventAddressData;
+use AIArmada\Events\Enums\VenueStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -54,6 +55,7 @@ class Venue extends Model implements Auditable, EventAddressable
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
     protected $fillable = [
+        'status',
         'name',
         'slug',
         'location_type',
@@ -78,6 +80,7 @@ class Venue extends Model implements Auditable, EventAddressable
     protected function casts(): array
     {
         return [
+            'status' => VenueStatus::class,
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'metadata' => 'array',
@@ -85,6 +88,7 @@ class Venue extends Model implements Auditable, EventAddressable
     }
 
     protected $attributes = [
+        'status' => 'active',
         'country' => 'MY',
         'location_type' => 'physical',
     ];

@@ -31,7 +31,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $order_column
  * @property array<string, mixed>|null $metadata
  */
-class EventAgendaItem extends Model implements Auditable
+class EventAgenda extends Model implements Auditable
 {
     use HasCommerceAudit;
     use HasOwner;

@@ -26,6 +26,9 @@ return [
             'series' => env('EVENTS_TABLE_SERIES', $tablePrefix . 'series'),
             'events' => env('EVENTS_TABLE_EVENTS', 'events'),
             'people' => env('EVENTS_TABLE_PEOPLE', $tablePrefix . 'speakers'),
+            'speakers' => env('EVENTS_TABLE_SPEAKERS', $tablePrefix . 'speaker_profiles'),
+            'organizers' => env('EVENTS_TABLE_ORGANIZERS', $tablePrefix . 'organizers'),
+            'sponsors' => env('EVENTS_TABLE_SPONSORS', $tablePrefix . 'sponsors'),
             'venues' => env('EVENTS_TABLE_VENUES', $tablePrefix . 'venues'),
             'occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'occurrences'),
             'sub_locations' => env('EVENTS_TABLE_SUB_LOCATIONS', $tablePrefix . 'sub_locations'),
@@ -39,6 +42,8 @@ return [
             'agenda_items' => env('EVENTS_TABLE_AGENDA_ITEMS', $tablePrefix . 'agenda_items'),
             'attendance' => env('EVENTS_TABLE_ATTENDANCE', $tablePrefix . 'attendance'),
             'engagements' => env('EVENTS_TABLE_ENGAGEMENTS', $tablePrefix . 'engagements'),
+            'seat_categories' => env('EVENTS_TABLE_SEAT_CATEGORIES', $tablePrefix . 'seat_categories'),
+            'registration_groups' => env('EVENTS_TABLE_REGISTRATION_GROUPS', $tablePrefix . 'registration_groups'),
         ],
     ],
 
@@ -211,6 +216,7 @@ return [
             'check_in_allowed_statuses' => ['confirmed'],
             'capacity_blocking_statuses' => ['pending', 'confirmed', 'checked_in', 'no_show'],
             'terminal_statuses' => ['checked_in', 'cancelled', 'refunded', 'no_show'],
+            'auto_promote_waitlist' => env('EVENTS_AUTO_PROMOTE_WAITLIST', false),
         ],
     ],
 

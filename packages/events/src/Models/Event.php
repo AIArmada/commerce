@@ -17,9 +17,14 @@ use AIArmada\Events\Enums\EventModerationStatus;
 use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\EventStructure;
 use AIArmada\Events\Enums\EventVisibility;
+use AIArmada\Events\Enums\OccurrenceStatus;
+use AIArmada\Events\Events\EventActivated;
+use AIArmada\Events\Events\EventArchived;
+use AIArmada\Events\Events\EventCancelled;
 use AIArmada\Events\Exceptions\InvalidEventStatusTransition;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Events\Support\Integration\ConfiguredEventModel;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -51,18 +56,18 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property EventStructure $structure
  * @property int|null $default_duration_minutes
  * @property string|null $default_timezone
- * @property Carbon|null $published_at
- * @property Carbon|null $public_starts_at
- * @property Carbon|null $public_ends_at
- * @property Carbon|null $cancelled_at
- * @property Carbon|null $postponed_at
- * @property Carbon|null $delayed_at
+ * @property CarbonImmutable|null $published_at
+ * @property CarbonImmutable|null $public_starts_at
+ * @property CarbonImmutable|null $public_ends_at
+ * @property CarbonImmutable|null $cancelled_at
+ * @property CarbonImmutable|null $postponed_at
+ * @property CarbonImmutable|null $delayed_at
  * @property string|null $last_state_change_actor_type
  * @property string|null $last_state_change_actor_id
  * @property string|null $last_state_change_note
- * @property Carbon|null $activated_at
- * @property Carbon|null $archived_at
- * @property Carbon|null $last_state_change_at
+ * @property CarbonImmutable|null $activated_at
+ * @property CarbonImmutable|null $archived_at
+ * @property CarbonImmutable|null $last_state_change_at
  * @property array<string, mixed>|null $media_references
  * @property array<string, mixed>|null $taxonomy
  * @property string|null $search_keywords
@@ -193,9 +198,44 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
             if ($currentStatus !== null && ! $currentStatus->canTransitionTo($next)) {
                 throw InvalidEventStatusTransition::from($currentStatus, $next);
             }
+
+            $now = now();
+
+            if ($next === EventStatus::Active && $event->activated_at === null) {
+                $event->activated_at = $now->toImmutable();
+            }
+
+            if ($next === EventStatus::Archived && $event->archived_at === null) {
+                $event->archived_at = $now->toImmutable();
+            }
+
+            if ($next === EventStatus::Cancelled && $event->cancelled_at === null) {
+                $event->cancelled_at = $now->toImmutable();
+            }
         });
 
         static::saved(function (self $event): void {
+            if ($event->wasChanged('status')) {
+                $next = $event->status;
+
+                if ($next === EventStatus::Active) {
+                    event(new EventActivated($event));
+                } elseif ($next === EventStatus::Archived) {
+                    event(new EventArchived($event));
+                } elseif ($next === EventStatus::Cancelled) {
+                    event(new EventCancelled($event));
+                }
+
+                if ($next->isTerminal()) {
+                    $event->occurrences()
+                        ->whereNotIn('status', [
+                            OccurrenceStatus::Cancelled->value,
+                            OccurrenceStatus::Completed->value,
+                        ])
+                        ->each(fn (Occurrence $occ) => $occ->update(['status' => OccurrenceStatus::Cancelled]));
+                }
+            }
+
             if (! $event->wasRecentlyCreated && ! $event->wasChanged(['taxonomy', 'media_references', 'metadata'])) {
                 return;
             }
@@ -310,8 +350,6 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
             $query
                 ->whereIn($this->qualifyColumn('status'), [
                     EventStatus::Active->value,
-                    EventStatus::Postponed->value,
-                    EventStatus::Delayed->value,
                     EventStatus::Cancelled->value,
                     EventStatus::Archived->value,
                 ])
@@ -393,15 +431,6 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
     }
 
     /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeDelayed(Builder $query): Builder
-    {
-        return $query->where($this->qualifyColumn('status'), EventStatus::Delayed->value);
-    }
-
-    /**
      * @return BelongsTo<EventSeries, $this>
      */
     public function series(): BelongsTo
@@ -426,13 +455,49 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
     }
 
     /**
-     * @return HasMany<EventPerson, $this>
+     * @return MorphMany<EventPerson, $this>
      */
-    public function people(): HasMany
+    public function people(): MorphMany
     {
-        return $this->hasMany(EventPerson::class, 'event_id')
+        return $this->morphMany(EventPerson::class, 'assignable')
             ->orderBy((new EventPerson)->qualifyColumn('order_column'))
             ->orderBy((new EventPerson)->qualifyColumn('display_name'));
+    }
+
+    /**
+     * @return MorphMany<EventOrganizer, $this>
+     */
+    public function organizers(): MorphMany
+    {
+        return $this->morphMany(EventOrganizer::class, 'assignable')
+            ->orderBy((new EventOrganizer)->qualifyColumn('order_column'));
+    }
+
+    /**
+     * @return MorphMany<EventSpeaker, $this>
+     */
+    public function speakers(): MorphMany
+    {
+        return $this->morphMany(EventSpeaker::class, 'assignable')
+            ->orderBy((new EventSpeaker)->qualifyColumn('order_column'));
+    }
+
+    /**
+     * @return MorphMany<EventSponsor, $this>
+     */
+    public function sponsors(): MorphMany
+    {
+        return $this->morphMany(EventSponsor::class, 'assignable')
+            ->orderBy((new EventSponsor)->qualifyColumn('order_column'));
+    }
+
+    /**
+     * @return MorphMany<EventSeatCategory, $this>
+     */
+    public function seatCategories(): MorphMany
+    {
+        return $this->morphMany(EventSeatCategory::class, 'assignable')
+            ->orderBy((new EventSeatCategory)->qualifyColumn('order_column'));
     }
 
     /**
@@ -470,21 +535,21 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
     }
 
     /**
-     * @return MorphMany<EventReferenceAssignment, $this>
+     * @return MorphMany<EventReference, $this>
      */
     public function references(): MorphMany
     {
-        return $this->morphMany(EventReferenceAssignment::class, 'assignable')
-            ->orderBy((new EventReferenceAssignment)->qualifyColumn('reference_kind'))
-            ->orderBy((new EventReferenceAssignment)->qualifyColumn('order_column'));
+        return $this->morphMany(EventReference::class, 'assignable')
+            ->orderBy((new EventReference)->qualifyColumn('reference_kind'))
+            ->orderBy((new EventReference)->qualifyColumn('order_column'));
     }
 
     /**
-     * @return HasMany<EventSubmission, $this>
+     * @return MorphMany<EventSubmission, $this>
      */
-    public function submissions(): HasMany
+    public function submissions(): MorphMany
     {
-        return $this->hasMany(EventSubmission::class, 'event_id');
+        return $this->morphMany(EventSubmission::class, 'assignable');
     }
 
     /**
@@ -496,11 +561,11 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
     }
 
     /**
-     * @return HasMany<EventChangeNotice, $this>
+     * @return MorphMany<EventChange, $this>
      */
-    public function changeNotices(): HasMany
+    public function changeNotices(): MorphMany
     {
-        return $this->hasMany(EventChangeNotice::class, 'event_id');
+        return $this->morphMany(EventChange::class, 'assignable');
     }
 
     /**
@@ -520,14 +585,14 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
     }
 
     /**
-     * @return HasManyThrough<EventAgendaItem, Occurrence, $this>
+     * @return HasManyThrough<EventAgenda, Occurrence, $this>
      */
     public function agendaItems(): HasManyThrough
     {
-        return $this->hasManyThrough(EventAgendaItem::class, Occurrence::class, 'event_id', 'occurrence_id')
-            ->orderBy((new EventAgendaItem)->qualifyColumn('order_column'))
-            ->orderBy((new EventAgendaItem)->qualifyColumn('starts_at'))
-            ->orderBy((new EventAgendaItem)->qualifyColumn('segment_key'));
+        return $this->hasManyThrough(EventAgenda::class, Occurrence::class, 'event_id', 'occurrence_id')
+            ->orderBy((new EventAgenda)->qualifyColumn('order_column'))
+            ->orderBy((new EventAgenda)->qualifyColumn('starts_at'))
+            ->orderBy((new EventAgenda)->qualifyColumn('segment_key'));
     }
 
     public function product(): BelongsTo
@@ -721,7 +786,7 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
             ->map(static function (Collection $items): array {
                 return $items
                     ->sortBy('order_column')
-                    ->map(static fn (EventReferenceAssignment $reference): array => [
+                    ->map(static fn (EventReference $reference): array => [
                         'reference_kind' => $reference->reference_kind,
                         'reference_type' => $reference->reference_type,
                         'reference_id' => $reference->reference_id,

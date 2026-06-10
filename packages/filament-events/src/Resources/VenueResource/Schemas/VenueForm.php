@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\VenueResource\Schemas;
 
+use AIArmada\Events\Enums\VenueStatus;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -49,6 +50,11 @@ final class VenueForm
                                 Textarea::make('notes')
                                     ->rows(4)
                                     ->columnSpanFull(),
+
+                                Select::make('status')
+                                    ->options(collect(VenueStatus::cases())->mapWithKeys(fn (VenueStatus $s): array => [$s->value => $s->label()]))
+                                    ->required()
+                                    ->default(VenueStatus::Active->value),
                             ])
                             ->columns(2)
                             ->columnSpan(['lg' => 2]),

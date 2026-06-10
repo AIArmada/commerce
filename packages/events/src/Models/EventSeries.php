@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Events\Enums\SeriesStatus;
 use AIArmada\Events\Support\Integration\ConfiguredEventModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $name
  * @property string $slug
  * @property string|null $description
- * @property string $status
+ * @property SeriesStatus $status
  * @property CarbonImmutable|null $activated_at
  * @property CarbonImmutable|null $archived_at
  * @property array<string, mixed>|null $metadata
@@ -54,7 +55,7 @@ class EventSeries extends Model implements Auditable
     protected function casts(): array
     {
         return [
-            'status' => 'string',
+            'status' => SeriesStatus::class,
             'activated_at' => 'immutable_datetime',
             'archived_at' => 'immutable_datetime',
             'metadata' => 'array',

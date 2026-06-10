@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Data;
 
-use AIArmada\Events\Models\EventChangeNotice;
+use AIArmada\Events\Models\EventChange;
 use Spatie\LaravelData\Data;
 
 final class EventChangeNoticePayloadData extends Data
@@ -31,7 +31,7 @@ final class EventChangeNoticePayloadData extends Data
         public readonly ?array $metadata = null,
     ) {}
 
-    public static function fromNotice(EventChangeNotice $notice): self
+    public static function fromNotice(EventChange $notice): self
     {
         return new self(
             id: $notice->id,

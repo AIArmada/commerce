@@ -59,4 +59,24 @@ enum RegistrationStatus: string
     {
         return LifecyclePolicy::registrationIsTerminal($this);
     }
+
+    public function canTransitionTo(self $next): bool
+    {
+        return match ([$this, $next]) {
+            [self::Pending, self::Confirmed],
+            [self::Pending, self::Cancelled],
+            [self::Pending, self::Waitlisted],
+            [self::Confirmed, self::CheckedIn],
+            [self::Confirmed, self::Cancelled],
+            [self::Confirmed, self::Refunded],
+            [self::Confirmed, self::NoShow],
+            [self::CheckedIn, self::Cancelled],
+            [self::CheckedIn, self::NoShow],
+            [self::Cancelled, self::Refunded],
+            [self::Waitlisted, self::Pending],
+            [self::Waitlisted, self::Cancelled],
+            [self::NoShow, self::Cancelled] => true,
+            default => false,
+        };
+    }
 }

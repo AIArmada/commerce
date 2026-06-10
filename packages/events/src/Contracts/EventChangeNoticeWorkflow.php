@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Contracts;
 
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventChangeNotice;
+use AIArmada\Events\Models\EventChange;
 use AIArmada\Events\Models\Occurrence;
 
 interface EventChangeNoticeWorkflow
@@ -26,7 +26,7 @@ interface EventChangeNoticeWorkflow
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>  $changedSections
@@ -44,14 +44,14 @@ interface EventChangeNoticeWorkflow
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>|null  $beforeSnapshot
      * @param  array<string, mixed>|null  $afterSnapshot
      * @param  array<string, mixed>  $metadata
      */
-    public function speakerChanged(
+    public function peopleChanged(
         Event $event,
         ?array $beforeSnapshot = null,
         ?array $afterSnapshot = null,
@@ -59,7 +59,7 @@ interface EventChangeNoticeWorkflow
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>|null  $beforeSnapshot
@@ -74,7 +74,7 @@ interface EventChangeNoticeWorkflow
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>|null  $beforeSnapshot
@@ -89,7 +89,7 @@ interface EventChangeNoticeWorkflow
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>|null  $beforeSnapshot
@@ -104,7 +104,7 @@ interface EventChangeNoticeWorkflow
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>|null  $beforeSnapshot
@@ -119,7 +119,7 @@ interface EventChangeNoticeWorkflow
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>|null  $beforeSnapshot
@@ -134,7 +134,7 @@ interface EventChangeNoticeWorkflow
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
         ?string $severity = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>|null  $beforeSnapshot
@@ -149,7 +149,7 @@ interface EventChangeNoticeWorkflow
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
         ?string $severity = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
     /**
      * @param  array<string, mixed>|null  $beforeSnapshot
@@ -164,9 +164,9 @@ interface EventChangeNoticeWorkflow
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
         ?string $severity = null,
-    ): EventChangeNotice;
+    ): EventChange;
 
-    public function publish(EventChangeNotice $notice): EventChangeNotice;
+    public function publish(EventChange $notice): EventChange;
 
-    public function retract(EventChangeNotice $notice): EventChangeNotice;
+    public function retract(EventChange $notice): EventChange;
 }

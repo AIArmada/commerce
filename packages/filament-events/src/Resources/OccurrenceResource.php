@@ -96,6 +96,8 @@ final class OccurrenceResource extends Resource
     {
         return [
             RelationManagers\RegistrationsRelationManager::class,
+            RelationManagers\EventSeatCategoriesRelationManager::class,
+            RelationManagers\EventRegistrationGroupsRelationManager::class,
         ];
     }
 

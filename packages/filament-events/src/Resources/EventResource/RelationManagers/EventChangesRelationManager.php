@@ -17,7 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-final class EventChangeNoticesRelationManager extends RelationManager
+final class EventChangesRelationManager extends RelationManager
 {
     protected static string $relationship = 'changeNotices';
 

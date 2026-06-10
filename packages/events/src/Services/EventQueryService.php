@@ -14,7 +14,7 @@ use AIArmada\Events\Data\EventSearchResultData;
 use AIArmada\Events\Data\OccurrenceDetailData;
 use AIArmada\Events\Data\RegistrationStatusData;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventChangeNotice;
+use AIArmada\Events\Models\EventChange;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 
@@ -54,7 +54,7 @@ final class EventQueryService
         return RegistrationStatusData::fromRegistration($registration);
     }
 
-    public function changeNoticePayload(EventChangeNotice $notice): EventChangeNoticePayloadData
+    public function changeNoticePayload(EventChange $notice): EventChangeNoticePayloadData
     {
         return EventChangeNoticePayloadData::fromNotice($notice);
     }

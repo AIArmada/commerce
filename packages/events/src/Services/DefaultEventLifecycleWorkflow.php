@@ -7,9 +7,6 @@ namespace AIArmada\Events\Services;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Events\EventCancelled;
-use AIArmada\Events\Events\EventDelayed;
-use AIArmada\Events\Events\EventPostponed;
-use AIArmada\Events\Events\EventResumed;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Support\Policy\EventLifecyclePolicy;
 use Illuminate\Database\Eloquent\Model;
@@ -21,61 +18,23 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 {
     public function postpone(Event $event, ?Model $actor = null, ?string $note = null): Event
     {
-        $this->assertCanTransition('postpone', $event, $note);
-
-        return DB::transaction(function () use ($event, $actor, $note): Event {
-            $this->stampStateChange($event, $actor, $note);
-
-            $event->forceFill([
-                'status' => EventStatus::Postponed,
-                'postponed_at' => Carbon::now(),
-            ])->save();
-
-            $fresh = $event->refresh();
-
-            DB::afterCommit(static fn () => event(new EventPostponed($fresh, $actor, $note)));
-
-            return $fresh;
-        });
+        throw new InvalidArgumentException(
+            'Postpone is not supported at the event level. Manage occurrence status directly.',
+        );
     }
 
     public function delay(Event $event, ?Model $actor = null, ?string $note = null): Event
     {
-        $this->assertCanTransition('delay', $event, $note);
-
-        return DB::transaction(function () use ($event, $actor, $note): Event {
-            $this->stampStateChange($event, $actor, $note);
-
-            $event->forceFill([
-                'status' => EventStatus::Delayed,
-                'delayed_at' => Carbon::now(),
-            ])->save();
-
-            $fresh = $event->refresh();
-
-            DB::afterCommit(static fn () => event(new EventDelayed($fresh, $actor, $note)));
-
-            return $fresh;
-        });
+        throw new InvalidArgumentException(
+            'Delay is not supported at the event level. Manage occurrence status directly.',
+        );
     }
 
     public function resume(Event $event, ?Model $actor = null, ?string $note = null): Event
     {
-        $this->assertCanTransition('resume', $event, $note);
-
-        return DB::transaction(function () use ($event, $actor, $note): Event {
-            $this->stampStateChange($event, $actor, $note);
-
-            $event->forceFill([
-                'status' => EventStatus::Active,
-            ])->save();
-
-            $fresh = $event->refresh();
-
-            DB::afterCommit(static fn () => event(new EventResumed($fresh, $actor, $note)));
-
-            return $fresh;
-        });
+        throw new InvalidArgumentException(
+            'Resume is not supported at the event level. Manage occurrence status directly.',
+        );
     }
 
     public function cancel(Event $event, ?Model $actor = null, ?string $note = null, ?string $reason = null): Event

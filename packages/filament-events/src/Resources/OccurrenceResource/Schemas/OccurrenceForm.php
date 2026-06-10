@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources\OccurrenceResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Enums\EventFormat;
+use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Enums\OccurrenceParticipationMode;
 use AIArmada\Events\Enums\OccurrenceStatus;
 use AIArmada\Events\Support\Integration\EventAddressRegistry;
@@ -58,6 +60,20 @@ final class OccurrenceForm
                 ->required()
                 ->maxLength(64)
                 ->default('Asia/Kuala_Lumpur'),
+
+            Select::make('visibility')
+                ->options(collect(EventVisibility::cases())->mapWithKeys(fn (EventVisibility $v): array => [$v->value => $v->label()]))
+                ->required()
+                ->default(EventVisibility::Public->value),
+
+            Select::make('format')
+                ->label('Format')
+                ->options(collect(EventFormat::cases())->mapWithKeys(fn (EventFormat $f): array => [$f->value => $f->label()]))
+                ->placeholder('Inherit from event'),
+
+            DateTimePicker::make('visible_at')
+                ->label('Visible From')
+                ->native(false),
         ];
 
         if ($includeEventField) {
@@ -131,6 +147,21 @@ final class OccurrenceForm
                                 )
                                 ->searchable()
                                 ->preload(),
+
+                            TextInput::make('website_url')
+                                ->label('Website URL')
+                                ->url()
+                                ->columnSpanFull(),
+
+                            TextInput::make('livestream_url')
+                                ->label('Livestream URL')
+                                ->url()
+                                ->columnSpanFull(),
+
+                            TextInput::make('recording_url')
+                                ->label('Recording URL')
+                                ->url()
+                                ->columnSpanFull(),
 
                             Select::make('product_id')
                                 ->label('Product')
