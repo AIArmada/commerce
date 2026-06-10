@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Carbon;
 
 describe('AffiliateCommissionPromotion Model', function (): void {
     beforeEach(function (): void {
