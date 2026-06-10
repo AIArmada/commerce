@@ -15,12 +15,12 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -99,8 +99,8 @@ class AffiliateProgram extends Model implements Auditable
         'visibility' => ProgramVisibility::class,
         'requires_approval' => 'boolean',
         'default_commission_rate_basis_points' => 'integer',
-            'paused_at' => 'immutable_datetime',
-            'archived_at' => 'immutable_datetime',
+        'paused_at' => 'immutable_datetime',
+        'archived_at' => 'immutable_datetime',
         'cookie_lifetime_days' => 'integer',
         'eligibility_rules' => 'array',
         'metadata' => 'array',
