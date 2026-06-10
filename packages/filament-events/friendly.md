@@ -56,7 +56,7 @@ Standard shape.
 
 **Files**
 
-- `EventResource/RelationManagers/{EventAgendaItems, EventAssets, EventAttendance, EventChangeNotices, EventClassifications, EventEngagements, EventPeople, EventReviews, EventSubmissions, Occurrences}.php`
+- `EventResource/RelationManagers/{EventAgendas, EventAssets, EventAttendance, EventChangeNotices, EventClassifications, EventEngagements, EventPeople, EventReviews, EventSubmissions, Occurrences}.php`
 
 **Why this hurts friendliness**
 
@@ -171,7 +171,7 @@ Status legend:
   7. EventClassificationsRelationManager (classification)
   8. EventEngagementsRelationManager (engagement metrics)
   9. EventAttendanceRelationManager (attendance)
-  10. EventAgendaItemsRelationManager (agenda)
+  10. EventAgendasRelationManager (agenda)
 - [done] Group by domain or split the entity. (Grouped into 4 domains: Scheduling — Occurrences, AgendaItems; People — People, Attendance; Submissions & Reviews — Submissions, Reviews, ChangeNotices; Metadata — Assets, Classifications, Engagements. Keeping as a single Event entity is intentional — these are all aspects of one event.)
 
 ### Phase 3 — consolidate `getEloquentQuery`

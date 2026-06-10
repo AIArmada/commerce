@@ -6,11 +6,11 @@ namespace AIArmada\Events\Resolvers;
 
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
 use AIArmada\Events\Data\EventChangeNoticeAudienceData;
-use AIArmada\Events\Models\EventChangeNotice;
+use AIArmada\Events\Models\EventChange;
 
 final class NullEventChangeNoticeNotificationDispatcher implements EventChangeNoticeNotificationDispatcher
 {
-    public function dispatch(EventChangeNotice $notice, EventChangeNoticeAudienceData $audiences): void
+    public function dispatch(EventChange $notice, EventChangeNoticeAudienceData $audiences): void
     {
         // Intentionally no-op: hosts bind their own dispatcher when they want delivery.
     }

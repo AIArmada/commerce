@@ -8,14 +8,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Data\EventChangeNoticeAudienceData;
 use AIArmada\Events\Enums\RegistrationStatus;
-use AIArmada\Events\Models\EventChangeNotice;
+use AIArmada\Events\Models\EventChange;
 use AIArmada\Events\Models\EventEngagement;
 use AIArmada\Events\Models\Registration;
 use Illuminate\Database\Eloquent\Builder;
 
 final class DefaultEventChangeNoticeAudienceResolver implements EventChangeNoticeAudienceResolver
 {
-    public function resolve(EventChangeNotice $notice): EventChangeNoticeAudienceData
+    public function resolve(EventChange $notice): EventChangeNoticeAudienceData
     {
         $owner = OwnerContext::fromTypeAndId(
             is_string($notice->owner_type) ? $notice->owner_type : null,

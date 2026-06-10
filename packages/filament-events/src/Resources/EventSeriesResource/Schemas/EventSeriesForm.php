@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventSeriesResource\Schemas;
 
+use AIArmada\Events\Enums\SeriesStatus;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -37,11 +38,8 @@ final class EventSeriesForm
                             ->columnSpanFull(),
 
                         Select::make('status')
-                            ->options([
-                                'active' => 'Active',
-                                'archived' => 'Archived',
-                            ])
-                            ->default('active')
+                            ->options(collect(SeriesStatus::cases())->mapWithKeys(fn (SeriesStatus $s): array => [$s->value => $s->label()]))
+                            ->default(SeriesStatus::Active->value)
                             ->required(),
 
                         KeyValue::make('metadata')

@@ -5,14 +5,14 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventAgendaItem;
+use AIArmada\Events\Models\EventAgenda;
 use AIArmada\Events\Models\EventAsset;
 use AIArmada\Events\Models\EventAttendance;
-use AIArmada\Events\Models\EventChangeNotice;
+use AIArmada\Events\Models\EventChange;
 use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventEngagement;
 use AIArmada\Events\Models\EventPerson;
-use AIArmada\Events\Models\EventReferenceAssignment;
+use AIArmada\Events\Models\EventReference;
 use AIArmada\Events\Models\EventReview;
 use AIArmada\Events\Models\EventSeries;
 use AIArmada\Events\Models\EventSubmission;
@@ -28,11 +28,11 @@ it('events models are auditable and activity loggable', function (): void {
         EventPerson::class,
         EventClassification::class,
         EventAsset::class,
-        EventReferenceAssignment::class,
-        EventAgendaItem::class,
+        EventReference::class,
+        EventAgenda::class,
         EventSubmission::class,
         EventReview::class,
-        EventChangeNotice::class,
+        EventChange::class,
         EventAttendance::class,
         EventEngagement::class,
         Occurrence::class,

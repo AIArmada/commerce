@@ -38,7 +38,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property Carbon|null $retracted_at
  * @property array<string, mixed>|null $metadata
  */
-class EventChangeNotice extends Model implements Auditable
+class EventChange extends Model implements Auditable
 {
     use HasCommerceAudit;
     use HasOwner;

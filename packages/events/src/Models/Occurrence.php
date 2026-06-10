@@ -12,12 +12,22 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Contracts\EventDisplayTimezoneResolver;
 use AIArmada\Events\Contracts\EventRelationalContentSubject;
 use AIArmada\Events\Data\EventAddressData;
+use AIArmada\Events\Enums\EventFormat;
+use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Enums\OccurrenceParticipationMode;
 use AIArmada\Events\Enums\OccurrenceStatus;
+use AIArmada\Events\Events\OccurrenceCancelled;
+use AIArmada\Events\Events\OccurrenceCompleted;
+use AIArmada\Events\Events\OccurrenceDelayed;
+use AIArmada\Events\Events\OccurrenceLive;
+use AIArmada\Events\Events\OccurrencePostponed;
+use AIArmada\Events\Events\OccurrenceScheduled;
+use AIArmada\Events\Exceptions\InvalidEventStatusTransition;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Events\Support\Integration\ConfiguredEventModel;
 use AIArmada\Events\Support\Integration\EventAddressResolver;
 use AIArmada\Events\Support\Policy\LifecyclePolicy;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -43,13 +53,13 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property OccurrenceStatus $status
  * @property OccurrenceParticipationMode $participation_mode
  * @property int|null $capacity
- * @property Carbon $starts_at
- * @property Carbon|null $ends_at
+ * @property CarbonImmutable $starts_at
+ * @property CarbonImmutable|null $ends_at
  * @property string $timezone
- * @property Carbon|null $registration_opens_at
- * @property Carbon|null $registration_closes_at
- * @property Carbon|null $check_in_opens_at
- * @property Carbon|null $check_in_closes_at
+ * @property CarbonImmutable|null $registration_opens_at
+ * @property CarbonImmutable|null $registration_closes_at
+ * @property CarbonImmutable|null $check_in_opens_at
+ * @property CarbonImmutable|null $check_in_closes_at
  * @property string|null $schedule_mode
  * @property string|null $schedule_reference_key
  * @property array<string, mixed>|null $schedule_reference_payload
@@ -58,11 +68,21 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $duplicate_strategy
  * @property bool $waitlist_enabled
  * @property bool $approval_required
- * @property Carbon|null $scheduled_at
- * @property Carbon|null $live_at
- * @property Carbon|null $completed_at
- * @property Carbon|null $cancelled_at
+ * @property CarbonImmutable|null $scheduled_at
+ * @property CarbonImmutable|null $live_at
+ * @property CarbonImmutable|null $completed_at
+ * @property CarbonImmutable|null $postponed_at
+ * @property CarbonImmutable|null $delayed_at
+ * @property CarbonImmutable|null $visible_at
+ * @property CarbonImmutable|null $cancelled_at
  * @property array<string, mixed>|null $metadata
+ * @property-read string|null $location_label
+ * @property-read string|null $address_label
+ * @property-read array<int, string> $address_lines
+ * @property-read string|null $address_country
+ * @property-read string|null $address_timezone
+ * @property-read string|null $address_latitude
+ * @property-read string|null $address_longitude
  */
 class Occurrence extends Model implements Auditable, EventRelationalContentSubject
 {
@@ -85,6 +105,8 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
         'variant_id',
         'name',
         'status',
+        'visibility',
+        'format',
         'participation_mode',
         'capacity',
         'starts_at',
@@ -106,6 +128,9 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
         'scheduled_at',
         'live_at',
         'completed_at',
+        'postponed_at',
+        'delayed_at',
+        'visible_at',
         'cancelled_at',
     ];
 
@@ -113,7 +138,8 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
     {
         return [
             'status' => OccurrenceStatus::class,
-            'participation_mode' => OccurrenceParticipationMode::class,
+            'visibility' => EventVisibility::class,
+            'format' => EventFormat::class,
             'capacity' => 'integer',
             'starts_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
@@ -124,6 +150,9 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
             'scheduled_at' => 'immutable_datetime',
             'live_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
+            'postponed_at' => 'immutable_datetime',
+            'delayed_at' => 'immutable_datetime',
+            'visible_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
             'metadata' => 'array',
             'schedule_reference_payload' => 'array',
@@ -134,11 +163,81 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
 
     protected $attributes = [
         'status' => 'draft',
+        'visibility' => 'public',
         'participation_mode' => 'registration_required',
     ];
 
     protected static function booted(): void
     {
+        static::updating(function (self $occurrence): void {
+            if (! $occurrence->isDirty('status')) {
+                return;
+            }
+
+            $current = $occurrence->getOriginal('status');
+            $next = $occurrence->status;
+
+            if (! $next instanceof OccurrenceStatus) {
+                return;
+            }
+
+            $currentStatus = $current instanceof OccurrenceStatus
+                ? $current
+                : (is_string($current) ? OccurrenceStatus::tryFrom($current) : null);
+
+            if ($currentStatus !== null && $currentStatus === $next) {
+                return;
+            }
+
+            if ($currentStatus !== null && ! $currentStatus->canTransitionTo($next)) {
+                throw InvalidEventStatusTransition::from($currentStatus, $next);
+            }
+
+            $now = now();
+
+            if ($next === OccurrenceStatus::Scheduled && $occurrence->scheduled_at === null) {
+                $occurrence->scheduled_at = $now->toImmutable();
+            }
+
+            if ($next === OccurrenceStatus::Live && $occurrence->live_at === null) {
+                $occurrence->live_at = $now->toImmutable();
+            }
+
+            if ($next === OccurrenceStatus::Completed && $occurrence->completed_at === null) {
+                $occurrence->completed_at = $now->toImmutable();
+            }
+
+            if ($next === OccurrenceStatus::Postponed && $occurrence->postponed_at === null) {
+                $occurrence->postponed_at = $now->toImmutable();
+            }
+
+            if ($next === OccurrenceStatus::Delayed && $occurrence->delayed_at === null) {
+                $occurrence->delayed_at = $now->toImmutable();
+            }
+
+            if ($next === OccurrenceStatus::Cancelled && $occurrence->cancelled_at === null) {
+                $occurrence->cancelled_at = $now->toImmutable();
+            }
+        });
+
+        static::saved(function (self $occurrence): void {
+            if (! $occurrence->wasChanged('status')) {
+                return;
+            }
+
+            $next = $occurrence->status;
+
+            match (true) {
+                $next === OccurrenceStatus::Scheduled => event(new OccurrenceScheduled($occurrence)),
+                $next === OccurrenceStatus::Live => event(new OccurrenceLive($occurrence)),
+                $next === OccurrenceStatus::Completed => event(new OccurrenceCompleted($occurrence)),
+                $next === OccurrenceStatus::Postponed => event(new OccurrencePostponed($occurrence)),
+                $next === OccurrenceStatus::Delayed => event(new OccurrenceDelayed($occurrence)),
+                $next === OccurrenceStatus::Cancelled => event(new OccurrenceCancelled($occurrence)),
+                default => null,
+            };
+        });
+
         static::creating(function (self $occurrence): void {
             $participationMode = $occurrence->getAttribute('participation_mode');
 
@@ -190,7 +289,7 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
     }
 
     /**
-     * @return BelongsTo<Model, $this>
+     * @return MorphTo<Model, $this>
      */
     public function event(): BelongsTo
     {
@@ -198,6 +297,43 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
             ConfiguredEventModel::classFor('events.models.event', Event::class),
             'event_id',
         );
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopePubliclyAccessible(Builder $query, ?CarbonImmutable $now = null): Builder
+    {
+        $now ??= CarbonImmutable::now('UTC');
+
+        return $query
+            ->whereIn($this->qualifyColumn('visibility'), [
+                EventVisibility::Public->value,
+                EventVisibility::Unlisted->value,
+            ])
+            ->where(function (Builder $query) use ($now): void {
+                $query
+                    ->whereNull($this->qualifyColumn('visible_at'))
+                    ->orWhere($this->qualifyColumn('visible_at'), '<=', $now);
+            });
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopePubliclyDiscoverable(Builder $query, ?CarbonImmutable $now = null): Builder
+    {
+        $now ??= CarbonImmutable::now('UTC');
+
+        return $query
+            ->where($this->qualifyColumn('visibility'), EventVisibility::Public->value)
+            ->where(function (Builder $query) use ($now): void {
+                $query
+                    ->whereNull($this->qualifyColumn('visible_at'))
+                    ->orWhere($this->qualifyColumn('visible_at'), '<=', $now);
+            });
     }
 
     /**
@@ -222,7 +358,7 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
     }
 
     /**
-     * @return BelongsTo<Model, $this>
+     * @return MorphTo<Model, $this>
      */
     public function product(): BelongsTo
     {
@@ -233,7 +369,7 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
     }
 
     /**
-     * @return BelongsTo<Model, $this>
+     * @return MorphTo<Model, $this>
      */
     public function variant(): BelongsTo
     {
@@ -268,32 +404,32 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
     }
 
     /**
-     * @return MorphMany<EventReferenceAssignment, $this>
+     * @return MorphMany<EventReference, $this>
      */
     public function references(): MorphMany
     {
-        return $this->morphMany(EventReferenceAssignment::class, 'assignable')
-            ->orderBy((new EventReferenceAssignment)->qualifyColumn('reference_kind'))
-            ->orderBy((new EventReferenceAssignment)->qualifyColumn('order_column'));
+        return $this->morphMany(EventReference::class, 'assignable')
+            ->orderBy((new EventReference)->qualifyColumn('reference_kind'))
+            ->orderBy((new EventReference)->qualifyColumn('order_column'));
     }
 
     /**
-     * @return HasMany<EventAgendaItem, $this>
+     * @return HasMany<EventAgenda, $this>
      */
     public function agendaItems(): HasMany
     {
-        return $this->hasMany(EventAgendaItem::class, 'occurrence_id')
-            ->orderBy((new EventAgendaItem)->qualifyColumn('order_column'))
-            ->orderBy((new EventAgendaItem)->qualifyColumn('starts_at'))
-            ->orderBy((new EventAgendaItem)->qualifyColumn('segment_key'));
+        return $this->hasMany(EventAgenda::class, 'occurrence_id')
+            ->orderBy((new EventAgenda)->qualifyColumn('order_column'))
+            ->orderBy((new EventAgenda)->qualifyColumn('starts_at'))
+            ->orderBy((new EventAgenda)->qualifyColumn('segment_key'));
     }
 
     /**
-     * @return HasMany<EventChangeNotice, $this>
+     * @return HasMany<EventChange, $this>
      */
     public function changeNotices(): HasMany
     {
-        return $this->hasMany(EventChangeNotice::class, 'replacement_occurrence_id');
+        return $this->hasMany(EventChange::class, 'replacement_occurrence_id');
     }
 
     /**
@@ -310,6 +446,38 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
     public function engagements(): HasMany
     {
         return $this->hasMany(EventEngagement::class, 'occurrence_id');
+    }
+
+    /**
+     * @return MorphMany<EventPerson, $this>
+     */
+    public function people(): MorphMany
+    {
+        return $this->morphMany(EventPerson::class, 'assignable');
+    }
+
+    /**
+     * @return MorphMany<EventSubmission, $this>
+     */
+    public function submissions(): MorphMany
+    {
+        return $this->morphMany(EventSubmission::class, 'assignable');
+    }
+
+    /**
+     * @return MorphMany<EventSeatCategory, $this>
+     */
+    public function seatCategories(): MorphMany
+    {
+        return $this->morphMany(EventSeatCategory::class, 'assignable');
+    }
+
+    /**
+     * @return HasMany<EventRegistrationGroup, $this>
+     */
+    public function registrationGroups(): HasMany
+    {
+        return $this->hasMany(EventRegistrationGroup::class, 'occurrence_id');
     }
 
     /**
@@ -330,7 +498,7 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
             ->map(static function (Collection $items): array {
                 return $items
                     ->sortBy('order_column')
-                    ->map(static fn (EventReferenceAssignment $reference): array => [
+                    ->map(static fn (EventReference $reference): array => [
                         'reference_kind' => $reference->reference_kind,
                         'reference_type' => $reference->reference_type,
                         'reference_id' => $reference->reference_id,

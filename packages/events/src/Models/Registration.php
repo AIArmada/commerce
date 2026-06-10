@@ -11,6 +11,8 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Enums\RegistrationAttendanceSource;
 use AIArmada\Events\Enums\RegistrationStatus;
+use AIArmada\Events\Events\RegistrationConfirmed;
+use AIArmada\Events\Events\RegistrationWaitlisted;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -115,6 +117,20 @@ class Registration extends Model implements Auditable
             }
 
             $registration->code = static::generateUniqueCode();
+        });
+
+        static::saved(function (self $registration): void {
+            if (! $registration->wasChanged('status')) {
+                return;
+            }
+
+            $next = $registration->status;
+
+            if ($next === RegistrationStatus::Confirmed) {
+                event(new RegistrationConfirmed($registration));
+            } elseif ($next === RegistrationStatus::Waitlisted) {
+                event(new RegistrationWaitlisted($registration));
+            }
         });
     }
 

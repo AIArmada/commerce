@@ -20,7 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-final class EventAgendaItemsRelationManager extends RelationManager
+final class EventAgendasRelationManager extends RelationManager
 {
     protected static string $relationship = 'agendaItems';
 

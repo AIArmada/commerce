@@ -30,7 +30,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $order_column
  * @property array<string, mixed>|null $metadata
  */
-class EventReferenceAssignment extends Model implements Auditable
+class EventReference extends Model implements Auditable
 {
     use HasCommerceAudit;
     use HasOwner;

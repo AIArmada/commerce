@@ -7,7 +7,7 @@ namespace AIArmada\Events\Services;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventChangeNotice;
+use AIArmada\Events\Models\EventChange;
 use AIArmada\Events\Models\Occurrence;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +25,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->withEventOwnerContext($event, function () use (
             $event,
             $changeKey,
@@ -36,10 +36,10 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
             $severity,
             $replacementEvent,
             $replacementOccurrence
-        ): EventChangeNotice {
+        ): EventChange {
             $this->assertReplacementOwnership($event, $replacementEvent, $replacementOccurrence);
 
-            $notice = new EventChangeNotice;
+            $notice = new EventChange;
             $notice->event()->associate($event);
             $notice->fill([
                 'change_key' => $changeKey,
@@ -75,7 +75,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
             changeKey: $changeKey,
@@ -89,7 +89,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         );
     }
 
-    public function speakerChanged(
+    public function peopleChanged(
         Event $event,
         ?array $beforeSnapshot = null,
         ?array $afterSnapshot = null,
@@ -97,10 +97,10 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
-            changeKey: 'speaker_changed',
+            changeKey: 'people_changed',
             changedSections: ['people' => ['speaker' => true]],
             beforeSnapshot: $beforeSnapshot,
             afterSnapshot: $afterSnapshot,
@@ -119,7 +119,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
             changeKey: 'title_changed',
@@ -141,7 +141,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
             changeKey: 'topic_changed',
@@ -163,7 +163,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
             changeKey: 'content_changed',
@@ -185,7 +185,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?string $severity = null,
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
             changeKey: 'schedule_changed',
@@ -207,7 +207,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
         ?string $severity = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
             changeKey: 'cancelled',
@@ -232,7 +232,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
         ?string $severity = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
             changeKey: 'postponed',
@@ -254,7 +254,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         ?Event $replacementEvent = null,
         ?Occurrence $replacementOccurrence = null,
         ?string $severity = null,
-    ): EventChangeNotice {
+    ): EventChange {
         return $this->create(
             event: $event,
             changeKey: 'replacement_linked',
@@ -268,9 +268,9 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         );
     }
 
-    public function publish(EventChangeNotice $notice): EventChangeNotice
+    public function publish(EventChange $notice): EventChange
     {
-        return $this->withNoticeOwnerContext($notice, function () use ($notice): EventChangeNotice {
+        return $this->withNoticeOwnerContext($notice, function () use ($notice): EventChange {
             DB::transaction(function () use ($notice): void {
                 $notice->publish();
                 $notice->save();
@@ -280,9 +280,9 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         });
     }
 
-    public function retract(EventChangeNotice $notice): EventChangeNotice
+    public function retract(EventChange $notice): EventChange
     {
-        return $this->withNoticeOwnerContext($notice, function () use ($notice): EventChangeNotice {
+        return $this->withNoticeOwnerContext($notice, function () use ($notice): EventChange {
             DB::transaction(function () use ($notice): void {
                 $notice->retract();
                 $notice->save();
@@ -314,7 +314,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
      * @param  callable(): TReturn  $callback
      * @return TReturn
      */
-    private function withNoticeOwnerContext(EventChangeNotice $notice, callable $callback): mixed
+    private function withNoticeOwnerContext(EventChange $notice, callable $callback): mixed
     {
         $owner = OwnerContext::fromTypeAndId(
             is_string($notice->getAttribute('owner_type')) ? $notice->getAttribute('owner_type') : null,
@@ -378,7 +378,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
     private function defaultSeverityForChangeKey(string $changeKey): string
     {
         return match ($changeKey) {
-            'speaker_changed', 'title_changed', 'topic_changed', 'people_changed' => 'high',
+            'people_changed', 'title_changed', 'topic_changed', 'people_changed' => 'high',
             'cancelled' => 'urgent',
             'postponed' => 'high',
             default => 'info',

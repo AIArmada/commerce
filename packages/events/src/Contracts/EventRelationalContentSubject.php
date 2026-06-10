@@ -6,7 +6,7 @@ namespace AIArmada\Events\Contracts;
 
 use AIArmada\Events\Models\EventAsset;
 use AIArmada\Events\Models\EventClassification;
-use AIArmada\Events\Models\EventReferenceAssignment;
+use AIArmada\Events\Models\EventReference;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 interface EventRelationalContentSubject
@@ -22,7 +22,7 @@ interface EventRelationalContentSubject
     public function assets(): MorphMany;
 
     /**
-     * @return MorphMany<EventReferenceAssignment, covariant \Illuminate\Database\Eloquent\Model>
+     * @return MorphMany<EventReference, covariant \Illuminate\Database\Eloquent\Model>
      */
     public function references(): MorphMany;
 }

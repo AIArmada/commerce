@@ -14,8 +14,8 @@ use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
 use AIArmada\Events\Data\EventAgendaItemData;
-use AIArmada\Events\Data\EventChangeNoticeAudienceData;
-use AIArmada\Events\Data\EventChangeNoticePayloadData;
+use AIArmada\Events\Data\EventChangeAudienceData;
+use AIArmada\Events\Data\EventChangePayloadData;
 use AIArmada\Events\Data\EventDetailData;
 use AIArmada\Events\Data\EventReviewSchemaData;
 use AIArmada\Events\Data\EventSearchCardData;
@@ -29,16 +29,16 @@ use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\EventStructure;
 use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Enums\RegistrationStatus;
-use AIArmada\Events\Events\EventChangeNoticePublished;
-use AIArmada\Events\Events\EventChangeNoticeRetracted;
+use AIArmada\Events\Events\EventChangePublished;
+use AIArmada\Events\Events\EventChangeRetracted;
 use AIArmada\Events\Models\Event as EventModel;
-use AIArmada\Events\Models\EventAgendaItem;
+use AIArmada\Events\Models\EventAgenda;
 use AIArmada\Events\Models\EventAsset;
-use AIArmada\Events\Models\EventChangeNotice;
+use AIArmada\Events\Models\EventChange;
 use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventEngagement;
 use AIArmada\Events\Models\EventPerson;
-use AIArmada\Events\Models\EventReferenceAssignment;
+use AIArmada\Events\Models\EventReference;
 use AIArmada\Events\Models\EventReview;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
@@ -491,7 +491,7 @@ it('persists reference assignments agenda items and relational search payloads',
         'password' => 'secret',
     ]);
 
-    EventReferenceAssignment::query()->create([
+    EventReference::query()->create([
         'assignable_type' => $event->getMorphClass(),
         'assignable_id' => $event->getKey(),
         'reference_type' => $source->getMorphClass(),
@@ -503,7 +503,7 @@ it('persists reference assignments agenda items and relational search payloads',
         'order_column' => 2,
     ]);
 
-    EventReferenceAssignment::query()->create([
+    EventReference::query()->create([
         'assignable_type' => $event->getMorphClass(),
         'assignable_id' => $event->getKey(),
         'reference_type' => $source->getMorphClass(),
@@ -515,7 +515,7 @@ it('persists reference assignments agenda items and relational search payloads',
         'order_column' => 1,
     ]);
 
-    EventReferenceAssignment::query()->create([
+    EventReference::query()->create([
         'assignable_type' => $occurrence->getMorphClass(),
         'assignable_id' => $occurrence->getKey(),
         'reference_kind' => 'itinerary_source',
@@ -524,7 +524,7 @@ it('persists reference assignments agenda items and relational search payloads',
         'order_column' => 1,
     ]);
 
-    EventAgendaItem::query()->create([
+    EventAgenda::query()->create([
         'occurrence_id' => $occurrence->getKey(),
         'segment_key' => 'closing',
         'segment_type' => 'talk',
@@ -534,7 +534,7 @@ it('persists reference assignments agenda items and relational search payloads',
         'order_column' => 2,
     ]);
 
-    EventAgendaItem::query()->create([
+    EventAgenda::query()->create([
         'occurrence_id' => $occurrence->getKey(),
         'segment_key' => 'opening',
         'segment_type' => 'talk',
@@ -555,7 +555,7 @@ it('persists reference assignments agenda items and relational search payloads',
         ->and($occurrence->agendaItems)->toHaveCount(2)
         ->and($occurrence->agendaItems->pluck('segment_key')->all())->toBe(['opening', 'closing'])
         ->and($occurrence->agendaItems->first()?->isTimed())->toBeTrue()
-        ->and(EventReferenceAssignment::query()
+        ->and(EventReference::query()
             ->withReferenceKind('source_material')
             ->withReferenceType($source->getMorphClass())
             ->count())->toBe(2);
@@ -716,7 +716,7 @@ it('returns stable query and read models from the canonical discovery service', 
         'timezone' => 'UTC',
     ]);
 
-    EventAgendaItem::query()->create([
+    EventAgenda::query()->create([
         'occurrence_id' => $occurrence->id,
         'segment_key' => 'opening',
         'segment_type' => 'talk',
@@ -734,7 +734,7 @@ it('returns stable query and read models from the canonical discovery service', 
         'email' => 'discovery@example.com',
     ]);
 
-    $notice = EventChangeNotice::query()->create([
+    $notice = EventChange::query()->create([
         'event_id' => $event->id,
         'change_key' => 'title_changed',
         'severity' => 'info',
@@ -769,7 +769,7 @@ it('returns stable query and read models from the canonical discovery service', 
         ->and($registrationStatus)->toBeInstanceOf(RegistrationStatusData::class)
         ->and($registrationStatus->status)->toBe('confirmed')
         ->and($registrationStatus->canCheckIn)->toBeTrue()
-        ->and($noticePayload)->toBeInstanceOf(EventChangeNoticePayloadData::class)
+        ->and($noticePayload)->toBeInstanceOf(EventChangePayloadData::class)
         ->and($noticePayload->changeKey)->toBe('title_changed');
 });
 
@@ -837,8 +837,8 @@ it('records moderation submissions reviews and reasoned transitions', function (
 
 it('releases change notices through lifecycle events and blocks replacement cycles', function (): void {
     EventFacade::fake([
-        EventChangeNoticePublished::class,
-        EventChangeNoticeRetracted::class,
+        EventChangePublished::class,
+        EventChangeRetracted::class,
     ]);
 
     $firstEvent = EventModel::query()->create([
@@ -861,7 +861,7 @@ it('releases change notices through lifecycle events and blocks replacement cycl
         'visibility' => EventVisibility::Public,
     ]);
 
-    $notice = EventChangeNotice::query()->create([
+    $notice = EventChange::query()->create([
         'event_id' => $firstEvent->id,
         'replacement_event_id' => $secondEvent->id,
         'change_key' => 'speaker_changed',
@@ -875,18 +875,18 @@ it('releases change notices through lifecycle events and blocks replacement cycl
     $notice->publish();
     $notice->save();
 
-    EventFacade::assertDispatched(EventChangeNoticePublished::class, static function (EventChangeNoticePublished $event): bool {
+    EventFacade::assertDispatched(EventChangePublished::class, static function (EventChangePublished $event): bool {
         return $event->notice->isPublished();
     });
 
     $notice->retract();
     $notice->save();
 
-    EventFacade::assertDispatched(EventChangeNoticeRetracted::class, static function (EventChangeNoticeRetracted $event): bool {
+    EventFacade::assertDispatched(EventChangeRetracted::class, static function (EventChangeRetracted $event): bool {
         return $event->notice->status === 'retracted';
     });
 
-    EventChangeNotice::query()->create([
+    EventChange::query()->create([
         'event_id' => $firstEvent->id,
         'replacement_event_id' => $secondEvent->id,
         'change_key' => 'title_changed',
@@ -894,7 +894,7 @@ it('releases change notices through lifecycle events and blocks replacement cycl
         'state' => 'draft',
     ]);
 
-    expect(fn (): EventChangeNotice => EventChangeNotice::query()->create([
+    expect(fn (): EventChange => EventChange::query()->create([
         'event_id' => $secondEvent->id,
         'replacement_event_id' => $firstEvent->id,
         'change_key' => 'topic_changed',
@@ -1071,14 +1071,14 @@ it('dispatches change notice notifications through the adapter seam after public
     $dispatcher = new class implements EventChangeNoticeNotificationDispatcher
     {
         /**
-         * @var array<int, array{notice: EventChangeNoticePayloadData, audiences: EventChangeNoticeAudienceData}>
+         * @var array<int, array{notice: EventChangePayloadData, audiences: EventChangeAudienceData}>
          */
         public array $calls = [];
 
-        public function dispatch(EventChangeNotice $notice, EventChangeNoticeAudienceData $audiences): void
+        public function dispatch(EventChange $notice, EventChangeAudienceData $audiences): void
         {
             $this->calls[] = [
-                'notice' => EventChangeNoticePayloadData::fromNotice($notice),
+                'notice' => EventChangePayloadData::fromNotice($notice),
                 'audiences' => $audiences,
             ];
         }

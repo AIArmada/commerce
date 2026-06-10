@@ -93,14 +93,17 @@ final class EventResource extends Resource
         return [
             RelationManagers\OccurrencesRelationManager::class,
             RelationManagers\EventPeopleRelationManager::class,
+            RelationManagers\EventOrganizersRelationManager::class,
+            RelationManagers\EventSpeakersRelationManager::class,
+            RelationManagers\EventSponsorsRelationManager::class,
             RelationManagers\EventSubmissionsRelationManager::class,
             RelationManagers\EventReviewsRelationManager::class,
-            RelationManagers\EventChangeNoticesRelationManager::class,
+            RelationManagers\EventChangesRelationManager::class,
             RelationManagers\EventAssetsRelationManager::class,
             RelationManagers\EventClassificationsRelationManager::class,
             RelationManagers\EventEngagementsRelationManager::class,
             RelationManagers\EventAttendanceRelationManager::class,
-            RelationManagers\EventAgendaItemsRelationManager::class,
+            RelationManagers\EventAgendasRelationManager::class,
         ];
     }
 

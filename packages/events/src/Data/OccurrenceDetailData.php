@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Data;
 
-use AIArmada\Events\Models\EventAgendaItem;
+use AIArmada\Events\Models\EventAgenda;
 use AIArmada\Events\Models\Occurrence;
 use Spatie\LaravelData\Data;
 
@@ -99,7 +99,7 @@ final class OccurrenceDetailData extends Data
             approvalRequired: $occurrence->approval_required,
             references: $occurrence->referenceMaterials(),
             agendaItems: $occurrence->agendaItems
-                ->map(static fn (EventAgendaItem $agendaItem): EventAgendaItemData => EventAgendaItemData::fromAgendaItem($agendaItem))
+                ->map(static fn (EventAgenda $agendaItem): EventAgendaItemData => EventAgendaItemData::fromAgendaItem($agendaItem))
                 ->values()
                 ->all(),
             metadata: $occurrence->metadata,
