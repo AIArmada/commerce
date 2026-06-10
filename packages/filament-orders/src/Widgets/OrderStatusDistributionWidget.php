@@ -28,6 +28,7 @@ final class OrderStatusDistributionWidget extends ChartWidget
     protected function getData(): array
     {
         $statuses = [
+            'created' => ['label' => 'Created', 'color' => '#6366f1'],
             'pending_payment' => ['label' => 'Pending Payment', 'color' => '#eab308'],
             'processing' => ['label' => 'Processing', 'color' => '#3b82f6'],
             'on_hold' => ['label' => 'On Hold', 'color' => '#6b7280'],
@@ -37,6 +38,8 @@ final class OrderStatusDistributionWidget extends ChartWidget
             'canceled' => ['label' => 'Canceled', 'color' => '#9ca3af'],
             'returned' => ['label' => 'Returned', 'color' => '#f97316'],
             'refunded' => ['label' => 'Refunded', 'color' => '#64748b'],
+            'fraud' => ['label' => 'Fraud', 'color' => '#dc2626'],
+            'payment_failed' => ['label' => 'Payment Failed', 'color' => '#ef4444'],
         ];
 
         $includeGlobal = (bool) config('orders.owner.include_global', false);

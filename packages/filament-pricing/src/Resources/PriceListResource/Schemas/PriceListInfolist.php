@@ -57,9 +57,11 @@ final class PriceListInfolist
                     ->schema([
                         Section::make('Settings')
                             ->schema([
-                                IconEntry::make('is_active')
-                                    ->label('Active')
-                                    ->boolean(),
+                                TextEntry::make('deactivated_at')
+                                    ->label('Status')
+                                    ->badge()
+                                    ->formatStateUsing(fn ($state) => $state === null ? 'Active' : 'Deactivated')
+                                    ->color(fn ($state) => $state === null ? 'success' : 'danger'),
 
                                 IconEntry::make('is_default')
                                     ->label('Default Price List')

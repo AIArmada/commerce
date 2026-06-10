@@ -11,7 +11,6 @@ use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
@@ -64,11 +63,11 @@ final class JntOrderTable
                     ->color(fn (JntOrder $record): string => self::getNormalizedStatus($record)->color())
                     ->formatStateUsing(fn (JntOrder $record): string => self::getNormalizedStatus($record)->label())
                     ->sortable(),
-                IconColumn::make('has_problem')
+                TextColumn::make('problem_at')
                     ->label('Problem')
-                    ->boolean()
-                    ->trueColor('danger')
-                    ->falseColor('gray')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state === null ? 'No' : 'Yes')
+                    ->color(fn ($state) => $state === null ? 'success' : 'danger')
                     ->sortable(),
                 TextColumn::make('chargeable_weight')
                     ->label('Weight')
@@ -121,7 +120,7 @@ final class JntOrderTable
                 Filter::make('has_problem')
                     ->label('Has Problem')
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->where('has_problem', true)),
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('problem_at')),
                 Filter::make('delivered')
                     ->label('Delivered')
                     ->toggle()
@@ -156,10 +155,10 @@ final class JntOrderTable
         return match ($status) {
             TrackingStatus::Pending => $query->whereNull('tracking_number'),
             TrackingStatus::Delivered => $query->whereNotNull('delivered_at'),
-            TrackingStatus::Exception => $query->where('has_problem', true),
+            TrackingStatus::Exception => $query->whereNotNull('problem_at'),
             TrackingStatus::InTransit => $query->whereNull('delivered_at')
                 ->whereNotNull('tracking_number')
-                ->where('has_problem', false)
+                ->whereNull('problem_at')
                 ->whereIn('last_status_code', ['20', '30', '401', '402']),
             TrackingStatus::AtHub => $query->whereIn('last_status_code', ['403', '404', '405']),
             TrackingStatus::OutForDelivery => $query->where('last_status_code', '94'),

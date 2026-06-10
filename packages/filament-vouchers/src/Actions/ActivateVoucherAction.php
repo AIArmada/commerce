@@ -7,6 +7,7 @@ namespace AIArmada\FilamentVouchers\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\States\Active;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -32,7 +33,11 @@ final class ActivateVoucherAction extends Action
                 $record = OwnerWriteGuard::findOrFailForOwner(Voucher::class, $record->getKey());
             }
 
-            $record->update(['status' => Active::class]);
+            $record->update([
+                'status' => Active::class,
+                'last_activated_at' => CarbonImmutable::now(),
+                'paused_at' => null,
+            ]);
 
             Notification::make()
                 ->title('Voucher activated')

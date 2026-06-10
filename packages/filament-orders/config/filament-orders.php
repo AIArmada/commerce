@@ -9,6 +9,12 @@ return [
         'sort' => 1,
     ],
 
+    /* Pages */
+    'pages' => [
+        'timeline' => true,
+        'fulfillment' => true,
+    ],
+
     /* Payment Gateways */
     'payment_gateways' => [
         'stripe' => 'Stripe',

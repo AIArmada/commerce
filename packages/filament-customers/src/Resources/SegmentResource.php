@@ -31,7 +31,7 @@ class SegmentResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $count = OwnerUiScope::apply(static::getModel()::query(), includeGlobal: false)
-            ->where('is_active', true)
+            ->whereNull('deactivated_at')
             ->count();
 
         return $count > 0 ? (string) $count : null;

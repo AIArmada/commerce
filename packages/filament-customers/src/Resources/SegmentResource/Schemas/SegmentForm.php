@@ -9,6 +9,7 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -128,9 +129,9 @@ final class SegmentForm
                     ->schema([
                         Section::make('Settings')
                             ->schema([
-                                Toggle::make('is_active')
-                                    ->label('Active')
-                                    ->default(true),
+                                DateTimePicker::make('deactivated_at')
+                                    ->label('Deactivated At')
+                                    ->helperText('Set a date to deactivate. Leave empty for active.'),
 
                                 TextInput::make('priority')
                                     ->label('Priority')

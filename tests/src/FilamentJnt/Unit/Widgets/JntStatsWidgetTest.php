@@ -54,7 +54,7 @@ it('builds stats and respects owner scoping', function (): void {
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-G1',
         'delivered_at' => now(),
-        'has_problem' => false,
+        'problem_at' => null,
     ]));
 
     // ownerA records: resolver is already ownerA, so auto-assign fires automatically.
@@ -63,7 +63,7 @@ it('builds stats and respects owner scoping', function (): void {
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-A1',
         'delivered_at' => null,
-        'has_problem' => false,
+        'problem_at' => null,
         'last_status_code' => '20',
     ]);
 
@@ -72,7 +72,7 @@ it('builds stats and respects owner scoping', function (): void {
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-A2',
         'delivered_at' => null,
-        'has_problem' => true,
+        'problem_at' => now(),
     ]);
 
     $ownerAPending = JntOrder::query()->create([
@@ -80,7 +80,7 @@ it('builds stats and respects owner scoping', function (): void {
         'customer_code' => 'CUST',
         'tracking_number' => null,
         'delivered_at' => null,
-        'has_problem' => false,
+        'problem_at' => null,
     ]);
 
     $ownerAReturn = JntOrder::query()->create([
@@ -88,7 +88,7 @@ it('builds stats and respects owner scoping', function (): void {
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-A4',
         'delivered_at' => null,
-        'has_problem' => false,
+        'problem_at' => null,
         'last_status_code' => '172',
     ]);
 
@@ -97,7 +97,7 @@ it('builds stats and respects owner scoping', function (): void {
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-B1',
         'delivered_at' => null,
-        'has_problem' => false,
+        'problem_at' => null,
         'last_status_code' => '20',
     ]));
 
@@ -121,7 +121,7 @@ it('builds stats without owner scoping when owner mode is disabled', function ()
         'order_id' => 'ORD-1',
         'customer_code' => 'CUST',
         'delivered_at' => null,
-        'has_problem' => false,
+        'problem_at' => null,
     ]);
 
     JntOrder::query()->create([
@@ -129,7 +129,7 @@ it('builds stats without owner scoping when owner mode is disabled', function ()
         'customer_code' => 'CUST',
         'tracking_number' => 'TRK-2',
         'delivered_at' => now(),
-        'has_problem' => false,
+        'problem_at' => null,
     ]);
 
     $widget = app(JntStatsWidget::class);

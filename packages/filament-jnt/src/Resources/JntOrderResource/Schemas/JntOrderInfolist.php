@@ -67,11 +67,11 @@ final class JntOrderInfolist
                                     'CC_CASH' => 'Cash on Delivery',
                                     default => $state ?? '—',
                                 }),
-                            TextEntry::make('has_problem')
+                            TextEntry::make('problem_at')
                                 ->label('Has Problem')
                                 ->badge()
-                                ->color(fn (bool $state): string => $state ? 'danger' : 'success')
-                                ->formatStateUsing(fn (bool $state): string => $state ? 'Yes' : 'No'),
+                                ->formatStateUsing(fn ($state): string => $state === null ? 'No' : 'Yes')
+                                ->color(fn ($state): string => $state === null ? 'success' : 'danger'),
                         ]),
                 ]),
 

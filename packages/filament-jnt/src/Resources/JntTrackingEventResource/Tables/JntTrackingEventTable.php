@@ -87,7 +87,7 @@ final class JntTrackingEventTable
                         return self::applyNormalizedStatusFilter($query, $data['value'] ?? null);
                     }),
                 Filter::make('has_problem')
-                    ->label('Has Problem')
+                    ->label('Has Problem Type')
                     ->toggle()
                     ->query(fn (Builder $query): Builder => $query->whereNotNull('problem_type')),
                 Filter::make('delivered')
