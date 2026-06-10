@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Inventory\Facades\InventoryAllocation;
-use AIArmada\Inventory\Services\InventoryAllocationService;
+use AIArmada\Inventory\Services\Stock\InventoryAllocationService;
 
 test('InventoryAllocation facade has correct accessor method', function (): void {
     $reflection = new ReflectionClass(InventoryAllocation::class);
