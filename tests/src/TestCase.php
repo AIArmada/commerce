@@ -807,6 +807,9 @@ abstract class TestCase extends Orchestra
             $table->integer('position')->default(0);
             $table->boolean('is_visible')->default(true);
             $table->boolean('is_featured')->default(false);
+            $table->string('meta_title')->nullable();
+            $table->text('meta_description')->nullable();
+            $table->json('metadata')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->timestamps();
             $table->softDeletes();
