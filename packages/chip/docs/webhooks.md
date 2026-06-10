@@ -216,3 +216,45 @@ $completedRefund = WebhookSimulator::forEvent(WebhookEventType::PaymentRefunded)
 ```
 
 Use the built-in testing helpers when you want to simulate the package's event flow instead of hand-rolling webhook arrays. When owner mode is enabled and you dispatch directly inside an active `OwnerContext`, `WebhookSimulator::dispatch()` also carries the current owner tuple into the payload so owner-aware listeners behave like the real HTTP path.
+
+## Alternative handler: DispatchChipWebhookAction
+
+Use `DispatchChipWebhookAction` when you want to programmatically dispatch a webhook event from non-HTTP surfaces (queued jobs, console commands, tests) while still benefiting from owner-scoped routing:
+
+```php
+use AIArmada\Chip\Actions\DispatchChipWebhookAction;
+
+$result = app(DispatchChipWebhookAction::class)->execute(
+    event: 'purchase.paid',
+    payload: ['id' => 'purchase_abc123', 'status' => 'paid'],
+    owner: $tenant, // optional — resolved from payload brand_id when omitted
+);
+
+if ($result->wasHandled()) {
+    // Event was routed to a handler
+}
+```
+
+The action enriches the payload, resolves owner context from the payload or provided model, and routes through the same `WebhookRouter` used by the built-in HTTP controller.
+
+## Alternative handler: HandleSendInstructionWebhookAction
+
+Use `HandleSendInstructionWebhookAction` specifically for CHIP Send payout webhooks. Unlike the generic `DispatchChipWebhookAction`, this action handles both the local model update (transitioning the `SendInstruction` state) and typed event dispatch in one step:
+
+```php
+use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
+use AIArmada\Chip\Enums\SendInstructionState;
+use AIArmada\Chip\Events\PayoutSuccess;
+
+$result = app(HandleSendInstructionWebhookAction::class)->execute(
+    payload: $enrichedPayload,
+    targetState: SendInstructionState::Success,
+    eventClass: PayoutSuccess::class,
+);
+
+if ($result->wasSkipped()) {
+    // Send instruction not found locally
+}
+```
+
+The action queries `SendInstruction` without owner scoping (CHIP Send records are not tenant-owned), updates the state, and dispatches the given event class with `PayoutData` as the first argument.

@@ -42,6 +42,60 @@ interface PriceCalculatorInterface
 | `currency` | string | Override default currency |
 | `effective_at` | DateTimeInterface\|string\|int | Calculate price at specific date |
 
+### CustomerPriceResolverInterface
+
+Resolves a customer-specific price for a priceable item by looking up price lists assigned to the given customer:
+
+```php
+namespace AIArmada\Pricing\Contracts;
+
+interface CustomerPriceResolverInterface
+{
+    /**
+     * Resolve a customer-specific price for a priceable item.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function resolve(string $priceableType, string $priceableId, int $quantity, array $context): ?int;
+}
+```
+
+### SegmentPriceResolverInterface
+
+Resolves a segment-specific price by searching price lists assigned to the customer's segments:
+
+```php
+namespace AIArmada\Pricing\Contracts;
+
+interface SegmentPriceResolverInterface
+{
+    /**
+     * Resolve a segment-specific price for a priceable item.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function resolve(string $priceableType, string $priceableId, int $quantity, array $context): ?int;
+}
+```
+
+### TierResolverInterface
+
+Resolves a quantity-based tier price and returns a structured result:
+
+```php
+namespace AIArmada\Pricing\Contracts;
+
+use AIArmada\Pricing\Data\TierPriceResultData;
+
+interface TierResolverInterface
+{
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function resolve(string $tierableType, string $tierableId, int $quantity, array $context): ?TierPriceResultData;
+}
+```
+
 ### Priceable
 
 Interface for items that can have dynamic pricing:
@@ -222,6 +276,29 @@ The `breakdown` array contains the calculation steps:
     ],
 ]
 ```
+
+### TierPriceResultData
+
+Returned by `TierResolverInterface::resolve()`:
+
+```php
+namespace AIArmada\Pricing\Data;
+
+use Spatie\LaravelData\Data;
+
+final class TierPriceResultData extends Data
+{
+    public function __construct(
+        public int $price,
+        public string $tier,
+    ) {}
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `price` | int | Tier price in cents |
+| `tier` | string | Human-readable tier description (e.g. "10-49 units") |
 
 ---
 

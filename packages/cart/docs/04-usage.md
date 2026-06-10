@@ -359,3 +359,84 @@ $item->getSubtotal(); // Money object
 // Associated model (if set)
 $item->getAssociatedModel(); // Eloquent model or null
 ```
+
+## Cart Migration
+
+The package provides Actions for guest-to-user cart migration with configurable merge strategies.
+
+### Direct Migration
+
+```php
+use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+
+$action = app(MigrateGuestCartToUserAction::class);
+
+$action->execute(
+    userId: 123,
+    instance: 'default',
+    sessionId: 'session-abc'
+);
+```
+
+### Login-Bound Migration
+
+`MigrateCartOnLoginAction` resolves the guest session ID from cached login credentials automatically:
+
+```php
+use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+
+$action = app(MigrateCartOnLoginAction::class);
+
+$result = $action->execute(user: $user, instance: 'default');
+
+// Or pass session ID explicitly
+$result = $action->execute(user: $user, instance: 'default', sessionId: 'session-abc');
+```
+
+### Merge Strategy
+
+Cart migration uses `CartMergeStrategyInterface` to resolve quantity conflicts when the guest and user carts share items.
+
+Configure the default strategy in `config/cart.php`:
+
+```php
+'migration' => [
+    'merge_strategy' => 'add_quantities',
+],
+```
+
+Available strategies:
+
+| Name | Behavior |
+|------|----------|
+| `add_quantities` | Sums guest and user quantities (default) |
+| `keep_highest_quantity` | Keeps the higher of the two |
+| `keep_user_cart` | Preserves the user's existing quantity |
+| `replace_with_guest` | Overwrites with the guest quantity |
+
+Apply a custom strategy at runtime:
+
+```php
+$action = app(MigrateGuestCartToUserAction::class);
+$action = $action->withMergeStrategy(
+    new class implements \AIArmada\Cart\Contracts\CartMergeStrategyInterface {
+        public function resolveConflict(int $userQuantity, int $guestQuantity): int
+        {
+            return $userQuantity + $guestQuantity;
+        }
+    }
+);
+$action->execute(userId: 123, instance: 'default', sessionId: 'session-abc');
+```
+
+Or register globally via the registry:
+
+```php
+use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+
+$registry = app(CartMergeStrategyRegistry::class);
+$registry->register($yourHandler, 'my-strategy');
+
+// Then reference in config:
+// 'migration' => ['merge_strategy' => 'my-strategy'],
+```

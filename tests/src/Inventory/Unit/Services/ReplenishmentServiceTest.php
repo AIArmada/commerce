@@ -10,8 +10,8 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
-use AIArmada\Inventory\Services\DemandForecastService;
-use AIArmada\Inventory\Services\ReplenishmentService;
+use AIArmada\Inventory\Services\Stock\DemandForecastService;
+use AIArmada\Inventory\Services\Stock\ReplenishmentService;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);

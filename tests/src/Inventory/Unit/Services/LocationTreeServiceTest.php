@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\LocationTreeService;
+use AIArmada\Inventory\Services\Stock\LocationTreeService;
 
 beforeEach(function (): void {
     $this->service = new LocationTreeService;

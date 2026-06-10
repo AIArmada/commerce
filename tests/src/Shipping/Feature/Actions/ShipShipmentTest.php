@@ -115,6 +115,6 @@ describe('ShipShipment Action', function (): void {
 
         expect($shipped->status)->toBeInstanceOf(Shipped::class);
         expect($shipped->tracking_number)->toBe('TRACK-LABEL-001');
-        expect($shipped->label_url)->toBe('https://example.com/label-auto.pdf');
+        expect($shipped->latestLabel()->url)->toBe('https://example.com/label-auto.pdf');
     });
 });

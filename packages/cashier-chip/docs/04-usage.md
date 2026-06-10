@@ -47,3 +47,38 @@ trait.
 
 CHIP subscriptions are application-managed. If you use recurring billing, schedule the renewal
 command and make sure it runs inside the correct owner context in multi-tenant apps.
+
+## 5. Use the Action classes
+
+The package provides dedicated Action classes for common billing operations. These are the
+canonical entry points for non-trivial workflows and are fully tested.
+
+```php
+use AIArmada\CashierChip\Actions\ChargeChipCustomer;
+use AIArmada\CashierChip\Actions\RefundChipPayment;
+use AIArmada\CashierChip\Actions\CreateChipSubscription;
+use AIArmada\CashierChip\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
+
+// One-off charge with rate limiting and error handling
+$payment = app(ChargeChipCustomer::class)->charge(
+    $user, 2500, $recurringToken, ['reference' => 'Order #123']
+);
+
+// Refund a purchase (full or partial)
+$purchase = app(RefundChipPayment::class)->refund(
+    $purchaseId, 1000 // partial refund in cents
+);
+
+// Create a subscription from a builder
+$subscription = app(CreateChipSubscription::class)->create(
+    $builder, $recurringToken
+);
+
+// Cancel a subscription immediately
+app(CancelChipSubscription::class)->cancel($subscription);
+
+// Sync a purchase status from a webhook payload
+app(SyncChipPurchaseStatus::class)->syncPaid($user, $purchaseData, $payload);
+app(SyncChipPurchaseStatus::class)->syncFailed($user, $purchaseData, $payload);
+```

@@ -4,7 +4,66 @@ title: Usage
 
 # Usage
 
+## Actions
+
+The pricing package provides fine-grained Actions for isolated price-resolution steps. These are the recommended entry points for new code.
+
+### ResolveBasePrice
+
+```php
+use AIArmada\Pricing\Actions\ResolveBasePrice;
+use AIArmada\Pricing\Contracts\Priceable;
+
+// Get the raw base price (in cents) from a Priceable item
+$basePrice = ResolveBasePrice::resolve($item); // e.g. 5000
+```
+
+### ResolveTierPrice
+
+```php
+use AIArmada\Pricing\Actions\ResolveTierPrice;
+
+// Resolve a quantity-based tier price
+$tier = ResolveTierPrice::resolve(
+    tierableType: $product::class,
+    tierableId: (string) $product->id,
+    quantity: 10,
+    context: ['price_list_id' => $wholesale->id],
+);
+// Returns ['price' => 4500, 'tier' => '10-49 units'] or null
+```
+
+### FormatPriceForDisplay
+
+```php
+use AIArmada\Pricing\Actions\FormatPriceForDisplay;
+
+// Format a minor-unit amount for display
+$formatted = FormatPriceForDisplay::format(1999, 'MYR'); // "RM 19.99"
+```
+
+### ApplyPromotionalAdjustment
+
+```php
+use AIArmada\Pricing\Actions\ApplyPromotionalAdjustment;
+use Carbon\CarbonImmutable;
+
+// Apply an active promotion to a priceable item
+$adjustment = ApplyPromotionalAdjustment::apply(
+    promotionableType: $product::class,
+    promotionableId: (string) $product->id,
+    basePrice: 5000,
+    quantity: 1,
+    effectiveAt: CarbonImmutable::now(),
+);
+// Returns ['price' => 4250, 'name' => 'Summer Sale'] or null
+```
+
+---
+
 ## Price Calculator
+
+> **Deprecation note:** The `PriceCalculator` service and `PriceCalculatorInterface` continue to work, but new code is encouraged to use the individual Actions above for clarity and testability. The calculator internally delegates to these same Actions.
 
 The `PriceCalculator` service is the main entry point for calculating prices. It evaluates all pricing rules and returns the best applicable price.
 

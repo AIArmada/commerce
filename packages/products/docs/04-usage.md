@@ -4,6 +4,72 @@ title: Usage
 
 # Usage
 
+## Canonical API: Actions
+
+The packages provides action classes for common operations. Use these instead of direct model queries to ensure events are dispatched and business rules are enforced.
+
+### CreateProduct
+
+```php
+use AIArmada\Products\Actions\CreateProduct;
+use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
+
+$product = CreateProduct::run([
+    'name' => 'Basic T-Shirt',
+    'slug' => 'basic-t-shirt',
+    'sku' => 'TSHIRT-001',
+    'type' => ProductType::Simple,
+    'status' => ProductStatus::Active,
+    'price' => 2999,
+]);
+```
+
+### UpdateProduct
+
+```php
+use AIArmada\Products\Actions\UpdateProduct;
+
+$product = UpdateProduct::run($product, [
+    'name' => 'Updated T-Shirt',
+    'price' => 2499,
+]);
+```
+
+### UpdateProductStatus
+
+```php
+use AIArmada\Products\Actions\UpdateProductStatus;
+use AIArmada\Products\Enums\ProductStatus;
+
+UpdateProductStatus::run($product, ProductStatus::Active);
+```
+
+### GenerateVariants
+
+```php
+use AIArmada\Products\Actions\GenerateVariants;
+
+$variants = GenerateVariants::run($product);
+// Returns Collection<int, Variant>
+```
+
+### ApplyAttributeChanges
+
+```php
+use AIArmada\Products\Actions\ApplyAttributeChanges;
+
+ApplyAttributeChanges::run($product, [
+    'material' => 'Cotton',
+    'care_instructions' => 'Cold wash only',
+]);
+
+// Also supports variant-level application:
+ApplyAttributeChanges::make()->forVariant($variant, [
+    'color' => 'Red',
+]);
+```
+
 ## Create a product in owner context
 
 ```php

@@ -101,6 +101,22 @@ The attribute system is split across:
 
 These models are owner-aware and use config-driven table resolution like the rest of the package.
 
+## `IsAttributeEntity` concern
+
+`AIArmada\Products\Concerns\IsAttributeEntity` is used by attribute models (`Attribute`, `AttributeGroup`, `AttributeSet`) to provide:
+
+- `scopeOrdered()` — orders by `position`
+- `scopeVisible()` — filters by `visibility = Visible`
+- `resolveProductTable()` — resolves the table name from package config
+
+## `IsOptionEntity` concern
+
+`AIArmada\Products\Concerns\IsOptionEntity` is used by option models (`Option`, `OptionValue`) to provide:
+
+- `scopeOrdered()` — orders by `position`
+- `scopeVisible()` — filters by `visibility = Visible`
+- `resolveProductTable()` — resolves the table name from package config
+
 ## `HasAttributes` trait
 
 Models using `AIArmada\Products\Traits\HasAttributes` get these helpers:

@@ -73,9 +73,9 @@ class ViewShipment extends ViewRecord
             Actions\Action::make('print_label')
                 ->label('Print Label')
                 ->icon('heroicon-o-printer')
-                ->visible(fn (Shipment $record) => $record->label_url !== null)
+                ->visible(fn (Shipment $record) => $record->latestLabel()?->url !== null)
                 ->authorize(fn (Shipment $record): bool => auth()->user()?->can('printLabel', $record) ?? false)
-                ->url(fn (Shipment $record) => $record->label_url)
+                ->url(fn (Shipment $record) => $record->latestLabel()?->url)
                 ->openUrlInNewTab(),
         ];
     }

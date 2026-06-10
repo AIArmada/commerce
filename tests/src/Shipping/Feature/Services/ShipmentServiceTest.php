@@ -327,7 +327,7 @@ describe('ShipmentService', function (): void {
         expect($shipped->status)->toBeInstanceOf(Shipped::class);
         expect($shipped->tracking_number)->toBe('TRACK123');
         expect($shipped->carrier_reference)->toBe('CARRIER123');
-        expect($shipped->label_url)->toBe('https://example.com/label.pdf');
+        expect($shipped->latestLabel()->url)->toBe('https://example.com/label.pdf');
         expect($shipped->shipped_at)->not->toBeNull();
         expect($shipped->events)->toHaveCount(1);
         expect($shipped->events->first()->description)->toBe('Shipment created with carrier');
@@ -415,8 +415,8 @@ describe('ShipmentService', function (): void {
         expect($label->format)->toBe('pdf');
         expect($label->url)->toBe('https://example.com/label.pdf');
         expect($label->size)->toBe('a4');
-        expect($shipment->fresh()->label_url)->toBe('https://example.com/label.pdf');
-        expect($shipment->fresh()->label_format)->toBe('pdf');
+        expect($shipment->fresh()->latestLabel()->url)->toBe('https://example.com/label.pdf');
+        expect($shipment->fresh()->latestLabel()->format)->toBe('pdf');
     });
 
     it('cannot generate label without tracking number', function (): void {

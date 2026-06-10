@@ -72,6 +72,22 @@ return [
 | `features.owner.enabled` | `false` | Enable multitenancy/owner scoping |
 | `features.owner.include_global` | `false` | Include global (ownerless) records in queries |
 | `features.owner.auto_assign_on_create` | `true` | Auto-assign the resolved owner to newly created pricing records |
+| `features.promotional.enabled` | `true` | Enable promotional price resolution |
+
+## PricingIntegrationRegistrar
+
+The `PricingIntegrationRegistrar` coordinates how downstream packages (cart, checkout, vouchers, promotions) wire into the pricing system. It is registered as a singleton and can be resolved via the container:
+
+```php
+use AIArmada\Pricing\Support\PricingIntegrationRegistrar;
+
+$registrar = app(PricingIntegrationRegistrar::class);
+
+// Access the shared calculator
+$calculator = $registrar->calculator();
+```
+
+The registrar's `boot()` method is called during service provider registration to wire up registered integrations. Downstream packages register their pricing needs through this registrar rather than directly binding to the container or editing the service provider.
 
 ## Environment Variables
 

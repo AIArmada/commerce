@@ -123,6 +123,26 @@ public function panel(Panel $panel): Panel
 }
 ```
 
+## Custom Pages
+
+The package provides dedicated pages for fulfillment and timeline workflows:
+
+- `OrderFulfillmentPage` — manage order fulfillment operations.
+- `OrderTimelinePage` — full order event timeline.
+
+Extend these pages to override actions, fields, or layout:
+
+```php
+namespace App\Filament\Pages;
+
+use AIArmada\FilamentOrders\Pages\OrderFulfillmentPage as BaseFulfillmentPage;
+
+class OrderFulfillmentPage extends BaseFulfillmentPage
+{
+    // ...
+}
+```
+
 ## Custom Views
 
 ### Timeline Widget

@@ -45,8 +45,6 @@ describe('GenerateLabel Action', function (): void {
         expect($label->format)->toBe('pdf');
         expect($label->url)->toBe('https://example.com/label.pdf');
         expect($label->size)->toBe('a4');
-        expect($shipment->fresh()->label_url)->toBe('https://example.com/label.pdf');
-        expect($shipment->fresh()->label_format)->toBe('pdf');
     });
 
     it('throws when shipment has no tracking number', function (): void {

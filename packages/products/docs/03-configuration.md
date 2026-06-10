@@ -95,6 +95,21 @@ return [
 
 - `features.variants.sku_pattern` is used by `Variant::generateSku()`.
 
+### Variant generation
+
+Variant generation is driven by the `VariantGeneratorInterface` contract. The default implementation is `MatrixVariantGenerator`, which builds a cartesian-product matrix from a product's options.
+
+To register a custom generator, bind your implementation in a service provider:
+
+```php
+use AIArmada\Products\Contracts\VariantGeneratorInterface;
+use App\Services\CustomVariantGenerator;
+
+$this->app->bind(VariantGeneratorInterface::class, CustomVariantGenerator::class);
+```
+
+The `GenerateVariants` action resolves the bound implementation and delegates generation to it.
+
 ### Media
 
 The package reads collection limits and mime rules from `media.collections.*`, and image conversion sizes from `media.conversions.*`.
