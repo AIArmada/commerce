@@ -280,6 +280,156 @@ $account->status: string
 $account->reference: ?string
 ```
 
+## Actions
+
+### DispatchChipWebhookAction
+
+```php
+use AIArmada\Chip\Actions\DispatchChipWebhookAction;
+
+$action = app(DispatchChipWebhookAction::class);
+
+$action->execute(string $event, array $payload, ?Model $owner = null): WebhookResult
+```
+
+Dispatches a webhook event through the `WebhookRouter` with optional owner scoping. Returns a `WebhookResult` with `wasHandled(): bool` and `wasSkipped(): bool`.
+
+### HandleSendInstructionWebhookAction
+
+```php
+use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
+
+$action = app(HandleSendInstructionWebhookAction::class);
+
+$action->execute(
+    EnrichedWebhookPayload $payload,
+    SendInstructionState $targetState,
+    string $eventClass,
+    array $eventArgs = [],
+): WebhookResult
+```
+
+Updates the local send instruction state from a webhook payload and dispatches the typed event. Returns `WebhookResult::skipped()` when the send instruction is not found locally.
+
+### RunChipPurchaseDocGenerationAction
+
+```php
+use AIArmada\Chip\Actions\RunChipPurchaseDocGenerationAction;
+
+$action = app(RunChipPurchaseDocGenerationAction::class);
+
+$action->execute(string $purchaseId, array $payload, DocData $docData, string $docTypeConfigKey): void
+```
+
+Generates a document (invoice/credit note) from a CHIP payment event. Guards against duplicates per payment ID. No-ops when `aiarmada/docs` is not installed.
+
+### SyncChipRecordsFromApiAction
+
+```php
+use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
+
+$action = app(SyncChipRecordsFromApiAction::class);
+
+$action->handle(
+    array $purchaseIds,
+    bool $dryRun = false,
+    bool $overwriteExisting = false,
+    array $statuses = [],
+    ?callable $onProgress = null,
+): array{processed: int, synced: int, skipped: int, failed: int, errors: array<int, string>}
+```
+
+Fetches CHIP purchases from the remote API and stores them locally via `StoreWebhookData`. Optionally links checkout customers via `ChipCustomerBridge`. Supports dry-run mode and status filtering.
+
+## Support Classes
+
+### ChipCustomerBridge
+
+```php
+use AIArmada\Chip\Support\ChipCustomerBridge;
+
+$bridge = app(ChipCustomerBridge::class);
+
+$bridge->findCheckoutSessionByPaymentId(string $paymentId): ?Model
+$bridge->linkCustomer(Model $checkoutSession, array $payload, string $source = 'chip_customer_bridge'): void
+```
+
+Integrates with `aiarmada/checkout` and `aiarmada/customers` to link a CHIP client ID to a local customer model after a completed checkout session. The checkout session model and customer model classes are configurable via `chip.integrations.customer_bridge.*`.
+
+### ChipOwnerTuple
+
+```php
+use AIArmada\Chip\Support\ChipOwnerTuple;
+
+ChipOwnerTuple::extractFromPayload(array $payload): ?array{string, string}
+ChipOwnerTuple::resolveFromPayload(array $payload): ?Model
+ChipOwnerTuple::embedInPayload(array $payload, Model $owner): array
+```
+
+Utility for embedding and extracting the owner tuple (`__owner_type`, `__owner_id`) in CHIP webhook payload envelopes. Used during webhook dispatch to carry the owner context through the async processing pipeline so owner-aware listeners can restore it on the worker side.
+
+### ChipPaymentStatusMapper
+
+```php
+use AIArmada\Chip\Support\ChipPaymentStatusMapper;
+
+ChipPaymentStatusMapper::map(string $chipStatus): PaymentStatus
+```
+
+Maps CHIP-internal status strings to the standardized `AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus` enum used by the unified gateway interface.
+
+### ChipWebhookOwnerResolver
+
+```php
+use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
+
+ChipWebhookOwnerResolver::resolveFromPayload(array $payload): ?Model
+ChipWebhookOwnerResolver::resolveFromBrandId(string $brandId): ?Model
+```
+
+Resolves the owner model from a webhook payload's `brand_id` field using the `chip.owner.webhook_brand_id_map` config. Supports both top-level `brand_id` and nested `purchase.brand_id` payload shapes.
+
+### ResolveWebhookPurchaseId
+
+```php
+use AIArmada\Chip\Support\ResolveWebhookPurchaseId;
+
+ResolveWebhookPurchaseId::fromPaymentPayload(array $payload): ?string
+ResolveWebhookPurchaseId::fromAnyPayload(array $payload): ?string
+```
+
+Extracts the CHIP purchase ID from webhook payloads. `fromPaymentPayload` handles payment-shaped refund completion payloads (`related_to.id`), while `fromAnyPayload` falls back to the top-level `id` or `data.id` field.
+
+### BuildChipDocData
+
+```php
+use AIArmada\Chip\Support\BuildChipDocData;
+use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Events\PaymentRefunded;
+use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Models\Doc;
+
+$builder = app(BuildChipDocData::class);
+
+$builder->forPayment(Purchase $purchase, PurchasePaid $event, DocType $docType): DocData
+$builder->forRefund(Purchase $purchase, PaymentRefunded $event, DocType $docType, ?Doc $originalInvoice): DocData
+```
+
+Builds `DocData` objects from CHIP payment and refund events for use with `RunChipPurchaseDocGenerationAction`. Extracts customer data, line items, and metadata from the purchase and event data.
+
+### WebhookOwnerBatchRunner
+
+```php
+use AIArmada\Chip\Support\WebhookOwnerBatchRunner;
+
+$runner = app(WebhookOwnerBatchRunner::class);
+
+$runner->run(callable $callback, int $limit = 0): array{processed: int, succeeded: int, failed: int}
+```
+
+Iterates over distinct owner tuples from the webhooks table, running the callback inside `OwnerContext::withOwner()` for each. Used by batch commands to process webhooks per-tenant when owner mode is enabled. When a current owner context is already active, runs the callback once in that context instead.
+
 ## Conventions
 
 - Amounts in **cents** (sen) for API communication

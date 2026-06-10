@@ -15,6 +15,19 @@ Cashier CHIP provides local subscription management. Unlike Stripe, CHIP doesn't
 
 ## Creating Subscriptions
 
+The canonical way to create a subscription is via the `CreateChipSubscription` Action.
+All `$builder->create()` calls delegate to it internally.
+
+```php
+use AIArmada\CashierChip\Actions\CreateChipSubscription;
+
+$subscription = app(CreateChipSubscription::class)->create(
+    builder: $builder,
+    recurringToken: $recurringToken,
+    options: [],
+);
+```
+
 ### Basic Subscription
 
 ```php
@@ -177,6 +190,19 @@ if ($subscription->hasIncompletePayment()) {
 ```
 
 ## Managing Subscriptions
+
+The canonical way to cancel a subscription is via the `CancelChipSubscription` Action.
+All `$subscription->cancel()` and `$subscription->cancelNow()` calls delegate to it internally.
+
+```php
+use AIArmada\CashierChip\Actions\CancelChipSubscription;
+
+// Cancel immediately
+app(CancelChipSubscription::class)->cancel($subscription);
+
+// Mark a subscription as past due
+app(CancelChipSubscription::class)->markPastDue($subscription, 'Payment declined');
+```
 
 ### Cancel at Period End
 

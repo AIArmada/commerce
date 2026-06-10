@@ -53,6 +53,20 @@ Use:
 
 These labels are consumed by UI helpers and widgets.
 
+## Policy-Based Authorization
+
+The following policies gate resource access:
+
+| Policy | Model |
+|--------|-------|
+| `SignalAlertRulePolicy` | Signal alert rules |
+| `SignalGoalPolicy` | Signal goals |
+| `SignalInteractionRulePolicy` | Signal interaction rules |
+| `SignalSegmentPolicy` | Signal segments |
+| `TrackedPropertyPolicy` | Tracked properties |
+
+Override any policy in your `AuthServiceProvider` to customize authorization logic.
+
 ## Extending Plugin Registration
 
 If you need additional app-specific pages/resources, register them in your panel provider alongside `FilamentSignalsPlugin::make()`.

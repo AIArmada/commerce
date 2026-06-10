@@ -6,6 +6,19 @@ title: One-off Charges
 
 Process single payments without creating subscriptions.
 
+The canonical way to charge a customer is via the `ChargeChipCustomer` Action. All `$user->charge()` calls delegate to it internally.
+
+```php
+use AIArmada\CashierChip\Actions\ChargeChipCustomer;
+
+$payment = app(ChargeChipCustomer::class)->charge(
+    billable: $user,
+    amount: 10000,
+    recurringToken: null,
+    options: ['reference' => 'Product Purchase - Order #123'],
+);
+```
+
 ## Simple Charges
 
 ### Charge with Default Payment Method
@@ -120,7 +133,19 @@ try {
 
 ## Refunds
 
-CHIP refunds are processed through the CHIP dashboard or API:
+The canonical way to refund a payment is via the `RefundChipPayment` Action:
+
+```php
+use AIArmada\CashierChip\Actions\RefundChipPayment;
+
+// Full refund
+app(RefundChipPayment::class)->refund($purchaseId);
+
+// Partial refund (50.00 MYR in cents)
+app(RefundChipPayment::class)->refund($purchaseId, 5000);
+```
+
+CHIP refunds can also be processed through the CHIP dashboard or lower-level API:
 
 ```php
 // Using the CHIP package directly

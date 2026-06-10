@@ -465,6 +465,18 @@ enum PipelinePhase: string
 }
 ```
 
+### CartMergeStrategy
+
+```php
+enum CartMergeStrategy: string
+{
+    case ADD_QUANTITIES = 'add_quantities';
+    case KEEP_HIGHEST_QUANTITY = 'keep_highest_quantity';
+    case KEEP_USER_CART = 'keep_user_cart';
+    case REPLACE_WITH_GUEST = 'replace_with_guest';
+}
+```
+
 ---
 
 ## Artisan Commands
@@ -488,6 +500,48 @@ php artisan cart:clear-abandoned --dry-run
 
 # Custom batch size
 php artisan cart:clear-abandoned --batch-size=500
+```
+
+---
+
+## Actions
+
+### MigrateGuestCartToUserAction
+
+```php
+use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+
+$action = app(MigrateGuestCartToUserAction::class);
+
+// Execute raw migration (returns bool)
+$action->execute(userId: 123, instance: 'default', sessionId: 'session-abc');
+
+// With custom merge strategy
+$action = $action->withMergeStrategy($customStrategy);
+$action->execute(userId: 123, instance: 'default', sessionId: 'session-abc');
+
+// With user model
+$result = $action->executeForUser(
+    user: $user,
+    instance: 'default',
+    sessionId: $guestSessionId
+);
+$result->success;
+$result->itemsMerged;
+$result->message;
+```
+
+### MigrateCartOnLoginAction
+
+```php
+use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+
+$action = app(MigrateCartOnLoginAction::class);
+
+$result = $action->execute(user: $user, instance: 'default');
+// $result['success'], $result['itemsMerged'], $result['message']
+
+$result = $action->execute(user: $user, instance: 'default', sessionId: 'session-abc');
 ```
 
 ---
@@ -570,4 +624,106 @@ $rule = RulePresets::metadataEquals('channel', 'mobile');
 $rule = RulePresets::all($rule1, $rule2);    // AND
 $rule = RulePresets::any($rule1, $rule2);    // OR
 $rule = RulePresets::not($rule);             // NOT
+```
+
+### CartMergeStrategyRegistry
+
+Registers and resolves merge strategies by name.
+
+```php
+use AIArmada\Cart\Services\CartMergeStrategyRegistry;
+use AIArmada\Cart\Enums\CartMergeStrategy;
+
+$registry = app(CartMergeStrategyRegistry::class);
+
+// Register built-in strategies
+$registry->registerBuiltIns();
+
+// Resolve from config
+$strategy = $registry->resolveFromConfig();
+
+// Get by name
+$strategy = $registry->get(CartMergeStrategy::ADD_QUANTITIES->value);
+
+// Register custom strategy
+$registry->register($yourHandler, 'my-strategy');
+```
+
+### CartFactory
+
+Creates `Cart` instances with shared dependencies.
+
+```php
+use AIArmada\Cart\Services\CartFactory;
+
+$factory = app(CartFactory::class);
+
+$cart = $factory->make(identifier: 'user-123', instanceName: 'default');
+$clone = $factory->cloneForIdentifier($cart, 'user-456');
+$wishlist = $factory->cloneForInstance($cart, 'wishlist');
+```
+
+### ConditionPipelineFactory
+
+Configures and creates condition pipeline instances.
+
+```php
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineFactory;
+
+$factory = app(ConditionPipelineFactory::class);
+
+$pipeline = $factory->createEager();
+$lazy = $factory->createLazy($context);
+
+$factory->configure(function ($pipeline) {
+    // Register pipeline stages
+});
+```
+
+### ConditionTypeHandlerRegistry
+
+Registers handlers for condition types (tax, shipping, discount, fee).
+
+```php
+use AIArmada\Cart\Conditions\Handlers\ConditionTypeHandlerRegistry;
+
+$registry = app(ConditionTypeHandlerRegistry::class);
+
+$registry->register($handler);
+$handler = $registry->get('tax');
+$allHandlers = $registry->all();
+```
+
+---
+
+## Contracts
+
+### CartMergeStrategyInterface
+
+```php
+use AIArmada\Cart\Contracts\CartMergeStrategyInterface;
+
+interface CartMergeStrategyInterface
+{
+    public function resolveConflict(int $userQuantity, int $guestQuantity): int;
+}
+```
+
+---
+
+## Support
+
+### LoginMigrationIdentifierResolver
+
+Resolves and caches session identifiers for login-based migration.
+
+```php
+use AIArmada\Cart\Support\LoginMigrationIdentifierResolver;
+
+$resolver = app(LoginMigrationIdentifierResolver::class);
+
+$identifiers = $resolver->resolveFromUser($user);
+$identifiers = $resolver->resolveFromCredentials($credentials);
+$sessionId = $resolver->findCachedSessionId($identifiers);
+$resolver->cacheSessionForIdentifiers($identifiers, session()->getId(), 5);
 ```

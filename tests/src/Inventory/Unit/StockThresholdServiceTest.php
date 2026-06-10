@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\StockThresholdService;
+use AIArmada\Inventory\Services\Stock\StockThresholdService;
 
 class StockThresholdServiceTest extends InventoryTestCase
 {

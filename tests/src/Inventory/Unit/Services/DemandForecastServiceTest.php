@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\DemandPeriodType;
 use AIArmada\Inventory\Models\InventoryDemandHistory;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\DemandForecastService;
+use AIArmada\Inventory\Services\Stock\DemandForecastService;
 
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();

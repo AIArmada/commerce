@@ -31,10 +31,34 @@ patterns on top of `aiarmada/chip`.
 
 ## Main models services or surfaces
 
+- **Actions** — `ChargeChipCustomer`, `RefundChipPayment`, `CreateChipSubscription`, `CancelChipSubscription`, `SyncChipPurchaseStatus` — canonical entry points for billing operations
 - **Billable surface** — trait-based customer, payment method, checkout, charge, and subscription APIs
 - **Persistence** — `cashier_chip_*` subscription tables plus CHIP billable columns
-- **Runtime behavior** — application-managed renewals, webhook processing, and local billing workflows
+- **Runtime behavior** — application-managed renewals (via `RenewSubscriptionsCommand` with `OwnerBatchRunner`), webhook processing, and local billing workflows
 - **Testing surface** — helpers and patterns for billing flows, recurring tokens, and webhook handling
+
+## Directory structure
+
+```
+src/
+├── Actions/          # ChargeChipCustomer, RefundChipPayment, CreateChipSubscription,
+│                     # CancelChipSubscription, SyncChipPurchaseStatus
+├── Billing/          # Billable, Cashier, Checkout, Coupon, Discount, PromotionCode
+├── Payment/          # Payment, PaymentMethod, PaymentMethodStore, StoredPaymentMethod,
+│                     # InvoicePayment
+├── Subscription/    # Subscription, SubscriptionBuilder, SubscriptionItem
+├── Invoice/         # Invoice, InvoiceLineItem
+├── Console/         # RenewSubscriptionsCommand, WebhookCommand
+├── Contracts/       # BillableContract, etc.
+├── Events/          # SubscriptionCreated, PaymentSucceeded, etc.
+├── Exceptions/
+├── Listeners/
+├── Testing/         # Test utilities
+└── CashierChipServiceProvider.php
+
+tests/
+└── Actions/         # Test suite for all five Actions
+```
 
 ## Owner scoping and security notes
 

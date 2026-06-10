@@ -192,6 +192,47 @@ $result = $migrationService->migrateGuestCartForUser(
 );
 ```
 
+> **Deprecation Notice:** The `CartMigrationService` is deprecated. Prefer the dedicated Action classes below.
+
+### Action-Based Migration
+
+```php
+use AIArmada\Cart\Actions\MigrateGuestCartToUserAction;
+
+$action = app(MigrateGuestCartToUserAction::class);
+
+// Execute raw migration (returns bool)
+$action->execute(
+    userId: 123,
+    instance: 'default',
+    sessionId: 'session-abc'
+);
+
+// With custom merge strategy
+$action = $action->withMergeStrategy($customStrategy);
+$action->execute(userId: 123, instance: 'default', sessionId: 'session-abc');
+
+// Convenience wrapper for user models
+$result = $action->executeForUser(
+    user: $user,
+    instance: 'default',
+    sessionId: $guestSessionId
+);
+// $result->success, $result->itemsMerged, $result->message
+```
+
+```php
+use AIArmada\Cart\Actions\MigrateCartOnLoginAction;
+
+$action = app(MigrateCartOnLoginAction::class);
+
+// Auto-resolves session ID from cached login identifiers
+$result = $action->execute(user: $user, instance: 'default');
+
+// Returns ['success' => bool, 'itemsMerged' => int, 'message' => string]
+$result['success'];
+```
+
 ### Auto-Migration on Login
 
 When enabled, carts migrate automatically:

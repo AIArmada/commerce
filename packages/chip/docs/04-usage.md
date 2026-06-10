@@ -347,6 +347,87 @@ class PaymentTest extends TestCase
 }
 ```
 
+## Actions
+
+The package provides reusable action classes for common orchestration workflows.
+
+### DispatchChipWebhookAction
+
+Dispatches a CHIP webhook event through the webhook router with optional owner scoping:
+
+```php
+use AIArmada\Chip\Actions\DispatchChipWebhookAction;
+use App\Models\Tenant;
+
+$result = app(DispatchChipWebhookAction::class)->execute(
+    event: 'purchase.paid',
+    payload: ['id' => 'purchase_abc123', 'status' => 'paid'],
+    owner: $tenant, // optional; resolved from payload when omitted
+);
+
+$result->wasHandled(); // true if the event was routed to a handler
+$result->wasSkipped(); // true if no handler matched
+```
+
+When an `owner` model is provided, the webhook envelope is enriched with owner context before routing, and the handler runs inside `OwnerContext::withOwner()`. When omitted, the action attempts to resolve the owner from the enriched payload's brand-to-owner map.
+
+### HandleSendInstructionWebhookAction
+
+Handles CHIP Send payout webhooks by updating the local send instruction state and dispatching the corresponding typed event:
+
+```php
+use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
+use AIArmada\Chip\Enums\SendInstructionState;
+use AIArmada\Chip\Events\PayoutSuccess;
+
+$result = app(HandleSendInstructionWebhookAction::class)->execute(
+    payload: $enrichedPayload,
+    targetState: SendInstructionState::Success,
+    eventClass: PayoutSuccess::class,
+);
+```
+
+The action looks up the local `SendInstruction` by ID from the payload, updates its `state` column, and dispatches the given event class. It returns `WebhookResult::skipped()` when the send instruction is not found locally.
+
+### RunChipPurchaseDocGenerationAction
+
+Generates documents (invoices, credit notes) from CHIP payment events when the optional `aiarmada/docs` package is installed:
+
+```php
+use AIArmada\Chip\Actions\RunChipPurchaseDocGenerationAction;
+use AIArmada\Chip\Support\BuildChipDocData;
+use AIArmada\Docs\Enums\DocType;
+
+app(RunChipPurchaseDocGenerationAction::class)->execute(
+    purchaseId: 'purchase_abc123',
+    payload: $webhookPayload,
+    docData: app(BuildChipDocData::class)->forPayment($purchase, $event, DocType::Invoice),
+    docTypeConfigKey: 'chip.integrations.docs.invoice',
+);
+```
+
+The action guards against duplicate document generation for the same payment ID and safely returns early when the `Docs` package is not installed.
+
+### SyncChipRecordsFromApiAction
+
+Syncs CHIP purchase records from the remote API into local storage, optionally linking checkout customers:
+
+```php
+use AIArmada\Chip\Actions\SyncChipRecordsFromApiAction;
+
+$summary = app(SyncChipRecordsFromApiAction::class)->handle(
+    purchaseIds: ['purchase_abc123', 'purchase_def456'],
+    dryRun: true,
+    overwriteExisting: false,
+    statuses: ['paid', 'refunded'],
+    onProgress: fn () => dump('processed one'),
+);
+
+// $summary = ['processed' => 2, 'synced' => 0, 'skipped' => 2, 'failed' => 0, 'errors' => []]
+```
+
+Use `dryRun: true` to preview which purchases would be synced. Use `overwriteExisting: true` to re-sync purchases already stored locally (required for backfill scenarios). When `aiarmada/checkout` and `aiarmada/customers` are installed, each synced purchase also creates a CHIP customer link via `ChipCustomerBridge`.
+
 ## Artisan Commands
 
 | Command | Description |

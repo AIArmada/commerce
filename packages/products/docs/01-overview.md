@@ -17,6 +17,9 @@ Use this package when you need the source-of-truth catalog domain: products, var
 - Catalog-domain enums, helpers, slugging, and money-aware product behavior
 - Owner-aware catalog persistence through `commerce-support`
 - Config-driven table names and catalog feature flags
+- Action classes for product lifecycle (`CreateProduct`, `UpdateProduct`, `UpdateProductStatus`, `ApplyAttributeChanges`, `GenerateVariants`)
+- A `VariantGeneratorInterface` contract and its `MatrixVariantGenerator` strategy
+- `IsAttributeEntity` and `IsOptionEntity` concerns for attribute/option model reuse
 
 ## What this package does not own
 
@@ -40,6 +43,27 @@ Use this package when you need the source-of-truth catalog domain: products, var
 - `AttributeGroup`
 - `AttributeSet`
 - Product, status, visibility, and attribute-type enums
+
+## Main actions
+
+- `CreateProduct` — creates a product and dispatches `ProductCreated`
+- `UpdateProduct` — updates a product and dispatches `ProductUpdated`
+- `UpdateProductStatus` — manages status transitions (Active, Draft, Disabled, Archived) with lifecycle timestamps
+- `GenerateVariants` — generates variant combinations via a configurable `VariantGeneratorInterface`
+- `ApplyAttributeChanges` — applies attribute values to products or variants
+
+## Contracts
+
+- `VariantGeneratorInterface` — implement to provide custom variant generation strategies
+
+## Strategies
+
+- `MatrixVariantGenerator` — the default variant generator; builds a cartesian-product matrix from product options
+
+## Concerns
+
+- `IsAttributeEntity` — provides `scopeOrdered()`, `scopeVisible()`, and table-name resolution for attribute models
+- `IsOptionEntity` — provides `scopeOrdered()`, `scopeVisible()`, and table-name resolution for option models
 
 ## Highlights
 

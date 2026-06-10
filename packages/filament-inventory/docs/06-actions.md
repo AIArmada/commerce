@@ -215,7 +215,13 @@ app(ReceiveStock::class)->execute(
 
 ## Action Authorization
 
-Actions respect Filament's authorization system:
+Actions respect Filament's authorization system via the following policies:
+
+| Policy | Model |
+|--------|-------|
+| `InventoryAllocationPolicy` | `InventoryAllocation` |
+| `InventoryLevelPolicy` | `InventoryLevel` |
+| `InventoryReorderSuggestionPolicy` | `InventoryReorderSuggestion` |
 
 ```php
 // In your policy

@@ -75,7 +75,15 @@ Manage geographic zones for rate calculation.
 
 ### Return Authorization Resource
 
-Manage return merchandise authorizations (RMAs).
+Manage return merchandise authorizations (RMAs). RMAs use a state machine with 8 states:
+
+```
+Draft → Pending → Approved → Received → Completed
+  │        │          │
+  │        ├── Rejected     (terminal)
+  ├── Cancelled             (terminal)
+           └── Expired      (terminal)
+```
 
 #### Processing a Return
 
@@ -83,7 +91,8 @@ Manage return merchandise authorizations (RMAs).
 2. Open a pending return
 3. Review the return details and reason
 4. Click **Approve** or **Reject**
-5. If approved, a return shipping label can be generated
+5. If approved, the return transitions to Approved status, and a return shipping label can be generated
+6. Once items are received, mark as Received; then Complete to finalize
 
 ## Pages
 
@@ -158,6 +167,8 @@ Available on the shipment list:
 ```php
 use AIArmada\FilamentShipping\Actions\ShipAction;
 use AIArmada\FilamentShipping\Actions\CancelShipmentAction;
+use AIArmada\FilamentShipping\Actions\PrintLabelAction;
+use AIArmada\FilamentShipping\Actions\SyncTrackingAction;
 
 // In a resource
 public static function table(Table $table): Table
@@ -166,8 +177,33 @@ public static function table(Table $table): Table
         ->actions([
             ShipAction::make(),
             CancelShipmentAction::make(),
+            PrintLabelAction::make(),
+            SyncTrackingAction::make(),
+        ])
+        ->bulkActions([
+            BulkShipAction::make(),
+            BulkCancelAction::make(),
+            BulkPrintLabelsAction::make(),
+            BulkSyncTrackingAction::make(),
         ]);
 }
+```
+
+### Using Domain Actions from Filament
+
+For programmatic shipping operations outside of table actions, use the domain Actions:
+
+```php
+use AIArmada\Shipping\Actions\CreateShipment;
+use AIArmada\Shipping\Actions\ShipShipment;
+use AIArmada\Shipping\Actions\CancelShipment;
+use AIArmada\Shipping\Actions\GenerateLabel;
+use AIArmada\Shipping\Actions\RecordTrackingEvent;
+
+// Inside a Filament action handler
+$shipment = CreateShipment::run($shipmentData);
+$result = ShipShipment::run($shipment);
+$label = GenerateLabel::run($shipment);
 ```
 
 ## Widgets

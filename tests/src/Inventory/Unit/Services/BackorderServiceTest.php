@@ -8,7 +8,7 @@ use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Services\BackorderService;
+use AIArmada\Inventory\Services\Stock\BackorderService;
 use AIArmada\Inventory\States\Fulfilled;
 use AIArmada\Inventory\States\PartiallyFulfilled;
 use AIArmada\Inventory\States\Pending;

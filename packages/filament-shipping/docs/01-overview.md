@@ -82,13 +82,20 @@ packages/filament-shipping/
 ├── resources/
 │   └── views/                   # Blade templates
 ├── src/
-│   ├── Actions/                 # Filament actions
+│   ├── Actions/                 # Filament actions (ShipAction, CancelShipmentAction, etc.)
 │   ├── Pages/                   # Custom Filament pages
 │   ├── Resources/               # Filament resources
 │   │   ├── ShipmentResource/
+│   │   │   ├── Schemas/         # ShipmentForm, ShipmentInfolist
+│   │   │   └── Tables/          # ShipmentsTable
 │   │   ├── ShippingZoneResource/
+│   │   │   ├── Schemas/         # ShippingZoneForm
+│   │   │   └── Tables/          # ShippingZonesTable
 │   │   └── ReturnAuthorizationResource/
-│   ├── Services/                # Bridge services
+│   │       ├── Schemas/         # ReturnAuthorizationForm
+│   │       └── Tables/          # ReturnAuthorizationsTable
+│   ├── Services/                # Bridge services (CartBridge)
+│   ├── Support/                 # ShippingStatsAggregator
 │   ├── Widgets/                 # Dashboard widgets
 │   ├── FilamentShippingPlugin.php
 │   └── FilamentShippingServiceProvider.php

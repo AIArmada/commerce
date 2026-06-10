@@ -18,6 +18,8 @@ Displays active carts, cart value, checkout starts, and abandoned carts with a s
 
 Displays recent active carts, carts with items, checkouts in progress, recent abandonments, total value, and high-value cart counts.
 
+> **Note:** `CartStatsOverviewWidget` and `LiveStatsWidget` have been removed from the package. Use `CartStatsWidget` for cart statistics.
+
 ## RecentActivityWidget
 
 Shows a recent activity table with status values:
