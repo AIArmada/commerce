@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;

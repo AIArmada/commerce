@@ -24,6 +24,7 @@ use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Created;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 it('uses collision-resistant package table defaults', function (): void {
@@ -213,7 +214,7 @@ it('normalizes action-written occurrence timestamps to UTC while preserving the 
 it('no-ops order fulfillment when no event checkout metadata is present', function (): void {
     $tableName = (new OrderItem)->getTable();
     if (! Schema::hasColumn($tableName, 'status')) {
-        Schema::table($tableName, function (Illuminate\Database\Schema\Blueprint $table): void {
+        Schema::table($tableName, function (Blueprint $table): void {
             $table->string('status', 30)->default('active');
         });
     }

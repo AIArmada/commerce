@@ -6,8 +6,8 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliatePayoutHold Model', function (): void {
     it('can be created with required fields', function (): void {
