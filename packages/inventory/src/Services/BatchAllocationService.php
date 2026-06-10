@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services;
 
-use AIArmada\Inventory\Services\Batch\BatchService;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Services\Batch\BatchService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
