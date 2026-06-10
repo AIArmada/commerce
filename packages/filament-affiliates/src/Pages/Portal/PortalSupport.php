@@ -209,7 +209,7 @@ class PortalSupport extends PortalPage
                 'id' => (string) $document->getKey(),
                 'document_type' => (string) $document->document_type,
                 'tax_year' => (int) $document->tax_year,
-                'status' => (string) $document->status,
+                'status' => $document->status->value,
                 'total_amount_minor' => (int) $document->total_amount_minor,
                 'currency' => (string) $document->currency,
                 'document_path' => $document->document_path,

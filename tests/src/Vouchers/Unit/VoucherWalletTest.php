@@ -54,7 +54,6 @@ test('can add voucher to wallet using trait', function (): void {
         ->and($walletEntry->voucher_id)->toBe($voucher->id)
         ->and($walletEntry->holder_id)->toBe($user->id)
         ->and($walletEntry->holder_type)->toBe($user->getMorphClass())
-        ->and($walletEntry->is_claimed)->toBeTrue()
         ->and($walletEntry->claimed_at)->not->toBeNull();
 });
 
@@ -93,18 +92,15 @@ test('can claim voucher wallet entry', function (): void {
         'voucher_id' => $voucher->id,
         'holder_id' => $user->id,
         'holder_type' => $user->getMorphClass(),
-        'is_claimed' => false,
     ]);
 
-    expect($walletEntry->is_claimed)->toBeFalse()
-        ->and($walletEntry->claimed_at)->toBeNull();
+    expect($walletEntry->claimed_at)->toBeNull();
 
     $walletEntry->claim();
 
     $walletEntry->refresh();
 
-    expect($walletEntry->is_claimed)->toBeTrue()
-        ->and($walletEntry->claimed_at)->not->toBeNull();
+    expect($walletEntry->claimed_at)->not->toBeNull();
 
     // Claiming again should not change
     $originalClaimedAt = $walletEntry->claimed_at;
@@ -128,19 +124,16 @@ test('can mark voucher wallet entry as redeemed', function (): void {
         'voucher_id' => $voucher->id,
         'holder_id' => $user->id,
         'holder_type' => $user->getMorphClass(),
-        'is_claimed' => true,
-        'is_redeemed' => false,
+        'claimed_at' => now(),
     ]);
 
-    expect($walletEntry->is_redeemed)->toBeFalse()
-        ->and($walletEntry->redeemed_at)->toBeNull();
+    expect($walletEntry->redeemed_at)->toBeNull();
 
     $walletEntry->markAsRedeemed();
 
     $walletEntry->refresh();
 
-    expect($walletEntry->is_redeemed)->toBeTrue()
-        ->and($walletEntry->redeemed_at)->not->toBeNull();
+    expect($walletEntry->redeemed_at)->not->toBeNull();
 
     // Marking again should not change
     $originalRedeemedAt = $walletEntry->redeemed_at;
@@ -174,14 +167,14 @@ test('can check if voucher wallet entry is expired', function (): void {
         'voucher_id' => $expiredVoucher->id,
         'holder_id' => $user->id,
         'holder_type' => $user->getMorphClass(),
-        'is_claimed' => true,
+        'claimed_at' => now(),
     ]);
 
     $activeWallet = VoucherWallet::create([
         'voucher_id' => $activeVoucher->id,
         'holder_id' => $user->id,
         'holder_type' => $user->getMorphClass(),
-        'is_claimed' => true,
+        'claimed_at' => now(),
     ]);
 
     expect($expiredWallet->isExpired())->toBeTrue()
@@ -233,32 +226,27 @@ test('can check if voucher wallet entry can be used', function (): void {
         'voucher_id' => $expiredVoucher->id,
         'holder_id' => $user->id,
         'holder_type' => $user->getMorphClass(),
-        'is_claimed' => true,
-        'is_redeemed' => false,
+        'claimed_at' => now(),
     ]);
 
     $activeWallet = VoucherWallet::create([
         'voucher_id' => $activeVoucher->id,
         'holder_id' => $user->id,
         'holder_type' => $user->getMorphClass(),
-        'is_claimed' => true,
-        'is_redeemed' => false,
+        'claimed_at' => now(),
     ]);
 
     $unclaimedWallet = VoucherWallet::create([
         'voucher_id' => $notStartedVoucher->id,
         'holder_id' => $user->id,
         'holder_type' => $user->getMorphClass(),
-        'is_claimed' => false,
-        'is_redeemed' => false,
     ]);
 
     $inactiveWallet = VoucherWallet::create([
         'voucher_id' => $inactiveVoucher->id,
         'holder_id' => $user->id,
         'holder_type' => $user->getMorphClass(),
-        'is_claimed' => true,
-        'is_redeemed' => false,
+        'claimed_at' => now(),
     ]);
 
     expect($expiredWallet->canBeUsed())->toBeFalse()
@@ -314,7 +302,7 @@ test('can get redeemed vouchers from wallet', function (): void {
     $redeemedVouchers = $user->getRedeemedVouchers();
 
     expect($redeemedVouchers)->toHaveCount(1)
-        ->and($redeemedVouchers->first()->is_redeemed)->toBeTrue();
+        ->and($redeemedVouchers->first()->redeemed_at)->not->toBeNull();
 });
 
 test('can get expired vouchers from wallet', function (): void {
@@ -351,12 +339,11 @@ test('can mark voucher as redeemed in wallet', function (): void {
 
     $walletEntry = $user->addVoucherToWallet('MARKREDEEM');
 
-    expect($walletEntry->is_redeemed)->toBeFalse();
+    expect($walletEntry->redeemed_at)->toBeNull();
 
     $user->markVoucherAsRedeemed('MARKREDEEM');
 
-    expect($walletEntry->fresh()->is_redeemed)->toBeTrue()
-        ->and($walletEntry->fresh()->redeemed_at)->not->toBeNull();
+    expect($walletEntry->fresh()->redeemed_at)->not->toBeNull();
 });
 
 test('can remove voucher from wallet', function (): void {

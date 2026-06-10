@@ -526,8 +526,8 @@ describe('InventoryReorderSuggestion', function (): void {
                 'ordered_at' => '2024-06-16 14:30:00',
             ]);
 
-            expect($suggestion->approved_at)->toBeInstanceOf(Carbon::class);
-            expect($suggestion->ordered_at)->toBeInstanceOf(Carbon::class);
+            expect($suggestion->approved_at)->toBeInstanceOf(CarbonImmutable::class);
+            expect($suggestion->ordered_at)->toBeInstanceOf(CarbonImmutable::class);
         });
 
         it('casts calculation_details to array', function (): void {

@@ -11,6 +11,7 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
@@ -226,7 +227,7 @@ describe('CommissionMaturityService', function (): void {
             $maturityDate = $this->service->getMaturityDate($conversion);
 
             // Default maturity is 30 days
-            expect($maturityDate)->toBeInstanceOf(Carbon::class);
+            expect($maturityDate)->toBeInstanceOf(CarbonInterface::class);
             expect($maturityDate->toDateString())->toBe($occurredAt->addDays(30)->toDateString());
         });
     });

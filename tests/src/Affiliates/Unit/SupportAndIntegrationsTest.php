@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\CommissionMaturityService;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
@@ -109,6 +110,7 @@ test('ProgramService joinProgram creates membership', function (): void {
         'status' => 'active',
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
+        'visibility' => ProgramVisibility::Public,
     ]);
 
     $membership = $service->joinProgram($affiliate, $program);
@@ -136,6 +138,7 @@ test('ProgramService leaveProgram removes membership', function (): void {
         'status' => 'active',
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
+        'visibility' => ProgramVisibility::Public,
     ]);
 
     // First join

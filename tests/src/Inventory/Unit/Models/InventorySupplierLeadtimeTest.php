@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
@@ -412,8 +413,8 @@ describe('InventorySupplierLeadtime', function (): void {
                 'last_received_at' => '2024-06-20 14:30:00',
             ]);
 
-            expect($leadtime->last_order_at)->toBeInstanceOf(Carbon::class);
-            expect($leadtime->last_received_at)->toBeInstanceOf(Carbon::class);
+            expect($leadtime->last_order_at)->toBeInstanceOf(CarbonImmutable::class);
+            expect($leadtime->last_received_at)->toBeInstanceOf(CarbonImmutable::class);
         });
 
         it('casts metadata to array', function (): void {

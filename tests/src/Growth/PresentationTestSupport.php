@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Enums\ExperimentStatus;
+use AIArmada\Growth\Enums\VariantStatus;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Signals\Models\SignalIdentity;
@@ -48,6 +49,7 @@ function growthPresentationCreateExperiment(User $owner, ExperimentStatus $statu
             'traffic_percentage' => 50,
             'position' => 1,
             'is_control' => true,
+            'status' => VariantStatus::Active,
         ]);
 
         Variant::factory()->create([
@@ -57,6 +59,7 @@ function growthPresentationCreateExperiment(User $owner, ExperimentStatus $statu
             'traffic_percentage' => 50,
             'position' => 2,
             'is_control' => false,
+            'status' => VariantStatus::Active,
         ]);
 
         return $experiment->fresh(['variants', 'trackedProperty']) ?? $experiment;

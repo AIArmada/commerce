@@ -78,7 +78,7 @@ it('builds a timeline from payments, notes and shipment state', function (): voi
     $note = $order->orderNotes()->create([
         'user_id' => null,
         'content' => 'Packed and ready.',
-        'is_customer_visible' => false,
+        'visibility' => 'internal',
     ]);
 
     $note->forceFill(['created_at' => now()->subMinutes(30), 'updated_at' => now()->subMinutes(30)])->save();

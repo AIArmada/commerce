@@ -78,6 +78,7 @@ it('can migrate guest cart to user cart', function (): void {
         $table->longText('metadata')->nullable();
         $table->bigInteger('version')->default(1)->index()->comment('Version number for optimistic locking');
         $table->timestamp('expires_at')->nullable()->index();
+        $table->uuid('merged_into_id')->nullable();
         $table->timestamps();
         $table->unique(['owner_scope', 'identifier', 'instance']);
     });

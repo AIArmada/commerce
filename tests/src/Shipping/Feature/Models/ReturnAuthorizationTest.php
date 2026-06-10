@@ -6,6 +6,10 @@ use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\ReturnAuthorizationState\RmaApproved;
+use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCompleted;
+use AIArmada\Shipping\States\ReturnAuthorizationState\RmaDraft;
+use AIArmada\Shipping\States\ReturnAuthorizationState\RmaPending;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
@@ -25,7 +29,7 @@ describe('ReturnAuthorization Model', function (): void {
         expect($rma->owner_id)->toBe('test-owner-123');
         expect($rma->type)->toBe('refund');
         expect($rma->reason)->toBe('defective');
-        expect($rma->status)->toBe('pending');
+        expect($rma->status)->toBeInstanceOf(RmaDraft::class);
     });
 
     it('generates unique RMA numbers', function (): void {
@@ -72,7 +76,7 @@ describe('ReturnAuthorization Model', function (): void {
         expect($rma->original_shipment_id)->toBe('shipment-123');
         expect($rma->order_reference)->toBe('ORDER-456');
         expect($rma->customer_id)->toBe('customer-789');
-        expect($rma->status)->toBe('approved');
+        expect($rma->status)->toBeInstanceOf(RmaApproved::class);
         expect($rma->type)->toBe('refund');
         expect($rma->reason)->toBe('defective');
         expect($rma->reason_details)->toBe('Item arrived damaged');
@@ -226,10 +230,10 @@ describe('ReturnAuthorization Model', function (): void {
         $approved = ReturnAuthorization::approved()->get();
 
         expect($pending)->toHaveCount(1);
-        expect($pending->first()->status)->toBe('pending');
+        expect($pending->first()->status)->toBeInstanceOf(RmaPending::class);
 
         expect($approved)->toHaveCount(1);
-        expect($approved->first()->status)->toBe('approved');
+        expect($approved->first()->status)->toBeInstanceOf(RmaApproved::class);
     });
 
     it('cascades delete to items', function (): void {

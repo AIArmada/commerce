@@ -75,7 +75,7 @@ it('prevents creating child rows for orders outside the current owner scope', fu
     expect(fn () => OrderNote::query()->create([
         'order_id' => $orderB->id,
         'content' => 'Cross-tenant note',
-        'is_customer_visible' => false,
+        'visibility' => 'internal',
     ]))->toThrow(AuthorizationException::class);
 });
 
@@ -114,7 +114,7 @@ it('auto-assigns child row owner from the parent order', function (): void {
     $note = OrderNote::query()->create([
         'order_id' => $orderA->id,
         'content' => 'Internal note',
-        'is_customer_visible' => false,
+        'visibility' => 'internal',
     ]);
 
     expect($item->owner_type)->toBe($orderA->owner_type)

@@ -83,7 +83,7 @@ final class ZoneCoverageWidget extends Widget
                 'id' => $zone->id,
                 'name' => $zone->name,
                 'code' => $zone->code,
-                'type' => ucfirst($zone->type),
+                'type' => ucfirst($zone->type->value),
                 'countries' => $zone->countries ?? [],
                 'states' => $zone->states ?? [],
                 'priority' => $zone->priority,

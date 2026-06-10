@@ -270,7 +270,7 @@ describe('Order Model', function (): void {
             OrderNote::create([
                 'order_id' => $order->id,
                 'content' => 'Internal note',
-                'is_customer_visible' => false,
+                'visibility' => 'internal',
             ]);
 
             $orderId = $order->id;
@@ -413,7 +413,7 @@ describe('Order Model', function (): void {
             OrderNote::create([
                 'order_id' => $order->id,
                 'content' => 'Customer called about delivery',
-                'is_customer_visible' => true,
+                'visibility' => 'customer',
             ]);
 
             $order->refresh();

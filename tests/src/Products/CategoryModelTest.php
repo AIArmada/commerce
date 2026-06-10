@@ -30,7 +30,7 @@ describe('Category Model', function (): void {
             $category = Category::create(['name' => 'Default Category']);
 
             expect($category->position)->toBe(0)
-                ->and($category->is_visible)->toBeTrue()
+                ->and($category->visibility)->toBe('catalog')
                 ->and($category->is_featured)->toBeFalse();
         });
     });
@@ -192,9 +192,9 @@ describe('Category Model', function (): void {
 
     describe('Category Visibility', function (): void {
         it('can filter visible categories', function (): void {
-            Category::create(['name' => 'Visible Cat 1', 'is_visible' => true]);
-            Category::create(['name' => 'Visible Cat 2', 'is_visible' => true]);
-            Category::create(['name' => 'Hidden Cat', 'is_visible' => false]);
+            Category::create(['name' => 'Visible Cat 1']);
+            Category::create(['name' => 'Visible Cat 2']);
+            Category::create(['name' => 'Hidden Cat', 'status' => 'hidden']);
 
             expect(Category::visible()->count())->toBeGreaterThanOrEqual(2);
         });

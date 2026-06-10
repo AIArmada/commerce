@@ -58,7 +58,6 @@ it('builds an owner-safe journey report', function (): void {
         'duration_milliseconds' => 120000,
         'entry_path' => '/landing',
         'exit_path' => '/checkout',
-        'is_bounce' => false,
     ]);
     $sessionA1->assignOwner($ownerA)->save();
 
@@ -69,7 +68,7 @@ it('builds an owner-safe journey report', function (): void {
         'duration_milliseconds' => 60000,
         'entry_path' => '/landing',
         'exit_path' => '/checkout',
-        'is_bounce' => true,
+        'bounced_at' => CarbonImmutable::parse('2026-03-10 10:00:00'),
     ]);
     $sessionA2->assignOwner($ownerA)->save();
 
@@ -80,7 +79,6 @@ it('builds an owner-safe journey report', function (): void {
         'duration_milliseconds' => 180000,
         'entry_path' => '/pricing',
         'exit_path' => '/contact',
-        'is_bounce' => false,
     ]);
     $sessionA3->assignOwner($ownerA)->save();
 
@@ -93,7 +91,7 @@ it('builds an owner-safe journey report', function (): void {
         'duration_milliseconds' => 30000,
         'entry_path' => '/other',
         'exit_path' => '/other-exit',
-        'is_bounce' => true,
+        'bounced_at' => CarbonImmutable::parse('2026-03-10 12:00:00'),
     ]);
     $sessionB->assignOwner($ownerB)->save();
 
@@ -145,7 +143,6 @@ it('applies signal segments to journey reports through session events', function
         'duration_milliseconds' => 120000,
         'entry_path' => '/landing',
         'exit_path' => '/checkout',
-        'is_bounce' => false,
     ]);
 
     $landingSessionB = SignalSession::query()->create([
@@ -155,7 +152,7 @@ it('applies signal segments to journey reports through session events', function
         'duration_milliseconds' => 60000,
         'entry_path' => '/landing',
         'exit_path' => '/checkout',
-        'is_bounce' => true,
+        'bounced_at' => CarbonImmutable::parse('2026-03-10 10:00:00'),
     ]);
 
     $pricingSession = SignalSession::query()->create([
@@ -165,7 +162,6 @@ it('applies signal segments to journey reports through session events', function
         'duration_milliseconds' => 180000,
         'entry_path' => '/pricing',
         'exit_path' => '/contact',
-        'is_bounce' => false,
     ]);
 
     foreach ([
@@ -235,7 +231,6 @@ it('uses saved journey report breakdown dimensions', function (): void {
             'entry_path' => '/landing',
             'exit_path' => '/checkout',
             'device_type' => $sessionData['device_type'],
-            'is_bounce' => false,
         ]);
     }
 

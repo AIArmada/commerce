@@ -135,7 +135,7 @@ it('accepts event payloads and creates identity and session records', function (
         ->and($followUpEvent?->content)->toBe('hero-banner')
         ->and($followUpEvent?->term)->toBe('spring deals')
         ->and($followUpEvent?->referrer)->toBe('https://google.com')
-        ->and($session?->is_bounce)->toBeFalse()
+        ->and($session?->bounced_at)->toBeNull()
         ->and($event?->revenue_minor)->toBe(9900)
         ->and($event?->property_types)->toMatchArray([
             'order_number' => 'string',
@@ -346,7 +346,7 @@ it('accepts pageview payloads and records a page_view event', function (): void 
         ->and($event?->url)->toBe('https://example.test/pricing')
         ->and($event?->properties['title'] ?? null)->toBe('Pricing')
         ->and($session?->session_identifier)->toBe('page-sess-1')
-        ->and($session?->is_bounce)->toBeTrue();
+        ->and($session?->bounced_at)->not->toBeNull();
 });
 
 it('updates owner-scoped pageview sessions without an ambient owner context', function (): void {
@@ -402,7 +402,7 @@ it('updates owner-scoped pageview sessions without an ambient owner context', fu
         ->and($session?->owner_type)->toBe($owner->getMorphClass())
         ->and((string) $session?->owner_id)->toBe((string) $owner->getKey())
         ->and($session?->exit_path)->toBe('/growth/results')
-        ->and($session?->is_bounce)->toBeFalse();
+        ->and($session?->bounced_at)->toBeNull();
 });
 
 it('rejects public ingestion when the tracked property domain does not match the request', function (): void {
@@ -510,7 +510,7 @@ it('adds the consolidated columns through the base session migration', function 
         ->and(Schema::hasColumn('custom_signal_sessions', 'referrer'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'utm_content'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'utm_term'))->toBeTrue()
-        ->and(Schema::hasColumn('custom_signal_sessions', 'is_bot'))->toBeTrue()
+        ->and(Schema::hasColumn('custom_signal_sessions', 'identified_as_bot_at'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'user_agent'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'ip_address'))->toBeTrue()
         ->and(Schema::hasColumn('custom_signal_sessions', 'duration_seconds'))->toBeFalse()
