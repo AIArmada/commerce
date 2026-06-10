@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('VoucherUsage Model', function (): void {
     describe('class structure', function (): void {
@@ -163,7 +163,7 @@ describe('VoucherUsage Model', function (): void {
             expect($casts['discount_amount'])->toBe('integer')
                 ->and($casts['metadata'])->toBe('array')
                 ->and($casts['target_definition'])->toBe('array')
-                ->and($casts['used_at'])->toBe('datetime');
+                ->and($casts['used_at'])->toBe('immutable_datetime');
         });
 
         it('casts discount_amount to integer', function (): void {
@@ -194,7 +194,7 @@ describe('VoucherUsage Model', function (): void {
             $usage = new VoucherUsage;
             $usage->used_at = '2025-01-15 14:30:00';
 
-            expect($usage->used_at)->toBeInstanceOf(Carbon::class)
+            expect($usage->used_at)->toBeInstanceOf(CarbonImmutable::class)
                 ->and($usage->used_at->format('Y-m-d'))->toBe('2025-01-15');
         });
     });

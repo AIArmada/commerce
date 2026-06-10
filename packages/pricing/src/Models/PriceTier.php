@@ -76,7 +76,6 @@ class PriceTier extends Model implements Auditable
      */
     protected $attributes = [
         'min_quantity' => 1,
-        'is_active' => true,
         'currency' => 'MYR',
     ];
 

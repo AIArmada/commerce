@@ -39,7 +39,7 @@ it('executes option manage_values action to create/update/delete values', functi
         'name' => 'Color',
         'display_name' => 'Color',
         'position' => 0,
-        'is_visible' => true,
+        'visibility' => 'visible',
     ]);
 
     $existing = $option->values()->create([
@@ -87,7 +87,6 @@ it('exercises variant relation manager actions and bulk actions', function (): v
     $variant = $product->variants()->create([
         'sku' => 'SKU-1',
         'price' => 1000,
-        'is_enabled' => false,
         'is_default' => false,
     ]);
 

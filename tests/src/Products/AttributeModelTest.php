@@ -418,7 +418,7 @@ describe('AttributeGroup Model', function (): void {
             ]);
 
             expect($group->position)->toBe(0)
-                ->and($group->is_visible)->toBeTrue();
+                ->and($group->visibility)->toBe('visible');
         });
     });
 

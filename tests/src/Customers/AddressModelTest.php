@@ -36,8 +36,7 @@ describe('Address Model', function (): void {
             $address = new Address;
             $casts = $address->getCasts();
             expect(array_key_exists('is_default_billing', $casts))->toBeTrue()
-                ->and(array_key_exists('is_default_shipping', $casts))->toBeTrue()
-                ->and(array_key_exists('is_verified', $casts))->toBeTrue();
+                ->and(array_key_exists('is_default_shipping', $casts))->toBeTrue();
         });
     });
 

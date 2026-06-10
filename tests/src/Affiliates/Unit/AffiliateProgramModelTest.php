@@ -15,10 +15,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\Pending;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-
-uses(RefreshDatabase::class);
 
 describe('AffiliateProgram Model', function (): void {
     it('can be created with required fields', function (): void {

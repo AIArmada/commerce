@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Promotions\Enums\PromotionType;
 use AIArmada\Promotions\Models\Promotion;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
@@ -387,8 +388,8 @@ describe('Promotion Model - Extended Tests', function (): void {
                 'ends_at' => '2024-12-31 23:59:59',
             ]);
 
-            expect($promotion->starts_at)->toBeInstanceOf(Carbon::class)
-                ->and($promotion->ends_at)->toBeInstanceOf(Carbon::class);
+            expect($promotion->starts_at)->toBeInstanceOf(CarbonImmutable::class)
+                ->and($promotion->ends_at)->toBeInstanceOf(CarbonImmutable::class);
         });
     });
 

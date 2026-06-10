@@ -93,9 +93,7 @@ class TaxExemption extends Model implements Auditable
     /**
      * @var array<string, mixed>
      */
-    protected $attributes = [
-        'status' => ExemptionStatus::Pending,
-    ];
+    protected $attributes = [];
 
     protected function casts(): array
     {

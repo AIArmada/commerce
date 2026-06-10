@@ -637,7 +637,7 @@ it('PortalPrograms returns joined programs and creative assets for the current a
         'default_commission_rate_basis_points' => 500,
         'commission_type' => 'percentage',
         'cookie_lifetime_days' => 30,
-        'is_public' => true,
+        'visibility' => 'public',
         'requires_approval' => false,
     ]);
 
@@ -697,7 +697,7 @@ it('PortalPrograms can join available programs and expose accessible creative as
         'default_commission_rate_basis_points' => 500,
         'commission_type' => 'percentage',
         'cookie_lifetime_days' => 30,
-        'is_public' => true,
+        'visibility' => 'public',
         'requires_approval' => false,
     ]);
 
@@ -764,7 +764,7 @@ it('PortalPrograms marks approval-required programs as pending requests', functi
         'default_commission_rate_basis_points' => 500,
         'commission_type' => 'percentage',
         'cookie_lifetime_days' => 30,
-        'is_public' => true,
+        'visibility' => 'public',
         'requires_approval' => true,
     ]);
 

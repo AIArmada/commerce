@@ -574,7 +574,6 @@ it('ignores mismatched owner rows when aggregating a global experiment that is o
         'traffic_percentage' => 100,
         'position' => 99,
         'is_control' => false,
-        'is_active' => true,
         'settings' => json_encode([]),
         'created_at' => $timestamp,
         'updated_at' => $timestamp,

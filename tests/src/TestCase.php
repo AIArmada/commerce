@@ -192,6 +192,13 @@ abstract class TestCase extends Orchestra
         $app['config']->set('app.env', 'testing');
         $app['config']->set('database.default', 'testing');
 
+        // Remove empty schema dump that would trigger loadSchemaState() to drop the
+        // migrations table before running migrations, causing "no such table" errors.
+        $schemaFile = $app->databasePath('schema/testing-schema.sql');
+        if (file_exists($schemaFile) && filesize($schemaFile) <= 5) {
+            @unlink($schemaFile);
+        }
+
         // Set USD currency for consistent test formatting
         $app['config']->set('cart.money.default_currency', 'USD');
 
@@ -390,6 +397,19 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliate-network/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/docs/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/promotions/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/orders/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/pricing/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/cashier-chip/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/growth/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/products/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/inventory/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/tax/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/cart/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/filament-cart/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/events/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/signals/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/customers/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/checkout/database/migrations');
     }
 
     protected function setUpDatabase(): void
@@ -514,6 +534,10 @@ abstract class TestCase extends Orchestra
             $table->string('collaboration_mode', 20)->default('edit');
             $table->bigInteger('version')->default(1)->index();
             $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamp('expired_at')->nullable();
+            $table->timestamp('checked_out_at')->nullable();
+            $table->timestamp('abandoned_at')->nullable();
+            $table->uuid('merged_into_id')->nullable();
             $table->timestamps();
 
             $table->unique(['owner_scope', 'identifier', 'instance']);
@@ -547,6 +571,7 @@ abstract class TestCase extends Orchestra
 
             $table->boolean('is_global')->default(false);
             $table->boolean('is_active')->default(false);
+            $table->timestampTz('deactivated_at')->nullable();
 
             // Owner scoping columns (nullable = global-only)
             $table->nullableUuidMorphs('owner');
@@ -562,6 +587,7 @@ abstract class TestCase extends Orchestra
             $table->index('is_dynamic');
             $table->index('is_global');
             $table->index('order');
+            $table->index('deactivated_at');
         });
 
         // Filament cart snapshots table (read models + synchronizers)
@@ -847,10 +873,12 @@ abstract class TestCase extends Orchestra
             $table->string('name');
             $table->string('display_name')->nullable();
             $table->integer('position')->default(0);
-            $table->boolean('is_visible')->default(true);
+            $table->string('visibility')->default('visible');
+            $table->timestampTz('hidden_at')->nullable();
             $table->timestamps();
 
             $table->index(['product_id', 'position']);
+            $table->index('visibility');
         });
 
         Schema::create('product_option_values', function (Blueprint $table): void {
@@ -877,7 +905,10 @@ abstract class TestCase extends Orchestra
             $table->unsignedBigInteger('compare_price')->nullable();
             $table->integer('stock_quantity')->default(0);
             $table->boolean('is_enabled')->default(true);
+            $table->timestampTz('deactivated_at')->nullable();
             $table->boolean('is_default')->default(false);
+
+            $table->index('deactivated_at');
             $table->decimal('weight', 10, 2)->nullable();
             $table->decimal('length', 10, 2)->nullable();
             $table->decimal('width', 10, 2)->nullable();
@@ -1174,6 +1205,9 @@ abstract class TestCase extends Orchestra
             $table->timestamp('delivered_at')->nullable();
             $table->timestamp('canceled_at')->nullable();
             $table->string('cancellation_reason')->nullable();
+            $table->timestampTz('payment_failed_at')->nullable();
+            $table->timestampTz('refunded_at')->nullable();
+            $table->timestampTz('completed_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->index(['status', 'created_at']);
@@ -1235,6 +1269,8 @@ abstract class TestCase extends Orchestra
             $table->text('failure_reason')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('paid_at')->nullable();
+            $table->timestampTz('failed_at')->nullable();
+            $table->timestampTz('refunded_at')->nullable();
             $table->timestamps();
         });
 
@@ -1252,6 +1288,7 @@ abstract class TestCase extends Orchestra
             $table->text('notes')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamp('refunded_at')->nullable();
+            $table->timestampTz('failed_at')->nullable();
             $table->timestamps();
         });
 
@@ -1261,10 +1298,10 @@ abstract class TestCase extends Orchestra
             $table->nullableUuidMorphs('owner');
             $table->foreignUuid('user_id')->nullable();
             $table->text('content');
-            $table->boolean('is_customer_visible')->default(false);
+            $table->string('visibility', 20)->default('internal');
             $table->timestamps();
             $table->index(['order_id', 'created_at']);
-            $table->index(['order_id', 'is_customer_visible']);
+            $table->index(['order_id', 'visibility']);
         });
 
         // =========================================================================
@@ -1381,6 +1418,7 @@ abstract class TestCase extends Orchestra
             $table->integer('amount')->default(0);
             $table->string('discount_type')->nullable();
             $table->integer('discount_value')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->string('currency')->default('MYR');
             $table->timestamps();
         });

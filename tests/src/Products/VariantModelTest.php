@@ -630,7 +630,7 @@ describe('Option Model', function (): void {
         ]);
 
         expect($option->position)->toBe(0)
-            ->and($option->is_visible)->toBeTrue();
+            ->and($option->visibility)->toBe('visible');
     });
 
     it('belongs to a product', function (): void {
@@ -656,8 +656,8 @@ describe('Option Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            Option::create(['product_id' => $product->id, 'name' => 'Visible', 'is_visible' => true]);
-            Option::create(['product_id' => $product->id, 'name' => 'Hidden', 'is_visible' => false]);
+            Option::create(['product_id' => $product->id, 'name' => 'Visible', 'visibility' => 'visible']);
+            Option::create(['product_id' => $product->id, 'name' => 'Hidden', 'visibility' => 'hidden']);
 
             expect(Option::where('product_id', $product->id)->visible()->count())->toBe(1);
         });

@@ -80,7 +80,7 @@ it('scopes child reads to current owner plus global (items/payments/notes)', fun
     $noteA = $orderA->orderNotes()->create([
         'user_id' => null,
         'content' => 'Note A',
-        'is_customer_visible' => false,
+        'visibility' => 'internal',
     ]);
 
     $orderGlobal = Order::query()->create([
@@ -112,7 +112,7 @@ it('scopes child reads to current owner plus global (items/payments/notes)', fun
     $noteGlobal = $orderGlobal->orderNotes()->create([
         'user_id' => null,
         'content' => 'Global note',
-        'is_customer_visible' => false,
+        'visibility' => 'internal',
     ]);
 
     // Create owner B records under ownerB resolver so model hooks allow it.
@@ -156,7 +156,7 @@ it('scopes child reads to current owner plus global (items/payments/notes)', fun
     $noteB = $orderB->orderNotes()->create([
         'user_id' => null,
         'content' => 'Note B',
-        'is_customer_visible' => false,
+        'visibility' => 'internal',
     ]);
 
     // Switch back to owner A context for assertions.
@@ -228,7 +228,7 @@ it('can exclude global rows for child reads when includeGlobal is false', functi
     $noteA = $orderA->orderNotes()->create([
         'user_id' => null,
         'content' => 'Note A',
-        'is_customer_visible' => false,
+        'visibility' => 'internal',
     ]);
 
     $orderGlobal = Order::query()->create([
@@ -259,7 +259,7 @@ it('can exclude global rows for child reads when includeGlobal is false', functi
     $noteGlobal = $orderGlobal->orderNotes()->create([
         'user_id' => null,
         'content' => 'Global note',
-        'is_customer_visible' => false,
+        'visibility' => 'internal',
     ]);
 
     expect(OrderItem::query()->forOwner(includeGlobal: false)->pluck('id')->all())

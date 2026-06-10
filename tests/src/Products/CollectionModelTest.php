@@ -56,7 +56,7 @@ describe('Collection Model', function (): void {
             $collection = Collection::create(['name' => 'Default Test']);
 
             expect($collection->type)->toBe('manual')
-                ->and($collection->is_visible)->toBeTrue()
+                ->and($collection->visibility)->toBe('catalog')
                 ->and($collection->is_featured)->toBeFalse()
                 ->and($collection->position)->toBe(0);
         });
@@ -349,7 +349,6 @@ describe('Collection Model', function (): void {
         it('checks if collection is published', function (): void {
             $published = Collection::create([
                 'name' => 'Published Collection',
-                'is_visible' => true,
                 'published_at' => now()->subDay(),
             ]);
 
@@ -359,7 +358,7 @@ describe('Collection Model', function (): void {
         it('returns false for unpublished collection', function (): void {
             $unpublished = Collection::create([
                 'name' => 'Unpublished Collection',
-                'is_visible' => false,
+                'status' => 'hidden',
             ]);
 
             expect($unpublished->isPublished())->toBeFalse();
@@ -368,7 +367,6 @@ describe('Collection Model', function (): void {
         it('returns false if published_at is in the future', function (): void {
             $scheduled = Collection::create([
                 'name' => 'Future Collection',
-                'is_visible' => true,
                 'published_at' => now()->addDays(5),
             ]);
 
@@ -378,7 +376,6 @@ describe('Collection Model', function (): void {
         it('returns false if unpublished_at has passed', function (): void {
             $expired = Collection::create([
                 'name' => 'Expired Collection',
-                'is_visible' => true,
                 'published_at' => now()->subDays(10),
                 'unpublished_at' => now()->subDay(),
             ]);
@@ -404,9 +401,9 @@ describe('Collection Model', function (): void {
 
     describe('Scopes', function (): void {
         it('can filter visible collections', function (): void {
-            Collection::create(['name' => 'Visible Scope 1', 'is_visible' => true]);
-            Collection::create(['name' => 'Visible Scope 2', 'is_visible' => true]);
-            Collection::create(['name' => 'Hidden Scope', 'is_visible' => false]);
+            Collection::create(['name' => 'Visible Scope 1']);
+            Collection::create(['name' => 'Visible Scope 2']);
+            Collection::create(['name' => 'Hidden Scope', 'status' => 'hidden']);
 
             expect(Collection::visible()->count())->toBeGreaterThanOrEqual(2);
         });
@@ -421,7 +418,6 @@ describe('Collection Model', function (): void {
         it('can filter published collections', function (): void {
             Collection::create([
                 'name' => 'Published Scope',
-                'is_visible' => true,
                 'published_at' => now()->subDay(),
             ]);
 

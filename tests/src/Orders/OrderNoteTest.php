@@ -20,12 +20,12 @@ describe('OrderNote Model', function (): void {
             $note = OrderNote::create([
                 'order_id' => $order->id,
                 'content' => 'Customer requested expedited shipping',
-                'is_customer_visible' => false,
+                'visibility' => 'internal',
             ]);
 
             expect($note)->toBeInstanceOf(OrderNote::class)
                 ->and($note->content)->toBe('Customer requested expedited shipping')
-                ->and($note->is_customer_visible)->toBeFalse();
+                ->and($note->visibility)->toBe('internal');
         });
 
         it('belongs to an order', function (): void {
@@ -40,7 +40,7 @@ describe('OrderNote Model', function (): void {
             $note = OrderNote::create([
                 'order_id' => $order->id,
                 'content' => 'Order processed successfully',
-                'is_customer_visible' => true,
+                'visibility' => 'customer',
             ]);
 
             expect($note->order->id)->toBe($order->id);
@@ -60,22 +60,22 @@ describe('OrderNote Model', function (): void {
             OrderNote::create([
                 'order_id' => $order->id,
                 'content' => 'Internal note for staff',
-                'is_customer_visible' => false,
+                'visibility' => 'internal',
             ]);
 
             OrderNote::create([
                 'order_id' => $order->id,
                 'content' => 'Customer visible update',
-                'is_customer_visible' => true,
+                'visibility' => 'customer',
             ]);
 
             $internalNotes = OrderNote::internal()->where('order_id', $order->id)->get();
             $customerNotes = OrderNote::customerVisible()->where('order_id', $order->id)->get();
 
             expect($internalNotes)->toHaveCount(1)
-                ->and($internalNotes->first()->is_customer_visible)->toBeFalse()
+                ->and($internalNotes->first()->visibility)->toBe('internal')
                 ->and($customerNotes)->toHaveCount(1)
-                ->and($customerNotes->first()->is_customer_visible)->toBeTrue();
+                ->and($customerNotes->first()->visibility)->toBe('customer');
         });
     });
 });
