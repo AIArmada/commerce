@@ -15,10 +15,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
-use function Laravel\Prompts\confirm;
-use function Laravel\Prompts\info;
 use function Laravel\Prompts\progress;
-use function Laravel\Prompts\warning;
 
 final class ClearAbandonedCartsCommand extends Command
 {
@@ -55,12 +52,12 @@ final class ClearAbandonedCartsCommand extends Command
         $now = CarbonImmutable::now();
 
         if ($deleteMode) {
-            info('Delete mode: Physically deleting carts with abandoned_at set');
+            $this->info('Delete mode: Physically deleting carts with abandoned_at set');
         } elseif ($useExpired) {
-            info('Clearing expired carts (using expires_at column)');
+            $this->info('Clearing expired carts (using expires_at column)');
         } else {
             $cutoffDate = $now->subDays($days);
-            info("Clearing carts abandoned before: {$cutoffDate->format('Y-m-d H:i:s')}");
+            $this->info("Clearing carts abandoned before: {$cutoffDate->format('Y-m-d H:i:s')}");
         }
 
         if ((bool) config('cart.owner.enabled', false)) {
@@ -178,7 +175,7 @@ final class ClearAbandonedCartsCommand extends Command
                     return self::FAILURE;
                 }
 
-                warning(sprintf(
+                $this->warn(sprintf(
                     'Skipping malformed owner tuple while clearing abandoned carts (owner_type: %s, owner_id: %s).',
                     $row->owner_type ?? 'null',
                     $row->owner_id === null ? 'null' : (string) $row->owner_id,
@@ -200,17 +197,16 @@ final class ClearAbandonedCartsCommand extends Command
         }
 
         if ($dryRun) {
-            warning('DRY RUN MODE - No data will be modified');
+            $this->warn('DRY RUN MODE - No data will be deleted');
         }
 
         if ($totalCount === 0) {
-            info('No abandoned carts found.');
+            $this->info('No abandoned carts found.');
 
             return self::SUCCESS;
         }
 
-        $label = $deleteMode ? 'delete' : 'mark as abandoned';
-        info("Found {$totalCount} carts to {$label}.");
+        $this->info("Found {$totalCount} abandoned carts to clear.");
 
         if ($dryRun) {
             $processedCount = 0;
@@ -232,14 +228,14 @@ final class ClearAbandonedCartsCommand extends Command
                 );
             }
 
-            info("Would {$label} {$processedCount} carts.");
+            $this->info("Would delete {$processedCount} abandoned carts.");
 
             return self::SUCCESS;
         }
 
-        $confirmed = confirm("Are you sure you want to {$label} these carts?");
+        $confirmed = $this->confirm('Are you sure you want to delete these carts?');
         if (! $confirmed) {
-            info('Operation cancelled.');
+            $this->info('Operation cancelled.');
 
             return self::SUCCESS;
         }
@@ -264,7 +260,7 @@ final class ClearAbandonedCartsCommand extends Command
             );
         }
 
-        info("Successfully {$label}d {$processedCount} carts.");
+        $this->info("Successfully deleted {$processedCount} carts.");
 
         return self::SUCCESS;
     }
@@ -281,19 +277,18 @@ final class ClearAbandonedCartsCommand extends Command
         bool $deleteMode = false,
     ): int {
         if ($dryRun) {
-            warning('DRY RUN MODE - No data will be modified');
+            $this->warn('DRY RUN MODE - No data will be deleted');
         }
 
         $totalCount = $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId, $deleteMode);
 
         if ($totalCount === 0) {
-            info('No abandoned carts found.');
+            $this->info('No abandoned carts found.');
 
             return self::SUCCESS;
         }
 
-        $label = $deleteMode ? 'delete' : 'mark as abandoned';
-        info("Found {$totalCount} carts to {$label}.");
+        $this->info("Found {$totalCount} abandoned carts to clear.");
 
         if ($dryRun) {
             $processedCount = $this->processForOwner(
@@ -308,14 +303,14 @@ final class ClearAbandonedCartsCommand extends Command
                 ownerId: $ownerId,
             );
 
-            info("Would {$label} {$processedCount} carts.");
+            $this->info("Would delete {$processedCount} abandoned carts.");
 
             return self::SUCCESS;
         }
 
-        $confirmed = confirm("Are you sure you want to {$label} these carts?");
+        $confirmed = $this->confirm('Are you sure you want to delete these carts?');
         if (! $confirmed) {
-            info('Operation cancelled.');
+            $this->info('Operation cancelled.');
 
             return self::SUCCESS;
         }
@@ -332,7 +327,7 @@ final class ClearAbandonedCartsCommand extends Command
             ownerId: $ownerId,
         );
 
-        info("Successfully {$label}d {$processedCount} carts.");
+        $this->info("Successfully deleted {$processedCount} carts.");
 
         return self::SUCCESS;
     }
@@ -368,8 +363,8 @@ final class ClearAbandonedCartsCommand extends Command
 
         $processedCount = 0;
 
-        $actionLabel = $deleteMode ? 'Deleting' : 'Marking as abandoned';
-        $progressLabel = $dryRun ? "Simulating {$actionLabel}..." : "{$actionLabel} carts...";
+        $actionLabel = 'Deleting';
+        $progressLabel = $dryRun ? "Simulating {$actionLabel}..." : "{$actionLabel} abandoned carts...";
 
         progress(
             label: $progressLabel,
@@ -383,21 +378,15 @@ final class ClearAbandonedCartsCommand extends Command
 
                 $ids = $chunk->toArray();
 
-                // Defense-in-depth: re-apply owner scope to prevent cross-tenant operations
+                $deleteQuery = DB::table($table)->whereIn('id', $ids);
+                CartOwnerScope::applyForOwner($deleteQuery, $ownerType, $ownerId);
+
                 if ($deleteMode) {
-                    $deleteQuery = DB::table($table)->whereIn('id', $ids);
-                    CartOwnerScope::applyForOwner($deleteQuery, $ownerType, $ownerId);
-                    $processed = $deleteQuery->delete();
-                    $processedCount += $processed;
-                } else {
-                    $updateQuery = DB::table($table)->whereIn('id', $ids);
-                    CartOwnerScope::applyForOwner($updateQuery, $ownerType, $ownerId);
-                    $processed = $updateQuery->update([
-                        'abandoned_at' => CarbonImmutable::now(),
-                        'updated_at' => CarbonImmutable::now(),
-                    ]);
-                    $processedCount += $processed;
+                    $deleteQuery->whereNotNull('abandoned_at');
                 }
+
+                $processed = $deleteQuery->delete();
+                $processedCount += $processed;
             }
         );
 

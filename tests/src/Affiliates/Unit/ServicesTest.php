@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -284,7 +285,7 @@ test('ProgramService getAvailablePrograms returns active public programs', funct
         'name' => 'Public Program',
         'slug' => 'public-program-svc',
         'status' => ProgramStatus::Active,
-        'is_public' => true,
+        'visibility' => ProgramVisibility::Public,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
         'cookie_lifetime_days' => 30,
@@ -294,7 +295,7 @@ test('ProgramService getAvailablePrograms returns active public programs', funct
         'name' => 'Private Program',
         'slug' => 'private-program-svc',
         'status' => ProgramStatus::Active,
-        'is_public' => false,
+        'visibility' => ProgramVisibility::Private,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
         'cookie_lifetime_days' => 30,
@@ -324,6 +325,7 @@ test('ProgramService joinProgram creates membership', function (): void {
         'name' => 'Join Test Program',
         'slug' => 'join-test-program',
         'status' => ProgramStatus::Active,
+        'visibility' => ProgramVisibility::Public,
         'requires_approval' => false,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
@@ -356,6 +358,7 @@ test('ProgramService joinProgram with approval required sets pending status', fu
         'name' => 'Approval Program',
         'slug' => 'approval-program',
         'status' => ProgramStatus::Active,
+        'visibility' => ProgramVisibility::Public,
         'requires_approval' => true,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
@@ -384,6 +387,7 @@ test('ProgramService leaveProgram removes membership', function (): void {
         'name' => 'Leave Test Program',
         'slug' => 'leave-test-program',
         'status' => ProgramStatus::Active,
+        'visibility' => ProgramVisibility::Public,
         'requires_approval' => false,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
@@ -415,6 +419,7 @@ test('ProgramService isMember returns correct status', function (): void {
         'name' => 'Member Test Program',
         'slug' => 'member-test-program',
         'status' => ProgramStatus::Active,
+        'visibility' => ProgramVisibility::Public,
         'requires_approval' => false,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
@@ -444,6 +449,7 @@ test('ProgramService getMembership returns membership details', function (): voi
         'name' => 'Membership Details Program',
         'slug' => 'membership-details-program',
         'status' => ProgramStatus::Active,
+        'visibility' => ProgramVisibility::Public,
         'requires_approval' => false,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
@@ -475,6 +481,7 @@ test('ProgramService getAffiliatePrograms returns affiliate programs', function 
         'name' => 'Program 1',
         'slug' => 'program-1-svc',
         'status' => ProgramStatus::Active,
+        'visibility' => ProgramVisibility::Public,
         'requires_approval' => false,
         'commission_type' => 'percentage',
         'default_commission_rate_basis_points' => 1000,
