@@ -21,10 +21,10 @@ describe('TaxZone Model', function (): void {
                 'is_active' => true,
             ]);
 
-    expect($zone)->toBeInstanceOf(TaxZone::class)
-        ->and($zone->name)->toBe('Malaysia')
-        ->and($zone->type)->toBe(ZoneType::Country)
-        ->and($zone->countries)->toContain('MY');
+            expect($zone)->toBeInstanceOf(TaxZone::class)
+                ->and($zone->name)->toBe('Malaysia')
+                ->and($zone->type)->toBe(ZoneType::Country)
+                ->and($zone->countries)->toContain('MY');
         });
 
         it('can create a state-based tax zone', function (): void {
@@ -37,8 +37,8 @@ describe('TaxZone Model', function (): void {
                 'is_active' => true,
             ]);
 
-    expect($zone->type)->toBe(ZoneType::State)
-        ->and($zone->states)->toContain('CA');
+            expect($zone->type)->toBe(ZoneType::State)
+                ->and($zone->states)->toContain('CA');
         });
 
         it('can create a postcode-based tax zone', function (): void {
@@ -51,8 +51,8 @@ describe('TaxZone Model', function (): void {
                 'is_active' => true,
             ]);
 
-    expect($zone->type)->toBe(ZoneType::Postcode)
-        ->and($zone->postcodes)->toContain('50000-50999');
+            expect($zone->type)->toBe(ZoneType::Postcode)
+                ->and($zone->postcodes)->toContain('50000-50999');
         });
     });
 
