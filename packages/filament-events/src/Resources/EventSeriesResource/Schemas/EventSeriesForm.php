@@ -6,8 +6,8 @@ namespace AIArmada\FilamentEvents\Resources\EventSeriesResource\Schemas;
 
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -36,9 +36,13 @@ final class EventSeriesForm
                             ->rows(4)
                             ->columnSpanFull(),
 
-                        Toggle::make('is_active')
-                            ->label('Active')
-                            ->default(true),
+                        Select::make('status')
+                            ->options([
+                                'active' => 'Active',
+                                'archived' => 'Archived',
+                            ])
+                            ->default('active')
+                            ->required(),
 
                         KeyValue::make('metadata')
                             ->columnSpanFull(),

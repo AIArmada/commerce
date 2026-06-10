@@ -63,8 +63,8 @@ final class CartItem extends Model
         'quantity' => 'integer',
         'attributes' => 'array',
         'conditions' => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'created_at' => 'immutable_datetime',
+        'updated_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string

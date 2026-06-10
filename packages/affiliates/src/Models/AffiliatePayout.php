@@ -35,6 +35,8 @@ use Spatie\ModelStates\HasStates;
  * @property array<string, mixed>|null $metadata
  * @property CarbonInterface|null $scheduled_at
  * @property CarbonInterface|null $paid_at
+ * @property CarbonInterface|null $failed_at
+ * @property CarbonInterface|null $cancelled_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read int $amount_minor Alias for total_minor
@@ -74,6 +76,8 @@ class AffiliatePayout extends Model implements Auditable
         'owner_id',
         'scheduled_at',
         'paid_at',
+        'failed_at',
+        'cancelled_at',
     ];
 
     protected function getActivityLogName(): string
@@ -84,8 +88,10 @@ class AffiliatePayout extends Model implements Auditable
     protected $casts = [
         'status' => PayoutStatus::class,
         'metadata' => 'array',
-        'scheduled_at' => 'datetime',
-        'paid_at' => 'datetime',
+            'scheduled_at' => 'immutable_datetime',
+            'paid_at' => 'immutable_datetime',
+            'failed_at' => 'immutable_datetime',
+            'cancelled_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string
@@ -156,6 +162,16 @@ class AffiliatePayout extends Model implements Auditable
             $payout->events()->delete();
             $payout->conversions()->update(['affiliate_payout_id' => null]);
         });
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->failed_at !== null;
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->cancelled_at !== null;
     }
 
     public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder

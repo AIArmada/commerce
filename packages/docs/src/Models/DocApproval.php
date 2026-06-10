@@ -28,6 +28,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $comments
  * @property CarbonImmutable|null $approved_at
  * @property CarbonImmutable|null $rejected_at
+ * @property CarbonImmutable|null $expired_at
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
@@ -54,6 +55,7 @@ final class DocApproval extends Model implements Auditable
         'comments',
         'approved_at',
         'rejected_at',
+        'expired_at',
         'expires_at',
     ];
 
@@ -156,9 +158,10 @@ final class DocApproval extends Model implements Auditable
     {
         return [
             'status' => DocApprovalStatus::class,
-            'approved_at' => 'datetime',
-            'rejected_at' => 'datetime',
-            'expires_at' => 'datetime',
+            'approved_at' => 'immutable_datetime',
+            'rejected_at' => 'immutable_datetime',
+            'expired_at' => 'immutable_datetime',
+            'expires_at' => 'immutable_datetime',
         ];
     }
 

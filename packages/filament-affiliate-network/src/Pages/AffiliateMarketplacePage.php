@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Pages;
 
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
@@ -85,8 +88,8 @@ final class AffiliateMarketplacePage extends Page
             $search = $this->search;
 
             return AffiliateOffer::withoutGlobalScope('owner_via_site')
-                ->where('status', AffiliateOffer::STATUS_ACTIVE)
-                ->where('is_public', true)
+                ->where('status', OfferStatus::Published)
+                ->where('visibility', OfferVisibility::Public)
                 ->when(mb_strlen((string) $search) >= 3, fn (Builder $query) => $query->where(function (Builder $q) use ($search): void {
                     $escaped = str_replace(['%', '_'], ['\%', '\_'], (string) $search);
                     $q->where('name', 'like', "%{$escaped}%")

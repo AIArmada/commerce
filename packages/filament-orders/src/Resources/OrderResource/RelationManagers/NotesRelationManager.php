@@ -45,9 +45,14 @@ final class NotesRelationManager extends RelationManager
                     ->rows(3)
                     ->columnSpanFull(),
 
-                Forms\Components\Toggle::make('is_customer_visible')
-                    ->label('Visible to Customer')
-                    ->default(false),
+                Forms\Components\Select::make('visibility')
+                    ->label('Visibility')
+                    ->options([
+                        'internal' => 'Internal Only',
+                        'customer' => 'Customer Visible',
+                    ])
+                    ->default('internal')
+                    ->required(),
             ]);
     }
 
@@ -60,11 +65,19 @@ final class NotesRelationManager extends RelationManager
                     ->wrap()
                     ->limit(100),
 
-                Tables\Columns\IconColumn::make('is_customer_visible')
-                    ->label('Customer Visible')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-eye')
-                    ->falseIcon('heroicon-o-eye-slash'),
+                Tables\Columns\TextColumn::make('visibility')
+                    ->label('Visibility')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'customer' => 'success',
+                        'internal' => 'gray',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'customer' => 'Customer Visible',
+                        'internal' => 'Internal Only',
+                        default => $state,
+                    }),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
@@ -72,10 +85,12 @@ final class NotesRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_customer_visible')
+                Tables\Filters\SelectFilter::make('visibility')
                     ->label('Visibility')
-                    ->trueLabel('Customer Visible')
-                    ->falseLabel('Internal Only'),
+                    ->options([
+                        'internal' => 'Internal Only',
+                        'customer' => 'Customer Visible',
+                    ]),
             ])
             ->headerActions([
                 CreateAction::make()

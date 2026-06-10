@@ -6,19 +6,21 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -32,8 +34,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
  * @property bool $requires_approval
- * @property bool $is_public
+ * @property ProgramVisibility $visibility
  * @property int $default_commission_rate_basis_points
+ * @property CarbonImmutable|null $paused_at
+ * @property CarbonImmutable|null $archived_at
  * @property CommissionType $commission_type
  * @property int $cookie_lifetime_days
  * @property string|null $terms_url
@@ -63,7 +67,7 @@ class AffiliateProgram extends Model implements Auditable
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $attributes = [
-        'is_public' => true,
+        'visibility' => ProgramVisibility::Private,
     ];
 
     protected $fillable = [
@@ -74,8 +78,10 @@ class AffiliateProgram extends Model implements Auditable
         'starts_at',
         'ends_at',
         'requires_approval',
-        'is_public',
+        'visibility',
         'default_commission_rate_basis_points',
+        'paused_at',
+        'archived_at',
         'commission_type',
         'cookie_lifetime_days',
         'terms_url',
@@ -88,11 +94,13 @@ class AffiliateProgram extends Model implements Auditable
     protected $casts = [
         'status' => ProgramStatus::class,
         'commission_type' => CommissionType::class,
-        'starts_at' => 'datetime',
-        'ends_at' => 'datetime',
+        'starts_at' => 'immutable_datetime',
+        'ends_at' => 'immutable_datetime',
+        'visibility' => ProgramVisibility::class,
         'requires_approval' => 'boolean',
-        'is_public' => 'boolean',
         'default_commission_rate_basis_points' => 'integer',
+            'paused_at' => 'immutable_datetime',
+            'archived_at' => 'immutable_datetime',
         'cookie_lifetime_days' => 'integer',
         'eligibility_rules' => 'array',
         'metadata' => 'array',
@@ -136,7 +144,7 @@ class AffiliateProgram extends Model implements Auditable
 
         return $this->belongsToMany(Affiliate::class, $membershipTable, 'program_id', 'affiliate_id')
             ->using(AffiliateProgramMembership::class)
-            ->withPivot(['tier_id', 'status', 'applied_at', 'approved_at', 'expires_at'])
+            ->withPivot(['tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
             ->withTimestamps();
     }
 
@@ -175,7 +183,7 @@ class AffiliateProgram extends Model implements Auditable
 
     public function isOpen(): bool
     {
-        return $this->isActive() && $this->is_public;
+        return $this->isActive() && $this->visibility === ProgramVisibility::Public;
     }
 
     public function canJoin(Affiliate $affiliate): bool
@@ -215,7 +223,12 @@ class AffiliateProgram extends Model implements Auditable
 
     public function scopePublic(Builder $query): Builder
     {
-        return $query->where('is_public', true);
+        return $query->where('visibility', ProgramVisibility::Public);
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
     }
 
     public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder

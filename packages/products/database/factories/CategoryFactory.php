@@ -28,26 +28,22 @@ class CategoryFactory extends Factory
             'description' => $this->faker->sentence(),
             'parent_id' => null,
             'position' => $this->faker->numberBetween(0, 100),
-            'is_visible' => true,
+            'status' => 'active',
+            'visibility' => 'catalog',
             'is_featured' => $this->faker->boolean(20),
             'meta_title' => null,
             'meta_description' => null,
         ];
     }
 
-    /**
-     * Hidden category.
-     */
     public function hidden(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_visible' => false,
+            'status' => 'hidden',
+            'hidden_at' => now(),
         ]);
     }
 
-    /**
-     * Featured category.
-     */
     public function featured(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -55,9 +51,6 @@ class CategoryFactory extends Factory
         ]);
     }
 
-    /**
-     * Child category.
-     */
     public function childOf(Category $parent): static
     {
         return $this->state(fn (array $attributes) => [

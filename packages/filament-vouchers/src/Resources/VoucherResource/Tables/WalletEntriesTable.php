@@ -59,11 +59,11 @@ final class WalletEntriesTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->state(function (VoucherWallet $record): string {
-                        if ($record->is_redeemed) {
+                        if ($record->redeemed_at !== null) {
                             return 'Redeemed';
                         }
 
-                        if ($record->is_claimed) {
+                        if ($record->claimed_at !== null) {
                             return 'Claimed';
                         }
 
@@ -83,8 +83,8 @@ final class WalletEntriesTable
                         default => Heroicon::OutlinedQuestionMarkCircle,
                     })
                     ->sortable(query: function ($query, string $direction): void {
-                        $query->orderBy('is_redeemed', $direction)
-                            ->orderBy('is_claimed', $direction);
+                        $query->orderBy('redeemed_at', $direction)
+                            ->orderBy('claimed_at', $direction);
                     }),
 
                 IconColumn::make('is_expired')
@@ -139,25 +139,25 @@ final class WalletEntriesTable
                     ])
                     ->native(false),
 
-                TernaryFilter::make('is_claimed')
+                TernaryFilter::make('claimed_at')
                     ->label('Claimed')
                     ->nullable()
                     ->trueLabel('Claimed Only')
                     ->falseLabel('Unclaimed Only')
                     ->queries(
-                        true: fn ($query) => $query->where('is_claimed', true),
-                        false: fn ($query) => $query->where('is_claimed', false),
+                        true: fn ($query) => $query->whereNotNull('claimed_at'),
+                        false: fn ($query) => $query->whereNull('claimed_at'),
                         blank: fn ($query) => $query,
                     ),
 
-                TernaryFilter::make('is_redeemed')
+                TernaryFilter::make('redeemed_at')
                     ->label('Redeemed')
                     ->nullable()
                     ->trueLabel('Redeemed Only')
                     ->falseLabel('Not Redeemed')
                     ->queries(
-                        true: fn ($query) => $query->where('is_redeemed', true),
-                        false: fn ($query) => $query->where('is_redeemed', false),
+                        true: fn ($query) => $query->whereNotNull('redeemed_at'),
+                        false: fn ($query) => $query->whereNull('redeemed_at'),
                         blank: fn ($query) => $query,
                     ),
             ])
@@ -167,7 +167,7 @@ final class WalletEntriesTable
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn (VoucherWallet $record): bool => ! $record->is_redeemed)
+                    ->visible(fn (VoucherWallet $record): bool => $record->redeemed_at === null)
                     ->action(function (VoucherWallet $record): void {
                         $record->markAsRedeemed();
                     }),

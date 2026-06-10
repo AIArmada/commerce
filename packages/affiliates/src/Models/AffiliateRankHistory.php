@@ -44,7 +44,7 @@ class AffiliateRankHistory extends Model implements Auditable
 
     protected $casts = [
         'reason' => RankQualificationReason::class,
-        'qualified_at' => 'datetime',
+        'qualified_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string

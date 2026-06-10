@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Pages;
 
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
@@ -85,7 +87,7 @@ final class MerchantDashboardPage extends Page
                     'offer' => fn ($query) => $query->withoutGlobalScope('owner_via_site'),
                     'affiliate' => fn ($query) => $query->withoutOwnerScope(),
                 ])
-                ->where('status', AffiliateOfferApplication::STATUS_PENDING)
+                ->where('status', ApplicationStatus::Pending)
                 ->latest('created_at')
                 ->limit(5)
                 ->get();
@@ -103,7 +105,7 @@ final class MerchantDashboardPage extends Page
                 ->with([
                     'site' => fn ($query) => $query->withoutOwnerScope(),
                 ])
-                ->where('status', AffiliateOffer::STATUS_ACTIVE)
+                ->where('status', OfferStatus::Published)
                 ->withCount('applications')
                 ->orderByDesc('applications_count')
                 ->limit(5)
@@ -129,7 +131,7 @@ final class MerchantDashboardPage extends Page
     {
         // Admin view: intentionally cross-tenant network-wide data — explicit global context.
         return OwnerContext::withOwner(null, fn (): int => AffiliateOffer::withoutGlobalScope('owner_via_site')
-            ->where('status', AffiliateOffer::STATUS_ACTIVE)
+            ->where('status', OfferStatus::Published)
             ->count());
     }
 
@@ -137,7 +139,7 @@ final class MerchantDashboardPage extends Page
     {
         // Admin view: intentionally cross-tenant network-wide data — explicit global context.
         return OwnerContext::withOwner(null, fn (): int => AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')
-            ->where('status', AffiliateOfferApplication::STATUS_PENDING)
+            ->where('status', ApplicationStatus::Pending)
             ->count());
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Support;
 
+use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
@@ -23,8 +25,8 @@ final class NetworkStatsAggregator
             $totalConversions = AffiliateOfferLink::withoutGlobalScope('owner_via_affiliate')->sum('conversions');
             $totalRevenue = AffiliateOfferLink::withoutGlobalScope('owner_via_affiliate')->sum('revenue');
             $activeSites = AffiliateSite::query()->withoutOwnerScope()->where('status', AffiliateSite::STATUS_VERIFIED)->count();
-            $activeOffers = AffiliateOffer::withoutGlobalScope('owner_via_site')->where('status', AffiliateOffer::STATUS_ACTIVE)->count();
-            $pendingApplications = AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')->where('status', AffiliateOfferApplication::STATUS_PENDING)->count();
+            $activeOffers = AffiliateOffer::withoutGlobalScope('owner_via_site')->where('status', OfferStatus::Published)->count();
+            $pendingApplications = AffiliateOfferApplication::withoutGlobalScope('owner_via_affiliate')->where('status', ApplicationStatus::Pending)->count();
 
             $conversionRate = $totalClicks > 0
                 ? round(($totalConversions / $totalClicks) * 100, 2)

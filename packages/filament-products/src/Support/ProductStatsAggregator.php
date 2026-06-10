@@ -19,7 +19,7 @@ final class ProductStatsAggregator
             $activeProducts = Product::query()->forOwner()->where('status', ProductStatus::Active)->count();
             $draftProducts = Product::query()->forOwner()->where('status', ProductStatus::Draft)->count();
             $totalCategories = Category::query()->forOwner()->count();
-            $totalCollections = Collection::query()->forOwner()->where('is_visible', true)->count();
+            $totalCollections = Collection::query()->forOwner()->visible()->count();
 
             $lastWeekProducts = Product::query()->forOwner()->where('created_at', '>=', now()->subWeek())->count();
             $previousWeekProducts = Product::query()->forOwner()

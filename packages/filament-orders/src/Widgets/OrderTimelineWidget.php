@@ -143,10 +143,14 @@ final class OrderTimelineWidget extends Widget implements HasForms
                     ->rows(2)
                     ->placeholder('Add a note to this order timeline...'),
 
-                Forms\Components\Toggle::make('is_customer_visible')
-                    ->label('Visible to Customer')
-                    ->default(false)
-                    ->helperText('Customer will see this note in their order history'),
+                Forms\Components\Select::make('visibility')
+                    ->label('Visibility')
+                    ->options([
+                        'internal' => 'Internal Only',
+                        'customer' => 'Customer Visible',
+                    ])
+                    ->default('internal')
+                    ->helperText('Customer will see customer-visible notes in their order history'),
             ])
             ->statePath('noteData');
     }
@@ -173,7 +177,7 @@ final class OrderTimelineWidget extends Widget implements HasForms
         try {
             $this->record->orderNotes()->create([
                 'content' => $data['content'],
-                'is_customer_visible' => $data['is_customer_visible'] ?? false,
+                'visibility' => $data['visibility'] ?? 'internal',
                 'user_id' => Filament::auth()->id(),
             ]);
         } catch (Throwable $e) {

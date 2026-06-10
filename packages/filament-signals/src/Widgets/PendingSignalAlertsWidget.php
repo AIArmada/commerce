@@ -81,7 +81,7 @@ final class PendingSignalAlertsWidget extends BaseWidget
         $queryFactory = function (): Builder {
             return SignalAlertLog::query()->forOwner()
                 ->with(['alertRule', 'trackedProperty'])
-                ->where('is_read', false)
+                ->whereNull('read_at')
                 ->orderByRaw("CASE severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END")
                 ->orderByDesc('created_at');
         };

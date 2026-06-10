@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Schemas;
 
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -51,9 +52,10 @@ final class AffiliateProgramInfolist
                             ->label('Cookie Lifetime')
                             ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : $state . ' days'),
 
-                        IconEntry::make('is_public')
-                            ->label('Public Program')
-                            ->boolean(),
+                        TextEntry::make('visibility')
+                            ->label('Visibility')
+                            ->badge()
+                            ->color(fn (string $state): string => ProgramVisibility::from($state)->color()),
 
                         IconEntry::make('requires_approval')
                             ->label('Requires Approval')

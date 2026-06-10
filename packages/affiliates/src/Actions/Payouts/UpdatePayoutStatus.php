@@ -6,7 +6,9 @@ namespace AIArmada\Affiliates\Actions\Payouts;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\States\CancelledPayout;
 use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
 use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +44,14 @@ final class UpdatePayoutStatus
 
             if ($newStatus->equals(CompletedPayout::class) && $payout->paid_at === null) {
                 $payout->paid_at = now();
+            }
+
+            if ($newStatus->equals(FailedPayout::class) && $payout->failed_at === null) {
+                $payout->failed_at = now();
+            }
+
+            if ($newStatus->equals(CancelledPayout::class) && $payout->cancelled_at === null) {
+                $payout->cancelled_at = now();
             }
 
             $payout->save();

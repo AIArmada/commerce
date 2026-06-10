@@ -59,7 +59,7 @@ return [
             'name' => 'Name',
             'description' => 'Description',
             'position' => 'Position',
-            'is_visible' => 'Visible',
+            'visibility' => 'Visible',
             'attributes' => 'Attributes',
             'attributes_count' => 'Attributes',
             'created_at' => 'Created',

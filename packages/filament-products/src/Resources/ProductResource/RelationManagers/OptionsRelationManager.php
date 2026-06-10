@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
+use AIArmada\Products\Enums\Visibility;
 use AIArmada\Products\Models\Product;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -13,8 +14,8 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -54,9 +55,10 @@ final class OptionsRelationManager extends RelationManager
                     ->default(0)
                     ->minValue(0),
 
-                Toggle::make('is_visible')
-                    ->label('Visible to customers')
-                    ->default(true),
+                Select::make('visibility')
+                    ->label('Visibility')
+                    ->options(Visibility::class)
+                    ->default(Visibility::Visible->value),
             ]);
     }
 
@@ -80,9 +82,11 @@ final class OptionsRelationManager extends RelationManager
                     ->counts('values')
                     ->sortable(),
 
-                Tables\Columns\IconColumn::make('is_visible')
-                    ->label('Visible')
-                    ->boolean(),
+                Tables\Columns\TextColumn::make('visibility')
+                    ->label('Visibility')
+                    ->badge()
+                    ->color(fn (string $state): string => Visibility::tryFrom($state)?->color() ?? 'gray')
+                    ->formatStateUsing(fn (string $state): string => Visibility::tryFrom($state)?->label() ?? $state),
 
                 Tables\Columns\TextColumn::make('position')
                     ->label('Position')

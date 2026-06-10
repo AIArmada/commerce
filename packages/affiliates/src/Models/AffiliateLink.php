@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -36,7 +37,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array<string, mixed>|null $subject_metadata
  * @property int $clicks
  * @property int $conversions
- * @property bool $is_active
+ * @property CarbonImmutable|null $deactivated_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
@@ -67,7 +68,7 @@ class AffiliateLink extends Model implements Auditable
         'subject_metadata',
         'clicks',
         'conversions',
-        'is_active',
+        'deactivated_at',
     ];
 
     public function getAuditInclude(): array
@@ -89,7 +90,7 @@ class AffiliateLink extends Model implements Auditable
             'subject_title_snapshot',
             'clicks',
             'conversions',
-            'is_active',
+            'deactivated_at',
         ];
     }
 
@@ -97,7 +98,7 @@ class AffiliateLink extends Model implements Auditable
         'subject_metadata' => 'array',
         'clicks' => 'integer',
         'conversions' => 'integer',
-        'is_active' => 'boolean',
+        'deactivated_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string
@@ -129,6 +130,21 @@ class AffiliateLink extends Model implements Auditable
     public function incrementConversions(): void
     {
         $this->increment('conversions');
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->deactivated_at === null;
+    }
+
+    public function deactivate(): void
+    {
+        $this->update(['deactivated_at' => now()]);
+    }
+
+    public function activate(): void
+    {
+        $this->update(['deactivated_at' => null]);
     }
 
     public function getConversionRate(): float

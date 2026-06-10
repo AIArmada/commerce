@@ -57,8 +57,8 @@ class AffiliateCommissionPromotion extends Model implements Auditable
     protected $casts = [
         'bonus_value' => 'integer',
         'conditions' => 'array',
-        'starts_at' => 'datetime',
-        'ends_at' => 'datetime',
+        'starts_at' => 'immutable_datetime',
+        'ends_at' => 'immutable_datetime',
         'max_uses' => 'integer',
         'current_uses' => 'integer',
         'affiliate_ids' => 'array',

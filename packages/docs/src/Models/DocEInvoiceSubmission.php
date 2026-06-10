@@ -33,6 +33,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $qr_code_url
  * @property CarbonImmutable|null $submitted_at
  * @property CarbonImmutable|null $validated_at
+ * @property CarbonImmutable|null $completed_at
+ * @property CarbonImmutable|null $failed_at
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
@@ -61,6 +63,8 @@ final class DocEInvoiceSubmission extends Model implements Auditable
         'qr_code_url',
         'submitted_at',
         'validated_at',
+        'completed_at',
+        'failed_at',
     ];
 
     public function getTable(): string
@@ -132,8 +136,10 @@ final class DocEInvoiceSubmission extends Model implements Auditable
             'validation_status' => DocEInvoiceValidationStatus::class,
             'errors' => 'array',
             'warnings' => 'array',
-            'submitted_at' => 'datetime',
-            'validated_at' => 'datetime',
+            'submitted_at' => 'immutable_datetime',
+            'validated_at' => 'immutable_datetime',
+            'completed_at' => 'immutable_datetime',
+            'failed_at' => 'immutable_datetime',
         ];
     }
 }

@@ -19,11 +19,13 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug');
             $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->string('status', 32)->default('active');
+            $table->timestampTz('activated_at')->nullable();
+            $table->timestampTz('archived_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id', 'is_active']);
+            $table->index(['owner_type', 'owner_id', 'status']);
             $table->unique(['owner_type', 'owner_id', 'slug']);
         });
     }

@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -76,7 +77,9 @@ use Throwable;
  * @property string|null $meta_description
  * @property string|null $tax_class
  * @property array<string, mixed>|null $metadata
- * @property Carbon|null $published_at
+ * @property CarbonImmutable|null $published_at
+ * @property CarbonImmutable|null $deactivated_at
+ * @property CarbonImmutable|null $archived_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Variant> $variants
@@ -132,7 +135,9 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
             'supports_variants' => 'boolean',
             'tracks_inventory' => 'boolean',
             'metadata' => 'array',
-            'published_at' => 'datetime',
+            'published_at' => 'immutable_datetime',
+            'deactivated_at' => 'immutable_datetime',
+            'archived_at' => 'immutable_datetime',
         ];
     }
 
@@ -420,6 +425,8 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     {
         $this->status = ProductStatus::Active;
         $this->published_at ??= now();
+        $this->deactivated_at = null;
+        $this->archived_at = null;
         $this->save();
 
         return $this;
@@ -428,6 +435,18 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function archive(): self
     {
         $this->status = ProductStatus::Archived;
+        $this->archived_at = now();
+        $this->deactivated_at = null;
+        $this->save();
+
+        return $this;
+    }
+
+    public function disable(): self
+    {
+        $this->status = ProductStatus::Disabled;
+        $this->deactivated_at = now();
+        $this->archived_at = null;
         $this->save();
 
         return $this;
@@ -527,6 +546,16 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
     public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
+    }
+
+    public function scopeDisabled(Builder $query): Builder
+    {
+        return $query->where('status', ProductStatus::Disabled);
+    }
+
+    public function scopeArchived(Builder $query): Builder
+    {
+        return $query->where('status', ProductStatus::Archived);
     }
 
     public function scopeVisible(Builder $query): Builder

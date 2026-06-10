@@ -10,12 +10,14 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\IsAttributeEntity;
+use AIArmada\Products\Enums\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -28,7 +30,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $code
  * @property string|null $description
  * @property int $position
- * @property bool $is_visible
+ * @property string $visibility
+ * @property CarbonImmutable|null $hidden_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Attribute> $groupAttributes
@@ -54,7 +57,8 @@ class AttributeGroup extends Model implements Auditable
     {
         return [
             'position' => 'integer',
-            'is_visible' => 'boolean',
+            'visibility' => 'string',
+            'hidden_at' => 'immutable_datetime',
         ];
     }
 
@@ -63,7 +67,7 @@ class AttributeGroup extends Model implements Auditable
      */
     protected $attributes = [
         'position' => 0,
-        'is_visible' => true,
+        'visibility' => 'visible',
     ];
 
     public function getTable(): string
@@ -136,7 +140,7 @@ class AttributeGroup extends Model implements Auditable
      */
     public function scopeVisible(Builder $query): Builder
     {
-        return $query->where('is_visible', true);
+        return $query->where('visibility', Visibility::Visible);
     }
 
     protected static function booted(): void
@@ -174,8 +178,13 @@ class AttributeGroup extends Model implements Auditable
             $group->assignOwner($owner);
         });
 
+        static::saving(function (AttributeGroup $group): void {
+            if ($group->isDirty('visibility')) {
+                $group->hidden_at = $group->visibility === Visibility::Hidden->value ? now() : null;
+            }
+        });
+
         static::deleting(function (AttributeGroup $group): void {
-            // Detach from attributes and attribute sets
             $group->groupAttributes()->detach();
             $group->attributeSets()->detach();
         });

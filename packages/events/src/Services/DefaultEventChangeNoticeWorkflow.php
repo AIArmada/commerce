@@ -44,7 +44,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
             $notice->fill([
                 'change_key' => $changeKey,
                 'severity' => $severity ?? $this->defaultSeverityForChangeKey($changeKey),
-                'state' => 'draft',
+                'status' => 'draft',
                 'changed_sections' => $this->normalizeNullableArray($changedSections),
                 'before_snapshot' => $this->normalizeNullableArray($beforeSnapshot),
                 'after_snapshot' => $this->normalizeNullableArray($afterSnapshot),

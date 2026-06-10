@@ -41,8 +41,12 @@ use RuntimeException;
  * @property string|null $email
  * @property string|null $phone
  * @property string|null $company
+ * @property Carbon|null $confirmed_at
  * @property Carbon|null $checked_in_at
  * @property Carbon|null $cancelled_at
+ * @property Carbon|null $refunded_at
+ * @property Carbon|null $no_show_at
+ * @property Carbon|null $waitlisted_at
  * @property array<string, mixed>|null $metadata
  * @property-read string $full_name
  */
@@ -74,8 +78,12 @@ class Registration extends Model implements Auditable
         'email',
         'phone',
         'company',
+        'confirmed_at',
         'checked_in_at',
         'cancelled_at',
+        'refunded_at',
+        'no_show_at',
+        'waitlisted_at',
         'metadata',
     ];
 
@@ -84,8 +92,12 @@ class Registration extends Model implements Auditable
         return [
             'attendance_source' => RegistrationAttendanceSource::class,
             'status' => RegistrationStatus::class,
-            'checked_in_at' => 'datetime',
-            'cancelled_at' => 'datetime',
+            'confirmed_at' => 'immutable_datetime',
+            'checked_in_at' => 'immutable_datetime',
+            'cancelled_at' => 'immutable_datetime',
+            'refunded_at' => 'immutable_datetime',
+            'no_show_at' => 'immutable_datetime',
+            'waitlisted_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }

@@ -63,7 +63,7 @@ class EventAttendance extends Model implements Auditable
     protected function casts(): array
     {
         return [
-            'checked_in_at' => 'datetime',
+            'checked_in_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }

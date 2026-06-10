@@ -31,6 +31,10 @@ return new class extends Migration
             $table->timestampTz('registration_closes_at')->nullable();
             $table->timestampTz('check_in_opens_at')->nullable();
             $table->timestampTz('check_in_closes_at')->nullable();
+            $table->timestampTz('scheduled_at')->nullable();
+            $table->timestampTz('live_at')->nullable();
+            $table->timestampTz('completed_at')->nullable();
+            $table->timestampTz('cancelled_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 

@@ -6,10 +6,10 @@ namespace AIArmada\FilamentProducts\Resources\AttributeGroupResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\Products\Enums\Visibility;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -49,9 +49,10 @@ class AttributeGroupForm
                             ->default(0)
                             ->minValue(0),
 
-                        Toggle::make('is_visible')
-                            ->label(__('filament-products::resources.attribute_groups.fields.is_visible'))
-                            ->default(true),
+                        Select::make('visibility')
+                            ->label(__('filament-products::resources.attribute_groups.fields.visibility'))
+                            ->options(Visibility::class)
+                            ->default(Visibility::Visible->value),
                     ])
                     ->columns(2),
 

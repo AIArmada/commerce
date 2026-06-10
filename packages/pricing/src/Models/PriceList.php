@@ -35,6 +35,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property int $priority
  * @property bool $is_default
  * @property bool $is_active
+ * @property Carbon|null $deactivated_at
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
  */
@@ -59,6 +60,7 @@ class PriceList extends Model implements Auditable
         'priority',
         'is_default',
         'is_active',
+        'deactivated_at',
         'customer_id',
         'segment_id',
         'starts_at',
@@ -72,8 +74,9 @@ class PriceList extends Model implements Auditable
         'priority' => 'integer',
         'is_default' => 'boolean',
         'is_active' => 'boolean',
-        'starts_at' => 'datetime',
-        'ends_at' => 'datetime',
+        'deactivated_at' => 'immutable_datetime',
+        'starts_at' => 'immutable_datetime',
+        'ends_at' => 'immutable_datetime',
     ];
 
     /**

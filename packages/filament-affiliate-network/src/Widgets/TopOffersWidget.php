@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Widgets;
 
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -26,7 +27,7 @@ final class TopOffersWidget extends BaseWidget
                     ->with([
                         'site' => fn ($query) => $query->withoutOwnerScope(),
                     ])
-                    ->where('status', AffiliateOffer::STATUS_ACTIVE)
+                    ->where('status', OfferStatus::Published)
                     ->withSum('links', 'clicks')
                     ->withSum('links', 'conversions')
                     ->withSum('links', 'revenue')

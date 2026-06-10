@@ -26,6 +26,8 @@ final class ApproveAffiliate
 
         $affiliate->status = new Active($affiliate);
         $affiliate->activated_at = now();
+        $affiliate->deactivated_at = null;
+        $affiliate->paused_at = null;
         $affiliate->save();
 
         return $affiliate;

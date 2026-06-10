@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
@@ -47,6 +48,7 @@ use Throwable;
  * @property float|null $height
  * @property bool $is_default
  * @property bool $is_enabled
+ * @property CarbonImmutable|null $deactivated_at
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -81,6 +83,7 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
             'weight' => 'decimal:2',
             'is_default' => 'boolean',
             'is_enabled' => 'boolean',
+            'deactivated_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }
@@ -490,6 +493,12 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
             }
 
             $variant->assignOwner($ownerToAssign);
+        });
+
+        static::saving(function (Variant $variant): void {
+            if ($variant->isDirty('is_enabled')) {
+                $variant->deactivated_at = $variant->is_enabled ? null : now();
+            }
         });
 
         static::deleting(function (Variant $variant): void {

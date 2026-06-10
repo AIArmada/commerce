@@ -28,6 +28,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $body
  * @property EmailStatus $status
  * @property CarbonImmutable|null $sent_at
+ * @property CarbonImmutable|null $delivered_at
+ * @property CarbonImmutable|null $failed_at
  * @property CarbonImmutable|null $opened_at
  * @property CarbonImmutable|null $clicked_at
  * @property int $open_count
@@ -58,6 +60,8 @@ final class DocEmail extends Model implements Auditable
         'subject',
         'body',
         'status',
+        'delivered_at',
+        'failed_at',
         'sent_at',
         'opened_at',
         'clicked_at',
@@ -123,9 +127,11 @@ final class DocEmail extends Model implements Auditable
     {
         return [
             'status' => EmailStatus::class,
-            'sent_at' => 'datetime',
-            'opened_at' => 'datetime',
-            'clicked_at' => 'datetime',
+            'sent_at' => 'immutable_datetime',
+            'delivered_at' => 'immutable_datetime',
+            'failed_at' => 'immutable_datetime',
+            'opened_at' => 'immutable_datetime',
+            'clicked_at' => 'immutable_datetime',
             'open_count' => 'integer',
             'click_count' => 'integer',
             'metadata' => 'array',

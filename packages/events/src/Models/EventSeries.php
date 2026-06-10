@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Support\Integration\ConfiguredEventModel;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +24,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $name
  * @property string $slug
  * @property string|null $description
- * @property bool $is_active
+ * @property string $status
+ * @property CarbonImmutable|null $activated_at
+ * @property CarbonImmutable|null $archived_at
  * @property array<string, mixed>|null $metadata
  */
 class EventSeries extends Model implements Auditable
@@ -42,20 +45,24 @@ class EventSeries extends Model implements Auditable
         'name',
         'slug',
         'description',
-        'is_active',
+        'status',
+        'activated_at',
+        'archived_at',
         'metadata',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
+            'status' => 'string',
+            'activated_at' => 'immutable_datetime',
+            'archived_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }
 
     protected $attributes = [
-        'is_active' => true,
+        'status' => 'active',
     ];
 
     public function getTable(): string

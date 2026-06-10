@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Tables;
 
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -37,13 +39,7 @@ final class AffiliateOffersTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        AffiliateOffer::STATUS_ACTIVE => 'success',
-                        AffiliateOffer::STATUS_PENDING => 'warning',
-                        AffiliateOffer::STATUS_PAUSED => 'info',
-                        AffiliateOffer::STATUS_DRAFT => 'gray',
-                        default => 'danger',
-                    }),
+                    ->color(fn (OfferStatus $state): string => $state->color()),
 
                 TextColumn::make('commission_rate')
                     ->label('Commission')
@@ -61,9 +57,9 @@ final class AffiliateOffersTable
                     ->boolean()
                     ->toggleable(),
 
-                IconColumn::make('is_public')
-                    ->label('Public')
-                    ->boolean()
+                TextColumn::make('visibility')
+                    ->badge()
+                    ->color(fn (OfferVisibility $state): string => $state->color())
                     ->toggleable(),
 
                 TextColumn::make('applications_count')
@@ -79,12 +75,16 @@ final class AffiliateOffersTable
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        AffiliateOffer::STATUS_DRAFT => 'Draft',
-                        AffiliateOffer::STATUS_PENDING => 'Pending',
-                        AffiliateOffer::STATUS_ACTIVE => 'Active',
-                        AffiliateOffer::STATUS_PAUSED => 'Paused',
-                        AffiliateOffer::STATUS_EXPIRED => 'Expired',
-                        AffiliateOffer::STATUS_REJECTED => 'Rejected',
+                        OfferStatus::Draft->value => 'Draft',
+                        OfferStatus::Published->value => 'Published',
+                        OfferStatus::Archived->value => 'Archived',
+                    ]),
+
+                SelectFilter::make('visibility')
+                    ->options([
+                        OfferVisibility::Public->value => 'Public',
+                        OfferVisibility::Private->value => 'Private',
+                        OfferVisibility::Unlisted->value => 'Unlisted',
                     ]),
 
                 // Admin filter: cross-tenant — show all sites for filtering.
@@ -94,9 +94,6 @@ final class AffiliateOffersTable
 
                 TernaryFilter::make('is_featured')
                     ->label('Featured'),
-
-                TernaryFilter::make('is_public')
-                    ->label('Public'),
             ])
             ->actions([
                 Actions\EditAction::make(),
@@ -104,27 +101,27 @@ final class AffiliateOffersTable
                     ->icon('heroicon-o-play')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn (AffiliateOffer $record): bool => $record->status !== AffiliateOffer::STATUS_ACTIVE)
+                    ->visible(fn (AffiliateOffer $record): bool => $record->status !== OfferStatus::Published)
                     ->action(function (AffiliateOffer $record): void {
                         // Admin resource bypasses owner_via_site scope (network-wide admin view).
                         $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope('owner_via_site')
                             ->whereKey($record->getKey())
                             ->firstOrFail());
 
-                        $scopedRecord->update(['status' => AffiliateOffer::STATUS_ACTIVE]);
+                        $scopedRecord->update(['status' => OfferStatus::Published]);
                     }),
                 Actions\Action::make('pause')
                     ->icon('heroicon-o-pause')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->visible(fn (AffiliateOffer $record): bool => $record->status === AffiliateOffer::STATUS_ACTIVE)
+                    ->visible(fn (AffiliateOffer $record): bool => $record->status === OfferStatus::Published)
                     ->action(function (AffiliateOffer $record): void {
                         // Admin resource bypasses owner_via_site scope (network-wide admin view).
                         $scopedRecord = OwnerContext::withOwner(null, fn (): AffiliateOffer => AffiliateOffer::withoutGlobalScope('owner_via_site')
                             ->whereKey($record->getKey())
                             ->firstOrFail());
 
-                        $scopedRecord->update(['status' => AffiliateOffer::STATUS_PAUSED]);
+                        $scopedRecord->update(['status' => OfferStatus::Archived]);
                     }),
             ])
             ->bulkActions([

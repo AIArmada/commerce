@@ -384,8 +384,8 @@ final class CohortAnalyzer
             $activeCount = Affiliate::whereIn('id', $affiliateIds)
                 ->where('status', Active::class)
                 ->where(function ($query) use ($periodEnd): void {
-                    $query->whereNull('disabled_at')
-                        ->orWhere('disabled_at', '>', $periodEnd);
+                    $query->whereNull('deactivated_at')
+                        ->orWhere('deactivated_at', '>', $periodEnd);
                 })
                 ->count();
 

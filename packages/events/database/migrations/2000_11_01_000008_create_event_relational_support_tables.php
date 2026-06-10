@@ -58,6 +58,7 @@ return new class extends Migration
             $table->string('alt_text')->nullable();
             $table->string('visibility')->default('public');
             $table->unsignedInteger('order_column')->nullable();
+
             $table->{$jsonColumnType}('metadata')->nullable();
             $table->timestampsTz();
 
@@ -106,7 +107,7 @@ return new class extends Migration
             $table->foreignUuid('replacement_occurrence_id')->nullable();
             $table->string('change_key');
             $table->string('severity')->default('info');
-            $table->string('state')->default('draft');
+            $table->string('status')->default('draft');
             $table->{$jsonColumnType}('changed_sections')->nullable();
             $table->{$jsonColumnType}('before_snapshot')->nullable();
             $table->{$jsonColumnType}('after_snapshot')->nullable();
@@ -116,7 +117,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['event_id', 'change_key'], 'event_change_notices_event_change_index');
-            $table->index(['state', 'severity'], 'event_change_notices_state_severity_index');
+            $table->index(['status', 'severity'], 'event_change_notices_state_severity_index');
         });
 
         Schema::create($attendanceTable, function (Blueprint $table) use ($jsonColumnType): void {

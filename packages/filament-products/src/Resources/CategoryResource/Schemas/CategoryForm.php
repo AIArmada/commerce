@@ -6,6 +6,7 @@ namespace AIArmada\FilamentProducts\Resources\CategoryResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\Products\Enums\CatalogStatus;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -92,10 +93,14 @@ class CategoryForm
                                     ->default(0)
                                     ->helperText('Lower numbers appear first'),
 
-                                Toggle::make('is_visible')
-                                    ->label('Visible')
-                                    ->default(true)
-                                    ->helperText('Show in navigation and listing'),
+                                Select::make('status')
+                                    ->label('Status')
+                                    ->options(
+                                        collect(CatalogStatus::cases())
+                                            ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
+                                    )
+                                    ->default('active')
+                                    ->helperText('Hidden removes from public views'),
 
                                 Toggle::make('is_featured')
                                     ->label('Featured')

@@ -124,7 +124,7 @@ final class PageViewsReport extends ReportPage implements HasTable
                     ->toggle()
                     ->default(true)
                     ->query(fn (Builder $query, array $data): Builder => ($data['isActive'] ?? false)
-                        ? $query->whereDoesntHave('session', fn (Builder $q): Builder => $q->where('is_bot', true))
+                        ? $query->whereDoesntHave('session', fn (Builder $q): Builder => $q->whereNotNull('identified_as_bot_at'))
                         : $query),
             ])
             ->emptyStateHeading('No page views recorded yet')

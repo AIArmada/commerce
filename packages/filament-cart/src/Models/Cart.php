@@ -103,11 +103,11 @@ class Cart extends Model
         'subtotal' => 'integer',
         'total' => 'integer',
         'savings' => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'last_activity_at' => 'datetime',
-        'checkout_started_at' => 'datetime',
-        'checkout_abandoned_at' => 'datetime',
+        'created_at' => 'immutable_datetime',
+        'updated_at' => 'immutable_datetime',
+        'last_activity_at' => 'immutable_datetime',
+        'checkout_started_at' => 'immutable_datetime',
+        'checkout_abandoned_at' => 'immutable_datetime',
     ];
 
     protected $attributes = [

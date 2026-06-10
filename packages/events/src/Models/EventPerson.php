@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Support\Integration\ConfiguredEventModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -32,7 +33,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $role_label
  * @property string|null $biography
  * @property int|null $order_column
- * @property bool $is_public
+ * @property EventVisibility $visibility
  * @property array<string, mixed>|null $metadata
  */
 class EventPerson extends Model implements Auditable
@@ -57,18 +58,18 @@ class EventPerson extends Model implements Auditable
         'role_label',
         'biography',
         'order_column',
-        'is_public',
+        'visibility',
         'metadata',
     ];
 
     protected $attributes = [
-        'is_public' => true,
+        'visibility' => 'public',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_public' => 'boolean',
+            'visibility' => EventVisibility::class,
             'metadata' => 'array',
         ];
     }
@@ -127,8 +128,10 @@ class EventPerson extends Model implements Auditable
     public function scopePubliclyVisible(Builder $query): Builder
     {
         return $query->where(function (Builder $query): void {
-            $query->where($this->qualifyColumn('is_public'), true)
-                ->orWhereNull($this->qualifyColumn('is_public'));
+            $query->whereIn($this->qualifyColumn('visibility'), [
+                EventVisibility::Public->value,
+                EventVisibility::Unlisted->value,
+            ]);
         });
     }
 

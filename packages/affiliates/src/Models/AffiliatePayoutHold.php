@@ -42,8 +42,8 @@ class AffiliatePayoutHold extends Model implements Auditable
     ];
 
     protected $casts = [
-        'expires_at' => 'datetime',
-        'released_at' => 'datetime',
+        'expires_at' => 'immutable_datetime',
+        'released_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string

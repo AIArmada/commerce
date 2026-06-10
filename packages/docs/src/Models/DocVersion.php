@@ -25,7 +25,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $change_summary
  * @property string|null $changed_by
  * @property CarbonImmutable $created_at
- * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
  */
 final class DocVersion extends Model implements Auditable

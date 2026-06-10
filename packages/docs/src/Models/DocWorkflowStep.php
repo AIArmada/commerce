@@ -25,6 +25,9 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array<string, mixed>|null $conditions
  * @property bool $is_required
  * @property int|null $timeout_hours
+ * @property CarbonImmutable|null $completed_at
+ * @property CarbonImmutable|null $timed_out_at
+ * @property CarbonImmutable|null $escalated_at
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read DocWorkflow $workflow
@@ -57,6 +60,9 @@ final class DocWorkflowStep extends Model implements Auditable
         'conditions',
         'is_required',
         'timeout_hours',
+        'completed_at',
+        'timed_out_at',
+        'escalated_at',
     ];
 
     public function getTable(): string
@@ -167,8 +173,11 @@ final class DocWorkflowStep extends Model implements Auditable
             'conditions' => 'array',
             'is_required' => 'boolean',
             'timeout_hours' => 'integer',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'completed_at' => 'immutable_datetime',
+            'timed_out_at' => 'immutable_datetime',
+            'escalated_at' => 'immutable_datetime',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
         ];
     }
 }
