@@ -11,10 +11,10 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\CompletedPayout;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingPayout;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 describe('AffiliatePayout Model', function (): void {
     beforeEach(function (): void {
