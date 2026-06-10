@@ -76,7 +76,7 @@ final class CreateTrackingLink
             'subject_instance' => Arr::get($attributes, 'subject_instance'),
             'subject_title_snapshot' => Str::limit((string) Arr::get($attributes, 'subject_title_snapshot', ''), 200, ''),
             'subject_metadata' => $subjectMetadata,
-            'is_active' => (bool) Arr::get($attributes, 'is_active', true),
+            'deactivated_at' => Arr::get($attributes, 'deactivated_at'),
         ]);
     }
 }

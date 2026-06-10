@@ -37,7 +37,7 @@ final class CollectionResource extends BaseCatalogResource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()->where('is_visible', true)->count();
+        $count = static::getEloquentQuery()->visible()->count();
 
         return $count > 0 ? (string) $count : null;
     }

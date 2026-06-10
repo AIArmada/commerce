@@ -54,7 +54,8 @@ final class SignalAlertLogTable
                     ->label('Delivery')
                     ->formatStateUsing(fn (mixed $state): string => is_array($state) ? implode(', ', array_keys($state)) : '')
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\IconColumn::make('is_read')
+                Tables\Columns\IconColumn::make('read_at')
+                    ->label('Read')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -68,18 +69,19 @@ final class SignalAlertLogTable
                         'warning' => 'Warning',
                         'critical' => 'Critical',
                     ]),
-                TernaryFilter::make('is_read'),
+                TernaryFilter::make('read_at')
+                    ->label('Read'),
             ])
             ->actions([
                 Action::make('mark_read')
                     ->label('Mark Read')
                     ->icon('heroicon-o-check')
-                    ->visible(fn (SignalAlertLog $record): bool => ! $record->is_read)
+                    ->visible(fn (SignalAlertLog $record): bool => $record->read_at === null)
                     ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsRead::class)($record)),
                 Action::make('mark_unread')
                     ->label('Mark Unread')
                     ->icon('heroicon-o-arrow-uturn-left')
-                    ->visible(fn (SignalAlertLog $record): bool => $record->is_read)
+                    ->visible(fn (SignalAlertLog $record): bool => $record->read_at !== null)
                     ->action(fn (SignalAlertLog $record) => app(MarkSignalAlertAsUnread::class)($record)),
             ])
             ->bulkActions([

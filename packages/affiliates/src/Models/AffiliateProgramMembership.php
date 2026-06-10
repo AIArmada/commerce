@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,8 @@ use RuntimeException;
  * @property MembershipStatus $status
  * @property Carbon $applied_at
  * @property Carbon|null $approved_at
+ * @property CarbonImmutable|null $rejected_at
+ * @property CarbonImmutable|null $suspended_at
  * @property Carbon|null $expires_at
  * @property string|null $approved_by
  * @property array<string, mixed>|null $custom_terms
@@ -49,14 +52,18 @@ class AffiliateProgramMembership extends Pivot
         'approved_at',
         'expires_at',
         'approved_by',
+        'rejected_at',
+        'suspended_at',
         'custom_terms',
     ];
 
     protected $casts = [
         'status' => MembershipStatus::class,
-        'applied_at' => 'datetime',
-        'approved_at' => 'datetime',
-        'expires_at' => 'datetime',
+        'applied_at' => 'immutable_datetime',
+        'approved_at' => 'immutable_datetime',
+        'expires_at' => 'immutable_datetime',
+            'rejected_at' => 'immutable_datetime',
+            'suspended_at' => 'immutable_datetime',
         'custom_terms' => 'array',
     ];
 
@@ -108,6 +115,8 @@ class AffiliateProgramMembership extends Pivot
             'status' => MembershipStatus::Approved,
             'approved_at' => now(),
             'approved_by' => $approvedBy,
+            'rejected_at' => null,
+            'suspended_at' => null,
         ]);
     }
 
@@ -115,6 +124,7 @@ class AffiliateProgramMembership extends Pivot
     {
         $this->update([
             'status' => MembershipStatus::Rejected,
+            'rejected_at' => now(),
         ]);
     }
 
@@ -122,7 +132,18 @@ class AffiliateProgramMembership extends Pivot
     {
         $this->update([
             'status' => MembershipStatus::Suspended,
+            'suspended_at' => now(),
         ]);
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->rejected_at !== null;
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
     }
 
     public function upgradeTier(AffiliateProgramTier $tier): void

@@ -55,6 +55,7 @@ use RuntimeException;
  * @property array{factory_keys?: array<int, string>, context?: array<string, mixed>}|null $rules
  * @property bool $is_active
  * @property bool $is_global
+ * @property CarbonImmutable|null $deactivated_at
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
@@ -111,6 +112,7 @@ class Condition extends Model implements Auditable
         'rules',
         'is_active',
         'is_global',
+        'deactivated_at',
     ];
 
     public function getAuditInclude(): array
@@ -494,11 +496,16 @@ class Condition extends Model implements Auditable
     }
 
     /**
+    /**
      * Boot the model and set up event listeners.
      */
     protected static function booted(): void
     {
         self::saving(function (Condition $condition): void {
+            if ($condition->isDirty('is_active') && $condition->is_active === false && $condition->getOriginal('is_active') === true) {
+                $condition->deactivated_at = CarbonImmutable::now();
+            }
+
             if (config('cart.owner.enabled', false)) {
                 $ownerType = $condition->owner_type;
                 $ownerId = $condition->owner_id;
@@ -561,6 +568,7 @@ class Condition extends Model implements Auditable
             'is_percentage' => 'boolean',
             'is_active' => 'boolean',
             'is_global' => 'boolean',
+            'deactivated_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];

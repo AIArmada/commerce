@@ -20,7 +20,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $affiliate_id
  * @property PayoutMethodType $type
  * @property array<string, mixed> $details
- * @property bool $is_verified
  * @property bool $is_default
  * @property CarbonInterface|null $verified_at
  * @property CarbonInterface|null $created_at
@@ -39,7 +38,6 @@ class AffiliatePayoutMethod extends Model implements Auditable
         'affiliate_id',
         'type',
         'details',
-        'is_verified',
         'is_default',
         'verified_at',
     ];
@@ -49,7 +47,6 @@ class AffiliatePayoutMethod extends Model implements Auditable
         return [
             'affiliate_id',
             'type',
-            'is_verified',
             'is_default',
             'verified_at',
         ];
@@ -58,9 +55,8 @@ class AffiliatePayoutMethod extends Model implements Auditable
     protected $casts = [
         'type' => PayoutMethodType::class,
         'details' => 'encrypted:array',
-        'is_verified' => 'boolean',
         'is_default' => 'boolean',
-        'verified_at' => 'datetime',
+        'verified_at' => 'immutable_datetime',
     ];
 
     protected $hidden = [
@@ -80,10 +76,14 @@ class AffiliatePayoutMethod extends Model implements Auditable
         return $this->belongsTo(Affiliate::class);
     }
 
+    public function isVerified(): bool
+    {
+        return $this->verified_at !== null;
+    }
+
     public function verify(): void
     {
         $this->update([
-            'is_verified' => true,
             'verified_at' => now(),
         ]);
     }

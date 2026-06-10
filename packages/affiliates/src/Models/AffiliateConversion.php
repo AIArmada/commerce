@@ -9,6 +9,7 @@ use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -49,6 +50,8 @@ use Spatie\ModelStates\HasStates;
  * @property array<string, mixed>|null $metadata
  * @property CarbonInterface|null $occurred_at
  * @property CarbonInterface|null $approved_at
+ * @property CarbonInterface|null $rejected_at
+ * @property CarbonInterface|null $paid_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read string|null $order_id Alias for order_reference
@@ -95,6 +98,8 @@ class AffiliateConversion extends Model
         'owner_id',
         'occurred_at',
         'approved_at',
+        'rejected_at',
+        'paid_at',
     ];
 
     public function getTable(): string
@@ -233,6 +238,8 @@ class AffiliateConversion extends Model
                     $conversion->approved_at = $approvedAt;
                 }
 
+                $conversion->rejected_at = null;
+
                 $affiliate = $conversion->affiliate()->first();
 
                 if (! $affiliate) {
@@ -265,7 +272,17 @@ class AffiliateConversion extends Model
                 return;
             }
 
+            if ($newStatus->equals(RejectedConversion::class) && $conversion->rejected_at === null) {
+                $conversion->updateQuietly(['rejected_at' => now()]);
+                $conversion->rejected_at = now();
+            }
+
             if ($newStatus->equals(PaidConversion::class)) {
+                if ($conversion->paid_at === null) {
+                    $conversion->updateQuietly(['paid_at' => now()]);
+                    $conversion->paid_at = now();
+                }
+
                 $affiliate = $conversion->affiliate()->first();
                 $balance = $affiliate?->balance()->first();
 
@@ -456,10 +473,22 @@ class AffiliateConversion extends Model
     {
         return [
             'metadata' => 'array',
-            'occurred_at' => 'datetime',
-            'approved_at' => 'datetime',
+            'occurred_at' => 'immutable_datetime',
+            'approved_at' => 'immutable_datetime',
+            'rejected_at' => 'immutable_datetime',
+            'paid_at' => 'immutable_datetime',
             'value_minor' => 'integer',
             'status' => ConversionStatus::class,
         ];
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->rejected_at !== null;
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->paid_at !== null;
     }
 }

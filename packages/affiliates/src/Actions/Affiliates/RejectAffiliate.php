@@ -21,6 +21,7 @@ final class RejectAffiliate
     public function handle(Affiliate $affiliate): Affiliate
     {
         $affiliate->status = new Disabled($affiliate);
+        $affiliate->deactivated_at = now();
         $affiliate->save();
 
         return $affiliate;

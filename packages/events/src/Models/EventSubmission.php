@@ -56,7 +56,7 @@ class EventSubmission extends Model implements Auditable
     protected function casts(): array
     {
         return [
-            'submitted_at' => 'datetime',
+            'submitted_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }

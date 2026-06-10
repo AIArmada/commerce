@@ -71,7 +71,7 @@ final class EnsureOccurrenceAction
                 [
                     'name' => $this->requireString($series, 'name'),
                     'description' => $this->stringOrNull($series['description'] ?? null),
-                    'is_active' => (bool) ($series['is_active'] ?? true),
+                    'status' => (bool) ($series['is_active'] ?? true) ? 'active' : 'archived',
                     'metadata' => $this->arrayOrNull($series['metadata'] ?? null),
                 ],
             );
@@ -597,7 +597,11 @@ final class EnsureOccurrenceAction
             $person = $personPayload['person'] ?? null;
             $roleLabel = $this->stringOrNull($personPayload['role_label'] ?? $personPayload['role'] ?? null);
             $roleKey = $this->stringOrNull($personPayload['role_key'] ?? null) ?? ($roleLabel !== null ? Str::slug($roleLabel) : null);
-            $isPublic = $this->booleanOrNull($personPayload['is_public'] ?? null);
+            $visibility = $this->stringOrNull($personPayload['visibility'] ?? null)
+                ?? ($this->booleanOrNull($personPayload['is_public'] ?? null) !== null
+                    ? ($personPayload['is_public'] ? 'public' : 'private')
+                    : 'public'
+                );
 
             EventPerson::query()->create([
                 'event_id' => $event->id,
@@ -609,13 +613,13 @@ final class EnsureOccurrenceAction
                 'role' => $roleLabel ?? $roleKey,
                 'role_key' => $roleKey,
                 'role_label' => $roleLabel,
-                'is_public' => $isPublic ?? true,
+                'visibility' => $visibility,
                 'biography' => $this->stringOrNull($personPayload['biography'] ?? null),
                 'order_column' => $this->intOrNull($personPayload['order_column'] ?? null) ?? $index + 1,
                 'metadata' => $this->mergeMetadata($personPayload['metadata'] ?? null, [
                     'role_key' => $roleKey,
                     'role_label' => $roleLabel,
-                    'is_public' => $isPublic,
+                    'visibility' => $visibility,
                 ]),
             ]);
         }

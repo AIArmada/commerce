@@ -10,8 +10,8 @@ use AIArmada\Inventory\Services\InventoryService;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Models\Product;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 
 final class EnsureCheckoutOfferProduct
@@ -48,7 +48,7 @@ final class EnsureCheckoutOfferProduct
             $product->tracks_inventory = $tracksInventory;
 
             if (! $product->exists && $product->published_at === null) {
-                $product->published_at = Carbon::now();
+                $product->published_at = CarbonImmutable::now();
             }
 
             if ($product->isDirty()) {

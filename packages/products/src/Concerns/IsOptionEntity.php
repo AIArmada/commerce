@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Concerns;
 
+use AIArmada\Products\Enums\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 
 trait IsOptionEntity
@@ -15,7 +16,7 @@ trait IsOptionEntity
 
     public function scopeVisible(Builder $query): Builder
     {
-        return $query->where('is_visible', true);
+        return $query->where('visibility', Visibility::Visible);
     }
 
     protected function resolveProductTable(string $key, string $default): string

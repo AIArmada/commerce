@@ -18,6 +18,7 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('slug');
+            $table->string('status', 32)->default('active');
             $table->string('contact_name')->nullable();
             $table->string('contact_email')->nullable();
             $table->string('contact_phone')->nullable();

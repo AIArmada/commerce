@@ -53,8 +53,8 @@ class AffiliateTrainingProgress extends Model implements Auditable
         'last_position' => 'integer',
         'quiz_score' => 'integer',
         'quiz_attempts' => 'integer',
-        'completed_at' => 'datetime',
-        'quiz_passed_at' => 'datetime',
+        'completed_at' => 'immutable_datetime',
+        'quiz_passed_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string

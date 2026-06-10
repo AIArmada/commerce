@@ -32,6 +32,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property int|null $compare_amount
  * @property string $currency
  * @property int $min_quantity
+ * @property Carbon|null $deactivated_at
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
  */
@@ -56,6 +57,7 @@ class Price extends Model implements Auditable
         'compare_amount',
         'currency',
         'min_quantity',
+        'deactivated_at',
         'starts_at',
         'ends_at',
     ];
@@ -67,8 +69,9 @@ class Price extends Model implements Auditable
         'amount' => 'integer',
         'compare_amount' => 'integer',
         'min_quantity' => 'integer',
-        'starts_at' => 'datetime',
-        'ends_at' => 'datetime',
+        'deactivated_at' => 'immutable_datetime',
+        'starts_at' => 'immutable_datetime',
+        'ends_at' => 'immutable_datetime',
     ];
 
     /**

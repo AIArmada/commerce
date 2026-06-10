@@ -7,6 +7,7 @@ namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Tax\Enums\ExemptionStatus;
 use AIArmada\Tax\Models\TaxExemption;
+use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
@@ -184,8 +185,8 @@ final class TaxExemptionForm
                             ->schema([
                                 Select::make('status')
                                     ->label('Status')
-                                    ->options(ExemptionStatus::class)
-                                    ->default(ExemptionStatus::Pending)
+                                    ->options(fn (): array => TaxExemptionState::options())
+                                    ->default('pending')
                                     ->required(),
 
                                 Placeholder::make('status_info')
@@ -203,15 +204,15 @@ final class TaxExemptionForm
                                             return '⏰ Expiring in ' . $record->expires_at->diffForHumans();
                                         }
 
-                                        if ($record->status === ExemptionStatus::Approved) {
+                                        if ($record->status instanceof \AIArmada\Tax\States\TaxExemptionState\ApprovedState) {
                                             return '✅ Active & Approved';
                                         }
 
-                                        if ($record->status === ExemptionStatus::Rejected) {
+                                        if ($record->status instanceof \AIArmada\Tax\States\TaxExemptionState\RejectedState) {
                                             return '❌ Rejected';
                                         }
 
-                                        return '⏳ Pending Review';
+                                        return '⏳ ' . $record->status->label();
                                     }),
 
                                 Placeholder::make('verified_info')

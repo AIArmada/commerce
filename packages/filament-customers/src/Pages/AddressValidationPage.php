@@ -43,7 +43,7 @@ class AddressValidationPage extends Page
     {
         $query = Address::query()
             ->with('customer')
-            ->where('is_verified', false);
+            ->whereNull('verified_at');
 
         if ((bool) config('customers.features.owner.enabled', false)) {
             $query = OwnerUiScope::apply($query, includeGlobal: false);
@@ -56,7 +56,7 @@ class AddressValidationPage extends Page
                 'customer_name' => $address->customer?->full_name ?? 'Unknown',
                 'full_address' => $address->full_address ?? "{$address->line1}, {$address->city}, {$address->postcode}",
                 'country' => $address->country,
-                'validated' => $address->is_verified,
+                'validated' => $address->getAttribute('verified_at') !== null,
             ])
             ->all();
     }
@@ -74,7 +74,7 @@ class AddressValidationPage extends Page
             return;
         }
 
-        $address->update(['is_verified' => true]);
+        $address->update(['verified_at' => now()]);
 
         Notification::make()
             ->title('Address validated successfully')

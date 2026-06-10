@@ -36,7 +36,7 @@ class ProductFactory extends Factory
             'type' => $type,
             'status' => ProductStatus::Active,
             'visibility' => ProductVisibility::CatalogSearch,
-            'price' => $this->faker->numberBetween(1000, 100000), // RM 10 - RM 1000
+            'price' => $this->faker->numberBetween(1000, 100000),
             'compare_price' => $this->faker->optional(0.3)->numberBetween(1000, 150000),
             'cost' => $this->faker->numberBetween(500, 50000),
             'sku' => mb_strtoupper(Str::random(8)),
@@ -50,7 +50,6 @@ class ProductFactory extends Factory
             'meta_description' => null,
         ];
 
-        // Only include dimension columns if they exist in the table
         $tableColumns = Schema::getColumnListing((new Product)->getTable());
         if (in_array('length', $tableColumns)) {
             $data['length'] = $requiresShipping ? $this->faker->optional()->randomFloat(2, 1, 100) : null;
@@ -65,9 +64,6 @@ class ProductFactory extends Factory
         return $data;
     }
 
-    /**
-     * Product in draft status.
-     */
     public function draft(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -75,9 +71,6 @@ class ProductFactory extends Factory
         ]);
     }
 
-    /**
-     * Product in active status.
-     */
     public function active(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -85,9 +78,22 @@ class ProductFactory extends Factory
         ]);
     }
 
-    /**
-     * Featured product.
-     */
+    public function disabled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => ProductStatus::Disabled,
+            'deactivated_at' => now(),
+        ]);
+    }
+
+    public function archived(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => ProductStatus::Archived,
+            'archived_at' => now(),
+        ]);
+    }
+
     public function featured(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -95,9 +101,6 @@ class ProductFactory extends Factory
         ]);
     }
 
-    /**
-     * Digital product.
-     */
     public function digital(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -112,17 +115,11 @@ class ProductFactory extends Factory
         ]);
     }
 
-    /**
-     * Unlimited digital product.
-     */
     public function digitalUnlimited(): static
     {
         return $this->digital();
     }
 
-    /**
-     * Inventory-tracked digital product.
-     */
     public function digitalInventoryTracked(): static
     {
         return $this->digital()->state(fn (array $attributes) => [
@@ -130,9 +127,6 @@ class ProductFactory extends Factory
         ]);
     }
 
-    /**
-     * Variant-capable digital product.
-     */
     public function digitalVariantCapable(): static
     {
         return $this->digital()->state(fn (array $attributes) => [
@@ -140,9 +134,6 @@ class ProductFactory extends Factory
         ]);
     }
 
-    /**
-     * Product on sale.
-     */
     public function onSale(int $discountPercent = 20): static
     {
         return $this->state(function (array $attributes) use ($discountPercent) {

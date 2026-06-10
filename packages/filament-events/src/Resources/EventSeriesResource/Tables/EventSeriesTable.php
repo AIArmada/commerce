@@ -9,9 +9,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 final class EventSeriesTable
@@ -25,9 +24,13 @@ final class EventSeriesTable
                     ->sortable()
                     ->description(fn (EventSeries $record): string => $record->slug),
 
-                IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean()
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'active' => 'success',
+                        'archived' => 'gray',
+                        default => 'gray',
+                    })
                     ->sortable(),
 
                 TextColumn::make('events_count')
@@ -42,8 +45,12 @@ final class EventSeriesTable
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                TernaryFilter::make('is_active')
-                    ->label('Active'),
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'active' => 'Active',
+                        'archived' => 'Archived',
+                    ]),
             ])
             ->actions([
                 ViewAction::make(),

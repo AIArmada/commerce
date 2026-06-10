@@ -27,6 +27,8 @@ return new class extends Migration
             $table->unsignedInteger('default_duration_minutes')->nullable();
             $table->text('summary')->nullable();
             $table->longText('description')->nullable();
+            $table->timestampTz('activated_at')->nullable();
+            $table->timestampTz('archived_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 

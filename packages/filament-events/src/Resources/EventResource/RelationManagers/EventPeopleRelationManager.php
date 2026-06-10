@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventResource\RelationManagers;
 
+use AIArmada\Events\Enums\EventVisibility;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -53,8 +54,9 @@ final class EventPeopleRelationManager extends RelationManager
                     ->numeric()
                     ->minValue(0),
 
-                Toggle::make('is_public')
-                    ->default(true),
+                Select::make('visibility')
+                    ->options(EventVisibility::class)
+                    ->default(EventVisibility::Public),
 
                 KeyValue::make('metadata')
                     ->columnSpanFull(),
@@ -82,9 +84,13 @@ final class EventPeopleRelationManager extends RelationManager
                     ->placeholder('Display-only')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\IconColumn::make('is_public')
-                    ->label('Public')
-                    ->boolean()
+                Tables\Columns\BadgeColumn::make('visibility')
+                    ->label('Visibility')
+                    ->colors([
+                        'success' => EventVisibility::Public->value,
+                        'warning' => EventVisibility::Unlisted->value,
+                        'gray' => EventVisibility::Private->value,
+                    ])
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('order_column')

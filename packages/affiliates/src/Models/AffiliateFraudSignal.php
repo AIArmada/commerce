@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property Carbon $detected_at
  * @property Carbon|null $reviewed_at
  * @property string|null $reviewed_by
+ * @property CarbonImmutable|null $dismissed_at
+ * @property CarbonImmutable|null $confirmed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
@@ -56,6 +59,8 @@ class AffiliateFraudSignal extends Model implements Auditable
         'detected_at',
         'reviewed_at',
         'reviewed_by',
+        'dismissed_at',
+        'confirmed_at',
     ];
 
     protected $casts = [
@@ -63,8 +68,10 @@ class AffiliateFraudSignal extends Model implements Auditable
         'severity' => FraudSeverity::class,
         'status' => FraudSignalStatus::class,
         'evidence' => 'array',
-        'detected_at' => 'datetime',
-        'reviewed_at' => 'datetime',
+        'detected_at' => 'immutable_datetime',
+        'reviewed_at' => 'immutable_datetime',
+            'dismissed_at' => 'immutable_datetime',
+            'confirmed_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string
@@ -126,6 +133,7 @@ class AffiliateFraudSignal extends Model implements Auditable
             'status' => FraudSignalStatus::Dismissed,
             'reviewed_at' => now(),
             'reviewed_by' => $reviewedBy,
+            'dismissed_at' => now(),
         ]);
     }
 
@@ -135,6 +143,7 @@ class AffiliateFraudSignal extends Model implements Auditable
             'status' => FraudSignalStatus::Confirmed,
             'reviewed_at' => now(),
             'reviewed_by' => $reviewedBy,
+            'confirmed_at' => now(),
         ]);
     }
 

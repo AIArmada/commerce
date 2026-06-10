@@ -93,10 +93,10 @@ class AffiliateAttribution extends Model
 
     protected $casts = [
         'metadata' => 'array',
-        'first_seen_at' => 'datetime',
-        'last_seen_at' => 'datetime',
-        'last_cookie_seen_at' => 'datetime',
-        'expires_at' => 'datetime',
+        'first_seen_at' => 'immutable_datetime',
+        'last_seen_at' => 'immutable_datetime',
+        'last_cookie_seen_at' => 'immutable_datetime',
+        'expires_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string

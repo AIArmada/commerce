@@ -43,8 +43,8 @@ final class VoucherWalletResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = (int) self::getEloquentQuery()->where('is_claimed', true)
-            ->where('is_redeemed', false)
+        $count = (int) self::getEloquentQuery()->whereNotNull('claimed_at')
+            ->whereNull('redeemed_at')
             ->count();
 
         return $count > 0 ? (string) $count : null;

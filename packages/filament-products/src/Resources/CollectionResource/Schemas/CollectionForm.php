@@ -6,6 +6,7 @@ namespace AIArmada\FilamentProducts\Resources\CollectionResource\Schemas;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\Products\Enums\CatalogStatus;
 use AIArmada\Products\Models\Category;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\MarkdownEditor;
@@ -155,9 +156,13 @@ class CollectionForm
                                     ->numeric()
                                     ->default(0),
 
-                                Toggle::make('is_visible')
-                                    ->label('Visible')
-                                    ->default(true),
+                                Select::make('status')
+                                    ->label('Status')
+                                    ->options(
+                                        collect(CatalogStatus::cases())
+                                            ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
+                                    )
+                                    ->default('active'),
 
                                 Toggle::make('is_featured')
                                     ->label('Featured Collection'),

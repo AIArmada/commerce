@@ -9,11 +9,13 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Products\Enums\CatalogStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -32,10 +34,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $type
  * @property array<string, mixed>|null $conditions
  * @property int $position
- * @property bool $is_visible
+ * @property CatalogStatus $status
+ * @property string $visibility
  * @property bool $is_featured
- * @property Carbon|null $published_at
- * @property Carbon|null $unpublished_at
+ * @property CarbonImmutable|null $published_at
+ * @property CarbonImmutable|null $unpublished_at
+ * @property CarbonImmutable|null $hidden_at
+ * @property CarbonImmutable|null $archived_at
  * @property string|null $meta_title
  * @property string|null $meta_description
  * @property array<string, mixed>|null $metadata
@@ -63,13 +68,16 @@ class Collection extends Model implements Auditable, HasMedia
     protected function casts(): array
     {
         return [
-            'type' => 'string', // manual or automatic
+            'type' => 'string',
             'conditions' => 'array',
-            'is_visible' => 'boolean',
+            'status' => CatalogStatus::class,
+            'visibility' => 'string',
             'is_featured' => 'boolean',
             'position' => 'integer',
-            'published_at' => 'datetime',
-            'unpublished_at' => 'datetime',
+            'published_at' => 'immutable_datetime',
+            'unpublished_at' => 'immutable_datetime',
+            'hidden_at' => 'immutable_datetime',
+            'archived_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }
@@ -79,7 +87,8 @@ class Collection extends Model implements Auditable, HasMedia
      */
     protected $attributes = [
         'type' => 'manual',
-        'is_visible' => true,
+        'status' => 'active',
+        'visibility' => 'catalog',
         'is_featured' => false,
         'position' => 0,
     ];
@@ -247,6 +256,10 @@ class Collection extends Model implements Auditable, HasMedia
      */
     public function isPublished(): bool
     {
+        if ($this->status !== CatalogStatus::Active) {
+            return false;
+        }
+
         $now = now();
 
         if ($this->published_at && $now->lt($this->published_at)) {
@@ -257,7 +270,7 @@ class Collection extends Model implements Auditable, HasMedia
             return false;
         }
 
-        return $this->is_visible;
+        return true;
     }
 
     /**
@@ -274,7 +287,7 @@ class Collection extends Model implements Auditable, HasMedia
 
     public function scopeVisible(Builder $query): Builder
     {
-        return $query->where('is_visible', true);
+        return $query->where('status', CatalogStatus::Active);
     }
 
     public function scopeFeatured(Builder $query): Builder
@@ -282,12 +295,22 @@ class Collection extends Model implements Auditable, HasMedia
         return $query->where('is_featured', true);
     }
 
+    public function scopeHidden(Builder $query): Builder
+    {
+        return $query->where('status', CatalogStatus::Hidden);
+    }
+
+    public function scopeArchived(Builder $query): Builder
+    {
+        return $query->where('status', CatalogStatus::Archived);
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         $now = now();
 
         return $query
-            ->where('is_visible', true)
+            ->where('status', CatalogStatus::Active)
             ->where(function ($q) use ($now): void {
                 $q->whereNull('published_at')
                     ->orWhere('published_at', '<=', $now);

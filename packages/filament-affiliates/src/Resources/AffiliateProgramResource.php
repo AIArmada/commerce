@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\RelationManagers\CommissionPromotionsRelationManager;
@@ -156,10 +157,9 @@ final class AffiliateProgramResource extends Resource
 
             Section::make('Settings')
                 ->schema([
-                    Forms\Components\Toggle::make('is_public')
-                        ->label('Public Program')
-                        ->default(true)
-                        ->helperText('Visible to all affiliates'),
+                    Forms\Components\Select::make('visibility')
+                        ->options(ProgramVisibility::class)
+                        ->default(ProgramVisibility::Public),
 
                     Forms\Components\Toggle::make('requires_approval')
                         ->label('Requires Approval')
@@ -203,9 +203,12 @@ final class AffiliateProgramResource extends Resource
                         'danger' => ProgramStatus::Archived->value,
                     ]),
 
-                Tables\Columns\IconColumn::make('is_public')
-                    ->boolean()
-                    ->label('Public'),
+                Tables\Columns\BadgeColumn::make('visibility')
+                    ->label('Visibility')
+                    ->colors([
+                        'success' => ProgramVisibility::Public->value,
+                        'gray' => ProgramVisibility::Private->value,
+                    ]),
 
                 Tables\Columns\TextColumn::make('default_commission_rate_basis_points')
                     ->label('Commission')
@@ -234,8 +237,8 @@ final class AffiliateProgramResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(ProgramStatus::class),
 
-                Tables\Filters\TernaryFilter::make('is_public')
-                    ->label('Public'),
+                Tables\Filters\SelectFilter::make('visibility')
+                    ->options(ProgramVisibility::class),
             ])
             ->actions([
                 ViewAction::make(),

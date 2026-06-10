@@ -40,6 +40,10 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonImmutable $issue_date
  * @property CarbonImmutable|null $due_date
  * @property CarbonImmutable|null $paid_at
+ * @property CarbonImmutable|null $sent_at
+ * @property CarbonImmutable|null $cancelled_at
+ * @property CarbonImmutable|null $refunded_at
+ * @property CarbonImmutable|null $overdue_at
  * @property string $subtotal
  * @property string $tax_amount
  * @property string $discount_amount
@@ -87,6 +91,10 @@ final class Doc extends Model implements Auditable
         'issue_date',
         'due_date',
         'paid_at',
+        'sent_at',
+        'cancelled_at',
+        'refunded_at',
+        'overdue_at',
         'subtotal',
         'tax_amount',
         'discount_amount',
@@ -312,7 +320,11 @@ final class Doc extends Model implements Auditable
             'status' => DocStatus::class,
             'issue_date' => 'date',
             'due_date' => 'date',
-            'paid_at' => 'datetime',
+            'paid_at' => 'immutable_datetime',
+            'sent_at' => 'immutable_datetime',
+            'cancelled_at' => 'immutable_datetime',
+            'refunded_at' => 'immutable_datetime',
+            'overdue_at' => 'immutable_datetime',
             'subtotal' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',

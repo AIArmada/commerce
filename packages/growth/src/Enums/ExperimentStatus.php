@@ -10,6 +10,7 @@ enum ExperimentStatus: string
     case Active = 'active';
     case Paused = 'paused';
     case Concluded = 'concluded';
+    case Archived = 'archived';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum ExperimentStatus: string
             self::Active => 'Active',
             self::Paused => 'Paused',
             self::Concluded => 'Concluded',
+            self::Archived => 'Archived',
         };
     }
 
@@ -28,6 +30,7 @@ enum ExperimentStatus: string
             self::Active => 'success',
             self::Paused => 'warning',
             self::Concluded => 'primary',
+            self::Archived => 'gray',
         };
     }
 }

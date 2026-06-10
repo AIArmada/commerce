@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Enums\TaxDocumentStatus;
 use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
@@ -64,10 +65,11 @@ class AffiliateTaxDocument extends Model implements Auditable
     }
 
     protected $casts = [
+        'status' => TaxDocumentStatus::class,
         'tax_year' => 'integer',
         'total_amount_minor' => 'integer',
-        'generated_at' => 'datetime',
-        'sent_at' => 'datetime',
+        'generated_at' => 'immutable_datetime',
+        'sent_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string
@@ -81,6 +83,46 @@ class AffiliateTaxDocument extends Model implements Auditable
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class, 'affiliate_id');
+    }
+
+    public function isGenerated(): bool
+    {
+        return $this->status === TaxDocumentStatus::Generated;
+    }
+
+    public function isSent(): bool
+    {
+        return $this->status === TaxDocumentStatus::Sent;
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === TaxDocumentStatus::Failed;
+    }
+
+    public function markAsGenerated(?string $path = null): void
+    {
+        $this->update([
+            'status' => TaxDocumentStatus::Generated,
+            'document_path' => $path,
+            'generated_at' => now(),
+        ]);
+    }
+
+    public function markAsSent(): void
+    {
+        $this->update([
+            'status' => TaxDocumentStatus::Sent,
+            'sent_at' => now(),
+        ]);
+    }
+
+    public function markAsFailed(?string $notes = null): void
+    {
+        $this->update([
+            'status' => TaxDocumentStatus::Failed,
+            'notes' => $notes,
+        ]);
     }
 
     /**

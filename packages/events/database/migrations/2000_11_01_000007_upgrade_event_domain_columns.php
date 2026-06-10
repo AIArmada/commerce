@@ -68,6 +68,14 @@ return new class extends Migration
                 $table->timestampTz('public_ends_at')->nullable()->index()->after('public_starts_at');
             }
 
+            if (! Schema::hasColumn($tableName, 'activated_at')) {
+                $table->timestampTz('activated_at')->nullable()->after('public_ends_at');
+            }
+
+            if (! Schema::hasColumn($tableName, 'archived_at')) {
+                $table->timestampTz('archived_at')->nullable()->after('activated_at');
+            }
+
             if (! Schema::hasColumn($tableName, 'media_references')) {
                 $table->{$jsonType}('media_references')->nullable()->after('description');
             }
@@ -119,9 +127,9 @@ return new class extends Migration
                 $table->string('role')->nullable();
                 $table->string('role_key')->nullable();
                 $table->string('role_label')->nullable();
-                $table->boolean('is_public')->default(true)->index();
                 $table->text('biography')->nullable();
                 $table->unsignedInteger('order_column')->nullable();
+                $table->string('visibility', 32)->default('public')->index();
                 $table->{$jsonType}('metadata')->nullable();
                 $table->timestampsTz();
 
@@ -149,8 +157,8 @@ return new class extends Migration
                 $table->string('role_label')->nullable()->after('role_key');
             }
 
-            if (! Schema::hasColumn($tableName, 'is_public')) {
-                $table->boolean('is_public')->default(true)->index()->after('role_label');
+            if (! Schema::hasColumn($tableName, 'visibility')) {
+                $table->string('visibility', 32)->default('public')->index()->after('role_label');
             }
 
             if (! Schema::hasColumn($tableName, 'order_column')) {

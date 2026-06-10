@@ -29,8 +29,12 @@ return new class extends Migration
             $table->string('email')->index();
             $table->string('phone')->nullable();
             $table->string('company')->nullable();
+            $table->timestampTz('confirmed_at')->nullable();
             $table->timestampTz('checked_in_at')->nullable()->index();
             $table->timestampTz('cancelled_at')->nullable()->index();
+            $table->timestampTz('refunded_at')->nullable();
+            $table->timestampTz('no_show_at')->nullable();
+            $table->timestampTz('waitlisted_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 

@@ -47,9 +47,11 @@ class CategoriesTable
                     ->counts('products')
                     ->sortable(),
 
-                Tables\Columns\IconColumn::make('is_visible')
-                    ->label('Visible')
-                    ->boolean(),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->color(fn ($state) => $state->color()),
 
                 Tables\Columns\IconColumn::make('is_featured')
                     ->label('Featured')
@@ -68,8 +70,13 @@ class CategoriesTable
             ])
             ->defaultSort('position')
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_visible')
-                    ->label('Visible'),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'active' => 'Active',
+                        'hidden' => 'Hidden',
+                        'archived' => 'Archived',
+                    ]),
 
                 Tables\Filters\TernaryFilter::make('is_featured')
                     ->label('Featured'),
@@ -105,19 +112,19 @@ class CategoriesTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     BulkAction::make('show')
-                        ->label('Make Visible')
+                        ->label('Set Active')
                         ->icon('heroicon-o-eye')
                         ->action(function (Collection $records): void {
                             $records->each(function (Category $record): void {
-                                $record->update(['is_visible' => true]);
+                                $record->update(['status' => 'active', 'hidden_at' => null]);
                             });
                         }),
                     BulkAction::make('hide')
-                        ->label('Make Hidden')
+                        ->label('Set Hidden')
                         ->icon('heroicon-o-eye-slash')
                         ->action(function (Collection $records): void {
                             $records->each(function (Category $record): void {
-                                $record->update(['is_visible' => false]);
+                                $record->update(['status' => 'hidden', 'hidden_at' => now()]);
                             });
                         }),
                 ]),

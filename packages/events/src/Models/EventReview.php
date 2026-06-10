@@ -63,7 +63,7 @@ class EventReview extends Model implements Auditable
     protected function casts(): array
     {
         return [
-            'reviewed_at' => 'datetime',
+            'reviewed_at' => 'immutable_datetime',
             'before_snapshot' => 'array',
             'after_snapshot' => 'array',
             'metadata' => 'array',

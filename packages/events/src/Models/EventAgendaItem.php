@@ -57,8 +57,8 @@ class EventAgendaItem extends Model implements Auditable
     protected function casts(): array
     {
         return [
-            'starts_at' => 'datetime',
-            'ends_at' => 'datetime',
+            'starts_at' => 'immutable_datetime',
+            'ends_at' => 'immutable_datetime',
             'duration_minutes' => 'integer',
             'order_column' => 'integer',
             'metadata' => 'array',

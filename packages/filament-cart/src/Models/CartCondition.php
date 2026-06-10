@@ -89,8 +89,8 @@ final class CartCondition extends Model
         'is_discount' => 'boolean',
         'is_percentage' => 'boolean',
         'is_global' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'created_at' => 'immutable_datetime',
+        'updated_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string

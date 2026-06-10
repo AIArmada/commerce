@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateOfferResource\Schemas;
 
+use AIArmada\AffiliateNetwork\Enums\OfferStatus;
+use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\FilamentAffiliateNetwork\Support\AffiliateNetworkOptionsProvider;
 use Filament\Forms\Components\DateTimePicker;
@@ -90,24 +92,25 @@ final class AffiliateOfferForm
                     ->schema([
                         Select::make('status')
                             ->options([
-                                AffiliateOffer::STATUS_DRAFT => 'Draft',
-                                AffiliateOffer::STATUS_PENDING => 'Pending Review',
-                                AffiliateOffer::STATUS_ACTIVE => 'Active',
-                                AffiliateOffer::STATUS_PAUSED => 'Paused',
-                                AffiliateOffer::STATUS_EXPIRED => 'Expired',
-                                AffiliateOffer::STATUS_REJECTED => 'Rejected',
+                                OfferStatus::Draft->value => 'Draft',
+                                OfferStatus::Published->value => 'Published',
+                                OfferStatus::Archived->value => 'Archived',
                             ])
                             ->required()
-                            ->default(AffiliateOffer::STATUS_DRAFT),
+                            ->default(OfferStatus::Draft->value),
+
+                        Select::make('visibility')
+                            ->options([
+                                OfferVisibility::Public->value => 'Public',
+                                OfferVisibility::Private->value => 'Private',
+                                OfferVisibility::Unlisted->value => 'Unlisted',
+                            ])
+                            ->default(OfferVisibility::Public->value)
+                            ->helperText('Controls marketplace visibility'),
 
                         Toggle::make('is_featured')
                             ->label('Featured')
                             ->default(false),
-
-                        Toggle::make('is_public')
-                            ->label('Public')
-                            ->default(true)
-                            ->helperText('Visible in marketplace'),
 
                         Toggle::make('requires_approval')
                             ->label('Requires Approval')

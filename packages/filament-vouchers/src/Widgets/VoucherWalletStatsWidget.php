@@ -22,9 +22,9 @@ final class VoucherWalletStatsWidget extends BaseWidget
         $wallets = $this->wallets();
 
         $total = (clone $wallets)->count();
-        $claimed = (clone $wallets)->where('is_claimed', true)->count();
-        $redeemed = (clone $wallets)->where('is_redeemed', true)->count();
-        $available = (clone $wallets)->where('is_redeemed', false)->count();
+        $claimed = (clone $wallets)->whereNotNull('claimed_at')->count();
+        $redeemed = (clone $wallets)->whereNotNull('redeemed_at')->count();
+        $available = (clone $wallets)->whereNull('redeemed_at')->count();
 
         // Calculate unique vouchers in wallets
         $uniqueVouchers = (clone $wallets)->distinct('voucher_id')->count('voucher_id');

@@ -32,6 +32,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property int $amount
  * @property string|null $discount_type
  * @property int|null $discount_value
+ * @property bool $is_active
  * @property string $currency
  * @property-read PriceList|null $priceList
  */
@@ -55,6 +56,7 @@ class PriceTier extends Model implements Auditable
         'amount',
         'discount_type',
         'discount_value',
+        'is_active',
         'currency',
     ];
 
@@ -66,6 +68,7 @@ class PriceTier extends Model implements Auditable
         'max_quantity' => 'integer',
         'amount' => 'integer',
         'discount_value' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -73,6 +76,7 @@ class PriceTier extends Model implements Auditable
      */
     protected $attributes = [
         'min_quantity' => 1,
+        'is_active' => true,
         'currency' => 'MYR',
     ];
 

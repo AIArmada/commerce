@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Schemas;
 
 use AIArmada\Shipping\Enums\ReturnReason;
+use AIArmada\Shipping\States\ReturnAuthorizationState\ReturnAuthorizationStatus;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -29,14 +30,7 @@ final class ReturnAuthorizationForm
                             ->maxLength(255),
 
                         Select::make('status')
-                            ->options([
-                                'pending' => 'Pending',
-                                'approved' => 'Approved',
-                                'rejected' => 'Rejected',
-                                'received' => 'Received',
-                                'completed' => 'Completed',
-                                'cancelled' => 'Cancelled',
-                            ])
+                            ->options(fn (): array => ReturnAuthorizationStatus::options())
                             ->required(),
 
                         Select::make('type')
@@ -69,6 +63,9 @@ final class ReturnAuthorizationForm
                             ->disabled(),
 
                         DateTimePicker::make('expires_at'),
+
+                        DateTimePicker::make('cancelled_at')
+                            ->disabled(),
                     ])
                     ->columns(2),
             ]);

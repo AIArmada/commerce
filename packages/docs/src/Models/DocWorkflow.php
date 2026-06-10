@@ -147,8 +147,8 @@ final class DocWorkflow extends Model implements Auditable
             'is_active' => 'boolean',
             'rules' => 'array',
             'priority' => 'integer',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
         ];
     }
 }

@@ -25,7 +25,7 @@ class VariantFactory extends Factory
             'product_id' => Product::factory(),
             'sku' => mb_strtoupper(Str::random(10)),
             'barcode' => $this->faker->optional()->ean13(),
-            'price' => null, // Uses product price by default
+            'price' => null,
             'compare_price' => null,
             'cost' => null,
             'weight' => $this->faker->optional()->randomFloat(2, 0.1, 50),
@@ -37,9 +37,6 @@ class VariantFactory extends Factory
         ];
     }
 
-    /**
-     * Default variant.
-     */
     public function default(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -47,19 +44,14 @@ class VariantFactory extends Factory
         ]);
     }
 
-    /**
-     * Disabled variant.
-     */
     public function disabled(): static
     {
         return $this->state(fn (array $attributes) => [
             'is_enabled' => false,
+            'deactivated_at' => now(),
         ]);
     }
 
-    /**
-     * Variant with price override.
-     */
     public function withPrice(int $priceInCents): static
     {
         return $this->state(fn (array $attributes) => [

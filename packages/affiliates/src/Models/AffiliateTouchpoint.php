@@ -67,7 +67,7 @@ class AffiliateTouchpoint extends Model
 
     protected $casts = [
         'metadata' => 'array',
-        'touched_at' => 'datetime',
+        'touched_at' => 'immutable_datetime',
     ];
 
     public function getTable(): string

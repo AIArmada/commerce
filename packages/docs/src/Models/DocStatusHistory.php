@@ -22,8 +22,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property DocStatus $status
  * @property string|null $notes
  * @property string|null $changed_by
+ * @property string $changed_by_type
  * @property CarbonImmutable $created_at
- * @property CarbonImmutable $updated_at
  * @property-read Doc $doc
  */
 final class DocStatusHistory extends Model implements Auditable
@@ -42,6 +42,7 @@ final class DocStatusHistory extends Model implements Auditable
         'status',
         'notes',
         'changed_by',
+        'changed_by_type',
     ];
 
     public function getTable(): string
@@ -64,6 +65,7 @@ final class DocStatusHistory extends Model implements Auditable
     {
         return [
             'status' => DocStatus::class,
+            'changed_by_type' => 'string',
         ];
     }
 }

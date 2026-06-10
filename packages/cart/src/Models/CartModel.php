@@ -34,6 +34,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array<string, mixed>|null $metadata
  * @property int $version
  * @property CarbonImmutable|null $expires_at
+ * @property CarbonImmutable|null $expired_at
+ * @property CarbonImmutable|null $checked_out_at
+ * @property CarbonImmutable|null $abandoned_at
+ * @property string|null $merged_into_id
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read CartCollection<int, CartItem> $cartItems
@@ -61,6 +65,10 @@ class CartModel extends Model implements Auditable
         'metadata',
         'version',
         'expires_at',
+        'expired_at',
+        'checked_out_at',
+        'abandoned_at',
+        'merged_into_id',
     ];
 
     /**
@@ -114,11 +122,48 @@ class CartModel extends Model implements Auditable
      */
     public function isExpired(): bool
     {
+        if ($this->expired_at !== null) {
+            return true;
+        }
+
         if ($this->expires_at === null) {
             return false;
         }
 
         return now()->isAfter($this->expires_at);
+    }
+
+    /**
+     * Check if cart has been converted to an order.
+     */
+    public function isConverted(): bool
+    {
+        return $this->checked_out_at !== null;
+    }
+
+    /**
+     * Check if cart has been marked as abandoned.
+     */
+    public function isAbandoned(): bool
+    {
+        return $this->abandoned_at !== null;
+    }
+
+    /**
+     * Check if cart has been merged into another cart.
+     */
+    public function isMerged(): bool
+    {
+        return $this->merged_into_id !== null;
+    }
+
+    /**
+     * Mark cart as converted (checked out).
+     */
+    public function markAsConverted(): void
+    {
+        $this->checked_out_at = CarbonImmutable::now();
+        $this->save();
     }
 
     /**
@@ -183,6 +228,9 @@ class CartModel extends Model implements Auditable
             'metadata' => 'array',
             'version' => 'integer',
             'expires_at' => 'immutable_datetime',
+            'expired_at' => 'immutable_datetime',
+            'checked_out_at' => 'immutable_datetime',
+            'abandoned_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
@@ -230,8 +278,13 @@ class CartModel extends Model implements Auditable
     #[Scope]
     protected function expired(Builder $query): void
     {
-        $query->whereNotNull('expires_at')
-            ->where('expires_at', '<', now());
+        $query->where(function (Builder $q): void {
+            $q->whereNotNull('expired_at')
+                ->orWhere(function (Builder $q2): void {
+                    $q2->whereNotNull('expires_at')
+                        ->where('expires_at', '<', now());
+                });
+        });
     }
 
     /**
@@ -242,10 +295,33 @@ class CartModel extends Model implements Auditable
     #[Scope]
     protected function notExpired(Builder $query): void
     {
-        $query->where(function (Builder $q): void {
-            $q->whereNull('expires_at')
-                ->orWhere('expires_at', '>', now());
-        });
+        $query->whereNull('expired_at')
+            ->where(function (Builder $q): void {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            });
+    }
+
+    /**
+     * Scope to filter converted carts.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function converted(Builder $query): void
+    {
+        $query->whereNotNull('checked_out_at');
+    }
+
+    /**
+     * Scope to filter abandoned carts.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function abandoned(Builder $query): void
+    {
+        $query->whereNotNull('abandoned_at');
     }
 
     /**

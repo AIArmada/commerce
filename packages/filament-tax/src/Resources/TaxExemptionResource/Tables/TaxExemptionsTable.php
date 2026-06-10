@@ -8,6 +8,9 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Actions\DownloadTaxExemptionCertificateAction;
 use AIArmada\Tax\Enums\ExemptionStatus;
 use AIArmada\Tax\Models\TaxExemption;
+use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
+use AIArmada\Tax\States\TaxExemptionState\PendingState;
+use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -55,8 +58,8 @@ final class TaxExemptionsTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn (ExemptionStatus $state): string => $state->label())
-                    ->color(fn (ExemptionStatus $state): string => $state->color()),
+                    ->formatStateUsing(fn (TaxExemptionState $state): string => $state->label())
+                    ->color(fn (TaxExemptionState $state): string => $state->color()),
 
                 TextColumn::make('starts_at')
                     ->label('Valid From')
@@ -112,7 +115,7 @@ final class TaxExemptionsTable
 
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options(ExemptionStatus::class),
+                    ->options(fn (): array => TaxExemptionState::options()),
 
                 Filter::make('expiring_soon')
                     ->label('Expiring in 30 days')
@@ -159,7 +162,7 @@ final class TaxExemptionsTable
                         ->label('Approve')
                         ->icon(Heroicon::OutlinedCheckBadge)
                         ->color('success')
-                        ->visible(fn (TaxExemption $record): bool => $record->status === ExemptionStatus::Pending)
+                        ->visible(fn (TaxExemption $record): bool => $record->isPending())
                         ->requiresConfirmation()
                         ->action(fn (TaxExemption $record) => $record->approve())
                         ->successNotificationTitle('Exemption approved'),

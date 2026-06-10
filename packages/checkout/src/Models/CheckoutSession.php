@@ -6,7 +6,9 @@ namespace AIArmada\Checkout\Models;
 
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\States\CheckoutState;
+use AIArmada\Checkout\States\Cancelled;
 use AIArmada\Checkout\States\Completed;
+use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -51,6 +53,8 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $error_message
  * @property CarbonImmutable|null $expires_at
  * @property CarbonImmutable|null $completed_at
+ * @property CarbonImmutable|null $cancelled_at
+ * @property CarbonImmutable|null $payment_failed_at
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
  */
@@ -102,6 +106,8 @@ class CheckoutSession extends Model
         'error_message',
         'expires_at',
         'completed_at',
+        'cancelled_at',
+        'payment_failed_at',
         'owner_type',
         'owner_id',
     ];
@@ -203,12 +209,21 @@ class CheckoutSession extends Model
     {
         $this->status->transitionTo($stateClass);
 
+        $timestampMap = [
+            Completed::class => 'completed_at',
+            Cancelled::class => 'cancelled_at',
+            PaymentFailed::class => 'payment_failed_at',
+        ];
+
         $updates = [
             'status' => $stateClass::getMorphClass(),
         ];
 
-        if (is_a($stateClass, Completed::class, true)) {
-            $updates['completed_at'] = CarbonImmutable::now();
+        foreach ($timestampMap as $class => $column) {
+            if (is_a($stateClass, $class, true)) {
+                $updates[$column] = CarbonImmutable::now();
+                break;
+            }
         }
 
         $updates['updated_at'] = CarbonImmutable::now();
@@ -223,8 +238,10 @@ class CheckoutSession extends Model
 
         $this->forceFill(['status' => $stateClass]);
 
-        if (array_key_exists('completed_at', $updates)) {
-            $this->completed_at = $updates['completed_at'];
+        foreach ($timestampMap as $class => $column) {
+            if (array_key_exists($column, $updates)) {
+                $this->{$column} = $updates[$column];
+            }
         }
 
         $this->updated_at = $updates['updated_at'];
@@ -259,6 +276,8 @@ class CheckoutSession extends Model
             'grand_total' => 'integer',
             'expires_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
+            'cancelled_at' => 'immutable_datetime',
+            'payment_failed_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
@@ -283,8 +302,18 @@ class CheckoutSession extends Model
         });
 
         static::updating(function (CheckoutSession $session): void {
-            if ($session->isDirty('status') && $session->status instanceof Completed) {
+            if (! $session->isDirty('status')) {
+                return;
+            }
+
+            $status = $session->status;
+
+            if ($status instanceof Completed) {
                 $session->completed_at = CarbonImmutable::now();
+            } elseif ($status instanceof Cancelled) {
+                $session->cancelled_at = CarbonImmutable::now();
+            } elseif ($status instanceof PaymentFailed) {
+                $session->payment_failed_at = CarbonImmutable::now();
             }
         });
     }

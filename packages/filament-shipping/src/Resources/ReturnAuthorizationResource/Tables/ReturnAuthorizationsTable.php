@@ -7,6 +7,7 @@ namespace AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Tables
 use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
 use AIArmada\FilamentShipping\Actions\RejectReturnAction;
 use AIArmada\Shipping\Enums\ReturnReason;
+use AIArmada\Shipping\States\ReturnAuthorizationState\ReturnAuthorizationStatus;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -31,15 +32,8 @@ final class ReturnAuthorizationsTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state) => match ($state) {
-                        'pending' => 'warning',
-                        'approved' => 'info',
-                        'rejected' => 'danger',
-                        'received' => 'primary',
-                        'completed' => 'success',
-                        'cancelled' => 'gray',
-                        default => 'gray',
-                    }),
+                    ->formatStateUsing(fn (ReturnAuthorizationStatus $state): string => $state->label())
+                    ->color(fn (ReturnAuthorizationStatus $state): string => $state->color()),
 
                 TextColumn::make('type')
                     ->badge(),
@@ -57,14 +51,7 @@ final class ReturnAuthorizationsTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
-                        'received' => 'Received',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
-                    ]),
+                    ->options(fn (): array => ReturnAuthorizationStatus::options()),
 
                 SelectFilter::make('type')
                     ->options([

@@ -11,6 +11,7 @@ use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\StorageInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class MigrateGuestCartToUserAction
@@ -117,6 +118,8 @@ final class MigrateGuestCartToUserAction
             $this->resolveStorage()->putMetadataBatch($userIdentifier, $instance, array_merge($guestMetadata, $userMetadata));
         }
 
+        $this->markSourceCartAsMerged($guestIdentifier, $instance, $userIdentifier);
+
         $guestStorage->forget($guestIdentifier, $instance);
 
         if (config('cart.events', true)) {
@@ -191,6 +194,8 @@ final class MigrateGuestCartToUserAction
         $conditions = $sourceStorage->getConditions($oldIdentifier, $instance);
         $metadata = $sourceStorage->getAllMetadata($oldIdentifier, $instance);
 
+        $this->markSourceCartAsMerged($oldIdentifier, $instance, $newIdentifier);
+
         $targetStorage->putItems($newIdentifier, $instance, $items);
 
         if (! empty($conditions)) {
@@ -204,6 +209,28 @@ final class MigrateGuestCartToUserAction
         $sourceStorage->forget($oldIdentifier, $instance);
 
         return true;
+    }
+
+    private function markSourceCartAsMerged(string $sourceIdentifier, string $instance, string $targetIdentifier): void
+    {
+        $table = config('cart.database.table', 'carts');
+
+        $targetCart = DB::table($table)
+            ->where('identifier', $targetIdentifier)
+            ->where('instance', $instance)
+            ->first(['id']);
+
+        if ($targetCart === null) {
+            return;
+        }
+
+        DB::table($table)
+            ->where('identifier', $sourceIdentifier)
+            ->where('instance', $instance)
+            ->update([
+                'merged_into_id' => $targetCart->id,
+                'updated_at' => now(),
+            ]);
     }
 
     /**

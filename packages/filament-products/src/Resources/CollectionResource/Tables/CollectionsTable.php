@@ -36,9 +36,11 @@ class CollectionsTable
                     ->counts('products')
                     ->sortable(),
 
-                Tables\Columns\IconColumn::make('is_visible')
-                    ->label('Visible')
-                    ->boolean(),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->color(fn ($state) => $state->color()),
 
                 Tables\Columns\IconColumn::make('is_featured')
                     ->label('Featured')
@@ -64,8 +66,13 @@ class CollectionsTable
                         'automatic' => 'Automatic',
                     ]),
 
-                Tables\Filters\TernaryFilter::make('is_visible')
-                    ->label('Visible'),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'active' => 'Active',
+                        'hidden' => 'Hidden',
+                        'archived' => 'Archived',
+                    ]),
 
                 Tables\Filters\TernaryFilter::make('is_featured')
                     ->label('Featured'),

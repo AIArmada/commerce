@@ -50,4 +50,29 @@ enum ProductStatus: string
     {
         return $this === self::Active;
     }
+
+    /**
+     * Returns the timestamp column name that should be set when transitioning TO this status.
+     */
+    public static function timestampForTransition(?self $to): ?string
+    {
+        return match ($to) {
+            self::Active => 'published_at',
+            self::Disabled => 'deactivated_at',
+            self::Archived => 'archived_at',
+            default => null,
+        };
+    }
+
+    /**
+     * Returns the timestamp column name that should be cleared when transitioning FROM a status.
+     */
+    public static function clearTimestampForTransition(?self $from): ?string
+    {
+        return match ($from) {
+            self::Disabled => 'deactivated_at',
+            self::Archived => 'archived_at',
+            default => null,
+        };
+    }
 }

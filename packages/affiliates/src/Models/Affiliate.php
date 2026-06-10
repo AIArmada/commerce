@@ -52,6 +52,8 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
  * @property CarbonInterface|null $activated_at
+ * @property CarbonInterface|null $deactivated_at
+ * @property CarbonInterface|null $paused_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read string|null $email Alias for contact_email
@@ -107,6 +109,8 @@ class Affiliate extends Model implements Auditable
         'owner_type',
         'owner_id',
         'activated_at',
+        'deactivated_at',
+        'paused_at',
     ];
 
     public function getAuditInclude(): array
@@ -131,6 +135,8 @@ class Affiliate extends Model implements Auditable
             'owner_type',
             'owner_id',
             'activated_at',
+            'deactivated_at',
+            'paused_at',
         ];
     }
 
@@ -183,7 +189,7 @@ class Affiliate extends Model implements Auditable
             'program_id'
         )
             ->using(AffiliateProgramMembership::class)
-            ->withPivot(['tier_id', 'status', 'applied_at', 'approved_at', 'expires_at'])
+            ->withPivot(['tier_id', 'status', 'applied_at', 'approved_at', 'rejected_at', 'suspended_at', 'expires_at'])
             ->withTimestamps();
     }
 
@@ -300,6 +306,16 @@ class Affiliate extends Model implements Auditable
         return $this->status instanceof Active;
     }
 
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
+    }
+
+    public function isPaused(): bool
+    {
+        return $this->paused_at !== null;
+    }
+
     public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
     {
         if (! config('affiliates.owner.enabled', false)) {
@@ -398,7 +414,9 @@ class Affiliate extends Model implements Auditable
             'direct_downline_count' => 'integer',
             'total_downline_count' => 'integer',
             'metadata' => 'array',
-            'activated_at' => 'datetime',
+            'activated_at' => 'immutable_datetime',
+            'deactivated_at' => 'immutable_datetime',
+            'paused_at' => 'immutable_datetime',
         ];
     }
 

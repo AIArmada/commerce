@@ -48,7 +48,7 @@ final class EventSeriesResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()->where('is_active', true)->count();
+        $count = static::getEloquentQuery()->where('status', 'active')->count();
 
         return $count > 0 ? (string) $count : null;
     }

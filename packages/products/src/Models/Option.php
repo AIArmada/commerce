@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Concerns\IsOptionEntity;
+use AIArmada\Products\Enums\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -29,7 +31,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $name
  * @property string|null $display_name
  * @property int $position
- * @property bool $is_visible
+ * @property string $visibility
+ * @property CarbonImmutable|null $hidden_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Product $product
@@ -55,7 +58,8 @@ class Option extends Model implements Auditable
     {
         return [
             'position' => 'integer',
-            'is_visible' => 'boolean',
+            'visibility' => 'string',
+            'hidden_at' => 'immutable_datetime',
         ];
     }
 
@@ -64,7 +68,7 @@ class Option extends Model implements Auditable
      */
     protected $attributes = [
         'position' => 0,
-        'is_visible' => true,
+        'visibility' => 'visible',
     ];
 
     public function getTable(): string
@@ -129,7 +133,7 @@ class Option extends Model implements Auditable
 
     public function scopeVisible(Builder $query): Builder
     {
-        return $query->where('is_visible', true);
+        return $query->where('visibility', Visibility::Visible);
     }
 
     public function scopeOrdered(Builder $query): Builder
@@ -195,6 +199,12 @@ class Option extends Model implements Auditable
             }
 
             $option->assignOwner($ownerToAssign);
+        });
+
+        static::saving(function (Option $option): void {
+            if ($option->isDirty('visibility')) {
+                $option->hidden_at = $option->visibility === Visibility::Hidden->value ? now() : null;
+            }
         });
 
         static::deleting(function (Option $option): void {

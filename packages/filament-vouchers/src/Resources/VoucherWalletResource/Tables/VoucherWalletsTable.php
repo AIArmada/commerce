@@ -38,7 +38,7 @@ final class VoucherWalletsTable
                     ->label('Holder ID')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                IconColumn::make('is_claimed')
+                IconColumn::make('claimed_at')
                     ->label('Claimed')
                     ->boolean(),
 
@@ -48,7 +48,7 @@ final class VoucherWalletsTable
                     ->sortable()
                     ->toggleable(),
 
-                IconColumn::make('is_redeemed')
+                IconColumn::make('redeemed_at')
                     ->label('Redeemed')
                     ->boolean(),
 
@@ -66,15 +66,15 @@ final class VoucherWalletsTable
             ->filters([
                 Filter::make('claimed')
                     ->label('Claimed Only')
-                    ->query(static fn (Builder $query): Builder => $query->where('is_claimed', true)),
+                    ->query(static fn (Builder $query): Builder => $query->whereNotNull('claimed_at')),
 
                 Filter::make('not_redeemed')
                     ->label('Not Redeemed')
-                    ->query(static fn (Builder $query): Builder => $query->where('is_redeemed', false)),
+                    ->query(static fn (Builder $query): Builder => $query->whereNull('redeemed_at')),
 
                 Filter::make('redeemed')
                     ->label('Redeemed')
-                    ->query(static fn (Builder $query): Builder => $query->where('is_redeemed', true)),
+                    ->query(static fn (Builder $query): Builder => $query->whereNotNull('redeemed_at')),
             ])
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])

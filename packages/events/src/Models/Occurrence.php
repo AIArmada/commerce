@@ -58,6 +58,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $duplicate_strategy
  * @property bool $waitlist_enabled
  * @property bool $approval_required
+ * @property Carbon|null $scheduled_at
+ * @property Carbon|null $live_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $cancelled_at
  * @property array<string, mixed>|null $metadata
  */
 class Occurrence extends Model implements Auditable, EventRelationalContentSubject
@@ -99,6 +103,10 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
         'duplicate_strategy',
         'waitlist_enabled',
         'approval_required',
+        'scheduled_at',
+        'live_at',
+        'completed_at',
+        'cancelled_at',
     ];
 
     protected function casts(): array
@@ -107,12 +115,16 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
             'status' => OccurrenceStatus::class,
             'participation_mode' => OccurrenceParticipationMode::class,
             'capacity' => 'integer',
-            'starts_at' => 'datetime',
-            'ends_at' => 'datetime',
-            'registration_opens_at' => 'datetime',
-            'registration_closes_at' => 'datetime',
-            'check_in_opens_at' => 'datetime',
-            'check_in_closes_at' => 'datetime',
+            'starts_at' => 'immutable_datetime',
+            'ends_at' => 'immutable_datetime',
+            'registration_opens_at' => 'immutable_datetime',
+            'registration_closes_at' => 'immutable_datetime',
+            'check_in_opens_at' => 'immutable_datetime',
+            'check_in_closes_at' => 'immutable_datetime',
+            'scheduled_at' => 'immutable_datetime',
+            'live_at' => 'immutable_datetime',
+            'completed_at' => 'immutable_datetime',
+            'cancelled_at' => 'immutable_datetime',
             'metadata' => 'array',
             'schedule_reference_payload' => 'array',
             'waitlist_enabled' => 'boolean',

@@ -20,12 +20,14 @@ use OwenIt\Auditing\Contracts\Auditable;
  *
  * @property string $id
  * @property string $doc_id
+ * @property string $status
  * @property string $amount
  * @property string $currency
  * @property string $payment_method
  * @property string|null $reference
  * @property string|null $transaction_id
  * @property CarbonImmutable $paid_at
+ * @property CarbonImmutable|null $refunded_at
  * @property string|null $notes
  * @property array<string, mixed>|null $metadata
  * @property CarbonImmutable $created_at
@@ -45,12 +47,14 @@ final class DocPayment extends Model implements Auditable
 
     protected $fillable = [
         'doc_id',
+        'status',
         'amount',
         'currency',
         'payment_method',
         'reference',
         'transaction_id',
         'paid_at',
+        'refunded_at',
         'notes',
         'metadata',
     ];
@@ -99,8 +103,10 @@ final class DocPayment extends Model implements Auditable
     protected function casts(): array
     {
         return [
+            'status' => 'string',
             'amount' => 'decimal:2',
-            'paid_at' => 'datetime',
+            'paid_at' => 'immutable_datetime',
+            'refunded_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }

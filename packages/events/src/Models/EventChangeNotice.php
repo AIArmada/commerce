@@ -30,7 +30,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $replacement_occurrence_id
  * @property string $change_key
  * @property string $severity
- * @property string $state
+ * @property string $status
  * @property array<string, mixed>|null $changed_sections
  * @property array<string, mixed>|null $before_snapshot
  * @property array<string, mixed>|null $after_snapshot
@@ -54,7 +54,7 @@ class EventChangeNotice extends Model implements Auditable
         'replacement_occurrence_id',
         'change_key',
         'severity',
-        'state',
+        'status',
         'changed_sections',
         'before_snapshot',
         'after_snapshot',
@@ -65,7 +65,7 @@ class EventChangeNotice extends Model implements Auditable
 
     protected $attributes = [
         'severity' => 'info',
-        'state' => 'draft',
+        'status' => 'draft',
     ];
 
     protected function casts(): array
@@ -74,8 +74,8 @@ class EventChangeNotice extends Model implements Auditable
             'changed_sections' => 'array',
             'before_snapshot' => 'array',
             'after_snapshot' => 'array',
-            'published_at' => 'datetime',
-            'retracted_at' => 'datetime',
+            'published_at' => 'immutable_datetime',
+            'retracted_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }
@@ -87,7 +87,7 @@ class EventChangeNotice extends Model implements Auditable
         });
 
         static::updated(static function (self $notice): void {
-            if (! $notice->wasChanged('state')) {
+            if (! $notice->wasChanged('status')) {
                 return;
             }
 
@@ -126,20 +126,20 @@ class EventChangeNotice extends Model implements Auditable
 
     public function publish(): void
     {
-        $this->state = 'published';
+        $this->status = 'published';
         $this->published_at ??= now();
         $this->retracted_at = null;
     }
 
     public function retract(): void
     {
-        $this->state = 'retracted';
+        $this->status = 'retracted';
         $this->retracted_at ??= now();
     }
 
     public function isPublished(): bool
     {
-        return $this->state === 'published';
+        return $this->status === 'published';
     }
 
     public function audiences(): EventChangeNoticeAudienceData
@@ -266,7 +266,7 @@ class EventChangeNotice extends Model implements Auditable
 
     private function dispatchStateTransitionEvent(): void
     {
-        $domainEvent = match ($this->state) {
+        $domainEvent = match ($this->status) {
             'published' => new EventChangeNoticePublished($this->fresh() ?? $this),
             'retracted' => new EventChangeNoticeRetracted($this->fresh() ?? $this),
             default => null,

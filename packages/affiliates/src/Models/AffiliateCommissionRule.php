@@ -60,8 +60,8 @@ class AffiliateCommissionRule extends Model implements Auditable
         'priority' => 'integer',
         'commission_value' => 'integer',
         'conditions' => 'array',
-        'starts_at' => 'datetime',
-        'ends_at' => 'datetime',
+        'starts_at' => 'immutable_datetime',
+        'ends_at' => 'immutable_datetime',
         'is_active' => 'boolean',
         'metadata' => 'array',
     ];

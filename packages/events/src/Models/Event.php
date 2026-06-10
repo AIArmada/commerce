@@ -60,6 +60,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $last_state_change_actor_type
  * @property string|null $last_state_change_actor_id
  * @property string|null $last_state_change_note
+ * @property Carbon|null $activated_at
+ * @property Carbon|null $archived_at
  * @property Carbon|null $last_state_change_at
  * @property array<string, mixed>|null $media_references
  * @property array<string, mixed>|null $taxonomy
@@ -103,6 +105,8 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
         'last_state_change_actor_type',
         'last_state_change_actor_id',
         'last_state_change_note',
+        'activated_at',
+        'archived_at',
         'last_state_change_at',
         'media_references',
         'taxonomy',
@@ -120,13 +124,15 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
             'visibility' => EventVisibility::class,
             'structure' => EventStructure::class,
             'default_duration_minutes' => 'integer',
-            'published_at' => 'datetime',
-            'public_starts_at' => 'datetime',
-            'public_ends_at' => 'datetime',
-            'cancelled_at' => 'datetime',
-            'postponed_at' => 'datetime',
-            'delayed_at' => 'datetime',
-            'last_state_change_at' => 'datetime',
+            'published_at' => 'immutable_datetime',
+            'public_starts_at' => 'immutable_datetime',
+            'public_ends_at' => 'immutable_datetime',
+            'cancelled_at' => 'immutable_datetime',
+            'postponed_at' => 'immutable_datetime',
+            'delayed_at' => 'immutable_datetime',
+            'activated_at' => 'immutable_datetime',
+            'archived_at' => 'immutable_datetime',
+            'last_state_change_at' => 'immutable_datetime',
             'media_references' => 'array',
             'taxonomy' => 'array',
             'metadata' => 'array',

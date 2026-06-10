@@ -133,8 +133,10 @@ final class AffiliateLinkResource extends Resource
                         ->label('Sub ID 3')
                         ->maxLength(255),
 
-                    Forms\Components\Toggle::make('is_active')
-                        ->default(true),
+                    Forms\Components\DateTimePicker::make('deactivated_at')
+                        ->label('Deactivated At')
+                        ->helperText('Leave empty for active links, set a date to deactivate')
+                        ->native(false),
                 ])
                 ->columns(2),
         ]);
@@ -174,9 +176,11 @@ final class AffiliateLinkResource extends Resource
                     ->numeric()
                     ->sortable(),
 
-                Tables\Columns\IconColumn::make('is_active')
-                    ->boolean()
-                    ->label('Active'),
+                Tables\Columns\TextColumn::make('deactivated_at')
+                    ->label('Status')
+                    ->formatStateUsing(fn (?string $state): string => $state === null ? 'Active' : 'Inactive')
+                    ->badge()
+                    ->color(fn (?string $state): string => $state === null ? 'success' : 'gray'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -184,8 +188,22 @@ final class AffiliateLinkResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active'),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'active' => 'Active',
+                        'inactive' => 'Inactive',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if ($data['value'] === 'active') {
+                            return $query->whereNull('deactivated_at');
+                        }
+                        if ($data['value'] === 'inactive') {
+                            return $query->whereNotNull('deactivated_at');
+                        }
+
+                        return $query;
+                    }),
             ])
             ->actions([
                 ViewAction::make(),

@@ -7,7 +7,7 @@ namespace AIArmada\Products\Actions;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Models\Product;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 final class UpdateProductStatus
 {
@@ -27,9 +27,15 @@ final class UpdateProductStatus
 
         $product->status = $newStatus;
 
-        if ($newStatus === ProductStatus::Active && $product->published_at === null) {
-            $product->published_at = Carbon::now();
-        }
+        // Transition rules for lifecycle timestamps
+        $now = CarbonImmutable::now();
+
+        match ($newStatus) {
+            ProductStatus::Active => $this->transitionToActive($product, $now),
+            ProductStatus::Disabled => $this->transitionToDisabled($product, $now),
+            ProductStatus::Archived => $this->transitionToArchived($product, $now),
+            ProductStatus::Draft => $this->transitionToDraft($product),
+        };
 
         static::$handlingStatusChange = true;
 
@@ -56,5 +62,33 @@ final class UpdateProductStatus
     public static function isHandlingStatusChange(): bool
     {
         return static::$handlingStatusChange;
+    }
+
+    private function transitionToActive(Product $product, CarbonImmutable $now): void
+    {
+        if ($product->published_at === null) {
+            $product->published_at = $now;
+        }
+
+        $product->deactivated_at = null;
+        $product->archived_at = null;
+    }
+
+    private function transitionToDisabled(Product $product, CarbonImmutable $now): void
+    {
+        $product->deactivated_at = $now;
+        $product->archived_at = null;
+    }
+
+    private function transitionToArchived(Product $product, CarbonImmutable $now): void
+    {
+        $product->archived_at = $now;
+        $product->deactivated_at = null;
+    }
+
+    private function transitionToDraft(Product $product): void
+    {
+        $product->archived_at = null;
+        $product->deactivated_at = null;
     }
 }

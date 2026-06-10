@@ -10,6 +10,7 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
@@ -33,8 +34,7 @@ final class PayoutMethodsRelationManager extends RelationManager
             KeyValue::make('details')
                 ->required(),
 
-            Toggle::make('is_verified')
-                ->default(false),
+            DateTimePicker::make('verified_at'),
 
             Toggle::make('is_default')
                 ->default(false),
@@ -53,7 +53,7 @@ final class PayoutMethodsRelationManager extends RelationManager
                     ->label('Label')
                     ->placeholder('—'),
 
-                IconColumn::make('is_verified')
+                IconColumn::make('verified_at')
                     ->label('Verified')
                     ->boolean(),
 
