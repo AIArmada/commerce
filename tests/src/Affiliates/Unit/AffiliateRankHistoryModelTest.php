@@ -8,8 +8,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\States\Active;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateRankHistory Model', function (): void {
     it('can be created with required fields', function (): void {

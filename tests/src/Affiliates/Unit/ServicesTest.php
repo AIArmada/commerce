@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
-use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
 use AIArmada\Affiliates\Models\Affiliate;
