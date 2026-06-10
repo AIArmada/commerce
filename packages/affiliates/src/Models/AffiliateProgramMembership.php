@@ -62,8 +62,8 @@ class AffiliateProgramMembership extends Pivot
         'applied_at' => 'immutable_datetime',
         'approved_at' => 'immutable_datetime',
         'expires_at' => 'immutable_datetime',
-            'rejected_at' => 'immutable_datetime',
-            'suspended_at' => 'immutable_datetime',
+        'rejected_at' => 'immutable_datetime',
+        'suspended_at' => 'immutable_datetime',
         'custom_terms' => 'array',
     ];
 

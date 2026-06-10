@@ -6,10 +6,7 @@ namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Tables;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentTax\Actions\DownloadTaxExemptionCertificateAction;
-use AIArmada\Tax\Enums\ExemptionStatus;
 use AIArmada\Tax\Models\TaxExemption;
-use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
-use AIArmada\Tax\States\TaxExemptionState\PendingState;
 use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Carbon\CarbonImmutable;

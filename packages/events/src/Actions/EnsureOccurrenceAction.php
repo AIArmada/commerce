@@ -598,7 +598,8 @@ final class EnsureOccurrenceAction
             $roleLabel = $this->stringOrNull($personPayload['role_label'] ?? $personPayload['role'] ?? null);
             $roleKey = $this->stringOrNull($personPayload['role_key'] ?? null) ?? ($roleLabel !== null ? Str::slug($roleLabel) : null);
             $visibility = $this->stringOrNull($personPayload['visibility'] ?? null)
-                ?? ($this->booleanOrNull($personPayload['is_public'] ?? null) !== null
+                ?? (
+                    $this->booleanOrNull($personPayload['is_public'] ?? null) !== null
                     ? ($personPayload['is_public'] ? 'public' : 'private')
                     : 'public'
                 );

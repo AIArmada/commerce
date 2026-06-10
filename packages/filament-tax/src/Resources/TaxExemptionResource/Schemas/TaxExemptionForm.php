@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
-use AIArmada\Tax\Enums\ExemptionStatus;
 use AIArmada\Tax\Models\TaxExemption;
+use AIArmada\Tax\States\TaxExemptionState\ApprovedState;
+use AIArmada\Tax\States\TaxExemptionState\RejectedState;
 use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Carbon\CarbonImmutable;
@@ -204,11 +205,11 @@ final class TaxExemptionForm
                                             return '⏰ Expiring in ' . $record->expires_at->diffForHumans();
                                         }
 
-                                        if ($record->status instanceof \AIArmada\Tax\States\TaxExemptionState\ApprovedState) {
+                                        if ($record->status instanceof ApprovedState) {
                                             return '✅ Active & Approved';
                                         }
 
-                                        if ($record->status instanceof \AIArmada\Tax\States\TaxExemptionState\RejectedState) {
+                                        if ($record->status instanceof RejectedState) {
                                             return '❌ Rejected';
                                         }
 

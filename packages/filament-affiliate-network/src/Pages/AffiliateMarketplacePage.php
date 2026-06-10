@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliateNetwork\Pages;
 
-use AIArmada\AffiliateNetwork\Enums\ApplicationStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferStatus;
 use AIArmada\AffiliateNetwork\Enums\OfferVisibility;
 use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
