@@ -12,7 +12,6 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
     $this->service = app(CommissionMaturityService::class);

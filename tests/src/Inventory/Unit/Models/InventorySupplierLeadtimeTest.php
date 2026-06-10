@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Supplier Product']);

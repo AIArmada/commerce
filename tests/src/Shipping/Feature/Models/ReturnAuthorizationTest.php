@@ -7,7 +7,6 @@ use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaApproved;
-use AIArmada\Shipping\States\ReturnAuthorizationState\RmaCompleted;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaDraft;
 use AIArmada\Shipping\States\ReturnAuthorizationState\RmaPending;
 use Illuminate\Database\Eloquent\Relations\HasMany;

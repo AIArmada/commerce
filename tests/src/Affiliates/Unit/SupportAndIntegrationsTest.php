@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\CommissionMaturityService;
-use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;

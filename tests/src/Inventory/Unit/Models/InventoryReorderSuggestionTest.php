@@ -8,7 +8,6 @@ use AIArmada\Inventory\Enums\ReorderUrgency;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
-use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Reorder Product']);
