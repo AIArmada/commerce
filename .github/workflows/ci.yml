@@ -186,7 +186,7 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run tests (Pest)
-        run: vendor/bin/pest --colors=always --parallel --shard=${{ matrix.shard }}/4
+        run: vendor/bin/pest tests packages --colors=always --parallel --shard=${{ matrix.shard }}/4
 
   ci:
     name: CI
