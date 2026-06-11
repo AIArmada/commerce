@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\CashierChip\Feature;
+
 use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
@@ -11,15 +13,14 @@ use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Testing\FakeChipClient;
-use AIArmada\CashierChip\Tests\TestCase;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Commerce\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Event;
 
-uses(TestCase::class);
-
+\uses(TestCase::class);
 describe('SyncChipPurchaseStatus', function (): void {
     it('dispatches PaymentSucceeded on syncPaid', function (): void {
         Event::fake();

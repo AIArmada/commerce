@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Tests\Unit;
+namespace AIArmada\Commerce\Tests\Chip\Unit;
 
 use AIArmada\Chip\Support\ResolveWebhookPurchaseId;
-use AIArmada\Chip\Tests\TestCase;
 
-uses(TestCase::class);
+
 
 describe('fromPaymentPayload', function (): void {
     it('resolves purchase ID from payment webhook payload', function (): void {

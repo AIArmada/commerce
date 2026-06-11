@@ -2,19 +2,21 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\CashierChip\Feature;
+
 use AIArmada\CashierChip\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
-use AIArmada\CashierChip\Tests\TestCase;
 use AIArmada\Chip\Data\ClientData;
+use AIArmada\Commerce\Tests\TestCase;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-uses(TestCase::class);
-
+\uses(TestCase::class);
 describe('CreateChipSubscription', function (): void {
     it('rejects empty prices', function (): void {
         $customer = new class extends Model implements BillableContract

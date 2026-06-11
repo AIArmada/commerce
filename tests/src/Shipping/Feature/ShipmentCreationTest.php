@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\Shipping\Feature;
+
 use AIArmada\Shipping\Actions\CreateShipment;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
 use AIArmada\Shipping\Models\Shipment;
-use AIArmada\Shipping\Tests\TestCase;
 
-uses(TestCase::class);
+
 
 describe('CreateShipment', function (): void {
     it('creates a shipment from DTO', function (): void {

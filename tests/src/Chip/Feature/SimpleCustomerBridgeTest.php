@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Tests\Feature;
+namespace AIArmada\Commerce\Tests\Chip\Feature;
 
 use AIArmada\Chip\Contracts\ChipCustomerDirectoryInterface;
 use AIArmada\Chip\Listeners\LinkChipCustomerFromCheckoutCompletion;
 use AIArmada\Chip\Models\ChipCustomerLink;
 use AIArmada\Chip\Support\ChipCustomerBridge;
-use AIArmada\Chip\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
-uses(TestCase::class);
+
 
 test('skips when event has no session', function (): void {
     $directory = new class implements ChipCustomerDirectoryInterface

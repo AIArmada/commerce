@@ -2,16 +2,15 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Tests\Feature;
+namespace AIArmada\Commerce\Tests\Chip\Feature;
 
 use AIArmada\Chip\Actions\HandleSendInstructionWebhookAction;
 use AIArmada\Chip\Data\EnrichedWebhookPayload;
 use AIArmada\Chip\Models\SendInstruction;
-use AIArmada\Chip\Tests\TestCase;
 use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
 use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 
-uses(TestCase::class);
+
 
 function createInstruction(array $overrides = []): SendInstruction
 {

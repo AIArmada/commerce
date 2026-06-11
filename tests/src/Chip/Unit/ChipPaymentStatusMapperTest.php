@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Tests\Unit;
+namespace AIArmada\Commerce\Tests\Chip\Unit;
 
 use AIArmada\Chip\Support\ChipPaymentStatusMapper;
-use AIArmada\Chip\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 
-uses(TestCase::class);
+
 
 it('maps created status', function (): void {
     expect(ChipPaymentStatusMapper::map('created'))->toBe(PaymentStatus::CREATED);

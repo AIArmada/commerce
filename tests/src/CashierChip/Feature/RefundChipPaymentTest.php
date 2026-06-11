@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\CashierChip\Feature;
+
 use AIArmada\CashierChip\Actions\RefundChipPayment;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Testing\FakeChipClient;
-use AIArmada\CashierChip\Tests\TestCase;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Commerce\Tests\TestCase;
 
-uses(TestCase::class);
-
+\uses(TestCase::class);
 describe('RefundChipPayment', function (): void {
     it('refunds a purchase', function (): void {
         $fakeClient = new FakeChipClient;
