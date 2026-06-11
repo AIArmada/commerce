@@ -12,8 +12,6 @@ use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
-
-
 test('skips when event has no session', function (): void {
     $directory = new class implements ChipCustomerDirectoryInterface
     {

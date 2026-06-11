@@ -7,8 +7,6 @@ namespace AIArmada\Commerce\Tests\Chip\Feature;
 use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
 use InvalidArgumentException;
 
-
-
 describe('ChipWebhookOwnerResolver', function (): void {
     it('returns null for missing brand_id', function (): void {
         $owner = ChipWebhookOwnerResolver::resolveFromPayload([]);

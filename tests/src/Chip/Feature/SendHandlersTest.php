@@ -10,8 +10,6 @@ use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
 use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 
-
-
 function createInstruction(array $overrides = []): SendInstruction
 {
     static $seq = 100;

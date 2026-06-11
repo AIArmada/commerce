@@ -6,8 +6,6 @@ namespace AIArmada\Commerce\Tests\Chip\Unit;
 
 use AIArmada\Chip\Support\ResolveWebhookPurchaseId;
 
-
-
 describe('fromPaymentPayload', function (): void {
     it('resolves purchase ID from payment webhook payload', function (): void {
         $payload = [

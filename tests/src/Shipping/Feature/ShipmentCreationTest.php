@@ -10,8 +10,6 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
 use AIArmada\Shipping\Models\Shipment;
 
-
-
 describe('CreateShipment', function (): void {
     it('creates a shipment from DTO', function (): void {
         $data = ShipmentData::from([
