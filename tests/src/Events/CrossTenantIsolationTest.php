@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\src\Events;
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
@@ -14,28 +15,31 @@ beforeEach(function (): void {
 });
 
 it('prevents reading events across owners', function (): void {
-    $ownerA = (object) ['id' => 'owner-a'];
-    $ownerB = (object) ['id' => 'owner-b'];
+    $ownerA = User::query()->create(['name' => 'Owner A', 'email' => 'owner-a@example.com', 'password' => 'secret']);
+    $ownerB = User::query()->create(['name' => 'Owner B', 'email' => 'owner-b@example.com', 'password' => 'secret']);
 
-    $eventA = Event::factory()->create(['owner_type' => get_class($ownerA), 'owner_id' => $ownerA->id]);
+    $eventA = Event::query()->create(['name' => 'Owner A Event', 'slug' => 'owner-a-event', 'status' => 'active', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
 
-    Event::withoutOwnerScope(fn () => expect(Event::forOwner($ownerB)->get())->not->toContain($eventA));
+    expect(Event::query()->withoutOwnerScope()->forOwner($ownerB)->get())->not->toContain($eventA);
 });
 
 it('prevents reading occurrences across owners', function (): void {
-    $ownerA = (object) ['id' => 'owner-a'];
-    $ownerB = (object) ['id' => 'owner-b'];
+    $ownerA = User::query()->create(['name' => 'Owner A', 'email' => 'occ-owner-a@example.com', 'password' => 'secret']);
+    $ownerB = User::query()->create(['name' => 'Owner B', 'email' => 'occ-owner-b@example.com', 'password' => 'secret']);
 
-    $occurrence = Occurrence::factory()->create(['owner_type' => get_class($ownerA), 'owner_id' => $ownerA->id]);
+    $event = Event::query()->create(['name' => 'Occurrence Owner A', 'slug' => 'occurrence-owner-a', 'status' => 'active', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
+    $occurrence = Occurrence::query()->create(['event_id' => $event->id, 'starts_at' => now('UTC')->addDay(), 'timezone' => 'UTC', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
 
-    Occurrence::withoutOwnerScope(fn () => expect(Occurrence::forOwner($ownerB)->get())->not->toContain($occurrence));
+    expect(Occurrence::query()->withoutOwnerScope()->forOwner($ownerB)->get())->not->toContain($occurrence);
 });
 
 it('prevents reading registrations across owners', function (): void {
-    $ownerA = (object) ['id' => 'owner-a'];
-    $ownerB = (object) ['id' => 'owner-b'];
+    $ownerA = User::query()->create(['name' => 'Owner A', 'email' => 'reg-owner-a@example.com', 'password' => 'secret']);
+    $ownerB = User::query()->create(['name' => 'Owner B', 'email' => 'reg-owner-b@example.com', 'password' => 'secret']);
 
-    $registration = Registration::factory()->create(['owner_type' => get_class($ownerA), 'owner_id' => $ownerA->id]);
+    $event = Event::query()->create(['name' => 'Registration Owner', 'slug' => 'registration-owner', 'status' => 'active', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
+    $occurrence = Occurrence::query()->create(['event_id' => $event->id, 'starts_at' => now('UTC')->addDay(), 'timezone' => 'UTC', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
+    $registration = Registration::query()->create(['occurrence_id' => $occurrence->id, 'first_name' => 'Test', 'last_name' => 'User', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
 
-    Registration::withoutOwnerScope(fn () => expect(Registration::forOwner($ownerB)->get())->not->toContain($registration));
+    expect(Registration::query()->withoutOwnerScope()->forOwner($ownerB)->get())->not->toContain($registration);
 });

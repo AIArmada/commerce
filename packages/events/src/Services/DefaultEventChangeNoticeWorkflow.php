@@ -155,6 +155,28 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
         );
     }
 
+    public function speakerChanged(
+        Event $event,
+        ?array $beforeSnapshot = null,
+        ?array $afterSnapshot = null,
+        array $metadata = [],
+        ?string $severity = null,
+        ?Event $replacementEvent = null,
+        ?Occurrence $replacementOccurrence = null,
+    ): EventChange {
+        return $this->create(
+            event: $event,
+            changeKey: 'speaker_changed',
+            changedSections: ['people' => ['speaker' => true]],
+            beforeSnapshot: $beforeSnapshot,
+            afterSnapshot: $afterSnapshot,
+            metadata: $metadata,
+            severity: $severity,
+            replacementEvent: $replacementEvent,
+            replacementOccurrence: $replacementOccurrence,
+        );
+    }
+
     public function contentChanged(
         Event $event,
         ?array $beforeSnapshot = null,
@@ -378,7 +400,7 @@ final class DefaultEventChangeNoticeWorkflow implements EventChangeNoticeWorkflo
     private function defaultSeverityForChangeKey(string $changeKey): string
     {
         return match ($changeKey) {
-            'people_changed', 'title_changed', 'topic_changed', 'people_changed' => 'high',
+            'people_changed', 'speaker_changed', 'title_changed', 'topic_changed' => 'high',
             'cancelled' => 'urgent',
             'postponed' => 'high',
             default => 'info',

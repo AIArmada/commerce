@@ -24,10 +24,10 @@ use AIArmada\FilamentEvents\Resources\EventResource;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages\EditEvent;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages\ListEvents;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages\ViewEvent;
-use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventAgendaItemsRelationManager;
+use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventAgendasRelationManager;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventAssetsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventAttendanceRelationManager;
-use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventChangeNoticesRelationManager;
+use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventChangesRelationManager;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventClassificationsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventEngagementsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\EventPeopleRelationManager;
@@ -116,12 +116,12 @@ it('builds event resource schemas and tables', function (): void {
         ->toContain(EventPeopleRelationManager::class)
         ->toContain(EventSubmissionsRelationManager::class)
         ->toContain(EventReviewsRelationManager::class)
-        ->toContain(EventChangeNoticesRelationManager::class)
+        ->toContain(EventChangesRelationManager::class)
         ->toContain(EventAssetsRelationManager::class)
         ->toContain(EventClassificationsRelationManager::class)
         ->toContain(EventEngagementsRelationManager::class)
         ->toContain(EventAttendanceRelationManager::class)
-        ->toContain(EventAgendaItemsRelationManager::class);
+        ->toContain(EventAgendasRelationManager::class);
     expect(OccurrenceResource::getRelations())->toContain(RegistrationsRelationManager::class);
 });
 
@@ -131,12 +131,12 @@ it('builds event relation manager schemas and tables', function (): void {
     $registrations = app(RegistrationsRelationManager::class);
     $submissions = app(EventSubmissionsRelationManager::class);
     $reviews = app(EventReviewsRelationManager::class);
-    $changeNotices = app(EventChangeNoticesRelationManager::class);
+    $changeNotices = app(EventChangesRelationManager::class);
     $assets = app(EventAssetsRelationManager::class);
     $classifications = app(EventClassificationsRelationManager::class);
     $engagements = app(EventEngagementsRelationManager::class);
     $attendance = app(EventAttendanceRelationManager::class);
-    $agendaItems = app(EventAgendaItemsRelationManager::class);
+    $agendaItems = app(EventAgendasRelationManager::class);
 
     expect($occurrences->form(Schema::make()))->toBeInstanceOf(Schema::class);
     expect($occurrences->table(makeFilamentEventsTable()))->toBeInstanceOf(Table::class);

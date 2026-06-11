@@ -8,7 +8,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Services\DefaultEventChangeNoticeWorkflow;
 
 it('creates a change notice', function (): void {
-    $event = Event::factory()->create();
+    $event = Event::query()->create(['name' => 'Change Notice', 'slug' => 'change-notice', 'status' => 'active']);
     $workflow = app(DefaultEventChangeNoticeWorkflow::class);
 
     $notice = $workflow->create($event, 'title_changed', changedSections: ['title' => true]);
@@ -18,7 +18,7 @@ it('creates a change notice', function (): void {
 });
 
 it('creates a people changed notice', function (): void {
-    $event = Event::factory()->create();
+    $event = Event::query()->create(['name' => 'People Changed', 'slug' => 'people-changed', 'status' => 'active']);
     $workflow = app(DefaultEventChangeNoticeWorkflow::class);
 
     $notice = $workflow->peopleChanged($event);
@@ -27,7 +27,7 @@ it('creates a people changed notice', function (): void {
 });
 
 it('creates a schedule changed notice', function (): void {
-    $event = Event::factory()->create();
+    $event = Event::query()->create(['name' => 'Schedule Changed', 'slug' => 'schedule-changed', 'status' => 'active']);
     $workflow = app(DefaultEventChangeNoticeWorkflow::class);
 
     $notice = $workflow->scheduleChanged($event);
@@ -36,7 +36,7 @@ it('creates a schedule changed notice', function (): void {
 });
 
 it('publishes and retracts a change notice', function (): void {
-    $event = Event::factory()->create();
+    $event = Event::query()->create(['name' => 'Publish Retract', 'slug' => 'publish-retract', 'status' => 'active']);
     $workflow = app(DefaultEventChangeNoticeWorkflow::class);
     $notice = $workflow->create($event, 'content_changed', changedSections: ['content' => true]);
 

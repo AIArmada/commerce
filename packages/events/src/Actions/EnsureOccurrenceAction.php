@@ -606,6 +606,8 @@ final class EnsureOccurrenceAction
 
             EventPerson::query()->create([
                 'event_id' => $event->id,
+                'assignable_type' => $event->getMorphClass(),
+                'assignable_id' => $event->id,
                 'person_type' => $this->stringOrNull($personPayload['person_type'] ?? null)
                     ?? ($person instanceof Model ? $person->getMorphClass() : null),
                 'person_id' => $this->stringOrNull($personPayload['person_id'] ?? null)

@@ -8,37 +8,41 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
 
 it('submits an event for review', function (): void {
-    $event = Event::factory()->create(['moderation_status' => 'draft', 'status' => 'draft']);
+    $event = Event::query()->create(['name' => 'Submit Review', 'slug' => 'submit-review', 'status' => 'draft']);
     $workflow = app(DefaultEventModerationWorkflow::class);
 
-    $result = $workflow->submit($event);
+    $submission = $workflow->submit($event);
 
-    expect($result->moderation_status->value)->toBe('pending');
+    expect($submission->status)->toBe('pending');
+    expect($event->fresh()->moderation_status->value)->toBe('pending');
 });
 
 it('approves a pending event', function (): void {
-    $event = Event::factory()->create(['moderation_status' => 'pending', 'status' => 'draft']);
+    $event = Event::query()->create(['name' => 'Approve Event', 'slug' => 'approve-event', 'moderation_status' => 'pending', 'status' => 'draft']);
     $workflow = app(DefaultEventModerationWorkflow::class);
 
-    $result = $workflow->approve($event, reasonKey: 'approved_for_publish');
+    $review = $workflow->approve($event, context: ['reason_key' => 'approved_for_publish']);
 
-    expect($result->moderation_status->value)->toBe('approved');
+    expect($review->decision->value)->toBe('approved');
+    expect($event->fresh()->moderation_status->value)->toBe('approved');
 });
 
 it('rejects an event with a reason', function (): void {
-    $event = Event::factory()->create(['moderation_status' => 'pending', 'status' => 'draft']);
+    $event = Event::query()->create(['name' => 'Reject Event', 'slug' => 'reject-event', 'moderation_status' => 'pending', 'status' => 'draft']);
     $workflow = app(DefaultEventModerationWorkflow::class);
 
-    $result = $workflow->reject($event, reasonKey: 'policy_violation', note: 'Violates community guidelines');
+    $review = $workflow->reject($event, context: ['reason_key' => 'policy_violation', 'note' => 'Violates community guidelines']);
 
-    expect($result->moderation_status->value)->toBe('rejected');
+    expect($review->decision->value)->toBe('rejected');
+    expect($event->fresh()->moderation_status->value)->toBe('rejected');
 });
 
 it('requests changes on an event', function (): void {
-    $event = Event::factory()->create(['moderation_status' => 'pending', 'status' => 'draft']);
+    $event = Event::query()->create(['name' => 'Request Changes', 'slug' => 'request-changes', 'moderation_status' => 'pending', 'status' => 'draft']);
     $workflow = app(DefaultEventModerationWorkflow::class);
 
-    $result = $workflow->requestChanges($event, reasonKey: 'needs_more_information', note: 'Please add more details');
+    $review = $workflow->requestChanges($event, context: ['reason_key' => 'needs_more_information', 'note' => 'Please add more details']);
 
-    expect($result->moderation_status->value)->toBe('changes_requested');
+    expect($review->decision->value)->toBe('changes_requested');
+    expect($event->fresh()->moderation_status->value)->toBe('changes_requested');
 });
