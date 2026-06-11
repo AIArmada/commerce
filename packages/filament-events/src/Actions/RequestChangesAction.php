@@ -6,6 +6,7 @@ namespace AIArmada\FilamentEvents\Actions;
 
 use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Support\Policy\EventModerationPolicy;
 use AIArmada\FilamentEvents\Resources\EventResource;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -24,7 +25,7 @@ final class RequestChangesAction
             ->schema([
                 Select::make('reason_key')
                     ->label('Reason')
-                    ->options(fn (): array => EventResource::reasonCodeOptions())
+                    ->options(fn (): array => EventModerationPolicy::reasonCodeOptions())
                     ->required()
                     ->helperText('A reason code is required when requesting changes.'),
 

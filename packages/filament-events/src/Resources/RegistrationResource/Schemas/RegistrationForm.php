@@ -40,13 +40,13 @@ final class RegistrationForm
                 ->helperText('Leave blank to generate a registration code.'),
 
             Select::make('status')
-                ->options(self::statusOptions())
+                ->options(RegistrationStatus::options())
                 ->required()
                 ->default(RegistrationStatus::Pending->value),
 
             Select::make('attendance_source')
                 ->label('Attendance Source')
-                ->options(self::attendanceSourceOptions())
+                ->options(RegistrationAttendanceSource::options())
                 ->required()
                 ->default(RegistrationAttendanceSource::Registration->value),
 
@@ -153,26 +153,6 @@ final class RegistrationForm
                         ->columnSpanFull(),
                 ]),
         ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public static function statusOptions(): array
-    {
-        return collect(RegistrationStatus::cases())
-            ->mapWithKeys(fn (RegistrationStatus $status): array => [$status->value => $status->label()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public static function attendanceSourceOptions(): array
-    {
-        return collect(RegistrationAttendanceSource::cases())
-            ->mapWithKeys(fn (RegistrationAttendanceSource $source): array => [$source->value => $source->label()])
-            ->all();
     }
 
     public static function occurrenceLabel(Occurrence $occurrence): string

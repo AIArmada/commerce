@@ -40,13 +40,13 @@ final class OccurrenceForm
                 ->maxLength(255),
 
             Select::make('status')
-                ->options(self::statusOptions())
+                ->options(OccurrenceStatus::options())
                 ->required()
                 ->default(OccurrenceStatus::Draft->value),
 
             Select::make('participation_mode')
                 ->label('Participation Mode')
-                ->options(self::participationModeOptions())
+                ->options(OccurrenceParticipationMode::options())
                 ->required()
                 ->default(OccurrenceParticipationMode::RegistrationRequired->value),
 
@@ -62,13 +62,13 @@ final class OccurrenceForm
                 ->default('Asia/Kuala_Lumpur'),
 
             Select::make('visibility')
-                ->options(collect(EventVisibility::cases())->mapWithKeys(fn (EventVisibility $v): array => [$v->value => $v->label()]))
+                ->options(EventVisibility::options())
                 ->required()
                 ->default(EventVisibility::Public->value),
 
             Select::make('format')
                 ->label('Format')
-                ->options(collect(EventFormat::cases())->mapWithKeys(fn (EventFormat $f): array => [$f->value => $f->label()]))
+                ->options(EventFormat::options())
                 ->placeholder('Inherit from event'),
 
             DateTimePicker::make('visible_at')
@@ -211,26 +211,6 @@ final class OccurrenceForm
                         ->columnSpanFull(),
                 ]),
         ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public static function statusOptions(): array
-    {
-        return collect(OccurrenceStatus::cases())
-            ->mapWithKeys(fn (OccurrenceStatus $status): array => [$status->value => $status->label()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public static function participationModeOptions(): array
-    {
-        return collect(OccurrenceParticipationMode::cases())
-            ->mapWithKeys(fn (OccurrenceParticipationMode $mode): array => [$mode->value => $mode->label()])
-            ->all();
     }
 
     /**

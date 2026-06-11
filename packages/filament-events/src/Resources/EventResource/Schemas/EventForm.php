@@ -71,18 +71,18 @@ final class EventForm
                                     ->preload(),
 
                                 Select::make('status')
-                                    ->options(self::statusOptions())
+                                    ->options(EventStatus::options())
                                     ->required()
                                     ->default(EventStatus::Draft->value),
 
                                 Select::make('moderation_status')
                                     ->label('Moderation')
-                                    ->options(self::moderationStatusOptions())
+                                    ->options(EventModerationStatus::options())
                                     ->required()
                                     ->default(EventModerationStatus::Approved->value),
 
                                 Select::make('visibility')
-                                    ->options(self::visibilityOptions())
+                                    ->options(EventVisibility::options())
                                     ->required()
                                     ->default(EventVisibility::Public->value),
 
@@ -124,36 +124,6 @@ final class EventForm
                             ->columnSpan(['lg' => 1]),
                     ]),
             ]);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function statusOptions(): array
-    {
-        return collect(EventStatus::cases())
-            ->mapWithKeys(fn (EventStatus $status): array => [$status->value => $status->label()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function moderationStatusOptions(): array
-    {
-        return collect(EventModerationStatus::cases())
-            ->mapWithKeys(fn (EventModerationStatus $status): array => [$status->value => $status->label()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function visibilityOptions(): array
-    {
-        return collect(EventVisibility::cases())
-            ->mapWithKeys(fn (EventVisibility $visibility): array => [$visibility->value => $visibility->label()])
-            ->all();
     }
 
     private static function jsonTextarea(string $name, string $label): Textarea

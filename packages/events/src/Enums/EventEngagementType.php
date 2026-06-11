@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Enums\Concerns\HasLabelOptions;
+
 enum EventEngagementType: string
 {
+    use HasLabelOptions;
+
     case Saved = 'saved';
     case Going = 'going';
     case Interested = 'interested';

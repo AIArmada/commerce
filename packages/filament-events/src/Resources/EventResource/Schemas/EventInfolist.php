@@ -11,6 +11,7 @@ use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\EventVisibility;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Services\EventQueryService;
+use AIArmada\Events\Support\Policy\EventModerationPolicy;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -119,10 +120,9 @@ final class EventInfolist
                         TextEntry::make('reviewSchema.reasonCodes')
                             ->label('Configured reason codes')
                             ->state(function (Event $record): string {
-                                $codes = self::reviewSchema($record)->reasonCodes;
+                                $codes = EventModerationPolicy::reasonCodeOptions();
                                 $labels = [];
-                                foreach ($codes as $key => $payload) {
-                                    $label = is_array($payload) ? ($payload['label'] ?? $key) : $payload;
+                                foreach ($codes as $key => $label) {
                                     $labels[] = "{$key}: {$label}";
                                 }
 

@@ -58,7 +58,7 @@ final class RegistrationsRelationManager extends RelationManager
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options(RegistrationResource::statusOptions()),
+                    ->options(RegistrationStatus::options()),
             ])
             ->headerActions([
                 CreateAction::make()

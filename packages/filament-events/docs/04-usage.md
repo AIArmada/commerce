@@ -85,6 +85,12 @@ The registration table and record pages expose a `Cancel` action with a reason f
 
 The cancellation reason is stored in the registration metadata by the core package.
 
+### Event moderation
+
+The event record page exposes `Submit for Review`, `Approve`, `Request Changes`, and `Reject` actions.
+
+Those actions delegate to the core moderation workflow and use the package moderation policy for reason-code labels, so the event admin surface stays aligned with the same approval rules as the domain package.
+
 ## Owner-aware admin queries
 
 All resources apply `OwnerUiScope::apply(..., includeGlobal: false)` to their main queries and to related record selectors. In practice that means:

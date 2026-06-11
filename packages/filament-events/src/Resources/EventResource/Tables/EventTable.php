@@ -68,14 +68,14 @@ final class EventTable
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
-                    ->options(self::statusOptions()),
+                    ->options(EventStatus::options()),
 
                 SelectFilter::make('moderation_status')
                     ->label('Moderation')
-                    ->options(self::moderationStatusOptions()),
+                    ->options(EventModerationStatus::options()),
 
                 SelectFilter::make('visibility')
-                    ->options(self::visibilityOptions()),
+                    ->options(EventVisibility::options()),
 
                 SelectFilter::make('event_series_id')
                     ->label('Series')
@@ -93,35 +93,5 @@ final class EventTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function statusOptions(): array
-    {
-        return collect(EventStatus::cases())
-            ->mapWithKeys(fn (EventStatus $status): array => [$status->value => $status->label()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function moderationStatusOptions(): array
-    {
-        return collect(EventModerationStatus::cases())
-            ->mapWithKeys(fn (EventModerationStatus $status): array => [$status->value => $status->label()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function visibilityOptions(): array
-    {
-        return collect(EventVisibility::cases())
-            ->mapWithKeys(fn (EventVisibility $visibility): array => [$visibility->value => $visibility->label()])
-            ->all();
     }
 }

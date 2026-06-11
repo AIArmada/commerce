@@ -80,6 +80,26 @@ final class EventModerationPolicy
             : null;
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public static function reasonCodeOptions(): array
+    {
+        $options = [];
+
+        foreach (self::reasonCodes() as $reasonKey => $payload) {
+            $label = self::reasonLabel((string) $reasonKey);
+
+            if (! is_string($label) || mb_trim($label) === '') {
+                $label = is_array($payload) ? (string) ($payload['label'] ?? $reasonKey) : (string) $payload;
+            }
+
+            $options[(string) $reasonKey] = $label;
+        }
+
+        return $options;
+    }
+
     public static function reasonCodes(): array
     {
         $configured = config('events.moderation.reason_codes', []);

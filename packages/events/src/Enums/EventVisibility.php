@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Enums\Concerns\HasLabelOptions;
+
 enum EventVisibility: string
 {
+    use HasLabelOptions;
+
     case Public = 'public';
     case Unlisted = 'unlisted';
     case Private = 'private';
