@@ -14,7 +14,7 @@ use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
 use AIArmada\Events\Data\EventAgendaItemData;
-use AIArmada\Events\Data\EventChangeAudienceData;
+use AIArmada\Events\Data\EventChangeNoticeAudienceData;
 use AIArmada\Events\Data\EventChangePayloadData;
 use AIArmada\Events\Data\EventDetailData;
 use AIArmada\Events\Data\EventReviewSchemaData;
@@ -1071,11 +1071,11 @@ it('dispatches change notice notifications through the adapter seam after public
     $dispatcher = new class implements EventChangeNoticeNotificationDispatcher
     {
         /**
-         * @var array<int, array{notice: EventChangePayloadData, audiences: EventChangeAudienceData}>
+         * @var array<int, array{notice: EventChangePayloadData, audiences: EventChangeNoticeAudienceData}>
          */
         public array $calls = [];
 
-        public function dispatch(EventChange $notice, EventChangeAudienceData $audiences): void
+        public function dispatch(EventChange $notice, EventChangeNoticeAudienceData $audiences): void
         {
             $this->calls[] = [
                 'notice' => EventChangePayloadData::fromNotice($notice),
