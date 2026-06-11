@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\Shipping\Feature;
+
 use AIArmada\Shipping\Actions\CreateShipment;
 use AIArmada\Shipping\Actions\RecordTrackingEvent;
 use AIArmada\Shipping\Data\AddressData;
@@ -10,10 +12,9 @@ use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\InTransit;
-use AIArmada\Shipping\Tests\TestCase;
 use Carbon\CarbonImmutable;
 
-uses(TestCase::class);
+
 
 describe('RecordTrackingEvent', function (): void {
     it('records a new tracking event for a shipment', function (): void {

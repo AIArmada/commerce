@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Tests\Unit;
+namespace AIArmada\Commerce\Tests\Chip\Unit;
 
 use AIArmada\Chip\Support\ChipOwnerTuple;
-use AIArmada\Chip\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 
-uses(TestCase::class);
+
 
 describe('extractFromPayload', function (): void {
     it('extracts owner tuple from payload', function (): void {

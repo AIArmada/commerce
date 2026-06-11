@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Tests\Feature;
+namespace AIArmada\Commerce\Tests\Chip\Feature;
 
 use AIArmada\Chip\Support\ChipWebhookOwnerResolver;
-use AIArmada\Chip\Tests\TestCase;
 use InvalidArgumentException;
 
-uses(TestCase::class);
+
 
 describe('ChipWebhookOwnerResolver', function (): void {
     it('returns null for missing brand_id', function (): void {

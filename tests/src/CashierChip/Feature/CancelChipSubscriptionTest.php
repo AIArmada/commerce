@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\CashierChip\Feature;
+
 use AIArmada\CashierChip\Actions\CancelChipSubscription;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Subscription\Subscription;
-use AIArmada\CashierChip\Tests\TestCase;
+use AIArmada\Commerce\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
 
-uses(TestCase::class);
-
+\uses(TestCase::class);
 describe('CancelChipSubscription', function (): void {
     it('cancels a subscription and dispatches event', function (): void {
         Event::fake();

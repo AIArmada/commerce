@@ -21,6 +21,10 @@ use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
 use AIArmada\Events\Models\Venue;
 use AIArmada\Events\Support\Policy\EventModerationPolicy;
+use AIArmada\FilamentEvents\Actions\ApproveEventAction;
+use AIArmada\FilamentEvents\Actions\RejectEventAction;
+use AIArmada\FilamentEvents\Actions\RequestChangesAction;
+use AIArmada\FilamentEvents\Actions\SubmitForReviewAction;
 use AIArmada\FilamentEvents\FilamentEventsPlugin;
 use AIArmada\FilamentEvents\FilamentEventsServiceProvider;
 use AIArmada\FilamentEvents\Resources\EventResource;
@@ -363,12 +367,12 @@ it('builds event resource page header actions', function (): void {
 });
 
 it('exposes event moderation and visibility options', function (): void {
-    expect(EventResource::moderationStatusOptions())->toMatchArray([
+    expect(EventModerationStatus::options())->toMatchArray([
         EventModerationStatus::Pending->value => EventModerationStatus::Pending->label(),
         EventModerationStatus::Approved->value => EventModerationStatus::Approved->label(),
         EventModerationStatus::Rejected->value => EventModerationStatus::Rejected->label(),
     ])
-        ->and(EventResource::visibilityOptions())->toMatchArray([
+        ->and(EventVisibility::options())->toMatchArray([
             EventVisibility::Public->value => EventVisibility::Public->label(),
             EventVisibility::Unlisted->value => EventVisibility::Unlisted->label(),
             EventVisibility::Private->value => EventVisibility::Private->label(),
@@ -376,7 +380,7 @@ it('exposes event moderation and visibility options', function (): void {
 });
 
 it('exposes participation modes and labels walk-in registrations without email', function (): void {
-    expect(OccurrenceResource::participationModeOptions())->toMatchArray([
+    expect(OccurrenceParticipationMode::options())->toMatchArray([
         OccurrenceParticipationMode::None->value => OccurrenceParticipationMode::None->label(),
         OccurrenceParticipationMode::RegistrationRequired->value => OccurrenceParticipationMode::RegistrationRequired->label(),
         OccurrenceParticipationMode::WalkInOnly->value => OccurrenceParticipationMode::WalkInOnly->label(),
@@ -547,6 +551,10 @@ it('resolves event and occurrence snapshots through the package query service', 
         ->and($eventSnapshot->name)->toBe('Snapshot Showcase')
         ->and($reviewSchema)->toBeInstanceOf(EventReviewSchemaData::class)
         ->and($reviewSchema->actions)->toEqual(EventModerationPolicy::allowedActionsFor($event->moderation_status))
+        ->and(EventModerationPolicy::reasonCodeOptions())->toMatchArray([
+            'approved_for_publish' => 'Approved for Publish',
+            'policy_violation' => 'Policy Violation',
+        ])
         ->and($occurrenceSnapshot)->toBeInstanceOf(OccurrenceDetailData::class)
         ->and($occurrenceSnapshot->name)->toBe('Main Show');
 });
@@ -577,10 +585,10 @@ it('exposes moderation actions keyed by package policy on the event view page', 
     $reviewSchema = EventResource::reviewSchema($event);
     expect($reviewSchema->actions)->toEqual(EventModerationPolicy::allowedActionsFor($event->moderation_status));
 
-    $submitAction = EventResource::submitForReviewAction();
-    $approveAction = EventResource::approveAction();
-    $requestChangesAction = EventResource::requestChangesAction();
-    $rejectAction = EventResource::rejectEventAction();
+    $submitAction = SubmitForReviewAction::make();
+    $approveAction = ApproveEventAction::make();
+    $requestChangesAction = RequestChangesAction::make();
+    $rejectAction = RejectEventAction::make();
 
     expect($submitAction->getName())->toBe('submitForReview')
         ->and($approveAction->getName())->toBe('approveEvent')

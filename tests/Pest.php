@@ -26,11 +26,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 
 pest()->extend(TestCase::class)->in(
     'src/Cart',
-    'src/CartAI',
-    'src/CartBlockchain',
-    'src/CartCollaboration',
-    'src/CartFraud',
-    'src/CartGraphQL',
     'src/Checkout',
     'src/Chip',
     'src/Docs',
@@ -44,7 +39,6 @@ pest()->extend(TestCase::class)->in(
     'src/FilamentAuthz',
     'src/FilamentAffiliates',
     'src/FilamentPromotions',
-    'src/Stock',
     'src/Affiliates',
     'src/AffiliateNetwork',
     'src/FilamentAffiliateNetwork',

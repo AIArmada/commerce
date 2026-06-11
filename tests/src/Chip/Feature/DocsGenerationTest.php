@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Tests\Feature;
+namespace AIArmada\Commerce\Tests\Chip\Feature;
 
 use AIArmada\Chip\Data\PaymentData;
 use AIArmada\Chip\Data\PurchaseData;
@@ -11,9 +11,8 @@ use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Listeners\GenerateDocOnPayment;
 use AIArmada\Chip\Listeners\GenerateDocOnRefund;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Tests\TestCase;
 
-uses(TestCase::class);
+
 
 describe('GenerateDocOnPayment', function (): void {
     it('skips when docs package is not installed', function (): void {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\Tests\Feature;
+namespace AIArmada\Commerce\Tests\Chip\Feature;
 
 use AIArmada\Chip\Actions\DispatchChipWebhookAction;
 use AIArmada\Chip\Data\WebhookResult;
@@ -14,7 +14,6 @@ use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Testing\WebhookSimulator;
-use AIArmada\Chip\Tests\TestCase;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
 use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
@@ -22,7 +21,7 @@ use AIArmada\Chip\Webhooks\WebhookRouter;
 use Illuminate\Support\Facades\Event;
 use Spatie\WebhookClient\Models\WebhookCall;
 
-uses(TestCase::class);
+
 
 beforeEach(function (): void {
     Event::fake();

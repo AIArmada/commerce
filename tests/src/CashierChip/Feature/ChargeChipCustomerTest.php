@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\CashierChip\Feature;
+
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
@@ -9,13 +11,12 @@ use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Testing\FakeChipClient;
-use AIArmada\CashierChip\Tests\TestCase;
 use AIArmada\Chip\Data\ClientData;
+use AIArmada\Commerce\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-uses(TestCase::class);
-
+\uses(TestCase::class);
 describe('ChargeChipCustomer', function (): void {
     it('charges a billable customer', function (): void {
         Cashier::fake(new FakeChipClient);
