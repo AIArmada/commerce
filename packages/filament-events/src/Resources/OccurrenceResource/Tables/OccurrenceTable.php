@@ -84,11 +84,11 @@ final class OccurrenceTable
             ->defaultSort('starts_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
-                    ->options(self::statusOptions()),
+                    ->options(OccurrenceStatus::options()),
 
                 SelectFilter::make('participation_mode')
                     ->label('Participation Mode')
-                    ->options(self::participationModeOptions()),
+                    ->options(OccurrenceParticipationMode::options()),
 
                 SelectFilter::make('event_id')
                     ->label('Event')
@@ -125,26 +125,6 @@ final class OccurrenceTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function statusOptions(): array
-    {
-        return collect(OccurrenceStatus::cases())
-            ->mapWithKeys(fn (OccurrenceStatus $status): array => [$status->value => $status->label()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function participationModeOptions(): array
-    {
-        return collect(OccurrenceParticipationMode::cases())
-            ->mapWithKeys(fn (OccurrenceParticipationMode $mode): array => [$mode->value => $mode->label()])
-            ->all();
     }
 
     /**

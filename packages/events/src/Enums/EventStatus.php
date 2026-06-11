@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Enums\Concerns\HasLabelOptions;
+
 enum EventStatus: string
 {
+    use HasLabelOptions;
+
     case Draft = 'draft';
     case Active = 'active';
     case Postponed = 'postponed';

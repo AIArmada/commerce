@@ -93,6 +93,8 @@ $accessibleByDirectLink = Event::query()
 - `publiclyDiscoverable()` includes only approved active public events inside their publication windows.
 - `searchable()` currently follows `publiclyDiscoverable()` and can be paired with the package search payload resolver.
 
+If you are building moderation UIs, `EventModerationPolicy::reasonCodeOptions()` returns normalized labels for the configured or default reason codes.
+
 ## Search payloads
 
 ```php
@@ -497,4 +499,3 @@ return [
 The `Event::title` accessor is always available and returns the value of
 the `name` field, so hosts can call `$event->title` without renaming the
 column.
-

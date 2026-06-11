@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Enums\Concerns\HasLabelOptions;
 use AIArmada\Events\Support\Policy\LifecyclePolicy;
 
 enum RegistrationStatus: string
 {
+    use HasLabelOptions;
+
     case Pending = 'pending';
     case Confirmed = 'confirmed';
     case CheckedIn = 'checked_in';

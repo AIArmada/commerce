@@ -69,7 +69,7 @@ final class RegistrationTable
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
-                    ->options(self::statusOptions()),
+                    ->options(RegistrationStatus::options()),
 
                 SelectFilter::make('occurrence_id')
                     ->label('Occurrence')
@@ -93,16 +93,6 @@ final class RegistrationTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function statusOptions(): array
-    {
-        return collect(RegistrationStatus::cases())
-            ->mapWithKeys(fn (RegistrationStatus $status): array => [$status->value => $status->label()])
-            ->all();
     }
 
     public static function occurrenceLabel(Occurrence $occurrence): string

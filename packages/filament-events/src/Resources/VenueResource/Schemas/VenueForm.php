@@ -55,7 +55,7 @@ final class VenueForm
                                     ->columnSpanFull(),
 
                                 Select::make('status')
-                                    ->options(collect(VenueStatus::cases())->mapWithKeys(fn (VenueStatus $s): array => [$s->value => $s->label()]))
+                                    ->options(VenueStatus::options())
                                     ->required()
                                     ->default(VenueStatus::Active->value),
                             ])

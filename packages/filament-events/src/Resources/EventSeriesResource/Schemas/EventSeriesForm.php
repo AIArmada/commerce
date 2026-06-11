@@ -41,7 +41,7 @@ final class EventSeriesForm
                             ->columnSpanFull(),
 
                         Select::make('status')
-                            ->options(collect(SeriesStatus::cases())->mapWithKeys(fn (SeriesStatus $s): array => [$s->value => $s->label()]))
+                            ->options(SeriesStatus::options())
                             ->default(SeriesStatus::Active->value)
                             ->required(),
 

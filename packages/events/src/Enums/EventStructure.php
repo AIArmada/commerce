@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Enums\Concerns\HasLabelOptions;
+
 enum EventStructure: string
 {
+    use HasLabelOptions;
+
     case Standalone = 'standalone';
     case Program = 'program';
     case Session = 'session';

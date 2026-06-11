@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Enums\Concerns\HasLabelOptions;
+
 enum EventFormat: string
 {
+    use HasLabelOptions;
+
     case Physical = 'physical';
     case Online = 'online';
     case Hybrid = 'hybrid';

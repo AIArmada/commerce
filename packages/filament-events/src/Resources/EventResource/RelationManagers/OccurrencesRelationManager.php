@@ -60,7 +60,7 @@ final class OccurrencesRelationManager extends RelationManager
             ->defaultSort('starts_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options(OccurrenceResource::statusOptions()),
+                    ->options(OccurrenceStatus::options()),
             ])
             ->headerActions([
                 CreateAction::make(),

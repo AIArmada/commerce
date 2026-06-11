@@ -128,16 +128,6 @@ final class RegistrationResource extends Resource
         return ['code', 'first_name', 'last_name', 'email', 'phone', 'company'];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    public static function statusOptions(): array
-    {
-        return collect(RegistrationStatus::cases())
-            ->mapWithKeys(fn (RegistrationStatus $status): array => [$status->value => $status->label()])
-            ->all();
-    }
-
     public static function checkInAction(): Action
     {
         return Action::make('check_in')

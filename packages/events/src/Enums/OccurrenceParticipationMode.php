@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Enums\Concerns\HasLabelOptions;
+
 enum OccurrenceParticipationMode: string
 {
+    use HasLabelOptions;
+
     case None = 'none';
     case RegistrationRequired = 'registration_required';
     case WalkInOnly = 'walk_in_only';

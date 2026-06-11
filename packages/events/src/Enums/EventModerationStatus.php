@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
+use AIArmada\Events\Enums\Concerns\HasLabelOptions;
+
 enum EventModerationStatus: string
 {
+    use HasLabelOptions;
+
     case Pending = 'pending';
     case ChangesRequested = 'changes_requested';
     case Approved = 'approved';
