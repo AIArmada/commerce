@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
+use RuntimeException;
 
 /**
  * @property string $id
@@ -56,7 +57,7 @@ class EventRegistrationGroup extends Model implements Auditable
     {
         static::creating(function (self $group): void {
             if (! is_string($group->code) || mb_trim($group->code) === '') {
-                $group->code = mb_strtoupper(Str::random(8));
+                $group->code = static::generateUniqueCode();
             }
         });
     }
@@ -74,5 +75,18 @@ class EventRegistrationGroup extends Model implements Auditable
     public function registrations(): HasMany
     {
         return $this->hasMany(Registration::class, 'registration_group_id');
+    }
+
+    public static function generateUniqueCode(): string
+    {
+        for ($attempt = 0; $attempt < 20; $attempt++) {
+            $code = mb_strtoupper(Str::random(8));
+
+            if (! static::query()->withoutOwnerScope()->where('code', $code)->exists()) {
+                return $code;
+            }
+        }
+
+        throw new RuntimeException('Unable to generate a unique registration group code.');
     }
 }

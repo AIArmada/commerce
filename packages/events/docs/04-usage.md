@@ -37,6 +37,7 @@ $occurrence = app(EnsureOccurrenceAction::class)->handle(
         'moderation_status' => EventModerationStatus::Approved,
         'visibility' => EventVisibility::Public,
         'default_timezone' => 'Asia/Kuala_Lumpur',
+        'registration_required' => true,
         'media_references' => [
             'cover' => 'https://example.com/ai-awakening-cover.jpg',
         ],
@@ -69,6 +70,8 @@ $occurrence = app(EnsureOccurrenceAction::class)->handle(
 ```
 
 `EnsureOccurrenceAction` is useful when importing schedules from an external source because it upserts the series, event, and occurrence together and links them to the selected address model.
+
+Set `registration_required` to `true` on events that should accept registrations. The core registration service refuses new registrations when that event-level flag is `false`, and the Filament Events admin surface exposes the same control as an event toggle.
 
 ## Public event visibility
 
@@ -164,7 +167,7 @@ $registration = app(RegistrationServiceInterface::class)->createForOccurrence(
 );
 ```
 
-The service rejects new registrations when the occurrence is closed, outside its registration window, or sold out.
+The service rejects new registrations when the occurrence is closed, outside its registration window, sold out, or when the parent event has `registration_required` set to `false`.
 
 Use `attendee` when the attendee identity is not necessarily an AIArmada customer. The value can be any Eloquent model and is stored through `attendee_type` / `attendee_id`.
 
@@ -494,5 +497,4 @@ return [
 The `Event::title` accessor is always available and returns the value of
 the `name` field, so hosts can call `$event->title` without renaming the
 column.
-
 

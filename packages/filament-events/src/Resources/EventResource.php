@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Data\EventDetailData;
 use AIArmada\Events\Data\EventReviewSchemaData;
 use AIArmada\Events\Enums\EventModerationStatus;
@@ -29,7 +31,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Cache;
 
 final class EventResource extends Resource
 {
@@ -64,8 +65,9 @@ final class EventResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = Cache::remember(
-            'filament-events:nav-badge:active',
+        $count = OwnerCache::remember(
+            OwnerContext::resolve(),
+            'filament-events.nav-badge.active',
             CarbonImmutable::now()->addSeconds(30),
             fn (): int => static::getEloquentQuery()->where('status', EventStatus::Active)->count(),
         );

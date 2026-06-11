@@ -16,7 +16,7 @@ None — all checklists marked [done].
 
 2. **`includeGlobal: false` used consistently across all resources.** Global rows are excluded everywhere (e.g. EventResource:55, EventSeriesResource:45). This is a design choice. Worth documenting in the CONTEXT.md that global events are not visible in the Filament panel.
 
-3. **Navigation badge queries the DB twice per render.** `EventResource::getNavigationBadge()` calls `getEloquentQuery()->where(...)->count()` and `getNavigationBadgeColor()` also hits DB. This pattern is fine for admin but could be optimized via caching (as `filament-jnt` does).
+3. **Navigation badge counts are cached per owner.** `EventResource::getNavigationBadge()` now wraps the count in `OwnerCache::remember()` so badge values do not bleed across owners. This follows the `filament-jnt` navigation badge pattern but uses the current owner context as part of the cache key.
 
 4. **`FilamentEventQueryAdapter` is a solid pattern but underused.** It bridges Filament filter state to domain `EventSearchCriteria` DTOs, but is only used for counts/snapshot reads. The main Resource queries still run through Eloquent directly. Opportunity to unify querying.
 
@@ -24,7 +24,7 @@ None — all checklists marked [done].
 
 ### Updated recommendation
 
-Priority 1: Extract the 4 moderation actions from EventResource to `Actions/` classes. Priority 2: Document the `includeGlobal: false` policy in CONTEXT.md. Priority 3: Consider caching nav badge counts.
+Priority 1: Extract the 4 moderation actions from EventResource to `Actions/` classes. Priority 2: Document the `includeGlobal: false` policy in CONTEXT.md. Priority 3: Keep owner-scoped navigation badge caching in place.
 
 ---
 
@@ -190,7 +190,7 @@ Status legend:
 ### Phase 5 — document includeGlobal policy and optimize nav badge
 
 - [done] Document the `includeGlobal: false` design choice in `CONTEXT.md` (global events are not visible in the Filament panel).
-- [done] Optimize navigation badge to cache counts (30-second Cache::remember, following `filament-jnt`'s `NavigationBadgeHelper` pattern).
+- [done] Optimize navigation badge to cache counts per owner (30-second `OwnerCache::remember`, following `filament-jnt`'s `NavigationBadgeHelper` pattern).
 
 ### Phase 6 — unify querying via FilamentEventQueryAdapter
 

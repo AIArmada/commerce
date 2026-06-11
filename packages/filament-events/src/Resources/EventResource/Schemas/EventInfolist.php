@@ -39,6 +39,11 @@ final class EventInfolist
                             ->badge()
                             ->formatStateUsing(fn (EventVisibility $state): string => $state->label())
                             ->color(fn (EventVisibility $state): string => $state->color()),
+                        TextEntry::make('registration_required')
+                            ->label('Registration')
+                            ->badge()
+                            ->formatStateUsing(fn (bool $state): string => $state ? 'Required' : 'Optional')
+                            ->color(fn (bool $state): string => $state ? 'warning' : 'gray'),
                         TextEntry::make('series.name')
                             ->label('Series')
                             ->placeholder('No series'),

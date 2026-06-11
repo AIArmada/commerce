@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventSubLocationResource\Schemas;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Models\EventSubLocation;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 final class EventSubLocationForm
@@ -28,7 +31,7 @@ final class EventSubLocationForm
                         TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true),
+                            ->scopedUnique(EventSubLocation::class, 'slug', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)),
 
                         Textarea::make('description')
                             ->rows(4)

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Data\EventDetailData;
 use AIArmada\Events\Data\EventReviewSchemaData;
 use AIArmada\Events\Data\EventSearchResultData;
@@ -13,6 +15,7 @@ use AIArmada\Events\Enums\OccurrenceParticipationMode;
 use AIArmada\Events\Enums\OccurrenceStatus;
 use AIArmada\Events\Enums\RegistrationAttendanceSource;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventSeries;
 use AIArmada\Events\Models\EventSubLocation;
 use AIArmada\Events\Models\Occurrence;
 use AIArmada\Events\Models\Registration;
@@ -57,11 +60,20 @@ use AIArmada\FilamentEvents\Resources\VenueResource\Pages\EditVenue;
 use AIArmada\FilamentEvents\Resources\VenueResource\Pages\ListVenues;
 use AIArmada\FilamentEvents\Resources\VenueResource\Pages\ViewVenue;
 use AIArmada\FilamentEvents\Support\FilamentEventQueryAdapter;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\Toggle;
 use Filament\Panel;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Concerns\InteractsWithSchemas;
+use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
+use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rules\Unique;
 use Illuminate\Validation\ValidationException;
+use Livewire\Component as LivewireComponent;
 
 afterEach(function (): void {
     if (class_exists(Mockery::class)) {
@@ -75,6 +87,63 @@ function makeFilamentEventsTable(): Table
     $livewire = Mockery::mock(HasTable::class);
 
     return Table::make($livewire);
+}
+
+if (! function_exists('filamentEvents_makeSchemaLivewire')) {
+    function filamentEvents_makeSchemaLivewire(): LivewireComponent & HasSchemas
+    {
+        return new class extends LivewireComponent implements HasSchemas
+        {
+            use InteractsWithSchemas;
+
+            public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
+            {
+                return null;
+            }
+
+            public function getOldSchemaState(string $statePath): mixed
+            {
+                return null;
+            }
+
+            public function getSchemaComponent(
+                string $key,
+                bool $withHidden = false,
+                array $skipComponentsChildContainersWhileSearching = [],
+            ): Component | Action | ActionGroup | null {
+                return null;
+            }
+
+            public function getSchema(string $name): ?Schema
+            {
+                return null;
+            }
+
+            public function currentlyValidatingSchema(?Schema $schema): void {}
+
+            public function getDefaultTestingSchemaName(): ?string
+            {
+                return null;
+            }
+
+            public function render(): string
+            {
+                return '';
+            }
+        };
+    }
+}
+
+function filamentEvents_findFlatComponent(Schema $schema, string $name): Component
+{
+    $component = collect($schema->getFlatComponents(withActions: false, withHidden: true, withAbsoluteKeys: true))
+        ->first(static function (object $component) use ($name): bool {
+            return method_exists($component, 'getName') && $component->getName() === $name;
+        });
+
+    expect($component)->toBeInstanceOf(Component::class);
+
+    return $component;
 }
 
 it('registers the filament events plugin resources', function (): void {
@@ -101,6 +170,83 @@ it('loads the filament events package config', function (): void {
     $this->app->register(FilamentEventsServiceProvider::class);
 
     expect(config('filament-events.navigation.group'))->toBe('Events');
+});
+
+it('scopes the event navigation badge cache per owner', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Owner A',
+        'email' => 'filament-events-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Owner B',
+        'email' => 'filament-events-owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerContext::withOwner($ownerA, function () use ($ownerA): void {
+        Event::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'Owner A Active Event',
+            'slug' => 'owner-a-active-event',
+            'status' => EventStatus::Active,
+            'default_timezone' => 'UTC',
+            'registration_required' => true,
+        ]);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($ownerB): void {
+        Event::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'name' => 'Owner B Active Event 1',
+            'slug' => 'owner-b-active-event-1',
+            'status' => EventStatus::Active,
+            'default_timezone' => 'UTC',
+            'registration_required' => true,
+        ]);
+
+        Event::query()->create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'name' => 'Owner B Active Event 2',
+            'slug' => 'owner-b-active-event-2',
+            'status' => EventStatus::Active,
+            'default_timezone' => 'UTC',
+            'registration_required' => true,
+        ]);
+    });
+
+    expect(OwnerContext::withOwner($ownerA, static fn (): ?string => EventResource::getNavigationBadge()))->toBe('1')
+        ->and(OwnerContext::withOwner($ownerB, static fn (): ?string => EventResource::getNavigationBadge()))->toBe('2');
+});
+
+it('exposes the event registration required toggle', function (): void {
+    $schema = EventResource::form(Schema::make(filamentEvents_makeSchemaLivewire())->model(Event::class));
+
+    $registrationRequired = filamentEvents_findFlatComponent($schema, 'registration_required');
+
+    expect($registrationRequired)->toBeInstanceOf(Toggle::class);
+});
+
+it('scopes owner-owned slug validation to the current owner', function (): void {
+    $schemas = [
+        EventResource::class => Event::class,
+        EventSeriesResource::class => EventSeries::class,
+        VenueResource::class => Venue::class,
+        EventSubLocationResource::class => EventSubLocation::class,
+    ];
+
+    foreach ($schemas as $resource => $model) {
+        $schema = $resource::form(Schema::make(filamentEvents_makeSchemaLivewire())->model($model));
+        $slugField = filamentEvents_findFlatComponent($schema, 'slug');
+        $validationRules = $slugField->getValidationRules();
+
+        expect(collect($validationRules)->contains(static fn (mixed $rule): bool => $rule instanceof Unique))->toBeFalse()
+            ->and(collect($validationRules)->contains(static fn (mixed $rule): bool => $rule instanceof Closure))->toBeTrue();
+    }
 });
 
 it('builds event resource schemas and tables', function (): void {
