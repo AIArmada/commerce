@@ -8,11 +8,13 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Enums\EventModerationStatus;
 use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\EventVisibility;
+use AIArmada\Events\Models\Event;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
@@ -39,7 +41,7 @@ final class EventForm
                                 TextInput::make('slug')
                                     ->required()
                                     ->maxLength(255)
-                                    ->unique(ignoreRecord: true),
+                                    ->scopedUnique(Event::class, 'slug', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false)),
 
                                 Textarea::make('summary')
                                     ->rows(2)
@@ -83,6 +85,10 @@ final class EventForm
                                     ->options(self::visibilityOptions())
                                     ->required()
                                     ->default(EventVisibility::Public->value),
+
+                                Toggle::make('registration_required')
+                                    ->label('Registration Required')
+                                    ->helperText('Require pre-registration before registrations can be accepted.'),
 
                                 TextInput::make('default_timezone')
                                     ->maxLength(64)

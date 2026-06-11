@@ -25,6 +25,7 @@ Features:
 
 - series relationship
 - status management
+- registration_required toggle for the event-level registration gate
 - summary + description fields
 - default timezone and duration
 - optional product link
@@ -90,7 +91,8 @@ All resources apply `OwnerUiScope::apply(..., includeGlobal: false)` to their ma
 
 - tables only show records visible to the current owner
 - relationship selects only list records visible to the current owner
-- navigation badges are computed from owner-scoped queries
+- slug inputs enforce owner-scoped uniqueness on event, series, venue, and sub-location forms
+- navigation badges are computed from owner-scoped queries and cached per owner
 
 ## Example panel registration
 

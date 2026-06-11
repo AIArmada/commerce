@@ -79,13 +79,13 @@ The Occurrence and Registration resources do not have this problem — their for
 
 | Resource | Navigation Badge Strategy |
 |---|---|
-| EventResource | `Cache::remember()` — cached |
+| EventResource | `OwnerCache::remember()` — cached per owner |
 | EventSeriesResource | Not evaluated |
 | OccurrenceResource | Uncached query |
 | RegistrationResource | Uncached query |
 | VenueResource | Not evaluated |
 
-Only `EventResource` uses caching for its navigation badge count. Other resources run uncached counts on every page load. Inconsistent across resources.
+Only `EventResource` uses owner-scoped caching for its navigation badge count. The cache key is derived from the current owner context via `OwnerCache`, so badge counts do not bleed across owners. Other resources still run uncached counts on every page load.
 
 ---
 

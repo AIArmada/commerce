@@ -237,7 +237,7 @@ class Registration extends Model implements Auditable
             $random = Str::upper(Str::random($length));
             $code = $prefix !== '' ? $prefix . '-' . $random : $random;
 
-            if (! static::query()->where('code', $code)->exists()) {
+            if (! static::query()->withoutOwnerScope()->where('code', $code)->exists()) {
                 return $code;
             }
         }

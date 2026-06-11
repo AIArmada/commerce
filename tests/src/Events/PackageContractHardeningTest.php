@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Actions\EnsureOccurrenceAction;
 use AIArmada\Events\Actions\FulfillEventOrderAction;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
@@ -12,6 +13,7 @@ use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\OccurrenceStatus;
 use AIArmada\Events\Enums\RegistrationStatus;
 use AIArmada\Events\Models\Event as EventModel;
+use AIArmada\Events\Models\EventRegistrationGroup;
 use AIArmada\Events\Models\EventSeries;
 use AIArmada\Events\Models\EventSubLocation;
 use AIArmada\Events\Models\Occurrence;
@@ -26,6 +28,7 @@ use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Orders\States\Created;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 it('uses collision-resistant package table defaults', function (): void {
     expect(config('events.database.tables'))->toMatchArray([
@@ -241,4 +244,131 @@ it('no-ops order fulfillment when no event checkout metadata is present', functi
     expect(app(EventOrderItemFulfillmentResolver::class))->toBeInstanceOf(DefaultEventOrderItemFulfillmentResolver::class)
         ->and($registrations)->toHaveCount(0)
         ->and(Registration::query()->count())->toBe(0);
+});
+
+it('generates registration codes across all owners', function (): void {
+    config()->set('events.features.owner.enabled', true);
+    config()->set('events.features.owner.auto_assign_on_create', false);
+
+    $ownerA = User::query()->create([
+        'name' => 'Registration Owner A',
+        'email' => 'registration-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Registration Owner B',
+        'email' => 'registration-owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    [$event, $occurrence] = OwnerContext::withOwner($ownerA, function () use ($ownerA): array {
+        $event = EventModel::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'Registration Code Event',
+            'slug' => 'registration-code-event',
+            'status' => EventStatus::Active,
+            'default_timezone' => 'UTC',
+            'registration_required' => true,
+        ]);
+
+        $occurrence = Occurrence::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'event_id' => $event->id,
+            'status' => OccurrenceStatus::Scheduled,
+            'starts_at' => now('UTC')->addDay(),
+            'timezone' => 'UTC',
+        ]);
+
+        Registration::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'occurrence_id' => $occurrence->id,
+            'code' => 'REG-AAAAAAAAAA',
+            'status' => RegistrationStatus::Pending,
+            'first_name' => 'Existing',
+            'last_name' => 'Registrant',
+            'email' => 'existing-registration@example.com',
+        ]);
+
+        return [$event, $occurrence];
+    });
+
+    expect($event)->toBeInstanceOf(EventModel::class)
+        ->and($occurrence)->toBeInstanceOf(Occurrence::class);
+
+    Str::createRandomStringsUsingSequence(['aaaaaaaaaa', 'bbbbbbbbbb']);
+
+    try {
+        $generatedCode = OwnerContext::withOwner($ownerB, static fn (): string => Registration::generateUniqueCode());
+    } finally {
+        Str::createRandomStringsNormally();
+    }
+
+    expect($generatedCode)->toBe('REG-BBBBBBBBBB');
+});
+
+it('generates registration group codes across all owners', function (): void {
+    config()->set('events.features.owner.enabled', true);
+    config()->set('events.features.owner.auto_assign_on_create', false);
+
+    $ownerA = User::query()->create([
+        'name' => 'Group Owner A',
+        'email' => 'group-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Group Owner B',
+        'email' => 'group-owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    [$event, $occurrence] = OwnerContext::withOwner($ownerA, function () use ($ownerA): array {
+        $event = EventModel::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'Group Code Event',
+            'slug' => 'group-code-event',
+            'status' => EventStatus::Active,
+            'default_timezone' => 'UTC',
+            'registration_required' => true,
+        ]);
+
+        $occurrence = Occurrence::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'event_id' => $event->id,
+            'status' => OccurrenceStatus::Scheduled,
+            'starts_at' => now('UTC')->addDay(),
+            'timezone' => 'UTC',
+        ]);
+
+        EventRegistrationGroup::query()->create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'occurrence_id' => $occurrence->id,
+            'name' => 'Existing Group',
+            'code' => 'AAAAAAAA',
+            'status' => 'draft',
+            'check_in_mode' => 'per_member',
+        ]);
+
+        return [$event, $occurrence];
+    });
+
+    expect($event)->toBeInstanceOf(EventModel::class)
+        ->and($occurrence)->toBeInstanceOf(Occurrence::class);
+
+    Str::createRandomStringsUsingSequence(['aaaaaaaa', 'bbbbbbbb']);
+
+    try {
+        $generatedCode = OwnerContext::withOwner($ownerB, static fn (): string => EventRegistrationGroup::generateUniqueCode());
+    } finally {
+        Str::createRandomStringsNormally();
+    }
+
+    expect($generatedCode)->toBe('BBBBBBBB');
 });
