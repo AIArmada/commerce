@@ -138,6 +138,7 @@ class Occurrence extends Model implements Auditable, EventRelationalContentSubje
     {
         return [
             'status' => OccurrenceStatus::class,
+            'participation_mode' => OccurrenceParticipationMode::class,
             'visibility' => EventVisibility::class,
             'format' => EventFormat::class,
             'capacity' => 'integer',

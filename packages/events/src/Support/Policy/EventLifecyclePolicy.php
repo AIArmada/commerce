@@ -78,8 +78,23 @@ final class EventLifecyclePolicy
     public static function defaultTransitionRules(): array
     {
         return [
-            'cancel' => [
+            'postpone' => [
                 'from' => [EventStatus::Active],
+                'to' => EventStatus::Postponed,
+                'note_required' => false,
+            ],
+            'delay' => [
+                'from' => [EventStatus::Active],
+                'to' => EventStatus::Delayed,
+                'note_required' => true,
+            ],
+            'resume' => [
+                'from' => [EventStatus::Postponed, EventStatus::Delayed],
+                'to' => EventStatus::Active,
+                'note_required' => false,
+            ],
+            'cancel' => [
+                'from' => [EventStatus::Active, EventStatus::Postponed, EventStatus::Delayed],
                 'to' => EventStatus::Cancelled,
                 'note_required' => false,
             ],

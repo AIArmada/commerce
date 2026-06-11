@@ -21,6 +21,9 @@ use AIArmada\Events\Enums\OccurrenceStatus;
 use AIArmada\Events\Events\EventActivated;
 use AIArmada\Events\Events\EventArchived;
 use AIArmada\Events\Events\EventCancelled;
+use AIArmada\Events\Events\EventDelayed;
+use AIArmada\Events\Events\EventPostponed;
+use AIArmada\Events\Events\EventResumed;
 use AIArmada\Events\Exceptions\InvalidEventStatusTransition;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Events\Support\Integration\ConfiguredEventModel;
@@ -205,6 +208,14 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
                 $event->activated_at = $now->toImmutable();
             }
 
+            if ($next === EventStatus::Postponed && $event->postponed_at === null) {
+                $event->postponed_at = $now->toImmutable();
+            }
+
+            if ($next === EventStatus::Delayed && $event->delayed_at === null) {
+                $event->delayed_at = $now->toImmutable();
+            }
+
             if ($next === EventStatus::Archived && $event->archived_at === null) {
                 $event->archived_at = $now->toImmutable();
             }
@@ -219,7 +230,20 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
                 $next = $event->status;
 
                 if ($next === EventStatus::Active) {
-                    event(new EventActivated($event));
+                    $previous = $event->getOriginal('status');
+                    $previousStatus = $previous instanceof EventStatus
+                        ? $previous
+                        : (is_string($previous) ? EventStatus::tryFrom($previous) : null);
+
+                    if ($previousStatus !== null && $previousStatus->isRecoverable()) {
+                        event(new EventResumed($event));
+                    } else {
+                        event(new EventActivated($event));
+                    }
+                } elseif ($next === EventStatus::Postponed) {
+                    event(new EventPostponed($event));
+                } elseif ($next === EventStatus::Delayed) {
+                    event(new EventDelayed($event));
                 } elseif ($next === EventStatus::Archived) {
                     event(new EventArchived($event));
                 } elseif ($next === EventStatus::Cancelled) {
@@ -350,6 +374,8 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
             $query
                 ->whereIn($this->qualifyColumn('status'), [
                     EventStatus::Active->value,
+                    EventStatus::Postponed->value,
+                    EventStatus::Delayed->value,
                     EventStatus::Cancelled->value,
                     EventStatus::Archived->value,
                 ])
@@ -392,6 +418,11 @@ class Event extends Model implements Auditable, EventRelationalContentSubject
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
+    public function scopeDelayed(Builder $query): Builder
+    {
+        return $query->where($this->qualifyColumn('status'), EventStatus::Delayed->value);
+    }
+
     public function scopeUpcoming(Builder $query, ?Carbon $now = null): Builder
     {
         $now ??= now('UTC');

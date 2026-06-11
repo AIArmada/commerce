@@ -50,6 +50,8 @@ class EventPerson extends Model implements Auditable
 
     protected $fillable = [
         'event_id',
+        'assignable_type',
+        'assignable_id',
         'person_type',
         'person_id',
         'display_name',

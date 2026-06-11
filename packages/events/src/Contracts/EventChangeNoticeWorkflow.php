@@ -96,6 +96,21 @@ interface EventChangeNoticeWorkflow
      * @param  array<string, mixed>|null  $afterSnapshot
      * @param  array<string, mixed>  $metadata
      */
+    public function speakerChanged(
+        Event $event,
+        ?array $beforeSnapshot = null,
+        ?array $afterSnapshot = null,
+        array $metadata = [],
+        ?string $severity = null,
+        ?Event $replacementEvent = null,
+        ?Occurrence $replacementOccurrence = null,
+    ): EventChange;
+
+    /**
+     * @param  array<string, mixed>|null  $beforeSnapshot
+     * @param  array<string, mixed>|null  $afterSnapshot
+     * @param  array<string, mixed>  $metadata
+     */
     public function contentChanged(
         Event $event,
         ?array $beforeSnapshot = null,
