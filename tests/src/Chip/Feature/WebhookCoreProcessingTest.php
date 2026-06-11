@@ -21,8 +21,6 @@ use AIArmada\Chip\Webhooks\WebhookRouter;
 use Illuminate\Support\Facades\Event;
 use Spatie\WebhookClient\Models\WebhookCall;
 
-
-
 beforeEach(function (): void {
     Event::fake();
 });

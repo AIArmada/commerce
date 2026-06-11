@@ -14,8 +14,6 @@ use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\InTransit;
 use Carbon\CarbonImmutable;
 
-
-
 describe('RecordTrackingEvent', function (): void {
     it('records a new tracking event for a shipment', function (): void {
         $shipment = createShipment();

@@ -7,8 +7,6 @@ namespace AIArmada\Commerce\Tests\Chip\Unit;
 use AIArmada\Chip\Support\ChipOwnerTuple;
 use Illuminate\Database\Eloquent\Model;
 
-
-
 describe('extractFromPayload', function (): void {
     it('extracts owner tuple from payload', function (): void {
         $result = ChipOwnerTuple::extractFromPayload([

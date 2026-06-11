@@ -7,8 +7,6 @@ namespace AIArmada\Commerce\Tests\Chip\Unit;
 use AIArmada\Chip\Support\ChipPaymentStatusMapper;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 
-
-
 it('maps created status', function (): void {
     expect(ChipPaymentStatusMapper::map('created'))->toBe(PaymentStatus::CREATED);
 });

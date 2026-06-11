@@ -12,8 +12,6 @@ use AIArmada\Chip\Listeners\GenerateDocOnPayment;
 use AIArmada\Chip\Listeners\GenerateDocOnRefund;
 use AIArmada\Chip\Models\Purchase;
 
-
-
 describe('GenerateDocOnPayment', function (): void {
     it('skips when docs package is not installed', function (): void {
         $listener = new GenerateDocOnPayment;
