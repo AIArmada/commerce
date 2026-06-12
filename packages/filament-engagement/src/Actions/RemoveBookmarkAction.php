@@ -16,7 +16,7 @@ final class RemoveBookmarkAction
             ->icon('heroicon-o-bookmark-slash')
             ->color('danger')
             ->requiresConfirmation()
-            ->action(function ($livewire, $record) {
+            ->action(function ($livewire, $record): void {
                 app(EngagementManager::class)->removeBookmark(auth()->user(), $record);
             });
     }

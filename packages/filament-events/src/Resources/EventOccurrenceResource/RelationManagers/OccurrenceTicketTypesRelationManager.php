@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers;
 
+use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -11,6 +12,7 @@ use Filament\Tables\Table;
 final class OccurrenceTicketTypesRelationManager extends RelationManager
 {
     protected static string $relationship = 'ticketTypes';
+
     protected static ?string $title = 'Ticket Types';
 
     public function table(Table $table): Table
@@ -29,6 +31,6 @@ final class OccurrenceTicketTypesRelationManager extends RelationManager
                     ->options(['entry' => 'Entry', 'seating' => 'Seating', 'standing' => 'Standing']),
             ])
             ->headerActions([])
-            ->actions([\Filament\Actions\ViewAction::make()]);
+            ->actions([ViewAction::make()]);
     }
 }

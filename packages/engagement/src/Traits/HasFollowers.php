@@ -21,12 +21,12 @@ trait HasFollowers
     }
 
     /**
-     * @param Builder<Follow> $query
+     * @param  Builder<Follow>  $query
      * @return Builder<Follow>
      */
     public function scopeActiveFollows(Builder $query): Builder
     {
-        return $query->whereHas('follows', function (Builder $q) {
+        return $query->whereHas('follows', function (Builder $q): void {
             $q->active();
         });
     }

@@ -13,7 +13,7 @@ final class EventLinkData extends Data
     public function __construct(
         public readonly string $id,
         public readonly string $link_type,
-        public readonly string|null|Optional $label,
+        public readonly string | null | Optional $label,
         public readonly string $url,
     ) {}
 

@@ -6,23 +6,26 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Models\Response;
+use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Infolists;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class ResponseResource extends Resource
 {
     protected static ?string $model = Response::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Engagement';
+    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
 
     protected static ?int $navigationSort = 4;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-hand-thumb-up';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-hand-thumb-up';
 
     public static function table(Table $table): Table
     {
@@ -62,11 +65,11 @@ final class ResponseResource extends Resource
                     ]),
             ])
             ->actions([
-                \Filament\Actions\Action::make('cancel')
+                Action::make('cancel')
                     ->visible(fn (Response $record): bool => $record->isActive())
                     ->action(fn (Response $record) => $record->update(['status' => Response::STATUS_CANCELLED]))
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('restore')
+                Action::make('restore')
                     ->visible(fn (Response $record): bool => $record->isCancelled())
                     ->action(fn (Response $record) => $record->update(['status' => Response::STATUS_ACTIVE]))
                     ->requiresConfirmation(),

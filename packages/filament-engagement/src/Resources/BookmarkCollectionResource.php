@@ -4,25 +4,27 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Resources;
 
-use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Models\BookmarkCollection;
+use BackedEnum;
 use Filament\Forms;
 use Filament\Infolists;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class BookmarkCollectionResource extends Resource
 {
     protected static ?string $model = BookmarkCollection::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-folder';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-folder';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Engagement';
+    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
 
     protected static ?int $navigationSort = 3;
 

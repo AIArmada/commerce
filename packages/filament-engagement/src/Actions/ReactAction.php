@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEngagement\Actions;
 
 use AIArmada\Engagement\Contracts\EngagementManager;
-use Filament\Forms;
 use Filament\Actions\Action;
+use Filament\Forms;
 
 final class ReactAction
 {
@@ -20,7 +20,7 @@ final class ReactAction
                     ->options(['like' => 'Like', 'love' => 'Love', 'useful' => 'Useful', 'support' => 'Support', 'insightful' => 'Insightful'])
                     ->required(),
             ])
-            ->action(function (array $data, $record) {
+            ->action(function (array $data, $record): void {
                 app(EngagementManager::class)->react(auth()->user(), $record, $data['reaction_type']);
             });
     }

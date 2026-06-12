@@ -7,7 +7,9 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventInvolvementFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,9 +44,9 @@ use Illuminate\Support\Carbon;
  * @property-read EventOccurrence|null $occurrence
  * @property-read EventSession|null $session
  * @property-read EventRole|null $role
- * @property-read Model|\Eloquent $involveable
+ * @property-read Model|Eloquent $involveable
  * @property-read EventInvolvement|null $replacedByInvolvement
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventInvolvement> $replacementFor
+ * @property-read Collection<int, EventInvolvement> $replacementFor
  */
 final class EventInvolvement extends Model
 {
@@ -138,8 +140,7 @@ final class EventInvolvement extends Model
     }
 
     /**
-     * @param Builder<static> $query
-     * @param string $roleCode
+     * @param  Builder<static>  $query
      * @return Builder<static>
      */
     public function scopeRole(Builder $query, string $roleCode): Builder
@@ -148,7 +149,7 @@ final class EventInvolvement extends Model
     }
 
     /**
-     * @param Builder<static> $query
+     * @param  Builder<static>  $query
      * @return Builder<static>
      */
     public function scopePublic(Builder $query): Builder
@@ -157,7 +158,7 @@ final class EventInvolvement extends Model
     }
 
     /**
-     * @param Builder<static> $query
+     * @param  Builder<static>  $query
      * @return Builder<static>
      */
     public function scopeFeatured(Builder $query): Builder
@@ -166,7 +167,7 @@ final class EventInvolvement extends Model
     }
 
     /**
-     * @param Builder<static> $query
+     * @param  Builder<static>  $query
      * @return Builder<static>
      */
     public function scopeHeadliner(Builder $query): Builder

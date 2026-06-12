@@ -33,7 +33,7 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Model|\Illuminate\Database\Eloquent\Model $searchable
+ * @property-read Model|Model $searchable
  * @property-read Event|null $event
  * @property-read EventOccurrence|null $occurrence
  * @property-read EventSession|null $session

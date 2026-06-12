@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEngagement\Actions;
 
 use AIArmada\Engagement\Contracts\EngagementManager;
-use Filament\Forms;
 use Filament\Actions\Action;
+use Filament\Forms;
 
 final class RespondAction
 {
@@ -20,7 +20,7 @@ final class RespondAction
                     ->options(['interested' => 'Interested', 'going' => 'Going', 'maybe' => 'Maybe', 'not_going' => 'Not Going'])
                     ->required(),
             ])
-            ->action(function (array $data, $record) {
+            ->action(function (array $data, $record): void {
                 app(EngagementManager::class)->respond(auth()->user(), $record, $data['response_type']);
             });
     }

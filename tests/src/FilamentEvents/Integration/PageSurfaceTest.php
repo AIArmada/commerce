@@ -108,14 +108,14 @@ it('scopes the special page queries to the current owner', function (): void {
     $ownerBGraph = $createGraph($ownerB, 'b');
     $makeTable = fn (): Table => Table::make(Mockery::mock(HasTable::class));
 
-    $ownerAPasses = OwnerContext::withOwner($ownerA, fn (): array => (new CheckInConsole())->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerBPasses = OwnerContext::withOwner($ownerB, fn (): array => (new CheckInConsole())->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerANotifications = OwnerContext::withOwner($ownerA, fn (): array => (new NotificationCenter())->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerBNotifications = OwnerContext::withOwner($ownerB, fn (): array => (new NotificationCenter())->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerASeatMaps = OwnerContext::withOwner($ownerA, fn (): array => (new SeatMapManager())->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerBSeatMaps = OwnerContext::withOwner($ownerB, fn (): array => (new SeatMapManager())->table($makeTable())->getQuery()->pluck('id')->all());
+    $ownerAPasses = OwnerContext::withOwner($ownerA, fn (): array => (new CheckInConsole)->table($makeTable())->getQuery()->pluck('id')->all());
+    $ownerBPasses = OwnerContext::withOwner($ownerB, fn (): array => (new CheckInConsole)->table($makeTable())->getQuery()->pluck('id')->all());
+    $ownerANotifications = OwnerContext::withOwner($ownerA, fn (): array => (new NotificationCenter)->table($makeTable())->getQuery()->pluck('id')->all());
+    $ownerBNotifications = OwnerContext::withOwner($ownerB, fn (): array => (new NotificationCenter)->table($makeTable())->getQuery()->pluck('id')->all());
+    $ownerASeatMaps = OwnerContext::withOwner($ownerA, fn (): array => (new SeatMapManager)->table($makeTable())->getQuery()->pluck('id')->all());
+    $ownerBSeatMaps = OwnerContext::withOwner($ownerB, fn (): array => (new SeatMapManager)->table($makeTable())->getQuery()->pluck('id')->all());
 
-    $previewPage = new EventPublicPreview();
+    $previewPage = new EventPublicPreview;
     OwnerContext::withOwner($ownerA, function () use ($previewPage, $ownerBGraph): void {
         $previewPage->mount($ownerBGraph['event']->id);
     });
@@ -131,14 +131,14 @@ it('scopes the special page queries to the current owner', function (): void {
 
 it('builds the special page header actions', function (): void {
     $pages = [
-        new ViewEvent(),
-        new CheckInConsole(),
-        new NotificationCenter(),
-        new SeatMapManager(),
+        new ViewEvent,
+        new CheckInConsole,
+        new NotificationCenter,
+        new SeatMapManager,
     ];
 
     foreach ($pages as $page) {
-        $method = new \ReflectionMethod($page, 'getHeaderActions');
+        $method = new ReflectionMethod($page, 'getHeaderActions');
         $method->setAccessible(true);
 
         expect($method->invoke($page))->toBeArray()->not->toBeEmpty();

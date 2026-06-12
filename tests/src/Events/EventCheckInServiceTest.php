@@ -7,7 +7,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 
-it('checks in an attendee', function () {
+it('checks in an attendee', function (): void {
     $event = Event::factory()->create();
     $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventApprovalRequest;
 use AIArmada\Events\Models\EventSubmission;

@@ -12,6 +12,6 @@ final class DefaultEventChangeNoticeAudienceResolver implements EventChangeNotic
 {
     public function resolve(EventUpdate $update, string $audienceScope): Collection
     {
-        return new Collection();
+        return new Collection;
     }
 }

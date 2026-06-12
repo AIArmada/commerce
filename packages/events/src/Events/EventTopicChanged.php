@@ -10,7 +10,7 @@ use AIArmada\Events\Models\EventSession;
 final class EventTopicChanged
 {
     public function __construct(
-        public Event|EventSession $target,
+        public Event | EventSession $target,
         public string $oldTopic,
         public string $newTopic,
     ) {}

@@ -43,7 +43,7 @@ final class DefaultEventPassIssuer implements EventPassIssuer
                     'event_registration_id' => $registration->id,
                     'event_registration_item_id' => $item->id,
                     'event_ticket_type_id' => $item->event_ticket_type_id,
-                    'pass_no' => 'PASS-' . strtoupper(Str::random(10)),
+                    'pass_no' => 'PASS-' . mb_strtoupper(Str::random(10)),
                     'status' => 'issued',
                     'issued_at' => CarbonImmutable::now(),
                 ]);

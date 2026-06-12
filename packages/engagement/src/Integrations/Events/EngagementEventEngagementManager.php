@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Integrations\Events;
 
-use AIArmada\Events\Contracts\EventEngagementManager as EventEngagementManagerContract;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Events\Contracts\EventEngagementManager as EventEngagementManagerContract;
 
 final class EngagementEventEngagementManager implements EventEngagementManagerContract
 {

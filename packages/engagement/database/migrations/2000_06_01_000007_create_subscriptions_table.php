@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Creates the engagement_subscriptions table.
  * Part of the aiarmada/engagement package.
@@ -36,5 +37,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
 };

@@ -21,12 +21,12 @@ trait HasResponses
     }
 
     /**
-     * @param Builder<Response> $query
+     * @param  Builder<Response>  $query
      * @return Builder<Response>
      */
     public function scopeActiveResponses(Builder $query): Builder
     {
-        return $query->whereHas('responses', function (Builder $q) {
+        return $query->whereHas('responses', function (Builder $q): void {
             $q->active();
         });
     }

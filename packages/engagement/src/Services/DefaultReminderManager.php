@@ -83,7 +83,7 @@ final class DefaultReminderManager implements ReminderManager
         return Reminder::query()
             ->whereIn('status', ['pending', 'scheduled'])
             ->where('remind_at', '<=', $now)
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', CarbonImmutable::now());
             })

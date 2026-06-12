@@ -1,6 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\Engagement\Services;
+
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use Illuminate\Support\Str;
 

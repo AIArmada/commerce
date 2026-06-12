@@ -6,23 +6,26 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Models\Subscription;
+use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Infolists;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Engagement';
+    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
 
     protected static ?int $navigationSort = 6;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-bell';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell';
 
     public static function table(Table $table): Table
     {
@@ -58,13 +61,13 @@ final class SubscriptionResource extends Resource
                     ]),
             ])
             ->actions([
-                \Filament\Actions\Action::make('mute')
+                Action::make('mute')
                     ->action(fn (Subscription $record) => $record->update(['status' => Subscription::STATUS_MUTED]))
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('unmute')
+                Action::make('unmute')
                     ->action(fn (Subscription $record) => $record->update(['status' => Subscription::STATUS_ACTIVE]))
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('unsubscribe')
+                Action::make('unsubscribe')
                     ->action(fn (Subscription $record) => $record->update(['status' => Subscription::STATUS_UNSUBSCRIBED]))
                     ->requiresConfirmation(),
             ]);

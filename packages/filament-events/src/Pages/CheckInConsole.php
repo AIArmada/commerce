@@ -1,13 +1,15 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\FilamentEvents\Pages;
 
-use BackedEnum;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventPass;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -17,18 +19,24 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class CheckInConsole extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-check';
-    protected static string|\UnitEnum|null $navigationGroup = 'Events';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-check';
+
+    protected static string | UnitEnum | null $navigationGroup = 'Events';
+
     protected static ?string $title = 'Check-In Console';
+
     protected static ?string $slug = 'events/check-in';
 
     public ?string $search = '';
+
     public ?string $passOrRegistration = '';
+
     public array $checkInResult = [];
 
     public function table(Table $table): Table
@@ -48,7 +56,7 @@ final class CheckInConsole extends Page implements HasTable
                     ->label('Check In')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->action(function (EventPass $record) {
+                    ->action(function (EventPass $record): void {
                         app(EventCheckInService::class)->checkIn([
                             'event_id' => $record->event_id,
                             'event_occurrence_id' => $record->event_occurrence_id,
@@ -69,11 +77,12 @@ final class CheckInConsole extends Page implements HasTable
             ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false));
 
         if ($this->passOrRegistration) {
-            $query->where(function (Builder $q) {
+            $query->where(function (Builder $q): void {
                 $q->where('pass_no', 'like', "%{$this->passOrRegistration}%")
-                  ->orWhereHas('registration', fn (Builder $r) =>
-                      $r->where('registration_no', 'like', "%{$this->passOrRegistration}%")
-                  );
+                    ->orWhereHas(
+                        'registration',
+                        fn (Builder $r) => $r->where('registration_no', 'like', "%{$this->passOrRegistration}%")
+                    );
             });
         }
 
@@ -91,7 +100,7 @@ final class CheckInConsole extends Page implements HasTable
                         ->placeholder('e.g. PASS-ABC123 or REG-001')
                         ->autocomplete(false),
                 ])
-                ->action(function (array $data) {
+                ->action(function (array $data): void {
                     $this->passOrRegistration = $data['query'];
                 }),
             Action::make('walkIn')
@@ -107,7 +116,7 @@ final class CheckInConsole extends Page implements HasTable
                     TextInput::make('attendee_name')->label('Name'),
                     TextInput::make('attendee_email')->label('Email'),
                 ])
-                ->action(function (array $data) {
+                ->action(function (array $data): void {
                     OwnerWriteGuard::findOrFailForOwner(Event::class, $data['event_id']);
 
                     app(EventCheckInService::class)->checkIn([

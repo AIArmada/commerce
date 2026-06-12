@@ -6,21 +6,25 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Models\Bookmark;
+use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Infolists;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class BookmarkResource extends Resource
 {
     protected static ?string $model = Bookmark::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-bookmark';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bookmark';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Engagement';
+    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
 
     protected static ?int $navigationSort = 2;
 
@@ -70,17 +74,17 @@ final class BookmarkResource extends Resource
                     ->label('Bookmarkable Type'),
             ])
             ->actions([
-                \Filament\Actions\Action::make('remove')
+                Action::make('remove')
                     ->action(fn (Bookmark $record) => $record->update(['status' => 'removed']))
                     ->requiresConfirmation()
                     ->visible(fn (Bookmark $record) => $record->isActive()),
-                \Filament\Actions\Action::make('restore')
+                Action::make('restore')
                     ->action(fn (Bookmark $record) => $record->update(['status' => 'active']))
                     ->requiresConfirmation()
                     ->visible(fn (Bookmark $record) => $record->isRemoved()),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkAction::make('remove')
+                BulkAction::make('remove')
                     ->action(fn ($records) => $records->each->update(['status' => 'removed'])),
             ])
             ->defaultSort('bookmarked_at', 'desc');

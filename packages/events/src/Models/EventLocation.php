@@ -7,6 +7,8 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventLocationFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Eloquent;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -54,11 +56,11 @@ use Illuminate\Support\Carbon;
  * @property-read Event $event
  * @property-read EventOccurrence|null $occurrence
  * @property-read EventSession|null $session
- * @property-read Model|\Eloquent $locationable
+ * @property-read Model|Eloquent $locationable
  * @property-read Venue|null $venue
  * @property-read VenueSpace|null $venueSpace
  * @property-read VenueSpaceType|null $venueSpaceType
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventFacility> $facilities
+ * @property-read Collection<int, EventFacility> $facilities
  */
 final class EventLocation extends Model
 {

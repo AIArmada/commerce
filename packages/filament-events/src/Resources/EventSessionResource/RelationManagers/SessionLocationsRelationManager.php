@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers;
 
+use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -11,6 +12,7 @@ use Filament\Tables\Table;
 final class SessionLocationsRelationManager extends RelationManager
 {
     protected static string $relationship = 'locations';
+
     protected static ?string $title = 'Locations';
 
     public function table(Table $table): Table
@@ -24,6 +26,6 @@ final class SessionLocationsRelationManager extends RelationManager
             ])
             ->filters([])
             ->headerActions([])
-            ->actions([\Filament\Actions\ViewAction::make()]);
+            ->actions([ViewAction::make()]);
     }
 }

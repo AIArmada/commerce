@@ -121,7 +121,5 @@ final class RegistrationService implements RegistrationServiceInterface
         event(new EventRegistrationCreated($registration));
     }
 
-    public function syncByOrder(string $orderId, string $orderType, string $eventType): void
-    {
-    }
+    public function syncByOrder(string $orderId, string $orderType, string $eventType): void {}
 }

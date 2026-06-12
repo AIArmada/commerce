@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Models;
 
 use AIArmada\Engagement\Database\Factories\ReactionFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,12 +20,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $reactable_id
  * @property string $reaction_type
  * @property string $status
- * @property \Carbon\CarbonImmutable|null $reacted_at
- * @property \Carbon\CarbonImmutable|null $removed_at
+ * @property CarbonImmutable|null $reacted_at
+ * @property CarbonImmutable|null $removed_at
  * @property string|null $source
  * @property array|null $metadata
- * @property \Carbon\CarbonImmutable $created_at
- * @property \Carbon\CarbonImmutable $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  */
 final class Reaction extends Model
 {
@@ -32,6 +33,7 @@ final class Reaction extends Model
     use UsesEngagementUuid;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_REMOVED = 'removed';
 
     protected $fillable = [
@@ -69,7 +71,7 @@ final class Reaction extends Model
     }
 
     /**
-     * @param Builder<Reaction> $query
+     * @param  Builder<Reaction>  $query
      * @return Builder<Reaction>
      */
     public function scopeActive(Builder $query): Builder
@@ -78,7 +80,7 @@ final class Reaction extends Model
     }
 
     /**
-     * @param Builder<Reaction> $query
+     * @param  Builder<Reaction>  $query
      * @return Builder<Reaction>
      */
     public function scopeForReactor(Builder $query, Model $reactor): Builder
@@ -88,7 +90,7 @@ final class Reaction extends Model
     }
 
     /**
-     * @param Builder<Reaction> $query
+     * @param  Builder<Reaction>  $query
      * @return Builder<Reaction>
      */
     public function scopeForReactable(Builder $query, Model $reactable): Builder
@@ -98,7 +100,7 @@ final class Reaction extends Model
     }
 
     /**
-     * @param Builder<Reaction> $query
+     * @param  Builder<Reaction>  $query
      * @return Builder<Reaction>
      */
     public function scopeReactionType(Builder $query, string $type): Builder
@@ -106,8 +108,15 @@ final class Reaction extends Model
         return $query->where('reaction_type', $type);
     }
 
-    public function isActive(): bool { return $this->status === self::STATUS_ACTIVE; }
-    public function isRemoved(): bool { return $this->status === self::STATUS_REMOVED; }
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isRemoved(): bool
+    {
+        return $this->status === self::STATUS_REMOVED;
+    }
 
     /**
      * @return array<string, string>

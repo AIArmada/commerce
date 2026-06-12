@@ -1,6 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\Engagement\Models;
+
 use AIArmada\Engagement\Database\Factories\ShareFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonInterface;
@@ -36,9 +39,13 @@ final class Share extends Model
     use UsesEngagementUuid;
 
     public const STATUS_CREATED = 'created';
+
     public const STATUS_SHARED = 'shared';
+
     public const STATUS_REVOKED = 'revoked';
+
     public const STATUS_EXPIRED = 'expired';
+
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
@@ -65,9 +72,20 @@ final class Share extends Model
         return $this->morphTo();
     }
 
-    public function isCreated(): bool { return $this->status === self::STATUS_CREATED; }
-    public function isShared(): bool { return $this->status === self::STATUS_SHARED; }
-    public function isFailed(): bool { return $this->status === self::STATUS_FAILED; }
+    public function isCreated(): bool
+    {
+        return $this->status === self::STATUS_CREATED;
+    }
+
+    public function isShared(): bool
+    {
+        return $this->status === self::STATUS_SHARED;
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === self::STATUS_FAILED;
+    }
 
     protected function casts(): array
     {

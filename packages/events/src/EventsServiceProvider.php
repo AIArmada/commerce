@@ -4,38 +4,67 @@ declare(strict_types=1);
 
 namespace AIArmada\Events;
 
+use AIArmada\Engagement\EngagementServiceProvider;
+use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
+use AIArmada\Events\Actions\SyncManagementAssignmentToAuthzAction;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
 use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
+use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Contracts\EventClassificationResolver;
 use AIArmada\Events\Contracts\EventDisplayTimezoneResolver;
+use AIArmada\Events\Contracts\EventEngagementManager;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
+use AIArmada\Events\Contracts\EventPassIssuer;
 use AIArmada\Events\Contracts\EventReferenceResolver;
 use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchEngine;
 use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
+use AIArmada\Events\Contracts\EventSeatAllocator;
 use AIArmada\Events\Contracts\EventTranslationProvider;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
-use AIArmada\Events\Models\EventManagementAssignment;
-use AIArmada\Events\Listeners\DispatchEventChangeNoticeNotifications;
 use AIArmada\Events\Events\EventChangeNoticePublished;
-use AIArmada\Events\Listeners\SyncEventOrderCompletionOnRegistrationCheckedIn;
+use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Integrations\NullEventEngagementManager;
+use AIArmada\Events\Listeners\DispatchEventChangeNoticeNotifications;
+use AIArmada\Events\Listeners\SyncEventOrderCompletionOnRegistrationCheckedIn;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderCanceled;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderPaid;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefunded;
-use AIArmada\Events\Events\RegistrationCheckedIn;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventManagementAssignment;
+use AIArmada\Events\Policies\EventPolicy;
+use AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver;
+use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
+use AIArmada\Events\Resolvers\DefaultEventClassificationResolver;
+use AIArmada\Events\Resolvers\DefaultEventDisplayTimezoneResolver;
+use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
+use AIArmada\Events\Resolvers\DefaultEventReferenceResolver;
+use AIArmada\Events\Resolvers\DefaultEventSearchPayloadResolver;
+use AIArmada\Events\Resolvers\NullEventChangeNoticeNotificationDispatcher;
+use AIArmada\Events\Resolvers\NullEventCheckoutIntentResolver;
+use AIArmada\Events\Resolvers\NullEventOrderItemFulfillmentResolver;
+use AIArmada\Events\Resolvers\NullEventScheduleResolver;
+use AIArmada\Events\Resolvers\NullEventSearchIndexer;
+use AIArmada\Events\Resolvers\NullEventTranslationProvider;
 use AIArmada\Events\Services\DefaultEventChangeNoticeWorkflow;
+use AIArmada\Events\Services\DefaultEventCheckInService;
 use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
+use AIArmada\Events\Services\DefaultEventPassIssuer;
+use AIArmada\Events\Services\DefaultEventSeatAllocator;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
+use AIArmada\Orders\Events\OrderCanceled;
+use AIArmada\Orders\Events\OrderPaid;
+use AIArmada\Orders\Events\OrderRefunded;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Gate;
 use RuntimeException;
@@ -55,7 +84,7 @@ final class EventsServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        Gate::policy(\AIArmada\Events\Models\Event::class, \AIArmada\Events\Policies\EventPolicy::class);
+        Gate::policy(Event::class, EventPolicy::class);
 
         $this->app->singleton(EventQueryService::class);
         $this->app->singleton(RegistrationService::class);
@@ -63,17 +92,17 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->singleton(EventModerationWorkflow::class, DefaultEventModerationWorkflow::class);
         $this->app->singleton(EventLifecycleWorkflow::class, DefaultEventLifecycleWorkflow::class);
 
-        $this->app->bind(\AIArmada\Events\Contracts\EventCheckInService::class, \AIArmada\Events\Services\DefaultEventCheckInService::class);
-        $this->app->bind(\AIArmada\Events\Contracts\EventPassIssuer::class, \AIArmada\Events\Services\DefaultEventPassIssuer::class);
-        $this->app->bind(\AIArmada\Events\Contracts\EventSeatAllocator::class, \AIArmada\Events\Services\DefaultEventSeatAllocator::class);
+        $this->app->bind(EventCheckInService::class, DefaultEventCheckInService::class);
+        $this->app->bind(EventPassIssuer::class, DefaultEventPassIssuer::class);
+        $this->app->bind(EventSeatAllocator::class, DefaultEventSeatAllocator::class);
         $this->app->bind(RegistrationServiceInterface::class, RegistrationService::class);
 
-        $this->app->bind(\AIArmada\Events\Contracts\EventEngagementManager::class, NullEventEngagementManager::class);
+        $this->app->bind(EventEngagementManager::class, NullEventEngagementManager::class);
 
-        if (class_exists(\AIArmada\Engagement\EngagementServiceProvider::class)) {
+        if (class_exists(EngagementServiceProvider::class)) {
             $this->app->bind(
-                \AIArmada\Events\Contracts\EventEngagementManager::class,
-                \AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager::class,
+                EventEngagementManager::class,
+                EngagementEventEngagementManager::class,
             );
         }
 
@@ -86,8 +115,8 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventChangeNoticeAudienceResolver::class, $this->changeNoticeAudienceResolverClass());
         $this->app->bind(EventChangeNoticeNotificationDispatcher::class, $this->changeNoticeNotificationDispatcherClass());
 
-        $this->app->bind(EventSearchIndexer::class, \AIArmada\Events\Resolvers\NullEventSearchIndexer::class);
-        $this->app->bind(EventTranslationProvider::class, \AIArmada\Events\Resolvers\NullEventTranslationProvider::class);
+        $this->app->bind(EventSearchIndexer::class, NullEventSearchIndexer::class);
+        $this->app->bind(EventTranslationProvider::class, NullEventTranslationProvider::class);
 
         $this->app->make(Dispatcher::class)
             ->listen(EventChangeNoticePublished::class, DispatchEventChangeNoticeNotifications::class);
@@ -97,17 +126,17 @@ final class EventsServiceProvider extends PackageServiceProvider
             $this->app->bind(EventCheckoutIntentResolver::class, $this->checkoutIntentResolverClass());
 
             $dispatcher = $this->app->make(Dispatcher::class);
-            $dispatcher->listen(\AIArmada\Orders\Events\OrderPaid::class, SyncEventOrderRegistrationsOnOrderPaid::class);
-            $dispatcher->listen(\AIArmada\Orders\Events\OrderCanceled::class, SyncEventOrderRegistrationsOnOrderCanceled::class);
-            $dispatcher->listen(\AIArmada\Orders\Events\OrderRefunded::class, SyncEventOrderRegistrationsOnOrderRefunded::class);
+            $dispatcher->listen(OrderPaid::class, SyncEventOrderRegistrationsOnOrderPaid::class);
+            $dispatcher->listen(OrderCanceled::class, SyncEventOrderRegistrationsOnOrderCanceled::class);
+            $dispatcher->listen(OrderRefunded::class, SyncEventOrderRegistrationsOnOrderRefunded::class);
             $dispatcher->listen(RegistrationCheckedIn::class, SyncEventOrderCompletionOnRegistrationCheckedIn::class);
         }
 
-        if (class_exists(\AIArmada\FilamentAuthz\FilamentAuthzServiceProvider::class)) {
+        if (class_exists(FilamentAuthzServiceProvider::class)) {
             $this->app->make(Dispatcher::class)
                 ->listen(
                     'eloquent.created: ' . EventManagementAssignment::class,
-                    \AIArmada\Events\Actions\SyncManagementAssignmentToAuthzAction::class,
+                    SyncManagementAssignmentToAuthzAction::class,
                 );
         }
     }
@@ -118,10 +147,10 @@ final class EventsServiceProvider extends PackageServiceProvider
 
         if ($resolver === null) {
             if (! CommerceIntegration::aiArmadaOrderFulfillmentAvailable()) {
-                return \AIArmada\Events\Resolvers\NullEventOrderItemFulfillmentResolver::class;
+                return NullEventOrderItemFulfillmentResolver::class;
             }
 
-            return \AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver::class;
+            return DefaultEventOrderItemFulfillmentResolver::class;
         }
 
         if (is_string($resolver) && is_a($resolver, EventOrderItemFulfillmentResolver::class, true)) {
@@ -137,10 +166,10 @@ final class EventsServiceProvider extends PackageServiceProvider
 
         if ($resolver === null) {
             if (! CommerceIntegration::aiArmadaCheckoutAvailable()) {
-                return \AIArmada\Events\Resolvers\NullEventCheckoutIntentResolver::class;
+                return NullEventCheckoutIntentResolver::class;
             }
 
-            return \AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver::class;
+            return DefaultEventCheckoutIntentResolver::class;
         }
 
         if (is_string($resolver) && is_a($resolver, EventCheckoutIntentResolver::class, true)) {
@@ -155,7 +184,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $resolver = config('events.timezone.display_timezone_resolver');
 
         if ($resolver === null) {
-            return \AIArmada\Events\Resolvers\DefaultEventDisplayTimezoneResolver::class;
+            return DefaultEventDisplayTimezoneResolver::class;
         }
 
         if (is_string($resolver) && is_a($resolver, EventDisplayTimezoneResolver::class, true)) {
@@ -170,7 +199,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $resolver = config('events.search.payload_resolver');
 
         if ($resolver === null) {
-            return \AIArmada\Events\Resolvers\DefaultEventSearchPayloadResolver::class;
+            return DefaultEventSearchPayloadResolver::class;
         }
 
         if (is_string($resolver) && is_a($resolver, EventSearchPayloadResolver::class, true)) {
@@ -185,7 +214,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $resolver = config('events.classifications.resolver');
 
         if ($resolver === null) {
-            return \AIArmada\Events\Resolvers\DefaultEventClassificationResolver::class;
+            return DefaultEventClassificationResolver::class;
         }
 
         if (is_string($resolver) && is_a($resolver, EventClassificationResolver::class, true)) {
@@ -200,7 +229,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $resolver = config('events.references.resolver');
 
         if ($resolver === null) {
-            return \AIArmada\Events\Resolvers\DefaultEventReferenceResolver::class;
+            return DefaultEventReferenceResolver::class;
         }
 
         if (is_string($resolver) && is_a($resolver, EventReferenceResolver::class, true)) {
@@ -215,7 +244,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $resolver = config('events.schedule.resolver');
 
         if ($resolver === null) {
-            return \AIArmada\Events\Resolvers\NullEventScheduleResolver::class;
+            return NullEventScheduleResolver::class;
         }
 
         if (is_string($resolver) && is_a($resolver, EventScheduleResolver::class, true)) {
@@ -245,7 +274,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $resolver = config('events.change_notices.audience_resolver');
 
         if ($resolver === null) {
-            return \AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver::class;
+            return DefaultEventChangeNoticeAudienceResolver::class;
         }
 
         if (is_string($resolver) && is_a($resolver, EventChangeNoticeAudienceResolver::class, true)) {
@@ -260,7 +289,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $dispatcher = config('events.change_notices.notification_dispatcher');
 
         if ($dispatcher === null) {
-            return \AIArmada\Events\Resolvers\NullEventChangeNoticeNotificationDispatcher::class;
+            return NullEventChangeNoticeNotificationDispatcher::class;
         }
 
         if (is_string($dispatcher) && is_a($dispatcher, EventChangeNoticeNotificationDispatcher::class, true)) {

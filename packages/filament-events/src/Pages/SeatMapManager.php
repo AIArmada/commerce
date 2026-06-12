@@ -1,15 +1,16 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\FilamentEvents\Pages;
 
-use BackedEnum;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSeatMap;
-use AIArmada\Events\Models\EventSeatSection;
-use AIArmada\Events\Models\EventSeat;
+use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
@@ -17,14 +18,18 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class SeatMapManager extends Page
 {
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-table-cells';
-    protected static string|\UnitEnum|null $navigationGroup = 'Events';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-table-cells';
+
+    protected static string | UnitEnum | null $navigationGroup = 'Events';
+
     protected static ?string $title = 'Seat Maps';
+
     protected static ?string $slug = 'events/seat-maps';
 
     public function table(Table $table): Table
@@ -43,7 +48,7 @@ final class SeatMapManager extends Page
                 TextColumn::make('created_at')->dateTime(),
             ])
             ->filters([])
-            ->actions([\Filament\Actions\ViewAction::make()]);
+            ->actions([ViewAction::make()]);
     }
 
     protected function getHeaderActions(): array
@@ -57,7 +62,7 @@ final class SeatMapManager extends Page
                         ->required(),
                     TextInput::make('name')->required(),
                 ])
-                ->action(function (array $data) {
+                ->action(function (array $data): void {
                     OwnerWriteGuard::findOrFailForOwner(Event::class, $data['event_id']);
 
                     EventSeatMap::query()->create([

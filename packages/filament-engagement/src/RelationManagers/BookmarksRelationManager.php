@@ -11,6 +11,7 @@ use Filament\Tables\Table;
 final class BookmarksRelationManager extends RelationManager
 {
     protected static string $relationship = 'bookmarks';
+
     protected static ?string $title = 'Bookmarks';
 
     public function table(Table $table): Table

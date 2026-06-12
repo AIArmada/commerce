@@ -34,8 +34,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class BookmarkCollection extends Model
 {
-    use HasOwner;
     use HasFactory;
+    use HasOwner;
     use HasOwnerScopeConfig;
     use UsesEngagementUuid;
 

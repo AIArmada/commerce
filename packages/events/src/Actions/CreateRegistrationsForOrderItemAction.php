@@ -23,7 +23,7 @@ final class CreateRegistrationsForOrderItemAction
     ) {}
 
     /**
-     * @param array<int, array<string, mixed>> $participants
+     * @param  array<int, array<string, mixed>>  $participants
      * @return Collection<int, EventRegistration>
      */
     public function handle(EventOccurrence $occurrence, mixed $orderItem, array $participants, mixed $purchaser = null): Collection
@@ -87,10 +87,11 @@ final class CreateRegistrationsForOrderItemAction
                     $existing->count(),
                 ));
             }
+
             return $existing;
         }
 
-        $registrations = new Collection();
+        $registrations = new Collection;
         foreach ($participants as $participant) {
             $registrations->push(
                 $this->registrationService->register([

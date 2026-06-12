@@ -21,12 +21,12 @@ trait HasReactions
     }
 
     /**
-     * @param Builder<Reaction> $query
+     * @param  Builder<Reaction>  $query
      * @return Builder<Reaction>
      */
     public function scopeActiveReactions(Builder $query): Builder
     {
-        return $query->whereHas('reactions', function (Builder $q) {
+        return $query->whereHas('reactions', function (Builder $q): void {
             $q->active();
         });
     }

@@ -34,7 +34,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
         event(new EventPublished($event));
     }
 
-    public function cancel(Event|EventOccurrence $target, ?string $reason = null): void
+    public function cancel(Event | EventOccurrence $target, ?string $reason = null): void
     {
         $target->update([
             'status' => 'cancelled',
@@ -51,7 +51,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
         }
     }
 
-    public function postpone(Event|EventOccurrence $target, ?string $reason = null): void
+    public function postpone(Event | EventOccurrence $target, ?string $reason = null): void
     {
         $target->update([
             'status' => 'postponed',
@@ -102,7 +102,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
         return $occurrence;
     }
 
-    public function complete(Event|EventOccurrence $target): void
+    public function complete(Event | EventOccurrence $target): void
     {
         $target->update([
             'status' => 'completed',
@@ -116,7 +116,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
         }
     }
 
-    public function archive(Event|EventOccurrence $target, ?string $reason = null): void
+    public function archive(Event | EventOccurrence $target, ?string $reason = null): void
     {
         $target->update([
             'status' => 'archived',
@@ -129,7 +129,7 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
         event(new EventArchived($target, $reason));
     }
 
-    private function recordChange(Event|EventOccurrence $target, string $changeType, ?string $reason = null, array $context = []): void
+    private function recordChange(Event | EventOccurrence $target, string $changeType, ?string $reason = null, array $context = []): void
     {
         $event = $target instanceof Event ? $target : $target->event;
 

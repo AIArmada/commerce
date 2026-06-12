@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Creates the engagement_follows table.
  * Part of the aiarmada/engagement package.
@@ -36,5 +37,4 @@ return new class extends Migration
             $table->index(['follower_type', 'follower_id', 'followable_type', 'followable_id', 'status']);
         });
     }
-
 };

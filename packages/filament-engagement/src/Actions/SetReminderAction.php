@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEngagement\Actions;
 
 use AIArmada\Engagement\Contracts\ReminderManager;
-use Filament\Forms;
 use Filament\Actions\Action;
+use Filament\Forms;
 
 final class SetReminderAction
 {
@@ -21,7 +21,7 @@ final class SetReminderAction
                     ->required(),
                 Forms\Components\DateTimePicker::make('remind_at')->label('Remind At'),
             ])
-            ->action(function (array $data, $record) {
+            ->action(function (array $data, $record): void {
                 app(ReminderManager::class)->setReminder(auth()->user(), $record, $data['reminder_type'], $data);
             });
     }

@@ -8,5 +8,5 @@ use AIArmada\Events\Data\EventRecurrenceRuleData;
 
 interface EventRecurrenceRuleParser
 {
-    public function parse(array|string $input): EventRecurrenceRuleData;
+    public function parse(array | string $input): EventRecurrenceRuleData;
 }

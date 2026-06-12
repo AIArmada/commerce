@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Events\Listeners;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Actions\SyncEventOrderRegistrationsAction;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Orders\Models\Order;
 
 final class SyncEventOrderRegistrationsOnOrderPaid
 {
@@ -16,8 +18,8 @@ final class SyncEventOrderRegistrationsOnOrderPaid
         }
 
         OwnerContext::withOwner($event->order->owner ?? null, function () use ($event): void {
-            $action = app(\AIArmada\Events\Actions\SyncEventOrderRegistrationsAction::class);
-            $action->handle($event->order->id, \AIArmada\Orders\Models\Order::class, 'paid');
+            $action = app(SyncEventOrderRegistrationsAction::class);
+            $action->handle($event->order->id, Order::class, 'paid');
         });
     }
 }

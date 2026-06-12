@@ -7,8 +7,8 @@ namespace AIArmada\Engagement\Contracts;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
-use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Reminder;
+use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
 
 interface EngagementManager

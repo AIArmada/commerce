@@ -21,12 +21,12 @@ trait HasSubscriptions
     }
 
     /**
-     * @param Builder<Subscription> $query
+     * @param  Builder<Subscription>  $query
      * @return Builder<Subscription>
      */
     public function scopeActiveSubscriptions(Builder $query): Builder
     {
-        return $query->whereHas('subscriptions', function (Builder $q) {
+        return $query->whereHas('subscriptions', function (Builder $q): void {
             $q->active();
         });
     }

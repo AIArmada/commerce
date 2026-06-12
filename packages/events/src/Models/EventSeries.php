@@ -31,9 +31,9 @@ use Illuminate\Support\Carbon;
  */
 final class EventSeries extends Model
 {
+    use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
-    use HasFactory;
     use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';

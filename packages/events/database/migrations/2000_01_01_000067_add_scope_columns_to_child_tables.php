@@ -37,5 +37,4 @@ return new class extends Migration
             $table->uuid('event_occurrence_id')->nullable()->index();
         });
     }
-
 };

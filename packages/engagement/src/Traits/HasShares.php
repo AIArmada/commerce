@@ -1,6 +1,9 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\Engagement\Traits;
+
 use AIArmada\Engagement\Models\Share;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Database\Factories\EventTemplateFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Eloquent;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,15 +38,15 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Model|\Eloquent $owner
- * @property-read Model|\Eloquent $templateable
+ * @property-read Model|Eloquent $owner
+ * @property-read Model|Eloquent $templateable
  * @property-read Collection<int, EventTemplateItem> $items
  */
 final class EventTemplate extends Model
 {
+    use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
-    use HasFactory;
     use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';

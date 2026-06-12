@@ -1,6 +1,11 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\Customers\Models\Customer;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 
 $tablePrefix = env('EVENTS_TABLE_PREFIX', '');
 $ownerConfig = [
@@ -155,11 +160,11 @@ return [
 
     /* Integrations */
     'integrations' => [
-        'product_model' => class_exists(\AIArmada\Products\Models\Product::class) ? \AIArmada\Products\Models\Product::class : null,
-        'variant_model' => class_exists(\AIArmada\Products\Models\Variant::class) ? \AIArmada\Products\Models\Variant::class : null,
-        'customer_model' => class_exists(\AIArmada\Customers\Models\Customer::class) ? \AIArmada\Customers\Models\Customer::class : null,
-        'order_model' => class_exists(\AIArmada\Orders\Models\Order::class) ? \AIArmada\Orders\Models\Order::class : null,
-        'order_item_model' => class_exists(\AIArmada\Orders\Models\OrderItem::class) ? \AIArmada\Orders\Models\OrderItem::class : null,
+        'product_model' => class_exists(Product::class) ? Product::class : null,
+        'variant_model' => class_exists(Variant::class) ? Variant::class : null,
+        'customer_model' => class_exists(Customer::class) ? Customer::class : null,
+        'order_model' => class_exists(Order::class) ? Order::class : null,
+        'order_item_model' => class_exists(OrderItem::class) ? OrderItem::class : null,
         'checkout_intent_resolver' => null,
         'order_item_fulfillment_resolver' => null,
     ],

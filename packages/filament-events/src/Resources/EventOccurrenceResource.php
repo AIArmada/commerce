@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -104,51 +108,51 @@ final class EventOccurrenceResource extends Resource
                 ExportAction::make()
                     ->exporter(EventOccurrenceExporter::class)
                     ->label('Export Occurrences'),
-                \Filament\Actions\Action::make('delay')
+                Action::make('delay')
                     ->label('Delay')
                     ->icon('heroicon-o-clock')
                     ->color('warning')
                     ->form([
-                        \Filament\Forms\Components\Textarea::make('reason'),
-                        \Filament\Forms\Components\DateTimePicker::make('expected_starts_at')->label('Expected New Start'),
+                        Textarea::make('reason'),
+                        DateTimePicker::make('expected_starts_at')->label('Expected New Start'),
                     ])
-                    ->action(function (array $data, \AIArmada\Events\Models\EventOccurrence $record) {
-                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->delay($record, $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
+                    ->action(function (array $data, EventOccurrence $record): void {
+                        app(EventLifecycleWorkflow::class)->delay($record, $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
                     })
-                    ->visible(fn (\AIArmada\Events\Models\EventOccurrence $record) => $record->status === 'published' || $record->status === 'scheduled')
+                    ->visible(fn (EventOccurrence $record) => $record->status === 'published' || $record->status === 'scheduled')
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('postpone')
+                Action::make('postpone')
                     ->label('Postpone')
                     ->icon('heroicon-o-calendar-x')
                     ->color('warning')
                     ->form([
-                        \Filament\Forms\Components\Textarea::make('reason')->required(),
+                        Textarea::make('reason')->required(),
                     ])
-                    ->action(function (array $data, \AIArmada\Events\Models\EventOccurrence $record) {
-                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->postpone($record, $data['reason']);
+                    ->action(function (array $data, EventOccurrence $record): void {
+                        app(EventLifecycleWorkflow::class)->postpone($record, $data['reason']);
                     })
-                    ->visible(fn (\AIArmada\Events\Models\EventOccurrence $record) => $record->status === 'published' || $record->status === 'scheduled')
+                    ->visible(fn (EventOccurrence $record) => $record->status === 'published' || $record->status === 'scheduled')
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('cancel')
+                Action::make('cancel')
                     ->label('Cancel Occurrence')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->form([
-                        \Filament\Forms\Components\Textarea::make('reason')->required(),
+                        Textarea::make('reason')->required(),
                     ])
-                    ->action(function (array $data, \AIArmada\Events\Models\EventOccurrence $record) {
-                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
+                    ->action(function (array $data, EventOccurrence $record): void {
+                        app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
                     })
-                    ->visible(fn (\AIArmada\Events\Models\EventOccurrence $record) => !in_array($record->status, ['cancelled', 'completed', 'archived']))
+                    ->visible(fn (EventOccurrence $record) => ! in_array($record->status, ['cancelled', 'completed', 'archived']))
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('complete')
+                Action::make('complete')
                     ->label('Complete')
                     ->icon('heroicon-o-check')
                     ->color('success')
-                    ->action(function (\AIArmada\Events\Models\EventOccurrence $record) {
-                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->complete($record);
+                    ->action(function (EventOccurrence $record): void {
+                        app(EventLifecycleWorkflow::class)->complete($record);
                     })
-                    ->visible(fn (\AIArmada\Events\Models\EventOccurrence $record) => $record->status === 'published')
+                    ->visible(fn (EventOccurrence $record) => $record->status === 'published')
                     ->requiresConfirmation(),
             ])
             ->actions([

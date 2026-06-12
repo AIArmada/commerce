@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventUpdateFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,7 +36,7 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventUpdateItem> $items
+ * @property-read Collection<int, EventUpdateItem> $items
  */
 final class EventUpdate extends Model
 {

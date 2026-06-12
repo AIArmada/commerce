@@ -15,6 +15,4 @@ return new class extends Migration
             $table->uuid('event_session_id')->nullable()->after('event_occurrence_id')->index();
         });
     }
-
-
 };

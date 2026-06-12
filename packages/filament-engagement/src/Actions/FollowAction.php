@@ -14,7 +14,7 @@ final class FollowAction
         return Action::make('follow')
             ->label('Follow')
             ->icon('heroicon-o-heart')
-            ->action(function ($livewire, $record) {
+            ->action(function ($livewire, $record): void {
                 app(EngagementManager::class)->follow(auth()->user(), $record);
             });
     }

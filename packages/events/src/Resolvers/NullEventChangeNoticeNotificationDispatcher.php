@@ -9,7 +9,5 @@ use AIArmada\Events\Models\EventNotificationBatch;
 
 final class NullEventChangeNoticeNotificationDispatcher implements EventChangeNoticeNotificationDispatcher
 {
-    public function dispatch(EventNotificationBatch $batch): void
-    {
-    }
+    public function dispatch(EventNotificationBatch $batch): void {}
 }

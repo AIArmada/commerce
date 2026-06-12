@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventChangeLogFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,8 +38,8 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon $created_at
  * @property-read Event $event
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventUpdate> $updates
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventNotificationBatch> $notificationBatches
+ * @property-read Collection<int, EventUpdate> $updates
+ * @property-read Collection<int, EventNotificationBatch> $notificationBatches
  */
 final class EventChangeLog extends Model
 {

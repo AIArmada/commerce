@@ -6,11 +6,11 @@ namespace AIArmada\Events\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Models\EventChangeLog;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventChangeLog;
+use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventUpdate;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -31,8 +31,7 @@ final class DispatchEventChangeChainAction
         ?string $sessionId = null,
         array $oldValue = [],
         array $newValue = [],
-    ): void
-    {
+    ): void {
         $event = OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
 
         if ($occurrenceId !== null) {
@@ -107,8 +106,7 @@ final class DispatchEventChangeChainAction
         ?string $reason,
         array $oldValue,
         array $newValue,
-    ): ?EventUpdate
-    {
+    ): ?EventUpdate {
         $updateTypes = [
             'cancelled' => 'cancellation',
             'postponed' => 'postponement',

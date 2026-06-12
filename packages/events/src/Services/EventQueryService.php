@@ -20,8 +20,8 @@ final class EventQueryService
 
     public function findUpcoming(int $limit = 10): Collection
     {
-        $eventTable = (new Event())->getTable();
-        $occurrenceTable = (new EventOccurrence())->getTable();
+        $eventTable = (new Event)->getTable();
+        $occurrenceTable = (new EventOccurrence)->getTable();
         $nextOccurrenceSubquery = EventOccurrence::query()
             ->select('starts_at')
             ->whereColumn("{$occurrenceTable}.event_id", "{$eventTable}.id")
