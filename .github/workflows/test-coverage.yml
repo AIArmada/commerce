@@ -35,6 +35,8 @@ jobs:
           key: coverage-composer-${{ hashFiles('**/composer.lock') }}
 
       - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run tests with coverage
