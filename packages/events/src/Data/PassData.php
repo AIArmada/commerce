@@ -14,13 +14,13 @@ final class PassData extends Data
     public function __construct(
         public readonly string $id,
         public readonly string $pass_no,
-        public readonly string|null|Optional $qr_code,
-        public readonly string|null|Optional $barcode,
+        public readonly string | null | Optional $qr_code,
+        public readonly string | null | Optional $barcode,
         public readonly string $status,
-        public readonly string|null|Optional $ticket_type_name,
-        public readonly CarbonImmutable|null|Optional $issued_at,
-        public readonly CarbonImmutable|null|Optional $activated_at,
-        public readonly CarbonImmutable|null|Optional $used_at,
+        public readonly string | null | Optional $ticket_type_name,
+        public readonly CarbonImmutable | null | Optional $issued_at,
+        public readonly CarbonImmutable | null | Optional $activated_at,
+        public readonly CarbonImmutable | null | Optional $used_at,
     ) {}
 
     public static function fromPass(EventPass $pass): self

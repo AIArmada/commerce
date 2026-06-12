@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Creates the engagement_bookmark_collection_items table.
  * Part of the aiarmada/engagement package.
@@ -27,5 +28,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
 };

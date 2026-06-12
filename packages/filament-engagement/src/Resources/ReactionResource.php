@@ -6,23 +6,26 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Models\Reaction;
+use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Infolists;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class ReactionResource extends Resource
 {
     protected static ?string $model = Reaction::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Engagement';
+    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
 
     protected static ?int $navigationSort = 5;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-star';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-star';
 
     public static function table(Table $table): Table
     {
@@ -55,11 +58,11 @@ final class ReactionResource extends Resource
                     ]),
             ])
             ->actions([
-                \Filament\Actions\Action::make('remove')
+                Action::make('remove')
                     ->visible(fn (Reaction $record): bool => $record->isActive())
                     ->action(fn (Reaction $record) => $record->update(['status' => Reaction::STATUS_REMOVED]))
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('restore')
+                Action::make('restore')
                     ->visible(fn (Reaction $record): bool => $record->isRemoved())
                     ->action(fn (Reaction $record) => $record->update(['status' => Reaction::STATUS_ACTIVE]))
                     ->requiresConfirmation(),
@@ -90,14 +93,14 @@ final class ReactionResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-                Forms\Components\TextInput::make('reactor_type'),
-                Forms\Components\TextInput::make('reactor_id'),
-                Forms\Components\TextInput::make('reactable_type'),
-                Forms\Components\TextInput::make('reactable_id'),
-                Forms\Components\TextInput::make('reaction_type'),
-                Forms\Components\TextInput::make('status'),
-                Forms\Components\DateTimePicker::make('reacted_at'),
-            ]);
+            Forms\Components\TextInput::make('reactor_type'),
+            Forms\Components\TextInput::make('reactor_id'),
+            Forms\Components\TextInput::make('reactable_type'),
+            Forms\Components\TextInput::make('reactable_id'),
+            Forms\Components\TextInput::make('reaction_type'),
+            Forms\Components\TextInput::make('status'),
+            Forms\Components\DateTimePicker::make('reacted_at'),
+        ]);
     }
 
     public static function getPages(): array

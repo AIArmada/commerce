@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Models;
 
 use AIArmada\Engagement\Database\Factories\ResponseFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,14 +21,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $response_type
  * @property string $status
  * @property string $visibility
- * @property \Carbon\CarbonImmutable|null $responded_at
- * @property \Carbon\CarbonImmutable|null $changed_at
- * @property \Carbon\CarbonImmutable|null $cancelled_at
- * @property \Carbon\CarbonImmutable|null $expires_at
+ * @property CarbonImmutable|null $responded_at
+ * @property CarbonImmutable|null $changed_at
+ * @property CarbonImmutable|null $cancelled_at
+ * @property CarbonImmutable|null $expires_at
  * @property string|null $source
  * @property array|null $metadata
- * @property \Carbon\CarbonImmutable $created_at
- * @property \Carbon\CarbonImmutable $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  */
 final class Response extends Model
 {
@@ -35,8 +36,11 @@ final class Response extends Model
     use UsesEngagementUuid;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_CHANGED = 'changed';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
@@ -77,7 +81,7 @@ final class Response extends Model
     }
 
     /**
-     * @param Builder<Response> $query
+     * @param  Builder<Response>  $query
      * @return Builder<Response>
      */
     public function scopeActive(Builder $query): Builder
@@ -86,7 +90,7 @@ final class Response extends Model
     }
 
     /**
-     * @param Builder<Response> $query
+     * @param  Builder<Response>  $query
      * @return Builder<Response>
      */
     public function scopeResponseType(Builder $query, string $type): Builder
@@ -95,7 +99,7 @@ final class Response extends Model
     }
 
     /**
-     * @param Builder<Response> $query
+     * @param  Builder<Response>  $query
      * @return Builder<Response>
      */
     public function scopeForResponder(Builder $query, Model $responder): Builder
@@ -105,7 +109,7 @@ final class Response extends Model
     }
 
     /**
-     * @param Builder<Response> $query
+     * @param  Builder<Response>  $query
      * @return Builder<Response>
      */
     public function scopeForRespondable(Builder $query, Model $respondable): Builder
@@ -115,7 +119,7 @@ final class Response extends Model
     }
 
     /**
-     * @param Builder<Response> $query
+     * @param  Builder<Response>  $query
      * @return Builder<Response>
      */
     public function scopePublic(Builder $query): Builder
@@ -123,8 +127,15 @@ final class Response extends Model
         return $query->where('visibility', 'public');
     }
 
-    public function isActive(): bool { return $this->status === self::STATUS_ACTIVE; }
-    public function isCancelled(): bool { return $this->status === self::STATUS_CANCELLED; }
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === self::STATUS_CANCELLED;
+    }
 
     protected static function newFactory(): ResponseFactory
     {

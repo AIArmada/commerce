@@ -12,10 +12,10 @@ final class EventInvolvementData extends Data
 {
     public function __construct(
         public readonly string $id,
-        public readonly string|null|Optional $role_code,
-        public readonly string|null|Optional $involveable_type,
-        public readonly string|null|Optional $involveable_id,
-        public readonly string|null|Optional $display_name,
+        public readonly string | null | Optional $role_code,
+        public readonly string | null | Optional $involveable_type,
+        public readonly string | null | Optional $involveable_id,
+        public readonly string | null | Optional $display_name,
         public readonly string $prominence,
         public readonly bool $is_featured,
         public readonly bool $is_primary,

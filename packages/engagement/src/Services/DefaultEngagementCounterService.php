@@ -6,8 +6,8 @@ namespace AIArmada\Engagement\Services;
 
 use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\EngagementCounter;
+use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Response;
 use Carbon\CarbonImmutable;

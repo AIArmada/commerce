@@ -6,24 +6,27 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Models\Reminder;
+use BackedEnum;
 use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Infolists;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class ReminderResource extends Resource
 {
     protected static ?string $model = Reminder::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Engagement';
+    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
 
     protected static ?int $navigationSort = 7;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clock';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clock';
 
     public static function table(Table $table): Table
     {
@@ -65,10 +68,10 @@ final class ReminderResource extends Resource
                     ]),
             ])
             ->actions([
-                \Filament\Actions\Action::make('cancel')
+                Action::make('cancel')
                     ->action(fn (Reminder $record) => $record->update(['status' => Reminder::STATUS_CANCELLED]))
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('mark sent')
+                Action::make('mark sent')
                     ->label('Mark Sent')
                     ->action(fn (Reminder $record) => $record->update([
                         'status' => Reminder::STATUS_SENT,

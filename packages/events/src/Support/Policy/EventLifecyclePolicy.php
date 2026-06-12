@@ -22,17 +22,17 @@ final class EventLifecyclePolicy
         return in_array($event->status, self::PUBLISHABLE_STATUSES, true);
     }
 
-    public function canCancel(Event|EventOccurrence $target): bool
+    public function canCancel(Event | EventOccurrence $target): bool
     {
         return in_array($target->status, self::CANCELLABLE_STATUSES, true);
     }
 
-    public function canArchive(Event|EventOccurrence $target): bool
+    public function canArchive(Event | EventOccurrence $target): bool
     {
         return in_array($target->status, self::ARCHIVABLE_STATUSES, true);
     }
 
-    public function canPostpone(Event|EventOccurrence $target): bool
+    public function canPostpone(Event | EventOccurrence $target): bool
     {
         return in_array($target->status, ['scheduled', 'published', 'delayed', 'rescheduled'], true);
     }
@@ -47,7 +47,7 @@ final class EventLifecyclePolicy
         return in_array($occurrence->status, ['scheduled', 'published', 'delayed', 'postponed', 'cancelled'], true);
     }
 
-    public function canComplete(Event|EventOccurrence $target): bool
+    public function canComplete(Event | EventOccurrence $target): bool
     {
         return in_array($target->status, self::COMPLETABLE_STATUSES, true);
     }

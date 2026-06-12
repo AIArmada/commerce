@@ -42,7 +42,7 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Model|\Illuminate\Database\Eloquent\Model $revisable
+ * @property-read Model|Model $revisable
  * @property-read Event|null $event
  * @property-read EventOccurrence|null $occurrence
  * @property-read EventSession|null $session

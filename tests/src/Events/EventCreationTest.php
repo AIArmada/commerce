@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 
-it('creates an event in draft status', function () {
+it('creates an event in draft status', function (): void {
     $event = Event::factory()->create();
 
     expect($event->status)->toBe(Event::DRAFT);
 });
 
-it('creates an event with an occurrence', function () {
+it('creates an event with an occurrence', function (): void {
     $event = Event::factory()->create();
     $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
@@ -22,7 +22,7 @@ it('creates an event with an occurrence', function () {
     expect($occurrence->event_id)->toBe($event->id);
 });
 
-it('creates an event with owner polymorphic reference', function () {
+it('creates an event with owner polymorphic reference', function (): void {
     $owner = User::query()->create([
         'name' => 'Event Owner',
         'email' => 'event-owner-' . uniqid() . '@example.com',
@@ -37,7 +37,7 @@ it('creates an event with owner polymorphic reference', function () {
         ->and($event->owner_id)->toBe((string) $owner->getKey());
 });
 
-it('publishes event using lifecycle workflow', function () {
+it('publishes event using lifecycle workflow', function (): void {
     $event = Event::factory()->create();
 
     app(EventLifecycleWorkflow::class)->publish($event);
@@ -47,7 +47,7 @@ it('publishes event using lifecycle workflow', function () {
     expect($event->published_at)->not->toBeNull();
 });
 
-it('cancels event and creates change log', function () {
+it('cancels event and creates change log', function (): void {
     $event = Event::factory()->published()->create();
 
     app(EventLifecycleWorkflow::class)->cancel($event, 'Test cancellation');

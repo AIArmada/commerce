@@ -7,7 +7,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventTicketType;
 
-it('creates individual registration', function () {
+it('creates individual registration', function (): void {
     $event = Event::factory()->create();
     $ticketType = EventTicketType::factory()->create(['event_id' => $event->id]);
 
@@ -32,7 +32,7 @@ it('creates individual registration', function () {
     expect($registration->items)->toHaveCount(1);
 });
 
-it('cancels registration without deletion', function () {
+it('cancels registration without deletion', function (): void {
     $event = Event::factory()->create();
     $registration = EventRegistration::factory()->create(['event_id' => $event->id]);
 

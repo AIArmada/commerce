@@ -5,19 +5,35 @@ declare(strict_types=1);
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Models\Reminder;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->manager = app(ReminderManager::class);
-    $this->recipient = new class {
-        public function getMorphClass(): string { return 'user'; }
-        public function getKey(): string { return 'user-1'; }
+    $this->recipient = new class
+    {
+        public function getMorphClass(): string
+        {
+            return 'user';
+        }
+
+        public function getKey(): string
+        {
+            return 'user-1';
+        }
     };
-    $this->subject = new class {
-        public function getMorphClass(): string { return 'event'; }
-        public function getKey(): string { return 'event-1'; }
+    $this->subject = new class
+    {
+        public function getMorphClass(): string
+        {
+            return 'event';
+        }
+
+        public function getKey(): string
+        {
+            return 'event-1';
+        }
     };
 });
 
-it('only dispatches pending or scheduled reminders', function () {
+it('only dispatches pending or scheduled reminders', function (): void {
     $this->manager->setReminder($this->recipient, $this->subject, 'before_start', [
         'remind_at' => now()->subMinute(),
     ]);
@@ -34,7 +50,7 @@ it('only dispatches pending or scheduled reminders', function () {
     expect($noLongerDue)->toBeEmpty();
 });
 
-it('marks sent reminders with sent_at', function () {
+it('marks sent reminders with sent_at', function (): void {
     $reminder = Reminder::factory()->create([
         'remindable_type' => 'event',
         'remindable_id' => 'event-1',
@@ -51,7 +67,7 @@ it('marks sent reminders with sent_at', function () {
     expect($reminder->fresh()->sent_at)->not->toBeNull();
 });
 
-it('marks failed reminders with failure_reason', function () {
+it('marks failed reminders with failure_reason', function (): void {
     $reminder = Reminder::factory()->create([
         'remindable_type' => 'event',
         'remindable_id' => 'event-1',

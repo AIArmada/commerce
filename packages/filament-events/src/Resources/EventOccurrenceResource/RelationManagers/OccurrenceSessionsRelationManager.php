@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers;
 
+use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -11,6 +12,7 @@ use Filament\Tables\Table;
 final class OccurrenceSessionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'sessions';
+
     protected static ?string $title = 'Sessions';
 
     public function table(Table $table): Table
@@ -28,6 +30,6 @@ final class OccurrenceSessionsRelationManager extends RelationManager
                     ->options(['scheduled' => 'Scheduled', 'completed' => 'Completed', 'cancelled' => 'Cancelled']),
             ])
             ->headerActions([])
-            ->actions([\Filament\Actions\ViewAction::make()]);
+            ->actions([ViewAction::make()]);
     }
 }

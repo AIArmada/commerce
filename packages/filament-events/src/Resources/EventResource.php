@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Models\Event;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\CodeEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -119,35 +122,35 @@ final class EventResource extends Resource
                 ExportAction::make()
                     ->exporter(EventExporter::class)
                     ->label('Export Events'),
-                \Filament\Actions\Action::make('publish')
+                Action::make('publish')
                     ->label('Publish')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->action(function (\AIArmada\Events\Models\Event $record) {
-                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->publish($record);
+                    ->action(function (Event $record): void {
+                        app(EventLifecycleWorkflow::class)->publish($record);
                     })
-                    ->visible(fn (\AIArmada\Events\Models\Event $record) => $record->status === \AIArmada\Events\Models\Event::DRAFT || $record->status === \AIArmada\Events\Models\Event::PENDING_REVIEW)
+                    ->visible(fn (Event $record) => $record->status === Event::DRAFT || $record->status === Event::PENDING_REVIEW)
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('archive')
+                Action::make('archive')
                     ->label('Archive')
                     ->icon('heroicon-o-archive-box')
                     ->color('warning')
-                    ->action(function (\AIArmada\Events\Models\Event $record) {
-                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->archive($record);
+                    ->action(function (Event $record): void {
+                        app(EventLifecycleWorkflow::class)->archive($record);
                     })
-                    ->visible(fn (\AIArmada\Events\Models\Event $record) => $record->status === \AIArmada\Events\Models\Event::PUBLISHED)
+                    ->visible(fn (Event $record) => $record->status === Event::PUBLISHED)
                     ->requiresConfirmation(),
-                \Filament\Actions\Action::make('cancel')
+                Action::make('cancel')
                     ->label('Cancel')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->form([
-                        \Filament\Forms\Components\Textarea::make('reason')->required(),
+                        Textarea::make('reason')->required(),
                     ])
-                    ->action(function (array $data, \AIArmada\Events\Models\Event $record) {
-                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
+                    ->action(function (array $data, Event $record): void {
+                        app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
                     })
-                    ->visible(fn (\AIArmada\Events\Models\Event $record) => !in_array($record->status, ['cancelled', 'completed', 'archived']))
+                    ->visible(fn (Event $record) => ! in_array($record->status, ['cancelled', 'completed', 'archived']))
                     ->requiresConfirmation(),
             ])
             ->actions([

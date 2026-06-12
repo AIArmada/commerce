@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Models;
 
 use AIArmada\Engagement\Database\Factories\ReminderFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,21 +20,21 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $recipient_id
  * @property string $reminder_type
  * @property string $status
- * @property \Carbon\CarbonImmutable|null $remind_at
+ * @property CarbonImmutable|null $remind_at
  * @property int|null $offset_minutes
  * @property string|null $anchor_type
  * @property string|null $anchor_code
  * @property string|null $channel
  * @property string|null $notification_class
- * @property \Carbon\CarbonImmutable|null $scheduled_at
- * @property \Carbon\CarbonImmutable|null $sent_at
- * @property \Carbon\CarbonImmutable|null $cancelled_at
- * @property \Carbon\CarbonImmutable|null $failed_at
- * @property \Carbon\CarbonImmutable|null $expires_at
+ * @property CarbonImmutable|null $scheduled_at
+ * @property CarbonImmutable|null $sent_at
+ * @property CarbonImmutable|null $cancelled_at
+ * @property CarbonImmutable|null $failed_at
+ * @property CarbonImmutable|null $expires_at
  * @property string|null $failure_reason
  * @property array|null $metadata
- * @property \Carbon\CarbonImmutable $created_at
- * @property \Carbon\CarbonImmutable $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  */
 final class Reminder extends Model
 {
@@ -41,10 +42,15 @@ final class Reminder extends Model
     use UsesEngagementUuid;
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_SCHEDULED = 'scheduled';
+
     public const STATUS_SENT = 'sent';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     public const STATUS_FAILED = 'failed';
+
     public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
@@ -91,7 +97,7 @@ final class Reminder extends Model
     }
 
     /**
-     * @param Builder<Reminder> $query
+     * @param  Builder<Reminder>  $query
      * @return Builder<Reminder>
      */
     public function scopePending(Builder $query): Builder
@@ -100,7 +106,7 @@ final class Reminder extends Model
     }
 
     /**
-     * @param Builder<Reminder> $query
+     * @param  Builder<Reminder>  $query
      * @return Builder<Reminder>
      */
     public function scopeForRecipient(Builder $query, Model $recipient): Builder
@@ -110,7 +116,7 @@ final class Reminder extends Model
     }
 
     /**
-     * @param Builder<Reminder> $query
+     * @param  Builder<Reminder>  $query
      * @return Builder<Reminder>
      */
     public function scopeForRemindable(Builder $query, Model $remindable): Builder
@@ -120,7 +126,7 @@ final class Reminder extends Model
     }
 
     /**
-     * @param Builder<Reminder> $query
+     * @param  Builder<Reminder>  $query
      * @return Builder<Reminder>
      */
     public function scopeReminderType(Builder $query, string $type): Builder
@@ -128,10 +134,25 @@ final class Reminder extends Model
         return $query->where('reminder_type', $type);
     }
 
-    public function isPending(): bool { return $this->status === self::STATUS_PENDING; }
-    public function isSent(): bool { return $this->status === self::STATUS_SENT; }
-    public function isFailed(): bool { return $this->status === self::STATUS_FAILED; }
-    public function isCancelled(): bool { return $this->status === self::STATUS_CANCELLED; }
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isSent(): bool
+    {
+        return $this->status === self::STATUS_SENT;
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === self::STATUS_FAILED;
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === self::STATUS_CANCELLED;
+    }
 
     /**
      * @return array<string, string>

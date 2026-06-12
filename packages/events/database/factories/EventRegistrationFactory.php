@@ -17,7 +17,7 @@ final class EventRegistrationFactory extends Factory
     public function definition(): array
     {
         return [
-            'registration_no' => 'REG-' . strtoupper($this->faker->bothify('??####')),
+            'registration_no' => 'REG-' . mb_strtoupper($this->faker->bothify('??####')),
             'registration_type' => 'individual',
             'status' => 'confirmed',
             'source' => 'website',

@@ -29,7 +29,7 @@ it('isolates event reads and writes by owner', function (): void {
         return Event::factory()->create();
     });
 
-    $ownerAEventIds = OwnerContext::withOwner($ownerA, function () use ($eventA): array {
+    $ownerAEventIds = OwnerContext::withOwner($ownerA, function (): array {
         return Event::query()->pluck('id')->all();
     });
 

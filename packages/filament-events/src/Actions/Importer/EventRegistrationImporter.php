@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\Events\Models\EventRegistration;
-use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
 
 final class EventRegistrationImporter extends Importer
 {
@@ -42,6 +42,6 @@ final class EventRegistrationImporter extends Importer
 
     public function resolveRecord(): ?EventRegistration
     {
-        return new EventRegistration();
+        return new EventRegistration;
     }
 }

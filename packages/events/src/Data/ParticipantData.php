@@ -14,15 +14,15 @@ final class ParticipantData extends Data
     public function __construct(
         public readonly string $id,
         public readonly string $name,
-        public readonly string|null|Optional $email,
-        public readonly string|null|Optional $phone,
-        public readonly string|null|Optional $relationship_to_registrant,
+        public readonly string | null | Optional $email,
+        public readonly string | null | Optional $phone,
+        public readonly string | null | Optional $relationship_to_registrant,
         public readonly bool $is_primary,
-        public readonly int|null|Optional $age,
-        public readonly string|null|Optional $gender,
+        public readonly int | null | Optional $age,
+        public readonly string | null | Optional $gender,
         public readonly string $status,
-        public readonly string|null|Optional $event_occurrence_id,
-        public readonly string|null|Optional $event_session_id,
+        public readonly string | null | Optional $event_occurrence_id,
+        public readonly string | null | Optional $event_session_id,
         public readonly CarbonImmutable $created_at,
     ) {}
 

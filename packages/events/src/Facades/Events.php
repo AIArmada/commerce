@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Facades;
 
+use AIArmada\Events\EventsServiceProvider;
 use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static \AIArmada\Events\Services\EventQueryService query()
  * @method static \AIArmada\Events\Services\RegistrationService registration()
  *
- * @see \AIArmada\Events\EventsServiceProvider
+ * @see EventsServiceProvider
  */
 final class Events extends Facade
 {

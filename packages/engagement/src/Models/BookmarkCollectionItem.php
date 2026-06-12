@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Models;
 
 use AIArmada\Engagement\Database\Factories\BookmarkCollectionItemFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,11 +17,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $bookmark_id
  * @property int $sort_order
  * @property string|null $notes
- * @property \Carbon\CarbonImmutable|null $added_at
- * @property \Carbon\CarbonImmutable|null $removed_at
+ * @property CarbonImmutable|null $added_at
+ * @property CarbonImmutable|null $removed_at
  * @property array|null $metadata
- * @property \Carbon\CarbonImmutable $created_at
- * @property \Carbon\CarbonImmutable $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read BookmarkCollection $collection
  * @property-read Bookmark $bookmark
  */

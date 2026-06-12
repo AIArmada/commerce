@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement;
 
+use AIArmada\Engagement\Console\Commands\MatchSubscriptionsCommand;
 use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
-use AIArmada\Engagement\Console\Commands\MatchSubscriptionsCommand;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
+use AIArmada\Engagement\Listeners\MatchSubscriptionsOnEventOccurrencePublished;
 use AIArmada\Engagement\Services\DefaultEngagementCounterService;
 use AIArmada\Engagement\Services\DefaultEngagementManager;
 use AIArmada\Engagement\Services\DefaultEngagementPolicyResolver;
@@ -19,6 +21,9 @@ use AIArmada\Engagement\Services\DefaultEngagementStateResolver;
 use AIArmada\Engagement\Services\DefaultReminderManager;
 use AIArmada\Engagement\Services\DefaultShareUrlGenerator;
 use AIArmada\Engagement\Services\DefaultSubscriptionManager;
+use AIArmada\Events\Contracts\EventEngagementManager;
+use AIArmada\Events\Events\EventPublished;
+use AIArmada\Events\EventsServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -39,7 +44,7 @@ final class EngagementServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        $this->app->singleton('engagement', fn ($app): \AIArmada\Engagement\Contracts\EngagementManager => $app->make(EngagementManager::class));
+        $this->app->singleton('engagement', fn ($app): EngagementManager => $app->make(EngagementManager::class));
 
         $this->app->bind(EngagementManager::class, DefaultEngagementManager::class);
         $this->app->bind(SubscriptionManager::class, DefaultSubscriptionManager::class);
@@ -55,32 +60,32 @@ final class EngagementServiceProvider extends PackageServiceProvider
 
     private function registerEventsIntegration(): void
     {
-        if (! class_exists(\AIArmada\Events\EventsServiceProvider::class)) {
+        if (! class_exists(EventsServiceProvider::class)) {
             return;
         }
 
-        if (! interface_exists(\AIArmada\Events\Contracts\EventEngagementManager::class)) {
+        if (! interface_exists(EventEngagementManager::class)) {
             return;
         }
 
         $this->app->bind(
-            \AIArmada\Events\Contracts\EventEngagementManager::class,
-            \AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager::class,
+            EventEngagementManager::class,
+            EngagementEventEngagementManager::class,
         );
     }
 
     private function registerEventListeners(): void
     {
-        if (! class_exists(\AIArmada\Events\EventsServiceProvider::class)) {
+        if (! class_exists(EventsServiceProvider::class)) {
             return;
         }
 
         $dispatcher = $this->app->make(Dispatcher::class);
 
-        if (class_exists(\AIArmada\Events\Events\EventPublished::class)) {
+        if (class_exists(EventPublished::class)) {
             $dispatcher->listen(
-                \AIArmada\Events\Events\EventPublished::class,
-                \AIArmada\Engagement\Listeners\MatchSubscriptionsOnEventOccurrencePublished::class,
+                EventPublished::class,
+                MatchSubscriptionsOnEventOccurrencePublished::class,
             );
         }
     }

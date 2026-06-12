@@ -10,7 +10,7 @@ use AIArmada\Events\Models\EventOccurrence;
 final class EventArchived
 {
     public function __construct(
-        public Event|EventOccurrence $target,
+        public Event | EventOccurrence $target,
         public ?string $reason = null,
     ) {}
 }

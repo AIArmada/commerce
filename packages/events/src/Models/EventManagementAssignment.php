@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventManagementAssignmentFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Eloquent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,8 +31,8 @@ use Illuminate\Support\Carbon;
  * @property-read Event|null $event
  * @property-read EventOccurrence|null $occurrence
  * @property-read EventSession|null $session
- * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $manageable
- * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $manager
+ * @property-read Model|Eloquent $manageable
+ * @property-read Model|Eloquent $manager
  */
 final class EventManagementAssignment extends Model
 {

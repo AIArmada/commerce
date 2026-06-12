@@ -1,16 +1,18 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\FilamentEvents\Widgets;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventAttendance;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Eloquent\Builder;
 
 final class EventStatsWidget extends StatsOverviewWidget
 {

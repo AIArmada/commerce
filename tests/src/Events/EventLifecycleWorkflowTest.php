@@ -6,11 +6,11 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->workflow = app(EventLifecycleWorkflow::class);
 });
 
-it('publishes event', function () {
+it('publishes event', function (): void {
     $event = Event::factory()->create();
 
     $this->workflow->publish($event);
@@ -18,7 +18,7 @@ it('publishes event', function () {
     expect($event->fresh()->status)->toBe(Event::PUBLISHED);
 });
 
-it('archives event', function () {
+it('archives event', function (): void {
     $event = Event::factory()->published()->create();
 
     $this->workflow->archive($event);
@@ -26,7 +26,7 @@ it('archives event', function () {
     expect($event->fresh()->status)->toBe('archived');
 });
 
-it('cancels occurrence', function () {
+it('cancels occurrence', function (): void {
     $event = Event::factory()->create();
     $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
@@ -35,7 +35,7 @@ it('cancels occurrence', function () {
     expect($occurrence->fresh()->status)->toBe('cancelled');
 });
 
-it('delays occurrence', function () {
+it('delays occurrence', function (): void {
     $event = Event::factory()->create();
     $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 

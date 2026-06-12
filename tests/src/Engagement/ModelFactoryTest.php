@@ -9,7 +9,7 @@ use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
 use AIArmada\Engagement\Models\Subscription;
 
-it('creates engagement models via factories', function () {
+it('creates engagement models via factories', function (): void {
     $follow = Follow::factory()->create([
         'follower_type' => 'user',
         'follower_id' => 'user-1',

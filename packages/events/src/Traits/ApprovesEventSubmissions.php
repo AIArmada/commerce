@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Traits;
 
-use Carbon\CarbonImmutable;
 use AIArmada\Events\Models\EventSubmission;
+use Carbon\CarbonImmutable;
 
 trait ApprovesEventSubmissions
 {

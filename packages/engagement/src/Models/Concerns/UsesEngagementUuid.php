@@ -14,7 +14,7 @@ trait UsesEngagementUuid
 
     protected static function bootUsesEngagementUuid(): void
     {
-        static::creating(function ($model) {
+        static::creating(function ($model): void {
             if (! $model->getKey()) {
                 $model->{$model->getKeyName()} = (string) Str::uuid();
             }

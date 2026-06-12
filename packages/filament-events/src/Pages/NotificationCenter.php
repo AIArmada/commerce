@@ -1,13 +1,15 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\FilamentEvents\Pages;
 
-use BackedEnum;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventNotificationDelivery;
+use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -19,14 +21,18 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
+use UnitEnum;
 
 final class NotificationCenter extends Page
 {
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-bell';
-    protected static string|\UnitEnum|null $navigationGroup = 'Events';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell';
+
+    protected static string | UnitEnum | null $navigationGroup = 'Events';
+
     protected static ?string $title = 'Notification Center';
+
     protected static ?string $slug = 'events/notifications';
 
     public function table(Table $table): Table
@@ -59,7 +65,7 @@ final class NotificationCenter extends Page
                     ->label('Send Now')
                     ->icon('heroicon-o-paper-airplane')
                     ->color('success')
-                    ->action(function (EventNotificationBatch $record) {
+                    ->action(function (EventNotificationBatch $record): void {
                         OwnerWriteGuard::findOrFailForOwner(Event::class, $record->event_id);
 
                         $record->update(['status' => 'sent', 'sent_at' => CarbonImmutable::now()]);
@@ -70,7 +76,7 @@ final class NotificationCenter extends Page
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(function (EventNotificationBatch $record) {
+                    ->action(function (EventNotificationBatch $record): void {
                         OwnerWriteGuard::findOrFailForOwner(Event::class, $record->event_id);
 
                         $record->update(['status' => 'cancelled', 'cancelled_at' => CarbonImmutable::now()]);
@@ -111,10 +117,10 @@ final class NotificationCenter extends Page
     protected function getHeaderActions(): array
     {
         return [
-                Action::make('createBatch')
-                    ->label('New Notification')
-                    ->icon('heroicon-o-plus')
-                    ->form([
+            Action::make('createBatch')
+                ->label('New Notification')
+                ->icon('heroicon-o-plus')
+                ->form([
                     Select::make('event_id')
                         ->label('Event')
                         ->relationship('event', 'title', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
@@ -125,7 +131,7 @@ final class NotificationCenter extends Page
                         ->options(['registrants' => 'Registrants', 'followers' => 'Followers', 'all' => 'All'])
                         ->required(),
                 ])
-                ->action(function (array $data) {
+                ->action(function (array $data): void {
                     OwnerWriteGuard::findOrFailForOwner(Event::class, $data['event_id']);
 
                     EventNotificationBatch::query()->create([

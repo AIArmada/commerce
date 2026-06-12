@@ -14,7 +14,7 @@ final class BookmarkAction
         return Action::make('bookmark')
             ->label('Bookmark')
             ->icon('heroicon-o-bookmark')
-            ->action(function ($livewire, $record) {
+            ->action(function ($livewire, $record): void {
                 app(EngagementManager::class)->bookmark(auth()->user(), $record);
             });
     }

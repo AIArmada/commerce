@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Models;
 
 use AIArmada\Engagement\Database\Factories\SubscriptionFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,14 +23,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array|null $criteria
  * @property string|null $notification_level
  * @property array|null $notification_preferences
- * @property \Carbon\CarbonImmutable|null $subscribed_at
- * @property \Carbon\CarbonImmutable|null $muted_at
- * @property \Carbon\CarbonImmutable|null $unsubscribed_at
- * @property \Carbon\CarbonImmutable|null $expires_at
+ * @property CarbonImmutable|null $subscribed_at
+ * @property CarbonImmutable|null $muted_at
+ * @property CarbonImmutable|null $unsubscribed_at
+ * @property CarbonImmutable|null $expires_at
  * @property string|null $source
  * @property array|null $metadata
- * @property \Carbon\CarbonImmutable $created_at
- * @property \Carbon\CarbonImmutable $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  */
 final class Subscription extends Model
 {
@@ -37,8 +38,11 @@ final class Subscription extends Model
     use UsesEngagementUuid;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_MUTED = 'muted';
+
     public const STATUS_UNSUBSCRIBED = 'unsubscribed';
+
     public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
@@ -81,7 +85,7 @@ final class Subscription extends Model
     }
 
     /**
-     * @param Builder<Subscription> $query
+     * @param  Builder<Subscription>  $query
      * @return Builder<Subscription>
      */
     public function scopeActive(Builder $query): Builder
@@ -90,7 +94,7 @@ final class Subscription extends Model
     }
 
     /**
-     * @param Builder<Subscription> $query
+     * @param  Builder<Subscription>  $query
      * @return Builder<Subscription>
      */
     public function scopeForSubscriber(Builder $query, Model $subscriber): Builder
@@ -100,7 +104,7 @@ final class Subscription extends Model
     }
 
     /**
-     * @param Builder<Subscription> $query
+     * @param  Builder<Subscription>  $query
      * @return Builder<Subscription>
      */
     public function scopeForSubscribable(Builder $query, Model $subscribable): Builder
@@ -110,7 +114,7 @@ final class Subscription extends Model
     }
 
     /**
-     * @param Builder<Subscription> $query
+     * @param  Builder<Subscription>  $query
      * @return Builder<Subscription>
      */
     public function scopeSubscriptionType(Builder $query, string $type): Builder
@@ -118,9 +122,20 @@ final class Subscription extends Model
         return $query->where('subscription_type', $type);
     }
 
-    public function isActive(): bool { return $this->status === self::STATUS_ACTIVE; }
-    public function isMuted(): bool { return $this->status === self::STATUS_MUTED; }
-    public function isUnsubscribed(): bool { return $this->status === self::STATUS_UNSUBSCRIBED; }
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isMuted(): bool
+    {
+        return $this->status === self::STATUS_MUTED;
+    }
+
+    public function isUnsubscribed(): bool
+    {
+        return $this->status === self::STATUS_UNSUBSCRIBED;
+    }
 
     protected static function newFactory(): SubscriptionFactory
     {

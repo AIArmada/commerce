@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Events\Actions\DispatchEventChangeChainAction;
 use AIArmada\Events\Models\Event;
 
-it('creates change log with update for cancellations', function () {
+it('creates change log with update for cancellations', function (): void {
     $event = Event::factory()->create();
 
     DispatchEventChangeChainAction::run(
@@ -21,7 +21,7 @@ it('creates change log with update for cancellations', function () {
     expect($event->fresh()->updates)->toHaveCount(1);
 });
 
-it('creates notification batch for critical changes', function () {
+it('creates notification batch for critical changes', function (): void {
     $event = Event::factory()->create();
 
     DispatchEventChangeChainAction::run(

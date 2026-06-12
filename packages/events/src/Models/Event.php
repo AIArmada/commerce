@@ -9,10 +9,11 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Database\Factories\EventFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
@@ -43,65 +44,84 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventOccurrence> $occurrences
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventSession> $sessions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLocation> $locations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventFacility> $facilities
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventInvolvement> $involvements
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAccessPolicy> $accessPolicies
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistration> $registrations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventTicketType> $ticketTypes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventPass> $passes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAttendance> $attendances
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventMaterial> $materials
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventReference> $references
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLink> $links
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventMedia> $media
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLanguage> $languages
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAudience> $audiences
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAudienceProfile> $audienceProfiles
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventEligibilityRule> $eligibilityRules
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventClassification> $classifications
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventTimeExpression> $timeExpressions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventItinerary> $itineraries
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventChangeLog> $changeLogs
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventUpdate> $updates
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventNotificationBatch> $notificationBatches
- * @property-read Model|\Eloquent $owner
- * @property-read Model|\Eloquent $createdBy
+ * @property-read Collection<int, EventOccurrence> $occurrences
+ * @property-read Collection<int, EventSession> $sessions
+ * @property-read Collection<int, EventLocation> $locations
+ * @property-read Collection<int, EventFacility> $facilities
+ * @property-read Collection<int, EventInvolvement> $involvements
+ * @property-read Collection<int, EventAccessPolicy> $accessPolicies
+ * @property-read Collection<int, EventRegistration> $registrations
+ * @property-read Collection<int, EventTicketType> $ticketTypes
+ * @property-read Collection<int, EventPass> $passes
+ * @property-read Collection<int, EventAttendance> $attendances
+ * @property-read Collection<int, EventMaterial> $materials
+ * @property-read Collection<int, EventReference> $references
+ * @property-read Collection<int, EventLink> $links
+ * @property-read Collection<int, EventMedia> $media
+ * @property-read Collection<int, EventLanguage> $languages
+ * @property-read Collection<int, EventAudience> $audiences
+ * @property-read Collection<int, EventAudienceProfile> $audienceProfiles
+ * @property-read Collection<int, EventEligibilityRule> $eligibilityRules
+ * @property-read Collection<int, EventClassification> $classifications
+ * @property-read Collection<int, EventTimeExpression> $timeExpressions
+ * @property-read Collection<int, EventItinerary> $itineraries
+ * @property-read Collection<int, EventChangeLog> $changeLogs
+ * @property-read Collection<int, EventUpdate> $updates
+ * @property-read Collection<int, EventNotificationBatch> $notificationBatches
+ * @property-read Model|Eloquent $owner
+ * @property-read Model|Eloquent $createdBy
  */
 final class Event extends Model
 {
+    use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
-    use HasFactory;
     use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
     public const DRAFT = 'draft';
+
     public const PENDING_REVIEW = 'pending_review';
+
     public const SCHEDULED = 'scheduled';
+
     public const PUBLISHED = 'published';
+
     public const DELAYED = 'delayed';
+
     public const POSTPONED = 'postponed';
+
     public const RESCHEDULED = 'rescheduled';
+
     public const CANCELLED = 'cancelled';
+
     public const COMPLETED = 'completed';
+
     public const ARCHIVED = 'archived';
+
     public const VOIDED = 'voided';
+
     public const EXPIRED = 'expired';
 
     public const PUBLIC = 'public';
+
     public const UNLISTED = 'unlisted';
+
     public const PRIVATE = 'private';
+
     public const REGISTERED_ONLY = 'registered_only';
+
     public const ATTENDEES_ONLY = 'attendees_only';
+
     public const MANAGERS_ONLY = 'managers_only';
+
     public const INTERNAL = 'internal';
 
     public const DELIVERY_PHYSICAL = 'physical';
+
     public const DELIVERY_ONLINE = 'online';
+
     public const DELIVERY_HYBRID = 'hybrid';
 
     protected $fillable = [
@@ -333,7 +353,7 @@ final class Event extends Model
     }
 
     /**
-     * @param Builder<static> $query
+     * @param  Builder<static>  $query
      * @return Builder<static>
      */
     public function scopePublished(Builder $query): Builder
@@ -342,7 +362,7 @@ final class Event extends Model
     }
 
     /**
-     * @param Builder<static> $query
+     * @param  Builder<static>  $query
      * @return Builder<static>
      */
     public function scopePublic(Builder $query): Builder

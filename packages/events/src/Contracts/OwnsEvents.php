@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+
 interface OwnsEvents
 {
-    /** @return \Illuminate\Database\Eloquent\Relations\MorphMany */
+    /** @return MorphMany */
     public function ownedEvents();
 
     public function defaultEventVisibility(): string;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
-use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
+use AIArmada\Events\Models\EventRegistration;
 
 final class PromoteWaitlistedRegistrationsAction
 {

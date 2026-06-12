@@ -11,10 +11,10 @@ final class RegisterInput extends Data
 {
     public function __construct(
         public readonly string $event_id,
-        public readonly string|null|Optional $event_occurrence_id,
-        public readonly string|null|Optional $event_session_id,
-        public readonly string|null|Optional $registrant_type,
-        public readonly string|null|Optional $registrant_id,
+        public readonly string | null | Optional $event_occurrence_id,
+        public readonly string | null | Optional $event_session_id,
+        public readonly string | null | Optional $registrant_type,
+        public readonly string | null | Optional $registrant_id,
         public readonly string $registration_type,
         public readonly string $source,
         /** @var array<ParticipantInput> */

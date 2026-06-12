@@ -21,12 +21,12 @@ trait HasBookmarks
     }
 
     /**
-     * @param Builder<Bookmark> $query
+     * @param  Builder<Bookmark>  $query
      * @return Builder<Bookmark>
      */
     public function scopeActiveBookmarks(Builder $query): Builder
     {
-        return $query->whereHas('bookmarks', function (Builder $q) {
+        return $query->whereHas('bookmarks', function (Builder $q): void {
             $q->active();
         });
     }

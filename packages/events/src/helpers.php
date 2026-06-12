@@ -24,6 +24,6 @@ if (! function_exists('event_registration_no')) {
         $prefix ??= config('events.codes.registration_prefix', 'REG');
         $length = (int) config('events.codes.registration_length', 10);
 
-        return $prefix . '-' . strtoupper(Str::random(max(6, $length)));
+        return $prefix . '-' . mb_strtoupper(Str::random(max(6, $length)));
     }
 }

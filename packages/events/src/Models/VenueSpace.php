@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\VenueSpaceFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,8 +36,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Venue $venue
- * @property-read \Illuminate\Database\Eloquent\Collection<int, VenueFacility> $facilities
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLocation> $eventLocations
+ * @property-read Collection<int, VenueFacility> $facilities
+ * @property-read Collection<int, EventLocation> $eventLocations
  */
 final class VenueSpace extends Model
 {

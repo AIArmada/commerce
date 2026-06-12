@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\FilamentEvents;
 
 use Spatie\LaravelPackageTools\Package;

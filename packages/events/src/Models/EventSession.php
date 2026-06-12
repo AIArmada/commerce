@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventSessionFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,21 +43,21 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Event $event
  * @property-read EventOccurrence|null $occurrence
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLocation> $locations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventFacility> $facilities
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventInvolvement> $involvements
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventMaterial> $materials
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventReference> $references
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLink> $links
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventMedia> $media
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLanguage> $languages
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAudience> $audiences
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventEligibilityRule> $eligibilityRules
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistration> $registrations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistrationParticipant> $participants
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAttendance> $attendances
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventChangeLog> $changeLogs
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventUpdate> $updates
+ * @property-read Collection<int, EventLocation> $locations
+ * @property-read Collection<int, EventFacility> $facilities
+ * @property-read Collection<int, EventInvolvement> $involvements
+ * @property-read Collection<int, EventMaterial> $materials
+ * @property-read Collection<int, EventReference> $references
+ * @property-read Collection<int, EventLink> $links
+ * @property-read Collection<int, EventMedia> $media
+ * @property-read Collection<int, EventLanguage> $languages
+ * @property-read Collection<int, EventAudience> $audiences
+ * @property-read Collection<int, EventEligibilityRule> $eligibilityRules
+ * @property-read Collection<int, EventRegistration> $registrations
+ * @property-read Collection<int, EventRegistrationParticipant> $participants
+ * @property-read Collection<int, EventAttendance> $attendances
+ * @property-read Collection<int, EventChangeLog> $changeLogs
+ * @property-read Collection<int, EventUpdate> $updates
  */
 final class EventSession extends Model
 {

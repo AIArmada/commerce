@@ -46,13 +46,27 @@ final class FilamentEngagementPlugin implements Plugin
         $resources = [];
         $enabled = config('filament-engagement.resources.enabled', []);
 
-        if ($enabled['follow'] ?? true) $resources[] = FollowResource::class;
-        if ($enabled['bookmark'] ?? true) $resources[] = BookmarkResource::class;
-        if ($enabled['collection'] ?? true) $resources[] = BookmarkCollectionResource::class;
-        if ($enabled['response'] ?? true) $resources[] = ResponseResource::class;
-        if ($enabled['reaction'] ?? true) $resources[] = ReactionResource::class;
-        if ($enabled['subscription'] ?? true) $resources[] = SubscriptionResource::class;
-        if ($enabled['reminder'] ?? true) $resources[] = ReminderResource::class;
+        if ($enabled['follow'] ?? true) {
+            $resources[] = FollowResource::class;
+        }
+        if ($enabled['bookmark'] ?? true) {
+            $resources[] = BookmarkResource::class;
+        }
+        if ($enabled['collection'] ?? true) {
+            $resources[] = BookmarkCollectionResource::class;
+        }
+        if ($enabled['response'] ?? true) {
+            $resources[] = ResponseResource::class;
+        }
+        if ($enabled['reaction'] ?? true) {
+            $resources[] = ReactionResource::class;
+        }
+        if ($enabled['subscription'] ?? true) {
+            $resources[] = SubscriptionResource::class;
+        }
+        if ($enabled['reminder'] ?? true) {
+            $resources[] = ReminderResource::class;
+        }
 
         return $resources;
     }

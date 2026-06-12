@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Events\Events\EventPublished;
@@ -11,15 +11,23 @@ use AIArmada\Events\Models\Event;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event as EventFacade;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->manager = app(SubscriptionManager::class);
-    $this->subscriber = new class {
-        public function getMorphClass(): string { return 'user'; }
-        public function getKey(): string { return 'user-1'; }
+    $this->subscriber = new class
+    {
+        public function getMorphClass(): string
+        {
+            return 'user';
+        }
+
+        public function getKey(): string
+        {
+            return 'user-1';
+        }
     };
 });
 
-it('matches subscriptions for published events', function () {
+it('matches subscriptions for published events', function (): void {
     EventFacade::fake([SubscriptionMatched::class]);
 
     $owner = User::query()->create([
@@ -48,12 +56,20 @@ it('matches subscriptions for published events', function () {
     });
 });
 
-it('does not match subscriptions with non-matching subject', function () {
+it('does not match subscriptions with non-matching subject', function (): void {
     $this->manager->subscribe($this->subscriber, $this->subscriber, 'updates');
 
-    $subject = new class {
-        public function getMorphClass(): string { return 'event_occurrence'; }
-        public function getKey(): string { return 'occ-1'; }
+    $subject = new class
+    {
+        public function getMorphClass(): string
+        {
+            return 'event_occurrence';
+        }
+
+        public function getKey(): string
+        {
+            return 'occ-1';
+        }
     };
 
     $matches = iterator_to_array(

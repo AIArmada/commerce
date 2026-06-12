@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Creates the engagement_responses table.
  * Part of the aiarmada/engagement package.
@@ -35,5 +36,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
 };

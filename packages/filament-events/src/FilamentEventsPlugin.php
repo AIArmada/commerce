@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\FilamentEvents;
 
 use Filament\Contracts\Plugin;
@@ -48,14 +50,30 @@ final class FilamentEventsPlugin implements Plugin
         $e = config('filament-events.resources.enabled', []);
         $r = [];
 
-        if ($e['event'] ?? true) $r[] = Resources\EventResource::class;
-        if ($e['occurrence'] ?? true) $r[] = Resources\EventOccurrenceResource::class;
-        if ($e['session'] ?? true) $r[] = Resources\EventSessionResource::class;
-        if ($e['venue'] ?? true) $r[] = Resources\VenueResource::class;
-        if ($e['registration'] ?? true) $r[] = Resources\EventRegistrationResource::class;
-        if ($e['ticket_type'] ?? true) $r[] = Resources\EventTicketTypeResource::class;
-        if ($e['attendance'] ?? true) $r[] = Resources\EventAttendanceResource::class;
-        if ($e['change_log'] ?? true) $r[] = Resources\EventChangeLogResource::class;
+        if ($e['event'] ?? true) {
+            $r[] = Resources\EventResource::class;
+        }
+        if ($e['occurrence'] ?? true) {
+            $r[] = Resources\EventOccurrenceResource::class;
+        }
+        if ($e['session'] ?? true) {
+            $r[] = Resources\EventSessionResource::class;
+        }
+        if ($e['venue'] ?? true) {
+            $r[] = Resources\VenueResource::class;
+        }
+        if ($e['registration'] ?? true) {
+            $r[] = Resources\EventRegistrationResource::class;
+        }
+        if ($e['ticket_type'] ?? true) {
+            $r[] = Resources\EventTicketTypeResource::class;
+        }
+        if ($e['attendance'] ?? true) {
+            $r[] = Resources\EventAttendanceResource::class;
+        }
+        if ($e['change_log'] ?? true) {
+            $r[] = Resources\EventChangeLogResource::class;
+        }
 
         return $r;
     }

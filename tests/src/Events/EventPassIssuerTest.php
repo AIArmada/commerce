@@ -7,7 +7,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventTicketType;
 
-it('issues passes for registration items', function () {
+it('issues passes for registration items', function (): void {
     $event = Event::factory()->create();
     $ticketType = EventTicketType::factory()->create([
         'event_id' => $event->id,

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Listeners;
 
-use AIArmada\Events\Events\EventPublished;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Events\Events\EventPublished;
 
 final class MatchSubscriptionsOnEventOccurrencePublished
 {

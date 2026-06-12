@@ -15,16 +15,16 @@ final class TicketTypeData extends Data
         public readonly string $id,
         public readonly string $name,
         public readonly string $code,
-        public readonly string|null|Optional $description,
+        public readonly string | null | Optional $description,
         public readonly string $access_type,
-        public readonly string|null|Optional $seating_mode,
+        public readonly string | null | Optional $seating_mode,
         public readonly int $price,
         public readonly string $currency,
-        public readonly int|null|Optional $quota,
+        public readonly int | null | Optional $quota,
         public readonly int $admits_quantity,
         public readonly string $status,
-        public readonly CarbonImmutable|null|Optional $sales_starts_at,
-        public readonly CarbonImmutable|null|Optional $sales_ends_at,
+        public readonly CarbonImmutable | null | Optional $sales_starts_at,
+        public readonly CarbonImmutable | null | Optional $sales_ends_at,
     ) {}
 
     public static function fromTicketType(EventTicketType $ticketType): self

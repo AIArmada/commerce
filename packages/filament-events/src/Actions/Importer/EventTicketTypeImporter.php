@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\Events\Models\EventTicketType;
-use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
 
 final class EventTicketTypeImporter extends Importer
 {
@@ -49,6 +49,6 @@ final class EventTicketTypeImporter extends Importer
 
     public function resolveRecord(): ?EventTicketType
     {
-        return new EventTicketType();
+        return new EventTicketType;
     }
 }

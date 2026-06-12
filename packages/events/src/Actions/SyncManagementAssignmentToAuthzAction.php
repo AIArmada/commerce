@@ -43,7 +43,7 @@ final class SyncManagementAssignmentToAuthzAction
         $this->assignManagerToScope($manager, $scopeId);
     }
 
-    private function assignManagerToScope(Model $manager, string|int $scopeId): void
+    private function assignManagerToScope(Model $manager, string | int $scopeId): void
     {
         $roleClass = 'Spatie\\Permission\\Models\\Role';
         $pivotTable = config('permission.table_names.model_has_roles', 'model_has_roles');

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Creates the engagement_bookmarks table.
  * Part of the aiarmada/engagement package.
@@ -33,5 +34,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
 };

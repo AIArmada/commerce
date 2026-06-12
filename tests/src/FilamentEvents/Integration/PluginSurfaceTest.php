@@ -14,18 +14,19 @@ use AIArmada\FilamentEvents\Pages\CheckInConsole;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
 use AIArmada\FilamentEvents\Pages\NotificationCenter;
 use AIArmada\FilamentEvents\Pages\SeatMapManager;
+use AIArmada\FilamentEvents\Resources\EventResource;
 use AIArmada\FilamentEvents\Widgets\EventStatsWidget;
 
 it('exposes the plugin resources, pages, and widgets', function (): void {
     $plugin = FilamentEventsPlugin::make();
 
-    $resources = (new \ReflectionMethod($plugin, 'getResources'))->invoke($plugin);
-    $pages = (new \ReflectionMethod($plugin, 'getPages'))->invoke($plugin);
-    $widgets = (new \ReflectionMethod($plugin, 'getWidgets'))->invoke($plugin);
+    $resources = (new ReflectionMethod($plugin, 'getResources'))->invoke($plugin);
+    $pages = (new ReflectionMethod($plugin, 'getPages'))->invoke($plugin);
+    $widgets = (new ReflectionMethod($plugin, 'getWidgets'))->invoke($plugin);
 
     expect($plugin->getId())->toBe('filament-events')
         ->and($resources)->toContain(
-            \AIArmada\FilamentEvents\Resources\EventResource::class,
+            EventResource::class,
         )
         ->and($pages)->toContain(
             CheckInConsole::class,

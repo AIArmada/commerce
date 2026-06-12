@@ -7,7 +7,8 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventRegistrationFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
+use Eloquent;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,12 +48,12 @@ use Illuminate\Support\Str;
  * @property Carbon|null $updated_at
  * @property-read Event $event
  * @property-read EventOccurrence|null $occurrence
- * @property-read Model|\Eloquent $registrant
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistrationParticipant> $participants
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistrationAnswer> $answers
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistrationItem> $items
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventPass> $passes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAttendance> $attendances
+ * @property-read Model|Eloquent $registrant
+ * @property-read Collection<int, EventRegistrationParticipant> $participants
+ * @property-read Collection<int, EventRegistrationAnswer> $answers
+ * @property-read Collection<int, EventRegistrationItem> $items
+ * @property-read Collection<int, EventPass> $passes
+ * @property-read Collection<int, EventAttendance> $attendances
  */
 final class EventRegistration extends Model
 {
@@ -83,7 +84,7 @@ final class EventRegistration extends Model
                 $prefix = (string) config('events.codes.registration_prefix', 'REG');
                 $length = max(6, (int) config('events.codes.registration_length', 10));
 
-                $registration->registration_no = $prefix . '-' . strtoupper(Str::random($length));
+                $registration->registration_no = $prefix . '-' . mb_strtoupper(Str::random($length));
             }
 
             if ($registration->registered_at === null) {

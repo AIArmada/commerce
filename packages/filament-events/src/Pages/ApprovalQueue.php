@@ -1,13 +1,15 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\FilamentEvents\Pages;
 
-use BackedEnum;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventSubmission;
 use AIArmada\Events\Models\EventApprovalRequest;
+use AIArmada\Events\Models\EventSubmission;
+use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -21,14 +23,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use RuntimeException;
+use UnitEnum;
 
 final class ApprovalQueue extends Page
 {
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';
-    protected static string|\UnitEnum|null $navigationGroup = 'Events';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-check-badge';
+
+    protected static string | UnitEnum | null $navigationGroup = 'Events';
+
     protected static ?string $title = 'Approval Queue';
+
     protected static ?string $slug = 'events/approvals';
 
     public function table(Table $table): Table
@@ -61,7 +67,7 @@ final class ApprovalQueue extends Page
                 SelectFilter::make('status')
                     ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected']),
                 SelectFilter::make('approvable_type')
-                    ->options([(new EventSubmission())->getMorphClass() => 'Event Submission']),
+                    ->options([(new EventSubmission)->getMorphClass() => 'Event Submission']),
             ])
             ->actions([
                 Action::make('approve')
@@ -71,7 +77,7 @@ final class ApprovalQueue extends Page
                     ->form([
                         Textarea::make('notes')->label('Approval Notes'),
                     ])
-                    ->action(function (array $data, EventApprovalRequest $record) {
+                    ->action(function (array $data, EventApprovalRequest $record): void {
                         $this->resolveSubmission($record);
 
                         $record->update([
@@ -89,7 +95,7 @@ final class ApprovalQueue extends Page
                         Textarea::make('reason')->label('Rejection Reason')->required(),
                         Textarea::make('notes')->label('Internal Notes'),
                     ])
-                    ->action(function (array $data, EventApprovalRequest $record) {
+                    ->action(function (array $data, EventApprovalRequest $record): void {
                         $this->resolveSubmission($record);
 
                         $record->update([
@@ -104,7 +110,7 @@ final class ApprovalQueue extends Page
                     ->label('Assign to Me')
                     ->icon('heroicon-o-user')
                     ->color('info')
-                    ->action(function (EventApprovalRequest $record) {
+                    ->action(function (EventApprovalRequest $record): void {
                         $this->resolveSubmission($record);
 
                         $user = Auth::user();

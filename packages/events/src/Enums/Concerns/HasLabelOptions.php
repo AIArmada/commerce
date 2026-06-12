@@ -12,6 +12,7 @@ trait HasLabelOptions
         foreach (static::cases() as $case) {
             $options[(string) $case->value] = $case->label();
         }
+
         return $options;
     }
 }

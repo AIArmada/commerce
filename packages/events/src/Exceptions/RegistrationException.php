@@ -6,6 +6,4 @@ namespace AIArmada\Events\Exceptions;
 
 use RuntimeException;
 
-class RegistrationException extends RuntimeException
-{
-}
+class RegistrationException extends RuntimeException {}

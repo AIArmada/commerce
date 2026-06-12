@@ -17,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+
 final class VenueResource extends Resource
 {
     protected static ?string $model = Venue::class;

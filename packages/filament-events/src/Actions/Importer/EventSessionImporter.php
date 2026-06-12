@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\Events\Models\EventSession;
-use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
 
 final class EventSessionImporter extends Importer
 {
@@ -50,6 +50,6 @@ final class EventSessionImporter extends Importer
 
     public function resolveRecord(): ?EventSession
     {
-        return new EventSession();
+        return new EventSession;
     }
 }

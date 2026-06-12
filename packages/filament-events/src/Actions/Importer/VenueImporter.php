@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Actions\Importer;
 
 use AIArmada\Events\Models\Venue;
-use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\ImportColumn;
+use Filament\Actions\Imports\Importer;
 
 final class VenueImporter extends Importer
 {
@@ -43,6 +43,6 @@ final class VenueImporter extends Importer
 
     public function resolveRecord(): ?Venue
     {
-        return new Venue();
+        return new Venue;
     }
 }

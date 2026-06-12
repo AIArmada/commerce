@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Services;
 
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
+use AIArmada\Engagement\Contracts\Reactable;
+use AIArmada\Engagement\Contracts\Respondable;
 
 final class DefaultEngagementPolicyResolver implements EngagementPolicyResolver
 {
@@ -20,7 +22,7 @@ final class DefaultEngagementPolicyResolver implements EngagementPolicyResolver
 
     public function canRespond(mixed $actor, mixed $subject, string $responseType): bool
     {
-        if ($subject instanceof \AIArmada\Engagement\Contracts\Respondable) {
+        if ($subject instanceof Respondable) {
             return in_array($responseType, $subject->allowedResponseTypes(), true);
         }
 
@@ -29,7 +31,7 @@ final class DefaultEngagementPolicyResolver implements EngagementPolicyResolver
 
     public function canReact(mixed $actor, mixed $subject, string $reactionType): bool
     {
-        if ($subject instanceof \AIArmada\Engagement\Contracts\Reactable) {
+        if ($subject instanceof Reactable) {
             return in_array($reactionType, $subject->allowedReactionTypes(), true);
         }
 

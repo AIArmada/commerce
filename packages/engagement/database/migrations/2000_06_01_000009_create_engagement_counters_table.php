@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Creates the engagement_interaction_counters table.
  * Part of the aiarmada/engagement package.
@@ -27,5 +28,4 @@ return new class extends Migration
             $table->timestampsTz();
         });
     }
-
 };

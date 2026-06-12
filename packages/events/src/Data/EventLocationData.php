@@ -13,17 +13,17 @@ final class EventLocationData extends Data
     public function __construct(
         public readonly string $id,
         public readonly string $location_role,
-        public readonly string|null|Optional $label,
-        public readonly string|null|Optional $address_line_1,
-        public readonly string|null|Optional $city,
-        public readonly string|null|Optional $state,
-        public readonly string|null|Optional $country,
-        public readonly float|null|Optional $latitude,
-        public readonly float|null|Optional $longitude,
-        public readonly string|null|Optional $google_maps_url,
-        public readonly string|null|Optional $waze_url,
-        public readonly string|null|Optional $directions,
-        public readonly VenueData|null|Optional $venue,
+        public readonly string | null | Optional $label,
+        public readonly string | null | Optional $address_line_1,
+        public readonly string | null | Optional $city,
+        public readonly string | null | Optional $state,
+        public readonly string | null | Optional $country,
+        public readonly float | null | Optional $latitude,
+        public readonly float | null | Optional $longitude,
+        public readonly string | null | Optional $google_maps_url,
+        public readonly string | null | Optional $waze_url,
+        public readonly string | null | Optional $directions,
+        public readonly VenueData | null | Optional $venue,
     ) {}
 
     public static function fromEventLocation(EventLocation $location): self

@@ -14,17 +14,17 @@ final class EventOccurrenceData extends Data
     public function __construct(
         public readonly string $id,
         public readonly string $event_id,
-        public readonly string|null|Optional $title,
+        public readonly string | null | Optional $title,
         public readonly CarbonImmutable $starts_at,
         public readonly CarbonImmutable $ends_at,
         public readonly string $timezone,
         public readonly string $status,
         public readonly string $visibility,
         public readonly string $delivery_mode,
-        public readonly int|null|Optional $capacity,
-        public readonly CarbonImmutable|null|Optional $published_at,
-        public readonly CarbonImmutable|null|Optional $cancelled_at,
-        public readonly int|null|Optional $registration_count,
+        public readonly int | null | Optional $capacity,
+        public readonly CarbonImmutable | null | Optional $published_at,
+        public readonly CarbonImmutable | null | Optional $cancelled_at,
+        public readonly int | null | Optional $registration_count,
         /** @var array<EventSessionData> */
         public readonly array $sessions,
         /** @var array<EventLocationData> */

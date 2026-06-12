@@ -8,6 +8,8 @@ use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Database\Factories\EventOccurrenceFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,30 +43,30 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Event $event
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventSession> $sessions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLocation> $locations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventFacility> $facilities
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventInvolvement> $involvements
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAccessPolicy> $accessPolicies
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistration> $registrations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistrationParticipant> $participants
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventTicketType> $ticketTypes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventPass> $passes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAttendance> $attendances
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventMaterial> $materials
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventReference> $references
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLink> $links
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventMedia> $media
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLanguage> $languages
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAudience> $audiences
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAudienceProfile> $audienceProfiles
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventEligibilityRule> $eligibilityRules
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventClassification> $classifications
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventTimeExpression> $timeExpressions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventItinerary> $itineraries
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventChangeLog> $changeLogs
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventUpdate> $updates
- * @property-read \Illuminate\Database\Eloquent\Collection<int, EventNotificationBatch> $notificationBatches
+ * @property-read Collection<int, EventSession> $sessions
+ * @property-read Collection<int, EventLocation> $locations
+ * @property-read Collection<int, EventFacility> $facilities
+ * @property-read Collection<int, EventInvolvement> $involvements
+ * @property-read Collection<int, EventAccessPolicy> $accessPolicies
+ * @property-read Collection<int, EventRegistration> $registrations
+ * @property-read Collection<int, EventRegistrationParticipant> $participants
+ * @property-read Collection<int, EventTicketType> $ticketTypes
+ * @property-read Collection<int, EventPass> $passes
+ * @property-read Collection<int, EventAttendance> $attendances
+ * @property-read Collection<int, EventMaterial> $materials
+ * @property-read Collection<int, EventReference> $references
+ * @property-read Collection<int, EventLink> $links
+ * @property-read Collection<int, EventMedia> $media
+ * @property-read Collection<int, EventLanguage> $languages
+ * @property-read Collection<int, EventAudience> $audiences
+ * @property-read Collection<int, EventAudienceProfile> $audienceProfiles
+ * @property-read Collection<int, EventEligibilityRule> $eligibilityRules
+ * @property-read Collection<int, EventClassification> $classifications
+ * @property-read Collection<int, EventTimeExpression> $timeExpressions
+ * @property-read Collection<int, EventItinerary> $itineraries
+ * @property-read Collection<int, EventChangeLog> $changeLogs
+ * @property-read Collection<int, EventUpdate> $updates
+ * @property-read Collection<int, EventNotificationBatch> $notificationBatches
  * @property-read EventOccurrence|null $rescheduledFromOccurrence
  * @property-read EventOccurrence|null $rescheduledToOccurrence
  */
@@ -74,13 +76,21 @@ final class EventOccurrence extends Model
     use UsesEventUuid;
 
     public const DRAFT = 'draft';
+
     public const SCHEDULED = 'scheduled';
+
     public const PUBLISHED = 'published';
+
     public const DELAYED = 'delayed';
+
     public const POSTPONED = 'postponed';
+
     public const RESCHEDULED = 'rescheduled';
+
     public const CANCELLED = 'cancelled';
+
     public const COMPLETED = 'completed';
+
     public const ARCHIVED = 'archived';
 
     protected $fillable = [
@@ -333,7 +343,7 @@ final class EventOccurrence extends Model
         return $this->belongsTo(self::class, 'rescheduled_to_occurrence_id');
     }
 
-    public function delay(?string $reason = null, ?\DateTimeInterface $expectedStartsAt = null): void
+    public function delay(?string $reason = null, ?DateTimeInterface $expectedStartsAt = null): void
     {
         app(EventLifecycleWorkflow::class)->delay($this, $reason, $expectedStartsAt);
     }

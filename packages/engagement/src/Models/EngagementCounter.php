@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Models;
 
 use AIArmada\Engagement\Database\Factories\EngagementCounterFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -17,10 +18,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $counter_type
  * @property string $counter_key
  * @property int $count_value
- * @property \Carbon\CarbonImmutable|null $recalculated_at
+ * @property CarbonImmutable|null $recalculated_at
  * @property array|null $metadata
- * @property \Carbon\CarbonImmutable $created_at
- * @property \Carbon\CarbonImmutable $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  */
 final class EngagementCounter extends Model
 {

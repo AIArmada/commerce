@@ -16,7 +16,7 @@ final class UnfollowAction
             ->icon('heroicon-o-heart-slash')
             ->color('danger')
             ->requiresConfirmation()
-            ->action(function ($livewire, $record) {
+            ->action(function ($livewire, $record): void {
                 app(EngagementManager::class)->unfollow(auth()->user(), $record);
             });
     }

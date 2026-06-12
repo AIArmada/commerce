@@ -175,7 +175,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
     }
 
     /**
-     * @param array<string|int, mixed> $data
+     * @param  array<string|int, mixed>  $data
      * @return array<string|int, mixed>
      */
     private function normalizeCriteria(array $data): array
@@ -199,8 +199,8 @@ final class DefaultSubscriptionManager implements SubscriptionManager
     }
 
     /**
-     * @param array<string|int, mixed> $criteria
-     * @param array<string|int, mixed> $context
+     * @param  array<string|int, mixed>  $criteria
+     * @param  array<string|int, mixed>  $context
      */
     private function criteriaMatches(array $criteria, array $context): bool
     {
@@ -228,7 +228,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
     }
 
     /**
-     * @param array<string|int, mixed> $data
+     * @param  array<string|int, mixed>  $data
      */
     private function isAssociativeArray(array $data): bool
     {

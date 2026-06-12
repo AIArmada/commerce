@@ -14,7 +14,7 @@ final class SubscribeAction
         return Action::make('subscribe')
             ->label('Subscribe')
             ->icon('heroicon-o-bell')
-            ->action(function ($livewire, $record) {
+            ->action(function ($livewire, $record): void {
                 app(SubscriptionManager::class)->subscribe(auth()->user(), $record);
             });
     }

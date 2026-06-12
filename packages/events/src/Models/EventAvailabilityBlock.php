@@ -7,6 +7,7 @@ namespace AIArmada\Events\Models;
 use AIArmada\Events\Database\Factories\EventAvailabilityBlockFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
+use Eloquent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,7 +37,7 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Model|\Eloquent $blockable
+ * @property-read Model|Eloquent $blockable
  * @property-read Event|null $event
  * @property-read EventOccurrence|null $occurrence
  * @property-read EventSession|null $session

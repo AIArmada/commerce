@@ -11,6 +11,7 @@ use Filament\Tables\Table;
 final class SubscriptionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'subscriptions';
+
     protected static ?string $title = 'Subscriptions';
 
     public function table(Table $table): Table

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Models\Venue;
 
-it('creates all core models via factories', function () {
+it('creates all core models via factories', function (): void {
     $event = Event::factory()->create();
     expect($event->exists)->toBeTrue();
 

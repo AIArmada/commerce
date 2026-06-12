@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\File;
-
-it('has no soft deletes in engagement migrations', function () {
+it('has no soft deletes in engagement migrations', function (): void {
     $dir = __DIR__ . '/../../../packages/engagement/database/migrations/';
     $files = glob($dir . '*.php');
     expect($files)->not->toBeEmpty();
@@ -15,11 +13,11 @@ it('has no soft deletes in engagement migrations', function () {
         expect($content)->not->toContain('softDeletes')
             ->and($content)->not->toContain('softDeletesTz')
             ->and($content)->not->toContain("foreign('")
-            ->and($content)->not->toContain("constrained(");
+            ->and($content)->not->toContain('constrained(');
     }
 });
 
-it('has uuid primary keys in all engagement migrations', function () {
+it('has uuid primary keys in all engagement migrations', function (): void {
     $dir = __DIR__ . '/../../../packages/engagement/database/migrations/';
     $files = glob($dir . '*.php');
     expect($files)->not->toBeEmpty();

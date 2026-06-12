@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Console\Commands;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Support\OwnerScope;
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use InvalidArgumentException;
 
 final class MatchSubscriptionsCommand extends Command
 {

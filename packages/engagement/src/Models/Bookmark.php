@@ -6,10 +6,12 @@ namespace AIArmada\Engagement\Models;
 
 use AIArmada\Engagement\Database\Factories\BookmarkFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -20,13 +22,13 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $bookmarkable_id
  * @property string $status
  * @property string|null $notes
- * @property \Carbon\CarbonImmutable|null $bookmarked_at
- * @property \Carbon\CarbonImmutable|null $removed_at
- * @property \Carbon\CarbonImmutable|null $archived_at
+ * @property CarbonImmutable|null $bookmarked_at
+ * @property CarbonImmutable|null $removed_at
+ * @property CarbonImmutable|null $archived_at
  * @property string|null $source
  * @property array|null $metadata
- * @property \Carbon\CarbonImmutable $created_at
- * @property \Carbon\CarbonImmutable $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  * @property-read Collection<int, BookmarkCollectionItem> $collectionItems
  */
 final class Bookmark extends Model
@@ -35,7 +37,9 @@ final class Bookmark extends Model
     use UsesEngagementUuid;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_REMOVED = 'removed';
+
     public const STATUS_ARCHIVED = 'archived';
 
     protected $fillable = [
@@ -74,15 +78,15 @@ final class Bookmark extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<BookmarkCollectionItem, $this>
+     * @return HasMany<BookmarkCollectionItem, $this>
      */
-    public function collectionItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function collectionItems(): HasMany
     {
         return $this->hasMany(BookmarkCollectionItem::class);
     }
 
     /**
-     * @param Builder<Bookmark> $query
+     * @param  Builder<Bookmark>  $query
      * @return Builder<Bookmark>
      */
     public function scopeActive(Builder $query): Builder
@@ -91,7 +95,7 @@ final class Bookmark extends Model
     }
 
     /**
-     * @param Builder<Bookmark> $query
+     * @param  Builder<Bookmark>  $query
      * @return Builder<Bookmark>
      */
     public function scopeRemoved(Builder $query): Builder
@@ -100,7 +104,7 @@ final class Bookmark extends Model
     }
 
     /**
-     * @param Builder<Bookmark> $query
+     * @param  Builder<Bookmark>  $query
      * @return Builder<Bookmark>
      */
     public function scopeArchived(Builder $query): Builder
@@ -109,7 +113,7 @@ final class Bookmark extends Model
     }
 
     /**
-     * @param Builder<Bookmark> $query
+     * @param  Builder<Bookmark>  $query
      * @return Builder<Bookmark>
      */
     public function scopeForBookmarker(Builder $query, Model $bookmarker): Builder
@@ -119,7 +123,7 @@ final class Bookmark extends Model
     }
 
     /**
-     * @param Builder<Bookmark> $query
+     * @param  Builder<Bookmark>  $query
      * @return Builder<Bookmark>
      */
     public function scopeForBookmarkable(Builder $query, Model $bookmarkable): Builder
@@ -128,9 +132,20 @@ final class Bookmark extends Model
             ->where('bookmarkable_id', $bookmarkable->getKey());
     }
 
-    public function isActive(): bool { return $this->status === self::STATUS_ACTIVE; }
-    public function isRemoved(): bool { return $this->status === self::STATUS_REMOVED; }
-    public function isArchived(): bool { return $this->status === self::STATUS_ARCHIVED; }
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isRemoved(): bool
+    {
+        return $this->status === self::STATUS_REMOVED;
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->status === self::STATUS_ARCHIVED;
+    }
 
     protected static function newFactory(): BookmarkFactory
     {

@@ -8,7 +8,7 @@ final class EventContentNormalizer
 {
     public function normalizeTitle(string $title): string
     {
-        return trim(preg_replace('/\s+/', ' ', $title) ?? $title);
+        return mb_trim(preg_replace('/\s+/', ' ', $title) ?? $title);
     }
 
     public function normalizeSummary(?string $summary): ?string
@@ -17,7 +17,7 @@ final class EventContentNormalizer
             return null;
         }
 
-        return trim(strip_tags($summary));
+        return mb_trim(strip_tags($summary));
     }
 
     public function normalizeDescription(?string $description): ?string
@@ -26,11 +26,11 @@ final class EventContentNormalizer
             return null;
         }
 
-        return trim($description);
+        return mb_trim($description);
     }
 
     /**
-     * @param array<string, mixed> $content
+     * @param  array<string, mixed>  $content
      * @return array<string, mixed>
      */
     public function normalize(array $content): array

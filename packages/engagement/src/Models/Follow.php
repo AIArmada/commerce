@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Models;
 
 use AIArmada\Engagement\Database\Factories\FollowFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,14 +21,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $status
  * @property string|null $notification_level
  * @property array|null $notification_preferences
- * @property \Carbon\CarbonImmutable|null $followed_at
- * @property \Carbon\CarbonImmutable|null $muted_at
- * @property \Carbon\CarbonImmutable|null $unfollowed_at
- * @property \Carbon\CarbonImmutable|null $blocked_at
+ * @property CarbonImmutable|null $followed_at
+ * @property CarbonImmutable|null $muted_at
+ * @property CarbonImmutable|null $unfollowed_at
+ * @property CarbonImmutable|null $blocked_at
  * @property string|null $source
  * @property array|null $metadata
- * @property \Carbon\CarbonImmutable $created_at
- * @property \Carbon\CarbonImmutable $updated_at
+ * @property CarbonImmutable $created_at
+ * @property CarbonImmutable $updated_at
  */
 final class Follow extends Model
 {
@@ -35,8 +36,11 @@ final class Follow extends Model
     use UsesEngagementUuid;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_MUTED = 'muted';
+
     public const STATUS_UNFOLLOWED = 'unfollowed';
+
     public const STATUS_BLOCKED = 'blocked';
 
     protected $fillable = [
@@ -77,7 +81,7 @@ final class Follow extends Model
     }
 
     /**
-     * @param Builder<Follow> $query
+     * @param  Builder<Follow>  $query
      * @return Builder<Follow>
      */
     public function scopeActive(Builder $query): Builder
@@ -86,7 +90,7 @@ final class Follow extends Model
     }
 
     /**
-     * @param Builder<Follow> $query
+     * @param  Builder<Follow>  $query
      * @return Builder<Follow>
      */
     public function scopeMuted(Builder $query): Builder
@@ -95,7 +99,7 @@ final class Follow extends Model
     }
 
     /**
-     * @param Builder<Follow> $query
+     * @param  Builder<Follow>  $query
      * @return Builder<Follow>
      */
     public function scopeUnfollowed(Builder $query): Builder
@@ -104,7 +108,7 @@ final class Follow extends Model
     }
 
     /**
-     * @param Builder<Follow> $query
+     * @param  Builder<Follow>  $query
      * @return Builder<Follow>
      */
     public function scopeForFollower(Builder $query, Model $follower): Builder
@@ -114,7 +118,7 @@ final class Follow extends Model
     }
 
     /**
-     * @param Builder<Follow> $query
+     * @param  Builder<Follow>  $query
      * @return Builder<Follow>
      */
     public function scopeForFollowable(Builder $query, Model $followable): Builder
@@ -124,7 +128,7 @@ final class Follow extends Model
     }
 
     /**
-     * @param Builder<Follow> $query
+     * @param  Builder<Follow>  $query
      * @return Builder<Follow>
      */
     public function scopeNotificationLevel(Builder $query, string $level): Builder
@@ -132,9 +136,20 @@ final class Follow extends Model
         return $query->where('notification_level', $level);
     }
 
-    public function isActive(): bool { return $this->status === self::STATUS_ACTIVE; }
-    public function isMuted(): bool { return $this->status === self::STATUS_MUTED; }
-    public function isUnfollowed(): bool { return $this->status === self::STATUS_UNFOLLOWED; }
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isMuted(): bool
+    {
+        return $this->status === self::STATUS_MUTED;
+    }
+
+    public function isUnfollowed(): bool
+    {
+        return $this->status === self::STATUS_UNFOLLOWED;
+    }
 
     protected static function newFactory(): FollowFactory
     {

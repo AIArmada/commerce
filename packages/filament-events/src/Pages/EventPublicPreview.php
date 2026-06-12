@@ -1,24 +1,32 @@
 <?php
+
 declare(strict_types=1);
+
 namespace AIArmada\FilamentEvents\Pages;
 
-use BackedEnum;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Models\Event;
-use Filament\Pages\Page;
+use BackedEnum;
 use Filament\Infolists;
+use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use UnitEnum;
 
 final class EventPublicPreview extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-eye';
-    protected static string|\UnitEnum|null $navigationGroup = 'Events';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-eye';
+
+    protected static string | UnitEnum | null $navigationGroup = 'Events';
+
     protected static ?string $title = 'Public Preview';
+
     protected static ?string $slug = 'events/public-preview';
+
     protected static bool $shouldRegisterNavigation = false;
 
     public ?string $eventId = null;
+
     public ?Event $event = null;
 
     public function mount(?string $event = null): void

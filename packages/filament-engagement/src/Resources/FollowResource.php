@@ -6,22 +6,25 @@ namespace AIArmada\FilamentEngagement\Resources;
 
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Models\Follow;
-use Filament\Forms;
+use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Infolists;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class FollowResource extends Resource
 {
     protected static ?string $model = Follow::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-heart';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-heart';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Engagement';
+    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
 
     protected static ?int $navigationSort = 1;
 
@@ -73,23 +76,23 @@ final class FollowResource extends Resource
                     ->label('Followable Type'),
             ])
             ->actions([
-                \Filament\Actions\Action::make('mute')
+                Action::make('mute')
                     ->action(fn (Follow $record) => $record->update(['status' => 'muted']))
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isActive()),
-                \Filament\Actions\Action::make('unmute')
+                Action::make('unmute')
                     ->action(fn (Follow $record) => $record->update(['status' => 'active']))
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isMuted()),
-                \Filament\Actions\Action::make('unfollow')
+                Action::make('unfollow')
                     ->action(fn (Follow $record) => $record->update(['status' => 'unfollowed']))
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isActive()),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkAction::make('mute')
+                BulkAction::make('mute')
                     ->action(fn ($records) => $records->each->update(['status' => 'muted'])),
-                \Filament\Actions\BulkAction::make('unfollow')
+                BulkAction::make('unfollow')
                     ->action(fn ($records) => $records->each->update(['status' => 'unfollowed'])),
             ])
             ->defaultSort('followed_at', 'desc');
