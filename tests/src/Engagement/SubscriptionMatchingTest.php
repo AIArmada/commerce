@@ -79,9 +79,7 @@ it('does not match subscriptions with non-matching subject', function (): void {
     expect($matches)->toBeEmpty();
 });
 
-it('matches subscriptions through the console command using the resolved owner context', function (): void {
-    EventFacade::fake([SubscriptionMatched::class]);
-
+it('matches subscriptions through the console command', function (): void {
     $owner = User::query()->create([
         'name' => 'Subscription Command Owner',
         'email' => 'subscription-command-owner-' . uniqid() . '@example.com',
@@ -99,6 +97,8 @@ it('matches subscriptions through the console command using the resolved owner c
         'visibility' => 'public',
         'delivery_mode' => 'online',
     ]);
+
+    EventFacade::fake([SubscriptionMatched::class]);
 
     expect(Artisan::call('engagement:match-subscriptions', [
         'subjectType' => Event::class,
