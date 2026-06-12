@@ -7,7 +7,7 @@ use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
 
-test('NormalizesEmailAddress normalizes email', function () {
+test('NormalizesEmailAddress normalizes email', function (): void {
     $normalizer = new NormalizesEmailAddress;
 
     expect($normalizer->normalize('  User@Example.COM  '))->toBe('user@example.com');
@@ -17,7 +17,7 @@ test('NormalizesEmailAddress normalizes email', function () {
     expect($normalizer->normalize('not-an-email'))->toBeNull();
 });
 
-test('NormalizesPhoneNumber normalizes MY phone', function () {
+test('NormalizesPhoneNumber normalizes MY phone', function (): void {
     $normalizer = new NormalizesPhoneNumber;
 
     $result = $normalizer->normalize('+60123456789');
@@ -33,7 +33,7 @@ test('NormalizesPhoneNumber normalizes MY phone', function () {
     expect($result['display'])->toBeNull();
 });
 
-test('NormalizesUrl normalizes URLs', function () {
+test('NormalizesUrl normalizes URLs', function (): void {
     $normalizer = new NormalizesUrl;
 
     expect($normalizer->normalize('example.com'))->toBe('https://example.com');
@@ -43,7 +43,7 @@ test('NormalizesUrl normalizes URLs', function () {
     expect($normalizer->normalize('ftp://example.com'))->toBeNull();
 });
 
-test('NormalizesSocialHandle normalizes handles', function () {
+test('NormalizesSocialHandle normalizes handles', function (): void {
     $normalizer = new NormalizesSocialHandle;
 
     expect($normalizer->normalize('@username'))->toBe('username');

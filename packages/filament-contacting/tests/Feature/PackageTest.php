@@ -27,7 +27,7 @@ use AIArmada\FilamentContacting\Tables\ContactMethodTable;
 use AIArmada\FilamentContacting\Tables\ContactSnapshotTable;
 use AIArmada\FilamentContacting\Tables\SocialProfileTable;
 
-test('config default values are correct', function () {
+test('config default values are correct', function (): void {
     $config = require __DIR__ . '/../../config/filament-contacting.php';
 
     expect($config['features']['standalone_resources'])->toBeFalse();
@@ -43,19 +43,19 @@ test('config default values are correct', function () {
     expect($config['resources']['contact_snapshots']['read_only'])->toBeTrue();
 });
 
-test('navigation config has required keys', function () {
+test('navigation config has required keys', function (): void {
     $config = require __DIR__ . '/../../config/filament-contacting.php';
     expect($config['navigation']['group'])->toBe('Contacting');
     expect($config['navigation']['icons']['contact_methods'])->toBe('heroicon-o-phone');
 });
 
-test('table config has required keys', function () {
+test('table config has required keys', function (): void {
     $config = require __DIR__ . '/../../config/filament-contacting.php';
     expect($config['tables']['default_pagination'])->toBe(25);
     expect($config['tables']['show_verification_columns'])->toBeTrue();
 });
 
-test('schema classes exist and have static make method', function () {
+test('schema classes exist and have static make method', function (): void {
     expect(method_exists(ContactMethodFormSchema::class, 'make'))->toBeTrue();
     expect(method_exists(SocialProfileFormSchema::class, 'make'))->toBeTrue();
     expect(method_exists(ContactMethodInfolistSchema::class, 'make'))->toBeTrue();
@@ -63,14 +63,14 @@ test('schema classes exist and have static make method', function () {
     expect(method_exists(ContactSnapshotInfolistSchema::class, 'make'))->toBeTrue();
 });
 
-test('GuardContactingUi class can be constructed', function () {
+test('GuardContactingUi class can be constructed', function (): void {
     $guard = new GuardsContactingUi;
     expect(method_exists($guard, 'contactMethodsReadOnly'))->toBeTrue();
     expect(method_exists($guard, 'socialProfilesReadOnly'))->toBeTrue();
     expect(method_exists($guard, 'contactSnapshotsReadOnly'))->toBeTrue();
 });
 
-test('ContactingFilamentConfig class can be constructed', function () {
+test('ContactingFilamentConfig class can be constructed', function (): void {
     $config = new ContactingFilamentConfig;
     expect(method_exists($config, 'standaloneResources'))->toBeTrue();
     expect(method_exists($config, 'relationManagersEnabled'))->toBeTrue();
@@ -79,41 +79,41 @@ test('ContactingFilamentConfig class can be constructed', function () {
     expect(method_exists($config, 'showVerificationColumns'))->toBeTrue();
 });
 
-test('ResolvesContactingModels resolves correct model classes', function () {
+test('ResolvesContactingModels resolves correct model classes', function (): void {
     $resolver = new ResolvesContactingModels;
     expect($resolver->contactMethod())->toBe(ContactMethod::class);
     expect($resolver->socialProfile())->toBe(SocialProfile::class);
     expect($resolver->contactSnapshot())->toBe(ContactSnapshot::class);
 });
 
-test('FilamentContactingPlugin can be instantiated', function () {
+test('FilamentContactingPlugin can be instantiated', function (): void {
     $plugin = FilamentContactingPlugin::make();
     expect($plugin)->toBeInstanceOf(FilamentContactingPlugin::class);
     expect($plugin->getId())->toBe('filament-contacting');
 });
 
-test('no migration files exist in package', function () {
+test('no migration files exist in package', function (): void {
     expect(glob(__DIR__ . '/../../database/migrations/*.php'))->toBeEmpty();
 });
 
-test('table classes exist', function () {
+test('table classes exist', function (): void {
     expect(class_exists(ContactMethodTable::class))->toBeTrue();
     expect(class_exists(SocialProfileTable::class))->toBeTrue();
     expect(class_exists(ContactSnapshotTable::class))->toBeTrue();
 })->skip('Requires Filament Table class which needs Laravel app');
 
-test('resource classes exist', function () {
+test('resource classes exist', function (): void {
     expect(class_exists(ContactMethodResource::class))->toBeTrue();
     expect(class_exists(SocialProfileResource::class))->toBeTrue();
     expect(class_exists(ContactSnapshotResource::class))->toBeTrue();
 })->skip('Requires Filament Resource class which needs Laravel app');
 
-test('relation manager classes exist', function () {
+test('relation manager classes exist', function (): void {
     expect(class_exists(ContactMethodsRelationManager::class))->toBeTrue();
     expect(class_exists(SocialProfilesRelationManager::class))->toBeTrue();
 })->skip('Requires Filament RelationManager class which needs Laravel app');
 
-test('export and import classes exist', function () {
+test('export and import classes exist', function (): void {
     expect(class_exists(ContactMethodExporter::class))->toBeTrue();
     expect(class_exists(SocialProfileExporter::class))->toBeTrue();
     expect(class_exists(ContactMethodImporter::class))->toBeTrue();

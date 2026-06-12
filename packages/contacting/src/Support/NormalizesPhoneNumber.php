@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Contacting\Support;
 
 use Propaganistas\LaravelPhone\PhoneNumber;
+use Throwable;
 
 final class NormalizesPhoneNumber
 {
@@ -32,7 +33,7 @@ final class NormalizesPhoneNumber
                 'normalized' => $parsed->formatE164(),
                 'display' => $parsed->formatInternational(),
             ];
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return [
                 'normalized' => $phone,
                 'display' => $phone,

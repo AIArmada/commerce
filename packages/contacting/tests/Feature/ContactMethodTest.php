@@ -11,13 +11,13 @@ use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesUrl;
 
-test('ContactMethod model class exists', function () {
+test('ContactMethod model class exists', function (): void {
     expect(class_exists(ContactMethod::class))->toBeTrue();
     // getTable() uses config() which needs Laravel app
     expect(true)->toBeTrue();
 });
 
-test('ContactMethodType enum has expected values', function () {
+test('ContactMethodType enum has expected values', function (): void {
     expect(ContactMethodType::Email->value)->toBe('email');
     expect(ContactMethodType::Phone->value)->toBe('phone');
     expect(ContactMethodType::Whatsapp->value)->toBe('whatsapp');
@@ -25,7 +25,7 @@ test('ContactMethodType enum has expected values', function () {
     expect(ContactMethodType::Other->value)->toBe('other');
 });
 
-test('ContactPurpose enum has expected values', function () {
+test('ContactPurpose enum has expected values', function (): void {
     expect(ContactPurpose::General->value)->toBe('general');
     expect(ContactPurpose::Admin->value)->toBe('admin');
     expect(ContactPurpose::Support->value)->toBe('support');
@@ -33,7 +33,7 @@ test('ContactPurpose enum has expected values', function () {
     expect(ContactPurpose::Emergency->value)->toBe('emergency');
 });
 
-test('ContactMethodData factory helpers', function () {
+test('ContactMethodData factory helpers', function (): void {
     $email = ContactMethodData::email('admin@example.com');
     expect($email->type)->toBe('email');
     expect($email->value)->toBe('admin@example.com');
@@ -51,7 +51,7 @@ test('ContactMethodData factory helpers', function () {
     expect($web->type)->toBe('website');
 });
 
-test('ContactMethodData from array', function () {
+test('ContactMethodData from array', function (): void {
     $data = new ContactMethodData(
         type: 'email',
         value: 'test@example.com',
@@ -65,7 +65,7 @@ test('ContactMethodData from array', function () {
     expect($data->isPublic)->toBeFalse();
 });
 
-test('NormalizeContactMethodAction normalizes email', function () {
+test('NormalizeContactMethodAction normalizes email', function (): void {
     $action = new NormalizeContactMethodAction(
         new NormalizesEmailAddress,
         new NormalizesPhoneNumber,
@@ -76,7 +76,7 @@ test('NormalizeContactMethodAction normalizes email', function () {
     expect($action->execute('email', 'valid@email.com')['normalized_value'])->toBe('valid@email.com');
 });
 
-test('NormalizeContactMethodAction normalizes MY phone', function () {
+test('NormalizeContactMethodAction normalizes MY phone', function (): void {
     $action = new NormalizeContactMethodAction(
         new NormalizesEmailAddress,
         new NormalizesPhoneNumber,
@@ -88,7 +88,7 @@ test('NormalizeContactMethodAction normalizes MY phone', function () {
     expect($result['display_value'])->not->toBeNull();
 });
 
-test('NormalizeContactMethodAction normalizes website', function () {
+test('NormalizeContactMethodAction normalizes website', function (): void {
     $action = new NormalizeContactMethodAction(
         new NormalizesEmailAddress,
         new NormalizesPhoneNumber,
@@ -99,7 +99,7 @@ test('NormalizeContactMethodAction normalizes website', function () {
     expect($action->execute('website', 'https://example.com')['normalized_value'])->toBe('https://example.com');
 });
 
-test('NormalizeContactMethodAction passes through unknown types', function () {
+test('NormalizeContactMethodAction passes through unknown types', function (): void {
     $action = new NormalizeContactMethodAction(
         new NormalizesEmailAddress,
         new NormalizesPhoneNumber,
