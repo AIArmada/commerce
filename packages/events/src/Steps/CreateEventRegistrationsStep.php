@@ -11,6 +11,7 @@ use AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use Illuminate\Database\Eloquent\Model;
 
 final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 {
@@ -44,7 +45,7 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 
         $orderClass = CommerceIntegration::requireModelClass('order_model', 'order fulfillment');
 
-        /** @var \Illuminate\Database\Eloquent\Model|null $order */
+        /** @var Model|null $order */
         $order = $orderClass::query()
             ->with('items.purchasable', 'customer')
             ->find($session->order_id);
@@ -150,7 +151,7 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
         $participants = [];
 
         if ($customer !== null) {
-            $name = trim((string) data_get($customer, 'full_name', ''));
+            $name = mb_trim((string) data_get($customer, 'full_name', ''));
             $name = $name !== '' ? $name : 'Attendee';
             $email = data_get($customer, 'email');
             $phone = data_get($customer, 'phone');

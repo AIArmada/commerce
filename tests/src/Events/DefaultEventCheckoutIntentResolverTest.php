@@ -7,7 +7,6 @@ use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
 
