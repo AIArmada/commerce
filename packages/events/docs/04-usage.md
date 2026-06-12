@@ -283,6 +283,67 @@ $pass = EventPass::create([
 
 When a model's slug changes, the old slug automatically issues a 308 redirect to the new URL via spatie/laravel-sluggable's self-healing URLs.
 
+## Selling Tickets via Commerce Checkout
+
+When `aiarmada/cart`, `aiarmada/checkout`, and `aiarmada/orders` are installed, ticket types can be sold through the standard commerce checkout pipeline alongside products.
+
+### Adding ticket types to cart
+
+```php
+use AIArmada\Events\Actions\AddEventTicketTypeToCartAction;
+use AIArmada\Events\Models\EventTicketType;
+
+$ticketType = EventTicketType::find('...');
+
+AddEventTicketTypeToCartAction::make()->handle(
+    cart: cart(),
+    ticketType: $ticketType,
+    quantity: 2,
+    participants: [
+        ['name' => 'Alice', 'email' => 'alice@example.com'],
+        ['name' => 'Bob', 'email' => 'bob@example.com'],
+    ],
+);
+```
+
+The action validates status, sales windows, min/max quantity, and remaining quota before adding. It handles cart merging — if the same ticket type is already in the cart, quantities and participants are merged rather than overwritten.
+
+### Mixed carts (tickets + products)
+
+Ticket types and products can coexist in the same cart. The checkout pipeline runs pricing, discounts, shipping, tax, and payment uniformly. After order creation, `CreateEventRegistrationsStep` (auto-registered) selectively processes only order items where `purchasable instanceof EventTicketType`, creating registrations and passes. Product items flow through normal order fulfillment.
+
+### Participant data
+
+Participant data is stored in the cart item's `attributes.participants` array. The step resolves it in priority order:
+1. Participants from the cart item attributes (passed via `AddEventTicketTypeToCartAction`)
+2. Fallback to the order customer's name/email/phone
+3. Generic "Attendee #N" entries
+
+One participant entry produces one registration with one ticket item — matching the order item's quantity.
+
+### Quota validation
+
+Quota is checked by counting `EventRegistrationItem` quantity across capacity-blocking statuses (`pending`, `confirmed`, `checked_in`, `no_show`). Quota is not checked during checkout intent (re-entering checkout for an existing registration). The inventory package is not required; ticket capacity is self-contained.
+
+### Checkout intent resolver
+
+`DefaultEventCheckoutIntentResolver` is bound when both cart and checkout packages are available. It creates a dedicated cart instance for the registration, preserving participant data:
+
+```php
+use AIArmada\Events\Actions\StartOccurrenceCheckoutAction;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventRegistration;
+
+StartOccurrenceCheckoutAction::make()->handle($occurrence, $registration);
+// Returns CheckoutSession from the commerce pipeline
+```
+
+Override via config `events.integrations.checkout_intent_resolver` or by binding `EventCheckoutIntentResolver`.
+
+### Per-occurrence ticket types
+
+When a ticket type's `event_occurrence_id` is set, it is scoped to that specific occurrence. Both `AddEventTicketTypeToCartAction` (via attributes) and `CreateRegistrationsForOrderItemAction` (via validation) enforce occurrence-scoping. Ticket types without an occurrence are event-wide and can be registered for any occurrence of the event.
+
 ## Extensibility via Contracts
 
 The package exposes contracts for every major operation. Bind your own implementation to override default behavior:
