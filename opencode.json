@@ -10,5 +10,19 @@
                 "boost:mcp"
             ]
         }
+    },
+    "provider": {
+        "openrouter": {
+            "models": {
+                "deepseek/deepseek-v4-flash": {
+                    "options": {
+                        "provider": {
+                            "order": ["baidu"],
+                            "allow_fallbacks": false
+                        }
+                    }
+                }
+            }
+        }
     }
 }

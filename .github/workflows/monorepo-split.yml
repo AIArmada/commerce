@@ -12,6 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         package:
+          - addressing
           - affiliate-network
           - affiliates
           - cart
@@ -20,11 +21,14 @@ jobs:
           - checkout
           - chip
           - commerce-support
+          - contacting
           - csuite
           - customers
           - docs
           - engagement
           - events
+          - feedback
+          - filament-addressing
           - filament-affiliate-network
           - filament-affiliates
           - filament-authz
@@ -32,10 +36,13 @@ jobs:
           - filament-cashier
           - filament-cashier-chip
           - filament-chip
+          - filament-commerce-support
+          - filament-contacting
           - filament-customers
           - filament-docs
           - filament-engagement
           - filament-events
+          - filament-feedback
           - filament-growth
           - filament-inventory
           - filament-jnt
@@ -44,6 +51,7 @@ jobs:
           - filament-products
           - filament-promotions
           - filament-shipping
+          - filament-signals
           - filament-tax
           - filament-vouchers
           - growth
@@ -55,7 +63,6 @@ jobs:
           - promotions
           - shipping
           - signals
-          - filament-signals
           - tax
           - vouchers
 

@@ -2,6 +2,12 @@
 
 Use this file for cross-cutting judgment, planning, and change execution.
 
+## Interaction Discipline
+
+- When the user asks a question or raises a concern, answer it directly. Do not jump to editing files unless they explicitly ask for changes.
+- If you start editing before the user finishes their thought, stop. Revert the premature edit and let them finish.
+- Waiting for direction is better than acting on assumption.
+
 ## Plan Before Coding
 - For non-trivial work such as multi-step changes, architecture decisions, or risky edits, write a brief plan before coding.
 - If new evidence invalidates the plan, stop and re-plan.

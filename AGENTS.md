@@ -178,15 +178,71 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - Filament tenancy is not a security boundary. All queries and all action handlers must still obey the owner-scoping contract.
 
+## Navigation
+
+### Config Standard
+
+Every `filament-*` package MUST use a nested `navigation.group` key in its config file:
+
+```php
+// config/filament-xxx.php
+'navigation' => [
+    'group' => 'Default Group Name',
+],
+```
+
+Settings pages use `navigation.settings_group` instead of `navigation.group`.
+
+### Resource/Page Standard
+
+Every Resource or Page MUST use `getNavigationGroup()` reading from config. Do NOT use the `$navigationGroup` static property:
+
+```php
+public static function getNavigationGroup(): string | UnitEnum | null
+{
+    return config('filament-xxx.navigation.group');
+}
+```
+
+### Navigation Sort
+
+When navigation sort order is configurable, use `getNavigationSort()` reading from config:
+
+```php
+public static function getNavigationSort(): ?int
+{
+    return config('filament-xxx.navigation.sort');
+}
+```
+
+### Run-time Overrides
+
+The `CommerceNavigation` engine (from `commerce-support`) supports overriding any navigation setting at runtime via `commerce-support.filament.navigation.items.{FQCN}`. Config-driven navigation is the foundation that makes this work — the engine reads a resource's config default, then merges runtime overrides on top.
+
+### What NOT to do
+
+- Do NOT use `$navigationGroup` static property on a Resource or Page (blocks runtime override)
+- Do NOT use flat config keys like `navigation_group` (use nested `navigation.group`)
+- Do NOT hardcode a group string in `getNavigationGroup()` — always read from config
+- Do NOT delegate through a plugin (avoid `Plugin::get()->getNavigationGroup()` pattern) — resources should read `config()` directly
+
 ## Verification
 
 - Double-check method signatures in the installed Filament version before shipping.
+- Verify no static `$navigationGroup` remains: `rg "static.*\$navigationGroup" packages/filament-*/src`
+- Verify config uses nested key: `rg "'navigation_group'" packages/filament-*/config` (should be empty)
 
 === .ai/general rules ===
 
 # General Guidelines (Monorepo-Specific)
 
 Use this file for cross-cutting judgment, planning, and change execution.
+
+## Interaction Discipline
+
+- When the user asks a question or raises a concern, answer it directly. Do not jump to editing files unless they explicitly ask for changes.
+- If you start editing before the user finishes their thought, stop. Revert the premature edit and let them finish.
+- Waiting for direction is better than acting on assumption.
 
 ## Plan Before Coding
 
@@ -469,7 +525,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4
+- php - 8.5
 
 ## Conventions
 
@@ -530,6 +586,13 @@ This application is a Laravel application and its main Laravel ecosystems packag
 # Deployment
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+
+=== herd rules ===
+
+# Laravel Herd
+
+- The application is served by Laravel Herd at `https?://[kebab-case-project-dir].test`. Use the `get-absolute-url` tool to generate valid URLs. Never run commands to serve the site. It is always available.
+- Use the `herd` CLI to manage services, PHP versions, and sites (e.g. `herd sites`, `herd services:start <service>`, `herd php:list`). Run `herd list` to discover all available commands.
 
 === tests rules ===
 
