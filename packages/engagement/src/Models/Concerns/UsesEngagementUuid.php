@@ -8,9 +8,15 @@ use Illuminate\Support\Str;
 
 trait UsesEngagementUuid
 {
-    public $incrementing = false;
+    public function getIncrementing(): bool
+    {
+        return false;
+    }
 
-    protected $keyType = 'string';
+    public function getKeyType(): string
+    {
+        return 'string';
+    }
 
     protected static function bootUsesEngagementUuid(): void
     {
