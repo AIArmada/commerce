@@ -62,6 +62,7 @@ use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
+use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Orders\Events\OrderCanceled;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;
@@ -141,6 +142,37 @@ final class EventsServiceProvider extends PackageServiceProvider
         }
     }
 
+    public function bootingPackage(): void
+    {
+        if (! interface_exists(CheckoutStepRegistryInterface::class)) {
+            return;
+        }
+
+        $registry = $this->app->make(CheckoutStepRegistryInterface::class);
+
+        if (! $registry->isEnabled('create_order')) {
+            return;
+        }
+
+        $step = new \AIArmada\Events\Steps\CreateEventRegistrationsStep(
+            createRegistrations: $this->app->make(\AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction::class),
+        );
+
+        if ($registry->has('create_event_registrations')) {
+            $registry->replace('create_event_registrations', $step);
+
+            return;
+        }
+
+        $registry->insertAfter('create_order', 'create_event_registrations', $step);
+    }
+
+    private function checkoutPipelineAvailable(): bool
+    {
+        return interface_exists(\AIArmada\Cart\Contracts\CartManagerInterface::class)
+            && interface_exists(\AIArmada\Checkout\Contracts\CheckoutServiceInterface::class);
+    }
+
     private function fulfillmentResolverClass(): string
     {
         $resolver = config('events.integrations.order_item_fulfillment_resolver');
@@ -165,7 +197,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $resolver = config('events.integrations.checkout_intent_resolver');
 
         if ($resolver === null) {
-            if (! CommerceIntegration::aiArmadaCheckoutAvailable()) {
+            if (! $this->checkoutPipelineAvailable()) {
                 return NullEventCheckoutIntentResolver::class;
             }
 
