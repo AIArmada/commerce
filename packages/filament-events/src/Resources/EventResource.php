@@ -38,6 +38,7 @@ final class EventResource extends Resource
     /**
      * @return Builder<Event>
      */
+    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<Event> $query */

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEvents\Actions\Exporter;
 use AIArmada\Events\Models\EventTicketType;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
+use Filament\Actions\Exports\Models\Export;
 
 final class EventTicketTypeExporter extends Exporter
 {
@@ -27,5 +28,16 @@ final class EventTicketTypeExporter extends Exporter
             ExportColumn::make('sales_starts_at'),
             ExportColumn::make('sales_ends_at'),
         ];
+    }
+
+    public static function getCompletedNotificationBody(Export $export): string
+    {
+        $body = 'Your event ticket type export has completed and ' . number_format($export->successful_rows) . ' ' . str('row')->plural($export->successful_rows) . ' exported.';
+
+        if ($failedRowsCount = $export->getFailedRowsCount()) {
+            $body .= ' ' . number_format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to export.';
+        }
+
+        return $body;
     }
 }

@@ -33,6 +33,7 @@ final class EventTicketTypeResource extends Resource
         return config('filament-events.navigation.group');
     }
 
+    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<EventTicketType> $query */

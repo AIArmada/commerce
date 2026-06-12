@@ -70,9 +70,8 @@ it('processes a pending payout successfully', function (): void {
         'affiliate_id' => $affiliate->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '123456789'],
-        'is_verified' => true,
-        'is_default' => true,
         'verified_at' => now(),
+        'is_default' => true,
     ]);
 
     $payout = AffiliatePayout::create([
@@ -178,9 +177,8 @@ it('marks a pending payout as failed when the processor fails', function (): voi
         'affiliate_id' => $affiliate->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '123456789'],
-        'is_verified' => true,
-        'is_default' => true,
         'verified_at' => now(),
+        'is_default' => true,
     ]);
 
     $payout = AffiliatePayout::create([
@@ -237,9 +235,8 @@ it('marks a pending payout as failed when the processor throws', function (): vo
         'affiliate_id' => $affiliate->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '123456789'],
-        'is_verified' => true,
-        'is_default' => true,
         'verified_at' => now(),
+        'is_default' => true,
     ]);
 
     $payout = AffiliatePayout::create([
@@ -304,9 +301,8 @@ it('rejects cross-tenant payout selection without mutating any selected payouts'
             'affiliate_id' => $affiliate->getKey(),
             'type' => PayoutMethodType::BankTransfer,
             'details' => ['bank_name' => 'Test Bank', 'account_number' => '123456789'],
-            'is_verified' => true,
+        'verified_at' => now(),
             'is_default' => true,
-            'verified_at' => now(),
         ]);
 
         $payout = AffiliatePayout::create([

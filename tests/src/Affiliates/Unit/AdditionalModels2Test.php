@@ -315,7 +315,7 @@ test('AffiliatePayoutMethod can be created with required fields', function (): v
         'affiliate_id' => $affiliate->id,
         'type' => PayoutMethodType::PayPal,
         'details' => ['email' => 'affiliate@example.com'],
-        'is_verified' => false,
+        'verified_at' => null,
         'is_default' => true,
     ]);
 
@@ -329,7 +329,7 @@ test('AffiliatePayoutMethod has affiliate relationship', function (): void {
     expect($method->affiliate())->toBeInstanceOf(BelongsTo::class);
 });
 
-test('AffiliatePayoutMethod verify sets is_verified and verified_at', function (): void {
+test('AffiliatePayoutMethod verify sets verified_at', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'PAY002',
         'name' => 'Verify Test',
@@ -343,7 +343,7 @@ test('AffiliatePayoutMethod verify sets is_verified and verified_at', function (
         'affiliate_id' => $affiliate->id,
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '1234567890'],
-        'is_verified' => false,
+        'verified_at' => null,
         'is_default' => false,
     ]);
 
@@ -367,7 +367,7 @@ test('AffiliatePayoutMethod setAsDefault updates default flag', function (): voi
         'affiliate_id' => $affiliate->id,
         'type' => PayoutMethodType::PayPal,
         'details' => ['email' => 'old@example.com'],
-        'is_verified' => true,
+        'verified_at' => now(),
         'is_default' => true,
     ]);
 
@@ -375,7 +375,7 @@ test('AffiliatePayoutMethod setAsDefault updates default flag', function (): voi
         'affiliate_id' => $affiliate->id,
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'New Bank'],
-        'is_verified' => true,
+        'verified_at' => now(),
         'is_default' => false,
     ]);
 

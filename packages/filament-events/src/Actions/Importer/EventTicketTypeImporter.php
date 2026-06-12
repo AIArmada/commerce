@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEvents\Actions\Importer;
 use AIArmada\Events\Models\EventTicketType;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
 
 final class EventTicketTypeImporter extends Importer
 {
@@ -50,5 +51,16 @@ final class EventTicketTypeImporter extends Importer
     public function resolveRecord(): ?EventTicketType
     {
         return new EventTicketType;
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your event ticket type import has completed and ' . number_format($import->successful_rows) . ' ' . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . number_format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
     }
 }

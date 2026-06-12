@@ -24,6 +24,7 @@ final class FilamentEngagementPlugin implements Plugin
 
     public static function get(): static
     {
+        /* @phpstan-ignore return.type */
         return filament(app(self::class)->getId());
     }
 
