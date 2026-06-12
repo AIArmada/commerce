@@ -301,7 +301,7 @@ it('rejects cross-tenant payout selection without mutating any selected payouts'
             'affiliate_id' => $affiliate->getKey(),
             'type' => PayoutMethodType::BankTransfer,
             'details' => ['bank_name' => 'Test Bank', 'account_number' => '123456789'],
-        'verified_at' => now(),
+            'verified_at' => now(),
             'is_default' => true,
         ]);
 
