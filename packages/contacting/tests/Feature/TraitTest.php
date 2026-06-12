@@ -5,12 +5,12 @@ declare(strict_types=1);
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 
-test('traits are usable', function () {
+test('traits are usable', function (): void {
     expect(trait_exists(HasContactMethods::class))->toBeTrue();
     expect(trait_exists(HasSocialProfiles::class))->toBeTrue();
 });
 
-test('HasContactMethods trait defines expected methods', function () {
+test('HasContactMethods trait defines expected methods', function (): void {
     $methods = get_class_methods(new class
     {
         use HasContactMethods;
@@ -24,7 +24,7 @@ test('HasContactMethods trait defines expected methods', function () {
     expect(in_array('addContactMethod', $methods))->toBeTrue();
 });
 
-test('HasSocialProfiles trait defines expected methods', function () {
+test('HasSocialProfiles trait defines expected methods', function (): void {
     $methods = get_class_methods(new class
     {
         use HasSocialProfiles;

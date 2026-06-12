@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Data\ContactSnapshotData;
 
-test('ContactSnapshotData constructor', function () {
+test('ContactSnapshotData constructor', function (): void {
     $data = new ContactSnapshotData(
         snapshotType: 'contact_method',
         reason: 'event_public_contact',
@@ -19,12 +19,12 @@ test('ContactSnapshotData constructor', function () {
     expect($data->value)->toBe('admin@example.com');
 });
 
-test('CreateContactSnapshotAction can be instantiated', function () {
+test('CreateContactSnapshotAction can be instantiated', function (): void {
     $action = new CreateContactSnapshotAction;
     expect($action)->toBeInstanceOf(CreateContactSnapshotAction::class);
 });
 
-test('snapshot action methods exist', function () {
+test('snapshot action methods exist', function (): void {
     $action = new CreateContactSnapshotAction;
     expect(method_exists($action, 'fromContactMethod'))->toBeTrue();
     expect(method_exists($action, 'fromSocialProfile'))->toBeTrue();

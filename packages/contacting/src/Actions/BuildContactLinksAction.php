@@ -6,16 +6,14 @@ namespace AIArmada\Contacting\Actions;
 
 use AIArmada\Contacting\Data\ContactLinksData;
 use AIArmada\Contacting\Models\ContactMethod;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 final class BuildContactLinksAction
 {
-    /**
-     * @param  Model  $contactable
-     */
     public function forContactable(Model $contactable): ContactLinksData
     {
-        /** @var \Illuminate\Database\Eloquent\Collection<int, ContactMethod> $contactMethods */
+        /** @var Collection<int, ContactMethod> $contactMethods */
         $contactMethods = $contactable->contactMethods;
 
         return $this->execute($contactMethods);

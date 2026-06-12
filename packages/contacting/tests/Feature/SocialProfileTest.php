@@ -9,13 +9,13 @@ use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
 
-test('SocialProfile model class exists', function () {
+test('SocialProfile model class exists', function (): void {
     expect(class_exists(SocialProfile::class))->toBeTrue();
     // getTable() uses config() which needs Laravel app; skip for unit tests
     expect(true)->toBeTrue();
 });
 
-test('SocialPlatform enum has expected values', function () {
+test('SocialPlatform enum has expected values', function (): void {
     expect(SocialPlatform::Facebook->value)->toBe('facebook');
     expect(SocialPlatform::Instagram->value)->toBe('instagram');
     expect(SocialPlatform::Tiktok->value)->toBe('tiktok');
@@ -25,7 +25,7 @@ test('SocialPlatform enum has expected values', function () {
     expect(SocialPlatform::Other->value)->toBe('other');
 });
 
-test('SocialProfileData constructor', function () {
+test('SocialProfileData constructor', function (): void {
     $data = new SocialProfileData(
         platform: 'facebook',
         handle: 'testpage',
@@ -39,7 +39,7 @@ test('SocialProfileData constructor', function () {
     expect($data->isPrimary)->toBeTrue();
 });
 
-test('SocialProfileData from array', function () {
+test('SocialProfileData from array', function (): void {
     $data = new SocialProfileData(
         platform: 'instagram',
         handle: '@user',
@@ -50,7 +50,7 @@ test('SocialProfileData from array', function () {
     expect($data->handle)->toBe('@user');
 });
 
-test('NormalizeSocialProfileAction normalizes @handle', function () {
+test('NormalizeSocialProfileAction normalizes @handle', function (): void {
     $action = new NormalizeSocialProfileAction(
         new NormalizesSocialHandle,
         new NormalizesUrl,
@@ -60,7 +60,7 @@ test('NormalizeSocialProfileAction normalizes @handle', function () {
     expect($action->execute('facebook', '  @spaced  ', null)['handle'])->toBe('spaced');
 });
 
-test('NormalizeSocialProfileAction extracts handle from URL', function () {
+test('NormalizeSocialProfileAction extracts handle from URL', function (): void {
     $action = new NormalizeSocialProfileAction(
         new NormalizesSocialHandle,
         new NormalizesUrl,
@@ -71,7 +71,7 @@ test('NormalizeSocialProfileAction extracts handle from URL', function () {
     expect($r['normalized_url'])->toBe('https://instagram.com/user123');
 });
 
-test('NormalizeSocialProfileAction handles null handle and URL', function () {
+test('NormalizeSocialProfileAction handles null handle and URL', function (): void {
     $action = new NormalizeSocialProfileAction(
         new NormalizesSocialHandle,
         new NormalizesUrl,
