@@ -42,8 +42,8 @@ Expected snapshot keys:
 
 ```text
 name
-address_line_1
-address_line_2
+line1
+line2
 city
 district
 state

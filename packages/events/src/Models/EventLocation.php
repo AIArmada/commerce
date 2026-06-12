@@ -28,8 +28,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $venue_space_id
  * @property string|null $venue_space_type_id
  * @property string|null $label
- * @property string|null $address_line_1
- * @property string|null $address_line_2
+ * @property string|null $line1
+ * @property string|null $line2
  * @property string|null $city
  * @property string|null $district
  * @property string|null $state
@@ -73,7 +73,7 @@ final class EventLocation extends Model
         'locationable_type', 'locationable_id',
         'venue_id', 'venue_space_id', 'venue_space_type_id',
         'label',
-        'address_line_1', 'address_line_2',
+        'line1', 'line2',
         'city', 'district', 'state', 'postcode', 'country',
         'level', 'unit_no',
         'latitude', 'longitude',

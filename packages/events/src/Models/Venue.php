@@ -21,8 +21,8 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $slug
  * @property string $venue_type
- * @property string|null $address_line_1
- * @property string|null $address_line_2
+ * @property string|null $line1
+ * @property string|null $line2
  * @property string|null $city
  * @property string|null $district
  * @property string|null $state
@@ -59,7 +59,7 @@ final class Venue extends Model
     protected $fillable = [
         'parent_venue_id',
         'name', 'slug', 'venue_type',
-        'address_line_1', 'address_line_2',
+        'line1', 'line2',
         'city', 'district', 'state', 'postcode', 'country',
         'latitude', 'longitude',
         'google_place_id', 'google_maps_url', 'waze_url', 'map_url',

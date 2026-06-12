@@ -24,7 +24,7 @@ final class VenueImporter extends Importer
             ImportColumn::make('venue_type')
                 ->requiredMapping()
                 ->label('Venue Type'),
-            ImportColumn::make('address_line_1')
+            ImportColumn::make('line1')
                 ->label('Address Line 1'),
             ImportColumn::make('city')
                 ->label('City'),

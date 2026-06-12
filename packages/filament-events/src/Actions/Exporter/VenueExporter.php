@@ -18,7 +18,7 @@ final class VenueExporter extends Exporter
         return [
             ExportColumn::make('name'),
             ExportColumn::make('venue_type'),
-            ExportColumn::make('address_line_1'),
+            ExportColumn::make('line1'),
             ExportColumn::make('city'),
             ExportColumn::make('state'),
             ExportColumn::make('country'),

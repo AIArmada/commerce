@@ -95,8 +95,8 @@ final class VenueResource extends Resource
                     ])->columns(2),
                 Section::make('Address')
                     ->schema([
-                        TextEntry::make('address_line_1'),
-                        TextEntry::make('address_line_2'),
+                        TextEntry::make('line1'),
+                        TextEntry::make('line2'),
                         TextEntry::make('city'),
                         TextEntry::make('district'),
                         TextEntry::make('state'),

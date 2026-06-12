@@ -26,13 +26,13 @@ return new class extends Migration
             $table->uuid('venue_space_id')->nullable()->index();
             $table->uuid('venue_space_type_id')->nullable()->index();
             $table->string('label')->nullable();
-            $table->string('address_line_1')->nullable();
-            $table->string('address_line_2')->nullable();
+            $table->string('line1')->nullable();
+            $table->string('line2')->nullable();
             $table->string('city')->nullable()->index();
             $table->string('district')->nullable()->index();
             $table->string('state')->nullable()->index();
-            $table->string('postcode')->nullable();
-            $table->string('country')->nullable()->index();
+            $table->string('postcode', 20)->nullable();
+            $table->string('country', 2)->nullable()->index();
             $table->string('level')->nullable();
             $table->string('unit_no')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
