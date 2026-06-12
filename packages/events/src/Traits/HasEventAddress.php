@@ -13,16 +13,16 @@ trait HasEventAddress
 
     public function eventAddress(): ?array
     {
-        if ($this->address_line_1 === null && $this->city === null) {
+        if ($this->line1 === null && $this->city === null) {
             return null;
         }
 
         return [
-            'line_1' => $this->address_line_1 ?? '',
-            'line_2' => $this->address_line_2 ?? null,
+            'line1' => $this->line1 ?? '',
+            'line2' => $this->line2 ?? null,
             'city' => $this->city ?? '',
             'state' => $this->state ?? '',
-            'postal_code' => $this->postal_code ?? '',
+            'postcode' => $this->postcode ?? '',
             'country' => $this->country ?? '',
         ];
     }

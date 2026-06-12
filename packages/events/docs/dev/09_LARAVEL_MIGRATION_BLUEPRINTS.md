@@ -164,13 +164,13 @@ Schema::create('event_locations', function (Blueprint $table) {
 
     $table->string('label')->nullable();
 
-    $table->string('address_line_1')->nullable();
-    $table->string('address_line_2')->nullable();
+    $table->string('line1')->nullable();
+    $table->string('line2')->nullable();
     $table->string('city')->nullable()->index();
     $table->string('district')->nullable()->index();
     $table->string('state')->nullable()->index();
-    $table->string('postcode')->nullable()->index();
-    $table->string('country')->nullable()->index();
+    $table->string('postcode', 20)->nullable()->index();
+    $table->string('country', 2)->nullable()->index();
 
     $table->string('level')->nullable();
     $table->string('unit_no')->nullable();

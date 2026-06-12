@@ -256,13 +256,13 @@ venues
 - slug string nullable index
 - venue_type string nullable index
 
-- address_line_1 string nullable
-- address_line_2 string nullable
+- line1 string nullable
+- line2 string nullable
 - city string nullable index
 - district string nullable index
 - state string nullable index
-- postcode string nullable index
-- country string nullable index
+- postcode string(20) nullable index
+- country string(2) nullable index
 
 - latitude decimal(10,7) nullable index
 - longitude decimal(10,7) nullable index
@@ -395,13 +395,13 @@ event_locations
 
 - label string nullable
 
-- address_line_1 string nullable
-- address_line_2 string nullable
+- line1 string nullable
+- line2 string nullable
 - city string nullable index
 - district string nullable index
 - state string nullable index
-- postcode string nullable index
-- country string nullable index
+- postcode string(20) nullable index
+- country string(2) nullable index
 
 - level string nullable
 - unit_no string nullable
