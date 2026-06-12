@@ -4,152 +4,127 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
-use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
-use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Traits\HasOwner;
-use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Events\Contracts\EventAddressable;
-use AIArmada\Events\Data\EventAddressData;
-use AIArmada\Events\Enums\VenueStatus;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Events\Database\Factories\VenueFactory;
+use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
- * @property string|null $owner_type
- * @property string|null $owner_id
+ * @property string|null $parent_venue_id
  * @property string $name
  * @property string $slug
- * @property string $location_type
- * @property string|null $contact_name
- * @property string|null $contact_email
- * @property string|null $contact_phone
- * @property string|null $line1
- * @property string|null $line2
+ * @property string $venue_type
+ * @property string|null $address_line_1
+ * @property string|null $address_line_2
  * @property string|null $city
+ * @property string|null $district
  * @property string|null $state
  * @property string|null $postcode
- * @property string $country
- * @property string|null $latitude
- * @property string|null $longitude
+ * @property string|null $country
+ * @property float|null $latitude
+ * @property float|null $longitude
+ * @property string|null $google_place_id
+ * @property string|null $google_maps_url
+ * @property string|null $waze_url
  * @property string|null $map_url
- * @property string|null $external_id
- * @property string|null $timezone
- * @property string|null $notes
- * @property array<string, mixed>|null $metadata
+ * @property string|null $phone
+ * @property string|null $email
+ * @property string|null $website_url
+ * @property string|null $directions
+ * @property CarbonImmutable|null $geocoded_at
+ * @property string|null $geocoding_source
+ * @property string $status
+ * @property string $visibility
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Venue|null $parentVenue
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Venue> $childVenues
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, VenueSpace> $spaces
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, VenueFacility> $facilities
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLocation> $eventLocations
  */
-class Venue extends Model implements Auditable, EventAddressable
+final class Venue extends Model
 {
-    use HasCommerceAudit;
-    use HasOwner {
-        scopeForOwner as baseScopeForOwner;
-    }
-    use HasOwnerScopeConfig;
-    use HasUuids;
-    use LogsCommerceActivity;
-
-    protected static string $ownerScopeConfigKey = 'events.features.owner';
+    use HasFactory;
+    use UsesEventUuid;
 
     protected $fillable = [
-        'status',
-        'name',
-        'slug',
-        'location_type',
-        'contact_name',
-        'contact_email',
-        'contact_phone',
-        'line1',
-        'line2',
-        'city',
-        'state',
-        'postcode',
-        'country',
-        'latitude',
-        'longitude',
-        'map_url',
-        'external_id',
-        'timezone',
-        'notes',
+        'parent_venue_id',
+        'name', 'slug', 'venue_type',
+        'address_line_1', 'address_line_2',
+        'city', 'district', 'state', 'postcode', 'country',
+        'latitude', 'longitude',
+        'google_place_id', 'google_maps_url', 'waze_url', 'map_url',
+        'phone', 'email', 'website_url', 'directions',
+        'geocoded_at', 'geocoding_source',
+        'status', 'visibility',
         'metadata',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'status' => VenueStatus::class,
-            'latitude' => 'decimal:7',
-            'longitude' => 'decimal:7',
-            'metadata' => 'array',
-        ];
-    }
-
-    protected $attributes = [
-        'status' => 'active',
-        'country' => 'MY',
-        'location_type' => 'physical',
     ];
 
     public function getTable(): string
     {
-        return config('events.database.tables.venues', 'event_venues');
+        return config('events.database.tables.venues', 'venues');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'geocoded_at' => 'immutable_datetime',
+            'metadata' => 'array',
+        ];
     }
 
     /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
+     * @return BelongsTo<Venue, $this>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = false): Builder
+    public function parentVenue(): BelongsTo
     {
-        $ownerToScope = $owner;
-
-        if (func_num_args() < 2) {
-            $ownerToScope = OwnerContext::CURRENT;
-        }
-
-        $includeGlobalToScope = $includeGlobal;
-
-        if (func_num_args() < 3) {
-            $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
-        }
-
-        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
-
-        return $scoped;
+        return $this->belongsTo(self::class, 'parent_venue_id');
     }
 
     /**
-     * @return MorphMany<Occurrence, $this>
+     * @return HasMany<Venue, $this>
      */
-    public function occurrences(): MorphMany
+    public function childVenues(): HasMany
     {
-        return $this->morphMany(Occurrence::class, 'address');
+        return $this->hasMany(self::class, 'parent_venue_id');
     }
 
-    public function eventAddressData(): EventAddressData
+    /**
+     * @return HasMany<VenueSpace, $this>
+     */
+    public function spaces(): HasMany
     {
-        $locationParts = collect([$this->city, $this->state, $this->postcode])
-            ->filter(static fn (mixed $value): bool => is_string($value) && mb_trim($value) !== '')
-            ->values()
-            ->all();
+        return $this->hasMany(VenueSpace::class);
+    }
 
-        $lines = array_values(array_filter([
-            $this->line1,
-            $this->line2,
-            $locationParts !== [] ? implode(', ', $locationParts) : null,
-            $this->country,
-        ], static fn (mixed $value): bool => is_string($value) && mb_trim($value) !== ''));
+    /**
+     * @return HasMany<VenueFacility, $this>
+     */
+    public function facilities(): HasMany
+    {
+        return $this->hasMany(VenueFacility::class);
+    }
 
-        return new EventAddressData(
-            label: $this->name,
-            lines: $lines,
-            latitude: $this->latitude,
-            longitude: $this->longitude,
-            country: $this->country,
-            timezone: $this->timezone,
-        );
+    /**
+     * @return MorphMany<EventLocation, $this>
+     */
+    public function eventLocations(): MorphMany
+    {
+        return $this->morphMany(EventLocation::class, 'locationable');
+    }
+
+    protected static function newFactory(): VenueFactory
+    {
+        return VenueFactory::new();
     }
 }

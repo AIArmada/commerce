@@ -13,6 +13,10 @@ enum EventVisibility: string
     case Public = 'public';
     case Unlisted = 'unlisted';
     case Private = 'private';
+    case RegisteredOnly = 'registered_only';
+    case AttendeesOnly = 'attendees_only';
+    case ManagersOnly = 'managers_only';
+    case Internal = 'internal';
 
     public function label(): string
     {
@@ -20,25 +24,10 @@ enum EventVisibility: string
             self::Public => 'Public',
             self::Unlisted => 'Unlisted',
             self::Private => 'Private',
+            self::RegisteredOnly => 'Registered Only',
+            self::AttendeesOnly => 'Attendees Only',
+            self::ManagersOnly => 'Managers Only',
+            self::Internal => 'Internal',
         };
-    }
-
-    public function color(): string
-    {
-        return match ($this) {
-            self::Public => 'success',
-            self::Unlisted => 'warning',
-            self::Private => 'gray',
-        };
-    }
-
-    public function isPubliclyAccessible(): bool
-    {
-        return $this !== self::Private;
-    }
-
-    public function isDiscoverable(): bool
-    {
-        return $this === self::Public;
     }
 }

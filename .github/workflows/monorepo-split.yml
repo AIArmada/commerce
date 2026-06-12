@@ -23,6 +23,7 @@ jobs:
           - csuite
           - customers
           - docs
+          - engagement
           - events
           - filament-affiliate-network
           - filament-affiliates
@@ -33,6 +34,7 @@ jobs:
           - filament-chip
           - filament-customers
           - filament-docs
+          - filament-engagement
           - filament-events
           - filament-growth
           - filament-inventory

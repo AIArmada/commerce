@@ -2,116 +2,146 @@
 title: Usage
 ---
 
-# Usage
-
 ## Resources
 
-### Event series
-
-`EventSeriesResource` manages reusable series/grouping records.
-
-Features:
-
-- name + slug management
-- active toggle
-- metadata editing
-- event counts in the table and infolist
+All resources are read-only views. Data entry is handled through the companion `aiarmada/events` domain package.
 
 ### Events
 
-`EventResource` manages the reusable event definitions.
+`EventResource` manages event definitions with lifecycle actions on the list page.
 
-Features:
+**Table columns:** title (searchable), status (badge, color-coded), visibility (badge), delivery_mode (badge), occurrences_count, published_at, updated_at.
 
-- series relationship
-- status management
-- registration_required toggle for the event-level registration gate
-- summary + description fields
-- default timezone and duration
-- optional product link
-- occurrences relation manager on the event detail pages
+**Filters:** status, visibility, delivery_mode.
+
+**Lifecycle actions (table header):**
+- **Publish** — promotes draft events to published (calls `EventLifecycleWorkflow::publish()`)
+- **Archive** — archives published events
+- **Cancel** — cancels an event with a reason
+
+**Infolist sections:** Identity, Lifecycle, Ownership, Metadata.
+
+**Relation managers (on View page):** Occurrences, Sessions, Locations, Involvements, Registrations, Ticket Types, Attendances. All read-only.
 
 ### Occurrences
 
-`OccurrenceResource` manages scheduled runs of an event.
+`EventOccurrenceResource` manages scheduled runs.
 
-Features:
+**Table columns:** event.title, title, starts_at (sortable), ends_at, status (badge), visibility (badge), capacity, published_at, cancelled_at.
 
-- linked event and venue
-- capacity management
-- starts/ends scheduling
-- registration open/close windows
-- check-in open/close windows
-- optional product + variant links
-- registrations relation manager on occurrence pages
-- filters for status, event, venue, and date range
+**Filters:** status, visibility, event.
+
+**Lifecycle actions:** Delay, Postpone, Cancel Occurrence, Complete.
+
+### Sessions
+
+`EventSessionResource` manages agenda items within occurrences.
+
+**Table columns:** event.title, occurrence.title, title, starts_at, ends_at, status (badge), sort_order.
+
+**Filter:** status.
 
 ### Venues
 
-`VenueResource` manages venue/contact/location details.
+`VenueResource` manages physical venue/contact details.
 
-Features:
+**Table columns:** name (searchable), venue_type (badge), city, state, country, status (badge), created_at.
 
-- slug generation
-- contact name, email, phone
-- address fields
-- timezone
-- occurrence counts
+**Filters:** venue_type, status, country.
 
 ### Registrations
 
-`RegistrationResource` manages attendees and linked commerce data.
+`EventRegistrationResource` provides visibility into registrations.
 
-Features:
+**Table columns:** registration_no (searchable, copyable), event.title, registrant_type (badge), registration_type (badge), status (badge), source (badge), total_participants, registered_at (sortable).
 
-- registration codes
-- participant name/email/phone
-- occurrence relationship
-- linked order, order item, purchaser customer, and participant customer
-- lifecycle fields such as `checked_in_at` and `cancelled_at`
-- quick actions for check-in and cancellation
+**Filters:** status, registration_type, source.
 
-## Resource actions
+### Ticket Types
 
-### Registration check-in
+`EventTicketTypeResource` manages admission definitions.
 
-The registration table and record pages expose a `Check In` action that calls the core `RegistrationService` with Filament as the source.
+**Table columns:** event.title, name, code (badge), access_type (badge), price (money), currency, quota, status (badge), sales_starts_at, sales_ends_at.
 
-That action only succeeds when the registration is currently `confirmed` and the linked occurrence is inside its configured check-in window.
+**Filters:** access_type, status.
 
-### Registration cancellation
+### Attendance
 
-The registration table and record pages expose a `Cancel` action with a reason field, which delegates to the core `RegistrationService`.
+`EventAttendanceResource` shows check-in records.
 
-The cancellation reason is stored in the registration metadata by the core package.
+**Table columns:** event.title, occurrence.title, attendance_type (badge), checked_in_at (sortable), check_in_source (badge), attendee_type, attendee_id.
 
-### Event moderation
+**Filters:** attendance_type, check_in_source.
 
-The event record page exposes `Submit for Review`, `Approve`, `Request Changes`, and `Reject` actions.
+## Check-In Console
 
-Those actions delegate to the core moderation workflow and use the package moderation policy for reason-code labels, so the event admin surface stays aligned with the same approval rules as the domain package.
+The Check-In Console page (`/events/check-in`) provides:
 
-## Owner-aware admin queries
-
-All resources apply `OwnerUiScope::apply(..., includeGlobal: false)` to their main queries and to related record selectors. In practice that means:
-
-- tables only show records visible to the current owner
-- relationship selects only list records visible to the current owner
-- slug inputs enforce owner-scoped uniqueness on event, series, venue, and sub-location forms
-- navigation badges are computed from owner-scoped queries and cached per owner
-
-## Example panel registration
+- **Search by pass number or registration number** — via header action modal
+- **Pass table** — shows pass_no, registration_no, registrant type, status, issued_at
+- **Check In action** — delegates to `EventCheckInService::checkIn()` (visible for issued/active passes)
+- **Walk-In Check-In** — header action with event select + attendee name/email
 
 ```php
-use AIArmada\FilamentEvents\FilamentEventsPlugin;
+use AIArmada\Events\Contracts\EventCheckInService;
 
-->plugins([
-    FilamentEventsPlugin::make(),
-])
+app(EventCheckInService::class)->checkIn([
+    'event_id' => $eventId,
+    'event_occurrence_id' => $occurrenceId,
+    'event_pass_id' => $pass->id,
+    'attendance_type' => 'registered',
+    'check_in_source' => 'qr',
+]);
 ```
 
-Once the plugin is registered, the package adds the full event admin surface to that panel automatically.
+## Notification Center
 
-## Related domain docs
+The Notification Center page (`/events/notifications`) manages notification batches:
 
-For model creation, fulfillment, and programmatic registration workflows, see the core [`aiarmada/events` usage guide](../../events/docs/04-usage.md).
+- **Table:** event.title, title, audience_scope (badge), status (badge), scheduled_at, sent_at
+- **Row actions:** Send Now, Cancel, View Deliveries (modal)
+- **Header action:** New Notification — create a pending batch with event, subject, audience scope
+
+## Approval Queue
+
+The Approval Queue page (`/events/approvals`) processes event submissions:
+
+- **Table:** approvable_type (badge), approvable_id, status (badge), requested_by, assigned_to, created_at, approved_at, rejected_at
+- **Row actions:** Approve (optional notes), Reject (required reason), Assign to Me
+
+## Event Public Preview
+
+The Event Public Preview page shows an event as the public would see it. Accessed via a link from the View Event page. Displays:
+
+- Event details (title, summary, description, status, delivery_mode)
+- Occurrences
+- Speakers and organizers
+- Pinned updates and notices
+- Ticket types
+
+## Owner Safety
+
+All resources apply `OwnerUiScope::apply(..., includeGlobal: false)` to their main queries. This means:
+
+- Tables only show records visible to the current owner
+- Relationship selects only list records visible to the current owner
+- Navigation badges are computed from owner-scoped queries
+
+Server-side validation in action handlers still relies on the core events package.
+
+## Disabling resources
+
+Individual resources can be disabled via config or plugin methods:
+
+```php
+// Via config
+'resources' => [
+    'enabled' => [
+        'venue' => false,
+    ],
+],
+
+// Via plugin
+FilamentEventsPlugin::make()
+    ->resources(['venue' => false]);
+```

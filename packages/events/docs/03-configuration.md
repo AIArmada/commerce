@@ -2,314 +2,123 @@
 title: Configuration
 ---
 
-# Configuration
+## Configuration file
 
-All package options live in `config/events.php`.
+The `config/events.php` file controls all Events package behavior.
 
-## Database
+### Database
 
 ```php
 'database' => [
-    'table_prefix' => 'event_',
-    'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+    'table_prefix' => env('EVENTS_TABLE_PREFIX', ''),
+    'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
-        'series' => 'event_series',
-        'events' => 'events',
-            'people' => 'event_speakers',
-        'venues' => 'event_venues',
-        'occurrences' => 'event_occurrences',
-        'registrations' => 'event_registrations',
+        'events' => env('EVENTS_TABLE_EVENTS', $tablePrefix . 'events'),
+        'event_occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'event_occurrences'),
+        // ... all 40+ table names configurable via env
     ],
-],
+]
 ```
 
-### `database.table_prefix`
+Every table name is individually configurable via environment variables, allowing collision-free coexistence with other packages.
 
-The fallback prefix used when a table name is not overridden in `database.tables`.
-
-### `database.json_column_type`
-
-Controls the JSON column type used by package migrations.
-
-### `database.tables`
-
-Override individual table names for:
-
-- `series`
-- `events`
-- `people`
-- `venues`
-- `occurrences`
-- `registrations`
-
-The defaults are intentionally package-specific to avoid collisions with a host application's own `events` table. Existing installs that already migrated older package defaults can pin those names:
+### Owner Scoping
 
 ```php
-'tables' => [
-    'series' => 'event_series',
-    'events' => 'events',
-        'people' => 'event_speakers',
-    'venues' => 'event_venues',
-    'occurrences' => 'event_occurrences',
-    'registrations' => 'event_registrations',
-],
+'owner' => [
+    'enabled' => env('EVENTS_OWNER_ENABLED', false),
+    'include_global' => env('EVENTS_OWNER_INCLUDE_GLOBAL', false),
+    'auto_assign_on_create' => env('EVENTS_OWNER_AUTO_ASSIGN', true),
+]
 ```
 
-Equivalent environment overrides are available: `EVENTS_TABLE_SERIES`, `EVENTS_TABLE_EVENTS`, `EVENTS_TABLE_PEOPLE`, `EVENTS_TABLE_VENUES`, `EVENTS_TABLE_OCCURRENCES`, and `EVENTS_TABLE_REGISTRATIONS`.
+Controls multi-tenancy behavior. When enabled, all queries are scoped to the current resolved owner. Global records are available when `include_global` is enabled.
 
-## Models
-
-```php
-'models' => [
-    'event' => \AIArmada\Events\Models\Event::class,
-    'organizer' => null,
-    'sub_location' => \AIArmada\Events\Models\EventSubLocation::class,
-],
-```
-
-### `models.event`
-
-The Eloquent model class returned by `Occurrence::event()` and `EventSeries::events()`.
-
-Set this to a host application's canonical event model when the package should manage occurrences and registrations for a richer public event record.
-
-### `models.sub_location`
-
-The Eloquent model class used for the shared sub-location pool.
-
-Set this to a host application's sub-location model if it needs a custom table or namespace.
-
-### `addresses.models`
-
-List of model classes that the address selector should offer in Filament and other selection surfaces.
-
-Address models must implement `AIArmada\Events\Contracts\EventAddressable` and provide their own address data.
-
-### `models.organizer`
-
-Optional documentation seam for the host application's organizer model. Organizer links are stored as morph columns on events, so the package does not need this value to resolve the relationship.
-
-## Features
-
-```php
-'features' => [
-    'owner' => [
-        'enabled' => true,
-        'include_global' => false,
-        'auto_assign_on_create' => true,
-    ],
-],
-```
-
-### `features.owner`
-
-Owner scoping controls for all event-domain models.
-
-- `enabled`: apply owner scoping to series, events, venues, occurrences, and registrations
-- `include_global`: allow readable owner-scoped queries to include global rows
-- `auto_assign_on_create`: stamp the current owner on new rows when owner columns are omitted
-
-## Codes
-
-```php
-'codes' => [
-    'registration_prefix' => 'REG',
-    'registration_length' => 10,
-],
-```
-
-### `codes.registration_prefix`
-
-Prefix used when generating registration codes.
-
-### `codes.registration_length`
-
-Total registration-code length, including the prefix.
-
-## Defaults
+### Defaults
 
 ```php
 'defaults' => [
-    'occurrence_participation_mode' => 'registration_required',
-    'event_moderation_status' => 'approved',
-    'event_visibility' => 'public',
-],
+    'timezone' => env('EVENTS_TIMEZONE', env('APP_TIMEZONE', 'UTC')),
+]
 ```
 
-### `defaults.occurrence_participation_mode`
-
-Default participation mode for newly created occurrences when no explicit mode is provided.
-
-Supported values:
-
-- `none`
-- `registration_required`
-- `walk_in_only`
-- `hybrid`
-
-### `defaults.event_moderation_status`
-
-Default moderation state for package-owned events created without an explicit moderation value.
-
-Supported values:
-
-- `pending`
-- `approved`
-- `rejected`
-
-### `defaults.event_visibility`
-
-Default public visibility for package-owned events created without an explicit visibility value.
-
-Supported values:
-
-- `public`
-- `unlisted`
-- `private`
-
-## Media
+### Codes
 
 ```php
-'media' => [
-    'collections' => [
-        'cover' => 'cover',
-        'poster' => 'poster',
-        'gallery' => 'gallery',
-    ],
-],
+'codes' => [
+    'registration_prefix' => env('EVENTS_REGISTRATION_PREFIX', 'REG'),
+    'registration_length' => (int) env('EVENTS_REGISTRATION_LENGTH', 10),
+]
 ```
 
-The core package stores package-neutral media references in the event `media_references` JSON column and exposes collection names through `Event::mediaCollections()`. Applications that use Spatie Media Library or another asset system can bind those collection names to their own adapters without adding a hard dependency to the core package.
+Controls auto-generated registration number format.
 
-## Taxonomy
-
-```php
-'taxonomy' => [
-    'groups' => [
-        'category',
-        'topic',
-        'audience',
-        'language',
-    ],
-],
-```
-
-The core package stores package-neutral taxonomy payloads in the event `taxonomy` JSON column. Applications can map those groups to Spatie Tags, custom taxonomies, or search-engine facets.
-
-## Search
-
-```php
-'search' => [
-    'payload_resolver' => null,
-],
-```
-
-Set `search.payload_resolver` to a class implementing `AIArmada\Events\Contracts\EventSearchPayloadResolver` when an application needs a custom Scout, Meilisearch, Typesense, or Algolia payload. If it is `null`, the package uses `DefaultEventSearchPayloadResolver`.
-
-## Timezone
-
-```php
-'timezone' => [
-    'default' => 'UTC',
-    'display_timezone_resolver' => null,
-],
-```
-
-The package stores timestamps in UTC and keeps the source timezone label on event / occurrence records. Set `timezone.display_timezone_resolver` to a class implementing `AIArmada\Events\Contracts\EventDisplayTimezoneResolver` when viewer-specific display behavior is needed.
-
-## Lifecycle
+### Lifecycle
 
 ```php
 'lifecycle' => [
     'occurrence' => [
-        'registration_accepting_statuses' => ['scheduled', 'live'],
-        'check_in_accepting_statuses' => ['scheduled', 'live'],
-        'walk_in_accepting_statuses' => ['scheduled', 'live'],
+        'registration_accepting_statuses' => ['scheduled', 'published', 'live'],
+        'check_in_accepting_statuses' => ['scheduled', 'published', 'live'],
+        'walk_in_accepting_statuses' => ['scheduled', 'published', 'live'],
     ],
     'registration' => [
         'check_in_allowed_statuses' => ['confirmed'],
         'capacity_blocking_statuses' => ['pending', 'confirmed', 'checked_in', 'no_show'],
         'terminal_statuses' => ['checked_in', 'cancelled', 'refunded', 'no_show'],
+        'auto_promote_waitlist' => env('EVENTS_AUTO_PROMOTE_WAITLIST', false),
     ],
+]
+```
+
+Controls which statuses allow registration, check-in, and walk-in. `capacity_blocking_statuses` determines which registration statuses consume occurrence capacity.
+
+### Resolvers (extensibility seams)
+
+```php
+'classifications' => ['resolver' => null],
+'assets' => ['resolver' => null],
+'references' => ['resolver' => null],
+'timezone' => ['display_timezone_resolver' => null],
+'schedule' => ['resolver' => null],
+'search' => ['payload_resolver' => null, 'engine' => null],
+'change_notices' => [
+    'audience_resolver' => null,
+    'notification_dispatcher' => null,
 ],
 ```
 
-### `lifecycle.occurrence.registration_accepting_statuses`
+Each resolver can be bound to a custom class for domain-specific behavior.
 
-Occurrence statuses that can accept new registrations when the registration window is also open.
+### Moderation
 
-### `lifecycle.occurrence.check_in_accepting_statuses`
+```php
+'moderation' => [
+    'actions' => [
+        'submit' => ['from' => ['draft', 'pending', 'approved', 'changes_requested', 'rejected'], 'to' => 'pending'],
+        'approve' => ['from' => ['pending', 'changes_requested'], 'to' => 'approved'],
+        'reject'  => ['from' => ['pending', 'approved', 'changes_requested'], 'to' => 'rejected'],
+        'cancel'  => ['from' => ['pending', 'approved', 'changes_requested', 'rejected'], 'to' => 'pending'],
+    ],
+    'reason_codes' => [
+        'approved_for_publish' => ['label' => 'Approved for Publish'],
+        'needs_more_information' => ['label' => 'Needs More Information', 'note_required' => true],
+    ],
+]
+```
 
-Occurrence statuses that can accept check-in when the check-in window is also open.
+Defines allowed moderation transitions and reason codes. Each action specifies valid `from` states, target `to` state, and whether notes/reasons are required.
 
-### `lifecycle.occurrence.walk_in_accepting_statuses`
-
-Occurrence statuses that can accept walk-in attendance when the check-in window is also open.
-
-### `lifecycle.registration.check_in_allowed_statuses`
-
-Registration statuses that can transition to checked-in.
-
-### `lifecycle.registration.capacity_blocking_statuses`
-
-Registration statuses counted against occurrence capacity. `waitlisted` does not block capacity by default.
-
-### `lifecycle.registration.terminal_statuses`
-
-Registration statuses treated as complete for ended-event order completion checks.
-
-## Integrations
-
-The package resolves related models from config so events and registrations can link back to the commerce layer when the first-party packages are installed:
+### Integrations
 
 ```php
 'integrations' => [
-    'product_model' => class_exists(\AIArmada\Products\Models\Product::class)
-        ? \AIArmada\Products\Models\Product::class
-        : null,
-    'variant_model' => class_exists(\AIArmada\Products\Models\Variant::class)
-        ? \AIArmada\Products\Models\Variant::class
-        : null,
-    'customer_model' => class_exists(\AIArmada\Customers\Models\Customer::class)
-        ? \AIArmada\Customers\Models\Customer::class
-        : null,
-    'order_model' => class_exists(\AIArmada\Orders\Models\Order::class)
-        ? \AIArmada\Orders\Models\Order::class
-        : null,
-    'order_item_model' => class_exists(\AIArmada\Orders\Models\OrderItem::class)
-        ? \AIArmada\Orders\Models\OrderItem::class
-        : null,
+    'product_model' => class_exists(...) ? Product::class : null,
+    'customer_model' => class_exists(...) ? Customer::class : null,
+    'order_model' => class_exists(...) ? Order::class : null,
     'checkout_intent_resolver' => null,
     'order_item_fulfillment_resolver' => null,
-],
+]
 ```
 
-These integrations are read by occurrence and registration relationships plus the order-fulfillment flows.
-
-When a related package is missing, its config value resolves to `null`. The core package still boots and core event registrations continue to work. Calling a commerce-specific relationship such as `Registration::order()` without the matching package installed throws a clear integration error.
-
-Order fulfillment features are auto-registered only when the AIArmada customers and orders package classes are available.
-
-### `integrations.checkout_intent_resolver`
-
-Set this to a class implementing `AIArmada\Events\Contracts\EventCheckoutIntentResolver` when paid occurrence checkout should use application-specific buyable, pricing, or participant metadata rules.
-
-If it is `null`, the package binds `DefaultEventCheckoutIntentResolver` when the first-party checkout stack is installed. Without that stack, it falls back to `NullEventCheckoutIntentResolver`.
-
-### `integrations.order_item_fulfillment_resolver`
-
-Set this to a class implementing `AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver` when order items should create event registrations.
-
-If it is `null`, the package binds `DefaultEventOrderItemFulfillmentResolver` when the first-party order stack is installed. That default resolver fulfills order items carrying event checkout metadata. Without the order stack, the package falls back to the no-op resolver.
-
-## Record-level occurrence settings
-
-Occurrence availability is controlled by model fields plus lifecycle policy config:
-
-- `capacity`
-- `registration_opens_at`
-- `registration_closes_at`
-- `check_in_opens_at`
-- `check_in_closes_at`
-
-`RegistrationService` enforces those values during create and check-in operations.
+Auto-detects commerce packages. When related packages are installed, integration features are automatically enabled. Custom resolvers can override default behavior.

@@ -4,144 +4,67 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Services;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventSearchEngine;
-use AIArmada\Events\Data\EventSearchCardData;
-use AIArmada\Events\Data\EventSearchCriteria;
-use AIArmada\Events\Data\EventSearchResultData;
-use AIArmada\Events\Enums\EventModerationStatus;
 use AIArmada\Events\Models\Event;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 final class EloquentEventSearchEngine implements EventSearchEngine
 {
-    public function search(EventSearchCriteria $criteria): EventSearchResultData
+    public function search(array $criteria): Collection
     {
-        $query = Event::query()->forOwner(OwnerContext::resolve(), $criteria->includeGlobal);
+        $query = Event::query();
 
-        $this->applyTermFilter($query, $criteria->term);
-        $this->applyEnumFilters($query, $criteria);
-        $this->applyRelationFilters($query, $criteria);
-        $this->applyDateFilters($query, $criteria);
-        $this->applySorting($query, $criteria);
-
-        $total = (clone $query)->count();
-
-        $items = $query
-            ->forPage(max(1, $criteria->page), max(1, $criteria->perPage))
-            ->get()
-            ->map(static fn (Event $event): EventSearchCardData => EventSearchCardData::fromEvent($event))
-            ->values()
-            ->all();
-
-        return EventSearchResultData::fromCards($items, $total, max(1, $criteria->page), max(1, $criteria->perPage));
-    }
-
-    private function applyTermFilter(Builder $query, ?string $term): void
-    {
-        $term = is_string($term) ? mb_trim($term) : null;
-
-        if ($term === null || $term === '') {
-            return;
+        if (!empty($criteria['status'])) {
+            $query->where('status', $criteria['status']);
         }
 
-        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term) . '%';
-
-        $query->where(static function (Builder $builder) use ($like): void {
-            $builder
-                ->where('name', 'like', $like)
-                ->orWhere('slug', 'like', $like)
-                ->orWhere('summary', 'like', $like)
-                ->orWhere('description', 'like', $like)
-                ->orWhere('search_keywords', 'like', $like);
-        });
-    }
-
-    private function applyEnumFilters(Builder $query, EventSearchCriteria $criteria): void
-    {
-        if ($criteria->statuses !== []) {
-            $query->whereIn('status', $criteria->statuses);
+        if (!empty($criteria['visibility'])) {
+            $query->where('visibility', $criteria['visibility']);
         }
 
-        if ($criteria->moderationStatuses !== []) {
-            $query->whereIn('moderation_status', array_map(
-                static fn (string $status): string => EventModerationStatus::tryFrom($status)?->value ?? $status,
-                $criteria->moderationStatuses,
-            ));
+        if (!empty($criteria['type'])) {
+            $query->where('type', $criteria['type']);
         }
 
-        if ($criteria->visibilities !== []) {
-            $query->whereIn('visibility', $criteria->visibilities);
+        if (!empty($criteria['delivery_mode'])) {
+            $query->where('delivery_mode', $criteria['delivery_mode']);
         }
 
-        if ($criteria->structures !== []) {
-            $query->whereIn('structure', $criteria->structures);
-        }
-    }
-
-    private function applyRelationFilters(Builder $query, EventSearchCriteria $criteria): void
-    {
-        if ($criteria->classificationGroups !== []) {
-            $query->whereHas('classifications', static function (Builder $builder) use ($criteria): void {
-                $builder->whereIn('group_key', $criteria->classificationGroups);
+        if (!empty($criteria['search'])) {
+            $search = $criteria['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('summary', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
-        if ($criteria->assetRoles !== []) {
-            $query->whereHas('assets', static function (Builder $builder) use ($criteria): void {
-                $builder->whereIn('role_key', $criteria->assetRoles);
+        if (!empty($criteria['owner_type']) && !empty($criteria['owner_id'])) {
+            $query->where('owner_type', $criteria['owner_type'])
+                ->where('owner_id', $criteria['owner_id']);
+        }
+
+        if (!empty($criteria['starts_after'])) {
+            $query->whereHas('occurrences', function ($q) use ($criteria) {
+                $q->where('starts_at', '>=', $criteria['starts_after']);
             });
         }
 
-        if ($criteria->referenceKinds !== []) {
-            $query->whereHas('references', static function (Builder $builder) use ($criteria): void {
-                $builder->whereIn('reference_kind', $criteria->referenceKinds);
+        if (!empty($criteria['ends_before'])) {
+            $query->whereHas('occurrences', function ($q) use ($criteria) {
+                $q->where('ends_at', '<=', $criteria['ends_before']);
             });
         }
-    }
 
-    private function applyDateFilters(Builder $query, EventSearchCriteria $criteria): void
-    {
-        if ($criteria->publishedAfter !== null) {
-            $query->where('published_at', '>=', $criteria->publishedAfter);
+        $sortField = $criteria['sort'] ?? 'created_at';
+        $sortDir = $criteria['sort_dir'] ?? 'desc';
+
+        $query->orderBy($sortField, $sortDir);
+
+        if (!empty($criteria['limit'])) {
+            $query->limit((int) $criteria['limit']);
         }
 
-        if ($criteria->publishedBefore !== null) {
-            $query->where('published_at', '<=', $criteria->publishedBefore);
-        }
-    }
-
-    private function applySorting(Builder $query, EventSearchCriteria $criteria): void
-    {
-        $direction = mb_strtolower($criteria->direction) === 'asc' ? 'asc' : 'desc';
-        $sort = $this->sortColumn($criteria->sort);
-
-        if ($sort !== null) {
-            $query->orderBy($sort, $direction);
-
-            if ($sort !== 'name') {
-                $query->orderBy('name', 'asc');
-            }
-
-            return;
-        }
-
-        $query
-            ->orderBy('published_at', 'desc')
-            ->orderBy('name', 'asc');
-    }
-
-    private function sortColumn(?string $sort): ?string
-    {
-        $sort = is_string($sort) ? mb_trim($sort) : null;
-
-        if ($sort === null || $sort === '') {
-            return null;
-        }
-
-        return match ($sort) {
-            'name', 'published_at', 'public_starts_at', 'public_ends_at', 'created_at' => $sort,
-            default => null,
-        };
+        return $query->get();
     }
 }

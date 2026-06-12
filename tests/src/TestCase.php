@@ -20,6 +20,7 @@ use AIArmada\CommerceSupport\SupportServiceProvider;
 use AIArmada\Customers\CustomersServiceProvider;
 use AIArmada\Docs\DocsServiceProvider;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
+use AIArmada\Engagement\EngagementServiceProvider;
 use AIArmada\Events\EventsServiceProvider;
 use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkServiceProvider;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
@@ -150,6 +151,7 @@ abstract class TestCase extends Orchestra
             JntServiceProvider::class,
             DocsServiceProvider::class,
             EventsServiceProvider::class,
+            EngagementServiceProvider::class,
             FilamentEventsServiceProvider::class,
             SignalsServiceProvider::class,
             GrowthServiceProvider::class,
@@ -310,6 +312,10 @@ abstract class TestCase extends Orchestra
         $app['config']->set('products.features.owner.include_global', false);
         $app['config']->set('events.features.owner.enabled', true);
         $app['config']->set('events.features.owner.include_global', false);
+        $app['config']->set('events.features.owner.auto_assign_on_create', true);
+        $app['config']->set('engagement.owner.enabled', true);
+        $app['config']->set('engagement.owner.include_global', false);
+        $app['config']->set('engagement.owner.auto_assign_on_create', true);
         $app['config']->set('growth.features.owner.enabled', true);
         $app['config']->set('growth.features.owner.include_global', false);
         $app['config']->set('promotions.features.owner.enabled', true);
@@ -384,6 +390,13 @@ abstract class TestCase extends Orchestra
         $app['config']->set('media-library.media_model', Media::class);
         $app['config']->set('media-library.disk_name', 'public');
 
+        // Configure engagement settings for testing
+        $app['config']->set('engagement.database.table_prefix', 'engagement_');
+        $app['config']->set('engagement.database.json_column_type', 'json');
+
+        // Map interactions config for engagement migrations that use old config key
+        $app['config']->set('interactions.database', $app['config']->get('engagement.database'));
+
         // Configure auth to use our test User model
         $app['config']->set('auth.providers.users.model', User::class);
     }
@@ -407,6 +420,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/cart/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/filament-cart/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/events/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/engagement/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/signals/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/customers/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/checkout/database/migrations');

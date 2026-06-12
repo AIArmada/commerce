@@ -4,58 +4,46 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Services;
 
-use AIArmada\Events\Contracts\EventSearchEngine;
-use AIArmada\Events\Data\EventChangeNoticePayloadData;
-use AIArmada\Events\Data\EventDetailData;
-use AIArmada\Events\Data\EventReviewSchemaData;
-use AIArmada\Events\Data\EventSearchCardData;
-use AIArmada\Events\Data\EventSearchCriteria;
-use AIArmada\Events\Data\EventSearchResultData;
-use AIArmada\Events\Data\OccurrenceDetailData;
-use AIArmada\Events\Data\RegistrationStatusData;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventChange;
-use AIArmada\Events\Models\Occurrence;
-use AIArmada\Events\Models\Registration;
+use AIArmada\Events\Models\EventOccurrence;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 final class EventQueryService
 {
-    public function __construct(
-        private readonly EventSearchEngine $searchEngine,
-    ) {}
-
-    public function search(EventSearchCriteria $criteria): EventSearchResultData
+    public function findPublished(): Collection
     {
-        return $this->searchEngine->search($criteria);
+        return Event::published()->get();
     }
 
-    public function card(Event $event): EventSearchCardData
+    public function findUpcoming(int $limit = 10): Collection
     {
-        return EventSearchCardData::fromEvent($event);
+        $eventTable = (new Event())->getTable();
+        $occurrenceTable = (new EventOccurrence())->getTable();
+        $nextOccurrenceSubquery = EventOccurrence::query()
+            ->select('starts_at')
+            ->whereColumn("{$occurrenceTable}.event_id", "{$eventTable}.id")
+            ->orderBy('starts_at')
+            ->limit(1);
+
+        return Event::published()
+            ->whereHas('occurrences', function (Builder $query): void {
+                $query->where('starts_at', '>=', CarbonImmutable::now());
+            })
+            ->orderBy($nextOccurrenceSubquery)
+            ->limit($limit)
+            ->get();
     }
 
-    public function detail(Event $event): EventDetailData
+    public function findByOwner(Model $owner): Collection
     {
-        return EventDetailData::fromEvent($event);
+        return Event::forOwner($owner)->get();
     }
 
-    public function occurrence(Occurrence $occurrence): OccurrenceDetailData
+    public function findBySlug(string $slug): ?Event
     {
-        return OccurrenceDetailData::fromOccurrence($occurrence);
-    }
-
-    public function reviewSchema(Event $event): EventReviewSchemaData
-    {
-        return EventReviewSchemaData::fromEvent($event);
-    }
-
-    public function registrationStatus(Registration $registration): RegistrationStatusData
-    {
-        return RegistrationStatusData::fromRegistration($registration);
-    }
-
-    public function changeNoticePayload(EventChange $notice): EventChangeNoticePayloadData
-    {
-        return EventChangeNoticePayloadData::fromNotice($notice);
+        return Event::where('slug', $slug)->first();
     }
 }

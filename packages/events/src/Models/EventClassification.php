@@ -4,97 +4,58 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
-use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
-use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Traits\HasOwner;
-use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Events\Database\Factories\EventClassificationFactory;
+use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Arr;
-use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
- * @property string|null $owner_type
- * @property string|null $owner_id
- * @property string|null $assignable_type
- * @property string|null $assignable_id
- * @property string|null $source_type
- * @property string|null $source_id
- * @property string $group_key
- * @property string $term_key
- * @property string|null $term_label
- * @property int|null $order_column
- * @property array<string, mixed>|null $metadata
+ * @property string $event_id
+ * @property string|null $event_occurrence_id
+ * @property string|null $event_session_id
+ * @property string|null $event_taxonomy_id
+ * @property string|null $event_term_id
+ * @property string|null $taxonomy_code
+ * @property string|null $term_code
+ * @property bool $is_primary
+ * @property int $weight
+ * @property int $sort_order
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
-class EventClassification extends Model implements Auditable
+final class EventClassification extends Model
 {
-    use HasCommerceAudit;
-    use HasOwner;
-    use HasOwnerScopeConfig;
-    use HasUuids;
-    use LogsCommerceActivity;
-
-    protected static string $ownerScopeConfigKey = 'events.features.owner';
+    use HasFactory;
+    use UsesEventUuid;
 
     protected $fillable = [
-        'assignable_type',
-        'assignable_id',
-        'source_type',
-        'source_id',
-        'group_key',
-        'term_key',
-        'term_label',
-        'order_column',
+        'event_id', 'event_occurrence_id', 'event_session_id',
+        'event_taxonomy_id', 'event_term_id',
+        'taxonomy_code', 'term_code',
+        'is_primary', 'weight', 'sort_order',
         'metadata',
     ];
+
+    public function getTable(): string
+    {
+        return config('events.database.tables.event_classifications', 'event_classifications');
+    }
 
     protected function casts(): array
     {
         return [
-            'order_column' => 'integer',
+            'is_primary' => 'boolean',
+            'weight' => 'integer',
+            'sort_order' => 'integer',
             'metadata' => 'array',
         ];
     }
 
-    public function getTable(): string
+    protected static function newFactory(): EventClassificationFactory
     {
-        return config('events.database.tables.classifications', 'event_classifications');
-    }
-
-    /**
-     * @return MorphTo<Model, $this>
-     */
-    public function assignable(): MorphTo
-    {
-        return $this->morphTo(__FUNCTION__, 'assignable_type', 'assignable_id');
-    }
-
-    /**
-     * @return MorphTo<Model, $this>
-     */
-    public function source(): MorphTo
-    {
-        return $this->morphTo(__FUNCTION__, 'source_type', 'source_id');
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeWithGroupKey(Builder $query, array | string $groupKey): Builder
-    {
-        return $query->whereIn($this->qualifyColumn('group_key'), Arr::wrap($groupKey));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeWithTermKey(Builder $query, array | string $termKey): Builder
-    {
-        return $query->whereIn($this->qualifyColumn('term_key'), Arr::wrap($termKey));
+        return EventClassificationFactory::new();
     }
 }

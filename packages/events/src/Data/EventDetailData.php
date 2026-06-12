@@ -5,84 +5,118 @@ declare(strict_types=1);
 namespace AIArmada\Events\Data;
 
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventPerson;
-use AIArmada\Events\Models\Occurrence;
+use Carbon\CarbonImmutable;
 use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Optional;
 
 final class EventDetailData extends Data
 {
-    /**
-     * @param  array<string, mixed>  $taxonomy
-     * @param  array<string, mixed>  $media
-     * @param  array<string, mixed>  $references
-     * @param  array<int, string>  $peopleNames
-     * @param  array<int, OccurrenceDetailData>  $occurrences
-     * @param  array<string, mixed>|null  $metadata
-     */
     public function __construct(
         public readonly string $id,
-        public readonly string $name,
+        public readonly string $title,
         public readonly string $slug,
-        public readonly ?string $summary = null,
-        public readonly ?string $description = null,
-        public readonly string $status = 'draft',
-        public readonly string $moderationStatus = 'pending',
-        public readonly string $visibility = 'public',
-        public readonly string $structure = 'standalone',
-        public readonly ?string $timezone = null,
-        public readonly array $taxonomy = [],
-        public readonly array $media = [],
-        public readonly array $references = [],
-        public readonly array $peopleNames = [],
-        public readonly ?string $publishedAt = null,
-        public readonly ?string $publicStartsAt = null,
-        public readonly ?string $publicEndsAt = null,
-        public readonly array $occurrences = [],
-        public readonly ?array $metadata = null,
-        public readonly bool $registrationRequired = false,
+        public readonly string|null|Optional $summary,
+        public readonly string|null|Optional $description,
+        public readonly string $type,
+        public readonly string $status,
+        public readonly string $visibility,
+        public readonly string $delivery_mode,
+        public readonly string $timezone,
+        public readonly string|null|Optional $status_reason,
+        public readonly CarbonImmutable|null|Optional $published_at,
+        public readonly CarbonImmutable|null|Optional $cancelled_at,
+        public readonly CarbonImmutable|null|Optional $postponed_at,
+        public readonly CarbonImmutable|null|Optional $archived_at,
+        public readonly CarbonImmutable|null|Optional $completed_at,
+        public readonly string|null|Optional $cover_image_url,
+        public readonly CarbonImmutable $created_at,
+        public readonly CarbonImmutable $updated_at,
+        /** @var array<EventOccurrenceData> */
+        public readonly array $occurrences,
+        /** @var array<EventLocationData> */
+        public readonly array $locations,
+        /** @var array<EventInvolvementData> */
+        public readonly array $involvements,
+        /** @var array<TicketTypeData> */
+        public readonly array $ticket_types,
+        /** @var array<EventSessionData> */
+        public readonly array $sessions,
+        /** @var array<EventLinkData> */
+        public readonly array $links,
     ) {}
 
     public static function fromEvent(Event $event): self
     {
-        $event->loadMissing([
-            'classifications',
-            'assets',
-            'references',
-            'people',
-            'occurrences.address',
-            'occurrences.subLocation',
-            'occurrences.references',
-            'occurrences.agendaItems',
-        ]);
+        $occurrences = [];
+        if ($event->relationLoaded('occurrences')) {
+            foreach ($event->occurrences->sortBy('starts_at') as $occurrence) {
+                $occurrences[] = EventOccurrenceData::fromOccurrence($occurrence);
+            }
+        }
+
+        $locations = [];
+        if ($event->relationLoaded('locations')) {
+            foreach ($event->locations as $location) {
+                $locations[] = EventLocationData::fromEventLocation($location);
+            }
+        }
+
+        $involvements = [];
+        if ($event->relationLoaded('involvements')) {
+            $featured = $event->involvements->where('is_featured', true);
+            $others = $event->involvements->where('is_featured', false);
+            foreach ($featured->merge($others) as $involvement) {
+                $involvements[] = EventInvolvementData::fromEventInvolvement($involvement);
+            }
+        }
+
+        $ticketTypes = [];
+        if ($event->relationLoaded('ticketTypes')) {
+            foreach ($event->ticketTypes as $ticketType) {
+                $ticketTypes[] = TicketTypeData::fromTicketType($ticketType);
+            }
+        }
+
+        $sessions = [];
+        if ($event->relationLoaded('sessions')) {
+            foreach ($event->sessions->sortBy('sort_order') as $session) {
+                $sessions[] = EventSessionData::fromEventSession($session);
+            }
+        }
+
+        $links = [];
+        if ($event->relationLoaded('links')) {
+            foreach ($event->links as $link) {
+                $links[] = EventLinkData::fromEventLink($link);
+            }
+        }
 
         return new self(
             id: $event->id,
-            name: $event->name,
+            title: $event->title,
             slug: $event->slug,
             summary: $event->summary,
             description: $event->description,
-            status: $event->status->value,
-            moderationStatus: $event->moderation_status->value,
-            visibility: $event->visibility->value,
-            structure: $event->structure->value,
-            timezone: $event->default_timezone,
-            taxonomy: $event->taxonomyTerms(),
-            media: $event->assetReferences(),
-            references: $event->referenceMaterials(),
-            peopleNames: $event->people
-                ->map(static fn (EventPerson $person): ?string => $person->display_name)
-                ->filter()
-                ->values()
-                ->all(),
-            publishedAt: $event->published_at?->toISOString(),
-            publicStartsAt: $event->public_starts_at?->toISOString(),
-            publicEndsAt: $event->public_ends_at?->toISOString(),
-            occurrences: $event->occurrences
-                ->map(static fn (Occurrence $occurrence): OccurrenceDetailData => OccurrenceDetailData::fromOccurrence($occurrence))
-                ->values()
-                ->all(),
-            metadata: $event->metadata,
-            registrationRequired: (bool) $event->registration_required,
+            type: $event->type,
+            status: $event->status,
+            visibility: $event->visibility,
+            delivery_mode: $event->delivery_mode,
+            timezone: $event->timezone,
+            status_reason: $event->status_reason,
+            published_at: $event->published_at,
+            cancelled_at: $event->cancelled_at,
+            postponed_at: $event->postponed_at,
+            archived_at: $event->archived_at,
+            completed_at: $event->completed_at,
+            cover_image_url: null,
+            created_at: CarbonImmutable::make($event->created_at),
+            updated_at: CarbonImmutable::make($event->updated_at),
+            occurrences: $occurrences,
+            locations: $locations,
+            involvements: $involvements,
+            ticket_types: $ticketTypes,
+            sessions: $sessions,
+            links: $links,
         );
     }
 }

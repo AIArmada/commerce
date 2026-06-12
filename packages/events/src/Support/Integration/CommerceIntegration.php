@@ -35,9 +35,6 @@ final class CommerceIntegration
             && class_exists(Variant::class);
     }
 
-    /**
-     * @return class-string<Model>|null
-     */
     public static function modelClass(string $integrationKey): ?string
     {
         $model = config("events.integrations.{$integrationKey}");
@@ -50,13 +47,9 @@ final class CommerceIntegration
             return null;
         }
 
-        /** @var class-string<Model> $model */
         return $model;
     }
 
-    /**
-     * @return class-string<Model>
-     */
     public static function requireModelClass(string $integrationKey, string $feature): string
     {
         $model = self::modelClass($integrationKey);

@@ -4,56 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Enums\EventModerationStatus;
-use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventReview;
 use AIArmada\Events\Models\EventSubmission;
-use Illuminate\Database\Eloquent\Model;
 
 interface EventModerationWorkflow
 {
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function submit(Event $event, ?Model $actor = null, array $context = []): EventSubmission;
+    public function submit(EventSubmission $submission, mixed $actor = null): void;
 
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function transition(Event $event, EventModerationStatus $decision, ?Model $actor = null, array $context = []): EventReview;
+    public function approve(EventSubmission $submission, mixed $actor = null, ?string $notes = null): void;
 
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function approve(Event $event, ?Model $actor = null, array $context = []): EventReview;
+    public function reject(EventSubmission $submission, mixed $actor, string $reason, ?string $notes = null): void;
 
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function requestChanges(Event $event, ?Model $actor = null, array $context = []): EventReview;
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function reject(Event $event, ?Model $actor = null, array $context = []): EventReview;
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function cancel(Event $event, ?Model $actor = null, array $context = []): EventReview;
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function reconsider(Event $event, ?Model $actor = null, array $context = []): EventReview;
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function revertToDraft(Event $event, ?Model $actor = null, array $context = []): EventReview;
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function remoderate(Event $event, ?Model $actor = null, array $context = []): EventReview;
+    public function requestChanges(EventSubmission $submission, mixed $actor, string $reason, ?string $notes = null): void;
 }

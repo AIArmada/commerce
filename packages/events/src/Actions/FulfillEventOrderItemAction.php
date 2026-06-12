@@ -5,34 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Events\Actions;
 
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
-use AIArmada\Events\Models\Registration;
-use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderItem;
-use Illuminate\Database\Eloquent\Collection;
+use AIArmada\Events\Models\EventRegistrationItem;
 
 final class FulfillEventOrderItemAction
 {
     public function __construct(
         private readonly EventOrderItemFulfillmentResolver $fulfillmentResolver,
-        private readonly CreateRegistrationsForOrderItemAction $createRegistrationsForOrderItem,
     ) {}
 
-    /**
-     * @return Collection<int, Registration>
-     */
-    public function handle(Order $order, OrderItem $orderItem): Collection
+    public function handle(EventRegistrationItem $registrationItem): void
     {
-        $fulfillment = $this->fulfillmentResolver->resolve($order, $orderItem);
-
-        if ($fulfillment === null) {
-            return new Collection;
-        }
-
-        return $this->createRegistrationsForOrderItem->handle(
-            $fulfillment->occurrence,
-            $orderItem,
-            $fulfillment->participants,
-            $fulfillment->purchaser,
-        );
+        $this->fulfillmentResolver->resolve($registrationItem);
     }
 }

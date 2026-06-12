@@ -1,0 +1,51 @@
+{
+    "name": "aiarmada/engagement",
+    "description": "Generic Laravel engagement package: follow, bookmark, respond, react, subscribe, reminders, share",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "engagement",
+        "follow",
+        "bookmark",
+        "reactions",
+        "subscriptions",
+        "reminders",
+        "share"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "aiarmada/commerce-support": "self.version",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "suggest": {
+        "aiarmada/events": "Enables EventEngagementManager integration adapter.",
+        "filament/filament": "Enables the Filament admin UI for engagement management."
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Engagement\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Engagement\\EngagementServiceProvider"
+            ],
+            "aliases": {
+                "Engagement": "AIArmada\\Engagement\\Facades\\Engagement"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

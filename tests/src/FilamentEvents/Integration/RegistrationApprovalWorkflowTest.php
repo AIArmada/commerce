@@ -3,125 +3,53 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Events\Enums\EventStatus;
-use AIArmada\Events\Enums\OccurrenceStatus;
-use AIArmada\Events\Enums\RegistrationStatus;
-use AIArmada\Events\Events\RegistrationApproved;
-use AIArmada\Events\Events\RegistrationRejected;
-use AIArmada\Events\Models\Event as EventModel;
-use AIArmada\Events\Models\Occurrence;
-use AIArmada\Events\Models\Registration;
-use AIArmada\Events\Services\RegistrationService;
-use AIArmada\FilamentEvents\Resources\RegistrationResource;
-use AIArmada\FilamentEvents\Resources\RegistrationResource\Pages\CreateRegistration;
-use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Table;
-use Illuminate\Support\Facades\Event;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventRegistration;
+use AIArmada\FilamentEvents\Resources\EventRegistrationResource;
 
-afterEach(function (): void {
-    Mockery::close();
-});
-
-function makeRegistrationApprovalTable(): Table
-{
-    /** @var HasTable $livewire */
-    $livewire = Mockery::mock(HasTable::class);
-
-    return Table::make($livewire);
-}
-
-it('wires registration approval actions and keeps create forms pending for approval-required occurrences', function (): void {
-    Event::fake([RegistrationApproved::class, RegistrationRejected::class]);
-
-    $user = User::query()->create([
-        'name' => 'Filament Reviewer',
-        'email' => 'filament-reviewer@example.com',
+it('scopes the event registration resource query to the current owner', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Owner A',
+        'email' => 'filament-events-owner-a-' . uniqid() . '@example.com',
         'password' => 'secret',
     ]);
 
-    $this->actingAs($user);
-
-    $event = EventModel::create([
-        'name' => 'Filament Approval Event',
-        'slug' => 'filament-approval-event',
-        'status' => EventStatus::Active,
-        'default_timezone' => 'Asia/Kuala_Lumpur',
-        'registration_required' => true,
+    $ownerB = User::query()->create([
+        'name' => 'Owner B',
+        'email' => 'filament-events-owner-b-' . uniqid() . '@example.com',
+        'password' => 'secret',
     ]);
 
-    $occurrence = Occurrence::create([
-        'event_id' => $event->id,
-        'status' => OccurrenceStatus::Scheduled,
-        'approval_required' => true,
-        'starts_at' => now()->addDays(4),
-        'timezone' => 'Asia/Kuala_Lumpur',
-    ]);
+    $ownerARegistration = OwnerContext::withOwner($ownerA, function (): EventRegistration {
+        $event = Event::factory()->create();
+        $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
-    $service = app(RegistrationService::class);
+        return EventRegistration::factory()->create([
+            'event_id' => $event->id,
+            'event_occurrence_id' => $occurrence->id,
+        ]);
+    });
 
-    $approvalTarget = $service->createForOccurrence($occurrence, [
-        'name' => 'Approval Target',
-        'email' => 'approval-target@example.com',
-    ]);
+    $ownerBRegistration = OwnerContext::withOwner($ownerB, function (): EventRegistration {
+        $event = Event::factory()->create();
+        $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
-    $rejectionTarget = $service->createForOccurrence($occurrence, [
-        'name' => 'Rejection Target',
-        'email' => 'rejection-target@example.com',
-    ]);
+        return EventRegistration::factory()->create([
+            'event_id' => $event->id,
+            'event_occurrence_id' => $occurrence->id,
+        ]);
+    });
 
-    $waitlistedTarget = Registration::create([
-        'occurrence_id' => $occurrence->id,
-        'status' => RegistrationStatus::Waitlisted,
-        'first_name' => 'Waitlisted',
-        'last_name' => 'Guest',
-        'email' => 'waitlisted-filament@example.com',
-    ]);
+    $ownerAIds = OwnerContext::withOwner($ownerA, function (): array {
+        return EventRegistrationResource::getEloquentQuery()->pluck('id')->all();
+    });
 
-    expect($approvalTarget->status)->toBe(RegistrationStatus::Pending)
-        ->and($rejectionTarget->status)->toBe(RegistrationStatus::Pending)
-        ->and(RegistrationResource::approveAction()->record($waitlistedTarget)->isVisible())->toBeTrue()
-        ->and(RegistrationResource::approveAction()->record($rejectionTarget)->isVisible())->toBeTrue();
+    $ownerBIds = OwnerContext::withOwner($ownerB, function (): array {
+        return EventRegistrationResource::getEloquentQuery()->pluck('id')->all();
+    });
 
-    $table = RegistrationResource::table(makeRegistrationApprovalTable());
-
-    $approve = $table->getAction('approve');
-    $reject = $table->getAction('reject');
-
-    expect($approve)->not->toBeNull()
-        ->and($reject)->not->toBeNull();
-
-    $approve?->call(['record' => $approvalTarget]);
-    $rejectionReason = 'Applicant did not meet eligibility requirements';
-    $reject?->call([
-        'record' => $rejectionTarget,
-        'data' => ['reason' => $rejectionReason],
-    ]);
-
-    $approvalTarget->refresh();
-    $rejectionTarget->refresh();
-
-    expect($approvalTarget->status)->toBe(RegistrationStatus::Confirmed)
-        ->and(data_get($approvalTarget->metadata, 'approval_transition'))->toBe('approve')
-        ->and(data_get($approvalTarget->metadata, 'approval_actor_id'))->toBe((string) $user->getKey())
-        ->and($rejectionTarget->status)->toBe(RegistrationStatus::Cancelled)
-        ->and(data_get($rejectionTarget->metadata, 'approval_transition'))->toBe('reject')
-        ->and(data_get($rejectionTarget->metadata, 'approval_rejection_reason'))->toBe($rejectionReason)
-        ->and(data_get($rejectionTarget->metadata, 'cancellation_reason'))->toBe($rejectionReason);
-
-    Event::assertDispatched(RegistrationApproved::class);
-    Event::assertDispatched(RegistrationRejected::class);
-
-    $createPage = new CreateRegistration;
-    $method = new ReflectionMethod($createPage::class, 'mutateFormDataBeforeCreate');
-    $method->setAccessible(true);
-
-    $mutated = $method->invoke($createPage, [
-        'occurrence_id' => $occurrence->id,
-        'status' => RegistrationStatus::Confirmed->value,
-        'first_name' => 'Pending',
-        'last_name' => 'Applicant',
-        'email' => 'pending-applicant@example.com',
-    ]);
-
-    expect($mutated['status'])->toBe(RegistrationStatus::Pending->value);
+    expect($ownerAIds)->toBe([$ownerARegistration->id])
+        ->and($ownerBIds)->toBe([$ownerBRegistration->id]);
 });

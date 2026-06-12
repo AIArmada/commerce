@@ -4,37 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
-use AIArmada\Events\Models\Registration;
-use AIArmada\Orders\Models\Order;
-use AIArmada\Orders\Models\OrderItem;
-use Illuminate\Database\Eloquent\Collection;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventRegistration;
 
 final class FulfillEventOrderAction
 {
-    public function __construct(
-        private readonly FulfillEventOrderItemAction $fulfillEventOrderItem,
-    ) {}
-
-    /**
-     * @return Collection<int, Registration>
-     */
-    public function handle(Order $order): Collection
+    public function handle(EventRegistration $registration): void
     {
-        $order->loadMissing(['items']);
+        OwnerWriteGuard::findOrFailForOwner(Event::class, $registration->event_id);
 
-        $registrations = new Collection;
+        $registration->loadMissing('items');
 
-        foreach ($order->items as $orderItem) {
-            if (! $orderItem instanceof OrderItem) {
-                continue;
-            }
-
-            $registrations = new Collection([
-                ...$registrations->all(),
-                ...$this->fulfillEventOrderItem->handle($order, $orderItem)->all(),
-            ]);
+        foreach ($registration->items as $item) {
+            app(FulfillEventOrderItemAction::class)->handle($item);
         }
-
-        return $registrations;
     }
 }

@@ -2,85 +2,38 @@
 title: Troubleshooting
 ---
 
-# Troubleshooting
+## Common Issues
 
-## The Events navigation group does not appear
+### Resources not appearing in navigation
 
-### Check plugin registration
+Check that the resource is enabled in `config/filament-events.php` under `resources.enabled`. If a key is set to `false`, the resource is not registered.
 
-Make sure the plugin is registered in your Filament panel provider:
+### Model not found in resource table
+
+The Filament resources apply `OwnerUiScope::apply(..., includeGlobal: false)` by default. If the records are global (no owner), they are intentionally hidden. To include global records, you would need to modify the resource's `getEloquentQuery()`.
+
+### Check-in action not visible
+
+The check-in action only appears for passes with `issued` or `active` status. Ensure the pass has been issued and the registration is confirmed.
+
+### "Model not found" relation manager
+
+Relation managers use Eloquent relationships defined in `aiarmada/events` models. If a relationship is missing, check that the core package models define the expected relationship methods.
+
+### Plugin not loading
+
+Ensure the plugin is registered in your panel configuration:
 
 ```php
-use AIArmada\FilamentEvents\FilamentEventsPlugin;
-
 ->plugins([
     FilamentEventsPlugin::make(),
 ])
 ```
 
-### Clear cached metadata
+### Custom navigation group not working
 
-```bash
-php artisan optimize:clear
+Set the navigation group via config or the plugin's fluent method:
+
+```php
+FilamentEventsPlugin::make()->navigationGroup('My Events');
 ```
-
-## The resources appear but the tables are empty
-
-### Check the core events package migrations
-
-`filament-events` depends on the tables from `aiarmada/events`.
-
-```bash
-php artisan migrate
-```
-
-### Check owner scoping
-
-The resources use owner-scoped queries by default. If your panel resolves a different owner than the records were created under, the tables will look empty even though rows exist.
-
-Review the core owner config in `config/events.php` and the application's owner resolver setup.
-
-## Relationship selectors are missing products, orders, or customers
-
-Those selectors depend on the integration model configuration from the core `events` package.
-
-Review the `events.integrations.*` config in the core package docs:
-
-- product model
-- variant model
-- customer model
-- order model
-- order item model
-
-## Check-in or cancel actions fail
-
-The Filament actions delegate to the core `RegistrationService`, so failures usually come from the underlying registration lifecycle rules rather than the Filament layer.
-
-Check:
-
-- the registration status
-- the occurrence check-in window
-- the occurrence capacity / registration window for creation flows
-- whether the occurrence is valid for the requested transition
-- any owner-scoping mismatch between the current admin context and the registration record
-
-## Occurrence scheduling fields look correct, but registration or check-in is still blocked
-
-Review the linked occurrence's:
-
-- `status`
-- `capacity`
-- `registration_opens_at`
-- `registration_closes_at`
-- `check_in_opens_at`
-- `check_in_closes_at`
-
-The admin UI only edits those values. The core events package still enforces them during registration creation and check-in.
-
-## Need deeper domain examples?
-
-Use the core package docs for the underlying event lifecycle:
-
-- [Events overview](../../events/docs/01-overview.md)
-- [Events configuration](../../events/docs/03-configuration.md)
-- [Events usage](../../events/docs/04-usage.md)

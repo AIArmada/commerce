@@ -4,82 +4,33 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Enums\RegistrationStatus;
-use AIArmada\Events\Models\Registration;
-use AIArmada\Events\Services\RegistrationService;
-use AIArmada\Orders\Models\Order;
-use Illuminate\Database\Eloquent\Collection;
+use AIArmada\Events\Contracts\RegistrationServiceInterface;
+use AIArmada\Events\Models\EventRegistration;
 
 final class SyncEventOrderRegistrationsAction
 {
     public function __construct(
-        private readonly RegistrationService $registrations,
+        private readonly RegistrationServiceInterface $registrationService,
     ) {}
 
-    public function cancel(Order $order, string $reason): int
+    public function handle(string $orderId, string $orderType, string $eventType): int
     {
-        return $this->withOrderOwnerContext($order, function () use ($order, $reason): int {
-            $registrations = $this->registrationsForOrder($order)
-                ->filter(static function (Registration $registration): bool {
-                    return in_array($registration->status->value, [
-                        RegistrationStatus::Pending->value,
-                        RegistrationStatus::Confirmed->value,
-                        RegistrationStatus::Waitlisted->value,
-                    ], true);
-                });
+        $registrations = EventRegistration::query()
+            ->where('external_order_id', $orderId)
+            ->where('external_order_type', $orderType)
+            ->get();
 
-            foreach ($registrations as $registration) {
-                $this->registrations->cancel($registration, $reason);
-            }
-
-            return $registrations->count();
-        });
-    }
-
-    /**
-     * @param  array<string, mixed>  $metadata
-     */
-    public function refund(Order $order, int $amount, string $reason, array $metadata = []): int
-    {
-        if ($amount < (int) $order->grand_total) {
-            return 0;
+        $count = 0;
+        foreach ($registrations as $registration) {
+            match ($eventType) {
+                'paid' => $this->registrationService->approve($registration),
+                'cancelled' => $this->registrationService->cancel($registration, 'Order cancelled'),
+                'refunded' => $this->registrationService->cancel($registration, 'Order refunded'),
+                default => null,
+            };
+            $count++;
         }
 
-        return $this->withOrderOwnerContext($order, function () use ($order, $reason, $metadata): int {
-            $registrations = $this->registrationsForOrder($order)
-                ->filter(static function (Registration $registration): bool {
-                    return $registration->status->value !== RegistrationStatus::Refunded->value;
-                });
-
-            foreach ($registrations as $registration) {
-                $this->registrations->refund($registration, $reason, $metadata);
-            }
-
-            return $registrations->count();
-        });
-    }
-
-    /**
-     * @return Collection<int, Registration>
-     */
-    private function registrationsForOrder(Order $order): Collection
-    {
-        return Registration::query()
-            ->where('order_id', $order->getKey())
-            ->get();
-    }
-
-    /**
-     * @template TReturn
-     *
-     * @param  callable(): TReturn  $callback
-     * @return TReturn
-     */
-    private function withOrderOwnerContext(Order $order, callable $callback): mixed
-    {
-        $owner = OwnerContext::fromTypeAndId($order->owner_type, $order->owner_id);
-
-        return OwnerContext::withOwner($owner, $callback);
+        return $count;
     }
 }

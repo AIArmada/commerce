@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Listeners;
 
-use AIArmada\Events\Actions\SyncEventOrderRegistrationsAction;
-use AIArmada\Orders\Events\OrderRefunded;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Support\Integration\CommerceIntegration;
 
 final class SyncEventOrderRegistrationsOnOrderRefunded
 {
-    public function __construct(
-        private readonly SyncEventOrderRegistrationsAction $syncEventOrderRegistrations,
-    ) {}
-
-    public function handle(OrderRefunded $event): void
+    public function handle(object $event): void
     {
-        $this->syncEventOrderRegistrations->refund($event->order, $event->amount, $event->reason, [
-            'source' => 'order_refunded',
-        ]);
+        if (! CommerceIntegration::aiArmadaOrderFulfillmentAvailable()) {
+            return;
+        }
+
+        OwnerContext::withOwner($event->order->owner ?? null, function () use ($event): void {
+            $action = app(\AIArmada\Events\Actions\SyncEventOrderRegistrationsAction::class);
+            $action->handle($event->order->id, \AIArmada\Orders\Models\Order::class, 'refunded');
+        });
     }
 }

@@ -4,118 +4,51 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Support\Policy;
 
-use AIArmada\Events\Enums\EventStatus;
-use InvalidArgumentException;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventOccurrence;
 
 final class EventLifecyclePolicy
 {
-    /**
-     * @return list<string>
-     */
-    public static function actionKeys(): array
+    private const array PUBLISHABLE_STATUSES = ['draft', 'scheduled', 'delayed', 'postponed'];
+
+    private const array CANCELLABLE_STATUSES = ['draft', 'scheduled', 'published', 'delayed', 'postponed', 'rescheduled'];
+
+    private const array ARCHIVABLE_STATUSES = ['draft', 'scheduled', 'published', 'delayed', 'postponed', 'rescheduled', 'cancelled', 'completed'];
+
+    private const array COMPLETABLE_STATUSES = ['scheduled', 'published', 'delayed', 'rescheduled'];
+
+    public function canPublish(Event $event): bool
     {
-        return array_keys(self::transitionRules());
+        return in_array($event->status, self::PUBLISHABLE_STATUSES, true);
     }
 
-    /**
-     * @return list<string>
-     */
-    public static function allowedActionsFor(EventStatus $fromStatus): array
+    public function canCancel(Event|EventOccurrence $target): bool
     {
-        return array_values(array_filter(
-            array_keys(self::transitionRules()),
-            static function (string $actionKey) use ($fromStatus): bool {
-                $rule = self::transitionRule($actionKey);
-
-                return in_array($fromStatus, $rule['from'], true);
-            },
-        ));
+        return in_array($target->status, self::CANCELLABLE_STATUSES, true);
     }
 
-    public static function canTransition(string $actionKey, EventStatus $fromStatus, EventStatus $toStatus): bool
+    public function canArchive(Event|EventOccurrence $target): bool
     {
-        $rule = self::transitionRule($actionKey);
-
-        return in_array($fromStatus, $rule['from'], true)
-            && $toStatus === $rule['to'];
+        return in_array($target->status, self::ARCHIVABLE_STATUSES, true);
     }
 
-    public static function noteRequired(string $actionKey): bool
+    public function canPostpone(Event|EventOccurrence $target): bool
     {
-        $rule = self::transitionRule($actionKey);
-
-        return (bool) ($rule['note_required'] ?? false);
+        return in_array($target->status, ['scheduled', 'published', 'delayed', 'rescheduled'], true);
     }
 
-    public static function targetStatusFor(string $actionKey): ?EventStatus
+    public function canDelay(EventOccurrence $occurrence): bool
     {
-        $rule = self::transitionRules()[$actionKey] ?? null;
-
-        if ($rule === null) {
-            return null;
-        }
-
-        return $rule['to'];
+        return in_array($occurrence->status, ['scheduled', 'published'], true);
     }
 
-    /**
-     * @return array<string, array{from: list<EventStatus>, to: EventStatus, note_required: bool}>
-     */
-    public static function transitionRules(): array
+    public function canReschedule(EventOccurrence $occurrence): bool
     {
-        $configured = config('events.lifecycle.actions', []);
-
-        if (! is_array($configured) || $configured === []) {
-            return self::defaultTransitionRules();
-        }
-
-        return $configured;
+        return in_array($occurrence->status, ['scheduled', 'published', 'delayed', 'postponed', 'cancelled'], true);
     }
 
-    /**
-     * @return array<string, array{from: list<EventStatus>, to: EventStatus, note_required: bool}>
-     */
-    public static function defaultTransitionRules(): array
+    public function canComplete(Event|EventOccurrence $target): bool
     {
-        return [
-            'postpone' => [
-                'from' => [EventStatus::Active],
-                'to' => EventStatus::Postponed,
-                'note_required' => false,
-            ],
-            'delay' => [
-                'from' => [EventStatus::Active],
-                'to' => EventStatus::Delayed,
-                'note_required' => true,
-            ],
-            'resume' => [
-                'from' => [EventStatus::Postponed, EventStatus::Delayed],
-                'to' => EventStatus::Active,
-                'note_required' => false,
-            ],
-            'cancel' => [
-                'from' => [EventStatus::Active, EventStatus::Postponed, EventStatus::Delayed],
-                'to' => EventStatus::Cancelled,
-                'note_required' => false,
-            ],
-        ];
-    }
-
-    /**
-     * @return array{from: list<EventStatus>, to: EventStatus, note_required: bool}
-     */
-    private static function transitionRule(string $actionKey): array
-    {
-        $rules = self::transitionRules();
-
-        if (! array_key_exists($actionKey, $rules)) {
-            throw new InvalidArgumentException(sprintf('Unknown lifecycle action [%s].', $actionKey));
-        }
-
-        return [
-            'from' => $rules[$actionKey]['from'],
-            'to' => $rules[$actionKey]['to'],
-            'note_required' => $rules[$actionKey]['note_required'],
-        ];
+        return in_array($target->status, self::COMPLETABLE_STATUSES, true);
     }
 }

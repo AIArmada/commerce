@@ -12,20 +12,16 @@ enum VenueStatus: string
 
     case Active = 'active';
     case Inactive = 'inactive';
+    case Closed = 'closed';
+    case UnderMaintenance = 'under_maintenance';
 
     public function label(): string
     {
         return match ($this) {
             self::Active => 'Active',
             self::Inactive => 'Inactive',
-        };
-    }
-
-    public function color(): string
-    {
-        return match ($this) {
-            self::Active => 'success',
-            self::Inactive => 'gray',
+            self::Closed => 'Closed',
+            self::UnderMaintenance => 'Under Maintenance',
         };
     }
 }

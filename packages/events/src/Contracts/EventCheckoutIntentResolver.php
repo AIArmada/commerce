@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Data\EventCheckoutIntentData;
-use AIArmada\Events\Models\Occurrence;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventRegistration;
 
 interface EventCheckoutIntentResolver
 {
-    /**
-     * @param  array<string, mixed>  $metadata
-     */
-    public function resolve(Occurrence $occurrence, int $quantity = 1, array $metadata = []): ?EventCheckoutIntentData;
+    public function resolve(EventOccurrence $occurrence, EventRegistration $registration): mixed;
 }

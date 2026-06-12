@@ -1,18 +1,16 @@
 {
     "name": "aiarmada/events",
-    "description": "Reusable Laravel event domain, scheduling, attendance, and optional commerce integration for AIArmada applications",
-    "license": "MIT",
+    "description": "Generic reusable Laravel events package with scheduling, locations, registrations, ticketing, attendance, and Filament administration",
     "type": "library",
+    "license": "MIT",
     "keywords": [
         "laravel",
-        "commerce",
         "events",
-        "people",
-        "organizers",
+        "scheduling",
         "registrations",
         "attendance",
-        "venues",
-        "tickets"
+        "ticketing",
+        "venues"
     ],
     "authors": [
         {
@@ -21,25 +19,34 @@
         }
     ],
     "require": {
+        "php": "^8.4",
         "aiarmada/commerce-support": "self.version",
-        "php": "^8.4"
+        "spatie/laravel-data": "^4.23",
+        "spatie/laravel-package-tools": "^1.16"
     },
     "suggest": {
-        "aiarmada/products": "Enables product and variant relationships for event definitions and occurrences.",
-        "aiarmada/customers": "Enables customer-backed purchasers and participants for registrations.",
+        "aiarmada/products": "Enables product/variant relationships for tickets and merchandise.",
+        "aiarmada/customers": "Enables customer-backed registrants and participants.",
         "aiarmada/orders": "Enables order-item fulfillment and event order completion sync.",
         "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing."
     },
     "autoload": {
         "psr-4": {
-            "AIArmada\\Events\\": "src/"
-        }
+            "AIArmada\\Events\\": "src/",
+            "AIArmada\\Events\\Database\\Factories\\": "database/factories"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "extra": {
         "laravel": {
             "providers": [
                 "AIArmada\\Events\\EventsServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Events": "AIArmada\\Events\\Facades\\Events"
+            }
         }
     },
     "config": {

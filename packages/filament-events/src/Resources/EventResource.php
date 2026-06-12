@@ -5,22 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerCache;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Data\EventDetailData;
-use AIArmada\Events\Data\EventReviewSchemaData;
-use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Services\EventQueryService;
-use AIArmada\FilamentEvents\Resources\EventResource\Pages;
-use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers;
-use AIArmada\FilamentEvents\Resources\EventResource\Schemas\EventForm;
-use AIArmada\FilamentEvents\Resources\EventResource\Schemas\EventInfolist;
-use AIArmada\FilamentEvents\Resources\EventResource\Tables\EventTable;
+use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use BackedEnum;
-use Carbon\CarbonImmutable;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ViewAction;
+use Filament\Infolists\Components\CodeEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -28,18 +23,13 @@ final class EventResource extends Resource
 {
     protected static ?string $model = Event::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-calendar-days';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-calendar';
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?int $navigationSort = 1;
 
     public static function getNavigationGroup(): ?string
     {
-        return (string) config('filament-events.navigation.group', 'Events');
-    }
-
-    public static function getNavigationSort(): ?int
-    {
-        return (int) config('filament-events.navigation.resources.events', 2);
+        return config('filament-events.navigation.group');
     }
 
     /**
@@ -51,78 +41,173 @@ final class EventResource extends Resource
         $query = parent::getEloquentQuery();
 
         return OwnerUiScope::apply($query, includeGlobal: false)
-            ->with(['series', 'product'])
             ->withCount('occurrences');
-    }
-
-    public static function getNavigationBadge(): ?string
-    {
-        $count = OwnerCache::remember(
-            OwnerContext::resolve(),
-            'filament-events.nav-badge.active',
-            CarbonImmutable::now()->addSeconds(30),
-            fn (): int => static::getEloquentQuery()->where('status', EventStatus::Active)->count(),
-        );
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function form(Schema $schema): Schema
-    {
-        return EventForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return EventTable::configure($table);
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('title')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'draft' => 'gray',
+                        'pending_review' => 'warning',
+                        'scheduled' => 'info',
+                        'published' => 'success',
+                        'delayed', 'postponed' => 'warning',
+                        'cancelled', 'voided', 'expired' => 'danger',
+                        'completed' => 'success',
+                        'archived' => 'gray',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('visibility')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'public' => 'success',
+                        'unlisted' => 'warning',
+                        'private', 'internal' => 'danger',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('delivery_mode')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'physical' => 'info',
+                        'online' => 'success',
+                        'hybrid' => 'warning',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('occurrences_count')
+                    ->label('Occurrences')
+                    ->counts('occurrences'),
+                Tables\Columns\TextColumn::make('published_at')
+                    ->dateTime()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'pending_review' => 'Pending Review',
+                        'scheduled' => 'Scheduled',
+                        'published' => 'Published',
+                        'delayed' => 'Delayed',
+                        'postponed' => 'Postponed',
+                        'cancelled' => 'Cancelled',
+                        'completed' => 'Completed',
+                        'archived' => 'Archived',
+                    ]),
+                Tables\Filters\SelectFilter::make('visibility')
+                    ->options([
+                        'public' => 'Public',
+                        'unlisted' => 'Unlisted',
+                        'private' => 'Private',
+                    ]),
+                Tables\Filters\SelectFilter::make('delivery_mode')
+                    ->options([
+                        'physical' => 'Physical',
+                        'online' => 'Online',
+                        'hybrid' => 'Hybrid',
+                    ]),
+            ])
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(EventExporter::class)
+                    ->label('Export Events'),
+                \Filament\Actions\Action::make('publish')
+                    ->label('Publish')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->action(function (\AIArmada\Events\Models\Event $record) {
+                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->publish($record);
+                    })
+                    ->visible(fn (\AIArmada\Events\Models\Event $record) => $record->status === \AIArmada\Events\Models\Event::DRAFT || $record->status === \AIArmada\Events\Models\Event::PENDING_REVIEW)
+                    ->requiresConfirmation(),
+                \Filament\Actions\Action::make('archive')
+                    ->label('Archive')
+                    ->icon('heroicon-o-archive-box')
+                    ->color('warning')
+                    ->action(function (\AIArmada\Events\Models\Event $record) {
+                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->archive($record);
+                    })
+                    ->visible(fn (\AIArmada\Events\Models\Event $record) => $record->status === \AIArmada\Events\Models\Event::PUBLISHED)
+                    ->requiresConfirmation(),
+                \Filament\Actions\Action::make('cancel')
+                    ->label('Cancel')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->form([
+                        \Filament\Forms\Components\Textarea::make('reason')->required(),
+                    ])
+                    ->action(function (array $data, \AIArmada\Events\Models\Event $record) {
+                        app(\AIArmada\Events\Contracts\EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
+                    })
+                    ->visible(fn (\AIArmada\Events\Models\Event $record) => !in_array($record->status, ['cancelled', 'completed', 'archived']))
+                    ->requiresConfirmation(),
+            ])
+            ->actions([
+                ViewAction::make(),
+            ]);
     }
 
     public static function infolist(Schema $schema): Schema
     {
-        return EventInfolist::configure($schema);
+        return $schema
+            ->schema([
+                Section::make('Identity')
+                    ->schema([
+                        TextEntry::make('title'),
+                        TextEntry::make('slug'),
+                        TextEntry::make('summary'),
+                        TextEntry::make('description'),
+                        TextEntry::make('type'),
+                    ])->columns(2),
+                Section::make('Lifecycle')
+                    ->schema([
+                        TextEntry::make('status')->badge(),
+                        TextEntry::make('visibility')->badge(),
+                        TextEntry::make('delivery_mode')->badge(),
+                        TextEntry::make('published_at')->dateTime(),
+                        TextEntry::make('cancelled_at')->dateTime(),
+                        TextEntry::make('postponed_at')->dateTime(),
+                        TextEntry::make('archived_at')->dateTime(),
+                    ])->columns(2),
+                Section::make('Ownership')
+                    ->schema([
+                        TextEntry::make('owner_type'),
+                        TextEntry::make('owner_id'),
+                    ])->columns(2),
+                Section::make('Metadata')
+                    ->schema([
+                        CodeEntry::make('metadata')
+                            ->visible(fn (?array $state): bool => ! empty($state)),
+                    ]),
+            ]);
     }
 
     public static function getRelations(): array
     {
         return [
-            RelationManagers\OccurrencesRelationManager::class,
-            RelationManagers\EventPeopleRelationManager::class,
-            RelationManagers\EventOrganizersRelationManager::class,
-            RelationManagers\EventSpeakersRelationManager::class,
-            RelationManagers\EventSponsorsRelationManager::class,
-            RelationManagers\EventSubmissionsRelationManager::class,
-            RelationManagers\EventReviewsRelationManager::class,
-            RelationManagers\EventChangesRelationManager::class,
-            RelationManagers\EventAssetsRelationManager::class,
-            RelationManagers\EventClassificationsRelationManager::class,
-            RelationManagers\EventEngagementsRelationManager::class,
-            RelationManagers\EventAttendanceRelationManager::class,
-            RelationManagers\EventAgendasRelationManager::class,
+            EventResource\RelationManagers\OccurrencesRelationManager::class,
+            EventResource\RelationManagers\SessionsRelationManager::class,
+            EventResource\RelationManagers\LocationsRelationManager::class,
+            EventResource\RelationManagers\InvolvementsRelationManager::class,
+            EventResource\RelationManagers\RegistrationsRelationManager::class,
+            EventResource\RelationManagers\TicketTypesRelationManager::class,
+            EventResource\RelationManagers\AttendancesRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListEvents::route('/'),
-            'create' => Pages\CreateEvent::route('/create'),
-            'view' => Pages\ViewEvent::route('/{record}'),
-            'edit' => Pages\EditEvent::route('/{record}/edit'),
+            'index' => EventResource\Pages\ListEvents::route('/'),
+            'view' => EventResource\Pages\ViewEvent::route('/{record}'),
         ];
-    }
-
-    public static function getGloballySearchableAttributes(): array
-    {
-        return ['name', 'slug', 'summary', 'description'];
-    }
-
-    public static function reviewSchema(Event $event): EventReviewSchemaData
-    {
-        return app(EventQueryService::class)->reviewSchema($event);
-    }
-
-    public static function snapshot(Event $event): EventDetailData
-    {
-        return app(EventQueryService::class)->detail($event);
     }
 }

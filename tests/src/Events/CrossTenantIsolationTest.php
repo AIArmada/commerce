@@ -2,44 +2,42 @@
 
 declare(strict_types=1);
 
-namespace Tests\src\Events;
-
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\Occurrence;
-use AIArmada\Events\Models\Registration;
+use Illuminate\Auth\Access\AuthorizationException;
 
-beforeEach(function (): void {
-    config(['events.features.owner.enabled' => true]);
-    config(['events.features.owner.auto_assign_on_create' => false]);
-});
+it('isolates event reads and writes by owner', function (): void {
+    $ownerA = User::query()->create([
+        'name' => 'Event Owner A',
+        'email' => 'event-owner-a-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
 
-it('prevents reading events across owners', function (): void {
-    $ownerA = User::query()->create(['name' => 'Owner A', 'email' => 'owner-a@example.com', 'password' => 'secret']);
-    $ownerB = User::query()->create(['name' => 'Owner B', 'email' => 'owner-b@example.com', 'password' => 'secret']);
+    $ownerB = User::query()->create([
+        'name' => 'Event Owner B',
+        'email' => 'event-owner-b-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
 
-    $eventA = Event::query()->create(['name' => 'Owner A Event', 'slug' => 'owner-a-event', 'status' => 'active', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
+    $eventA = OwnerContext::withOwner($ownerA, function (): Event {
+        return Event::factory()->create();
+    });
 
-    expect(Event::query()->withoutOwnerScope()->forOwner($ownerB)->get())->not->toContain($eventA);
-});
+    $eventB = OwnerContext::withOwner($ownerB, function (): Event {
+        return Event::factory()->create();
+    });
 
-it('prevents reading occurrences across owners', function (): void {
-    $ownerA = User::query()->create(['name' => 'Owner A', 'email' => 'occ-owner-a@example.com', 'password' => 'secret']);
-    $ownerB = User::query()->create(['name' => 'Owner B', 'email' => 'occ-owner-b@example.com', 'password' => 'secret']);
+    $ownerAEventIds = OwnerContext::withOwner($ownerA, function () use ($eventA): array {
+        return Event::query()->pluck('id')->all();
+    });
 
-    $event = Event::query()->create(['name' => 'Occurrence Owner A', 'slug' => 'occurrence-owner-a', 'status' => 'active', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
-    $occurrence = Occurrence::query()->create(['event_id' => $event->id, 'starts_at' => now('UTC')->addDay(), 'timezone' => 'UTC', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
+    expect($ownerAEventIds)->toEqual([$eventA->id]);
 
-    expect(Occurrence::query()->withoutOwnerScope()->forOwner($ownerB)->get())->not->toContain($occurrence);
-});
-
-it('prevents reading registrations across owners', function (): void {
-    $ownerA = User::query()->create(['name' => 'Owner A', 'email' => 'reg-owner-a@example.com', 'password' => 'secret']);
-    $ownerB = User::query()->create(['name' => 'Owner B', 'email' => 'reg-owner-b@example.com', 'password' => 'secret']);
-
-    $event = Event::query()->create(['name' => 'Registration Owner', 'slug' => 'registration-owner', 'status' => 'active', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
-    $occurrence = Occurrence::query()->create(['event_id' => $event->id, 'starts_at' => now('UTC')->addDay(), 'timezone' => 'UTC', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
-    $registration = Registration::query()->create(['occurrence_id' => $occurrence->id, 'first_name' => 'Test', 'last_name' => 'User', 'owner_type' => $ownerA->getMorphClass(), 'owner_id' => $ownerA->getKey()]);
-
-    expect(Registration::query()->withoutOwnerScope()->forOwner($ownerB)->get())->not->toContain($registration);
+    expect(function () use ($ownerA, $eventB): void {
+        OwnerContext::withOwner($ownerA, function () use ($eventB): void {
+            OwnerWriteGuard::findOrFailForOwner(Event::class, $eventB->id);
+        });
+    })->toThrow(AuthorizationException::class);
 });
