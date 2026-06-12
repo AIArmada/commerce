@@ -76,11 +76,7 @@ it('passes customer_id in context when a customer is provided', function (): voi
         'last_name' => 'Customer',
         'email' => 'customer-' . uniqid() . '@example.com',
         'status' => CustomerStatus::Active,
-        'wallet_balance' => 0,
-        'lifetime_value' => 0,
-        'total_orders' => 0,
         'accepts_marketing' => false,
-        'last_order_at' => null,
     ]);
 
     $capturedContext = null;
