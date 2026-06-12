@@ -9,6 +9,8 @@ use DateTimeInterface;
 
 class Generator
 {
+    public string $company;
+
     public string $uuid;
 
     public string $slug;
@@ -104,6 +106,12 @@ class Generator
     public function userAgent(): string {}
 
     public function uuid(): string {}
+
+    public function text(int $maxNbChars = 200): string {}
+
+    public function languageCode(): string {}
+
+    public function randomLetter(): string {}
 
     public function word(): string {}
 

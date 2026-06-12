@@ -16,6 +16,7 @@ final class FilamentEventsPlugin implements Plugin
 
     public static function get(): static
     {
+        /* @phpstan-ignore return.type */
         return filament(app(self::class)->getId());
     }
 

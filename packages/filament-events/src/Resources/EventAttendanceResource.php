@@ -31,6 +31,7 @@ final class EventAttendanceResource extends Resource
         return config('filament-events.navigation.group');
     }
 
+    /* @phpstan-ignore return.type */
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<EventAttendance> $query */

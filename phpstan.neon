@@ -39,6 +39,9 @@ parameters:
         -
             identifier: 'return.type'
             message: '#should return.*but returns.*(?:[$]this|static)\(#i'
+        -
+            identifier: 'return.type'
+            message: '#should return.*Builder.*<.*>.*but returns.*Builder.*<.*>.#i'
 
     excludePaths:
         analyseAndScan:

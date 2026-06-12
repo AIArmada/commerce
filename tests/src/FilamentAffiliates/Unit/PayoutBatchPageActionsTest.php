@@ -49,7 +49,7 @@ it('processes a payout via the record action', function (): void {
         'affiliate_id' => $affiliate->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '12345678'],
-        'is_verified' => true,
+        'verified_at' => now(),
         'is_default' => true,
     ]);
 
@@ -104,7 +104,7 @@ it('processes a payout when user only has affiliate.payout permission', function
         'affiliate_id' => $affiliate->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Alt Permission Bank', 'account_number' => '87654321'],
-        'is_verified' => true,
+        'verified_at' => now(),
         'is_default' => true,
     ]);
 
@@ -258,7 +258,7 @@ it('executes batch processing bulk action', function (): void {
         'affiliate_id' => $affiliateA->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '12345678'],
-        'is_verified' => true,
+        'verified_at' => now(),
         'is_default' => true,
     ]);
 
@@ -317,7 +317,7 @@ it('blocks payout processing action when user lacks payout update permission', f
         'affiliate_id' => $affiliate->getKey(),
         'type' => PayoutMethodType::BankTransfer,
         'details' => ['bank_name' => 'Test Bank', 'account_number' => '12345678'],
-        'is_verified' => true,
+        'verified_at' => now(),
         'is_default' => true,
     ]);
 

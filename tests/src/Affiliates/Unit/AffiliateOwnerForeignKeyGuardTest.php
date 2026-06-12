@@ -112,7 +112,7 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
         'affiliate_id' => $affiliateA->getKey(),
         'type' => PayoutMethodType::PayPal,
         'details' => ['email' => 'a@example.com'],
-        'is_verified' => false,
+        'verified_at' => null,
         'is_default' => true,
     ]);
 
@@ -120,7 +120,7 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
         'affiliate_id' => $affiliateB->getKey(),
         'type' => PayoutMethodType::PayPal,
         'details' => ['email' => 'b@example.com'],
-        'is_verified' => false,
+        'verified_at' => null,
         'is_default' => true,
     ]))->toThrow(AuthorizationException::class);
 });

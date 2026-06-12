@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEvents\Actions\Exporter;
 use AIArmada\Events\Models\EventAttendance;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
+use Filament\Actions\Exports\Models\Export;
 
 final class EventAttendanceExporter extends Exporter
 {
@@ -25,5 +26,16 @@ final class EventAttendanceExporter extends Exporter
             ExportColumn::make('attendee_id'),
             ExportColumn::make('created_at'),
         ];
+    }
+
+    public static function getCompletedNotificationBody(Export $export): string
+    {
+        $body = 'Your event attendance export has completed and ' . number_format($export->successful_rows) . ' ' . str('row')->plural($export->successful_rows) . ' exported.';
+
+        if ($failedRowsCount = $export->getFailedRowsCount()) {
+            $body .= ' ' . number_format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to export.';
+        }
+
+        return $body;
     }
 }
