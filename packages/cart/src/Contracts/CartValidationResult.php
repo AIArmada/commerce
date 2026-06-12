@@ -19,8 +19,8 @@ final readonly class CartValidationResult
     }
 
     /**
-     * @param array<string, mixed> $errors
-     * @param array<string, mixed> $metadata
+     * @param  array<string, mixed>  $errors
+     * @param  array<string, mixed>  $metadata
      */
     public static function invalid(
         string $message,
