@@ -40,6 +40,8 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampTz('occurred_at')->nullable()->index();
             $table->timestampTz('approved_at')->nullable()->index();
+            $table->timestampTz('rejected_at')->nullable();
+            $table->timestampTz('paid_at')->nullable();
             $table->timestampsTz();
 
             $table->index(['affiliate_id', 'status'], 'affiliate_conversions_affiliate_status_idx');

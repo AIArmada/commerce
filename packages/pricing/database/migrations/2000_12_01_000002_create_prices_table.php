@@ -24,6 +24,7 @@ return new class extends Migration
 
             // Quantity-based pricing (min qty for this price)
             $table->unsignedInteger('min_quantity')->default(1);
+            $table->timestampTz('deactivated_at')->nullable();
 
             // Scheduling
             $table->timestampTz('starts_at')->nullable();

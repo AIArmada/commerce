@@ -63,6 +63,8 @@ return new class extends Migration
 
             // Publishing
             $table->timestampTz('published_at')->nullable();
+            $table->timestampTz('deactivated_at')->nullable();
+            $table->timestampTz('archived_at')->nullable();
 
             $table->timestampsTz();
 
@@ -75,6 +77,8 @@ return new class extends Migration
             $table->index('is_featured');
             $table->index('price');
             $table->index('published_at');
+            $table->index('deactivated_at');
+            $table->index('archived_at');
         });
     }
 

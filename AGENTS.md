@@ -3,52 +3,70 @@
 
 # AI Guidelines Overview (Monorepo Contract)
 
-These files are intentionally split by concern for easier maintenance. Read and apply **all** of them.
+These files are intentionally split by concern for easier maintenance. Read and apply all of them, and keep each rule in the narrowest subject file that fits it.
 
-## How to apply
+## Rule Hierarchy
 
-- **Follow the strictest rule when in doubt** (security > data isolation > correctness > style).
-- **If instructions conflict or are impossible**, say so explicitly, explain why, and propose the safest alternative.
-- **Never assume UI scoping is security**. Server-side enforcement and validation are mandatory.
+- Follow the strictest rule when guidance overlaps: security > data isolation > correctness > style.
+- If instructions conflict or cannot both be satisfied, say so explicitly, explain the conflict, and choose the safest alternative.
+- Never assume UI scoping is security. Server-side enforcement and validation are mandatory.
 
-## Runtime assumptions
+## Runtime Baseline
 
-- **PHP**: Target **PHP 8.4+** only.
-- **Filament**: Use Filament v5 APIs. Filament v5 is API-compatible with Filament v4; the primary difference is Livewire (v5 uses Livewire v4, v4 uses Livewire v3). When official v5 docs are missing, Filament v4 docs/examples are acceptable.
-- **Octane compatibility**: Assume long-lived workers. Avoid request-leaking static mutable state, prefer request-scoped/container-scoped state, and ensure code is safe under Laravel Octane.
+- Target PHP 8.4+ only.
+- Use Filament v5 APIs.
+- Assume long-lived workers. Avoid request-leaking static mutable state, prefer request-scoped or container-scoped state, and keep code safe under Laravel Octane.
 
-## Verification mindset
+## Verification Baseline
 
-- Prefer **small, auditable changes** over broad refactors.
-- Use per-package checks (tests/PHPStan) instead of repo-wide runs.
-- When a guideline requires verification, either run it (if feasible) or call out what must be run by the user.
+- Prefer per-package checks instead of repo-wide runs.
+- When a guideline requires verification, run it if feasible. If not, say exactly what the user must run.
 
-## Agent skills
+## Project References
 
-### Issue tracker
+- Issues are tracked in this repo's GitHub Issues. See `docs/agents/issue-tracker.md`.
+- Use the canonical labels `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+- Treat this repo as multi-context: read `CONTEXT-MAP.md` first, then the relevant `CONTEXT.md` and ADRs. See `docs/agents/domain.md`.
 
-Issues are tracked in this repo's GitHub Issues. See `docs/agents/issue-tracker.md`.
+## Package Contexts
 
-### Triage labels
+- Every `packages/<pkg>` root must have a `CONTEXT.md`.
+- Read the owning package's `CONTEXT.md` before code search or edits.
+- Use the package context to route work quickly: identify the package role, search surface, related packages, and follow-up reads.
+- `CONTEXT.md` is a routing document, not a full spec or changelog. Keep it short, stable, and easy to scan.
+- Required frontmatter: `title`, `package`, `status`, `surface`, `family`.
+- Standard section order:
+  - `## Snapshot`
 
-Use the canonical labels `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+  - `## Read next`
 
-### Domain docs
+  - `## Guardrails`
 
-Treat this repo as multi-context: read `CONTEXT-MAP.md` first, then the relevant context `CONTEXT.md` and ADRs. See `docs/agents/domain.md`.
+- `Snapshot` should name the Composer package, the package role, the best starting search paths, and the related packages.
+- `Read next` should point to the package docs in this order: `01-overview`, `03-configuration`, `04-usage`, `99-troubleshooting`, then `02-installation` when setup or publishing is involved. Add sibling `CONTEXT.md` files when cross-package changes are likely.
+- `Guardrails` should state the package's ownership boundary, the main surfaces it owns, what belongs in sibling packages, and any must-follow review rule such as revalidating IDs or updating docs in the same pass.
+- `filament-*` packages are adapters, not domain owners.
+- If a task crosses core and Filament boundaries, read both contexts before editing.
+- Package docs under `docs/*.md` are canonical. When public behavior or config changes, update the owning package's docs in the same pass.
 
 === .ai/config rules ===
 
 # Config Guidelines
 
-- **Keys**: Keep minimal. If a key is defined but never read, remove it.
-- **Section order** (keep consistent across packages):
-  - Core: Database -> Credentials/API -> Defaults -> Features/Behavior -> Integrations -> HTTP -> Webhooks -> Cache -> Logging.
-  - Filament: Navigation -> Tables -> Features -> Resources.
-- **Rules**:
-  - Any package that uses JSON columns in migrations MUST define and use a `json_column_type` setting.
-  - Prefer opinionated defaults over excessive `env()` usage (only use env vars for secrets or deploy-time values).
-  - Comments: section headers only; inline comments only for non-obvious values.
+## Key Discipline
+
+- Keep config keys minimal. If a key is defined but never read, remove it.
+- Prefer opinionated defaults over excessive `env()` usage. Use env vars only for secrets or deploy-time values.
+- Comments should be section headers only; inline comments are only for non-obvious values.
+
+## Section Order
+
+- Core packages: Database -> Credentials/API -> Defaults -> Features/Behavior -> Integrations -> HTTP -> Webhooks -> Cache -> Logging.
+- Filament packages: Navigation -> Tables -> Features -> Resources.
+
+## JSON Columns
+
+- Any package that uses JSON columns in migrations must define and use a `json_column_type` setting so the column type stays configurable.
 
 ## Verification
 
@@ -59,88 +77,106 @@ Treat this repo as multi-context: read `CONTEXT-MAP.md` first, then the relevant
 
 # Database Guidelines
 
-- **Primary keys**: `uuid('id')->primary()`.
-- **Foreign keys**: `foreignUuid('col')` only.
-- **Never** add DB-level constraints or cascades: no `->constrained()`, no `->cascadeOnDelete()`, no FK constraints.
-- **Cascades/integrity**: enforce in application logic (models/actions/services).
-- **Migrations**: keep safe/idempotent; no `down()` required.
+## Primary Keys
+
+- Use `uuid('id')->primary()` for primary keys.
+
+## Foreign Key Columns
+
+- Use `foreignUuid('col')` for foreign-key columns only.
+- Do not add database foreign-key constraints.
+
+## Integrity Rules
+
+- Never add database-level constraints or cascades: no `->constrained()`, no `->cascadeOnDelete()`, no FK constraints.
+- Enforce cascades and integrity in application logic through models, Actions, and services.
+
+## Migrations
+
+- Keep migrations safe and idempotent.
+- No `down()` method is required.
 
 ## Verification
 
-- Ensure no constraints/cascades slipped in: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
+- Ensure no constraints or cascades slipped in: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
 
 === .ai/development rules ===
 
 # Development Guidelines
 
-- **Safety**: NEVER "cleanup" or mass-revert without permission.
-- **Scope**: Run tools (Pint/PHPStan) ONLY on modified packages.
+## Tooling and Scope
 
-## Monorepo Formatting
+- Run tools such as Pint, PHPStan, and Pest only on modified packages.
+- If touching `packages/*/src/**`, run Pint only on the changed files or at least only on the changed packages.
+- Never run Pint repo-wide "just to be safe"; it creates noisy diffs across unrelated packages.
+- Do not open style-only PRs.
+- Prefer the standard project-local binaries directly (`./vendor/bin/pest`, `./vendor/bin/phpstan`, `./vendor/bin/rector`, `./vendor/bin/pint`) in a normal local shell.
+- Do not add or commit machine-specific launcher files or symlinks such as `php-local`; personal PHP/Herd wrappers belong in local shell config, not the repository.
+- Keep tracked agent and MCP config repo-safe. Local development credential files like `auth.json` may exist on your machine, but they must stay ignored and never be committed.
+- Do not commit absolute home-directory paths, personal `SITE_PATH` values, or other machine-specific local tool wiring.
 
-- **Golden rule**: No style-only PRs.
-- If touching `packages/*/src/**`, run Pint only on changed files (or at least only the changed packages).
-- Never run Pint repo-wide “just to be safe” — it creates noisy diffs across unrelated packages.
+## Code Conventions
 
-## Best Practices
-
-- **Tooling commands**: Prefer standard project-local binaries directly (`./vendor/bin/pest`, `./vendor/bin/phpstan`, `./vendor/bin/rector`, `./vendor/bin/pint`) in a normal local shell. Do **not** add or commit machine-specific launcher files/symlinks such as `php-local`; personal PHP/Herd wrappers belong in local shell config, not the repo.
-- **Repo-safe local tooling**: Keep tracked agent/MCP config repo-safe. Local development credential files like `auth.json` may exist on your machine, but they must stay ignored and never be committed. Do **not** commit absolute home-directory paths, personal `SITE_PATH` values, or other machine-specific local tool wiring.
-- **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
-- **Modern PHP**: 8.4+ (readonly, match, modern typing).
-- **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
-- **Octane-safe by default**: Avoid process-wide mutable statics/singletons for request data; use request attributes, scoped container bindings, or explicit context wrappers that always restore state.
-- **Logic**: Action Classes only. No logic in Controllers/Models.
-- **Structure**: SOLID, Repository for access, Factory for creation.
+- Prefer Laravel-native helpers, collections, and the service container when the framework already provides the right abstraction.
+- Use modern PHP 8.4 features and explicit typing.
+- Use `CarbonImmutable` or other immutable date/time objects wherever possible; avoid mutable `Carbon` unless you have a strong reason.
+- Keep business logic out of controllers and models. Put orchestration in Actions.
+- Use SOLID principles, repositories for data access, and factories for object creation when those abstractions improve clarity.
 
 ## Naming
 
-- **Classes**: `PascalCase`.
-- **Methods/Vars**: `camelCase`.
-- **Consts**: `SCREAMING_SNAKE`.
-- **DB**: `snake_case` (tables/cols).
-- **Bool**: `is_`, `has_`, `can_`.
+- Classes: `PascalCase`.
+- Methods and variables: `camelCase`.
+- Constants: `SCREAMING_SNAKE`.
+- Database tables and columns: `snake_case`.
+- Boolean names: `is_`, `has_`, `can_`.
 
-## Agents
+## Team Roles
 
-- **Auditor**: Strict auditing/security (`.github/agents/Auditor.agent.md`).
-- **QC**: QA/Testing (`.github/agents/QC.agent.md`).
-- **Visionary**: Architecture (`.github/agents/Visionary.agent.md`).
+- Auditor: strict auditing/security (`.github/agents/Auditor.agent.md`).
+- QC: QA/testing (`.github/agents/QC.agent.md`).
+- Visionary: architecture (`.github/agents/Visionary.agent.md`).
 
-## Beta Status
+## Compatibility Policy
 
-- **Break Changes**: Allowed for improvement. No backward compatibility required.
+- Breaking changes are allowed when they improve the system. Backward compatibility is not required unless a task explicitly asks for it.
 
 === .ai/docs rules ===
 
 # Documentation Guidelines
 
-- **Location**: `packages/<pkg>/docs/`
-- **Required files**: `01-overview`, `02-install`, `03-config`, `04-usage`, `99-trouble`
-- **Format**: Markdown with YAML frontmatter (`title:`) at the top of every file.
+## Location and Structure
 
-## Content rules
+- Put package docs in `packages/<pkg>/docs/`.
+- Required files: `01-overview.md`, `02-installation.md`, `03-configuration.md`, `04-usage.md`, `99-troubleshooting.md`.
+- Use Markdown with YAML frontmatter. Every file must include a `title:` entry.
 
-- Use `##` for main sections, `###` for subsections.
-- Examples must be copy-paste ready (include imports/namespaces where relevant).
+## Writing Rules
+
+- Use `##` for main sections and `###` for subsections.
+- Examples must be copy-paste ready, including imports and namespaces where relevant.
 - Cross-reference related docs using relative links.
 - Call out breaking changes explicitly and explain the migration path.
 
 ## Callouts
 
-- Import: `import Aside from "@components/Aside.astro"`
-- Variants: `info`, `warning`, `tip`, `danger`
+- Use the docs callout syntax consistently when a callout improves readability.
+- Supported variants: `info`, `warning`, `tip`, `danger`.
 
 === .ai/filament rules ===
 
 # Filament Guidelines
 
-- **Version**: Filament v5.
-  - Filament v5 is API-compatible with Filament v4; the main difference is Livewire (v5 uses Livewire v4, v4 uses Livewire v3).
-  - When v5 docs are incomplete, v4 docs/examples are acceptable.
-- **Spatie**: MUST use official Filament plugins (Tags, Settings, Media, Fonts).
-- **Actions**: Use built-in `Import`/`Export` actions only.
-- **Multitenancy**: Filament tenancy is NOT sufficient; all queries and action handlers must still obey the owner-scoping contract.
+## Platform Rules
+
+- Use Filament v5 APIs.
+- Filament v5 is the target surface. If v5 documentation is thin, the equivalent v4 examples are acceptable because the APIs are compatible.
+- Use the official Filament plugins for Tags, Settings, Media, and Fonts when those capabilities are needed.
+- Use the built-in `Import` and `Export` actions only.
+
+## Tenancy
+
+- Filament tenancy is not a security boundary. All queries and all action handlers must still obey the owner-scoping contract.
 
 ## Verification
 
@@ -150,222 +186,218 @@ Treat this repo as multi-context: read `CONTEXT-MAP.md` first, then the relevant
 
 # General Guidelines (Monorepo-Specific)
 
-Use this file for cross-cutting guidance that is **not already covered** in other guideline files.
+Use this file for cross-cutting judgment, planning, and change execution.
 
-## 1) Workflow Quality
+## Plan Before Coding
 
-- For non-trivial work (multi-step changes, architecture decisions, or risk of regressions), write a brief plan before coding.
+- For non-trivial work such as multi-step changes, architecture decisions, or risky edits, write a brief plan before coding.
 - If new evidence invalidates the plan, stop and re-plan.
-- Verify behavior before declaring done.
+- State assumptions explicitly. If there are multiple interpretations, name them and ask instead of guessing.
+- Push back when a request is unclear, internally inconsistent, or overcomplicated.
 
-### Codebase-aware vs architecture-first
+## Choose the Right Shape of Change
 
-- Start **codebase-aware** by default: inspect sibling files, follow established conventions, and prefer the smallest change that fits the current package and boundary.
-- Steer **architecture-first** when copying the existing pattern would spread a known design problem, duplicate shared logic across packages, or force a fix that is locally correct but systemically wrong.
-- Common escalation signals:
-  - the root cause lives in a shared primitive, package boundary, owner-scoping rule, or cross-cutting contract;
-  - the same workaround would need to be repeated in multiple files or packages;
-  - the local pattern conflicts with hard rules such as security, multitenancy, Octane safety, or package independence;
-  - the right fix likely belongs in `commerce-support` or another shared foundation, not in one package-specific patch.
-- When you switch, say so explicitly: name the local pattern you are not copying, explain why, propose the smallest architecture change that fixes the root cause, and list the surfaces that need verification.
+- Start codebase-aware by default: inspect sibling files, follow established conventions, and prefer the smallest change that fits the package boundary.
+- Switch to architecture-first when copying the existing pattern would spread a known design problem, duplicate shared logic across packages, or create a fix that is locally correct but systemically wrong.
+- When you switch, say so explicitly: name the local pattern you are not copying, explain why, propose the smallest shared correction, and list the surfaces that need verification.
 - Stay architecture-first in scope, not in blast radius: prefer one well-placed shared primitive or boundary correction over a broad rewrite.
-- During refactors and reviews, look for opportunities to preserve or add extension seams—hooks, domain events, metadata, contracts, resolvers, and support classes—so the package stays easy to extend without hard-coded branching.
+- Preserve extension seams where they help the codebase stay adaptable: hooks, domain events, metadata, contracts, resolvers, and support classes.
 
-## 2) Runtime-Extension Safety
-
-Before removing a method that static analysis reports as undefined, verify runtime extension sources first:
-- `macro()` / `hasMacro()` registrations
-- package mixins / traits
-- framework/plugin runtime extension points
-
-If runtime-provided, preserve behavior and fix analysis with a narrow, targeted approach rather than deleting feature calls.
-
-## 3) Action-Oriented Orchestration
-
-- Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entrypoints.
-- Keep trivial single-step handlers inline when extraction adds no clarity.
-- Reuse existing actions before creating new ones.
-- During refactors, reviews, or audits, look for repeated orchestration that should become reusable Actions, Services, or Use Cases instead of living in controllers, jobs, or UI handlers.
-
-## 4) Tracking Review for Behavioral UI Changes
-
-When a task changes user behavior (entry points, forms, actions, or meaningful workflow transitions), evaluate whether product tracking should be updated.
-- Prefer high-signal events over noisy click logs.
-- Prefer server-confirmed events for backend outcomes.
-
-## 5) Thoughtfulness Before Changes
-
-### Before coding
-
-- State assumptions explicitly.
-- If there are multiple interpretations, name them and ask instead of guessing.
-- Surface tradeoffs and push back when a request is unclear or overcomplicated.
-
-### Keep it simple
+## Keep the Change Surgical
 
 - Use the smallest correct change.
-- Do not add speculative abstractions, configurability, error handling for impossible cases, or features beyond the request.
+- Do not add speculative abstractions, configurability, or error handling for impossible cases.
 - If a 50-line fix is enough, do not write 200.
-- Prefer the simplest solution a senior engineer would not call overengineered.
-
-### Be surgical
-
-- Touch only what the request requires.
 - Match existing style; do not refactor adjacent code, comments, or formatting.
 - Clean up only your own mess.
 - Mention unrelated dead code instead of deleting it.
 - Remove only imports, variables, or functions your change makes unused.
+- Never "cleanup" or mass-revert without permission.
 
-### Work toward proof
+## Runtime Extension Safety
 
-- Write a brief plan for multi-step work.
-- Define success criteria up front.
-- Verify each step until the result is done.
+- Before removing a method that static analysis reports as undefined, verify runtime extension sources first.
+- Check `macro()` / `hasMacro()` registrations, package mixins or traits, and framework or plugin extension points.
+- If the method is runtime-provided, preserve behavior and fix analysis with a narrow, targeted change.
+
+## Reusable Orchestration
+
+- Prefer Laravel Actions for reusable orchestration that spans transactions, side effects, normalization, or multiple entry points.
+- Keep trivial single-step handlers inline when extraction adds no clarity.
+- Reuse existing Actions before creating new ones.
+
+## Behavioral Changes
+
+- When a task changes user behavior such as entry points, forms, actions, or meaningful workflow transitions, evaluate whether product tracking should be updated.
+- Prefer high-signal events over noisy click logs.
+- Prefer server-confirmed events for backend outcomes.
+
+## Proof
+
+- Verify behavior before declaring done.
+- Write a brief success criterion for multi-step work.
 - Turn tasks into tests or checks when possible:
-  - Add validation → write failing tests first, then make them pass.
-  - Fix a bug → reproduce it with a test, then fix it.
-  - Refactor X → verify behavior before and after.
+  - Add validation -> write failing tests first, then make them pass.
+  - Fix a bug -> reproduce it with a test, then fix it.
+  - Refactor -> verify behavior before and after.
 - Every changed line should trace directly to the request.
 
 === .ai/model rules ===
 
 # Model Guidelines
 
-- **Base**:
-  - Use `Illuminate\Database\Eloquent\Concerns\HasUuids`.
-  - Do NOT set `protected $table`; implement `getTable()` using package config (tables map + prefix).
-- **Relations**: type relations and collections with PHPDoc generics.
-- **Cascades**: implement application-level cascades in `booted()` (delete or null-out). Never rely on DB cascades.
-- **Migrations**: use `foreignUuid()` only (no `constrained()` / FK constraints).
+## Base Model Contract
+
+- Use `Illuminate\Database\Eloquent\Concerns\HasUuids`.
+- Do not set `protected $table`; implement `getTable()` using package config so table names can be prefixed and remapped per package.
+
+## Type Safety
+
+- Type relations and collections with PHPDoc generics.
+
+## Relationship Behavior
+
+- Implement application-level cascades in `booted()` using delete or null-out behavior.
+- Never rely on database cascades.
+
+## Lifecycle
+
+- When a model has a status or state machine, keep the enum, transition code, and lifecycle columns in sync.
+- Record business-critical terminal transitions in dedicated `timestampTz` columns.
+- Use `*_at` for the actual transition time and keep scheduled deadlines such as `expires_at` separate.
+- Do not bury lifecycle events in JSON or booleans when the timestamp matters operationally.
+- Keep the state-to-timestamp mapping centralised in the transition method or supporting trait.
+- Use immutable date casts for lifecycle timestamps when the model supports them.
 
 ## Verification
 
-- Search for forbidden DB cascades/constraints in migrations: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
+- Search for forbidden DB cascades or constraints in migrations: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
 
 === .ai/multitenancy rules ===
 
 # Multitenancy Guidelines
 
-## Monorepo Contract
+## Boundary and Trust
 
-- **Boundary is mandatory**: Every package that stores tenant-owned data MUST define an explicit tenant boundary and enforce it on **every** read/write path.
-- **Single source of truth**: Multi-tenancy primitives live in `commerce-support`.
-- **No UI trust**: Filament form options are not security. Always validate on the server.
-- **Column semantics**: `owner_type/owner_id` is the default tenant boundary tuple. If a package customizes the column names, it MUST still preserve the same semantics through `HasOwner` / `ownerScopeConfig()` and MUST NOT reuse the boundary columns for unrelated meaning.
+- Every package that stores tenant-owned data must define an explicit tenant boundary and enforce it on every read and write path.
+- Multi-tenancy primitives live in `commerce-support`.
+- Filament form options are not security. Always validate on the server.
+- `owner_type` / `owner_id` is the default tenant boundary tuple. If a package customizes the column names, it must preserve the same semantics through `HasOwner` and `ownerScopeConfig()`, and it must not reuse the boundary columns for unrelated meaning.
 
-## Runtime Ground Truth (`commerce-support`)
+## Runtime Ownership
 
-- **Owner mode switch**: owner enforcement is activated by `commerce-support.owner.enabled`.
-- **Resolver contract**: bind `AIArmada\CommerceSupport\Contracts\OwnerResolverInterface` to resolve the current owner. When owner mode is enabled, using `NullOwnerResolver` is invalid and should fail fast.
-- **Owner context API**: use `OwnerContext::withOwner($owner, fn () => ...)` for scoped work and `OwnerContext::withOwner(null, fn () => ...)` for explicit global work.
-- **HTTP-only override**: use `OwnerContext::setForRequest()` only from middleware/framework integrations. Do **not** use it as a generic escape hatch.
-- **Request protection**: use `AIArmada\CommerceSupport\Middleware\NeedsOwner` on routes/surfaces that must not proceed without a resolved owner.
+- Owner enforcement is activated by `commerce-support.owner.enabled`.
+- Bind `AIArmada\CommerceSupport\Contracts\OwnerResolverInterface` to resolve the current owner. When owner mode is enabled, using `NullOwnerResolver` is invalid and should fail fast.
+- Use `OwnerContext::withOwner($owner, fn () => ...)` for scoped work and `OwnerContext::withOwner(null, fn () => ...)` for explicit global work.
+- Use `OwnerContext::setForRequest()` only from middleware or framework integrations. Do not use it as a generic escape hatch.
+- Use `AIArmada\CommerceSupport\Middleware\NeedsOwner` on routes or surfaces that must not proceed without a resolved owner.
 
-## Design defaults (align ecosystem behavior)
+## Data Model
 
-- **Default enforcement**: models using `HasOwner` get a global `OwnerScope` when their owner scoping config is enabled.
-- **Default include-global**: `false` unless explicitly required by business rules.
-- **Meaning of `owner = null`**: treat as **global-only** records, not “all owners”.
-- **Cross-tenant/system operations**: allowed only when the call site uses an explicit, greppable opt-out.
-- **Explicit global is first-class**: code that reads or mutates global rows must enter explicit global context instead of relying on a missing owner.
+- Tenant-owned tables use `$table->nullableMorphs('owner')`.
+- Tenant-owned models use `HasOwner` from `commerce-support`.
+- When scoping is package-configurable, implement `ownerScopeConfig()` via `HasOwnerScopeConfig` and set the package config key.
+- Non-tenant ownership concepts such as wallet holder, payee, or actor must use different column names and relationships.
 
-## Data Model (Required)
+## Ownership Semantics
 
-- **Migration**: `$table->nullableMorphs('owner')` for tenant-owned tables.
-- **Model**: `use HasOwner` (from `commerce-support`).
-- **Config-backed models**: when scoping is package-configurable, implement `ownerScopeConfig()` via `HasOwnerScopeConfig` and set the package config key.
-- **Provider**: Bind `OwnerResolverInterface` to resolve current owner context.
-- **Non-tenant "ownership"** (wallet holder, payee, actor, etc.) MUST use different column names/relationships.
+- Owner-scoped reads require either a resolved owner or explicit global context.
+- Persisted owner tuples are immutable after creation. Owned rows must not be promoted, demoted, or reassigned by editing `owner_type` or `owner_id` directly.
+- New owned rows may inherit the current owner automatically when `auto_assign_on_create` is enabled.
+- Global writes are privileged. Mutating persisted global rows requires explicit global context.
+- Helper methods such as `removeOwner()` are only safe on unsaved or new models.
+- Default enforcement is a global `OwnerScope` when the model's owner scoping config is enabled.
+- Default include-global is `false` unless business rules require otherwise.
+- `owner = null` means global-only records, not "all owners".
+- Cross-tenant or system operations are allowed only when the call site uses an explicit, greppable opt-out.
+- Code that reads or mutates global rows must enter explicit global context instead of relying on a missing owner.
 
-## Model Semantics (Non-negotiable)
+## Query And Write Enforcement
 
-- **Reads require context**: owner-scoped reads require either a resolved owner or explicit global context.
-- **Persisted owner tuple is immutable**: after creation, owned rows MUST NOT be promoted, demoted, or reassigned by editing `owner_type` / `owner_id` directly.
-- **Auto-assignment**: new owned rows may inherit the current owner automatically when `auto_assign_on_create` is enabled.
-- **Global writes are privileged**: mutating persisted global rows requires explicit global context.
-- **Unsaved exceptions only**: helper methods like `removeOwner()` are only safe on unsaved/new models.
+- Tenant-owned `HasOwner` models should rely on `commerce-support`'s `OwnerScope` rather than package-local ad hoc scoping logic.
+- Intentionally cross-tenant work must use an explicit opt-out such as `->withoutOwnerScope()` or `withoutGlobalScope(OwnerScope::class)`.
+- For inbound IDs on write paths, prefer `OwnerWriteGuard::findOrFailForOwner()` or `ResolveOwnedModelOrFailAction` over hand-rolled checks.
+- Reads must be owner-enforced on every surface, UI and non-UI alike. Use `Model::forOwner($owner)` when intentionally selecting an owner context or including global rows, and use `Model::globalOnly()` for global-only records.
+- Any inbound foreign IDs such as `location_id`, `order_id`, or `batch_id` must be validated as belonging to the current owner scope before attach or update.
+- `DB::table(...)` paths touching tenant-owned data must apply `OwnerQuery::applyToQueryBuilder(...)` because Eloquent global scopes do not apply.
+- If a package supports global rows, include-global behavior must be explicit and consistent.
+- If you remove the global scope, immediately reapply scoping intentionally (`forOwner`, `globalOnly`, `OwnerQuery`, and so on) unless the operation is truly cross-tenant by design.
 
-## Enforcement (Default-on)
+## HTTP, Filament, And Background Work
 
-- Tenant-owned `HasOwner` models SHOULD rely on commerce-support's `OwnerScope` rather than package-local ad hoc scoping logic.
-- **Escape hatch**: intentionally cross-tenant/system operations MUST use an explicit, greppable opt-out (e.g. `->withoutOwnerScope()` / `withoutGlobalScope(OwnerScope::class)`).
-- **Scoped lookup helper**: for inbound IDs on write paths, prefer `OwnerWriteGuard::findOrFailForOwner()` or `ResolveOwnedModelOrFailAction` over hand-rolled checks.
-- **Non-request surfaces** (jobs/commands/schedules): MUST NOT rely on ambient web auth. Pass/iterate owner explicitly and apply owner context via `OwnerContext::withOwner(...)` or the job helpers below.
+- Filament resources must return owner-safe queries from `getEloquentQuery()`.
+- Validate IDs again inside `->action()` handlers for defense in depth, preferably with `OwnerWriteGuard` or `ResolveOwnedModelOrFailAction`.
+- Scope relationship option queries and validate submitted IDs.
+- Widgets, badges, counts, sums, exists checks, and other aggregates must be owner-scoped.
+- Route model binding and download routes must not resolve cross-tenant rows for `HasOwner` models.
+- Prefer hardened binding patterns where applicable, such as `OwnerRouteBinding::bind(...)`, an owner-safe query, or `ResolveOwnedModelOrFailAction`.
+- Console commands, queued jobs, scheduled tasks, exports, reports, health checks, and webhooks must apply the same owner scoping as HTTP and Filament.
+- Prefer `OwnerContextJob` for queued jobs, or implement `OwnerScopedJob` when you need an explicit owner payload contract.
+- Commands and batch processing should iterate owners explicitly and wrap each unit of work in `OwnerContext::withOwner(...)`.
+- Jobs and commands must not rely on ambient web auth to resolve the owner.
 
-## Query Rules (Non-negotiable)
+## Shared Infrastructure
 
-- **Reads**: Must be owner-enforced on every surface (UI + non-UI). Use the default `HasOwner` global scope whenever possible; use `Model::forOwner($owner)` when intentionally selecting an owner context and/or explicitly including global rows.
-- **Writes**: Any inbound foreign IDs (e.g., `location_id`, `order_id`, `batch_id`) MUST be validated as belonging to the current owner scope before attach/update.
-- **Query builder**: `DB::table(...)` paths touching tenant-owned data MUST apply `OwnerQuery::applyToQueryBuilder(...)` (Eloquent global scopes do not apply).
-- **Global rows**: If a package supports global rows, provide clear semantics:
-  - `Model::forOwner($owner)` (owner-only)
-  - `Model::globalOnly()` (global-only)
-  - Optional: include-global behavior must be explicit and consistent.
-- **Unscoped Eloquent is opt-out only**: if you remove the global scope, immediately reapply scoping intentionally (`forOwner`, `globalOnly`, `OwnerQuery`, etc.) unless the operation is truly cross-tenant by design.
+- Use `OwnerCache` for tenant-sensitive cache keys. Never share raw cache keys across owners.
+- Use `OwnerFilesystem` for tenant-sensitive file storage paths. Never concatenate raw `owner_id` paths manually.
+- Use `OwnerScopeKey` when a package needs stable owner-specific cache or file prefixes.
 
-## Filament Rules
+## Verification
 
-- **Resources**: Ensure `getEloquentQuery()` is owner-safe (default-on scope or explicit scoping). Don’t rely solely on `$tenantOwnershipRelationshipName` or UI filters.
-- **Actions**: Validate IDs again inside `->action()` handlers (defense-in-depth), preferably with `OwnerWriteGuard` / `ResolveOwnedModelOrFailAction`.
-- **Relationship selects**: Scope option queries and validate submitted IDs.
-- **Widgets / badges / aggregates**: any `count()`, `sum()`, `exists()`, or stats query must be owner-scoped too.
-
-## Routing & Binding
-
-- Route-model binding/download routes MUST NOT resolve cross-tenant rows for `HasOwner` models.
-- Prefer hardened binding patterns where applicable (e.g., `OwnerRouteBinding::bind(...)`, an owner-safe query, or `ResolveOwnedModelOrFailAction`).
-
-## Non-UI Surfaces
-
-- Console commands, queued jobs, scheduled tasks, exports, reports, health checks, and webhooks MUST apply the same owner scoping as HTTP/Filament.
-- **Jobs**: prefer `OwnerContextJob` for queued jobs, or implement `OwnerScopedJob` when you need an explicit owner payload contract.
-- **Commands / batch processing**: iterate owners explicitly and wrap each unit of work in `OwnerContext::withOwner(...)`.
-- Jobs/commands MUST NOT rely on ambient web auth to resolve owner; pass/iterate owner explicitly and apply owner context via the standard override mechanism.
-
-## Shared Infrastructure Rules
-
-- **Cache**: use `OwnerCache` for tenant-sensitive cache keys; never share raw cache keys across owners.
-- **Filesystem**: use `OwnerFilesystem` for tenant-sensitive file storage paths; never concatenate raw `owner_id` paths manually.
-- **Owner scope keys**: when a package needs stable owner-specific cache/file prefixes, use `OwnerScopeKey` rather than inventing a package-local format.
-
-## Verification (Required)
-
-- Add at least one cross-tenant regression test proving reads are isolated and writes throw/abort.
+- Add at least one cross-tenant regression test proving reads are isolated and writes throw or abort.
 - For `HasOwner` models, prefer reusing `commerce-support`'s `OwnerScopingContractTests` where practical.
-- Grep for unscoped entrypoints:
+- Grep for unscoped entry points:
   - `rg -n -- "::query\(|->query\(|getEloquentQuery\(" packages/<pkg>/src`
   - `rg -n -- "count\(|sum\(|avg\(|exists\(" packages/<pkg>/src`
   - `rg -n -- "DB::table\(" packages/<pkg>/src`
   - `rg -n -- "Route::.*\{.*\}" packages/<pkg>/routes`
   - `rg -n -- "withoutOwnerScope\(|withoutGlobalScope\(.*Owner" packages/<pkg>/src`
-- Grep for non-standard tuple usage and confirm it is intentional/configured:
+- Grep for non-standard tuple usage and confirm it is intentional and configured:
   - `rg -n -- "owner_type|owner_id|owner_type_column|owner_id_column" packages/<pkg>/src packages/<pkg>/config packages/<pkg>/database`
 
 === .ai/packages rules ===
 
 # Packages Guidelines
 
-- **Independence**: Packages must work standalone. Prefer `suggest` over hard `require` for optional integrations.
-- **Foundation-first**: Always check `commerce-support` for existing primitives, traits, helpers, and contracts before building custom logic or requiring external packages directly.
-- **Standardize shared capabilities**: If functionality is useful across packages (now or soon), implement it in `commerce-support` so behavior stays consistent and maintainable long term.
-- When a capability may grow variants, prefer stable extension seams—contracts, metadata, hooks, domain events, resolvers, and support classes—over hard-coded branching; put shared seams in `commerce-support` when multiple packages may benefit.
-- During refactors, reviews, or audits, look for repeated orchestration that should become reusable Actions, Services, or Use Cases so the package stays friendly to multiple entrypoints.
-- **Money & currency**: Treat money as integer minor units plus an explicit currency code. Use `commerce-support` money primitives before rolling your own: `MoneyNormalizer` for normalization, `FormatsMoney` or Akaunting `money(..., ..., false)` for display/value formatting, and package/domain `Money` objects where contracts already expect them. Do **not** hand-roll currency display with raw `number_format()` and string concatenation when a shared formatter is available.
-- **Integration**: When related packages are installed together, auto-enable integrations via `class_exists()` checks in service providers.
-- **DTOs**: Use `spatie/laravel-data`.
-- **Deletes**: No soft deletes (`SoftDeletes`).
-- **Testing**: Verify both standalone install and integrated behavior.
+## Package Boundaries
+
+- Packages must work standalone. Prefer `suggest` over hard `require` for optional integrations.
+- When related packages are installed together, auto-enable integrations in service providers with `class_exists()` checks.
+
+## Shared Foundations
+
+- Always check `commerce-support` for existing primitives, traits, helpers, and contracts before building custom logic or requiring an external package directly.
+- If a capability is useful across packages now or soon, implement it in `commerce-support` so behavior stays consistent and maintainable long term.
+- When a capability may grow variants, prefer stable extension seams such as contracts, metadata, hooks, domain events, resolvers, and support classes. Put shared seams in `commerce-support` when multiple packages may benefit.
+- Prefer tagged registrars or contributor interfaces for optional integrations instead of hard-coded service-provider branching.
+- Keep foundation service providers lean. If they start enumerating downstream packages, split the registration into registrars or support classes.
+- When orchestration repeats across HTTP, jobs, listeners, commands, or UI entry points, extract a reusable Action, Service, or Use Case.
+
+## Money And Storage
+
+- Treat money as integer minor units plus an explicit currency code.
+- Use `commerce-support` money primitives before rolling your own: `MoneyNormalizer` for normalization, `FormatsMoney` or Akaunting `money(..., ..., false)` for display or value formatting, and package or domain `Money` objects where contracts already expect them.
+- Do not hand-roll currency display with raw `number_format()` and string concatenation when a shared formatter is available.
+- No soft deletes (`SoftDeletes`).
+
+## Verification
+
+- Verify both standalone install and integrated behavior.
 
 === .ai/phpstan rules ===
 
 # PHPStan Guidelines
 
-- **Level**: 6
-- **Scope**: per package (e.g. `packages/<pkg>/src`), not repo-wide.
-- **Rules**:
-  - Respect `phpstan.neon`.
-  - Do not add new `ignoreErrors` unless root-cause fixes are exhausted.
-  - Prefer real fixes over suppression.
+## Baseline
+
+- Level 6.
+- Analyse per package, for example `packages/<pkg>/src`, not repo-wide.
+
+## Rules
+
+- Respect `phpstan.neon`.
+- Do not add new `ignoreErrors` entries unless root-cause fixes are exhausted.
+- Prefer real fixes over suppression.
 
 ## Verification
 
@@ -375,49 +407,57 @@ When a task changes user behavior (entry points, forms, actions, or meaningful w
 
 # Spatie Guidelines
 
-- **DTOs**: `spatie/laravel-data`
-- **Logging**: `activitylog` (business events), `auditing` (compliance)
-- **Webhooks**: `spatie/laravel-webhook-client` (idempotent job pattern)
-- **Media**: `spatie/laravel-medialibrary`
-- **Settings**: `spatie/laravel-settings`
-- **Tags**: `spatie/laravel-tags`
-- **States**: `spatie/laravel-model-states`
+## Preferred Packages
 
-## Rule of thumb
+- DTOs: `spatie/laravel-data`
+- Logging: `activitylog` for business events, `auditing` for compliance
+- Webhooks: `spatie/laravel-webhook-client` for the idempotent job pattern
+- Media: `spatie/laravel-medialibrary`
+- Settings: `spatie/laravel-settings`
+- Tags: `spatie/laravel-tags`
+- States: `spatie/laravel-model-states`
 
-- If one of the above solves the problem, prefer it over inventing a custom subsystem.
+## Rule Of Thumb
+
+- If one of these packages solves the problem, use it instead of inventing a custom subsystem.
 
 === .ai/test rules ===
 
 # Testing Guidelines
 
-- **Goal**: ELIMINATE BUGS.
-- **Parallelism is mandatory**: Every Pest or PHPUnit test invocation must include `--parallel`.
-  This applies to single files, directories, package sweeps, and final verification runs.
-  If a command does not support `--parallel`, use the closest parallel-capable equivalent instead of omitting it.
-- **Refs** (Filament v4 docs are acceptable for v5 testing APIs):
-  - [Overview](https://filamentphp.com/docs/4.x/testing/overview)
-  - [Resources](https://filamentphp.com/docs/4.x/testing/testing-resources)
-  - [Tables](https://filamentphp.com/docs/4.x/testing/testing-tables)
-  - [Schemas](https://filamentphp.com/docs/4.x/testing/testing-schemas)
-  - [Actions](https://filamentphp.com/docs/4.x/testing/testing-actions)
-  - [Notifications](https://filamentphp.com/docs/4.x/testing/testing-notifications)
+## Goal
+
+- Eliminate bugs.
+
+## Parallelism
+
+- Every Pest or PHPUnit invocation must include `--parallel`.
+- This applies to single files, directories, package sweeps, and final verification runs.
+- If a command does not support `--parallel`, use the closest parallel-capable equivalent instead of omitting it.
+
+## References
+
+- [Overview](https://filamentphp.com/docs/5.x/testing/overview)
+- [Resources](https://filamentphp.com/docs/5.x/testing/testing-resources)
+- [Tables](https://filamentphp.com/docs/5.x/testing/testing-tables)
+- [Schemas](https://filamentphp.com/docs/5.x/testing/testing-schemas)
+- [Actions](https://filamentphp.com/docs/5.x/testing/testing-actions)
+- [Notifications](https://filamentphp.com/docs/5.x/testing/testing-notifications)
 
 ## Execution
 
-- **Do not run everything**. Run tests per package/scope.
-- **Always use `--parallel`**. No exceptions.
-- **Single**: `./vendor/bin/pest --parallel path/to/Test.php`
-- **Dir**: `./vendor/bin/pest --parallel path/to/dir`
-- **Full**: `./vendor/bin/pest --parallel ...` (final only)
+- Do not run everything. Run tests per package or scope.
+- Single file: `./vendor/bin/pest --parallel path/to/Test.php`
+- Directory: `./vendor/bin/pest --parallel path/to/dir`
+- Full suite: `./vendor/bin/pest --parallel ...` only for final verification.
 
 ## Coverage
 
 - Always include `--parallel` when using `--coverage`.
 - Command: `./vendor/bin/pest --coverage --parallel`
-- Don’t run full coverage if `0% files > 10%`.
-- Targets: Core ≥80%, Filament ≥70%, Support ≥80%.
-- **Output**: ALWAYS pipe: `2>&1 | tee /tmp/out.txt`.
+- Do not run full coverage if `0% files > 10%`.
+- Targets: Core >=80%, Filament >=70%, Support >=80%.
+- Always pipe output with `2>&1 | tee /tmp/out.txt`.
 
 === foundation rules ===
 
@@ -429,7 +469,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4
+- php - 8.5
 
 ## Conventions
 
@@ -490,6 +530,13 @@ This application is a Laravel application and its main Laravel ecosystems packag
 # Deployment
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+
+=== herd rules ===
+
+# Laravel Herd
+
+- The application is served by Laravel Herd at `https?://[kebab-case-project-dir].test`. Use the `get-absolute-url` tool to generate valid URLs. Never run commands to serve the site. It is always available.
+- Use the `herd` CLI to manage services, PHP versions, and sites (e.g. `herd sites`, `herd services:start <service>`, `herd php:list`). Run `herd list` to discover all available commands.
 
 === tests rules ===
 

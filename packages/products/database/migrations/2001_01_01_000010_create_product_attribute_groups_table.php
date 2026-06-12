@@ -20,13 +20,14 @@ return new class extends Migration
             $table->string('code');
             $table->text('description')->nullable();
             $table->unsignedInteger('position')->default(0);
-            $table->boolean('is_visible')->default(true);
+            $table->string('visibility')->default('visible');
+            $table->timestampTz('hidden_at')->nullable();
 
             $table->timestampsTz();
 
             $table->unique(['owner_type', 'owner_id', 'code']);
 
-            $table->index(['position', 'is_visible']);
+            $table->index('visibility');
         });
     }
 

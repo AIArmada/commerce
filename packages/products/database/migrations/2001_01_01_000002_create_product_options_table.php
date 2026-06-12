@@ -21,11 +21,13 @@ return new class extends Migration
             $table->string('name'); // e.g., Size, Color, Material
             $table->string('display_name')->nullable(); // e.g., "Select your size"
             $table->unsignedInteger('position')->default(0);
-            $table->boolean('is_visible')->default(true);
+            $table->string('visibility')->default('visible');
+            $table->timestampTz('hidden_at')->nullable();
 
             $table->timestampsTz();
 
             $table->index(['product_id', 'position']);
+            $table->index('visibility');
         });
     }
 

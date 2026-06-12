@@ -30,8 +30,11 @@ return new class extends Migration
 
             // Display
             $table->unsignedInteger('position')->default(0);
-            $table->boolean('is_visible')->default(true);
             $table->boolean('is_featured')->default(false);
+            $table->string('status')->default('active');
+            $table->string('visibility')->default('catalog');
+            $table->timestampTz('hidden_at')->nullable();
+            $table->timestampTz('archived_at')->nullable();
 
             // Scheduling
             $table->timestampTz('published_at')->nullable();
@@ -47,7 +50,8 @@ return new class extends Migration
 
             $table->unique(['owner_type', 'owner_id', 'slug']);
 
-            $table->index(['type', 'is_visible']);
+            $table->index('status');
+            $table->index('hidden_at');
             $table->index('is_featured');
             $table->index(['published_at', 'unpublished_at']);
         });
