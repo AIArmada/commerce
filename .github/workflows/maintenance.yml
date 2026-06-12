@@ -57,6 +57,8 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run tests (Pest)
@@ -90,6 +92,8 @@ jobs:
           restore-keys: ${{ runner.os }}-phpstan-
 
       - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run PHPStan
@@ -123,6 +127,8 @@ jobs:
           restore-keys: ${{ runner.os }}-rector-
 
       - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run Rector (dry-run)
