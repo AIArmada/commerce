@@ -5,7 +5,9 @@ declare(strict_types=1);
 return [
     /* Navigation */
 
-    'navigation_group' => 'E-commerce',
+    'navigation' => [
+        'group' => 'E-commerce',
+    ],
 
     /* Widgets */
 
@@ -28,6 +30,7 @@ return [
             'fraud_monitoring' => true,
             'reports' => true,
             'network_visualization' => true,
+            'creatives' => true,
         ],
     ],
 
@@ -50,6 +53,7 @@ return [
             'conversions' => true,
             'payouts' => true,
             'support_compliance' => true,
+            'creatives' => true,
         ],
     ],
 
@@ -69,14 +73,15 @@ return [
             'affiliate_payouts' => 62,
             'affiliate_programs' => 63,
             'affiliate_commission_templates' => 64,
-            'affiliate_fraud_signals' => 65,
-            'affiliate_links' => 66,
-            'affiliate_touchpoints' => 67,
-            'affiliate_ranks' => 68,
-            'affiliate_network' => 69,
-            'affiliate_rank_histories' => 70,
-            'affiliate_support_tickets' => 71,
-            'affiliate_tax_documents' => 72,
+            'affiliate_creatives' => 65,
+            'affiliate_fraud_signals' => 66,
+            'affiliate_links' => 67,
+            'affiliate_touchpoints' => 68,
+            'affiliate_ranks' => 69,
+            'affiliate_network' => 70,
+            'affiliate_rank_histories' => 71,
+            'affiliate_support_tickets' => 72,
+            'affiliate_tax_documents' => 73,
         ],
     ],
 

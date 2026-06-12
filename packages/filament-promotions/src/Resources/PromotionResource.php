@@ -140,7 +140,7 @@ final class PromotionResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-promotions.navigation_group');
+        return config('filament-promotions.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

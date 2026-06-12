@@ -253,12 +253,24 @@ $reminders = $resolver->remindersFor($user, $occurrence);
 
 ## Events package integration
 
-When `aiarmada/events` is installed, the engagement package auto-registers an `EventEngagementManager` that connects engagement actions to event domain events:
+When `aiarmada/events` is installed, the engagement package auto-registers an `EventEngagementManager` that connects engagement actions to event domain events. The bridge delegates all actions — `follow`, `bookmark`, `respond`, `subscribe`, `remind`, and `share` — through the engagement package's `EngagementManager`, creating proper persisted records with lifecycle events.
 
 ```php
-// Following an event triggers a domain event
-app(EngagementManager::class)->follow($user, $event);
-// → AIArmada\Engagement\Events\FollowCreated dispatched
+// Sharing an event persists a Share record via EngagementManager
+app(EngagementManager::class)->share($user, $event, ['channel' => 'twitter']);
+// → Share record created with status 'created', then 'shared'
+// → ShareCreated and ShareCompleted dispatched
+```
+
+The `stateFor()` method includes a `share` key with the active share's `id`, `share_url`, `share_token`, `channel`, `status`, and `shared_at`.
+
+To support rich share metadata, implement the `Shareable` contract on your event subject models, or add duck-type methods (`shareUrl()`, `shareTitle()`, `shareDescription()`, `shareImage()`). The `Event` model already includes these duck-type methods.
+
+```php
+$event->shareUrl();        // Generated from configured route
+$event->shareTitle();      // The event title
+$event->shareDescription(); // The event summary
+$event->shareImage();      // First media URL
 ```
 
 ## Customizing via contracts

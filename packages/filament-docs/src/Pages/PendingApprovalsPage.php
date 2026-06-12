@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
-use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -42,7 +41,7 @@ final class PendingApprovalsPage extends Page implements HasTable
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return app(FilamentDocsPlugin::class)->getNavigationGroup();
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

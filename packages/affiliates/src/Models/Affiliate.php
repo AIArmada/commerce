@@ -10,6 +10,8 @@ use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
+use AIArmada\Contacting\Concerns\HasContactMethods;
+use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -44,8 +46,6 @@ use Spatie\ModelStates\HasStates;
  * @property int $direct_downline_count
  * @property int $total_downline_count
  * @property string|null $default_voucher_code
- * @property string|null $contact_email
- * @property string|null $website_url
  * @property string|null $payout_terms
  * @property string|null $tracking_domain
  * @property string|null $owner_type
@@ -56,7 +56,6 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $paused_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read string|null $email Alias for contact_email
  * @property-read int $commission_rate_basis_points Alias for commission_rate
  * @property-read Affiliate|null $parent
  * @property-read AffiliateRank|null $rank
@@ -77,10 +76,12 @@ use Spatie\ModelStates\HasStates;
 class Affiliate extends Model implements Auditable
 {
     use HasCommerceAudit;
+    use HasContactMethods;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
+    use HasSocialProfiles;
     use HasStates;
     use HasUuids;
     use LogsCommerceActivity;
@@ -101,8 +102,6 @@ class Affiliate extends Model implements Auditable
         'direct_downline_count',
         'total_downline_count',
         'default_voucher_code',
-        'contact_email',
-        'website_url',
         'payout_terms',
         'tracking_domain',
         'metadata',
@@ -129,7 +128,6 @@ class Affiliate extends Model implements Auditable
             'direct_downline_count',
             'total_downline_count',
             'default_voucher_code',
-            'website_url',
             'payout_terms',
             'tracking_domain',
             'owner_type',
@@ -376,18 +374,6 @@ class Affiliate extends Model implements Auditable
             $affiliate->balance()->delete();
             $affiliate->children()->update(['parent_affiliate_id' => null]);
         });
-    }
-
-    /**
-     * Alias for contact_email.
-     *
-     * @return Attribute<string|null, never>
-     */
-    protected function email(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->contact_email,
-        );
     }
 
     /**

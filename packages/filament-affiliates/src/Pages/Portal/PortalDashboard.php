@@ -49,6 +49,7 @@ class PortalDashboard extends PortalPage
             'recentConversions' => $this->getConversions(5),
             'recentPayouts' => $this->getPayouts(3),
             'vouchers' => $this->getVouchers(10),
+            'downlines' => $this->getDownlines(),
         ];
     }
 }

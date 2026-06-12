@@ -18,7 +18,7 @@ describe('Pages Instantiation', function (): void {
     });
 
     it('uses configured navigation group for cart dashboard', function (): void {
-        config(['filament-cart.navigation_group' => 'Operations']);
+        config(['filament-cart.navigation.group' => 'Operations']);
 
         expect(CartDashboard::getNavigationGroup())->toBe('Operations');
     });

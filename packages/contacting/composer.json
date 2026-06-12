@@ -1,0 +1,49 @@
+{
+    "name": "aiarmada/contacting",
+    "description": "Generic reusable contact methods and social profiles for any entity in Laravel",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "contact",
+        "social",
+        "profiles",
+        "phone",
+        "email",
+        "whatsapp"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "aiarmada/commerce-support": "self.version",
+        "propaganistas/laravel-phone": "^6.0",
+        "spatie/laravel-data": "^4.23",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "suggest": {
+        "aiarmada/filament-contacting": "Filament admin UI for contact methods and social profiles."
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Contacting\\": "src/",
+            "AIArmada\\Contacting\\Database\\Factories\\": "database/factories"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Contacting\\ContactingServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

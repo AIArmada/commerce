@@ -8,7 +8,9 @@ return [
     | Navigation
     |--------------------------------------------------------------------------
     */
-    'navigation_group' => 'Vouchers & Discounts',
+    'navigation' => [
+        'group' => 'Vouchers & Discounts',
+    ],
 
     'resources' => [
         'navigation_sort' => [

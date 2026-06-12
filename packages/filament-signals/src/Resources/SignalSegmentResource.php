@@ -27,8 +27,6 @@ final class SignalSegmentResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Insights';
-
     protected static ?int $navigationSort = 31;
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -43,7 +41,7 @@ final class SignalSegmentResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-signals.navigation_group', 'Insights');
+        return config('filament-signals.navigation.group', 'Insights');
     }
 
     public static function getNavigationSort(): ?int

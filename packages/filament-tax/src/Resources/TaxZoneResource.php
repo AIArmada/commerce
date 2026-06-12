@@ -23,9 +23,12 @@ final class TaxZoneResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-globe-alt';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Tax';
-
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-tax.navigation.group');
+    }
 
     protected static ?string $recordTitleAttribute = 'name';
 

@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\DocEmailTemplate;
-use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
@@ -248,7 +247,7 @@ final class DocEmailTemplateResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return app(FilamentDocsPlugin::class)->getNavigationGroup();
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

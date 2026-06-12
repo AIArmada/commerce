@@ -22,9 +22,12 @@ class AddressValidationPage extends Page
 
     protected static ?string $slug = 'address-validation';
 
-    protected static string | UnitEnum | null $navigationGroup = 'CRM';
-
     protected static ?int $navigationSort = 100;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-customers.navigation.group');
+    }
 
     public static function getNavigationLabel(): string
     {
@@ -55,7 +58,7 @@ class AddressValidationPage extends Page
                 'id' => $address->id,
                 'customer_name' => $address->customer?->full_name ?? 'Unknown',
                 'full_address' => $address->full_address ?? "{$address->line1}, {$address->city}, {$address->postcode}",
-                'country' => $address->country,
+                'country_code' => $address->country_code,
                 'validated' => $address->getAttribute('verified_at') !== null,
             ])
             ->all();

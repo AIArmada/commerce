@@ -205,6 +205,26 @@ trait InteractsWithAffiliate
     }
 
     /**
+     * Get direct downlines (children) for the affiliate.
+     *
+     * @return Collection<int, Affiliate>
+     */
+    public function getDownlines(): Collection
+    {
+        $affiliate = $this->getAffiliate();
+
+        if (! $affiliate) {
+            return new Collection;
+        }
+
+        return $affiliate->children()
+            ->with(['rank'])
+            ->withCount('conversions')
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    /**
      * Format amount for display.
      *
      * Uses the affiliate's currency or falls back to the default currency.

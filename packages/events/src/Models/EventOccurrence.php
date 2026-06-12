@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Contacting\Concerns\HasContactMethods;
+use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Database\Factories\EventOccurrenceFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
@@ -72,7 +74,9 @@ use Illuminate\Support\Carbon;
  */
 final class EventOccurrence extends Model
 {
+    use HasContactMethods;
     use HasFactory;
+    use HasSocialProfiles;
     use UsesEventUuid;
 
     public const DRAFT = 'draft';

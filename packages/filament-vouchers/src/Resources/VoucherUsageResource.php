@@ -75,7 +75,7 @@ final class VoucherUsageResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-vouchers.navigation_group');
+        return config('filament-vouchers.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

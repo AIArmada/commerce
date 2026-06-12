@@ -8,8 +8,10 @@ return [
     | Navigation
     |--------------------------------------------------------------------------
     */
-    'navigation_group' => 'Shipping',
-    'navigation_badge_color' => 'primary',
+    'navigation' => [
+        'group' => 'Shipping',
+        'badge_color' => 'primary',
+    ],
 
     /*
     |--------------------------------------------------------------------------

@@ -36,7 +36,7 @@ class CartDashboard extends Page
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-cart.navigation_group', 'E-Commerce');
+        return config('filament-cart.navigation.group', 'E-Commerce');
     }
 
     public static function getNavigationBadge(): ?string

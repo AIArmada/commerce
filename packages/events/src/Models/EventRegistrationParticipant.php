@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Events\Database\Factories\EventRegistrationParticipantFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,8 +23,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $participant_type
  * @property string|null $participant_id
  * @property string $name
- * @property string|null $email
- * @property string|null $phone
  * @property string|null $relationship_to_registrant
  * @property bool $is_primary
  * @property int|null $age
@@ -40,6 +39,7 @@ use Illuminate\Support\Carbon;
  */
 final class EventRegistrationParticipant extends Model
 {
+    use HasContactMethods;
     use HasFactory;
     use UsesEventUuid;
 
@@ -47,7 +47,7 @@ final class EventRegistrationParticipant extends Model
         'event_registration_id',
         'event_id', 'event_occurrence_id', 'event_session_id',
         'participant_type', 'participant_id',
-        'name', 'email', 'phone',
+        'name',
         'relationship_to_registrant', 'is_primary',
         'age', 'gender',
         'status', 'notes',

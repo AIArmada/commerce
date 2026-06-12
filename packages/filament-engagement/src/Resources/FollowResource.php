@@ -24,9 +24,12 @@ final class FollowResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-heart';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
-
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-engagement.navigation.group');
+    }
 
     public static function getEloquentQuery(): Builder
     {

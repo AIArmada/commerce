@@ -10,7 +10,6 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\Pending;
-use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\CreateDoc;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\EditDoc;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\ListDocs;
@@ -156,7 +155,7 @@ final class DocResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return app(FilamentDocsPlugin::class)->getNavigationGroup();
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

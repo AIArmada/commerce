@@ -96,7 +96,7 @@ final class ShippingAdapter
                 'postcode' => $shippingData['postcode'] ?? '',
                 'city' => $shippingData['city'] ?? '',
                 'state' => $shippingData['state'] ?? '',
-                'country' => $shippingData['country'] ?? 'MY',
+                'country_code' => $shippingData['country_code'] ?? 'MY',
             ],
         ];
     }

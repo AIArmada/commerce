@@ -225,7 +225,7 @@ final class AffiliateRankResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-affiliates.navigation_group');
+        return config('filament-affiliates.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

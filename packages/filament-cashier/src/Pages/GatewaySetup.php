@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Pages;
 
-use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -26,7 +25,7 @@ final class GatewaySetup extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return FilamentCashierPlugin::get()->getNavigationGroup();
+        return config('filament-cashier.navigation.group');
     }
 
     public function getTitle(): string

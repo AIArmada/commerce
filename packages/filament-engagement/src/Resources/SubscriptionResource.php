@@ -21,9 +21,12 @@ final class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
 
-    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
-
     protected static ?int $navigationSort = 6;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-engagement.navigation.group');
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell';
 

@@ -22,9 +22,12 @@ class SegmentResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-user-group';
 
-    protected static string | UnitEnum | null $navigationGroup = 'CRM';
-
     protected static ?int $navigationSort = 2;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-customers.navigation.group');
+    }
 
     protected static ?string $recordTitleAttribute = 'name';
 

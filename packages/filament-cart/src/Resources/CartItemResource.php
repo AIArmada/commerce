@@ -24,8 +24,6 @@ final class CartItemResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedShoppingBag;
 
-    protected static string | UnitEnum | null $navigationGroup = null;
-
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $navigationLabel = 'Cart Items';
@@ -38,7 +36,7 @@ final class CartItemResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-cart.navigation_group');
+        return config('filament-cart.navigation.group');
     }
 
     public static function form(Schema $schema): Schema

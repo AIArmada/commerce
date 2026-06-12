@@ -330,7 +330,7 @@ radius search
 distance sorting
 routing
 map display
-state/district clustering
+state clustering
 geo recommendations
 ```
 

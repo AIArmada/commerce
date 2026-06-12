@@ -37,7 +37,9 @@ Verify both `aiarmada/events` and `aiarmada/engagement` are installed. The adapt
 
 ### Share URL generation failing
 
-Ensure the subject model is shareable (uses `HasShares` trait) and the `share_url` is accessible. For custom URL generation, bind your own `ShareUrlGenerator` implementation.
+Ensure the subject model has a `shareUrl()` method (or implements `Shareable`). The `Event` model includes a `shareUrl()` method that uses the configured `events.shares.route_name` route. Configure the route name in `config/events.php` or via the `EVENTS_SHARE_ROUTE` env var if your app uses a different route name.
+
+For custom URL generation, bind your own `ShareUrlGenerator` implementation.
 
 ### Traits not finding expected methods
 

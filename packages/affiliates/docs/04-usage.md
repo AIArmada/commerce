@@ -298,6 +298,47 @@ AffiliateStatus::normalize(Disabled::class); // Disabled
 
 Affiliate lifecycle is implemented with Spatie model states, not a backed enum. In write paths you can assign the state class directly, for example `Pending::class` or `Active::class`.
 
+## Affiliate Network / Downlines
+
+### Viewing Downlines on the Dashboard
+
+When an affiliate has downlines (affiliates they referred), the affiliate portal dashboard displays a **Your Network** section showing a table of direct downlines with their name, code, rank, conversion count, and status.
+
+Downlines are loaded via the `children()` relationship on the `Affiliate` model (`parent_affiliate_id`).
+
+### Registration with Referral Code
+
+New affiliates can optionally enter a referral code during self-registration. If the code matches an existing affiliate:
+
+- The new affiliate's `parent_affiliate_id` is set to the referrer
+- The `NetworkService::addToNetwork()` is called to build the closure table when network features are enabled
+
+```php
+// The portal registration form includes a "Referral Code (optional)" field.
+// When a valid code is submitted, the new affiliate is automatically linked
+// as a downline of the referring affiliate.
+```
+
+### Working with the Network Programmatically
+
+```php
+use AIArmada\Affiliates\Services\NetworkService;
+
+$network = app(NetworkService::class);
+
+// Get direct downlines
+$downlines = $network->getDirectRecruits($affiliate);
+
+// Get entire downline tree
+$allDownlines = $network->getDownline($affiliate);
+
+// Get upline
+$upline = $network->getUpline($affiliate);
+
+// Build a tree structure for visualization
+$tree = $network->buildTree($affiliate, $maxDepth = 3);
+```
+
 ### Querying Affiliates
 
 ```php

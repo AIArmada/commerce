@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Contacting\Concerns\HasContactMethods;
+use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Database\Factories\EventSessionFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
@@ -61,7 +63,9 @@ use Illuminate\Support\Carbon;
  */
 final class EventSession extends Model
 {
+    use HasContactMethods;
     use HasFactory;
+    use HasSocialProfiles;
     use UsesEventUuid;
 
     protected $fillable = [

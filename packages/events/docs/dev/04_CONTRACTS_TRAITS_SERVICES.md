@@ -45,7 +45,6 @@ name
 line1
 line2
 city
-district
 state
 postcode
 country

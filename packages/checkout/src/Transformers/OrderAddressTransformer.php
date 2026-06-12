@@ -37,7 +37,7 @@ final class OrderAddressTransformer implements SessionDataTransformerInterface
             'city' => $city ?? 'Unknown',
             'state' => $data['state'] ?? $data['province'] ?? null,
             'postcode' => $postcode ?? '00000',
-            'country' => $country,
+            'country_code' => $country,
             'phone' => $data['phone'] ?? null,
             'email' => $data['email'] ?? null,
             'metadata' => is_array($data['metadata'] ?? null) ? $data['metadata'] : null,
@@ -93,7 +93,7 @@ final class OrderAddressTransformer implements SessionDataTransformerInterface
      */
     private function normalizeCountry(array $data): string
     {
-        $country = $data['country_code'] ?? $data['country'] ?? 'MY';
+        $country = $data['country_code'] ?? 'MY';
 
         if (! is_string($country)) {
             return 'MY';

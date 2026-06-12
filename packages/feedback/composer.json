@@ -1,0 +1,51 @@
+{
+    "name": "aiarmada/feedback",
+    "description": "Core feedback, survey, response, invitation, analytics, and testimonial package for AI Armada applications.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "feedback",
+        "surveys",
+        "nps",
+        "csat",
+        "testimonials",
+        "analytics"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "aiarmada/commerce-support": "self.version",
+        "aiarmada/contacting": "self.version",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "suggest": {
+        "aiarmada/filament-feedback": "Admin panel adapter for managing feedback forms and responses.",
+        "aiarmada/events": "Attach feedback forms to events, occurrences, sessions, speakers, and venues.",
+        "aiarmada/certificates": "React to feedback submission before issuing certificates.",
+        "aiarmada/engagement": "Publish approved testimonials and public review summaries."
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Feedback\\": "src/",
+            "AIArmada\\Feedback\\Database\\Factories\\": "database/factories"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Feedback\\FeedbackServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

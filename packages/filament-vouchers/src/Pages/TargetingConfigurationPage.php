@@ -39,9 +39,12 @@ final class TargetingConfigurationPage extends Page implements HasForms
 
     protected static ?string $title = 'Voucher Targeting Configuration';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Vouchers & Discounts';
-
     protected static ?int $navigationSort = 101;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-vouchers.navigation.group');
+    }
 
     public static function canAccess(): bool
     {
