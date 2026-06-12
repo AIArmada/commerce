@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events;
 
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
+use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Engagement\EngagementServiceProvider;
 use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
+use AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction;
 use AIArmada\Events\Actions\SyncManagementAssignmentToAuthzAction;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
@@ -60,9 +64,9 @@ use AIArmada\Events\Services\DefaultEventSeatAllocator;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\RegistrationService;
+use AIArmada\Events\Steps\CreateEventRegistrationsStep;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
-use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Orders\Events\OrderCanceled;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;
@@ -154,8 +158,8 @@ final class EventsServiceProvider extends PackageServiceProvider
             return;
         }
 
-        $step = new \AIArmada\Events\Steps\CreateEventRegistrationsStep(
-            createRegistrations: $this->app->make(\AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction::class),
+        $step = new CreateEventRegistrationsStep(
+            createRegistrations: $this->app->make(CreateRegistrationsForOrderItemAction::class),
         );
 
         if ($registry->has('create_event_registrations')) {
@@ -169,8 +173,8 @@ final class EventsServiceProvider extends PackageServiceProvider
 
     private function checkoutPipelineAvailable(): bool
     {
-        return interface_exists(\AIArmada\Cart\Contracts\CartManagerInterface::class)
-            && interface_exists(\AIArmada\Checkout\Contracts\CheckoutServiceInterface::class);
+        return interface_exists(CartManagerInterface::class)
+            && interface_exists(CheckoutServiceInterface::class);
     }
 
     private function fulfillmentResolverClass(): string

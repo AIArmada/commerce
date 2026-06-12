@@ -14,6 +14,7 @@ use AIArmada\Events\Steps\CreateEventRegistrationsStep;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use Illuminate\Support\Str;
+
 use function Pest\Laravel\mock;
 
 beforeEach(function (): void {
