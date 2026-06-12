@@ -22,7 +22,7 @@ final class VenueFactory extends Factory
             'slug' => Str::slug($this->faker->unique()->company()),
             'city' => $this->faker->city(),
             'state' => $this->faker->state(),
-            'country' => $this->faker->country(),
+            'country_code' => $this->faker->countryCode(),
             'status' => 'active',
             'visibility' => 'public',
         ];

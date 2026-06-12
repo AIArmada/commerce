@@ -21,8 +21,6 @@ return new class extends Migration
             $table->string('participant_type')->nullable()->index();
             $table->uuid('participant_id')->nullable()->index();
             $table->string('name')->nullable();
-            $table->string('email')->nullable()->index();
-            $table->string('phone')->nullable()->index();
             $table->string('relationship_to_registrant')->nullable();
             $table->boolean('is_primary')->default(false)->index();
             $table->integer('age')->nullable();

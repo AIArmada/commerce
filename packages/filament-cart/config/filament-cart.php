@@ -32,7 +32,9 @@ return [
     | Navigation
     |--------------------------------------------------------------------------
     */
-    'navigation_group' => 'E-Commerce',
+    'navigation' => [
+        'group' => 'E-Commerce',
+    ],
 
     'resources' => [
         'navigation_sort' => [

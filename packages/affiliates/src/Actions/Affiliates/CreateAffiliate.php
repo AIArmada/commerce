@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Contacting\Data\ContactMethodData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -43,8 +44,7 @@ final class CreateAffiliate
                 'commission_type' => $data['commission_type'] ?? $this->getDefaultCommissionType(),
                 'commission_rate' => $data['commission_rate'] ?? $this->getDefaultCommissionRate(),
                 'currency' => $data['currency'] ?? config('affiliates.currency.default', 'USD'),
-                'contact_email' => $data['contact_email'] ?? null,
-                'website_url' => $data['website_url'] ?? null,
+                'parent_affiliate_id' => $data['parent_affiliate_id'] ?? null,
                 'metadata' => $data['metadata'] ?? [],
             ]);
 
@@ -58,6 +58,14 @@ final class CreateAffiliate
             }
 
             $affiliate->save();
+
+            if ($email = $data['contact_email'] ?? null) {
+                $affiliate->addContactMethod(ContactMethodData::email($email, 'general'));
+            }
+
+            if ($website = $data['website_url'] ?? null) {
+                $affiliate->addContactMethod(ContactMethodData::website($website));
+            }
 
             return $affiliate;
         });

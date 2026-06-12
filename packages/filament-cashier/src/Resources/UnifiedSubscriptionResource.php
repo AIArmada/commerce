@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Resources;
 
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Tables\SubscriptionsTable;
 use BackedEnum;
@@ -49,7 +48,7 @@ final class UnifiedSubscriptionResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return FilamentCashierPlugin::get()->getNavigationGroup();
+        return config('filament-cashier.navigation.group');
     }
 
     public static function getNavigationLabel(): string

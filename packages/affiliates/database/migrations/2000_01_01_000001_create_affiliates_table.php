@@ -29,8 +29,6 @@ return new class extends Migration
             $table->integer('direct_downline_count')->default(0);
             $table->integer('total_downline_count')->default(0);
             $table->string('default_voucher_code', 64)->nullable();
-            $table->string('contact_email')->nullable();
-            $table->string('website_url')->nullable();
             $table->string('payout_terms')->nullable();
             $table->string('tracking_domain')->nullable();
             $table->nullableUuidMorphs('owner');

@@ -1,0 +1,33 @@
+{
+    "name": "aiarmada/filament-contacting",
+    "description": "Filament v5 adapter for aiarmada/contacting.",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "aiarmada/contacting": "self.version",
+        "filament/filament": "^5.6.7",
+        "ysfkaya/filament-phone-input": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\FilamentContacting\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AIArmada\\FilamentContacting\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\FilamentContacting\\FilamentContactingServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

@@ -25,8 +25,6 @@ final class ConditionResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTag;
 
-    protected static string | UnitEnum | null $navigationGroup = null;
-
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $navigationLabel = 'Conditions';
@@ -39,7 +37,7 @@ final class ConditionResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-cart.navigation_group');
+        return config('filament-cart.navigation.group');
     }
 
     public static function form(Schema $schema): Schema

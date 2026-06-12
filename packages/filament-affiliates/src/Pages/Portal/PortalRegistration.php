@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
+use AIArmada\Affiliates\Services\NetworkService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
 use Filament\Actions\Action;
@@ -106,7 +107,20 @@ class PortalRegistration extends FilamentRegister
                 $this->getPasswordConfirmationFormComponent(),
                 $this->getAffiliateNameFormComponent(),
                 $this->getWebsiteUrlFormComponent(),
+                $this->getReferralCodeFormComponent(),
             ]);
+    }
+
+    protected function getReferralCodeFormComponent(): Component
+    {
+        return TextInput::make('referral_code')
+            ->label(__('Referral Code (optional)'))
+            ->helperText(__('If you were referred by an affiliate, enter their code here.'))
+            ->maxLength(255)
+            ->exists(
+                table: config('affiliates.database.tables.affiliates', 'affiliate_affiliates'),
+                column: 'code',
+            );
     }
 
     protected function getAffiliateNameFormComponent(): Component
@@ -138,11 +152,32 @@ class PortalRegistration extends FilamentRegister
             }
         }
 
-        return $registrationService->register([
+        $affiliateData = [
             'name' => $data['affiliate_name'],
             'contact_email' => $data['email'],
             'website_url' => $data['website_url'] ?? null,
-        ], $owner);
+        ];
+
+        $referrer = null;
+
+        if (! empty($data['referral_code'])) {
+            $referrer = Affiliate::query()
+                ->where('code', $data['referral_code'])
+                ->first();
+
+            if ($referrer) {
+                $affiliateData['parent_affiliate_id'] = $referrer->id;
+            }
+        }
+
+        $affiliate = $registrationService->register($affiliateData, $owner);
+
+        if ($referrer) {
+            $networkService = app(NetworkService::class);
+            $networkService->addToNetwork($affiliate, $referrer);
+        }
+
+        return $affiliate;
     }
 
     public function getRegisterFormAction(): Action

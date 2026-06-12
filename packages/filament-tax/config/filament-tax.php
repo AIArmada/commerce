@@ -28,4 +28,15 @@ return [
         'disk' => env('TAX_CERTIFICATES_DISK', 'local'),
         'directory' => 'tax-exemptions',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Navigation
+    |--------------------------------------------------------------------------
+    */
+
+    'navigation' => [
+        'group' => 'Tax',
+        'settings_group' => 'Settings',
+    ],
 ];

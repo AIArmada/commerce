@@ -23,7 +23,7 @@ trait HasEventAddress
             'city' => $this->city ?? '',
             'state' => $this->state ?? '',
             'postcode' => $this->postcode ?? '',
-            'country' => $this->country ?? '',
+            'country_code' => $this->country_code ?? '',
         ];
     }
 

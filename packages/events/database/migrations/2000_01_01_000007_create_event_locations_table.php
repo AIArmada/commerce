@@ -29,10 +29,10 @@ return new class extends Migration
             $table->string('line1')->nullable();
             $table->string('line2')->nullable();
             $table->string('city')->nullable()->index();
-            $table->string('district')->nullable()->index();
             $table->string('state')->nullable()->index();
             $table->string('postcode', 20)->nullable();
-            $table->string('country', 2)->nullable()->index();
+            $table->string('country_code', 2)->nullable()->index();
+            $table->string('country')->nullable();
             $table->string('level')->nullable();
             $table->string('unit_no')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();

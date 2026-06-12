@@ -11,7 +11,6 @@ use AIArmada\Docs\States\Overdue;
 use AIArmada\Docs\States\PartiallyPaid;
 use AIArmada\Docs\States\Pending;
 use AIArmada\Docs\States\Sent;
-use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -237,7 +236,7 @@ final class AgingReportPage extends Page implements HasTable
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return app(FilamentDocsPlugin::class)->getNavigationGroup();
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

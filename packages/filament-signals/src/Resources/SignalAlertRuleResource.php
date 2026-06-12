@@ -21,8 +21,6 @@ final class SignalAlertRuleResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell-alert';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Insights';
-
     protected static ?int $navigationSort = 33;
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -37,7 +35,7 @@ final class SignalAlertRuleResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-signals.navigation_group', 'Insights');
+        return config('filament-signals.navigation.group', 'Insights');
     }
 
     public static function getNavigationSort(): ?int

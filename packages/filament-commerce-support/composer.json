@@ -1,0 +1,33 @@
+{
+    "name": "aiarmada/filament-commerce-support",
+    "description": "Filament v5 admin panel for Commerce Support — navigation management, runtime overrides, and unified settings.",
+    "license": "MIT",
+    "homepage": "https://github.com/aiarmada/commerce",
+    "support": {
+        "issues": "https://github.com/aiarmada/commerce/issues",
+        "source": "https://github.com/aiarmada/commerce"
+    },
+    "require": {
+        "aiarmada/commerce-support": "self.version",
+        "filament/filament": "^5.6.7",
+        "spatie/laravel-settings": "^3.8.1",
+        "php": "^8.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\FilamentCommerceSupport\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\FilamentCommerceSupport\\FilamentCommerceSupportServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

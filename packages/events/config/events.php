@@ -47,7 +47,6 @@ return [
             'event_seats' => env('EVENTS_TABLE_SEATS', $tablePrefix . 'event_seats'),
             'event_seat_holds' => env('EVENTS_TABLE_SEAT_HOLDS', $tablePrefix . 'event_seat_holds'),
             'event_seat_allocations' => env('EVENTS_TABLE_SEAT_ALLOCATIONS', $tablePrefix . 'event_seat_allocations'),
-            'event_engagements' => env('EVENTS_TABLE_ENGAGEMENTS', $tablePrefix . 'event_engagements'),
             'event_attendances' => env('EVENTS_TABLE_ATTENDANCES', $tablePrefix . 'event_attendances'),
             'event_attendance_logs' => env('EVENTS_TABLE_ATTENDANCE_LOGS', $tablePrefix . 'event_attendance_logs'),
             'event_materials' => env('EVENTS_TABLE_MATERIALS', $tablePrefix . 'event_materials'),
@@ -105,6 +104,11 @@ return [
     /* Defaults */
     'defaults' => [
         'timezone' => env('EVENTS_TIMEZONE', env('APP_TIMEZONE', 'UTC')),
+    ],
+
+    /* Shares */
+    'shares' => [
+        'route_name' => env('EVENTS_SHARE_ROUTE', 'events.show'),
     ],
 
     /* Codes */

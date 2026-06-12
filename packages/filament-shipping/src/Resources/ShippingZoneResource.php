@@ -25,9 +25,12 @@ class ShippingZoneResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedMap;
 
-    protected static string | UnitEnum | null $navigationGroup = 'Shipping';
-
     protected static ?int $navigationSort = 2;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-shipping.navigation.group');
+    }
 
     /**
      * @return Builder<ShippingZone>

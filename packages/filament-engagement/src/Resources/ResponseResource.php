@@ -21,9 +21,12 @@ final class ResponseResource extends Resource
 {
     protected static ?string $model = Response::class;
 
-    protected static string | UnitEnum | null $navigationGroup = 'Engagement';
-
     protected static ?int $navigationSort = 4;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-engagement.navigation.group');
+    }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-hand-thumb-up';
 

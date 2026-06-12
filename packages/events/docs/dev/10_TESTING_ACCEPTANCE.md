@@ -84,7 +84,7 @@ Create fake domain model `TestMasjid` implementing `HasEventAddress`.
 
 ## Coordinates
 
-- [ ] Location can be filtered by state/district.
+- [ ] Location can be filtered by state.
 - [ ] Location can be queried by lat/lng range.
 - [ ] If geo_point supported, radius query works.
 

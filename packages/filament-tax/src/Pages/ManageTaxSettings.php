@@ -28,9 +28,12 @@ final class ManageTaxSettings extends Page
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-receipt-percent';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Settings';
-
     protected static ?int $navigationSort = 11;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-tax.navigation.settings_group');
+    }
 
     /** @var view-string */
     protected string $view = 'filament-tax::pages.manage-tax-settings';

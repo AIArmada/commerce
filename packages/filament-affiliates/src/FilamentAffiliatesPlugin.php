@@ -9,6 +9,7 @@ use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource;
@@ -112,6 +113,10 @@ final class FilamentAffiliatesPlugin implements Plugin
             $resources[] = AffiliateFraudSignalResource::class;
         }
 
+        if ($features['creatives']) {
+            $resources[] = AffiliateCreativeResource::class;
+        }
+
         return $resources;
     }
 
@@ -166,7 +171,7 @@ final class FilamentAffiliatesPlugin implements Plugin
     }
 
     /**
-     * @return array{conversions: bool, payouts: bool, programs: bool, commission_management: bool, links: bool, attribution: bool, ranks: bool, support_compliance: bool, fraud_monitoring: bool, reports: bool, network_visualization: bool}
+     * @return array{conversions: bool, payouts: bool, programs: bool, commission_management: bool, links: bool, attribution: bool, ranks: bool, support_compliance: bool, fraud_monitoring: bool, reports: bool, network_visualization: bool, creatives: bool}
      */
     private function getAdminFeatures(): array
     {
@@ -185,6 +190,7 @@ final class FilamentAffiliatesPlugin implements Plugin
             'fraud_monitoring' => (bool) ($configured['fraud_monitoring'] ?? true),
             'reports' => (bool) ($configured['reports'] ?? true),
             'network_visualization' => (bool) ($configured['network_visualization'] ?? true),
+            'creatives' => (bool) ($configured['creatives'] ?? true),
         ];
     }
 }

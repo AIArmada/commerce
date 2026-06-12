@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates;
 
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
@@ -158,6 +159,10 @@ class AffiliatePanelProvider extends PanelProvider
 
         if ($features['support_compliance'] ?? true) {
             $pages[] = PortalSupport::class;
+        }
+
+        if ($features['creatives'] ?? true) {
+            $pages[] = PortalCreatives::class;
         }
 
         return $pages;

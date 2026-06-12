@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
+use AIArmada\Contacting\Concerns\HasContactMethods;
+use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Database\Factories\VenueFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
@@ -27,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $district
  * @property string|null $state
  * @property string|null $postcode
+ * @property string|null $country_code
  * @property string|null $country
  * @property float|null $latitude
  * @property float|null $longitude
@@ -34,9 +37,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $google_maps_url
  * @property string|null $waze_url
  * @property string|null $map_url
- * @property string|null $phone
- * @property string|null $email
- * @property string|null $website_url
  * @property string|null $directions
  * @property CarbonImmutable|null $geocoded_at
  * @property string|null $geocoding_source
@@ -53,17 +53,19 @@ use Illuminate\Support\Carbon;
  */
 final class Venue extends Model
 {
+    use HasContactMethods;
     use HasFactory;
+    use HasSocialProfiles;
     use UsesEventUuid;
 
     protected $fillable = [
         'parent_venue_id',
         'name', 'slug', 'venue_type',
         'line1', 'line2',
-        'city', 'district', 'state', 'postcode', 'country',
+        'city', 'district', 'state', 'postcode', 'country_code', 'country',
         'latitude', 'longitude',
         'google_place_id', 'google_maps_url', 'waze_url', 'map_url',
-        'phone', 'email', 'website_url', 'directions',
+        'directions',
         'geocoded_at', 'geocoding_source',
         'status', 'visibility',
         'metadata',

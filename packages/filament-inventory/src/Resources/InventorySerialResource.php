@@ -98,7 +98,7 @@ final class InventorySerialResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-inventory.navigation_group');
+        return config('filament-inventory.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

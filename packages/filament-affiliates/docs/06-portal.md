@@ -10,11 +10,11 @@ The plugin includes a self-service Filament panel for affiliates.
 
 The portal allows affiliates to:
 
-- view a dashboard with earnings, click, conversion summaries, and linked vouchers,
+- view a dashboard with earnings, click, conversion summaries, downline affiliates, and linked vouchers,
 - generate affiliate links (full and short),
 - review conversion history with source labels (link, voucher, downline),
 - review payout history,
-- register a new affiliate account when portal registration is enabled.
+- register a new affiliate account when portal registration is enabled, optionally with a referral code to link as a downline.
 
 ## Enabling the Portal
 
@@ -90,3 +90,14 @@ If stricter enforcement is needed (for example affiliate-only guard middleware),
 
 - Portal filters are not authorization by themselves.
 - Server-side write validation should continue to enforce owner-safe access.
+
+## Dashboard — Downlines
+
+When the affiliate has downlines (affiliates they directly referred), the dashboard displays a **Your Network** section. This table shows each downline's name, affiliate code, rank, conversion count, and status.
+
+## Registration — Referral Code
+
+The registration form includes an optional **Referral Code** field. If a valid affiliate code is entered:
+
+- The new affiliate is linked as a direct downline (`parent_affiliate_id`) of the referring affiliate.
+- The `NetworkService::addToNetwork()` call builds the closure table entry (when `affiliates.network.enabled` is `true`).

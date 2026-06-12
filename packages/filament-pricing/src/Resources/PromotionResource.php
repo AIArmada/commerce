@@ -31,9 +31,12 @@ final class PromotionResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-gift';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Pricing';
-
     protected static ?int $navigationSort = 2;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-pricing.navigation.group');
+    }
 
     protected static ?string $recordTitleAttribute = 'name';
 

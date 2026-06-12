@@ -20,7 +20,7 @@ abstract class BaseJntResource extends Resource
 
     final public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-jnt.navigation_group');
+        return config('filament-jnt.navigation.group');
     }
 
     final public static function getNavigationSort(): ?int
@@ -40,7 +40,7 @@ abstract class BaseJntResource extends Resource
 
     final public static function getNavigationBadgeColor(): ?string
     {
-        return config('filament-jnt.navigation_badge_color', 'primary');
+        return config('filament-jnt.navigation.badge_color', 'primary');
     }
 
     protected static function pollingInterval(): string

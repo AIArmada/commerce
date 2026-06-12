@@ -98,7 +98,7 @@ final class CartResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-cart.navigation_group');
+        return config('filament-cart.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

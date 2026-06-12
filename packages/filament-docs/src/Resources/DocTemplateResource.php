@@ -6,7 +6,6 @@ namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Models\DocTemplate;
-use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\CreateDocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\EditDocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\ListDocTemplates;
@@ -112,7 +111,7 @@ final class DocTemplateResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return app(FilamentDocsPlugin::class)->getNavigationGroup();
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

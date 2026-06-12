@@ -273,6 +273,55 @@
                     </div>
                 </x-filament::section>
             @endif
+
+            @if ($downlines->isNotEmpty())
+                <x-filament::section>
+                    <x-slot name="heading">
+                        {{ __('Your Network') }}
+                    </x-slot>
+
+                    <x-slot name="description">
+                        {{ __('Affiliates you have referred. You earn commissions on their conversions.') }}
+                    </x-slot>
+
+                    <div class="fia-portal-table-wrap">
+                        <table class="fia-portal-table">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('Name') }}</th>
+                                    <th>{{ __('Code') }}</th>
+                                    <th>{{ __('Rank') }}</th>
+                                    <th>{{ __('Conversions') }}</th>
+                                    <th class="fia-portal-status">{{ __('Status') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($downlines as $downline)
+                                    <tr>
+                                        <td>
+                                            <span class="font-medium">{{ $downline->name }}</span>
+                                        </td>
+                                        <td>
+                                            <code class="fia-portal-code">{{ $downline->code }}</code>
+                                        </td>
+                                        <td>
+                                            <span>{{ $downline->rank?->name ?? '—' }}</span>
+                                        </td>
+                                        <td>
+                                            <span>{{ number_format($downline->conversions_count) }}</span>
+                                        </td>
+                                        <td class="fia-portal-status">
+                                            <x-filament::badge :color="$downline->status->color()" size="sm">
+                                                {{ $downline->status->label() }}
+                                            </x-filament::badge>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </x-filament::section>
+            @endif
         </div>
     @endif
 </x-filament-panels::page>

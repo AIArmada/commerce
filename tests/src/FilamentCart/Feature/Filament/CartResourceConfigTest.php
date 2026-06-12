@@ -8,7 +8,7 @@ use Filament\Support\Icons\Heroicon;
 
 test('cart resource navigation uses configuration', function (): void {
     config([
-        'filament-cart.navigation_group' => 'Operations',
+        'filament-cart.navigation.group' => 'Operations',
         'filament-cart.resources.navigation_sort.carts' => 42,
     ]);
 

@@ -25,6 +25,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 */
 
 pest()->extend(TestCase::class)->in(
+    'src/Addressing',
+    'src/FilamentAddressing',
     'src/Cart',
     'src/Checkout',
     'src/Chip',
@@ -53,6 +55,7 @@ pest()->extend(TestCase::class)->in(
     'src/Tax',
     'src/Shipping',
     'src/Support',
+    'src/FilamentCommerceSupport',
 );
 
 pest()->extend(ProductsTestCase::class)->in('src/Products');

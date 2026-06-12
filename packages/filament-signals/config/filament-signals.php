@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 return [
     /* Navigation */
-    'navigation_group' => 'Insights',
+    'navigation' => [
+        'group' => 'Insights',
+    ],
 
     /* Features */
     'features' => [

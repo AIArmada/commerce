@@ -259,7 +259,6 @@ venues
 - line1 string nullable
 - line2 string nullable
 - city string nullable index
-- district string nullable index
 - state string nullable index
 - postcode string(20) nullable index
 - country string(2) nullable index
@@ -398,7 +397,6 @@ event_locations
 - line1 string nullable
 - line2 string nullable
 - city string nullable index
-- district string nullable index
 - state string nullable index
 - postcode string(20) nullable index
 - country string(2) nullable index

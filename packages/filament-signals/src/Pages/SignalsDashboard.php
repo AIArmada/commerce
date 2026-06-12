@@ -20,7 +20,7 @@ final class SignalsDashboard extends Dashboard
 
     public static function getNavigationGroup(): ?string
     {
-        return config('filament-signals.navigation_group', 'Insights');
+        return config('filament-signals.navigation.group', 'Insights');
     }
 
     public static function getNavigationSort(): ?int

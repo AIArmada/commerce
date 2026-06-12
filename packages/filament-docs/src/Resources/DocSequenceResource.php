@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Models\DocSequence;
-use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use BackedEnum;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -238,7 +237,7 @@ final class DocSequenceResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return app(FilamentDocsPlugin::class)->getNavigationGroup();
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

@@ -7,8 +7,8 @@ namespace AIArmada\Engagement\Integrations\Events;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
-use AIArmada\Engagement\Contracts\ShareUrlGenerator;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Models\Share;
 use AIArmada\Events\Contracts\EventEngagementManager as EventEngagementManagerContract;
 
 final class EngagementEventEngagementManager implements EventEngagementManagerContract
@@ -18,7 +18,6 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
         private readonly SubscriptionManager $subscriptionManager,
         private readonly ReminderManager $reminderManager,
         private readonly EngagementStateResolver $stateResolver,
-        private readonly ShareUrlGenerator $shareUrlGenerator,
     ) {}
 
     public function follow(mixed $actor, mixed $eventTarget, array $options = []): mixed
@@ -59,12 +58,20 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
 
     public function share(mixed $actor, mixed $eventTarget, array $options = []): mixed
     {
-        return $this->shareUrlGenerator->generateShareUrl($eventTarget, $options);
+        return $this->engagementManager->share($actor, $eventTarget, $options);
     }
 
     public function stateFor(mixed $actor, mixed $eventTarget): array
     {
         $response = $this->stateResolver->responseFor($actor, $eventTarget);
+
+        $share = Share::query()
+            ->where('sharer_type', $actor->getMorphClass())
+            ->where('sharer_id', $actor->getKey())
+            ->where('shareable_type', $eventTarget->getMorphClass())
+            ->where('shareable_id', $eventTarget->getKey())
+            ->whereIn('status', [Share::STATUS_CREATED, Share::STATUS_SHARED])
+            ->first();
 
         return [
             'is_following' => $this->stateResolver->isFollowing($actor, $eventTarget),
@@ -72,6 +79,14 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
             'response' => $response?->response_type,
             'subscriptions' => $this->stateResolver->subscriptionsFor($actor, $eventTarget),
             'reminders' => $this->stateResolver->remindersFor($actor, $eventTarget),
+            'share' => $share ? [
+                'id' => $share->getKey(),
+                'share_url' => $share->share_url,
+                'share_token' => $share->share_token,
+                'channel' => $share->channel,
+                'status' => $share->status,
+                'shared_at' => $share->shared_at,
+            ] : null,
         ];
     }
 }

@@ -10,11 +10,15 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 
 final class CreativesRelationManager extends RelationManager
 {
@@ -27,27 +31,49 @@ final class CreativesRelationManager extends RelationManager
                 ->required()
                 ->maxLength(255),
 
-            TextInput::make('type')
+            Select::make('type')
+                ->options([
+                    'banner' => 'Banner',
+                    'text_link' => 'Text Link',
+                    'image' => 'Image',
+                    'video' => 'Video',
+                    'document' => 'Document',
+                    'email' => 'Email Template',
+                ])
                 ->required()
-                ->maxLength(100),
+                ->default('banner'),
+
+            Textarea::make('description')
+                ->rows(3),
+
+            SpatieMediaLibraryFileUpload::make('asset')
+                ->collection('creative_asset')
+                ->maxSize(51200)
+                ->label('Upload File')
+                ->helperText('Upload an image, video, PDF, or ZIP file. Max 50MB.'),
 
             TextInput::make('asset_url')
-                ->required()
-                ->url(),
+                ->label('Asset URL (or leave blank if uploading)')
+                ->url()
+                ->maxLength(2048),
 
             TextInput::make('destination_url')
                 ->required()
-                ->url(),
+                ->url()
+                ->maxLength(2048),
 
             TextInput::make('tracking_code')
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->default(fn (): string => mb_strtoupper(Str::random(8))),
 
             TextInput::make('width')
-                ->numeric(),
+                ->numeric()
+                ->nullable(),
 
             TextInput::make('height')
-                ->numeric(),
+                ->numeric()
+                ->nullable(),
 
             KeyValue::make('metadata')
                 ->keyLabel('Key')

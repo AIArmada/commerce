@@ -6,6 +6,8 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Contacting\Concerns\HasContactMethods;
+use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Database\Factories\EventFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
@@ -17,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\URL;
 
 /**
  * @property string $id
@@ -73,9 +76,11 @@ use Illuminate\Support\Carbon;
  */
 final class Event extends Model
 {
+    use HasContactMethods;
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasSocialProfiles;
     use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
@@ -378,5 +383,27 @@ final class Event extends Model
     public function isPubliclyVisible(): bool
     {
         return $this->visibility === self::PUBLIC && $this->status === self::PUBLISHED;
+    }
+
+    public function shareTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function shareUrl(): string
+    {
+        return URL::route(config('events.shares.route_name', 'events.show'), [$this->slug], true);
+    }
+
+    public function shareDescription(): ?string
+    {
+        return $this->summary;
+    }
+
+    public function shareImage(): ?string
+    {
+        $media = $this->media->first();
+
+        return $media?->url;
     }
 }

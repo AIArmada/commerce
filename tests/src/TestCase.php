@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests;
 
+use AIArmada\Addressing\AddressingServiceProvider;
 use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Cart\CartServiceProvider;
@@ -22,6 +23,7 @@ use AIArmada\Docs\DocsServiceProvider;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 use AIArmada\Engagement\EngagementServiceProvider;
 use AIArmada\Events\EventsServiceProvider;
+use AIArmada\FilamentAddressing\FilamentAddressingServiceProvider;
 use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkServiceProvider;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
@@ -166,10 +168,12 @@ abstract class TestCase extends Orchestra
             SluggableServiceProvider::class,
             FilamentAuthzServiceProvider::class,
             FilamentVouchersServiceProvider::class,
+            AddressingServiceProvider::class,
             AffiliatesServiceProvider::class,
             FilamentAffiliatesServiceProvider::class,
             AffiliateNetworkServiceProvider::class,
             FilamentAffiliateNetworkServiceProvider::class,
+            FilamentAddressingServiceProvider::class,
             ShippingServiceProvider::class,
             ProductsServiceProvider::class,
             FilamentShippingServiceProvider::class,
@@ -241,6 +245,9 @@ abstract class TestCase extends Orchestra
 
         // Configure cart cache to use array driver in tests (avoid Redis connection issues in CI)
         $app['config']->set('cart.cache.store', 'array');
+
+        // Configure addressing for testing
+        $app['config']->set('addressing.database.json_column_type', 'json');
 
         // Configure Spatie Laravel Data settings for testing
         $app['config']->set('data.date_format', DATE_ATOM);
@@ -403,6 +410,7 @@ abstract class TestCase extends Orchestra
 
     protected function defineDatabaseMigrations(): void
     {
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/addressing/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/chip/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/vouchers/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/shipping/database/migrations');
@@ -1504,6 +1512,17 @@ abstract class TestCase extends Orchestra
             $table->uuid('verified_by')->nullable();
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('expires_at')->nullable();
+            $table->timestamps();
+        });
+
+        // Test tables for addressing package tests
+        Schema::create('test_models', function (Blueprint $table): void {
+            $table->id();
+            $table->timestamps();
+        });
+
+        Schema::create('test_owners', function (Blueprint $table): void {
+            $table->id();
             $table->timestamps();
         });
     }

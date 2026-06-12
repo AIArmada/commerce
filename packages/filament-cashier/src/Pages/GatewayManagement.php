@@ -8,7 +8,6 @@ use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Chip\Chip;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use BackedEnum;
 use Exception;
 use Filament\Actions\Action;
@@ -38,7 +37,7 @@ final class GatewayManagement extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return FilamentCashierPlugin::get()->getNavigationGroup();
+        return config('filament-cashier.navigation.group');
     }
 
     public function getTitle(): string

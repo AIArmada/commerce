@@ -8,6 +8,7 @@
         "source": "https://github.com/aiarmada/commerce"
     },
     "require": {
+        "aiarmada/contacting": "self.version",
         "aiarmada/commerce-support": "self.version",
         "php": "^8.4"
     },

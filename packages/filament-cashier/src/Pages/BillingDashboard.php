@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Pages;
 
-use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashier\Widgets\GatewayBreakdownWidget;
 use AIArmada\FilamentCashier\Widgets\GatewayComparisonWidget;
 use AIArmada\FilamentCashier\Widgets\TotalMrrWidget;
@@ -31,7 +30,7 @@ final class BillingDashboard extends BaseDashboard
 
     public static function getNavigationGroup(): ?string
     {
-        return FilamentCashierPlugin::get()->getNavigationGroup();
+        return config('filament-cashier.navigation.group');
     }
 
     public function getTitle(): string

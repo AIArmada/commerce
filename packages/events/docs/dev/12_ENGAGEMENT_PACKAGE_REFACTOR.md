@@ -85,6 +85,11 @@ When `aiarmada/engagement` exists, bind the real adapter using `class_exists()`.
 - [x] Add optional binding to Engagement adapter using `class_exists()`. (EventsServiceProvider)
 - [x] Remove engagement table migrations from Events package.
 - [x] Remove engagement models from Events package.
+- [x] Remove engagement enum and action from Events package.
+- [x] Add `shareUrl()`, `shareTitle()`, `shareDescription()`, `shareImage()` duck-type methods to Event model.
+- [x] Fix `EngagementEventEngagementManager::share()` to persist Share records via `EngagementManager::share()`.
+- [x] Add share state to `EngagementEventEngagementManager::stateFor()` return array.
+- [x] Add `aiarmada/engagement` to Events `composer.json` suggests.
 - [ ] Remove direct engagement relation managers from Events package. (Filament not built)
 - [ ] Update Filament resources to hide engagement widgets when adapter is null. (Filament not built)
 - [ ] Update tests to verify Events boots with and without Engagement package. (not started)

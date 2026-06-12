@@ -28,9 +28,12 @@ final class ManagePricingSettings extends Page
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-currency-dollar';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Settings';
-
     protected static ?int $navigationSort = 10;
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-pricing.navigation.settings_group');
+    }
 
     /** @var view-string */
     protected string $view = 'filament-pricing::pages.manage-pricing-settings';

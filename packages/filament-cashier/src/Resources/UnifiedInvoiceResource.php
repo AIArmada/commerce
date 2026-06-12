@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Resources;
 
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Tables\InvoicesTable;
 use BackedEnum;
@@ -44,7 +43,7 @@ final class UnifiedInvoiceResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return FilamentCashierPlugin::get()->getNavigationGroup();
+        return config('filament-cashier.navigation.group');
     }
 
     public static function getNavigationLabel(): string
