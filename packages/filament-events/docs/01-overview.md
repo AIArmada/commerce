@@ -2,109 +2,73 @@
 title: Overview
 ---
 
-# Filament Events
+## Introduction
 
-## Purpose
-
-The `aiarmada/filament-events` package is the Filament admin adapter for `aiarmada/events`.
+`aiarmada/filament-events` is the Filament admin adapter for `aiarmada/events`. It provides Filament v5 resources, pages, and widgets for managing events, occurrences, sessions, registrations, ticket types, attendance, and venues.
 
 ## What this package owns
 
-- Filament resources for event series, events, occurrences, venues, and registrations
-- Filament relation managers and registration lifecycle actions such as check-in and cancellation
-- Owner-safe resource queries and commerce-aware links inside the admin UI
+- Filament resources for events, occurrences, sessions, venues, registrations, ticket types, and attendance
+- Custom pages: check-in console, notification center, approval queue, and public event preview
+- Owner-scoped resource queries using `OwnerUiScope`
+- Lifecycle workflow actions (publish, cancel, postpone, delay, archive)
+- Relation managers on the event detail page (occurrences, sessions, locations, involvements, registrations, ticket types, attendances)
 
 ## What this package does not own
 
 - Event-domain persistence or registration business rules; those stay in `aiarmada/events`
 - Product, variant, order, or customer domain logic beyond linked resource access
 
-## Related packages
+## Relationship to the core package
 
-- [`aiarmada/events`](../../events/docs/01-overview.md) — core event-domain package
-- [`aiarmada/products`](../../products/docs/01-overview.md), [`aiarmada/customers`](../../customers/docs/01-overview.md), and [`aiarmada/orders`](../../orders/docs/01-overview.md) — related commerce records surfaced in resource links
-- [`aiarmada/commerce-support`](../../commerce-support/docs/01-overview.md) — owner-scoping support
+Use `aiarmada/events` for:
+- Event models and enums
+- Registration services and business rules
+- Order-item fulfillment actions
+- Owner-scoped domain logic
 
-## Main models services or surfaces
+Use this package for:
+- Admin CRUD and read-only views
+- Owner-safe resource queries
+- Filament forms, tables, infolists, and relation managers
+- Check-in console and notification management
 
-- **Resources** — event series, events, occurrences, venues, and registrations
-- **Filament surface** — owner-scoped list pages, relation managers, resource forms, tables, and infolists
-- **Actions** — registration lifecycle actions including check-in and cancellation
+## Registered Resources
 
-## Owner scoping and security notes
+| Resource | Model | Purpose |
+|---|---|---|
+| `EventResource` | `Event` | Manage event definitions, lifecycle, and related records |
+| `EventOccurrenceResource` | `EventOccurrence` | Manage scheduled runs, capacity, and windows |
+| `EventSessionResource` | `EventSession` | Manage agenda items within occurrences |
+| `VenueResource` | `Venue` | Manage physical venue/contact details |
+| `EventRegistrationResource` | `EventRegistration` | View registrations and participant data |
+| `EventTicketTypeResource` | `EventTicketType` | Manage admission definitions and pricing |
+| `EventAttendanceResource` | `EventAttendance` | View check-in and attendance records |
 
-- The plugin should mirror the owner-scoping behavior defined by `aiarmada/events`
-- Resource filtering and linked commerce records are not authorization; action handlers still rely on the core events package to enforce owner-safe writes
+## Custom Pages
 
-`aiarmada/filament-events` provides the Filament v5 admin surface for the core [`aiarmada/events`](../../events/docs/01-overview.md) package.
+| Page | Purpose |
+|---|---|
+| **Check-In Console** | Search passes, check-in attendees, record walk-ins |
+| **Notification Center** | Create and send notification batches, view deliveries |
+| **Approval Queue** | Review and process event submission approvals |
+| **Event Public Preview** | View an event as the public would see it |
 
-It registers owner-aware resources for:
+## Widgets
 
-- event series
-- events
-- occurrences
-- venues
-- registrations
+| Widget | Purpose |
+|---|---|
+| **Event Stats** | Dashboard cards for total events, published, upcoming occurrences, registrations, attendances |
 
-## What the plugin adds
+## Related Packages
 
-- CRUD resources for all event-domain models
-- owner-scoped list pages using `OwnerUiScope`
-- relation managers for event → occurrences and occurrence → registrations
-- registration lifecycle actions like check-in and cancellation
-- commerce-aware resource links to products, variants, orders, and customers where the core events package exposes them
-
-## Registered resources
-
-| Resource | Purpose |
-| --- | --- |
-| `EventSeriesResource` | Manage reusable series/grouping records |
-| `EventResource` | Manage the main event definitions |
-| `OccurrenceResource` | Manage scheduled runs, venues, and registration windows |
-| `VenueResource` | Manage physical venue/contact details |
-| `RegistrationResource` | Manage attendees, linked commerce records, and registration lifecycle |
-
-## Navigation
-
-By default the plugin groups its resources under `Events` and orders them like this:
-
-1. Event Series
-2. Events
-3. Occurrences
-4. Venues
-5. Registrations
-
-You can customize the group label and sort order through `config/filament-events.php`.
+- `aiarmada/events` — core event-domain package
+- `aiarmada/commerce-support` — owner scoping support
 
 ## Requirements
 
 - PHP 8.4+
-- Laravel 13+
-- Filament 5.6+
+- Laravel 11+
+- Filament 5+
 - `aiarmada/events`
 - `aiarmada/commerce-support`
-
-## Relationship to the core package
-
-`filament-events` does not replace the domain logic in `aiarmada/events`.
-
-Use the core package for:
-
-- event models and enums
-- registration services
-- order-item fulfillment actions
-- owner-scoped domain rules
-
-Use this package for:
-
-- admin CRUD
-- owner-safe resource queries
-- Filament forms, tables, infolists, and relation managers
-
-## Read next
-
-- [Installation](02-installation.md)
-- [Configuration](03-configuration.md)
-- [Usage](04-usage.md)
-- [Troubleshooting](99-troubleshooting.md)
-- [Core Events overview](../../events/docs/01-overview.md)

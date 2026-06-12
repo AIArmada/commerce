@@ -19,6 +19,7 @@ parameters:
         - stubs/phpstan/laravel-cashier.stub.php
         - stubs/phpstan/faker.stub.php
         - stubs/phpstan/trait_usage_harness.php
+        - stubs/phpstan/EventInteractionManager.stub.php
 
     stubFiles:
         - stubs/phpstan/stripe.stub.php
@@ -43,4 +44,3 @@ parameters:
         analyseAndScan:
             - vendor
             - '*/Testing/*'
-            - packages/inventory/src/Cart/

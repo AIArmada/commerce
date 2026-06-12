@@ -2,51 +2,49 @@
 title: Installation
 ---
 
-# Installation
-
-Install the package through Composer:
+## Install
 
 ```bash
 composer require aiarmada/events
 ```
 
-This installs the core events package. Product, customer, and order integrations are first-party optional integrations.
-
-To enable commerce-backed event sales and order fulfillment, install the matching AIArmada packages in the same application:
+## Publish and run migrations
 
 ```bash
-composer require aiarmada/products aiarmada/customers aiarmada/orders
-```
-
-When those packages are present, `aiarmada/events` automatically registers order fulfillment actions, the ended-event order finalization command, and the registration check-in listener that syncs eligible orders.
-
-Order fulfillment still needs an application resolver configured at `events.integrations.order_item_fulfillment_resolver`. Without one, fulfillment intentionally no-ops.
-
-Then run migrations:
-
-```bash
+php artisan vendor:publish --provider="AIArmada\Events\EventsServiceProvider" --tag="migrations"
 php artisan migrate
 ```
 
-If you want to customize table names or integrations, publish the config:
+## Publish configuration
 
 ```bash
-php artisan vendor:publish --tag=events-config
+php artisan vendor:publish --provider="AIArmada\Events\EventsServiceProvider" --tag="config"
 ```
 
-## Table-name upgrade note
+## Environment variables
 
-Fresh installs use the following default table names:
+| Variable | Default | Description |
+|---|---|---|
+| `EVENTS_TABLE_PREFIX` | (empty) | Prefix for all events tables |
+| `EVENTS_JSON_COLUMN_TYPE` | `jsonb` | JSON column type (`jsonb` or `json`) |
+| `EVENTS_OWNER_ENABLED` | `false` | Enable owner/multi-tenancy scoping |
+| `EVENTS_OWNER_INCLUDE_GLOBAL` | `false` | Include global records in owner-scoped queries |
+| `EVENTS_OWNER_AUTO_ASSIGN` | `true` | Auto-assign owner on creation |
+| `EVENTS_TIMEZONE` | `APP_TIMEZONE` | Default timezone |
+| `EVENTS_REGISTRATION_PREFIX` | `REG` | Prefix for auto-generated registration numbers |
+| `EVENTS_TABLE_EVENTS` | `{prefix}events` | Custom events table name |
+| `EVENTS_TABLE_OCCURRENCES` | `{prefix}event_occurrences` | Custom occurrences table name |
+| `EVENTS_TABLE_SESSIONS` | `{prefix}event_sessions` | Custom sessions table name |
+| `EVENTS_TABLE_PARTICIPANTS` | `{prefix}event_registration_participants` | Custom participants table name |
 
-- `event_series`
-- `events`
-- `event_speakers`
-- `event_venues`
-- `event_occurrences`
-- `event_registrations`
+## Verify installation
 
-Older package versions defaulted to `commerce_event_series`, `commerce_events`, `commerce_event_venues`, `commerce_event_occurrences`, and `commerce_event_registrations`.
+```php
+use AIArmada\Events\Models\Event;
 
-If an existing app already migrated those old defaults, publish the config before migrating and set `events.database.tables.*` back to the installed table names. Do not rerun fresh package migrations against a production database with different table names unless you have a forward migration plan for copying or renaming the existing data.
-
-> In the AIArmada monorepo, the package is auto-discovered once Composer autoloads are refreshed.
+$event = Event::create([
+    'title' => 'Test Event',
+    'status' => 'draft',
+    'visibility' => 'public',
+]);
+```

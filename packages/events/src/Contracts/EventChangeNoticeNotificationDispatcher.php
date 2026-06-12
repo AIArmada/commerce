@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Data\EventChangeNoticeAudienceData;
-use AIArmada\Events\Models\EventChange;
+use AIArmada\Events\Models\EventNotificationBatch;
 
 interface EventChangeNoticeNotificationDispatcher
 {
-    public function dispatch(EventChange $notice, EventChangeNoticeAudienceData $audiences): void;
+    public function dispatch(EventNotificationBatch $batch): void;
 }

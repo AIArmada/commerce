@@ -4,224 +4,78 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Support\Policy;
 
-use AIArmada\Events\Enums\EventModerationStatus;
+use AIArmada\Events\Models\EventSubmission;
 use InvalidArgumentException;
 
 final class EventModerationPolicy
 {
-    public static function actionKeys(): array
+    /** @var array<string, array{from: string[], to: string, note_required?: bool, reason_required?: bool}> */
+    private array $actions;
+
+    public function __construct()
     {
-        return array_keys(self::transitionRules());
+        $this->actions = config('events.moderation.actions', []);
     }
 
-    public static function allowedActionsFor(EventModerationStatus $fromStatus): array
+    public function canSubmit(EventSubmission $submission): bool
     {
-        $current = $fromStatus->value;
-
-        return array_values(array_filter(
-            array_keys(self::transitionRules()),
-            static function (string $actionKey) use ($current): bool {
-                $rule = self::transitionRule($actionKey);
-
-                return in_array($current, $rule['from'], true);
-            },
-        ));
+        return $this->isTransitionAllowed('submit', $submission->status);
     }
 
-    public static function actionKeyForDecision(EventModerationStatus $decision): string
+    public function canApprove(EventSubmission $submission): bool
     {
-        return match ($decision) {
-            EventModerationStatus::Pending => 'submit',
-            EventModerationStatus::ChangesRequested => 'request_changes',
-            EventModerationStatus::Approved => 'approve',
-            EventModerationStatus::Rejected => 'reject',
-        };
+        return $this->isTransitionAllowed('approve', $submission->status);
     }
 
-    public static function canTransition(string $actionKey, EventModerationStatus $fromStatus, EventModerationStatus $toStatus): bool
+    public function canReject(EventSubmission $submission): bool
     {
-        $rule = self::transitionRule($actionKey);
-
-        return in_array($fromStatus->value, $rule['from'], true)
-            && $toStatus->value === $rule['to'];
+        return $this->isTransitionAllowed('reject', $submission->status);
     }
 
-    public static function noteRequired(string $actionKey): bool
+    public function canRequestChanges(EventSubmission $submission): bool
     {
-        $rule = self::transitionRule($actionKey);
-
-        return (bool) ($rule['note_required'] ?? false);
+        return $this->isTransitionAllowed('request_changes', $submission->status);
     }
 
-    public static function reasonRequired(string $actionKey): bool
+    public function canCancel(EventSubmission $submission): bool
     {
-        $rule = self::transitionRule($actionKey);
-
-        return (bool) ($rule['reason_required'] ?? false);
+        return $this->isTransitionAllowed('cancel', $submission->status);
     }
 
-    public static function hasReasonCode(string $reasonKey): bool
+    public function canReconsider(EventSubmission $submission): bool
     {
-        return array_key_exists($reasonKey, self::reasonCodes());
+        return $this->isTransitionAllowed('reconsider', $submission->status);
     }
 
-    public static function reasonLabel(string $reasonKey): ?string
+    public function isNoteRequired(string $action): bool
     {
-        $reason = self::reasonCodes()[$reasonKey] ?? null;
+        return $this->actions[$action]['note_required'] ?? false;
+    }
 
-        if (! is_array($reason)) {
-            return null;
+    public function isReasonRequired(string $action): bool
+    {
+        return $this->actions[$action]['reason_required'] ?? false;
+    }
+
+    public function assertTransitionAllowed(string $action, string $currentStatus): void
+    {
+        if (! $this->isTransitionAllowed($action, $currentStatus)) {
+            throw new InvalidArgumentException(sprintf(
+                'Cannot perform "%s" on submission with status "%s".',
+                $action,
+                $currentStatus,
+            ));
+        }
+    }
+
+    private function isTransitionAllowed(string $action, string $currentStatus): bool
+    {
+        $config = $this->actions[$action] ?? null;
+
+        if ($config === null) {
+            return false;
         }
 
-        $label = $reason['label'] ?? null;
-
-        return is_string($label) && mb_trim($label) !== ''
-            ? mb_trim($label)
-            : null;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public static function reasonCodeOptions(): array
-    {
-        $options = [];
-
-        foreach (self::reasonCodes() as $reasonKey => $payload) {
-            $label = self::reasonLabel((string) $reasonKey);
-
-            if (! is_string($label) || mb_trim($label) === '') {
-                $label = is_array($payload) ? (string) ($payload['label'] ?? $reasonKey) : (string) $payload;
-            }
-
-            $options[(string) $reasonKey] = $label;
-        }
-
-        return $options;
-    }
-
-    public static function reasonCodes(): array
-    {
-        $configured = config('events.moderation.reason_codes', []);
-
-        if (! is_array($configured) || $configured === []) {
-            return self::defaultReasonCodes();
-        }
-
-        return $configured;
-    }
-
-    public static function defaultReasonCodes(): array
-    {
-        return [
-            'approved_for_publish' => [
-                'label' => 'Approved for Publish',
-                'note_required' => false,
-            ],
-            'needs_more_information' => [
-                'label' => 'Needs More Information',
-                'note_required' => true,
-            ],
-            'policy_violation' => [
-                'label' => 'Policy Violation',
-                'note_required' => true,
-            ],
-            'duplicate' => [
-                'label' => 'Duplicate',
-                'note_required' => true,
-            ],
-        ];
-    }
-
-    private static function transitionRules(): array
-    {
-        $configured = config('events.moderation.actions', []);
-
-        if (! is_array($configured) || $configured === []) {
-            return self::defaultTransitionRules();
-        }
-
-        return $configured;
-    }
-
-    private static function defaultTransitionRules(): array
-    {
-        return [
-            'submit' => [
-                'from' => ['draft', 'pending', 'approved', 'changes_requested', 'rejected'],
-                'to' => EventModerationStatus::Pending->value,
-                'note_required' => false,
-                'reason_required' => false,
-            ],
-            'approve' => [
-                'from' => ['pending', 'changes_requested'],
-                'to' => EventModerationStatus::Approved->value,
-                'note_required' => false,
-                'reason_required' => false,
-            ],
-            'request_changes' => [
-                'from' => ['pending', 'approved'],
-                'to' => EventModerationStatus::ChangesRequested->value,
-                'note_required' => true,
-                'reason_required' => true,
-            ],
-            'reject' => [
-                'from' => ['pending', 'approved', 'changes_requested'],
-                'to' => EventModerationStatus::Rejected->value,
-                'note_required' => true,
-                'reason_required' => true,
-            ],
-            'cancel' => [
-                'from' => ['pending', 'approved', 'changes_requested', 'rejected'],
-                'to' => EventModerationStatus::Pending->value,
-                'note_required' => false,
-                'reason_required' => false,
-            ],
-            'reconsider' => [
-                'from' => ['rejected', 'changes_requested'],
-                'to' => EventModerationStatus::Pending->value,
-                'note_required' => false,
-                'reason_required' => false,
-            ],
-            'revert_to_draft' => [
-                'from' => ['pending', 'approved', 'changes_requested', 'rejected'],
-                'to' => EventModerationStatus::Pending->value,
-                'note_required' => false,
-                'reason_required' => false,
-            ],
-            'remoderate' => [
-                'from' => ['approved', 'changes_requested', 'rejected'],
-                'to' => EventModerationStatus::Pending->value,
-                'note_required' => false,
-                'reason_required' => false,
-            ],
-        ];
-    }
-
-    private static function transitionRule(string $actionKey): array
-    {
-        $rules = self::transitionRules();
-
-        if (! array_key_exists($actionKey, $rules)) {
-            throw new InvalidArgumentException(sprintf('Unknown moderation action [%s].', $actionKey));
-        }
-
-        $rule = $rules[$actionKey];
-
-        return [
-            'from' => array_values(array_filter(
-                array_map(
-                    static fn (mixed $status): ?string => is_string($status) && mb_trim($status) !== ''
-                        ? mb_trim($status)
-                        : null,
-                    is_array($rule['from'] ?? null) ? $rule['from'] : [],
-                ),
-            )),
-            'to' => is_string($rule['to'] ?? null) && mb_trim((string) $rule['to']) !== ''
-                ? mb_trim((string) $rule['to'])
-                : EventModerationStatus::Pending->value,
-            'note_required' => (bool) ($rule['note_required'] ?? false),
-            'reason_required' => (bool) ($rule['reason_required'] ?? false),
-        ];
+        return in_array($currentStatus, $config['from'], true);
     }
 }

@@ -11,83 +11,33 @@ enum EventStatus: string
     use HasLabelOptions;
 
     case Draft = 'draft';
-    case Active = 'active';
-    case Postponed = 'postponed';
+    case PendingReview = 'pending_review';
+    case Scheduled = 'scheduled';
+    case Published = 'published';
     case Delayed = 'delayed';
+    case Postponed = 'postponed';
+    case Rescheduled = 'rescheduled';
     case Cancelled = 'cancelled';
+    case Completed = 'completed';
     case Archived = 'archived';
+    case Voided = 'voided';
+    case Expired = 'expired';
 
     public function label(): string
     {
         return match ($this) {
             self::Draft => 'Draft',
-            self::Active => 'Active',
-            self::Postponed => 'Postponed',
+            self::PendingReview => 'Pending Review',
+            self::Scheduled => 'Scheduled',
+            self::Published => 'Published',
             self::Delayed => 'Delayed',
+            self::Postponed => 'Postponed',
+            self::Rescheduled => 'Rescheduled',
             self::Cancelled => 'Cancelled',
+            self::Completed => 'Completed',
             self::Archived => 'Archived',
-        };
-    }
-
-    public function color(): string
-    {
-        return match ($this) {
-            self::Draft => 'gray',
-            self::Active => 'success',
-            self::Postponed => 'warning',
-            self::Delayed => 'warning',
-            self::Cancelled => 'danger',
-            self::Archived => 'gray',
-        };
-    }
-
-    public function isBookable(): bool
-    {
-        return $this === self::Active;
-    }
-
-    public function isPubliclyVisible(): bool
-    {
-        return match ($this) {
-            self::Active,
-            self::Postponed,
-            self::Delayed,
-            self::Cancelled,
-            self::Archived => true,
-            self::Draft => false,
-        };
-    }
-
-    public function isEngageable(): bool
-    {
-        return $this === self::Active;
-    }
-
-    public function isTerminal(): bool
-    {
-        return $this === self::Cancelled || $this === self::Archived;
-    }
-
-    public function isRecoverable(): bool
-    {
-        return $this === self::Postponed || $this === self::Delayed;
-    }
-
-    public function canTransitionTo(self $next): bool
-    {
-        return match ([$this, $next]) {
-            [self::Draft, self::Active],
-            [self::Draft, self::Archived],
-            [self::Active, self::Postponed],
-            [self::Active, self::Delayed],
-            [self::Active, self::Cancelled],
-            [self::Active, self::Archived],
-            [self::Postponed, self::Active],
-            [self::Postponed, self::Cancelled],
-            [self::Delayed, self::Active],
-            [self::Delayed, self::Postponed],
-            [self::Delayed, self::Cancelled] => true,
-            default => false,
+            self::Voided => 'Voided',
+            self::Expired => 'Expired',
         };
     }
 }

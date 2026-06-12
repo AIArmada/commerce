@@ -4,35 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Contracts\EventRelationalContentSubject;
+use AIArmada\Events\Models\Event;
 use AIArmada\Events\Services\EventContentSynchronizer;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 final class SynchronizeEventContent
 {
+    use AsAction;
+
     public function __construct(
         private readonly EventContentSynchronizer $synchronizer,
     ) {}
 
-    public function handle(EventRelationalContentSubject & Model $subject, ?string $source = null): void
+    public function handle(Event $event, array $options = []): void
     {
-        $owner = $subject->getAttribute('owner_type') !== null && $subject->getAttribute('owner_id') !== null
-            ? OwnerContext::fromTypeAndId(
-                (string) $subject->getAttribute('owner_type'),
-                (string) $subject->getAttribute('owner_id'),
-            )
-            : null;
-
-        OwnerContext::withOwner($owner, function () use ($subject): void {
-            $this->synchronizer->sync($subject);
-        });
-
-        Log::info('Event content synchronized', [
-            'subject_type' => $subject::class,
-            'subject_id' => $subject->getKey(),
-            'source' => $source ?? 'action',
-        ]);
+        $this->synchronizer->sync($event, $options);
     }
 }

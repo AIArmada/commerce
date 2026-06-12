@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers;
+
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables;
+use Filament\Tables\Table;
+
+final class OccurrenceAttendancesRelationManager extends RelationManager
+{
+    protected static string $relationship = 'attendances';
+    protected static ?string $title = 'Attendances';
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('attendance_type')->badge(),
+                Tables\Columns\TextColumn::make('checked_in_at')->dateTime()->sortable(),
+                Tables\Columns\TextColumn::make('check_in_source')->badge(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('attendance_type')
+                    ->options(['registered' => 'Registered', 'walk_in' => 'Walk-in']),
+            ])
+            ->headerActions([])
+            ->actions([\Filament\Actions\ViewAction::make()]);
+    }
+}

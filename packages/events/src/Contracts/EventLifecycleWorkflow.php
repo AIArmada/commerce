@@ -5,15 +5,22 @@ declare(strict_types=1);
 namespace AIArmada\Events\Contracts;
 
 use AIArmada\Events\Models\Event;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Events\Models\EventOccurrence;
+use DateTimeInterface;
 
 interface EventLifecycleWorkflow
 {
-    public function postpone(Event $event, ?Model $actor = null, ?string $note = null): Event;
+    public function publish(Event $event): void;
 
-    public function delay(Event $event, ?Model $actor = null, ?string $note = null): Event;
+    public function cancel(Event|EventOccurrence $target, ?string $reason = null): void;
 
-    public function resume(Event $event, ?Model $actor = null, ?string $note = null): Event;
+    public function postpone(Event|EventOccurrence $target, ?string $reason = null): void;
 
-    public function cancel(Event $event, ?Model $actor = null, ?string $note = null, ?string $reason = null): Event;
+    public function delay(EventOccurrence $occurrence, ?string $reason = null, ?DateTimeInterface $expectedStartsAt = null): void;
+
+    public function reschedule(EventOccurrence $occurrence, DateTimeInterface $newStartsAt, DateTimeInterface $newEndsAt, array $options = []): EventOccurrence;
+
+    public function complete(Event|EventOccurrence $target): void;
+
+    public function archive(Event|EventOccurrence $target, ?string $reason = null): void;
 }

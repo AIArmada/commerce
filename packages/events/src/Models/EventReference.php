@@ -4,137 +4,59 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
-use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
-use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Traits\HasOwner;
-use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Events\Database\Factories\EventReferenceFactory;
+use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Arr;
-use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
- * @property string|null $owner_type
- * @property string|null $owner_id
- * @property string|null $assignable_type
- * @property string|null $assignable_id
- * @property string|null $reference_type
- * @property string|null $reference_id
- * @property string $reference_kind
- * @property string|null $display_label
- * @property string|null $source_label
+ * @property string $event_id
+ * @property string|null $event_occurrence_id
+ * @property string|null $event_session_id
+ * @property string|null $referenceable_type
+ * @property string|null $referenceable_id
+ * @property string $reference_type
+ * @property string $title
  * @property string|null $url
- * @property int|null $order_column
- * @property array<string, mixed>|null $metadata
+ * @property string|null $citation
+ * @property string $visibility
+ * @property int $sort_order
+ * @property string|null $notes
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
-class EventReference extends Model implements Auditable
+final class EventReference extends Model
 {
-    use HasCommerceAudit;
-    use HasOwner;
-    use HasOwnerScopeConfig;
-    use HasUuids;
-    use LogsCommerceActivity;
-
-    protected static string $ownerScopeConfigKey = 'events.features.owner';
+    use HasFactory;
+    use UsesEventUuid;
 
     protected $fillable = [
-        'assignable_type',
-        'assignable_id',
+        'event_id', 'event_occurrence_id', 'event_session_id',
+        'referenceable_type', 'referenceable_id',
         'reference_type',
-        'reference_id',
-        'reference_kind',
-        'display_label',
-        'source_label',
-        'url',
-        'order_column',
+        'title', 'url', 'citation',
+        'visibility', 'sort_order', 'notes',
         'metadata',
     ];
+
+    public function getTable(): string
+    {
+        return config('events.database.tables.event_references', 'event_references');
+    }
 
     protected function casts(): array
     {
         return [
-            'order_column' => 'integer',
+            'sort_order' => 'integer',
             'metadata' => 'array',
         ];
     }
 
-    public function getTable(): string
+    protected static function newFactory(): EventReferenceFactory
     {
-        return config('events.database.tables.references', 'event_reference_assignments');
-    }
-
-    /**
-     * @return MorphTo<Model, $this>
-     */
-    public function assignable(): MorphTo
-    {
-        return $this->morphTo(__FUNCTION__, 'assignable_type', 'assignable_id');
-    }
-
-    /**
-     * @return MorphTo<Model, $this>
-     */
-    public function reference(): MorphTo
-    {
-        return $this->morphTo(__FUNCTION__, 'reference_type', 'reference_id');
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @param  array<int, string>|string  $referenceKinds
-     * @return Builder<static>
-     */
-    public function scopeWithReferenceKind(Builder $query, array | string $referenceKinds): Builder
-    {
-        return $query->whereIn($this->qualifyColumn('reference_kind'), Arr::wrap($referenceKinds));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @param  array<int, string>|string  $sourceLabels
-     * @return Builder<static>
-     */
-    public function scopeWithSourceLabel(Builder $query, array | string $sourceLabels): Builder
-    {
-        return $query->whereIn($this->qualifyColumn('source_label'), Arr::wrap($sourceLabels));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeWithReferenceType(Builder $query, array | string $referenceTypes): Builder
-    {
-        return $query->whereIn($this->qualifyColumn('reference_type'), Arr::wrap($referenceTypes));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeWithReferenceId(Builder $query, array | string $referenceIds): Builder
-    {
-        return $query->whereIn($this->qualifyColumn('reference_id'), Arr::wrap($referenceIds));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeWithDisplayLabel(Builder $query, array | string $displayLabels): Builder
-    {
-        return $query->whereIn($this->qualifyColumn('display_label'), Arr::wrap($displayLabels));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeWithUrl(Builder $query, array | string $urls): Builder
-    {
-        return $query->whereIn($this->qualifyColumn('url'), Arr::wrap($urls));
+        return EventReferenceFactory::new();
     }
 }

@@ -4,105 +4,80 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
-use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
-use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Events\Enums\SeriesStatus;
-use AIArmada\Events\Support\Integration\ConfiguredEventModel;
-use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Events\Database\Factories\EventSeriesFactory;
+use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property string $name
+ * @property string $title
  * @property string $slug
  * @property string|null $description
- * @property SeriesStatus $status
- * @property CarbonImmutable|null $activated_at
- * @property CarbonImmutable|null $archived_at
- * @property array<string, mixed>|null $metadata
+ * @property string $series_type
+ * @property string $status
+ * @property string $visibility
+ * @property bool $is_dynamic
+ * @property mixed|null $dynamic_rule_json
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
-class EventSeries extends Model implements Auditable
+final class EventSeries extends Model
 {
-    use HasCommerceAudit;
-    use HasOwner {
-        scopeForOwner as baseScopeForOwner;
-    }
+    use HasOwner;
     use HasOwnerScopeConfig;
-    use HasUuids;
-    use LogsCommerceActivity;
+    use HasFactory;
+    use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
     protected $fillable = [
-        'name',
-        'slug',
-        'description',
-        'status',
-        'activated_at',
-        'archived_at',
+        'owner_type', 'owner_id',
+        'title', 'slug', 'description',
+        'series_type', 'status', 'visibility',
+        'is_dynamic', 'dynamic_rule_json',
         'metadata',
-    ];
-
-    protected function casts(): array
-    {
-        return [
-            'status' => SeriesStatus::class,
-            'activated_at' => 'immutable_datetime',
-            'archived_at' => 'immutable_datetime',
-            'metadata' => 'array',
-        ];
-    }
-
-    protected $attributes = [
-        'status' => 'active',
     ];
 
     public function getTable(): string
     {
-        return config('events.database.tables.series', 'event_series');
+        return config('events.database.tables.event_series', 'event_series');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_dynamic' => 'boolean',
+            'dynamic_rule_json' => 'array',
+            'metadata' => 'array',
+        ];
     }
 
     /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
+     * @return HasMany<EventSeriesItem, $this>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = false): Builder
+    public function items(): HasMany
     {
-        $ownerToScope = $owner;
-
-        if (func_num_args() < 2) {
-            $ownerToScope = OwnerContext::CURRENT;
-        }
-
-        $includeGlobalToScope = $includeGlobal;
-
-        if (func_num_args() < 3) {
-            $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
-        }
-
-        /** @var Builder<static> $scoped */
-        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
-
-        return $scoped;
+        return $this->hasMany(EventSeriesItem::class);
     }
 
     /**
-     * @return HasMany<Model, $this>
+     * @return HasMany<EventSeriesRule, $this>
      */
-    public function events(): HasMany
+    public function rules(): HasMany
     {
-        return $this->hasMany(
-            ConfiguredEventModel::classFor('events.models.event', Event::class),
-            'event_series_id',
-        );
+        return $this->hasMany(EventSeriesRule::class);
+    }
+
+    protected static function newFactory(): EventSeriesFactory
+    {
+        return EventSeriesFactory::new();
     }
 }

@@ -4,166 +4,55 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Support\Policy;
 
-use AIArmada\Events\Enums\OccurrenceStatus;
-use AIArmada\Events\Enums\RegistrationStatus;
-use BackedEnum;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventRegistration;
 
 final class LifecyclePolicy
 {
-    public static function occurrenceAcceptsRegistrations(OccurrenceStatus | string $status): bool
+    public function canAcceptRegistrations(EventOccurrence $occurrence): bool
     {
-        return in_array(self::statusValue($status), self::occurrenceRegistrationAcceptingValues(), true);
+        $statuses = config('events.lifecycle.occurrence.registration_accepting_statuses', ['scheduled', 'published', 'live']);
+
+        return in_array($occurrence->status, $statuses, true);
     }
 
-    public static function occurrenceAcceptsCheckIn(OccurrenceStatus | string $status): bool
+    public function canCheckIn(EventOccurrence $occurrence): bool
     {
-        return in_array(self::statusValue($status), self::occurrenceCheckInAcceptingValues(), true);
+        $statuses = config('events.lifecycle.occurrence.check_in_accepting_statuses', ['scheduled', 'published', 'live']);
+
+        return in_array($occurrence->status, $statuses, true);
     }
 
-    public static function occurrenceAcceptsWalkIns(OccurrenceStatus | string $status): bool
+    public function canWalkIn(EventOccurrence $occurrence): bool
     {
-        return in_array(self::statusValue($status), self::occurrenceWalkInAcceptingValues(), true);
+        $statuses = config('events.lifecycle.occurrence.walk_in_accepting_statuses', ['scheduled', 'published', 'live']);
+
+        return in_array($occurrence->status, $statuses, true);
     }
 
-    public static function registrationCanCheckIn(RegistrationStatus | string $status): bool
+    public function canCheckInRegistration(EventRegistration $registration): bool
     {
-        return in_array(self::statusValue($status), self::registrationCheckInAllowedValues(), true);
+        $statuses = config('events.lifecycle.registration.check_in_allowed_statuses', ['confirmed']);
+
+        return in_array($registration->status, $statuses, true);
     }
 
-    /**
-     * @return list<string>
-     */
-    public static function registrationCapacityBlockingValues(): array
+    public function isCapacityBlocking(EventRegistration $registration): bool
     {
-        return self::configuredStatusValues(
-            config('events.lifecycle.registration.capacity_blocking_statuses'),
-            [
-                RegistrationStatus::Pending->value,
-                RegistrationStatus::Confirmed->value,
-                RegistrationStatus::CheckedIn->value,
-                RegistrationStatus::NoShow->value,
-            ],
-        );
+        $statuses = config('events.lifecycle.registration.capacity_blocking_statuses', ['pending', 'confirmed', 'checked_in', 'no_show']);
+
+        return in_array($registration->status, $statuses, true);
     }
 
-    public static function registrationBlocksCapacity(RegistrationStatus | string $status): bool
+    public function isTerminal(EventRegistration $registration): bool
     {
-        return in_array(self::statusValue($status), self::registrationCapacityBlockingValues(), true);
+        $statuses = config('events.lifecycle.registration.terminal_statuses', ['checked_in', 'cancelled', 'refunded', 'no_show']);
+
+        return in_array($registration->status, $statuses, true);
     }
 
-    public static function registrationIsTerminal(RegistrationStatus | string $status): bool
+    public function shouldAutoPromoteWaitlist(): bool
     {
-        return in_array(self::statusValue($status), self::registrationTerminalValues(), true);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function occurrenceRegistrationAcceptingValues(): array
-    {
-        return self::configuredStatusValues(
-            config('events.lifecycle.occurrence.registration_accepting_statuses'),
-            [
-                OccurrenceStatus::Scheduled->value,
-                OccurrenceStatus::Live->value,
-            ],
-        );
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function occurrenceCheckInAcceptingValues(): array
-    {
-        return self::configuredStatusValues(
-            config('events.lifecycle.occurrence.check_in_accepting_statuses'),
-            [
-                OccurrenceStatus::Scheduled->value,
-                OccurrenceStatus::Live->value,
-            ],
-        );
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function occurrenceWalkInAcceptingValues(): array
-    {
-        return self::configuredStatusValues(
-            config('events.lifecycle.occurrence.walk_in_accepting_statuses'),
-            [
-                OccurrenceStatus::Scheduled->value,
-                OccurrenceStatus::Live->value,
-            ],
-        );
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function registrationCheckInAllowedValues(): array
-    {
-        return self::configuredStatusValues(
-            config('events.lifecycle.registration.check_in_allowed_statuses'),
-            [RegistrationStatus::Confirmed->value],
-        );
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function registrationTerminalValues(): array
-    {
-        return self::configuredStatusValues(
-            config('events.lifecycle.registration.terminal_statuses'),
-            [
-                RegistrationStatus::CheckedIn->value,
-                RegistrationStatus::Cancelled->value,
-                RegistrationStatus::Refunded->value,
-                RegistrationStatus::NoShow->value,
-            ],
-        );
-    }
-
-    private static function statusValue(BackedEnum | string $status): string
-    {
-        if ($status instanceof BackedEnum) {
-            return (string) $status->value;
-        }
-
-        return $status;
-    }
-
-    /**
-     * @param  list<string>  $default
-     * @return list<string>
-     */
-    private static function configuredStatusValues(mixed $configured, array $default): array
-    {
-        if (! is_array($configured)) {
-            return $default;
-        }
-
-        $values = [];
-
-        foreach ($configured as $status) {
-            if ($status instanceof BackedEnum) {
-                $values[] = (string) $status->value;
-
-                continue;
-            }
-
-            if (! is_scalar($status)) {
-                continue;
-            }
-
-            $value = mb_trim((string) $status);
-
-            if ($value !== '') {
-                $values[] = $value;
-            }
-        }
-
-        return $values === [] ? $default : array_values(array_unique($values));
+        return (bool) config('events.lifecycle.registration.auto_promote_waitlist', false);
     }
 }

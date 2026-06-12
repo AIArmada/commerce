@@ -4,135 +4,171 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Services;
 
+use AIArmada\Events\Actions\DispatchEventChangeChainAction;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
-use AIArmada\Events\Enums\EventStatus;
+use AIArmada\Events\Events\EventArchived;
 use AIArmada\Events\Events\EventCancelled;
 use AIArmada\Events\Events\EventDelayed;
+use AIArmada\Events\Events\EventOccurrenceCancelled;
+use AIArmada\Events\Events\EventOccurrenceCompleted;
+use AIArmada\Events\Events\EventOccurrencePostponed;
+use AIArmada\Events\Events\EventOccurrenceRescheduled;
 use AIArmada\Events\Events\EventPostponed;
-use AIArmada\Events\Events\EventResumed;
+use AIArmada\Events\Events\EventPublished;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Support\Policy\EventLifecyclePolicy;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
+use AIArmada\Events\Models\EventOccurrence;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
 
 final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 {
-    public function postpone(Event $event, ?Model $actor = null, ?string $note = null): Event
+    public function publish(Event $event): void
     {
-        $this->assertCanTransition('postpone', $event, $note);
+        $event->update([
+            'status' => Event::PUBLISHED,
+            'published_at' => CarbonImmutable::now(),
+        ]);
 
-        return DB::transaction(function () use ($event, $actor, $note): Event {
-            $this->stampStateChange($event, $actor, $note);
+        $this->recordChange($event, 'published');
 
-            $event->forceFill([
-                'status' => EventStatus::Postponed,
-                'postponed_at' => Carbon::now(),
-            ])->save();
-
-            $fresh = $event->refresh();
-
-            DB::afterCommit(static fn () => event(new EventPostponed($fresh, $actor, $note)));
-
-            return $fresh;
-        });
+        event(new EventPublished($event));
     }
 
-    public function delay(Event $event, ?Model $actor = null, ?string $note = null): Event
+    public function cancel(Event|EventOccurrence $target, ?string $reason = null): void
     {
-        $this->assertCanTransition('delay', $event, $note);
+        $target->update([
+            'status' => 'cancelled',
+            'cancelled_at' => CarbonImmutable::now(),
+            'status_reason' => $reason,
+        ]);
 
-        return DB::transaction(function () use ($event, $actor, $note): Event {
-            $this->stampStateChange($event, $actor, $note);
+        $this->recordChange($target, 'cancelled', $reason);
 
-            $event->forceFill([
-                'status' => EventStatus::Delayed,
-                'delayed_at' => Carbon::now(),
-            ])->save();
-
-            $fresh = $event->refresh();
-
-            DB::afterCommit(static fn () => event(new EventDelayed($fresh, $actor, $note)));
-
-            return $fresh;
-        });
-    }
-
-    public function resume(Event $event, ?Model $actor = null, ?string $note = null): Event
-    {
-        $this->assertCanTransition('resume', $event, $note);
-
-        return DB::transaction(function () use ($event, $actor, $note): Event {
-            $this->stampStateChange($event, $actor, $note);
-
-            $event->forceFill([
-                'status' => EventStatus::Active,
-            ])->save();
-
-            $fresh = $event->refresh();
-
-            DB::afterCommit(static fn () => event(new EventResumed($fresh, $actor, $note)));
-
-            return $fresh;
-        });
-    }
-
-    public function cancel(Event $event, ?Model $actor = null, ?string $note = null, ?string $reason = null): Event
-    {
-        $this->assertCanTransition('cancel', $event, $note);
-
-        return DB::transaction(function () use ($event, $actor, $note, $reason): Event {
-            $this->stampStateChange($event, $actor, $note);
-
-            $event->forceFill([
-                'status' => EventStatus::Cancelled,
-                'cancelled_at' => Carbon::now(),
-            ])->save();
-
-            $fresh = $event->refresh();
-
-            DB::afterCommit(static fn () => event(new EventCancelled($fresh, $actor, $note, $reason)));
-
-            return $fresh;
-        });
-    }
-
-    private function assertCanTransition(string $actionKey, Event $event, ?string $note): void
-    {
-        $current = $event->status instanceof EventStatus
-            ? $event->status
-            : EventStatus::Draft;
-
-        $target = EventLifecyclePolicy::targetStatusFor($actionKey);
-
-        if ($target === null) {
-            throw new InvalidArgumentException(sprintf('Unknown lifecycle action [%s].', $actionKey));
-        }
-
-        if (! EventLifecyclePolicy::canTransition($actionKey, $current, $target)) {
-            throw new InvalidArgumentException(sprintf(
-                'The [%s] lifecycle action is not allowed from [%s].',
-                $actionKey,
-                $current->value,
-            ));
-        }
-
-        if (EventLifecyclePolicy::noteRequired($actionKey) && ($note === null || mb_trim($note) === '')) {
-            throw new InvalidArgumentException(sprintf(
-                'The [%s] lifecycle action requires a note.',
-                $actionKey,
-            ));
+        if ($target instanceof Event) {
+            event(new EventCancelled($target, $reason));
+        } else {
+            event(new EventOccurrenceCancelled($target, $reason));
         }
     }
 
-    private function stampStateChange(Event $event, ?Model $actor, ?string $note): void
+    public function postpone(Event|EventOccurrence $target, ?string $reason = null): void
     {
-        $event->forceFill([
-            'last_state_change_actor_type' => $actor?->getMorphClass(),
-            'last_state_change_actor_id' => $actor !== null ? (string) $actor->getKey() : null,
-            'last_state_change_note' => $note,
-            'last_state_change_at' => Carbon::now(),
-        ])->save();
+        $target->update([
+            'status' => 'postponed',
+            'postponed_at' => CarbonImmutable::now(),
+            'status_reason' => $reason,
+        ]);
+
+        $this->recordChange($target, 'postponed', $reason);
+
+        if ($target instanceof Event) {
+            event(new EventPostponed($target, $reason));
+        } else {
+            event(new EventOccurrencePostponed($target, $reason));
+        }
+    }
+
+    public function delay(EventOccurrence $occurrence, ?string $reason = null, ?DateTimeInterface $expectedStartsAt = null): void
+    {
+        $occurrence->update([
+            'status' => 'delayed',
+            'status_reason' => $reason,
+        ]);
+
+        $this->recordChange($occurrence, 'delayed', $reason);
+
+        event(new EventDelayed($occurrence, $reason, $expectedStartsAt));
+    }
+
+    public function reschedule(EventOccurrence $occurrence, DateTimeInterface $newStartsAt, DateTimeInterface $newEndsAt, array $options = []): EventOccurrence
+    {
+        $oldOccurrence = clone $occurrence;
+
+        $occurrence->update([
+            'starts_at' => $newStartsAt,
+            'ends_at' => $newEndsAt,
+            'status' => 'rescheduled',
+        ]);
+
+        $this->recordChange($occurrence, 'rescheduled', null, [
+            'old_starts_at' => $oldOccurrence->starts_at,
+            'old_ends_at' => $oldOccurrence->ends_at,
+            'new_starts_at' => $newStartsAt,
+            'new_ends_at' => $newEndsAt,
+        ]);
+
+        event(new EventOccurrenceRescheduled($oldOccurrence, $occurrence));
+
+        return $occurrence;
+    }
+
+    public function complete(Event|EventOccurrence $target): void
+    {
+        $target->update([
+            'status' => 'completed',
+            'completed_at' => CarbonImmutable::now(),
+        ]);
+
+        $this->recordChange($target, 'completed');
+
+        if ($target instanceof EventOccurrence) {
+            event(new EventOccurrenceCompleted($target));
+        }
+    }
+
+    public function archive(Event|EventOccurrence $target, ?string $reason = null): void
+    {
+        $target->update([
+            'status' => 'archived',
+            'archived_at' => CarbonImmutable::now(),
+            'status_reason' => $reason,
+        ]);
+
+        $this->recordChange($target, 'archived', $reason);
+
+        event(new EventArchived($target, $reason));
+    }
+
+    private function recordChange(Event|EventOccurrence $target, string $changeType, ?string $reason = null, array $context = []): void
+    {
+        $event = $target instanceof Event ? $target : $target->event;
+
+        DispatchEventChangeChainAction::run(
+            eventId: $event->getKey(),
+            changeType: $changeType,
+            changeCategory: $this->changeCategory($changeType),
+            impactLevel: $this->impactLevel($changeType),
+            requiresNotification: $this->requiresNotification($changeType),
+            reason: $reason,
+            occurrenceId: $target instanceof EventOccurrence ? $target->getKey() : null,
+            oldValue: $context,
+        );
+    }
+
+    private function changeCategory(string $changeType): string
+    {
+        return match ($changeType) {
+            'published' => 'administration',
+            'cancelled', 'postponed', 'rescheduled', 'delayed' => 'status',
+            'completed', 'archived' => 'administration',
+            default => 'administration',
+        };
+    }
+
+    private function impactLevel(string $changeType): string
+    {
+        return match ($changeType) {
+            'cancelled', 'postponed' => 'critical',
+            'rescheduled', 'delayed' => 'high',
+            'published' => 'low',
+            'completed' => 'low',
+            'archived' => 'medium',
+            default => 'low',
+        };
+    }
+
+    private function requiresNotification(string $changeType): bool
+    {
+        return in_array($changeType, ['cancelled', 'postponed', 'rescheduled'], true);
     }
 }

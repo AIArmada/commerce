@@ -2,86 +2,43 @@
 title: Troubleshooting
 ---
 
-# Troubleshooting
+## Common Issues
 
-## Registrations are not visible in admin or service queries
+### Migrations fail
 
-**Likely cause:** owner scoping is enabled but the current owner context is missing or incorrect.
+Ensure the `events` database config key exists and the connection is valid. Check `EVENTS_JSON_COLUMN_TYPE` — use `jsonb` for PostgreSQL and `json` for MySQL if your MySQL version does not support native JSONB.
 
-**Fix:** ensure the request, job, or command is running with the intended owner context before querying event, occurrence, or registration records.
+### Owner scoping not working
 
-**Verify:** load the same occurrence or registration again after setting the owner context and confirm the expected records are returned.
+Enable owner mode in config:
 
-## Registration creation fails with “This event date is not accepting registrations.”
+```
+EVENTS_OWNER_ENABLED=true
+```
 
-**Likely cause:** the occurrence status or registration window does not currently allow new attendees.
+Ensure your owner model implements the required `OwnerResolverInterface` contract from `commerce-support`. The resolver must be bound in your service provider.
 
-**Fix:** inspect the occurrence status, `events.lifecycle.occurrence.registration_accepting_statuses`, plus `registration_opens_at` and `registration_closes_at`.
+### Registrations not creating passes
 
-**Verify:** reload the occurrence and confirm its status is allowed by lifecycle config and the current time falls inside the configured registration window.
+Verify the registration has associated `registration_items` with valid `event_ticket_type_id` references. Passes are created through explicit action, not automatically on registration creation.
 
-## Registration creation fails with “This event date is sold out.” or “Only N seat(s) remain...”
+### Registration refuses creation
 
-**Likely cause:** the occurrence `capacity` has already been consumed by capacity-blocking registrations.
+Check:
 
-**Fix:** review registrations whose statuses are listed in `events.lifecycle.registration.capacity_blocking_statuses`, or increase the capacity if appropriate.
+- The occurrence's `status` is in `lifecycle.occurrence.registration_accepting_statuses`
+- The occurrence has not reached capacity
+- The registration window is open
+- `event_occurrence_id` references a valid occurrence
 
-**Verify:** compare the remaining capacity against the number of attendee payloads you are trying to create.
+### Participant not appearing in occurrence/session queries
 
-## Check-in fails with “This event date is not currently open for check-in.”
+Ensure the participant was created with `event_occurrence_id` / `event_session_id` set explicitly. Participants inherit scope from the parent registration only when those columns are left null.
 
-**Likely cause:** the occurrence is outside its check-in window.
+### Check-in fails
 
-**Fix:** inspect `check_in_opens_at` and `check_in_closes_at` on the occurrence.
+The registration must have status `confirmed` and the occurrence must be in a check-in-accepting status (configured via `lifecycle.occurrence.check_in_accepting_statuses`).
 
-**Verify:** retry while the current time falls inside the configured check-in window.
+### Model not found in Filament admin
 
-Also confirm the occurrence status is listed in `events.lifecycle.occurrence.check_in_accepting_statuses`.
-
-## Walk-in recording fails with “This event date is not accepting walk-ins.”
-
-**Likely cause:** the occurrence is not in `walk_in_only` or `hybrid` mode, the occurrence status is not allowed for walk-ins, or the check-in window is closed.
-
-**Fix:** inspect `participation_mode`, `events.lifecycle.occurrence.walk_in_accepting_statuses`, `check_in_opens_at`, and `check_in_closes_at`.
-
-**Verify:** reload the occurrence and confirm `acceptsWalkIns()` returns true before recording the walk-in.
-
-## Check-in or cancellation actions fail unexpectedly
-
-**Likely cause:** the target registration is not in a state that permits the lifecycle transition.
-
-**Fix:** inspect the current registration status and run the correct lifecycle transition for that state.
-
-**Verify:** confirm the registration status changes and the occurrence attendee counts remain consistent afterward.
-
-## Mutating a global occurrence or registration throws an explicit-global error
-
-**Likely cause:** owner scoping is enabled and the target record is global, but the current flow did not enter explicit global context.
-
-**Fix:** wrap the mutation in `OwnerContext::withOwner(null, ...)`.
-
-**Verify:** rerun the same write inside explicit global context and confirm the mutation succeeds.
-
-## Commerce-specific relationships throw an integration unavailable error
-
-**Likely cause:** the app is using the core events package without the matching optional first-party commerce package installed or configured.
-
-**Fix:** install the needed package, for example `aiarmada/orders`, `aiarmada/customers`, or `aiarmada/products`, then refresh Composer autoload and clear/rebuild Laravel config. If you use custom models, configure the matching `events.integrations.*_model` key.
-
-**Verify:** confirm the relevant integration config key resolves to a concrete Eloquent model class and retry the relationship or order-fulfillment flow.
-
-## Order fulfillment creates no registrations
-
-**Likely cause:** `aiarmada/orders` is installed, but `events.integrations.order_item_fulfillment_resolver` is not configured.
-
-**Fix:** configure a class that implements `AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver`.
-
-**Verify:** resolve `EventOrderItemFulfillmentResolver` from the container and confirm it is either your application resolver or the package default resolver, depending on your intended integration.
-
-## Package migrations try to create unexpected table names
-
-**Likely cause:** the app upgraded from older defaults but did not pin the existing package table names in `events.database.tables.*`.
-
-**Fix:** publish `events.php` and set the table names to the names already installed in your database before running migrations.
-
-**Verify:** compare the configured table names with the actual database tables and confirm the package models return the expected names from `getTable()`.
+The Filament resources apply `OwnerUiScope::apply(..., includeGlobal: false)` by default. Global records are intentionally hidden. If you need to see global records, check your `EVENTS_OWNER_INCLUDE_GLOBAL` setting and ensure the resource allows it.

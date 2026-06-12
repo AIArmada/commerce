@@ -4,889 +4,359 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Models;
 
-use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
-use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Events\Actions\SynchronizeEventContent;
-use AIArmada\Events\Contracts\EventDisplayTimezoneResolver;
-use AIArmada\Events\Contracts\EventRelationalContentSubject;
-use AIArmada\Events\Contracts\EventSearchPayloadResolver;
-use AIArmada\Events\Enums\EventModerationStatus;
-use AIArmada\Events\Enums\EventStatus;
-use AIArmada\Events\Enums\EventStructure;
-use AIArmada\Events\Enums\EventVisibility;
-use AIArmada\Events\Enums\OccurrenceStatus;
-use AIArmada\Events\Events\EventActivated;
-use AIArmada\Events\Events\EventArchived;
-use AIArmada\Events\Events\EventCancelled;
-use AIArmada\Events\Events\EventDelayed;
-use AIArmada\Events\Events\EventPostponed;
-use AIArmada\Events\Events\EventResumed;
-use AIArmada\Events\Exceptions\InvalidEventStatusTransition;
-use AIArmada\Events\Support\Integration\CommerceIntegration;
-use AIArmada\Events\Support\Integration\ConfiguredEventModel;
+use AIArmada\Events\Database\Factories\EventFactory;
+use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
-use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property string|null $organizer_type
- * @property string|null $organizer_id
- * @property string|null $event_series_id
- * @property string|null $parent_event_id
- * @property string|null $product_id
- * @property string $name
+ * @property string|null $created_by_type
+ * @property string|null $created_by_id
+ * @property string $title
  * @property string $slug
  * @property string|null $summary
  * @property string|null $description
- * @property EventStatus $status
- * @property EventModerationStatus $moderation_status
- * @property EventVisibility $visibility
- * @property EventStructure $structure
- * @property int|null $default_duration_minutes
- * @property string|null $default_timezone
+ * @property string $type
+ * @property string $status
+ * @property string $visibility
+ * @property string $delivery_mode
+ * @property string $timezone
+ * @property string|null $default_venue_id
  * @property CarbonImmutable|null $published_at
- * @property CarbonImmutable|null $public_starts_at
- * @property CarbonImmutable|null $public_ends_at
  * @property CarbonImmutable|null $cancelled_at
  * @property CarbonImmutable|null $postponed_at
- * @property CarbonImmutable|null $delayed_at
- * @property string|null $last_state_change_actor_type
- * @property string|null $last_state_change_actor_id
- * @property string|null $last_state_change_note
- * @property CarbonImmutable|null $activated_at
  * @property CarbonImmutable|null $archived_at
- * @property CarbonImmutable|null $last_state_change_at
- * @property array<string, mixed>|null $media_references
- * @property array<string, mixed>|null $taxonomy
- * @property string|null $search_keywords
- * @property array<string, mixed>|null $metadata
- * @property bool $registration_required
+ * @property CarbonImmutable|null $completed_at
+ * @property string|null $status_reason
+ * @property string|null $status_message
+ * @property array|null $metadata
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventOccurrence> $occurrences
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventSession> $sessions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLocation> $locations
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventFacility> $facilities
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventInvolvement> $involvements
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAccessPolicy> $accessPolicies
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventRegistration> $registrations
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventTicketType> $ticketTypes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventPass> $passes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAttendance> $attendances
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventMaterial> $materials
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventReference> $references
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLink> $links
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventMedia> $media
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventLanguage> $languages
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAudience> $audiences
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventAudienceProfile> $audienceProfiles
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventEligibilityRule> $eligibilityRules
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventClassification> $classifications
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventTimeExpression> $timeExpressions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventItinerary> $itineraries
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventChangeLog> $changeLogs
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventUpdate> $updates
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, EventNotificationBatch> $notificationBatches
+ * @property-read Model|\Eloquent $owner
+ * @property-read Model|\Eloquent $createdBy
  */
-class Event extends Model implements Auditable, EventRelationalContentSubject
+final class Event extends Model
 {
-    use HasCommerceAudit;
-    use HasOwner {
-        scopeForOwner as baseScopeForOwner;
-    }
+    use HasOwner;
     use HasOwnerScopeConfig;
-    use HasUuids;
-    use LogsCommerceActivity;
+    use HasFactory;
+    use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
+    public const DRAFT = 'draft';
+    public const PENDING_REVIEW = 'pending_review';
+    public const SCHEDULED = 'scheduled';
+    public const PUBLISHED = 'published';
+    public const DELAYED = 'delayed';
+    public const POSTPONED = 'postponed';
+    public const RESCHEDULED = 'rescheduled';
+    public const CANCELLED = 'cancelled';
+    public const COMPLETED = 'completed';
+    public const ARCHIVED = 'archived';
+    public const VOIDED = 'voided';
+    public const EXPIRED = 'expired';
+
+    public const PUBLIC = 'public';
+    public const UNLISTED = 'unlisted';
+    public const PRIVATE = 'private';
+    public const REGISTERED_ONLY = 'registered_only';
+    public const ATTENDEES_ONLY = 'attendees_only';
+    public const MANAGERS_ONLY = 'managers_only';
+    public const INTERNAL = 'internal';
+
+    public const DELIVERY_PHYSICAL = 'physical';
+    public const DELIVERY_ONLINE = 'online';
+    public const DELIVERY_HYBRID = 'hybrid';
+
     protected $fillable = [
-        'event_series_id',
-        'parent_event_id',
-        'organizer_type',
-        'organizer_id',
-        'product_id',
-        'name',
-        'slug',
-        'summary',
-        'description',
-        'status',
-        'moderation_status',
-        'visibility',
-        'default_duration_minutes',
-        'default_timezone',
-        'published_at',
-        'public_starts_at',
-        'public_ends_at',
-        'cancelled_at',
-        'postponed_at',
-        'delayed_at',
-        'last_state_change_actor_type',
-        'last_state_change_actor_id',
-        'last_state_change_note',
-        'activated_at',
-        'archived_at',
-        'last_state_change_at',
-        'media_references',
-        'taxonomy',
-        'search_keywords',
+        'owner_type', 'owner_id',
+        'created_by_type', 'created_by_id',
+        'title', 'slug', 'summary', 'description',
+        'type', 'status', 'visibility', 'delivery_mode',
+        'timezone', 'default_venue_id',
+        'published_at', 'cancelled_at', 'postponed_at', 'archived_at', 'completed_at',
+        'status_reason', 'status_message',
         'metadata',
-        'structure',
-        'registration_required',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'status' => EventStatus::class,
-            'moderation_status' => EventModerationStatus::class,
-            'visibility' => EventVisibility::class,
-            'structure' => EventStructure::class,
-            'default_duration_minutes' => 'integer',
-            'published_at' => 'immutable_datetime',
-            'public_starts_at' => 'immutable_datetime',
-            'public_ends_at' => 'immutable_datetime',
-            'cancelled_at' => 'immutable_datetime',
-            'postponed_at' => 'immutable_datetime',
-            'delayed_at' => 'immutable_datetime',
-            'activated_at' => 'immutable_datetime',
-            'archived_at' => 'immutable_datetime',
-            'last_state_change_at' => 'immutable_datetime',
-            'media_references' => 'array',
-            'taxonomy' => 'array',
-            'metadata' => 'array',
-            'registration_required' => 'boolean',
-        ];
-    }
-
-    protected $attributes = [
-        'status' => 'draft',
-        'moderation_status' => 'approved',
-        'visibility' => 'public',
-        'structure' => 'standalone',
-    ];
-
-    public function getTitleAttribute(): string
-    {
-        return $this->name;
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(function (self $event): void {
-            if ($event->getAttribute('structure') instanceof EventStructure) {
-                return;
-            }
-
-            $configuredStructure = config('events.defaults.event_structure', EventStructure::Standalone->value);
-
-            if (is_string($configuredStructure) && EventStructure::tryFrom($configuredStructure) instanceof EventStructure) {
-                $event->setAttribute('structure', $configuredStructure);
-
-                return;
-            }
-
-            $event->setAttribute('structure', EventStructure::Standalone->value);
-        });
-
-        static::updating(function (self $event): void {
-            if (! $event->isDirty('status')) {
-                return;
-            }
-
-            $current = $event->getOriginal('status');
-            $next = $event->status;
-
-            if (! $next instanceof EventStatus) {
-                return;
-            }
-
-            $currentStatus = $current instanceof EventStatus
-                ? $current
-                : (is_string($current) ? EventStatus::tryFrom($current) : null);
-
-            if ($currentStatus !== null && $currentStatus === $next) {
-                return;
-            }
-
-            if ($currentStatus !== null && ! $currentStatus->canTransitionTo($next)) {
-                throw InvalidEventStatusTransition::from($currentStatus, $next);
-            }
-
-            $now = now();
-
-            if ($next === EventStatus::Active && $event->activated_at === null) {
-                $event->activated_at = $now->toImmutable();
-            }
-
-            if ($next === EventStatus::Postponed && $event->postponed_at === null) {
-                $event->postponed_at = $now->toImmutable();
-            }
-
-            if ($next === EventStatus::Delayed && $event->delayed_at === null) {
-                $event->delayed_at = $now->toImmutable();
-            }
-
-            if ($next === EventStatus::Archived && $event->archived_at === null) {
-                $event->archived_at = $now->toImmutable();
-            }
-
-            if ($next === EventStatus::Cancelled && $event->cancelled_at === null) {
-                $event->cancelled_at = $now->toImmutable();
-            }
-        });
-
-        static::saved(function (self $event): void {
-            if ($event->wasChanged('status')) {
-                $next = $event->status;
-
-                if ($next === EventStatus::Active) {
-                    $previous = $event->getOriginal('status');
-                    $previousStatus = $previous instanceof EventStatus
-                        ? $previous
-                        : (is_string($previous) ? EventStatus::tryFrom($previous) : null);
-
-                    if ($previousStatus !== null && $previousStatus->isRecoverable()) {
-                        event(new EventResumed($event));
-                    } else {
-                        event(new EventActivated($event));
-                    }
-                } elseif ($next === EventStatus::Postponed) {
-                    event(new EventPostponed($event));
-                } elseif ($next === EventStatus::Delayed) {
-                    event(new EventDelayed($event));
-                } elseif ($next === EventStatus::Archived) {
-                    event(new EventArchived($event));
-                } elseif ($next === EventStatus::Cancelled) {
-                    event(new EventCancelled($event));
-                }
-
-                if ($next->isTerminal()) {
-                    $event->occurrences()
-                        ->whereNotIn('status', [
-                            OccurrenceStatus::Cancelled->value,
-                            OccurrenceStatus::Completed->value,
-                        ])
-                        ->each(fn (Occurrence $occ) => $occ->update(['status' => OccurrenceStatus::Cancelled]));
-                }
-            }
-
-            if (! $event->wasRecentlyCreated && ! $event->wasChanged(['taxonomy', 'media_references', 'metadata'])) {
-                return;
-            }
-
-            app(SynchronizeEventContent::class)->handle($event, 'model_saved');
-        });
-    }
 
     public function getTable(): string
     {
         return config('events.database.tables.events', 'events');
     }
 
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = false): Builder
+    protected function casts(): array
     {
-        $ownerToScope = $owner;
-
-        if (func_num_args() < 2) {
-            $ownerToScope = OwnerContext::CURRENT;
-        }
-
-        $includeGlobalToScope = $includeGlobal;
-
-        if (func_num_args() < 3) {
-            $includeGlobalToScope = (bool) config('events.features.owner.include_global', false);
-        }
-
-        /** @var Builder<static> $scoped */
-        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobalToScope);
-
-        return $scoped;
+        return [
+            'published_at' => 'immutable_datetime',
+            'cancelled_at' => 'immutable_datetime',
+            'postponed_at' => 'immutable_datetime',
+            'archived_at' => 'immutable_datetime',
+            'completed_at' => 'immutable_datetime',
+            'metadata' => 'array',
+        ];
     }
 
     /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeApproved(Builder $query): Builder
-    {
-        return $query->where($this->qualifyColumn('moderation_status'), EventModerationStatus::Approved->value);
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeRootEvents(Builder $query): Builder
-    {
-        return $query->whereNull($this->qualifyColumn('parent_event_id'));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeChildEvents(Builder $query): Builder
-    {
-        return $query->whereNotNull($this->qualifyColumn('parent_event_id'));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeWithStructure(Builder $query, EventStructure | string $structure): Builder
-    {
-        $structureValue = $structure instanceof EventStructure ? $structure->value : $structure;
-
-        return $query->where($this->qualifyColumn('structure'), $structureValue);
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeStandalone(Builder $query): Builder
-    {
-        return $this->scopeRootEvents($this->scopeWithStructure($query, EventStructure::Standalone));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopePrograms(Builder $query): Builder
-    {
-        return $this->scopeRootEvents($this->scopeWithStructure($query, EventStructure::Program));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeSessions(Builder $query): Builder
-    {
-        return $this->scopeChildEvents($this->scopeWithStructure($query, EventStructure::Session));
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopePubliclyAccessible(Builder $query, ?Carbon $now = null): Builder
-    {
-        $now ??= now('UTC');
-
-        return $this->constrainPublicWindow(
-            $query
-                ->whereIn($this->qualifyColumn('status'), [
-                    EventStatus::Active->value,
-                    EventStatus::Postponed->value,
-                    EventStatus::Delayed->value,
-                    EventStatus::Cancelled->value,
-                    EventStatus::Archived->value,
-                ])
-                ->where($this->qualifyColumn('moderation_status'), EventModerationStatus::Approved->value)
-                ->whereIn($this->qualifyColumn('visibility'), [
-                    EventVisibility::Public->value,
-                    EventVisibility::Unlisted->value,
-                ]),
-            $now,
-        );
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopePubliclyDiscoverable(Builder $query, ?Carbon $now = null): Builder
-    {
-        $now ??= now('UTC');
-
-        return $this->constrainPublicWindow(
-            $query
-                ->where($this->qualifyColumn('status'), EventStatus::Active->value)
-                ->where($this->qualifyColumn('moderation_status'), EventModerationStatus::Approved->value)
-                ->where($this->qualifyColumn('visibility'), EventVisibility::Public->value),
-            $now,
-        );
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeSearchable(Builder $query, ?Carbon $now = null): Builder
-    {
-        return $this->scopePubliclyDiscoverable($query, $now);
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeDelayed(Builder $query): Builder
-    {
-        return $query->where($this->qualifyColumn('status'), EventStatus::Delayed->value);
-    }
-
-    public function scopeUpcoming(Builder $query, ?Carbon $now = null): Builder
-    {
-        $now ??= now('UTC');
-
-        return $query
-            ->where($this->qualifyColumn('status'), EventStatus::Active->value)
-            ->where(function (Builder $query) use ($now): void {
-                $query
-                    ->whereNull($this->qualifyColumn('public_starts_at'))
-                    ->orWhere($this->qualifyColumn('public_starts_at'), '>=', $now);
-            });
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    public function scopeLive(Builder $query, ?Carbon $now = null): Builder
-    {
-        $now ??= now('UTC');
-
-        return $query
-            ->where($this->qualifyColumn('status'), EventStatus::Active->value)
-            ->where(function (Builder $query) use ($now): void {
-                $query
-                    ->where(function (Builder $query) use ($now): void {
-                        $query
-                            ->whereNull($this->qualifyColumn('public_starts_at'))
-                            ->orWhere($this->qualifyColumn('public_starts_at'), '<=', $now);
-                    })
-                    ->where(function (Builder $query) use ($now): void {
-                        $query
-                            ->whereNull($this->qualifyColumn('public_ends_at'))
-                            ->orWhere($this->qualifyColumn('public_ends_at'), '>=', $now);
-                    });
-            });
-    }
-
-    /**
-     * @return BelongsTo<EventSeries, $this>
-     */
-    public function series(): BelongsTo
-    {
-        return $this->belongsTo(EventSeries::class, 'event_series_id');
-    }
-
-    /**
-     * @return BelongsTo<Model, $this>
-     */
-    public function parentEvent(): BelongsTo
-    {
-        return $this->belongsTo(ConfiguredEventModel::classFor('events.models.event', self::class), 'parent_event_id');
-    }
-
-    /**
-     * @return MorphTo<Model, $this>
-     */
-    public function organizer(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-    /**
-     * @return MorphMany<EventPerson, $this>
-     */
-    public function people(): MorphMany
-    {
-        return $this->morphMany(EventPerson::class, 'assignable')
-            ->orderBy((new EventPerson)->qualifyColumn('order_column'))
-            ->orderBy((new EventPerson)->qualifyColumn('display_name'));
-    }
-
-    /**
-     * @return MorphMany<EventOrganizer, $this>
-     */
-    public function organizers(): MorphMany
-    {
-        return $this->morphMany(EventOrganizer::class, 'assignable')
-            ->orderBy((new EventOrganizer)->qualifyColumn('order_column'));
-    }
-
-    /**
-     * @return MorphMany<EventSpeaker, $this>
-     */
-    public function speakers(): MorphMany
-    {
-        return $this->morphMany(EventSpeaker::class, 'assignable')
-            ->orderBy((new EventSpeaker)->qualifyColumn('order_column'));
-    }
-
-    /**
-     * @return MorphMany<EventSponsor, $this>
-     */
-    public function sponsors(): MorphMany
-    {
-        return $this->morphMany(EventSponsor::class, 'assignable')
-            ->orderBy((new EventSponsor)->qualifyColumn('order_column'));
-    }
-
-    /**
-     * @return MorphMany<EventSeatCategory, $this>
-     */
-    public function seatCategories(): MorphMany
-    {
-        return $this->morphMany(EventSeatCategory::class, 'assignable')
-            ->orderBy((new EventSeatCategory)->qualifyColumn('order_column'));
-    }
-
-    /**
-     * @return HasMany<Model, $this>
-     */
-    public function childEvents(): HasMany
-    {
-        return $this->hasMany(ConfiguredEventModel::classFor('events.models.event', self::class), 'parent_event_id')
-            ->orderBy($this->qualifyColumn('structure'))
-            ->orderBy($this->qualifyColumn('name'));
-    }
-
-    /**
-     * @return HasMany<Occurrence, $this>
+     * @return HasMany<EventOccurrence, $this>
      */
     public function occurrences(): HasMany
     {
-        return $this->hasMany(Occurrence::class, 'event_id');
+        return $this->hasMany(EventOccurrence::class);
     }
 
     /**
-     * @return MorphMany<EventClassification, $this>
+     * @return HasMany<EventSession, $this>
      */
-    public function classifications(): MorphMany
+    public function sessions(): HasMany
     {
-        return $this->morphMany(EventClassification::class, 'assignable');
+        return $this->hasMany(EventSession::class);
     }
 
     /**
-     * @return MorphMany<EventAsset, $this>
+     * @return HasMany<EventLocation, $this>
      */
-    public function assets(): MorphMany
+    public function locations(): HasMany
     {
-        return $this->morphMany(EventAsset::class, 'assignable');
+        return $this->hasMany(EventLocation::class);
     }
 
     /**
-     * @return MorphMany<EventReference, $this>
+     * @return HasMany<EventFacility, $this>
      */
-    public function references(): MorphMany
+    public function facilities(): HasMany
     {
-        return $this->morphMany(EventReference::class, 'assignable')
-            ->orderBy((new EventReference)->qualifyColumn('reference_kind'))
-            ->orderBy((new EventReference)->qualifyColumn('order_column'));
+        return $this->hasMany(EventFacility::class);
     }
 
     /**
-     * @return MorphMany<EventSubmission, $this>
+     * @return HasMany<EventInvolvement, $this>
      */
-    public function submissions(): MorphMany
+    public function involvements(): HasMany
     {
-        return $this->morphMany(EventSubmission::class, 'assignable');
+        return $this->hasMany(EventInvolvement::class);
     }
 
     /**
-     * @return HasMany<EventReview, $this>
+     * @return HasMany<EventAccessPolicy, $this>
      */
-    public function reviews(): HasMany
+    public function accessPolicies(): HasMany
     {
-        return $this->hasMany(EventReview::class, 'event_id');
+        return $this->hasMany(EventAccessPolicy::class);
     }
 
     /**
-     * @return MorphMany<EventChange, $this>
+     * @return HasMany<EventRegistration, $this>
      */
-    public function changeNotices(): MorphMany
+    public function registrations(): HasMany
     {
-        return $this->morphMany(EventChange::class, 'assignable');
+        return $this->hasMany(EventRegistration::class);
+    }
+
+    /**
+     * @return HasMany<EventTicketType, $this>
+     */
+    public function ticketTypes(): HasMany
+    {
+        return $this->hasMany(EventTicketType::class);
+    }
+
+    /**
+     * @return HasMany<EventPass, $this>
+     */
+    public function passes(): HasMany
+    {
+        return $this->hasMany(EventPass::class);
     }
 
     /**
      * @return HasMany<EventAttendance, $this>
      */
-    public function attendanceRecords(): HasMany
+    public function attendances(): HasMany
     {
-        return $this->hasMany(EventAttendance::class, 'event_id');
+        return $this->hasMany(EventAttendance::class);
     }
 
     /**
-     * @return HasMany<EventEngagement, $this>
+     * @return HasMany<EventMaterial, $this>
      */
-    public function engagements(): HasMany
+    public function materials(): HasMany
     {
-        return $this->hasMany(EventEngagement::class, 'event_id');
+        return $this->hasMany(EventMaterial::class);
     }
 
     /**
-     * @return HasManyThrough<EventAgenda, Occurrence, $this>
+     * @return HasMany<EventReference, $this>
      */
-    public function agendaItems(): HasManyThrough
+    public function references(): HasMany
     {
-        return $this->hasManyThrough(EventAgenda::class, Occurrence::class, 'event_id', 'occurrence_id')
-            ->orderBy((new EventAgenda)->qualifyColumn('order_column'))
-            ->orderBy((new EventAgenda)->qualifyColumn('starts_at'))
-            ->orderBy((new EventAgenda)->qualifyColumn('segment_key'));
-    }
-
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(
-            CommerceIntegration::requireModelClass('product_model', 'products'),
-            'product_id',
-        );
-    }
-
-    public function isPubliclyAccessible(?Carbon $now = null): bool
-    {
-        $now ??= now('UTC');
-
-        if (! $this->status->isPubliclyVisible()) {
-            return false;
-        }
-
-        if (! $this->moderation_status->isPubliclyVisible()) {
-            return false;
-        }
-
-        if (! $this->visibility->isPubliclyAccessible()) {
-            return false;
-        }
-
-        return $this->isInsidePublicWindow($now);
-    }
-
-    public function isPubliclyDiscoverable(?Carbon $now = null): bool
-    {
-        if ($this->status !== EventStatus::Active) {
-            return false;
-        }
-
-        if (! $this->moderation_status->isPubliclyVisible()) {
-            return false;
-        }
-
-        if (! $this->visibility->isDiscoverable()) {
-            return false;
-        }
-
-        return $this->isInsidePublicWindow($now ?? now('UTC'));
-    }
-
-    public function isEngageable(): bool
-    {
-        return $this->status->isEngageable();
-    }
-
-    public function isRoot(): bool
-    {
-        return $this->parent_event_id === null;
-    }
-
-    public function isChild(): bool
-    {
-        return $this->parent_event_id !== null;
-    }
-
-    public function isStandalone(): bool
-    {
-        return $this->structure->isStandalone();
-    }
-
-    public function isProgram(): bool
-    {
-        return $this->structure->isProgram();
-    }
-
-    public function isSession(): bool
-    {
-        return $this->structure->isSession();
-    }
-
-    public function displayTimezone(?Model $viewer = null): string
-    {
-        return app(EventDisplayTimezoneResolver::class)->resolve($this, $viewer);
+        return $this->hasMany(EventReference::class);
     }
 
     /**
-     * @return array<string, string>
+     * @return HasMany<EventLink, $this>
      */
-    public function mediaCollections(): array
+    public function links(): HasMany
     {
-        $collections = config('events.media.collections', []);
-
-        return is_array($collections)
-            ? array_filter($collections, static fn (mixed $value): bool => is_string($value) && mb_trim($value) !== '')
-            : [];
+        return $this->hasMany(EventLink::class);
     }
 
     /**
-     * @return array<int, mixed>|array<string, mixed>
+     * @return HasMany<EventMedia, $this>
      */
-    public function taxonomyTerms(?string $group = null): array
+    public function media(): HasMany
     {
-        $classifications = $this->relationLoaded('classifications')
-            ? $this->classifications
-            : $this->classifications()->orderBy('group_key')->orderBy('order_column')->get();
-
-        if ($classifications->isNotEmpty()) {
-            $grouped = $classifications
-                ->sortBy('order_column')
-                ->groupBy('group_key')
-                ->map(static fn (Collection $items): array => $items->pluck('term_key')->values()->all())
-                ->all();
-
-            if ($group === null) {
-                return $grouped;
-            }
-
-            return $grouped[$group] ?? [];
-        }
-
-        $taxonomy = $this->taxonomy ?? [];
-
-        if ($group === null) {
-            return $taxonomy;
-        }
-
-        $terms = $taxonomy[$group] ?? [];
-
-        return is_array($terms) ? $terms : [];
+        return $this->hasMany(EventMedia::class);
     }
 
     /**
-     * @return array<int, mixed>|array<string, mixed>
+     * @return HasMany<EventLanguage, $this>
      */
-    public function assetReferences(?string $role = null): array
+    public function languages(): HasMany
     {
-        $assets = $this->relationLoaded('assets')
-            ? $this->assets
-            : $this->assets()->orderBy('role_key')->orderBy('order_column')->get();
-
-        if ($assets->isNotEmpty()) {
-            $grouped = $assets
-                ->sortBy('order_column')
-                ->groupBy('role_key')
-                ->map(static function (Collection $items): array | string {
-                    $payload = $items
-                        ->map(static fn (EventAsset $asset): string => $asset->url ?? $asset->provider_reference ?? $asset->title ?? '')
-                        ->filter(static fn (string $value): bool => $value !== '')
-                        ->values()
-                        ->all();
-
-                    if (count($payload) === 1) {
-                        return $payload[0];
-                    }
-
-                    return $payload;
-                })
-                ->all();
-
-            if ($role === null) {
-                return $grouped;
-            }
-
-            $rolePayload = $grouped[$role] ?? [];
-
-            return is_array($rolePayload) ? $rolePayload : [$rolePayload];
-        }
-
-        $mediaReferences = $this->media_references ?? [];
-
-        if ($role === null) {
-            return $mediaReferences;
-        }
-
-        $reference = $mediaReferences[$role] ?? [];
-
-        return is_array($reference) ? $reference : [$reference];
+        return $this->hasMany(EventLanguage::class);
     }
 
     /**
-     * @return array<int, mixed>|array<string, mixed>
+     * @return HasMany<EventAudience, $this>
      */
-    public function referenceMaterials(?string $kind = null): array
+    public function audiences(): HasMany
     {
-        $references = $this->relationLoaded('references')
-            ? $this->references
-            : $this->references()->orderBy('reference_kind')->orderBy('order_column')->get();
-
-        if ($references->isEmpty()) {
-            return $kind === null ? [] : [];
-        }
-
-        $grouped = $references
-            ->groupBy('reference_kind')
-            ->map(static function (Collection $items): array {
-                return $items
-                    ->sortBy('order_column')
-                    ->map(static fn (EventReference $reference): array => [
-                        'reference_kind' => $reference->reference_kind,
-                        'reference_type' => $reference->reference_type,
-                        'reference_id' => $reference->reference_id,
-                        'display_label' => $reference->display_label,
-                        'source_label' => $reference->source_label,
-                        'url' => $reference->url,
-                        'order_column' => $reference->order_column,
-                        'metadata' => $reference->metadata,
-                    ])
-                    ->values()
-                    ->all();
-            })
-            ->all();
-
-        if ($kind === null) {
-            return $grouped;
-        }
-
-        return $grouped[$kind] ?? [];
+        return $this->hasMany(EventAudience::class);
     }
 
     /**
-     * @return array<string, mixed>
+     * @return HasMany<EventAudienceProfile, $this>
      */
-    public function toSearchableArray(): array
+    public function audienceProfiles(): HasMany
     {
-        $this->loadMissing(['classifications', 'assets', 'references', 'people']);
-
-        return app(EventSearchPayloadResolver::class)->toSearchableArray($this);
+        return $this->hasMany(EventAudienceProfile::class);
     }
 
     /**
-     * @param  Builder<static>  $query
+     * @return HasMany<EventEligibilityRule, $this>
+     */
+    public function eligibilityRules(): HasMany
+    {
+        return $this->hasMany(EventEligibilityRule::class);
+    }
+
+    /**
+     * @return HasMany<EventClassification, $this>
+     */
+    public function classifications(): HasMany
+    {
+        return $this->hasMany(EventClassification::class);
+    }
+
+    /**
+     * @return HasMany<EventTimeExpression, $this>
+     */
+    public function timeExpressions(): HasMany
+    {
+        return $this->hasMany(EventTimeExpression::class);
+    }
+
+    /**
+     * @return HasMany<EventItinerary, $this>
+     */
+    public function itineraries(): HasMany
+    {
+        return $this->hasMany(EventItinerary::class);
+    }
+
+    /**
+     * @return HasMany<EventChangeLog, $this>
+     */
+    public function changeLogs(): HasMany
+    {
+        return $this->hasMany(EventChangeLog::class);
+    }
+
+    /**
+     * @return HasMany<EventUpdate, $this>
+     */
+    public function updates(): HasMany
+    {
+        return $this->hasMany(EventUpdate::class);
+    }
+
+    /**
+     * @return HasMany<EventNotificationBatch, $this>
+     */
+    public function notificationBatches(): HasMany
+    {
+        return $this->hasMany(EventNotificationBatch::class);
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function createdBy(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * @param Builder<static> $query
      * @return Builder<static>
      */
-    private function constrainPublicWindow(Builder $query, Carbon $now): Builder
+    public function scopePublished(Builder $query): Builder
     {
-        return $query
-            ->where(function (Builder $query) use ($now): void {
-                $query
-                    ->whereNull($this->qualifyColumn('published_at'))
-                    ->orWhere($this->qualifyColumn('published_at'), '<=', $now);
-            })
-            ->where(function (Builder $query) use ($now): void {
-                $query
-                    ->whereNull($this->qualifyColumn('public_starts_at'))
-                    ->orWhere($this->qualifyColumn('public_starts_at'), '<=', $now);
-            })
-            ->where(function (Builder $query) use ($now): void {
-                $query
-                    ->whereNull($this->qualifyColumn('public_ends_at'))
-                    ->orWhere($this->qualifyColumn('public_ends_at'), '>=', $now);
-            });
+        return $query->where('status', self::PUBLISHED);
     }
 
-    private function isInsidePublicWindow(Carbon $now): bool
+    /**
+     * @param Builder<static> $query
+     * @return Builder<static>
+     */
+    public function scopePublic(Builder $query): Builder
     {
-        if ($this->published_at !== null && $this->published_at->gt($now)) {
-            return false;
-        }
+        return $query->where('visibility', self::PUBLIC);
+    }
 
-        if ($this->public_starts_at !== null && $this->public_starts_at->gt($now)) {
-            return false;
-        }
+    protected static function newFactory(): EventFactory
+    {
+        return EventFactory::new();
+    }
 
-        if ($this->public_ends_at !== null && $this->public_ends_at->lt($now)) {
-            return false;
-        }
-
-        return true;
+    public function isPubliclyVisible(): bool
+    {
+        return $this->visibility === self::PUBLIC && $this->status === self::PUBLISHED;
     }
 }

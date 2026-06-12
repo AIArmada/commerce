@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Events\Models\Event;
 
 interface EventClassificationResolver
 {
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    public function resolve(Model $subject): array;
+    public function resolve(Event $event): array;
 }

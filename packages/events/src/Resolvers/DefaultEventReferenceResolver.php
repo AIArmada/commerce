@@ -5,23 +5,18 @@ declare(strict_types=1);
 namespace AIArmada\Events\Resolvers;
 
 use AIArmada\Events\Contracts\EventReferenceResolver;
-use Illuminate\Database\Eloquent\Model;
+use AIArmada\Events\Models\EventReference;
 
 final class DefaultEventReferenceResolver implements EventReferenceResolver
 {
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    public function resolve(Model $subject): array
+    public function resolve(EventReference $reference): array
     {
-        foreach (['references', 'reference_materials', 'source_materials'] as $attribute) {
-            $references = $subject->getAttribute($attribute);
-
-            if (is_array($references)) {
-                return $references;
-            }
-        }
-
-        return [];
+        return [
+            'id' => $reference->id,
+            'title' => $reference->title,
+            'citation' => $reference->citation,
+            'url' => $reference->url,
+            'reference_type' => $reference->reference_type,
+        ];
     }
 }

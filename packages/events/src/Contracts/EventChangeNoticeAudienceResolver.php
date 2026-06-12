@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Contracts;
 
-use AIArmada\Events\Data\EventChangeNoticeAudienceData;
-use AIArmada\Events\Models\EventChange;
+use AIArmada\Events\Models\EventUpdate;
 
 interface EventChangeNoticeAudienceResolver
 {
-    public function resolve(EventChange $notice): EventChangeNoticeAudienceData;
+    public function resolve(EventUpdate $update, string $audienceScope): iterable;
 }
