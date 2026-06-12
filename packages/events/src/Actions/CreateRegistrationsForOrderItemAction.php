@@ -65,7 +65,13 @@ final class CreateRegistrationsForOrderItemAction
             throw new InvalidArgumentException(sprintf('The order item must belong to an instance of %s.', $orderClass));
         }
 
-        if (! $orderItem->purchasable instanceof EventTicketType || $orderItem->purchasable->event_id !== $occurrence->event_id) {
+        $ticketType = $orderItem->purchasable;
+
+        if (
+            ! $ticketType instanceof EventTicketType
+            || $ticketType->event_id !== $occurrence->event_id
+            || ($ticketType->event_occurrence_id !== null && $ticketType->event_occurrence_id !== $occurrence->id)
+        ) {
             throw new InvalidArgumentException('The selected order item must reference a ticket type that belongs to the same event occurrence.');
         }
 
@@ -106,7 +112,7 @@ final class CreateRegistrationsForOrderItemAction
                     'external_order_id' => $orderItem->order_id,
                     'external_order_type' => $orderClass,
                     'items' => [[
-                        'event_ticket_type_id' => $orderItem->purchasable->getKey(),
+                        'event_ticket_type_id' => $ticketType->getKey(),
                         'quantity' => 1,
                         'unit_price' => $orderItem->unit_price,
                         'total_price' => $orderItem->unit_price,
