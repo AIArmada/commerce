@@ -49,6 +49,10 @@ return new class extends Migration
             $table->date('issue_date');
             $table->date('due_date')->nullable();
             $table->timestampTz('paid_at')->nullable();
+            $table->timestampTz('sent_at')->nullable();
+            $table->timestampTz('cancelled_at')->nullable();
+            $table->timestampTz('refunded_at')->nullable();
+            $table->timestampTz('overdue_at')->nullable();
             $table->decimal('subtotal', 15, 2)->default(0);
             $table->decimal('tax_amount', 15, 2)->default(0);
             $table->decimal('discount_amount', 15, 2)->default(0);
@@ -95,7 +99,8 @@ return new class extends Migration
             $table->string('status');
             $table->text('notes')->nullable();
             $table->string('changed_by')->nullable();
-            $table->timestampsTz();
+            $table->string('changed_by_type', 50)->default('user');
+            $table->timestampTz('created_at');
 
             $table->index('doc_id', $statusTable . '_doc_id_index');
             $table->index('status', $statusTable . '_status_index');

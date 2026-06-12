@@ -40,6 +40,7 @@ return new class extends Migration
             // Status
             $table->boolean('is_default')->default(false);
             $table->boolean('is_enabled')->default(true);
+            $table->timestampTz('deactivated_at')->nullable();
 
             $table->{$jsonColumnType}('metadata')->nullable();
 
@@ -50,6 +51,7 @@ return new class extends Migration
             $table->index('product_id');
             $table->index('is_enabled');
             $table->index('is_default');
+            $table->index('deactivated_at');
         });
     }
 

@@ -42,6 +42,9 @@ return new class extends Migration
             $table->{$jsonColumnType}('conditions')->nullable();
             $table->boolean('is_required')->default(true);
             $table->unsignedInteger('timeout_hours')->nullable();
+            $table->timestampTz('completed_at')->nullable();
+            $table->timestampTz('timed_out_at')->nullable();
+            $table->timestampTz('escalated_at')->nullable();
             $table->timestampsTz();
 
             $table->index(['workflow_id', 'order']);

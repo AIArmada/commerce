@@ -36,6 +36,8 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampTz('activated_at')->nullable();
+            $table->timestampTz('deactivated_at')->nullable();
+            $table->timestampTz('paused_at')->nullable();
             $table->timestampsTz();
             $table->index(['status', 'activated_at'], 'affiliates_active_idx');
         });

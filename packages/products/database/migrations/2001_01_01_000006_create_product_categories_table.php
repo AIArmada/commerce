@@ -27,8 +27,11 @@ return new class extends Migration
 
             // Display
             $table->unsignedInteger('position')->default(0);
-            $table->boolean('is_visible')->default(true);
             $table->boolean('is_featured')->default(false);
+            $table->string('status')->default('active');
+            $table->string('visibility')->default('catalog');
+            $table->timestampTz('hidden_at')->nullable();
+            $table->timestampTz('archived_at')->nullable();
 
             // SEO
             $table->string('meta_title')->nullable();
@@ -41,7 +44,8 @@ return new class extends Migration
             // Unique slug per parent
             $table->unique(['owner_type', 'owner_id', 'parent_id', 'slug']);
             $table->index('parent_id');
-            $table->index(['is_visible', 'position']);
+            $table->index('status');
+            $table->index('hidden_at');
         });
     }
 

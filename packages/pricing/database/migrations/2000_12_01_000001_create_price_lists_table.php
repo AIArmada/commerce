@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('priority')->default(0);
             $table->boolean('is_default')->default(false);
             $table->boolean('is_active')->default(true);
+            $table->timestampTz('deactivated_at')->nullable();
 
             // Optional: Link to customer or segment
             $table->foreignUuid('customer_id')->nullable();

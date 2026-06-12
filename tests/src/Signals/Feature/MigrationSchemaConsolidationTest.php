@@ -48,7 +48,7 @@ it('creates the owner scope column in the base interaction rule migration', func
 
     Schema::dropIfExists($tableName);
 
-    $migration = require __DIR__ . '/../../../../packages/signals/database/migrations/2001_01_01_000018_create_signals_interaction_rules_table.php';
+    $migration = require __DIR__ . '/../../../../packages/signals/database/migrations/2001_01_01_000011_create_signals_interaction_rules_table.php';
     $migration->up();
 
     expect(Schema::hasTable($tableName))->toBeTrue()

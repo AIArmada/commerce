@@ -28,6 +28,7 @@ return new class extends Migration
             // Alternative: Discount instead of fixed price
             $table->string('discount_type')->nullable(); // 'percentage', 'fixed'
             $table->unsignedBigInteger('discount_value')->nullable();
+            $table->boolean('is_active')->default(true);
 
             $table->nullableMorphs('owner');
 

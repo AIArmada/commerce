@@ -14,7 +14,10 @@ return new class extends Migration
 
         Schema::create(config('events.database.tables.event_registration_participants', 'event_registration_participants'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
+            $table->uuid('event_id')->nullable()->index();
             $table->uuid('event_registration_id')->index();
+            $table->uuid('event_occurrence_id')->nullable()->index();
+            $table->uuid('event_session_id')->nullable()->index();
             $table->string('participant_type')->nullable()->index();
             $table->uuid('participant_id')->nullable()->index();
             $table->string('name')->nullable();

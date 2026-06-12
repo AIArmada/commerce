@@ -11,7 +11,7 @@
         "aiarmada/commerce-support": "self.version",
         "aiarmada/affiliate-network": "self.version",
         "aiarmada/filament-affiliates": "self.version",
-        "filament/filament": "^5.6.5",
+        "filament/filament": "^5.6.7",
         "php": "^8.4"
     },
     "autoload": {

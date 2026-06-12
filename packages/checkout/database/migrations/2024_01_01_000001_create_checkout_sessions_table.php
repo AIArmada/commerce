@@ -64,6 +64,8 @@ return new class extends Migration
             // Timestamps
             $table->timestampTz('expires_at')->nullable()->index();
             $table->timestampTz('completed_at')->nullable();
+            $table->timestampTz('cancelled_at')->nullable()->index();
+            $table->timestampTz('payment_failed_at')->nullable();
             $table->timestampsTz();
 
             // Indexes for common queries

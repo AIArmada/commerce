@@ -14,6 +14,8 @@ return new class extends Migration
 
         Schema::create(config('events.database.tables.event_itinerary_items', 'event_itinerary_items'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
+            $table->uuid('event_id')->nullable()->index();
+            $table->uuid('event_occurrence_id')->nullable()->index();
             $table->uuid('event_itinerary_id')->index();
             $table->string('item_type')->index();
             $table->uuid('event_session_id')->nullable()->index();
