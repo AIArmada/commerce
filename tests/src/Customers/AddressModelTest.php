@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Enums\AddressType;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Services\CustomerResolver;
-use AIArmada\Contacting\Data\ContactMethodData;
 
 describe('Address Model', function (): void {
     beforeEach(function (): void {

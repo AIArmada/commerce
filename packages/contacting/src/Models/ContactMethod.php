@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
 use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -47,9 +48,9 @@ use Illuminate\Support\Carbon;
 final class ContactMethod extends Model
 {
     use HasFactory;
-    use HasUuids;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasUuids;
 
     protected $guarded = [];
 
@@ -188,7 +189,7 @@ final class ContactMethod extends Model
         $allowedValues = array_is_list($allowedTypes) ? $allowedTypes : array_keys($allowedTypes);
 
         if (! in_array($this->type, $allowedValues, true)) {
-            throw new \InvalidArgumentException(sprintf('Unsupported contact method type "%s".', $this->type));
+            throw new InvalidArgumentException(sprintf('Unsupported contact method type "%s".', $this->type));
         }
     }
 
@@ -235,7 +236,7 @@ final class ContactMethod extends Model
             return;
         }
 
-        throw new \InvalidArgumentException('Contact method contactable owner must match the contact method owner.');
+        throw new InvalidArgumentException('Contact method contactable owner must match the contact method owner.');
     }
 
     protected static function newFactory(): ContactMethodFactory

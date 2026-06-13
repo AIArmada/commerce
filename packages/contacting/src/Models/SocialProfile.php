@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
 use Carbon\CarbonImmutable;
@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -48,9 +49,9 @@ use Illuminate\Support\Carbon;
 final class SocialProfile extends Model
 {
     use HasFactory;
-    use HasUuids;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasUuids;
 
     protected $guarded = [];
 
@@ -186,7 +187,7 @@ final class SocialProfile extends Model
         $allowedValues = array_is_list($allowedPlatforms) ? $allowedPlatforms : array_keys($allowedPlatforms);
 
         if (! in_array($this->platform, $allowedValues, true)) {
-            throw new \InvalidArgumentException(sprintf('Unsupported social platform "%s".', $this->platform));
+            throw new InvalidArgumentException(sprintf('Unsupported social platform "%s".', $this->platform));
         }
     }
 
@@ -233,7 +234,7 @@ final class SocialProfile extends Model
             return;
         }
 
-        throw new \InvalidArgumentException('Social profile socialable owner must match the social profile owner.');
+        throw new InvalidArgumentException('Social profile socialable owner must match the social profile owner.');
     }
 
     protected static function newFactory(): SocialProfileFactory

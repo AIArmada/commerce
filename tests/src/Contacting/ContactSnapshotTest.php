@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
-use AIArmada\Contacting\Data\ContactSnapshotData;
 use AIArmada\Contacting\Data\ContactMethodData;
+use AIArmada\Contacting\Data\ContactSnapshotData;
 use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\Customers\Models\Customer;
 
-test('ContactSnapshotData constructor', function () {
+test('ContactSnapshotData constructor', function (): void {
     $data = new ContactSnapshotData(
         snapshotType: 'contact_method',
         reason: 'event_public_contact',
@@ -22,12 +22,12 @@ test('ContactSnapshotData constructor', function () {
     expect($data->value)->toBe('admin@example.com');
 });
 
-test('CreateContactSnapshotAction can be instantiated', function () {
+test('CreateContactSnapshotAction can be instantiated', function (): void {
     $action = new CreateContactSnapshotAction;
     expect($action)->toBeInstanceOf(CreateContactSnapshotAction::class);
 });
 
-test('CreateContactSnapshotAction persists snapshots with the source owner', function () {
+test('CreateContactSnapshotAction persists snapshots with the source owner', function (): void {
     $customer = Customer::create([
         'first_name' => 'Snapshot',
         'last_name' => 'Owner',
@@ -45,7 +45,7 @@ test('CreateContactSnapshotAction persists snapshots with the source owner', fun
         ->and(ContactSnapshot::query()->whereKey($snapshot->id)->exists())->toBeTrue();
 });
 
-test('CreateContactSnapshotAction returns an unsaved snapshot when snapshots are disabled', function () {
+test('CreateContactSnapshotAction returns an unsaved snapshot when snapshots are disabled', function (): void {
     config()->set('contacting.features.contact_snapshots', false);
 
     $customer = Customer::create([
@@ -65,7 +65,7 @@ test('CreateContactSnapshotAction returns an unsaved snapshot when snapshots are
         ->and(ContactSnapshot::query()->count())->toBe(0);
 });
 
-test('snapshot action methods exist', function () {
+test('snapshot action methods exist', function (): void {
     $action = new CreateContactSnapshotAction;
     expect(method_exists($action, 'fromContactMethod'))->toBeTrue();
     expect(method_exists($action, 'fromSocialProfile'))->toBeTrue();
