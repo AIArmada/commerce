@@ -11,8 +11,8 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -43,7 +43,7 @@ trait InteractsWithAffiliate
             $owner = OwnerUiScope::resolveOwner(Affiliate::class);
             $contactEmail = is_string($user->email ?? null) ? mb_strtolower($user->email) : null;
 
-            $this->affiliate = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($owner, function () use ($owner, $user, $contactEmail): ?Affiliate {
+            $this->affiliate = OwnerContext::withOwner($owner, function () use ($owner, $user, $contactEmail): ?Affiliate {
                 return Affiliate::query()
                     ->forOwner($owner, false)
                     ->where(function (Builder $query) use ($user, $contactEmail): void {
@@ -65,7 +65,7 @@ trait InteractsWithAffiliate
                     ->first();
             });
         } else {
-            $this->affiliate = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($user, function () use ($user): ?Affiliate {
+            $this->affiliate = OwnerContext::withOwner($user, function () use ($user): ?Affiliate {
                 $contactEmail = is_string($user->email ?? null) ? mb_strtolower($user->email) : null;
 
                 return Affiliate::query()

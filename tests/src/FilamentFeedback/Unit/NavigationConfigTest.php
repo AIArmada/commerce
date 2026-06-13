@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentFeedback\Pages\FeedbackDashboard;
 use AIArmada\FilamentFeedback\Resources\FeedbackFormResource;
 use AIArmada\FilamentFeedback\Resources\FeedbackInvitationResource;
 use AIArmada\FilamentFeedback\Resources\FeedbackResponseResource;
 use AIArmada\FilamentFeedback\Resources\FeedbackTemplateResource;
 use AIArmada\FilamentFeedback\Resources\FeedbackTestimonialResource;
-use AIArmada\Commerce\Tests\TestCase;
 
 uses(TestCase::class);
 

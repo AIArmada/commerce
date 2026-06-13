@@ -26,14 +26,14 @@ beforeEach(function (): void {
 });
 
 it('reuses snapshot participants and falls back to the registrant when needed', function (): void {
-        OwnerContext::withOwner(null, function (): void {
-            $customer = Customer::create([
-                'first_name' => 'Maya',
-                'last_name' => 'Jones',
-                'email' => 'maya@example.com',
-                'phone' => '+60111222333',
-                'is_guest' => false,
-            ]);
+    OwnerContext::withOwner(null, function (): void {
+        $customer = Customer::create([
+            'first_name' => 'Maya',
+            'last_name' => 'Jones',
+            'email' => 'maya@example.com',
+            'phone' => '+60111222333',
+            'is_guest' => false,
+        ]);
         $customer->addContactMethod(ContactMethodData::email('maya@example.com'));
         $customer->addContactMethod(ContactMethodData::phone('+60111222333', countryCode: 'MY'));
 

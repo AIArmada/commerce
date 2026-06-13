@@ -73,7 +73,7 @@ final class NormalizesPhoneNumber
             return $digits;
         }
 
-        $nationalNumber = ltrim($digits, '0');
+        $nationalNumber = mb_ltrim($digits, '0');
 
         if ($nationalNumber === '') {
             return '';
@@ -92,7 +92,7 @@ final class NormalizesPhoneNumber
             return null;
         }
 
-        return match (strtoupper($countryCode)) {
+        return match (mb_strtoupper($countryCode)) {
             'AU' => '61',
             'CA' => '1',
             'GB' => '44',

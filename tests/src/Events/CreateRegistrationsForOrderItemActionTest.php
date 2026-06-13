@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
