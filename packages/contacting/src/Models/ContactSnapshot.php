@@ -42,9 +42,9 @@ use Illuminate\Support\Carbon;
 final class ContactSnapshot extends Model
 {
     use HasFactory;
-    use HasUuids;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasUuids;
 
     protected $guarded = [];
 
