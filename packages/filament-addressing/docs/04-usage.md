@@ -33,6 +33,9 @@ Countries are seeded by `aiarmada/addressing`.
 
 The country resource is read-only by default and is intended for browsing/searching ISO 3166-1 country/territory data.
 
+To enable safe editing, set `resources.countries.read_only=false` and `features.country_editing=true`.
+The edit form keeps identity fields locked and only exposes safe display metadata.
+
 Search examples:
 
 - `MY`
@@ -72,13 +75,15 @@ MY,state,Selangor,app.malaysia,MY-10
 Recommended columns:
 
 ```csv
-country_code,type,level,name,native_name,code,parent_source_id,source,source_id,latitude,longitude
-MY,state,1,Selangor,Selangor,10,,app.malaysia,MY-10,3.0738,101.5183
+country_code,type,level,name,native_name,code,parent_source_id,source,source_id,latitude,longitude,metadata
+MY,state,1,Selangor,Selangor,10,,app.malaysia,MY-10,3.0738,101.5183,"{""source"":""legacy""}"
 MY,district,2,Petaling,Petaling,PETALING,MY-10,app.malaysia,MY-10-PETALING,,
 MY,city,3,Shah Alam,Shah Alam,SHAH-ALAM,MY-10-PETALING,app.malaysia,MY-10-PETALING-SHAH-ALAM,,
 ```
 
 The importer must call the core `ImportAddressAreasAction`. It must not insert rows directly.
+
+The `parent_source_id` column is country-scoped and cycle-safe. The UI hides parent choices that would create a loop, and the importer rejects the same loop server-side.
 
 ## Reuse Address Form Schema
 
@@ -148,6 +153,8 @@ Only enable this for trusted admin panels.
     'model' => \AIArmada\Addressing\Models\Address::class,
 ],
 ```
+
+If `features.address_export` is enabled, the central Address resource also shows a built-in export action.
 
 :::warning
 If addresses are owner-scoped, verify `getEloquentQuery()` and action handlers are owner-safe before enabling this resource.

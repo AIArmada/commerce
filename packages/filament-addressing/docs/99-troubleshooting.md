@@ -57,6 +57,8 @@ Do not use full country name as the key.
 
 Check that `parent_source_id` references a row from the same source.
 
+The same parent cannot be the current area or one of its descendants. If the UI does not show the parent you expect, the hierarchy would create a cycle and is intentionally blocked.
+
 Example:
 
 ```csv

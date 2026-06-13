@@ -92,7 +92,7 @@ class AddressAreaTable
             ->distinct()
             ->orderBy('level')
             ->pluck('level', 'level')
-            ->map(fn (int $level): string => (string) $level)
+            ->map(static fn (mixed $level): string => (string) $level)
             ->toArray();
     }
 
