@@ -22,7 +22,7 @@ final class EventAttendanceResource extends Resource
 {
     protected static ?string $model = EventAttendance::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-check';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
     protected static ?int $navigationSort = 12;
 

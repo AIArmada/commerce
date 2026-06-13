@@ -57,7 +57,7 @@ final class EventStatsWidget extends StatsOverviewWidget
                     ->count()
             )
                 ->description('All check-ins')
-                ->descriptionIcon('heroicon-o-clipboard-check')
+                ->descriptionIcon('heroicon-o-clipboard-document-check')
                 ->color('gray'),
         ];
     }
