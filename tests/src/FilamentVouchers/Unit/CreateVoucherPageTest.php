@@ -2,9 +2,16 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\CreateVoucher;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
+use AIArmada\Vouchers\Enums\VoucherType;
 use Illuminate\Validation\ValidationException;
 
 uses(TestCase::class);
@@ -61,4 +68,46 @@ it('rejects invalid condition target presets', function (): void {
     expect(fn () => $persist->invoke($page, [
         'condition_target_preset' => 'not-a-preset',
     ]))->toThrow(ValidationException::class);
+});
+
+it('rejects affiliate program ids outside the current owner scope on create', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', false);
+
+    $ownerA = User::query()->create([
+        'name' => 'Owner A',
+        'email' => 'voucher-page-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownerB = User::query()->create([
+        'name' => 'Owner B',
+        'email' => 'voucher-page-owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    $foreignProgram = OwnerContext::withOwner($ownerB, function (): AffiliateProgram {
+        return AffiliateProgram::create([
+            'name' => 'Foreign Voucher Program',
+            'status' => ProgramStatus::Active,
+            'requires_approval' => false,
+            'visibility' => ProgramVisibility::Public,
+            'default_commission_rate_basis_points' => 1000,
+            'commission_type' => CommissionType::Percentage,
+            'cookie_lifetime_days' => 30,
+        ]);
+    });
+
+    $page = app(CreateVoucher::class);
+    $mutate = new ReflectionMethod(CreateVoucher::class, 'mutateFormDataBeforeCreate');
+
+    expect(fn (): array => OwnerContext::withOwner($ownerA, function () use ($page, $mutate, $foreignProgram): array {
+        return $mutate->invoke($page, [
+            'code' => 'PAGE-FOREIGN-PROGRAM',
+            'type' => VoucherType::Fixed->value,
+            'value' => 1000,
+            'condition_target_preset' => ConditionTargetPreset::GrandTotal->value,
+            'affiliate_program_id' => $foreignProgram->id,
+        ]);
+    }))->toThrow(ValidationException::class);
 });

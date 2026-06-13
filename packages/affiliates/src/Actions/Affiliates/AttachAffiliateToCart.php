@@ -81,7 +81,7 @@ final class AttachAffiliateToCart
         $this->pruneAttributionOverflow($identifier, $instance, $affiliate->owner_type, $affiliate->owner_id);
 
         if (config('affiliates.cart.persist_metadata', true)) {
-            $this->persistCartMetadata($cart, $affiliate, $attribution);
+            $this->persistCartMetadata($cart, $affiliate, $attribution, $context);
         }
 
         if ($this->shouldDispatch('dispatch_attributed')) {
@@ -195,9 +195,9 @@ final class AttachAffiliateToCart
         ]);
     }
 
-    private function persistCartMetadata(Cart $cart, Affiliate $affiliate, AffiliateAttribution $attribution): void
+    private function persistCartMetadata(Cart $cart, Affiliate $affiliate, AffiliateAttribution $attribution, array $context = []): void
     {
-        $cart->setMetadata($this->metadataKey(), [
+        $data = [
             'affiliate_id' => $affiliate->getKey(),
             'affiliate_code' => $affiliate->code,
             'attribution_id' => $attribution->getKey(),
@@ -210,7 +210,21 @@ final class AttachAffiliateToCart
             'source' => $attribution->source,
             'campaign' => $attribution->campaign,
             'attached_at' => now()->toIso8601String(),
-        ]);
+        ];
+
+        if (! empty($context['commission_override'])) {
+            $data['commission_override'] = $context['commission_override'];
+        }
+
+        if (! empty($context['affiliate_program_id'])) {
+            $data['affiliate_program_id'] = $context['affiliate_program_id'];
+        }
+
+        if (! empty($context['upline_levels'])) {
+            $data['upline_levels'] = $context['upline_levels'];
+        }
+
+        $cart->setMetadata($this->metadataKey(), $data);
     }
 
     private function fillAttribution(AffiliateAttribution $attribution, array $payload): void

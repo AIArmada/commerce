@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
+use AIArmada\FilamentVouchers\Support\MoneyHelper;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Infolists\Components\TextEntry;
@@ -18,7 +21,7 @@ final class VoucherInfolist
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema->components([
+        $components = [
             Section::make('Voucher Overview')
                 ->schema([
                     Grid::make(2)
@@ -161,67 +164,130 @@ final class VoucherInfolist
 
                     return $record->promotion_source_label !== null || $record->promotion_source_id !== null;
                 }),
+        ];
 
-            Section::make('Usage Metrics')
+        if (class_exists(AffiliateProgram::class)) {
+            $components[] = Section::make('Affiliate Commission')
                 ->schema([
-                    Grid::make(4)
+                    Grid::make(3)
                         ->schema([
-                            TextEntry::make('applied_count')
-                                ->label('Applied')
+                            TextEntry::make('affiliate_commission_type')
+                                ->label('Commission Type')
+                                ->state(
+                                    static fn ($record): string => $record->affiliate_commission_type instanceof CommissionType
+                                        ? $record->affiliate_commission_type->label()
+                                        : 'Default (from affiliate/program)'
+                                )
                                 ->badge()
-                                ->tooltip('Number of times this voucher has been applied to carts'),
+                                ->color(fn ($record): string => $record->affiliate_commission_type instanceof CommissionType ? 'warning' : 'gray')
+                                ->placeholder('Default'),
 
-                            TextEntry::make('usages_count')
-                                ->label('Redeemed')
-                                ->state(static fn ($record): int => $record->usages()->count())
-                                ->badge(),
+                            TextEntry::make('affiliate_commission_value')
+                                ->label('Commission Value')
+                                ->state(
+                                    static fn ($record): string => $record->affiliate_commission_value !== null
+                                        ? (
+                                            $record->affiliate_commission_type === CommissionType::Percentage
+                                                ? MoneyHelper::formatPercentage((int) $record->affiliate_commission_value)
+                                                : MoneyHelper::formatMoney((int) $record->affiliate_commission_value, (string) $record->currency)
+                                        )
+                                        : '—'
+                                )
+                                ->placeholder('—'),
 
-                            TextEntry::make('remaining_uses')
-                                ->label('Remaining')
-                                ->state(static fn ($record): string => Str::of((string) ($record->getRemainingUses() ?? '∞'))->toString())
-                                ->badge(),
+                            TextEntry::make('affiliateProgram.name')
+                                ->label('Commission Program')
+                                ->url(static function ($record): ?string {
+                                    if (! $record->affiliateProgram) {
+                                        return null;
+                                    }
 
-                            TextEntry::make('usageProgress')
-                                ->label('Usage %')
-                                ->state(static fn ($record): string => $record->usageProgress === null ? '—' : number_format($record->usageProgress, 1) . '%')
-                                ->badge(),
+                                    $resourceClass = 'AIArmada\\FilamentAffiliates\\Resources\\AffiliateProgramResource';
+
+                                    if (! class_exists($resourceClass)) {
+                                        return null;
+                                    }
+
+                                    return $resourceClass::getUrl('view', ['record' => $record->affiliateProgram]);
+                                })
+                                ->placeholder('No program'),
                         ]),
-                ]),
 
-            Section::make('Wallet Statistics')
-                ->description('Vouchers saved to user wallets for future use')
-                ->schema([
-                    Grid::make(4)
-                        ->schema([
-                            TextEntry::make('wallet_entries_count')
-                                ->label('Total in Wallets')
-                                ->badge()
-                                ->color('primary'),
+                    TextEntry::make('affiliate_upline_levels')
+                        ->label('Upline Levels')
+                        ->state(
+                            static fn ($record): string => is_array($record->affiliate_upline_levels)
+                                ? collect($record->affiliate_upline_levels)
+                                    ->map(fn (array $level): string => 'Level ' . ($level['level'] ?? '?') . ': ' . number_format(($level['share'] ?? 0) * 100, 1) . '%')
+                                    ->implode(', ')
+                                : 'Global config'
+                        )
+                        ->placeholder('Global config'),
+                ])
+                ->collapsible();
+        }
 
-                            TextEntry::make('wallet_available_count')
-                                ->label('Available')
-                                ->badge()
-                                ->color('success'),
+        $components[] = Section::make('Usage Metrics')
+            ->schema([
+                Grid::make(4)
+                    ->schema([
+                        TextEntry::make('applied_count')
+                            ->label('Applied')
+                            ->badge()
+                            ->tooltip('Number of times this voucher has been applied to carts'),
 
-                            TextEntry::make('wallet_claimed_count')
-                                ->label('Claimed')
-                                ->badge()
-                                ->color('warning'),
+                        TextEntry::make('usages_count')
+                            ->label('Redeemed')
+                            ->state(static fn ($record): int => $record->usages()->count())
+                            ->badge(),
 
-                            TextEntry::make('wallet_redeemed_count')
-                                ->label('Redeemed')
-                                ->badge()
-                                ->color('danger'),
-                        ]),
-                ]),
+                        TextEntry::make('remaining_uses')
+                            ->label('Remaining')
+                            ->state(static fn ($record): string => Str::of((string) ($record->getRemainingUses() ?? '∞'))->toString())
+                            ->badge(),
 
-            Section::make('Description')
-                ->schema([
-                    TextEntry::make('description')
-                        ->label('Description')
-                        ->markdown()
-                        ->default('-'),
-                ]),
-        ]);
+                        TextEntry::make('usageProgress')
+                            ->label('Usage %')
+                            ->state(static fn ($record): string => $record->usageProgress === null ? '—' : number_format($record->usageProgress, 1) . '%')
+                            ->badge(),
+                    ]),
+            ]);
+
+        $components[] = Section::make('Wallet Statistics')
+            ->description('Vouchers saved to user wallets for future use')
+            ->schema([
+                Grid::make(4)
+                    ->schema([
+                        TextEntry::make('wallet_entries_count')
+                            ->label('Total in Wallets')
+                            ->badge()
+                            ->color('primary'),
+
+                        TextEntry::make('wallet_available_count')
+                            ->label('Available')
+                            ->badge()
+                            ->color('success'),
+
+                        TextEntry::make('wallet_claimed_count')
+                            ->label('Claimed')
+                            ->badge()
+                            ->color('warning'),
+
+                        TextEntry::make('wallet_redeemed_count')
+                            ->label('Redeemed')
+                            ->badge()
+                            ->color('danger'),
+                    ]),
+            ]);
+
+        $components[] = Section::make('Description')
+            ->schema([
+                TextEntry::make('description')
+                    ->label('Description')
+                    ->markdown()
+                    ->default('-'),
+            ]);
+
+        return $schema->components($components);
     }
 }

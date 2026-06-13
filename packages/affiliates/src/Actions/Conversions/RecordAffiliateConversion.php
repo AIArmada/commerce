@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Actions\Conversions;
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
+use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PendingConversion;
@@ -26,6 +28,7 @@ final class RecordAffiliateConversion
 
     public function __construct(
         private readonly CommissionCalculator $commissionCalculator,
+        private readonly CommissionRuleEngine $ruleEngine,
         private readonly Dispatcher $events,
         private readonly WebhookDispatcher $webhooks,
         private readonly AttributionModel $attributionModel,
@@ -51,9 +54,11 @@ final class RecordAffiliateConversion
         $subtotalMinor = $this->resolveMinorAmount($payload['subtotal'] ?? null, fn () => $cart->subtotal()->getAmount());
         $totalMinor = $this->resolveMinorAmount($payload['total'] ?? null, fn () => $cart->total()->getAmount());
 
-        $commissionMinor = $this->resolveMinorAmount(
-            $payload['commission'] ?? null,
-            fn () => $this->commissionCalculator->calculate($affiliate, $subtotalMinor ?? $totalMinor ?? 0)
+        $commissionMinor = $this->resolveCommission(
+            $affiliate,
+            $subtotalMinor ?? $totalMinor ?? 0,
+            $metadata,
+            $payload,
         );
 
         $status = config('affiliates.commissions.default_status', PendingConversion::value());
@@ -71,11 +76,22 @@ final class RecordAffiliateConversion
 
         foreach ($weights as $affiliateId => $weight) {
             $weight = max(0, (float) $weight);
-            $portionCommission = (int) round(($commissionMinor ?? 0) * $weight);
+            $portionCommission = (int) round($commissionMinor * $weight);
             $portionRevenue = (int) round(($totalMinor ?? 0) * $weight);
             $beneficiary = $affiliateId === $affiliate->getKey()
                 ? $affiliate
                 : $this->findAffiliateById($affiliateId);
+
+            $conversionMetadata = $this->buildConversionMetadata(
+                $payload['metadata'] ?? [],
+                $weight,
+                $payload['subject_type'] ?? $attribution?->subject_type ?? ($metadata['subject_type'] ?? null),
+                $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
+            );
+
+            if (isset($metadata['upline_levels'])) {
+                $conversionMetadata['upline_levels'] = $metadata['upline_levels'];
+            }
 
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
@@ -98,12 +114,7 @@ final class RecordAffiliateConversion
                 'commission_currency' => $payload['commission_currency'] ?? $affiliate->currency,
                 'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
                 'channel' => $payload['channel'] ?? null,
-                'metadata' => $this->buildConversionMetadata(
-                    $payload['metadata'] ?? [],
-                    $weight,
-                    $payload['subject_type'] ?? $attribution?->subject_type ?? ($metadata['subject_type'] ?? null),
-                    $payload['subject_title_snapshot'] ?? $attribution?->subject_title_snapshot ?? ($metadata['subject_title_snapshot'] ?? null),
-                ),
+                'metadata' => $conversionMetadata,
                 'owner_type' => $beneficiary?->owner_type ?? $affiliate->owner_type,
                 'owner_id' => $beneficiary?->owner_id ?? $affiliate->owner_id,
                 'occurred_at' => $payload['occurred_at'] ?? now(),
@@ -125,6 +136,45 @@ final class RecordAffiliateConversion
         $this->allocateUpline->handle($conversions, $autoApprove, $statusEnum, $attribution?->getKey());
 
         return $conversions[0];
+    }
+
+    private function resolveCommission(Affiliate $affiliate, int $baseAmount, array $metadata, array $payload): int
+    {
+        if (isset($payload['commission'])) {
+            return $this->resolveMinorAmount($payload['commission'], fn () => 0);
+        }
+
+        $voucherOverride = $metadata['commission_override'] ?? null;
+
+        if (is_array($voucherOverride) && isset($voucherOverride['type'], $voucherOverride['value'])) {
+            return $this->calculateVoucherCommission($voucherOverride, $baseAmount);
+        }
+
+        $programId = $metadata['affiliate_program_id'] ?? null;
+
+        if ($programId) {
+            $result = $this->ruleEngine->calculate($affiliate, $baseAmount, [
+                'program_id' => $programId,
+            ]);
+
+            return $result->finalCommissionMinor;
+        }
+
+        return $this->commissionCalculator->calculate($affiliate, $baseAmount);
+    }
+
+    private function calculateVoucherCommission(array $override, int $baseAmount): int
+    {
+        $type = $override['type'];
+        $value = (int) $override['value'];
+
+        if ($type === CommissionType::Fixed->value) {
+            return max(0, $value);
+        }
+
+        $scale = max(1, (int) config('affiliates.currency.percentage_scale', 100));
+
+        return (int) max(0, round(($baseAmount * $value) / ($scale * 100)));
     }
 
     private function findAffiliateById(string $affiliateId): ?Affiliate
