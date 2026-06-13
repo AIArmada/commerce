@@ -36,6 +36,7 @@ parameters:
         - identifier: 'larastan.noEnvCallsOutsideOfConfig'
         - identifier: 'classConstant.notFound'
         - identifier: 'class.extendsFinal'
+        - identifier: 'function.alreadyNarrowedType'
         -
             identifier: 'return.type'
             message: '#should return.*but returns.*(?:[$]this|static)\(#i'
