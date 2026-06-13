@@ -8,6 +8,7 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Support\ConditionTargetFormData;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
+use AIArmada\Vouchers\Support\VoucherAffiliateOwnershipGuard;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -41,6 +42,7 @@ final class EditVoucher extends EditRecord
 
         $record = $this->getRecord();
         $data = $this->enforceOwnerOnUpdate($record, $data);
+        $data = VoucherAffiliateOwnershipGuard::sanitize($data);
 
         return $this->persistConditionTargetDefinition($data);
     }

@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
 use AIArmada\Affiliates\Listeners\AttachAffiliateFromVoucher;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Data\VoucherData;
@@ -73,4 +77,50 @@ test('voucher code fallback attaches affiliate when metadata missing', function 
     expect($attribution)
         ->not()->toBeNull()
         ->and($attribution->affiliate_id)->toBe($fallbackAffiliate->getKey());
+});
+
+test('listener preserves affiliate commission and program overrides from vouchers', function (): void {
+    $program = AffiliateProgram::create([
+        'name' => 'Voucher Program',
+        'status' => ProgramStatus::Active,
+        'requires_approval' => false,
+        'visibility' => ProgramVisibility::Public,
+        'default_commission_rate_basis_points' => 1000,
+        'commission_type' => CommissionType::Percentage,
+        'cookie_lifetime_days' => 30,
+    ]);
+
+    $voucher = VoucherData::fromArray([
+        'id' => (string) Str::uuid(),
+        'code' => 'PROMO-OVERRIDE',
+        'name' => 'Promo Override',
+        'type' => VoucherType::Fixed->value,
+        'value' => 1000,
+        'currency' => 'USD',
+        'status' => Active::class,
+        'metadata' => [
+            'affiliate_code' => 'VOUCHER-AFF',
+        ],
+        'affiliate_commission_type' => CommissionType::Fixed,
+        'affiliate_commission_value' => 2500,
+        'affiliate_program_id' => $program->id,
+        'affiliate_upline_levels' => [
+            ['level' => 1, 'share' => 0.05],
+            ['level' => 2, 'share' => 0.025],
+        ],
+    ]);
+
+    $cart = app('cart')->getCurrentCart();
+
+    app(AttachAffiliateFromVoucher::class)->handle(new VoucherApplied($cart, $voucher));
+
+    expect(Cart::getAffiliateMetadata('commission_override'))->toBe([
+        'type' => CommissionType::Fixed->value,
+        'value' => 2500,
+    ])
+        ->and(Cart::getAffiliateMetadata('affiliate_program_id'))->toBe($program->id)
+        ->and(Cart::getAffiliateMetadata('upline_levels'))->toBe([
+            ['level' => 1, 'share' => 0.05],
+            ['level' => 2, 'share' => 0.025],
+        ]);
 });

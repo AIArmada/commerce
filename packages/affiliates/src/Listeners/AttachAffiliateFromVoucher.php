@@ -14,13 +14,31 @@ final class AttachAffiliateFromVoucher
 
     public function handle(VoucherApplied $event): void
     {
-        $metadata = $event->voucher->metadata ?? [];
+        $voucher = $event->voucher;
+
+        $metadata = $voucher->metadata ?? [];
+
         $context = [
-            'voucher_code' => $event->voucher->code,
+            'voucher_code' => $voucher->code,
             'source' => 'voucher',
             'utm_campaign' => $metadata['campaign'] ?? null,
-            'metadata' => ['voucher_id' => $event->voucher->id],
+            'metadata' => ['voucher_id' => $voucher->id],
         ];
+
+        if ($voucher->affiliateCommissionType && $voucher->affiliateCommissionValue !== null) {
+            $context['commission_override'] = [
+                'type' => $voucher->affiliateCommissionType,
+                'value' => $voucher->affiliateCommissionValue,
+            ];
+        }
+
+        if ($voucher->affiliateProgramId) {
+            $context['affiliate_program_id'] = $voucher->affiliateProgramId;
+        }
+
+        if ($voucher->affiliateUplineLevels) {
+            $context['upline_levels'] = $voucher->affiliateUplineLevels;
+        }
 
         $cookieValue = $this->resolveCookieValue();
 

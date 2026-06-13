@@ -2,7 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\Enums\ProgramVisibility;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\States\Active as AffiliateActive;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Actions\CreateVoucher;
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
@@ -14,6 +22,7 @@ use AIArmada\Vouchers\Models\VoucherWallet;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -112,6 +121,86 @@ describe('CreateVoucher Action', function (): void {
                 'buy' => ['quantity' => 2],
                 'get' => ['quantity' => 1, 'discount' => '100%'],
             ]);
+    });
+
+    it('persists affiliate override fields', function (): void {
+        $affiliate = Affiliate::create([
+            'code' => 'AFF-OVERRIDE-' . uniqid(),
+            'name' => 'Affiliate Override',
+            'status' => AffiliateActive::class,
+            'commission_type' => 'percentage',
+            'commission_rate' => 1000,
+            'currency' => 'MYR',
+        ]);
+
+        $program = AffiliateProgram::create([
+            'name' => 'Voucher Override Program',
+            'status' => ProgramStatus::Active,
+            'requires_approval' => false,
+            'visibility' => ProgramVisibility::Public,
+            'default_commission_rate_basis_points' => 1000,
+            'commission_type' => CommissionType::Percentage,
+            'cookie_lifetime_days' => 30,
+        ]);
+
+        $voucher = CreateVoucher::run([
+            'code' => 'ACTION-AFFILIATE-OVERRIDE',
+            'type' => VoucherType::Fixed,
+            'value' => 100,
+            'affiliate_id' => $affiliate->id,
+            'affiliate_program_id' => $program->id,
+            'affiliate_commission_type' => CommissionType::Fixed,
+            'affiliate_commission_value' => 2500,
+            'affiliate_upline_levels' => [
+                ['level' => 1, 'share' => 0.05],
+            ],
+        ]);
+
+        expect($voucher->affiliate_id)->toBe($affiliate->id)
+            ->and($voucher->affiliate_program_id)->toBe($program->id)
+            ->and($voucher->affiliate_commission_type)->toBe(CommissionType::Fixed)
+            ->and($voucher->affiliate_commission_value)->toBe(2500)
+            ->and($voucher->affiliate_upline_levels)->toBe([
+                ['level' => 1, 'share' => 0.05],
+            ]);
+    });
+
+    it('rejects affiliate program ids outside the current owner scope', function (): void {
+        config()->set('affiliates.owner.enabled', true);
+        config()->set('affiliates.owner.include_global', false);
+
+        $ownerA = User::query()->create([
+            'name' => 'Owner A',
+            'email' => 'voucher-owner-a@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerB = User::query()->create([
+            'name' => 'Owner B',
+            'email' => 'voucher-owner-b@example.com',
+            'password' => 'secret',
+        ]);
+
+        $foreignProgram = OwnerContext::withOwner($ownerB, function (): AffiliateProgram {
+            return AffiliateProgram::create([
+                'name' => 'Foreign Program',
+                'status' => ProgramStatus::Active,
+                'requires_approval' => false,
+                'visibility' => ProgramVisibility::Public,
+                'default_commission_rate_basis_points' => 1000,
+                'commission_type' => CommissionType::Percentage,
+                'cookie_lifetime_days' => 30,
+            ]);
+        });
+
+        expect(fn (): Voucher => OwnerContext::withOwner($ownerA, function () use ($foreignProgram): Voucher {
+            return CreateVoucher::run([
+                'code' => 'ACTION-FOREIGN-PROGRAM',
+                'type' => VoucherType::Fixed,
+                'value' => 100,
+                'affiliate_program_id' => $foreignProgram->id,
+            ]);
+        }))->toThrow(ValidationException::class);
     });
 
     it('overrides forged owner payload when owner context is resolved', function (): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
+use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
@@ -33,8 +34,20 @@ final class VouchersTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->withCount('usages')->with('promotion'))
-            ->columns([
+            ->modifyQueryUsing(static function (Builder $query): Builder {
+                $query->withCount('usages');
+
+                if (class_exists('AIArmada\\Promotions\\Models\\Promotion')) {
+                    $query->with('promotion');
+                }
+
+                if (class_exists(AffiliateProgram::class)) {
+                    $query->with('affiliateProgram');
+                }
+
+                return $query;
+            })
+            ->columns(array_values(array_filter([
                 TextColumn::make('code')
                     ->label('Code')
                     ->copyable()
@@ -142,6 +155,13 @@ final class VouchersTable
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                class_exists(AffiliateProgram::class)
+                    ? TextColumn::make('affiliateProgram.name')
+                        ->label('Program')
+                        ->placeholder('—')
+                        ->toggleable(isToggledHiddenByDefault: true)
+                    : null,
+
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -181,7 +201,7 @@ final class VouchersTable
                     ->since()
                     ->sortable()
                     ->toggleable(),
-            ])
+            ])))
             ->filters([
                 SelectFilter::make('type')
                     ->label('Voucher Type')

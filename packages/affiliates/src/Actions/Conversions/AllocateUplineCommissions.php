@@ -44,10 +44,19 @@ final class AllocateUplineCommissions
                 continue;
             }
 
+            $overrideLevels = $conversionData->metadata['upline_levels'] ?? null;
+
+            $resolvedLevels = $levels;
+
+            if (is_array($overrideLevels)) {
+                usort($overrideLevels, static fn (array $a, array $b): int => ($a['level'] ?? 0) <=> ($b['level'] ?? 0));
+                $resolvedLevels = array_column($overrideLevels, 'share');
+            }
+
             $current = $affiliate->parent;
             $depth = 0;
 
-            foreach ($levels as $share) {
+            foreach ($resolvedLevels as $share) {
                 $depth++;
 
                 if (! $current) {

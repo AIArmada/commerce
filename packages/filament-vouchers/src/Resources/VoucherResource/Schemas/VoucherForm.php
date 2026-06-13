@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Enums\VoucherType;
@@ -12,6 +13,7 @@ use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -21,6 +23,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class VoucherForm
@@ -251,7 +254,14 @@ final class VoucherForm
                     Grid::make(1)->schema([
                         Select::make('affiliate_id')
                             ->label('Linked Affiliate')
-                            ->relationship('affiliate', 'name')
+                            ->relationship(
+                                'affiliate',
+                                'name',
+                                modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply(
+                                    $query,
+                                    includeGlobal: (bool) config('affiliates.owner.include_global', false),
+                                ),
+                            )
                             ->searchable()
                             ->preload()
                             ->placeholder('Not linked to any affiliate')
@@ -259,6 +269,82 @@ final class VoucherForm
                     ]),
                 ])
                 ->collapsible();
+
+            $sections[] = Section::make('Affiliate Commission Override')
+                ->description('Override the affiliate\'s default commission rate for this voucher. Per-voucher values take highest priority, then program rules, then the affiliate\'s default.')
+                ->schema([
+                    Grid::make(3)
+                        ->schema([
+                            Select::make('affiliate_commission_type')
+                                ->label('Commission Type')
+                                ->options([
+                                    'percentage' => 'Percentage',
+                                    'fixed' => 'Fixed Amount',
+                                ])
+                                ->placeholder('Use default')
+                                ->live()
+                                ->helperText('Percentage or fixed amount override for the affiliate commission.'),
+
+                            TextInput::make('affiliate_commission_value')
+                                ->label('Commission Value')
+                                ->numeric()
+                                ->minValue(0)
+                                ->helperText(
+                                    fn (Get $get): string => $get('affiliate_commission_type') === 'percentage'
+                                    ? 'Basis points (e.g., 1500 = 15%)'
+                                    : 'Cents (e.g., 5000 = 50.00)'
+                                )
+                                ->visible(fn (Get $get): bool => $get('affiliate_commission_type') !== null)
+                                ->suffix(fn (Get $get): string => $get('affiliate_commission_type') === 'percentage' ? 'bp' : null),
+
+                            Select::make('affiliate_program_id')
+                                ->label('Commission Program')
+                                ->relationship(
+                                    'affiliateProgram',
+                                    'name',
+                                    modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply(
+                                        $query,
+                                        includeGlobal: (bool) config('affiliates.owner.include_global', false),
+                                    ),
+                                )
+                                ->searchable()
+                                ->preload()
+                                ->placeholder('No program (use affiliate default)')
+                                ->helperText('Applies program commission rules when no per-voucher override is set.'),
+                        ]),
+                ])
+                ->collapsible()
+                ->collapsed();
+
+            $sections[] = Section::make('Affiliate Upline Levels')
+                ->description('Override upline commission splits for this voucher. When empty, uses the global multi-level settings.')
+                ->schema([
+                    Repeater::make('affiliate_upline_levels')
+                        ->label('Upline Levels')
+                        ->schema([
+                            TextInput::make('level')
+                                ->label('Level')
+                                ->numeric()
+                                ->required()
+                                ->minValue(1)
+                                ->maxValue(50)
+                                ->helperText('Upline depth (1 = direct parent)'),
+                            TextInput::make('share')
+                                ->label('Share')
+                                ->numeric()
+                                ->required()
+                                ->minValue(0.001)
+                                ->maxValue(1)
+                                ->step(0.001)
+                                ->helperText('Share of base commission (0.05 = 5%)'),
+                        ])
+                        ->columns(2)
+                        ->addActionLabel('Add Upline Level')
+                        ->defaultItems(0)
+                        ->collapsible(),
+                ])
+                ->collapsible()
+                ->collapsed();
         }
 
         if ($ownerRegistry->hasDefinitions()) {
