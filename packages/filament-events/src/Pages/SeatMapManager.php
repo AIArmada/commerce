@@ -76,6 +76,6 @@ final class SeatMapManager extends Page
 
     public function getView(): string
     {
-        return 'filament-pages::simple-page';
+        return 'filament-panels::pages.simple';
     }
 }

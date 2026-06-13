@@ -147,6 +147,6 @@ final class NotificationCenter extends Page implements HasTable
 
     public function getView(): string
     {
-        return 'filament-pages::simple-page';
+        return 'filament-panels::pages.simple';
     }
 }
