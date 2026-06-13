@@ -54,7 +54,7 @@ final class EventRegistrationResource extends Resource
                 Tables\Columns\TextColumn::make('registrant.first_name')
                     ->label('Name')
                     ->state(fn (EventRegistration $record): string => $record->registrant
-                        ? trim(($record->registrant->first_name ?? '') . ' ' . ($record->registrant->last_name ?? ''))
+                        ? mb_trim(($record->registrant->first_name ?? '') . ' ' . ($record->registrant->last_name ?? ''))
                         : ($record->participants->first()?->name ?? ''))
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query
                         ->whereHas('registrant', fn (Builder $q) => $q
