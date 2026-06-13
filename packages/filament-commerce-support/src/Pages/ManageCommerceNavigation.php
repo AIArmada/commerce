@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCommerceSupport\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\CommerceNavigation;
 use AIArmada\FilamentCommerceSupport\Settings\CommerceNavigationSettings;
+use AIArmada\FilamentCommerceSupport\Support\NavigationConfigurator;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -18,6 +19,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\DB;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use UnitEnum;
 
@@ -95,7 +97,7 @@ class ManageCommerceNavigation extends Page
             // If there's no items group override matching this group key, check
             // if any items have the SAME group key as their default group.
             if ($groupItems === []) {
-                foreach ($mergedOverrides as $class => $override) {
+                foreach ($mergedOverrides as $override) {
                     $itemGroup = $override['group'] ?? '';
                     if ($itemGroup === '' || ! isset($mergedGroups[$itemGroup]) || $itemGroup === $key) {
                         continue;
@@ -248,6 +250,7 @@ class ManageCommerceNavigation extends Page
                                         : class_basename($class);
                                 }
                                 $hidden = ! empty($state['hidden']);
+
                                 return $hidden ? "✕ {$label}" : $label;
                             })
                             ->addActionLabel(__('Add Item to this Group'))
@@ -295,6 +298,7 @@ class ManageCommerceNavigation extends Page
                     $submittedOverrides[$class] = $config;
                     $itemIndex++;
                 }
+
                 continue;
             }
 
@@ -345,7 +349,7 @@ class ManageCommerceNavigation extends Page
 
         // Apply group renames to item overrides
         if ($groupRenames !== []) {
-            foreach ($submittedOverrides as $class => &$config) {
+            foreach ($submittedOverrides as &$config) {
                 $currentGroup = $config['group'] ?? '';
                 if (isset($groupRenames[$currentGroup])) {
                     $config['group'] = $groupRenames[$currentGroup];
@@ -359,7 +363,7 @@ class ManageCommerceNavigation extends Page
         $trueDefaultOverrides = $this->getTrueDefaultOverrides();
 
         if ($groupRenames !== []) {
-            foreach ($trueDefaultOverrides as $class => &$config) {
+            foreach ($trueDefaultOverrides as &$config) {
                 $currentGroup = $config['group'] ?? '';
                 if (isset($groupRenames[$currentGroup])) {
                     $config['group'] = $groupRenames[$currentGroup];
@@ -389,7 +393,7 @@ class ManageCommerceNavigation extends Page
 
         $settings->save();
 
-        \AIArmada\FilamentCommerceSupport\Support\NavigationConfigurator::apply();
+        NavigationConfigurator::apply();
 
         Notification::make()
             ->title(__('Navigation configuration saved.'))
@@ -431,7 +435,7 @@ class ManageCommerceNavigation extends Page
     {
         $panel = Filament::getCurrentOrDefaultPanel();
         $defaults = [];
-        $originalItems = \AIArmada\FilamentCommerceSupport\Support\NavigationConfigurator::$originalItemsConfig;
+        $originalItems = NavigationConfigurator::$originalItemsConfig;
 
         $extract = function (string $class) use (&$defaults, $originalItems): void {
             $group = null;
@@ -497,7 +501,7 @@ class ManageCommerceNavigation extends Page
     private function getTrueDefaultGroups(): array
     {
         $groups = [];
-        $configGroups = \AIArmada\FilamentCommerceSupport\Support\NavigationConfigurator::$originalGroupConfig;
+        $configGroups = NavigationConfigurator::$originalGroupConfig;
 
         foreach ($configGroups as $key => $config) {
             $groups[$key] = [
@@ -587,7 +591,7 @@ class ManageCommerceNavigation extends Page
             // Seed the missing rows so spatie/laravel-settings can load/save.
             $group = 'commerce-navigation';
             foreach (['groups', 'overrides'] as $name) {
-                \Illuminate\Support\Facades\DB::table('settings')->insertOrIgnore([
+                DB::table('settings')->insertOrIgnore([
                     'group' => $group,
                     'name' => $name,
                     'locked' => false,
@@ -914,13 +918,13 @@ class ManageCommerceNavigation extends Page
         $panel = Filament::getCurrentOrDefaultPanel();
         $defaults = [];
 
-        $extract = function (string $class) use (&$defaults) {
+        $extract = function (string $class) use (&$defaults): void {
             $defaultGroup = method_exists($class, 'getNavigationGroup') ? $class::getNavigationGroup() : null;
             $defaultSort = method_exists($class, 'getNavigationSort') ? $class::getNavigationSort() : null;
             $defaultParent = method_exists($class, 'getNavigationParentItem') ? $class::getNavigationParentItem() : null;
 
             $group = CommerceNavigation::group($class, $defaultGroup);
-            if ($group instanceof \UnitEnum) {
+            if ($group instanceof UnitEnum) {
                 $group = $group->name;
             }
 
@@ -963,7 +967,7 @@ class ManageCommerceNavigation extends Page
         foreach ($defaults as $class => &$config) {
             $config['__item_index'] = $itemIndex++;
             $config['__label'] = method_exists($class, 'getNavigationLabel') ? $class::getNavigationLabel() : class_basename($class);
-            
+
             $groupKey = $config['group'] ?? '';
             $config['__group_sort'] = 9999;
             if ($groupKey !== '') {
@@ -1019,7 +1023,7 @@ class ManageCommerceNavigation extends Page
         }
 
         foreach ($submitted as $key => $value) {
-            if (! array_key_exists($key, $default) || $default[$key] != $value) {
+            if (! array_key_exists($key, $default) || $default[$key] !== $value) {
                 return true;
             }
         }
