@@ -436,9 +436,15 @@ final class Event extends Model
     /**
      * Static shortcut for metadata() on the first event.
      */
-    public static function metadataValue(string $key, mixed $default = null): mixed
+    public static function metadataValue(string $key, mixed $default = null, ?string $slug = null): mixed
     {
-        $event = self::query()->first();
+        $query = self::query();
+
+        if ($slug !== null) {
+            $query->where('slug', $slug);
+        }
+
+        $event = $query->first();
 
         return $event?->metadata($key, $default) ?? $default;
     }
@@ -446,9 +452,9 @@ final class Event extends Model
     /**
      * First occurrence date label, read from metadata.
      */
-    public static function occurrenceLabel(string $preferredDate): ?string
+    public static function occurrenceLabel(string $preferredDate, ?string $slug = null): ?string
     {
-        $data = self::metadataValue("occurrences.{$preferredDate}");
+        $data = self::metadataValue("occurrences.{$preferredDate}", null, $slug);
 
         return is_array($data) && isset($data['label']) && is_string($data['label'])
             ? $data['label']
@@ -458,9 +464,9 @@ final class Event extends Model
     /**
      * First occurrence start time, read from metadata.
      */
-    public static function occurrenceStartsAt(string $preferredDate): ?string
+    public static function occurrenceStartsAt(string $preferredDate, ?string $slug = null): ?string
     {
-        $data = self::metadataValue("occurrences.{$preferredDate}");
+        $data = self::metadataValue("occurrences.{$preferredDate}", null, $slug);
 
         return is_array($data) && isset($data['starts_at']) && is_string($data['starts_at'])
             ? $data['starts_at']
@@ -470,9 +476,9 @@ final class Event extends Model
     /**
      * @return array<int, string>
      */
-    public static function preferredDates(): array
+    public static function preferredDates(?string $slug = null): array
     {
-        $occurrences = self::metadataValue('occurrences', []);
+        $occurrences = self::metadataValue('occurrences', [], $slug);
 
         if (! is_array($occurrences)) {
             return [];
