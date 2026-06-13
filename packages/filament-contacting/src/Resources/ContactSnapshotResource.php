@@ -7,6 +7,7 @@ namespace AIArmada\FilamentContacting\Resources;
 use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\FilamentContacting\Schemas\ContactSnapshotInfolistSchema;
 use AIArmada\FilamentContacting\Tables\ContactSnapshotTable;
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -16,7 +17,7 @@ final class ContactSnapshotResource extends Resource
 {
     protected static ?string $model = ContactSnapshot::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-archive-box';
+    protected static BackedEnum | string | null $navigationIcon = 'heroicon-o-archive-box';
 
     protected static ?int $navigationSort = 3;
 
@@ -25,9 +26,9 @@ final class ContactSnapshotResource extends Resource
         return config('filament-contacting.navigation.group');
     }
 
-    public static function getNavigationIcon(): string
+    public static function getNavigationIcon(): BackedEnum | string | null
     {
-        return (string) config('filament-contacting.navigation.icons.contact_snapshots', parent::getNavigationIcon());
+        return config('filament-contacting.navigation.icons.contact_snapshots', parent::getNavigationIcon());
     }
 
     public static function getEloquentQuery(): Builder

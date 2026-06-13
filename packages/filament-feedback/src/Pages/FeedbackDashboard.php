@@ -24,7 +24,7 @@ final class FeedbackDashboard extends Dashboard
 
     public static function getNavigationGroup(): ?string
     {
-        return config('filament-feedback.navigation.group', 'Feedback');
+        return config('filament-feedback.navigation.group');
     }
 
     public function getWidgets(): array

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentContacting\Imports;
 use AIArmada\Contacting\Models\SocialProfile;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
 
 final class SocialProfileImporter extends Importer
 {
@@ -16,11 +17,11 @@ final class SocialProfileImporter extends Importer
     {
         return [
             ImportColumn::make('socialable_type')
-                ->required(),
+                ->requiredMapping(),
             ImportColumn::make('socialable_id')
-                ->required(),
+                ->requiredMapping(),
             ImportColumn::make('platform')
-                ->required(),
+                ->requiredMapping(),
             ImportColumn::make('label'),
             ImportColumn::make('handle'),
             ImportColumn::make('url'),
@@ -52,5 +53,19 @@ final class SocialProfileImporter extends Importer
         $record->save();
 
         return $record;
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your social profile import has completed and '
+            . number_format($import->successful_rows) . ' '
+            . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . number_format($failedRowsCount) . ' '
+                . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
     }
 }

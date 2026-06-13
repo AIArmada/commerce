@@ -42,14 +42,32 @@ final class ContactSnapshotInfolistSchema
             Section::make('Stored Payload')
                 ->schema([
                     TextEntry::make('payload')
-                        ->json()
+                        ->formatStateUsing(function (?array $state): ?string {
+                            if (empty($state)) {
+                                return null;
+                            }
+
+                            return json_encode(
+                                $state,
+                                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+                            ) ?: null;
+                        })
                         ->visible(fn (?array $state): bool => ! empty($state)),
                 ]),
 
             Section::make('Metadata')
                 ->schema([
                     TextEntry::make('metadata')
-                        ->json()
+                        ->formatStateUsing(function (?array $state): ?string {
+                            if (empty($state)) {
+                                return null;
+                            }
+
+                            return json_encode(
+                                $state,
+                                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+                            ) ?: null;
+                        })
                         ->visible(fn (?array $state): bool => ! empty($state)),
                 ]),
         ];

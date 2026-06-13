@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Address;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -58,7 +59,7 @@ class AddressValidationPage extends Page
                 'id' => $address->id,
                 'customer_name' => $address->customer?->full_name ?? 'Unknown',
                 'full_address' => $address->full_address ?? "{$address->line1}, {$address->city}, {$address->postcode}",
-                'country_code' => $address->country_code,
+                'country' => $address->country ?? $address->country_code,
                 'validated' => $address->getAttribute('verified_at') !== null,
             ])
             ->all();
@@ -66,7 +67,9 @@ class AddressValidationPage extends Page
 
     public function validateAddress(string $addressId): void
     {
-        $address = Address::find($addressId);
+        $address = (bool) config('customers.features.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(Address::class, $addressId, includeGlobal: false)
+            : Address::find($addressId);
 
         if ($address === null) {
             Notification::make()

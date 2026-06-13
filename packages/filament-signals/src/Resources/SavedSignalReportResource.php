@@ -32,7 +32,7 @@ final class SavedSignalReportResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-signals.navigation.group', 'Insights');
+        return config('filament-signals.navigation.group');
     }
 
     public static function getNavigationSort(): ?int

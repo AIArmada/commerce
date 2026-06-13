@@ -28,31 +28,27 @@ use AIArmada\FilamentContacting\Tables\ContactSnapshotTable;
 use AIArmada\FilamentContacting\Tables\SocialProfileTable;
 
 test('config default values are correct', function () {
-    $config = require __DIR__ . '/../../config/filament-contacting.php';
+    expect(config('filament-contacting.features.standalone_resources'))->toBeFalse();
+    expect(config('filament-contacting.features.relation_managers'))->toBeTrue();
+    expect(config('filament-contacting.features.imports'))->toBeFalse();
+    expect(config('filament-contacting.features.exports'))->toBeTrue();
 
-    expect($config['features']['standalone_resources'])->toBeFalse();
-    expect($config['features']['relation_managers'])->toBeTrue();
-    expect($config['features']['imports'])->toBeFalse();
-    expect($config['features']['exports'])->toBeTrue();
-
-    expect($config['resources']['contact_methods']['enabled'])->toBeFalse();
-    expect($config['resources']['contact_methods']['read_only'])->toBeFalse();
-    expect($config['resources']['social_profiles']['enabled'])->toBeFalse();
-    expect($config['resources']['social_profiles']['read_only'])->toBeFalse();
-    expect($config['resources']['contact_snapshots']['enabled'])->toBeFalse();
-    expect($config['resources']['contact_snapshots']['read_only'])->toBeTrue();
+    expect(config('filament-contacting.resources.contact_methods.enabled'))->toBeFalse();
+    expect(config('filament-contacting.resources.contact_methods.read_only'))->toBeFalse();
+    expect(config('filament-contacting.resources.social_profiles.enabled'))->toBeFalse();
+    expect(config('filament-contacting.resources.social_profiles.read_only'))->toBeFalse();
+    expect(config('filament-contacting.resources.contact_snapshots.enabled'))->toBeFalse();
+    expect(config('filament-contacting.resources.contact_snapshots.read_only'))->toBeTrue();
 });
 
 test('navigation config has required keys', function () {
-    $config = require __DIR__ . '/../../config/filament-contacting.php';
-    expect($config['navigation']['group'])->toBe('Contacting');
-    expect($config['navigation']['icons']['contact_methods'])->toBe('heroicon-o-phone');
+    expect(config('filament-contacting.navigation.group'))->toBe('Contacting');
+    expect(config('filament-contacting.navigation.icons.contact_methods'))->toBe('heroicon-o-phone');
 });
 
 test('table config has required keys', function () {
-    $config = require __DIR__ . '/../../config/filament-contacting.php';
-    expect($config['tables']['default_pagination'])->toBe(25);
-    expect($config['tables']['show_verification_columns'])->toBeTrue();
+    expect(config('filament-contacting.tables.default_pagination'))->toBe(25);
+    expect(config('filament-contacting.tables.show_verification_columns'))->toBeTrue();
 });
 
 test('schema classes exist and have static make method', function () {
@@ -93,7 +89,7 @@ test('FilamentContactingPlugin can be instantiated', function () {
 });
 
 test('no migration files exist in package', function () {
-    expect(glob(__DIR__ . '/../../database/migrations/*.php'))->toBeEmpty();
+    expect(glob(base_path('packages/filament-contacting/database/migrations/*.php')))->toBeEmpty();
 });
 
 test('table classes exist', function () {

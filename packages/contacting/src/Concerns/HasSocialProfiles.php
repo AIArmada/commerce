@@ -7,10 +7,19 @@ namespace AIArmada\Contacting\Concerns;
 use AIArmada\Contacting\Actions\CreateSocialProfileAction;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Models\SocialProfile;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasSocialProfiles
 {
+    protected static function bootHasSocialProfiles(): void
+    {
+        static::deleting(function (Model $model): void {
+            /** @phpstan-ignore-next-line */
+            $model->socialProfiles()->delete();
+        });
+    }
+
     /**
      * @return MorphMany<SocialProfile, $this>
      */

@@ -8,6 +8,7 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectContext;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentSubjectResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 
@@ -50,79 +51,83 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
 
     public function handle(CheckoutSession $session): StepResult
     {
-        $customer = $session->customer_id !== null ? $session->customer : null;
-        $billable = $session->billable;
-        $billingData = $session->billing_data ?? [];
-        $shippingData = $session->shipping_data ?? [];
-        $user = auth()->check() ? auth()->user() : null;
+        $owner = $session->hasOwner() ? $session->owner : null;
 
-        if ($user instanceof Model) {
-            $this->storeCheckoutActorReference($session, $user);
-        }
+        return OwnerContext::withOwner($owner, function () use ($owner, $session): StepResult {
+            $customer = $session->customer_id !== null ? $session->customer : null;
+            $billable = $session->billable;
+            $billingData = $session->billing_data ?? [];
+            $shippingData = $session->shipping_data ?? [];
+            $user = auth()->check() ? auth()->user() : null;
 
-        $resolved = $this->paymentSubjectResolver->resolve(new PaymentSubjectContext(
-            gateway: $session->selected_payment_gateway ?? (string) config('checkout.payment.default_gateway', 'chip'),
-            actor: $user instanceof Model ? $user : null,
-            sessionCustomer: $customer,
-            sessionBillable: $billable,
-            billingData: $billingData,
-            shippingData: $shippingData,
-            metadata: ['checkout_session_id' => $session->id],
-            owner: $session->hasOwner() ? $session->owner : null,
-            source: 'checkout.resolve_customer',
-        ));
-
-        if ($resolved !== null && $resolved->subject instanceof Model) {
-            $updates = [
-                'billable_type' => $resolved->subject->getMorphClass(),
-                'billable_id' => (string) $resolved->subject->getKey(),
-            ];
-
-            if ($resolved->subject instanceof Customer) {
-                $updates['customer_id'] = $resolved->subject->id;
+            if ($user instanceof Model) {
+                $this->storeCheckoutActorReference($session, $user);
             }
 
-            $session->update($updates);
-            $session->unsetRelation('customer');
-            $session->unsetRelation('billable');
+            $resolved = $this->paymentSubjectResolver->resolve(new PaymentSubjectContext(
+                gateway: $session->selected_payment_gateway ?? (string) config('checkout.payment.default_gateway', 'chip'),
+                actor: $user instanceof Model ? $user : null,
+                sessionCustomer: $customer,
+                sessionBillable: $billable,
+                billingData: $billingData,
+                shippingData: $shippingData,
+                metadata: ['checkout_session_id' => $session->id],
+                owner: $owner,
+                source: 'checkout.resolve_customer',
+            ));
 
-            if ($resolved->subject instanceof Customer) {
+            if ($resolved !== null && $resolved->subject instanceof Model) {
+                $updates = [
+                    'billable_type' => $resolved->subject->getMorphClass(),
+                    'billable_id' => (string) $resolved->subject->getKey(),
+                ];
+
+                if ($resolved->subject instanceof Customer) {
+                    $updates['customer_id'] = $resolved->subject->id;
+                }
+
+                $session->update($updates);
+                $session->unsetRelation('customer');
+                $session->unsetRelation('billable');
+
+                if ($resolved->subject instanceof Customer) {
+                    $this->loadCustomerDefaults($session);
+                }
+
+                return $this->success('Payment subject resolved', [
+                    'customer_id' => $updates['customer_id'] ?? null,
+                    'billable_type' => $updates['billable_type'],
+                    'billable_id' => $updates['billable_id'],
+                ]);
+            }
+
+            if ($customer !== null) {
+                $session->update([
+                    'customer_id' => $customer->id,
+                    'billable_type' => $customer->getMorphClass(),
+                    'billable_id' => (string) $customer->getKey(),
+                ]);
+                $session->unsetRelation('customer');
+                $session->unsetRelation('billable');
+
                 $this->loadCustomerDefaults($session);
+
+                return $this->success('Customer resolved', [
+                    'customer_id' => $customer->id,
+                    'billable_type' => $customer->getMorphClass(),
+                    'billable_id' => (string) $customer->getKey(),
+                ]);
             }
 
-            return $this->success('Payment subject resolved', [
-                'customer_id' => $updates['customer_id'] ?? null,
-                'billable_type' => $updates['billable_type'],
-                'billable_id' => $updates['billable_id'],
-            ]);
-        }
+            if ($billable instanceof Model) {
+                return $this->success('Billable already resolved', [
+                    'billable_type' => $billable->getMorphClass(),
+                    'billable_id' => (string) $billable->getKey(),
+                ]);
+            }
 
-        if ($customer !== null) {
-            $session->update([
-                'customer_id' => $customer->id,
-                'billable_type' => $customer->getMorphClass(),
-                'billable_id' => (string) $customer->getKey(),
-            ]);
-            $session->unsetRelation('customer');
-            $session->unsetRelation('billable');
-
-            $this->loadCustomerDefaults($session);
-
-            return $this->success('Customer resolved', [
-                'customer_id' => $customer->id,
-                'billable_type' => $customer->getMorphClass(),
-                'billable_id' => (string) $customer->getKey(),
-            ]);
-        }
-
-        if ($billable instanceof Model) {
-            return $this->success('Billable already resolved', [
-                'billable_type' => $billable->getMorphClass(),
-                'billable_id' => (string) $billable->getKey(),
-            ]);
-        }
-
-        return $this->success('Proceeding as guest checkout');
+            return $this->success('Proceeding as guest checkout');
+        });
     }
 
     private function storeCheckoutActorReference(CheckoutSession $session, Model $user): void

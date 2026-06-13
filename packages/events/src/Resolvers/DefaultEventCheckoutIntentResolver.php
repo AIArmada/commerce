@@ -10,6 +10,7 @@ use AIArmada\Events\Actions\AddEventTicketTypeToCartAction;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
+use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
 final class DefaultEventCheckoutIntentResolver implements EventCheckoutIntentResolver
@@ -75,8 +76,8 @@ final class DefaultEventCheckoutIntentResolver implements EventCheckoutIntentRes
         return $participants->map(function (mixed $participant): array {
             return array_filter([
                 'name' => data_get($participant, 'name'),
-                'email' => data_get($participant, 'email'),
-                'phone' => data_get($participant, 'phone'),
+                'email' => $this->resolveParticipantContactValue($participant, 'email'),
+                'phone' => $this->resolveParticipantContactValue($participant, 'phone'),
                 'relationship_to_registrant' => data_get($participant, 'relationship_to_registrant'),
                 'participant_type' => data_get($participant, 'participant_type'),
                 'participant_id' => data_get($participant, 'participant_id'),
@@ -90,5 +91,28 @@ final class DefaultEventCheckoutIntentResolver implements EventCheckoutIntentRes
                 'is_primary' => (bool) data_get($participant, 'is_primary', false),
             ], static fn (mixed $value): bool => $value !== null);
         })->values()->toArray();
+    }
+
+    private function resolveParticipantContactValue(mixed $participant, string $type): ?string
+    {
+        if (! $participant instanceof Model || ! method_exists($participant, 'contactMethods')) {
+            return null;
+        }
+
+        $contactMethod = $participant->contactMethods()
+            ->where('type', $type)
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order')
+            ->first();
+
+        $value = $contactMethod?->normalized_value ?? $contactMethod?->value ?? data_get($participant, $type);
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_trim($value);
+
+        return $value === '' ? null : $value;
     }
 }

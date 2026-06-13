@@ -42,16 +42,7 @@ final class CreateContactMethodAction
         $contactMethod->is_verified = $data->isVerified;
         $contactMethod->metadata = $data->metadata;
 
-        DB::transaction(function () use ($contactMethod, $data): void {
-            if ($data->isPrimary) {
-                ContactMethod::where('contactable_type', $contactMethod->contactable_type)
-                    ->where('contactable_id', $contactMethod->contactable_id)
-                    ->where('type', $data->type)
-                    ->where('purpose', $data->purpose)
-                    ->where('id', '!=', $contactMethod->id)
-                    ->update(['is_primary' => false]);
-            }
-
+        DB::transaction(function () use ($contactMethod): void {
             $contactMethod->save();
         });
 

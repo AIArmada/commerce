@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
 use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,8 +48,12 @@ final class ContactMethod extends Model
 {
     use HasFactory;
     use HasUuids;
+    use HasOwner;
+    use HasOwnerScopeConfig;
 
     protected $guarded = [];
+
+    protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
     public function getTable(): string
     {
@@ -124,6 +132,110 @@ final class ContactMethod extends Model
     public function scopeVerified(Builder $query): Builder
     {
         return $query->where('is_verified', true);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (ContactMethod $contactMethod): void {
+            $contactMethod->applyDefaultFlags();
+        });
+
+        static::saving(function (ContactMethod $contactMethod): void {
+            $contactMethod->normalizeForSave();
+            $contactMethod->guardAllowedType();
+            $contactMethod->guardContactableOwner();
+        });
+
+        static::saved(function (ContactMethod $contactMethod): void {
+            $contactMethod->syncSiblingPrimaryFlags();
+        });
+    }
+
+    private function applyDefaultFlags(): void
+    {
+        if ($this->is_public === null) {
+            $this->is_public = (bool) config('contacting.defaults.public_by_default', true);
+        }
+
+        if ($this->is_verified === null) {
+            $this->is_verified = (bool) config('contacting.defaults.verified_by_default', false);
+        }
+    }
+
+    private function normalizeForSave(): void
+    {
+        if ($this->country_code !== null) {
+            $this->country_code = mb_strtoupper($this->country_code);
+        }
+
+        $normalized = app(NormalizeContactMethodAction::class)->execute(
+            $this->type,
+            $this->value,
+            $this->country_code,
+        );
+
+        $this->normalized_value = $normalized['normalized_value'];
+        $this->display_value = $normalized['display_value'];
+    }
+
+    private function guardAllowedType(): void
+    {
+        if (! (bool) config('contacting.features.strict_contact_types', false)) {
+            return;
+        }
+
+        $allowedTypes = config('contacting.contact_methods.types', []);
+        $allowedValues = array_is_list($allowedTypes) ? $allowedTypes : array_keys($allowedTypes);
+
+        if (! in_array($this->type, $allowedValues, true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported contact method type "%s".', $this->type));
+        }
+    }
+
+    private function syncSiblingPrimaryFlags(): void
+    {
+        if (! $this->is_primary) {
+            return;
+        }
+
+        ContactMethod::query()
+            ->where('contactable_type', $this->contactable_type)
+            ->where('contactable_id', $this->contactable_id)
+            ->where('type', $this->type)
+            ->where('purpose', $this->purpose)
+            ->where('id', '!=', $this->id)
+            ->update(['is_primary' => false]);
+    }
+
+    private function guardContactableOwner(): void
+    {
+        $contactable = $this->contactable;
+
+        if (! $contactable instanceof Model) {
+            return;
+        }
+
+        $contactableOwnerType = $contactable->getAttribute('owner_type');
+        $contactableOwnerId = $contactable->getAttribute('owner_id');
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
+            return;
+        }
+
+        if (
+            $owner !== null
+            && $contactableOwnerType === $owner->getMorphClass()
+            && (string) $contactableOwnerId === (string) $owner->getKey()
+        ) {
+            return;
+        }
+
+        if ($owner === null && $contactableOwnerType === null && $contactableOwnerId === null) {
+            return;
+        }
+
+        throw new \InvalidArgumentException('Contact method contactable owner must match the contact method owner.');
     }
 
     protected static function newFactory(): ContactMethodFactory

@@ -7,8 +7,8 @@ namespace AIArmada\FilamentContacting\RelationManagers;
 use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use AIArmada\FilamentContacting\Tables\ContactMethodTable;
+use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Table;
 
 final class ContactMethodsRelationManager extends RelationManager

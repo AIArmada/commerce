@@ -33,6 +33,15 @@ test('NormalizesPhoneNumber normalizes MY phone', function () {
     expect($result['display'])->toBeNull();
 });
 
+test('NormalizesPhoneNumber respects country codes for local numbers', function () {
+    $normalizer = new NormalizesPhoneNumber;
+
+    $result = $normalizer->normalize('0123456789', 'MY');
+
+    expect($result['normalized'])->toBe('+60123456789');
+    expect($result['display'])->toBe('+60123456789');
+});
+
 test('NormalizesUrl normalizes URLs', function () {
     $normalizer = new NormalizesUrl;
 

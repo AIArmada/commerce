@@ -8,6 +8,7 @@ use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateNetworkResource;
@@ -61,6 +62,7 @@ it('registers affiliate resources, pages, and widgets', function (): void {
             AffiliateTaxDocumentResource::class,
             AffiliateNetworkResource::class,
             AffiliateFraudSignalResource::class,
+            AffiliateCreativeResource::class,
         ])
         ->andReturnSelf();
 
@@ -111,6 +113,7 @@ it('skips payout and program admin surfaces when commission tracking is disabled
             AffiliateTaxDocumentResource::class,
             AffiliateNetworkResource::class,
             AffiliateFraudSignalResource::class,
+            AffiliateCreativeResource::class,
         ])
         ->andReturnSelf();
 
@@ -161,6 +164,7 @@ it('skips link admin surface when links feature is disabled', function (): void 
             AffiliateTaxDocumentResource::class,
             AffiliateNetworkResource::class,
             AffiliateFraudSignalResource::class,
+            AffiliateCreativeResource::class,
         ])
         ->andReturnSelf();
 
@@ -213,6 +217,7 @@ it('skips commission template admin surface when commission management is disabl
             AffiliateTaxDocumentResource::class,
             AffiliateNetworkResource::class,
             AffiliateFraudSignalResource::class,
+            AffiliateCreativeResource::class,
         ])
         ->andReturnSelf();
 
@@ -264,6 +269,7 @@ it('skips support and compliance admin surfaces when support compliance is disab
             AffiliateRankHistoryResource::class,
             AffiliateNetworkResource::class,
             AffiliateFraudSignalResource::class,
+            AffiliateCreativeResource::class,
         ])
         ->andReturnSelf();
 

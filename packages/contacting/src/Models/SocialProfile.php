@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -45,8 +49,12 @@ final class SocialProfile extends Model
 {
     use HasFactory;
     use HasUuids;
+    use HasOwner;
+    use HasOwnerScopeConfig;
 
     protected $guarded = [];
+
+    protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
     public function getTable(): string
     {
@@ -125,6 +133,107 @@ final class SocialProfile extends Model
     public function scopeVerified(Builder $query): Builder
     {
         return $query->where('is_verified', true);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (SocialProfile $profile): void {
+            $profile->applyDefaultFlags();
+        });
+
+        static::saving(function (SocialProfile $profile): void {
+            $profile->normalizeForSave();
+            $profile->guardAllowedPlatform();
+            $profile->guardSocialableOwner();
+        });
+
+        static::saved(function (SocialProfile $profile): void {
+            $profile->syncSiblingPrimaryFlags();
+        });
+    }
+
+    private function applyDefaultFlags(): void
+    {
+        if ($this->is_public === null) {
+            $this->is_public = (bool) config('contacting.defaults.public_by_default', true);
+        }
+
+        if ($this->is_verified === null) {
+            $this->is_verified = (bool) config('contacting.defaults.verified_by_default', false);
+        }
+    }
+
+    private function normalizeForSave(): void
+    {
+        $normalized = app(NormalizeSocialProfileAction::class)->execute(
+            $this->platform,
+            $this->handle,
+            $this->url,
+        );
+
+        $this->handle = $normalized['handle'];
+        $this->url = $normalized['normalized_url'];
+        $this->normalized_url = $normalized['normalized_url'];
+    }
+
+    private function guardAllowedPlatform(): void
+    {
+        if (! (bool) config('contacting.features.strict_social_platforms', false)) {
+            return;
+        }
+
+        $allowedPlatforms = config('contacting.social_profiles.platforms', []);
+        $allowedValues = array_is_list($allowedPlatforms) ? $allowedPlatforms : array_keys($allowedPlatforms);
+
+        if (! in_array($this->platform, $allowedValues, true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported social platform "%s".', $this->platform));
+        }
+    }
+
+    private function syncSiblingPrimaryFlags(): void
+    {
+        if (! $this->is_primary) {
+            return;
+        }
+
+        SocialProfile::query()
+            ->where('socialable_type', $this->socialable_type)
+            ->where('socialable_id', $this->socialable_id)
+            ->where('platform', $this->platform)
+            ->where('purpose', $this->purpose)
+            ->where('id', '!=', $this->id)
+            ->update(['is_primary' => false]);
+    }
+
+    private function guardSocialableOwner(): void
+    {
+        $socialable = $this->socialable;
+
+        if (! $socialable instanceof Model) {
+            return;
+        }
+
+        $socialableOwnerType = $socialable->getAttribute('owner_type');
+        $socialableOwnerId = $socialable->getAttribute('owner_id');
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
+            return;
+        }
+
+        if (
+            $owner !== null
+            && $socialableOwnerType === $owner->getMorphClass()
+            && (string) $socialableOwnerId === (string) $owner->getKey()
+        ) {
+            return;
+        }
+
+        if ($owner === null && $socialableOwnerType === null && $socialableOwnerId === null) {
+            return;
+        }
+
+        throw new \InvalidArgumentException('Social profile socialable owner must match the social profile owner.');
     }
 
     protected static function newFactory(): SocialProfileFactory

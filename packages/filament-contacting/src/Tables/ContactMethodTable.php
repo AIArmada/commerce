@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Tables;
 
+use AIArmada\Contacting\Enums\ContactMethodType;
 use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ExportBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
-use Ysfkaya\FilamentPhoneInput\Tables\PhoneColumn;
 
 final class ContactMethodTable
 {
@@ -27,10 +31,9 @@ final class ContactMethodTable
                 Tables\Columns\TextColumn::make('label')
                     ->searchable(),
 
-                PhoneColumn::make('normalized_value')
-                    ->displayFormat(PhoneInputNumberType::INTERNATIONAL)
-                    ->countryColumn('country_code')
-                    ->label('Phone')
+                Tables\Columns\TextColumn::make('display_value')
+                    ->label('Display Value')
+                    ->limit(50)
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('value')
@@ -69,7 +72,7 @@ final class ContactMethodTable
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
-                    ->options(config('contacting.contact_methods.types', [])),
+                    ->options(ContactMethodType::options(config('contacting.contact_methods.types', []))),
 
                 Tables\Filters\TernaryFilter::make('is_primary'),
 
@@ -81,19 +84,19 @@ final class ContactMethodTable
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
 
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->visible(fn (): bool => ! $guard->contactMethodsReadOnly()),
 
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->visible(fn (): bool => ! $guard->contactMethodsReadOnly()),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make()
+                DeleteBulkAction::make()
                     ->visible(fn (): bool => ! $guard->contactMethodsReadOnly()),
 
-                Tables\Actions\ExportBulkAction::make()
+                ExportBulkAction::make()
                     ->visible(fn (): bool => $config->exportsEnabled()),
             ]);
     }

@@ -141,6 +141,7 @@ function checkoutDocumentGenerationOrder(string $suffix): Order
         'line1' => '123 Checkout Street',
         'city' => 'Kuala Lumpur',
         'postcode' => '50000',
+        'country_code' => 'MY',
         'country' => 'MY',
         'email' => 'checkout-docs+' . $suffix . '@example.com',
         'phone' => '0123456789',

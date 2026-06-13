@@ -2,12 +2,27 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Concerns\HasCustomerProfile;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
+
+beforeEach(function (): void {
+    Schema::dropIfExists('test_owners');
+
+    Schema::create('test_owners', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+});
 
 // Create a test model that uses the trait (users table uses UUID primary key in the test schema)
 class TestUserWithProfile extends Model
@@ -90,12 +105,20 @@ describe('HasCustomerProfile Trait', function (): void {
                 'password' => 'password',
             ]);
 
-            $profile = $user->getOrCreateCustomerProfile();
+            $owner = CustomersTestOwner::query()->create(['name' => 'Profile Owner']);
 
-            expect($profile)->toBeInstanceOf(Customer::class)
-                ->and($profile->email)->toBe($user->email)
-                ->and($profile->first_name)->toBe('Jane')
-                ->and($profile->last_name)->toBe('Doe');
+            $profile = OwnerContext::withOwner($owner, function () use ($user): Customer {
+                $profile = $user->getOrCreateCustomerProfile();
+
+                expect($profile)->toBeInstanceOf(Customer::class)
+                    ->and($profile->first_name)->toBe('Jane')
+                    ->and($profile->last_name)->toBe('Doe')
+                    ->and($profile->contactMethods()->where('type', 'email')->where('normalized_value', mb_strtolower($user->email))->exists())->toBeTrue();
+
+                return $profile;
+            });
+
+            expect($profile)->toBeInstanceOf(Customer::class);
         });
     });
 

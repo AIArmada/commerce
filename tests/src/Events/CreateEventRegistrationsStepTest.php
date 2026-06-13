@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\Event;
@@ -25,13 +26,16 @@ beforeEach(function (): void {
 });
 
 it('reuses snapshot participants and falls back to the registrant when needed', function (): void {
-    OwnerContext::withOwner(null, function (): void {
-        $customer = Customer::factory()->create([
-            'first_name' => 'Maya',
-            'last_name' => 'Jones',
-            'email' => 'maya@example.com',
-            'phone' => '+60111222333',
-        ]);
+        OwnerContext::withOwner(null, function (): void {
+            $customer = Customer::create([
+                'first_name' => 'Maya',
+                'last_name' => 'Jones',
+                'email' => 'maya@example.com',
+                'phone' => '+60111222333',
+                'is_guest' => false,
+            ]);
+        $customer->addContactMethod(ContactMethodData::email('maya@example.com'));
+        $customer->addContactMethod(ContactMethodData::phone('+60111222333', countryCode: 'MY'));
 
         $event = Event::factory()->create();
         $occurrence = EventOccurrence::factory()->create([
@@ -170,5 +174,94 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
                 'is_primary' => false,
             ],
         ]);
+    });
+});
+
+it('prefers the customer email and phone columns when fallback participants are built', function (): void {
+    OwnerContext::withOwner(null, function (): void {
+        $customer = Customer::create([
+            'first_name' => 'Raw',
+            'last_name' => 'Source',
+            'email' => 'fresh@example.com',
+            'phone' => '+60123456789',
+            'is_guest' => false,
+        ]);
+
+        $customer->addContactMethod(ContactMethodData::email('stale@example.com'));
+        $customer->addContactMethod(ContactMethodData::phone('+60987654321', countryCode: 'MY'));
+
+        $event = Event::factory()->create();
+        $occurrence = EventOccurrence::factory()->create([
+            'event_id' => $event->id,
+        ]);
+
+        $ticketType = EventTicketType::factory()->create([
+            'event_id' => $event->id,
+            'event_occurrence_id' => $occurrence->id,
+        ]);
+
+        $order = Order::factory()->create([
+            'customer_type' => $customer->getMorphClass(),
+            'customer_id' => $customer->id,
+        ]);
+
+        OrderItem::query()->create([
+            'id' => (string) Str::uuid(),
+            'order_id' => $order->id,
+            'purchasable_type' => $ticketType->getMorphClass(),
+            'purchasable_id' => $ticketType->id,
+            'name' => $ticketType->name,
+            'sku' => 'RAW-FALLBACK-' . Str::upper(Str::random(8)),
+            'quantity' => 1,
+            'unit_price' => $ticketType->price,
+            'discount_amount' => 0,
+            'tax_amount' => 0,
+            'currency' => $ticketType->currency,
+        ]);
+
+        $session = CheckoutSession::query()->create([
+            'cart_id' => (string) Str::uuid(),
+            'order_id' => $order->id,
+            'cart_snapshot' => [
+                'items' => [
+                    [
+                        'id' => $ticketType->id,
+                        'name' => $ticketType->name,
+                        'price' => $ticketType->price,
+                        'quantity' => 1,
+                        'attributes' => [
+                            'purchasable_id' => $ticketType->id,
+                        ],
+                        'associated_model' => [
+                            'class' => EventTicketType::class,
+                            'id' => $ticketType->id,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $captured = [];
+
+        $registrationService = mock(RegistrationServiceInterface::class);
+        $registrationService->shouldReceive('register')
+            ->once()
+            ->andReturnUsing(function (array $data) use (&$captured): EventRegistration {
+                $captured[] = $data['participants'][0] ?? null;
+
+                return new EventRegistration;
+            });
+
+        $step = app(CreateEventRegistrationsStep::class);
+        $result = $step->handle($session->fresh());
+
+        expect($result->isSuccessful())->toBeTrue()
+            ->and($captured)->toHaveCount(1)
+            ->and($captured[0])->toBe([
+                'name' => 'Raw Source',
+                'email' => 'fresh@example.com',
+                'phone' => '+60123456789',
+                'is_primary' => true,
+            ]);
     });
 });

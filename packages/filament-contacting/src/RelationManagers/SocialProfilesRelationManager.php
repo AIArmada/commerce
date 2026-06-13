@@ -7,8 +7,8 @@ namespace AIArmada\FilamentContacting\RelationManagers;
 use AIArmada\FilamentContacting\Schemas\SocialProfileFormSchema;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use AIArmada\FilamentContacting\Tables\SocialProfileTable;
+use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Table;
 
 final class SocialProfilesRelationManager extends RelationManager

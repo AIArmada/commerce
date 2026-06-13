@@ -6,6 +6,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\PersistCustomerStep;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Customers\Models\Customer;
 
 describe('PersistCustomerStep', function (): void {
@@ -39,13 +40,27 @@ describe('PersistCustomerStep', function (): void {
         $step->handle($session);
 
         $session->refresh();
-        $customer = Customer::find($session->customer_id);
+        $customer = OwnerContext::withOwner(null, function () use ($session): ?Customer {
+            return Customer::find($session->customer_id);
+        });
+        $customerContactExists = OwnerContext::withOwner(null, function () use ($customer): bool {
+            return $customer?->contactMethods()
+                ->where('type', 'email')
+                ->where('normalized_value', 'post-payment@example.com')
+                ->exists() ?? false;
+        });
+        $customerAddressCount = OwnerContext::withOwner(null, function () use ($customer): int {
+            return $customer?->addresses()->count() ?? 0;
+        });
+        $billableMatches = OwnerContext::withOwner(null, function () use ($session, $customer): bool {
+            return $session->fresh(['billable'])?->billable?->is($customer) ?? false;
+        });
 
         expect($customer)->not->toBeNull()
             ->and($customer->is_guest)->toBeTrue()
-            ->and($customer->email)->toBe('post-payment@example.com')
-            ->and($customer->addresses()->count())->toBe(2)
-            ->and($session->billable?->is($customer))->toBeTrue();
+            ->and($customerContactExists)->toBeTrue()
+            ->and($customerAddressCount)->toBe(2)
+            ->and($billableMatches)->toBeTrue();
     });
 
     it('merges a guest session customer into the authenticated customer after payment using the stored actor reference', function (): void {
@@ -53,29 +68,35 @@ describe('PersistCustomerStep', function (): void {
             'email' => 'registered@example.com',
         ]);
 
-        $userCustomer = Customer::create([
-            'user_id' => $user->id,
-            'first_name' => 'Registered',
-            'last_name' => 'User',
-            'email' => 'registered@example.com',
-            'is_guest' => false,
-        ]);
+        [$userCustomer, $guestCustomer] = OwnerContext::withOwner(null, function () use ($user): array {
+            $userCustomer = Customer::create([
+                'user_id' => $user->id,
+                'first_name' => 'Registered',
+                'last_name' => 'User',
+                'email' => 'registered@example.com',
+                'is_guest' => false,
+            ]);
+            $userCustomer->addContactMethod(ContactMethodData::email('registered@example.com'));
 
-        $guestCustomer = Customer::create([
-            'first_name' => 'Guest',
-            'last_name' => 'Checkout',
-            'email' => 'guest@example.com',
-            'is_guest' => true,
-        ]);
+            $guestCustomer = Customer::create([
+                'first_name' => 'Guest',
+                'last_name' => 'Checkout',
+                'email' => 'guest@example.com',
+                'is_guest' => true,
+            ]);
+            $guestCustomer->addContactMethod(ContactMethodData::email('guest@example.com'));
 
-        $guestCustomer->addresses()->create([
-            'type' => 'billing',
-            'line1' => '789 Merge Street',
-            'city' => 'Kuala Lumpur',
-            'postcode' => '50000',
-            'country' => 'MY',
-            'is_default_billing' => true,
-        ]);
+            $guestCustomer->addresses()->create([
+                'type' => 'billing',
+                'line1' => '789 Merge Street',
+                'city' => 'Kuala Lumpur',
+                'postcode' => '50000',
+                'country' => 'MY',
+                'is_default_billing' => true,
+            ]);
+
+            return [$userCustomer, $guestCustomer];
+        });
 
         $session = CheckoutSession::create([
             'cart_id' => 'cart-post-payment-merge-1',
@@ -103,11 +124,20 @@ describe('PersistCustomerStep', function (): void {
         $step->handle($session);
 
         $session->refresh();
+        $resolvedSession = OwnerContext::withOwner(null, function () use ($session): CheckoutSession {
+            return $session->fresh(['customer', 'billable']);
+        });
+        $userCustomerAddressCount = OwnerContext::withOwner(null, function () use ($userCustomer): int {
+            return $userCustomer->fresh()->addresses()->count();
+        });
+        $guestExists = OwnerContext::withOwner(null, function () use ($guestCustomer): bool {
+            return Customer::query()->whereKey($guestCustomer->id)->exists();
+        });
 
-        expect($session->customer_id)->toBe($userCustomer->id)
-            ->and(Customer::query()->whereKey($guestCustomer->id)->exists())->toBeFalse()
-            ->and($userCustomer->fresh()->addresses()->count())->toBe(1)
-            ->and($session->billable?->is($userCustomer))->toBeTrue();
+        expect($resolvedSession->customer_id)->toBe($userCustomer->id)
+            ->and($guestExists)->toBeFalse()
+            ->and($userCustomerAddressCount)->toBe(1)
+            ->and($resolvedSession->billable?->is($userCustomer))->toBeTrue();
     });
 
     it('preserves an existing non-customer billable subject without creating a customer', function (): void {
@@ -136,7 +166,10 @@ describe('PersistCustomerStep', function (): void {
 
         expect($session->customer_id)->toBeNull()
             ->and($session->billable?->is($user))->toBeTrue()
-            ->and(Customer::query()->where('email', 'billable@example.com')->exists())->toBeFalse();
+            ->and(Customer::query()->whereHas('contactMethods', function ($query): void {
+                $query->where('type', 'email')
+                    ->where('normalized_value', 'billable@example.com');
+            })->exists())->toBeFalse();
     });
 
     it('creates the post-payment customer within the checkout session owner context', function (): void {
@@ -185,12 +218,17 @@ describe('PersistCustomerStep', function (): void {
         $ownerA = User::factory()->create(['email' => 'owner-a@example.com']);
         $ownerB = User::factory()->create(['email' => 'owner-b@example.com']);
 
-        $tenantBCustomer = OwnerContext::withOwner($ownerB, fn (): Customer => Customer::create([
-            'first_name' => 'Other',
-            'last_name' => 'Tenant',
-            'email' => 'shared-guest@example.com',
-            'is_guest' => true,
-        ]));
+        $tenantBCustomer = OwnerContext::withOwner($ownerB, function (): Customer {
+            $customer = Customer::create([
+                'first_name' => 'Other',
+                'last_name' => 'Tenant',
+                'email' => 'other-tenant@example.com',
+                'is_guest' => true,
+            ]);
+            $customer->addContactMethod(ContactMethodData::email('shared-guest@example.com'));
+
+            return $customer;
+        });
 
         $session = OwnerContext::withOwner($ownerA, fn (): CheckoutSession => CheckoutSession::create([
             'cart_id' => 'cart-post-payment-cross-tenant-1',
@@ -214,9 +252,15 @@ describe('PersistCustomerStep', function (): void {
 
         $ownerASession = OwnerContext::withOwner($ownerA, fn (): CheckoutSession => $session->fresh(['customer']));
         $ownerBCustomerFresh = OwnerContext::withOwner($ownerB, fn (): ?Customer => $tenantBCustomer->fresh());
+        $ownerAContactExists = OwnerContext::withOwner($ownerA, function () use ($ownerASession): bool {
+            return $ownerASession->customer?->contactMethods()
+                ->where('type', 'email')
+                ->where('normalized_value', 'shared-guest@example.com')
+                ->exists() ?? false;
+        });
 
         expect($ownerASession->customer_id)->not->toBe($tenantBCustomer->id)
-            ->and($ownerASession->customer?->email)->toBe('shared-guest@example.com')
+            ->and($ownerAContactExists)->toBeTrue()
             ->and($ownerASession->customer?->owner_type)->toBe($ownerA->getMorphClass())
             ->and((string) $ownerASession->customer?->owner_id)->toBe((string) $ownerA->getKey())
             ->and($ownerBCustomerFresh?->owner_type)->toBe($ownerB->getMorphClass())

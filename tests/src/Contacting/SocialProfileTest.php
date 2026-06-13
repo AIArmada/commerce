@@ -8,6 +8,7 @@ use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
+use AIArmada\Customers\Models\Customer;
 
 test('SocialProfile model class exists', function () {
     expect(class_exists(SocialProfile::class))->toBeTrue();
@@ -23,6 +24,14 @@ test('SocialPlatform enum has expected values', function () {
     expect(SocialPlatform::Linkedin->value)->toBe('linkedin');
     expect(SocialPlatform::X->value)->toBe('x');
     expect(SocialPlatform::Other->value)->toBe('other');
+});
+
+test('SocialPlatform options map configured values', function () {
+    expect(SocialPlatform::options(['facebook', 'telegram_channel', 'x']))->toBe([
+        'facebook' => 'Facebook',
+        'telegram_channel' => 'Telegram Channel',
+        'x' => 'X / Twitter',
+    ]);
 });
 
 test('SocialProfileData constructor', function () {
@@ -48,6 +57,33 @@ test('SocialProfileData from array', function () {
 
     expect($data->platform)->toBe('instagram');
     expect($data->handle)->toBe('@user');
+});
+
+test('primary social profiles remain unique per socialable type and purpose', function () {
+    $customer = Customer::create([
+        'first_name' => 'Primary',
+        'last_name' => 'Profile',
+        'email' => 'primary-profile-' . uniqid() . '@example.com',
+        'status' => 'active',
+    ]);
+
+    $first = $customer->addSocialProfile(new SocialProfileData(
+        platform: 'facebook',
+        purpose: 'general',
+        handle: 'first-' . uniqid(),
+        isPrimary: true,
+    ));
+
+    $second = $customer->addSocialProfile(new SocialProfileData(
+        platform: 'facebook',
+        purpose: 'general',
+        handle: 'second-' . uniqid(),
+        isPrimary: true,
+    ));
+
+    expect($first->fresh()?->is_primary)->toBeFalse()
+        ->and($second->fresh()?->is_primary)->toBeTrue()
+        ->and($customer->socialProfiles()->where('platform', 'facebook')->where('purpose', 'general')->count())->toBe(2);
 });
 
 test('NormalizeSocialProfileAction normalizes @handle', function () {

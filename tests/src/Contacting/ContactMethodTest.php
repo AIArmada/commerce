@@ -10,6 +10,7 @@ use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesUrl;
+use AIArmada\Customers\Models\Customer;
 
 test('ContactMethod model class exists', function () {
     expect(class_exists(ContactMethod::class))->toBeTrue();
@@ -25,12 +26,47 @@ test('ContactMethodType enum has expected values', function () {
     expect(ContactMethodType::Other->value)->toBe('other');
 });
 
+test('ContactMethodType options map configured values', function () {
+    expect(ContactMethodType::options(['email', 'phone', 'whatsapp']))->toBe([
+        'email' => 'Email',
+        'phone' => 'Phone',
+        'whatsapp' => 'WhatsApp',
+    ]);
+});
+
 test('ContactPurpose enum has expected values', function () {
     expect(ContactPurpose::General->value)->toBe('general');
     expect(ContactPurpose::Admin->value)->toBe('admin');
     expect(ContactPurpose::Support->value)->toBe('support');
     expect(ContactPurpose::Billing->value)->toBe('billing');
     expect(ContactPurpose::Emergency->value)->toBe('emergency');
+});
+
+test('primary contact methods remain unique per contactable type and purpose', function () {
+    $customer = Customer::create([
+        'first_name' => 'Primary',
+        'last_name' => 'Contact',
+        'email' => 'primary-contact-' . uniqid() . '@example.com',
+        'status' => 'active',
+    ]);
+
+    $first = $customer->addContactMethod(new ContactMethodData(
+        type: 'email',
+        purpose: 'general',
+        value: 'first-' . uniqid() . '@example.com',
+        isPrimary: true,
+    ));
+
+    $second = $customer->addContactMethod(new ContactMethodData(
+        type: 'email',
+        purpose: 'general',
+        value: 'second-' . uniqid() . '@example.com',
+        isPrimary: true,
+    ));
+
+    expect($first->fresh()?->is_primary)->toBeFalse()
+        ->and($second->fresh()?->is_primary)->toBeTrue()
+        ->and($customer->contactMethods()->where('type', 'email')->where('purpose', 'general')->count())->toBe(2);
 });
 
 test('ContactMethodData factory helpers', function () {

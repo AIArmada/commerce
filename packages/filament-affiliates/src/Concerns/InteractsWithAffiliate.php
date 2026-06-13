@@ -11,6 +11,7 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,26 +43,47 @@ trait InteractsWithAffiliate
             $owner = OwnerUiScope::resolveOwner(Affiliate::class);
             $contactEmail = is_string($user->email ?? null) ? mb_strtolower($user->email) : null;
 
-            $this->affiliate = Affiliate::query()
-                ->forOwner($owner, false)
-                ->where(function (Builder $query) use ($user, $contactEmail): void {
-                    $query
-                        ->where(function (Builder $ownedByUser) use ($user): void {
+            $this->affiliate = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($owner, function () use ($owner, $user, $contactEmail): ?Affiliate {
+                return Affiliate::query()
+                    ->forOwner($owner, false)
+                    ->where(function (Builder $query) use ($user, $contactEmail): void {
+                        $query->where(function (Builder $ownedByUser) use ($user): void {
                             $ownedByUser
                                 ->where('owner_type', $user->getMorphClass())
                                 ->where('owner_id', $user->getKey());
                         });
 
-                    if (is_string($contactEmail) && $contactEmail !== '') {
-                        $query->orWhereRaw('LOWER(contact_email) = ?', [$contactEmail]);
-                    }
-                })
-                ->first();
+                        if (is_string($contactEmail) && $contactEmail !== '') {
+                            $query->orWhereHas('contactMethods', function (Builder $contactMethods) use ($contactEmail): void {
+                                $contactMethods
+                                    ->where('type', 'email')
+                                    ->where('purpose', 'general')
+                                    ->whereRaw('LOWER(COALESCE(normalized_value, value)) = ?', [$contactEmail]);
+                            });
+                        }
+                    })
+                    ->first();
+            });
         } else {
-            $this->affiliate = Affiliate::query()
-                ->where('owner_type', $user->getMorphClass())
-                ->where('owner_id', $user->getKey())
-                ->first();
+            $this->affiliate = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($user, function () use ($user): ?Affiliate {
+                $contactEmail = is_string($user->email ?? null) ? mb_strtolower($user->email) : null;
+
+                return Affiliate::query()
+                    ->where(function (Builder $query) use ($user, $contactEmail): void {
+                        $query->where('owner_type', $user->getMorphClass())
+                            ->where('owner_id', $user->getKey());
+
+                        if (is_string($contactEmail) && $contactEmail !== '') {
+                            $query->orWhereHas('contactMethods', function (Builder $contactMethods) use ($contactEmail): void {
+                                $contactMethods
+                                    ->where('type', 'email')
+                                    ->where('purpose', 'general')
+                                    ->whereRaw('LOWER(COALESCE(normalized_value, value)) = ?', [$contactEmail]);
+                            });
+                        }
+                    })
+                    ->first();
+            });
         }
 
         return $this->affiliate;

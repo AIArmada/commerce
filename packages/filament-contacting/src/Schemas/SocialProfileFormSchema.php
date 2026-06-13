@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Schemas;
 
-use Filament\Forms\Components\Grid;
+use AIArmada\Contacting\Enums\SocialPlatform;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 
 final class SocialProfileFormSchema
@@ -23,7 +24,7 @@ final class SocialProfileFormSchema
                     Grid::make(2)->schema([
                         Select::make('platform')
                             ->label('Platform')
-                            ->options(self::platformOptions())
+                            ->options(SocialPlatform::options(config('contacting.social_profiles.platforms', [])))
                             ->required()
                             ->searchable()
                             ->native(false),
@@ -57,31 +58,9 @@ final class SocialProfileFormSchema
 
                         Toggle::make('is_public')
                             ->label('Public')
-                            ->default(true),
+                            ->default((bool) config('contacting.defaults.public_by_default', true)),
                     ]),
                 ]),
         ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function platformOptions(): array
-    {
-        return config('contacting.social_profiles.platforms', [
-            'facebook' => 'Facebook',
-            'instagram' => 'Instagram',
-            'tiktok' => 'TikTok',
-            'youtube' => 'YouTube',
-            'linkedin' => 'LinkedIn',
-            'x' => 'X / Twitter',
-            'threads' => 'Threads',
-            'telegram' => 'Telegram',
-            'telegram_channel' => 'Telegram Channel',
-            'telegram_group' => 'Telegram Group',
-            'whatsapp_channel' => 'WhatsApp Channel',
-            'website' => 'Website',
-            'other' => 'Other',
-        ]);
     }
 }

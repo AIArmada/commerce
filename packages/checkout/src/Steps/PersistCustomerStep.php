@@ -46,7 +46,7 @@ final class PersistCustomerStep extends AbstractCheckoutStep
 
         /** @var CustomerResolver $customerResolver */
         $customerResolver = app(CustomerResolver::class);
-        $owner = $session->hasOwner() ? $session->owner : OwnerContext::CURRENT;
+        $owner = $session->hasOwner() ? $session->owner : null;
 
         return $this->runWithinSessionOwnerContext($session, function () use ($customerResolver, $owner, $session): StepResult {
             $sessionCustomer = $session->customer_id !== null ? $session->customer : null;
@@ -132,10 +132,6 @@ final class PersistCustomerStep extends AbstractCheckoutStep
      */
     private function runWithinSessionOwnerContext(CheckoutSession $session, callable $callback): mixed
     {
-        if (! $session->hasOwner()) {
-            return $callback();
-        }
-
-        return OwnerContext::withOwner($session->owner, $callback);
+        return OwnerContext::withOwner($session->hasOwner() ? $session->owner : null, $callback);
     }
 }

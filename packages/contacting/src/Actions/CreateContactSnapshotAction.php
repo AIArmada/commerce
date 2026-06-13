@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\Contacting\Models\SocialProfile;
@@ -14,45 +15,48 @@ final class CreateContactSnapshotAction
 {
     public function fromContactMethod(Model $snapshotable, ContactMethod $contactMethod, ?string $reason = null): ContactSnapshot
     {
-        $snapshot = new ContactSnapshot;
-        $snapshot->snapshotable()->associate($snapshotable);
-        $snapshot->snapshot_type = 'contact_method';
-        $snapshot->source_id = $contactMethod->id;
-        $snapshot->source_type = $contactMethod->getMorphClass();
-        $snapshot->reason = $reason;
-        $snapshot->label = $contactMethod->label;
-        $snapshot->channel = $contactMethod->type;
-        $snapshot->value = $contactMethod->value;
-        $snapshot->normalized_value = $contactMethod->normalized_value;
-        $snapshot->display_value = $contactMethod->display_value;
-        $snapshot->is_public = $contactMethod->is_public;
-        $snapshot->payload = $contactMethod->toArray();
-
-        $snapshot->save();
-
-        return $snapshot;
+        return $this->persistSnapshot(
+            $this->makeSnapshot(
+                snapshotable: $snapshotable,
+                snapshotType: 'contact_method',
+                sourceId: $contactMethod->id,
+                sourceType: $contactMethod->getMorphClass(),
+                reason: $reason,
+                label: $contactMethod->label,
+                channel: $contactMethod->type,
+                value: $contactMethod->value,
+                normalizedValue: $contactMethod->normalized_value,
+                url: null,
+                displayValue: $contactMethod->display_value,
+                isPublic: $contactMethod->is_public,
+                payload: $contactMethod->toArray(),
+                owner: $contactMethod->owner,
+            ),
+            $contactMethod->owner,
+        );
     }
 
     public function fromSocialProfile(Model $snapshotable, SocialProfile $socialProfile, ?string $reason = null): ContactSnapshot
     {
-        $snapshot = new ContactSnapshot;
-        $snapshot->snapshotable()->associate($snapshotable);
-        $snapshot->snapshot_type = 'social_profile';
-        $snapshot->source_id = $socialProfile->id;
-        $snapshot->source_type = $socialProfile->getMorphClass();
-        $snapshot->reason = $reason;
-        $snapshot->label = $socialProfile->label;
-        $snapshot->channel = $socialProfile->platform;
-        $snapshot->value = $socialProfile->handle ?? $socialProfile->url;
-        $snapshot->normalized_value = $socialProfile->normalized_url;
-        $snapshot->url = $socialProfile->url;
-        $snapshot->display_value = $socialProfile->display_name ?? $socialProfile->handle;
-        $snapshot->is_public = $socialProfile->is_public;
-        $snapshot->payload = $socialProfile->toArray();
-
-        $snapshot->save();
-
-        return $snapshot;
+        return $this->persistSnapshot(
+            $this->makeSnapshot(
+                snapshotable: $snapshotable,
+                snapshotType: 'social_profile',
+                sourceId: $socialProfile->id,
+                sourceType: $socialProfile->getMorphClass(),
+                reason: $reason,
+                label: $socialProfile->label,
+                channel: $socialProfile->platform,
+                value: $socialProfile->handle ?? $socialProfile->url,
+                normalizedValue: $socialProfile->normalized_url,
+                url: $socialProfile->url,
+                displayValue: $socialProfile->display_name ?? $socialProfile->handle,
+                isPublic: $socialProfile->is_public,
+                payload: $socialProfile->toArray(),
+                owner: $socialProfile->owner,
+            ),
+            $socialProfile->owner,
+        );
     }
 
     /**
@@ -73,5 +77,59 @@ final class CreateContactSnapshotAction
         }
 
         return $snapshots;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function makeSnapshot(
+        Model $snapshotable,
+        string $snapshotType,
+        string $sourceId,
+        string $sourceType,
+        ?string $reason,
+        ?string $label,
+        ?string $channel,
+        ?string $value,
+        ?string $normalizedValue,
+        ?string $url,
+        ?string $displayValue,
+        bool $isPublic,
+        array $payload,
+        ?Model $owner,
+    ): ContactSnapshot {
+        $snapshot = new ContactSnapshot;
+        $snapshot->snapshotable()->associate($snapshotable);
+        $snapshot->snapshot_type = $snapshotType;
+        $snapshot->source_id = $sourceId;
+        $snapshot->source_type = $sourceType;
+        $snapshot->reason = $reason;
+        $snapshot->label = $label;
+        $snapshot->channel = $channel;
+        $snapshot->value = $value;
+        $snapshot->normalized_value = $normalizedValue;
+        $snapshot->url = $url;
+        $snapshot->display_value = $displayValue;
+        $snapshot->is_public = $isPublic;
+        $snapshot->payload = $payload;
+
+        if ($owner !== null) {
+            $snapshot->assignOwner($owner);
+        }
+
+        return $snapshot;
+    }
+
+    private function persistSnapshot(ContactSnapshot $snapshot, ?Model $owner): ContactSnapshot
+    {
+        if (! (bool) config('contacting.features.contact_snapshots', true)) {
+            return $snapshot;
+        }
+
+        return OwnerContext::withOwner($owner, function () use ($snapshot): ContactSnapshot {
+            $snapshot->save();
+
+            return $snapshot;
+        });
     }
 }

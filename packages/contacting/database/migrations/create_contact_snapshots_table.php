@@ -43,8 +43,6 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['snapshotable_type', 'snapshotable_id']);
-            $table->index(['owner_type', 'owner_id']);
             $table->index(['snapshot_type']);
             $table->index(['channel']);
             $table->index(['reason']);

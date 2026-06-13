@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Actions\MergeCustomersAction;
 use BackedEnum;
@@ -103,7 +104,7 @@ final class MergeCustomersPage extends Page implements HasForms
 
     protected function getCustomerLabel(string $id): string
     {
-        $customer = Customer::find($id);
+        $customer = $this->resolveCustomer($id);
 
         if (! $customer) {
             return '';
@@ -130,8 +131,8 @@ final class MergeCustomersPage extends Page implements HasForms
             return;
         }
 
-        $target = Customer::find($targetId);
-        $source = Customer::find($sourceId);
+        $target = $this->resolveCustomer($targetId);
+        $source = $this->resolveCustomer($sourceId);
 
         if (! $target || ! $source) {
             Notification::make()
@@ -163,5 +164,17 @@ final class MergeCustomersPage extends Page implements HasForms
                 ->modalDescription('This action will merge all data from the source customer into the target customer and delete the source. This cannot be undone.')
                 ->modalSubmitActionLabel('Yes, merge them'),
         ];
+    }
+
+    private function resolveCustomer(string $id): ?Customer
+    {
+        if (! (bool) config('customers.features.owner.enabled', false)) {
+            return Customer::find($id);
+        }
+
+        /** @var Customer $customer */
+        $customer = OwnerWriteGuard::findOrFailForOwner(Customer::class, $id, includeGlobal: false);
+
+        return $customer;
     }
 }
