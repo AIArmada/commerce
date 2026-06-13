@@ -55,8 +55,7 @@ final class CreativesRelationManager extends RelationManager
             TextInput::make('asset_url')
                 ->label('Asset URL (or leave blank if uploading)')
                 ->url()
-                ->maxLength(2048)
-                ->default(''),
+                ->maxLength(2048),
 
             TextInput::make('destination_url')
                 ->required()
