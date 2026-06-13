@@ -7,7 +7,7 @@ use AIArmada\Contacting\Data\ContactLinksData;
 use AIArmada\Contacting\Data\ContactSnapshotData;
 use AIArmada\Contacting\Models\ContactMethod;
 
-test('BuildContactLinksAction builds mailto link', function () {
+test('BuildContactLinksAction builds mailto link', function (): void {
     $action = new BuildContactLinksAction;
 
     $cm = new ContactMethod;
@@ -24,7 +24,7 @@ test('BuildContactLinksAction builds mailto link', function () {
     expect($links->mailtoUrl)->toBe('mailto:admin@example.com');
 });
 
-test('BuildContactLinksAction returns null for empty contact methods', function () {
+test('BuildContactLinksAction returns null for empty contact methods', function (): void {
     $action = new BuildContactLinksAction;
 
     $links = $action->execute([]);
@@ -34,7 +34,7 @@ test('BuildContactLinksAction returns null for empty contact methods', function 
     expect($links->websiteUrl)->toBeNull();
 });
 
-test('ContactSnapshotData constructor', function () {
+test('ContactSnapshotData constructor', function (): void {
     $data = new ContactSnapshotData(
         snapshotType: 'contact_method',
         reason: 'event_public_contact',
@@ -48,7 +48,7 @@ test('ContactSnapshotData constructor', function () {
     expect($data->value)->toBe('admin@example.com');
 });
 
-test('ContactLinksData constructor', function () {
+test('ContactLinksData constructor', function (): void {
     $data = new ContactLinksData(
         mailtoUrl: 'mailto:admin@example.com',
         whatsappUrl: 'https://wa.me/60123456789',
@@ -58,7 +58,7 @@ test('ContactLinksData constructor', function () {
     expect($data->whatsappUrl)->toBe('https://wa.me/60123456789');
 });
 
-test('migrations have no forbidden patterns', function () {
+test('migrations have no forbidden patterns', function (): void {
     $migrationPath = realpath(base_path('packages/contacting/database/migrations'));
     $files = glob("$migrationPath/*.php");
 
