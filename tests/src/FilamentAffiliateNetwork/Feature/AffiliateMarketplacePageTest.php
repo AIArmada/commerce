@@ -10,6 +10,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferLink;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -26,7 +27,7 @@ describe('AffiliateMarketplacePage', function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'AFF' . uniqid(),
             'name' => 'Marketplace Affiliate',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -170,7 +171,7 @@ describe('AffiliateMarketplacePage', function (): void {
         $affiliate = OwnerContext::withOwner($owner, fn () => Affiliate::create([
             'code' => 'AFF' . uniqid(),
             'name' => 'Tenant Marketplace Affiliate',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -215,7 +216,7 @@ describe('AffiliateMarketplacePage', function (): void {
         $affiliate = OwnerContext::withOwner($owner, fn () => Affiliate::create([
             'code' => 'AFF' . uniqid(),
             'name' => 'Tenant Link Affiliate',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
