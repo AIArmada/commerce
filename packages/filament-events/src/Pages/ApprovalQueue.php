@@ -14,6 +14,8 @@ use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\EmbeddedTable;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -147,8 +149,11 @@ final class ApprovalQueue extends Page implements HasTable
         return $submission;
     }
 
-    public function getView(): string
+    public function content(Schema $schema): Schema
     {
-        return 'filament-panels::pages.simple';
+        return $schema
+            ->components([
+                EmbeddedTable::make(),
+            ]);
     }
 }

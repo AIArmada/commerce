@@ -41,7 +41,7 @@ final class EventRegistrationResource extends Resource
 
         return $query
             ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
-            ->with(['event', 'occurrence']);
+            ->with(['event', 'occurrence', 'registrant', 'participants']);
     }
 
     public static function table(Table $table): Table
@@ -51,11 +51,35 @@ final class EventRegistrationResource extends Resource
                 Tables\Columns\TextColumn::make('registration_no')
                     ->searchable()
                     ->copyable(),
+                Tables\Columns\TextColumn::make('registrant.first_name')
+                    ->label('Name')
+                    ->state(fn (EventRegistration $record): string => $record->registrant
+                        ? trim(($record->registrant->first_name ?? '') . ' ' . ($record->registrant->last_name ?? ''))
+                        : ($record->participants->first()?->name ?? ''))
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query
+                        ->whereHas('registrant', fn (Builder $q) => $q
+                            ->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%"))
+                        ->orWhereHas('participants', fn (Builder $q) => $q
+                            ->where('name', 'like', "%{$search}%"))),
+                Tables\Columns\TextColumn::make('registrant.email')
+                    ->label('Email')
+                    ->state(fn (EventRegistration $record): ?string => $record->registrant?->email
+                        ?? $record->participants->first()?->metadata['contact']['email'] ?? null)
+                    ->copyable()
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query
+                        ->whereHas('registrant', fn (Builder $q) => $q
+                            ->where('email', 'like', "%{$search}%"))),
+                Tables\Columns\TextColumn::make('registrant.phone')
+                    ->label('Phone')
+                    ->state(fn (EventRegistration $record): ?string => $record->registrant?->phone
+                        ?? $record->participants->first()?->metadata['contact']['phone'] ?? null)
+                    ->copyable(),
+                Tables\Columns\TextColumn::make('registrant.company')
+                    ->label('Company')
+                    ->state(fn (EventRegistration $record): ?string => $record->registrant?->company ?? null),
                 Tables\Columns\TextColumn::make('event.title')
                     ->label('Event'),
-                Tables\Columns\TextColumn::make('registrant_type')
-                    ->badge(),
-                Tables\Columns\TextColumn::make('registrant_id'),
                 Tables\Columns\TextColumn::make('registration_type')
                     ->badge(),
                 Tables\Columns\TextColumn::make('status')

@@ -14,6 +14,8 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\EmbeddedTable;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -59,7 +61,11 @@ final class SeatMapManager extends Page implements HasTable
                 ->label('Create Seat Map')
                 ->form([
                     Select::make('event_id')
-                        ->relationship('event', 'title', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                        ->label('Event')
+                        ->options(fn (): array => OwnerUiScope::apply(Event::query())
+                            ->pluck('title', 'id')
+                            ->all())
+                        ->searchable()
                         ->required(),
                     TextInput::make('name')->required(),
                 ])
@@ -75,8 +81,12 @@ final class SeatMapManager extends Page implements HasTable
         ];
     }
 
-    public function getView(): string
+    public function content(Schema $schema): Schema
     {
-        return 'filament-panels::pages.simple';
+        return $schema
+            ->components([
+                EmbeddedTable::make(),
+            ]);
     }
+
 }

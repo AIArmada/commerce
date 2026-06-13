@@ -124,7 +124,8 @@ final class AffiliateCreativeResource extends Resource
                     TextInput::make('asset_url')
                         ->label('Asset URL (or leave blank if uploading)')
                         ->url()
-                        ->maxLength(2048),
+                        ->maxLength(2048)
+                        ->default(''),
 
                     TextInput::make('width')
                         ->label('Width (px)')

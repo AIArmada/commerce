@@ -153,7 +153,7 @@ final class EventOccurrenceResource extends Resource
                     ->action(function (EventOccurrence $record): void {
                         app(EventLifecycleWorkflow::class)->complete($record);
                     })
-                    ->visible(fn (EventOccurrence $record) => $record->status === 'published')
+                    ->visible(fn (?EventOccurrence $record) => $record?->status === 'published')
                     ->requiresConfirmation(),
             ])
             ->actions([

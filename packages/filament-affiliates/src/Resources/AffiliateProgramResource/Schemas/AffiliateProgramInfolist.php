@@ -55,7 +55,7 @@ final class AffiliateProgramInfolist
                         TextEntry::make('visibility')
                             ->label('Visibility')
                             ->badge()
-                            ->color(fn (string $state): string => ProgramVisibility::from($state)->color()),
+                            ->color(fn (ProgramVisibility $state): string => $state->color()),
 
                         IconEntry::make('requires_approval')
                             ->label('Requires Approval')

@@ -15,6 +15,8 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\EmbeddedTable;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -124,7 +126,9 @@ final class NotificationCenter extends Page implements HasTable
                 ->form([
                     Select::make('event_id')
                         ->label('Event')
-                        ->relationship('event', 'title', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                        ->options(fn (): array => OwnerUiScope::apply(Event::query(), includeGlobal: false)
+                            ->pluck('title', 'id')
+                            ->all())
                         ->searchable()
                         ->required(),
                     TextInput::make('title')->label('Subject')->required(),
@@ -145,13 +149,11 @@ final class NotificationCenter extends Page implements HasTable
         ];
     }
 
-    public function hasLogo(): bool
+    public function content(Schema $schema): Schema
     {
-        return false;
-    }
-
-    public function getView(): string
-    {
-        return 'filament-panels::pages.simple';
+        return $schema
+            ->components([
+                EmbeddedTable::make(),
+            ]);
     }
 }
