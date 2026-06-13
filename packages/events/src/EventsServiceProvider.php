@@ -22,6 +22,7 @@ use AIArmada\Events\Contracts\EventEngagementManager;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
+use AIArmada\Events\Contracts\EventPassDeliveryService;
 use AIArmada\Events\Contracts\EventPassIssuer;
 use AIArmada\Events\Contracts\EventReferenceResolver;
 use AIArmada\Events\Contracts\EventScheduleResolver;
@@ -63,8 +64,10 @@ use AIArmada\Events\Services\DefaultEventPassIssuer;
 use AIArmada\Events\Services\DefaultEventSeatAllocator;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventQueryService;
+use AIArmada\Events\Services\NullEventPassDeliveryService;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Steps\CreateEventRegistrationsStep;
+use AIArmada\Events\Steps\IssueEventPassesStep;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
 use AIArmada\Orders\Events\OrderCanceled;
@@ -99,6 +102,7 @@ final class EventsServiceProvider extends PackageServiceProvider
 
         $this->app->bind(EventCheckInService::class, DefaultEventCheckInService::class);
         $this->app->bind(EventPassIssuer::class, DefaultEventPassIssuer::class);
+        $this->app->bind(EventPassDeliveryService::class, NullEventPassDeliveryService::class);
         $this->app->bind(EventSeatAllocator::class, DefaultEventSeatAllocator::class);
         $this->app->bind(RegistrationServiceInterface::class, RegistrationService::class);
 
@@ -169,6 +173,27 @@ final class EventsServiceProvider extends PackageServiceProvider
         }
 
         $registry->insertAfter('create_order', 'create_event_registrations', $step);
+
+        if (! $registry->isEnabled('create_event_registrations')) {
+            return;
+        }
+
+        if (! (bool) config('events.features.auto_issue_passes', false)) {
+            return;
+        }
+
+        $passStep = new IssueEventPassesStep(
+            passIssuer: $this->app->make(EventPassIssuer::class),
+            passDelivery: $this->app->make(EventPassDeliveryService::class),
+        );
+
+        if ($registry->has('issue_event_passes')) {
+            $registry->replace('issue_event_passes', $passStep);
+
+            return;
+        }
+
+        $registry->insertAfter('create_event_registrations', 'issue_event_passes', $passStep);
     }
 
     private function checkoutPipelineAvailable(): bool

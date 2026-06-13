@@ -371,4 +371,22 @@ final class EventOccurrence extends Model
     {
         app(EventLifecycleWorkflow::class)->complete($this);
     }
+
+    public function capacityRemaining(): ?int
+    {
+        if ($this->capacity === null) {
+            return null;
+        }
+
+        $blockingStatuses = config(
+            'events.lifecycle.registration.capacity_blocking_statuses',
+            EventRegistration::CAPACITY_BLOCKING_STATUSES,
+        );
+
+        $reserved = $this->registrations()
+            ->whereIn('status', $blockingStatuses)
+            ->sum('total_participants');
+
+        return max(0, $this->capacity - (int) $reserved);
+    }
 }

@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
 
@@ -405,5 +406,82 @@ final class Event extends Model
         $media = $this->media->first();
 
         return $media?->url;
+    }
+
+    /**
+     * Read a display-oriented key from this Event.
+     *
+     * Maps config-style dotted paths to model columns or metadata:
+     *   series.name / event.name        → $this->title
+     *   event.summary                   → $this->summary
+     *   event.description               → $this->description
+     *   event.default_timezone          → $this->timezone
+     *   event.time_label                → $this->metadata['time_label']
+     *   venue.short_name                → $this->metadata['venue']['short_name']
+     *   occurrences                     → $this->metadata['occurrences']
+     */
+    public function metadata(string $key, mixed $default = null): mixed
+    {
+        return match (true) {
+            $key === 'series.name', $key === 'event.name' => $this->title,
+            $key === 'series.slug', $key === 'event.slug' => $this->slug,
+            $key === 'event.summary', $key === 'series.description' => $this->summary ?? $default,
+            $key === 'event.description' => $this->description ?? $default,
+            $key === 'event.default_timezone' => $this->timezone ?? $default,
+            str_starts_with($key, 'event.') => Arr::get($this->metadata ?? [], mb_substr($key, 6), $default),
+            default => Arr::get($this->metadata ?? [], $key, $default),
+        };
+    }
+
+    /**
+     * Static shortcut for metadata() on the first event.
+     * Results are cached per request.
+     */
+    public static function metadataValue(string $key, mixed $default = null): mixed
+    {
+        $event = self::query()->first();
+
+        return $event?->metadata($key, $default) ?? $default;
+    }
+
+    /**
+     * First occurrence date label, read from metadata.
+     */
+    public static function occurrenceLabel(string $preferredDate): ?string
+    {
+        $data = self::metadataValue("occurrences.{$preferredDate}");
+
+        return is_array($data) && isset($data['label']) && is_string($data['label'])
+            ? $data['label']
+            : null;
+    }
+
+    /**
+     * First occurrence start time, read from metadata.
+     */
+    public static function occurrenceStartsAt(string $preferredDate): ?string
+    {
+        $data = self::metadataValue("occurrences.{$preferredDate}");
+
+        return is_array($data) && isset($data['starts_at']) && is_string($data['starts_at'])
+            ? $data['starts_at']
+            : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function preferredDates(): array
+    {
+        $occurrences = self::metadataValue('occurrences', []);
+
+        if (! is_array($occurrences)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_keys($occurrences),
+            static fn (mixed $date): bool => is_string($date) && $date !== '',
+        ));
     }
 }

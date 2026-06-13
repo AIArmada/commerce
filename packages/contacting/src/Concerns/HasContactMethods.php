@@ -66,6 +66,73 @@ trait HasContactMethods
         return $this->contactMethods()->where('purpose', $purpose);
     }
 
+    public function resolveEmail(): ?string
+    {
+        return $this->resolveContact('email');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function resolveEmails(): array
+    {
+        return $this->resolveContacts('email');
+    }
+
+    public function resolvePhone(): ?string
+    {
+        return $this->resolveContact('phone');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function resolvePhones(): array
+    {
+        return $this->resolveContacts('phone');
+    }
+
+    private function resolveContact(string $type): ?string
+    {
+        $contact = $this->contactMethods()
+            ->where('type', $type)
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order')
+            ->first();
+
+        return $contact !== null ? $this->normalizeContactValue($contact) : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveContacts(string $type): array
+    {
+        return $this->contactMethods()
+            ->where('type', $type)
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (ContactMethod $contact): ?string => $this->normalizeContactValue($contact))
+            ->filter(static fn (?string $value): bool => $value !== null)
+            ->values()
+            ->toArray();
+    }
+
+    private function normalizeContactValue(ContactMethod $contact): ?string
+    {
+        $value = $contact->getAttribute('normalized_value')
+            ?? $contact->getAttribute('value');
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_trim($value);
+
+        return $value === '' ? null : $value;
+    }
+
     public function addContactMethod(ContactMethodData | array $data): ContactMethod
     {
         if (is_array($data)) {
