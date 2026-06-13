@@ -57,8 +57,9 @@ final class EventRegistrationResource extends Resource
                     ->state(function (EventRegistration $record): string {
                         $registrant = $record->registrant;
                         if ($registrant instanceof Customer) {
-                            return trim(($registrant->first_name ?? '') . ' ' . ($registrant->last_name ?? ''));
+                            return mb_trim(($registrant->first_name ?? '') . ' ' . ($registrant->last_name ?? ''));
                         }
+
                         return $record->participants->first()?->name ?? '';
                     })
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query
@@ -74,6 +75,7 @@ final class EventRegistrationResource extends Resource
                         if ($registrant instanceof Customer && $registrant->email) {
                             return $registrant->email;
                         }
+
                         return $record->participants->first()?->metadata['contact']['email'] ?? null;
                     })
                     ->copyable()
@@ -87,6 +89,7 @@ final class EventRegistrationResource extends Resource
                         if ($registrant instanceof Customer && $registrant->phone) {
                             return $registrant->phone;
                         }
+
                         return $record->participants->first()?->metadata['contact']['phone'] ?? null;
                     })
                     ->copyable(),
@@ -94,6 +97,7 @@ final class EventRegistrationResource extends Resource
                     ->label('Company')
                     ->state(function (EventRegistration $record): ?string {
                         $registrant = $record->registrant;
+
                         return $registrant instanceof Customer ? $registrant->company : null;
                     }),
                 Tables\Columns\TextColumn::make('event.title')
