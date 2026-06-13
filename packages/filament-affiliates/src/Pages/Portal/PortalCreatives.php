@@ -98,7 +98,7 @@ class PortalCreatives extends PortalPage
                 'name' => $creative->name,
                 'type' => $creative->type,
                 'description' => $creative->description,
-                'asset_url' => $creative->asset_url,
+                'asset_url' => $creative->asset_url ?? $creative->getFirstMediaUrl('creative_asset'),
                 'width' => $creative->width,
                 'height' => $creative->height,
                 'destination_url' => $creative->destination_url,

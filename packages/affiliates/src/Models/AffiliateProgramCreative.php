@@ -99,6 +99,7 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('creative_asset')
+            ->useDisk('public')
             ->singleFile()
             ->acceptsMimeTypes([
                 'image/jpeg',
