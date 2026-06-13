@@ -31,8 +31,8 @@ final class ParticipantData extends Data
         return new self(
             id: $participant->id,
             name: $participant->name,
-            email: $participant->email,
-            phone: $participant->phone,
+            email: self::resolveContactValue($participant, 'email'),
+            phone: self::resolveContactValue($participant, 'phone'),
             relationship_to_registrant: $participant->relationship_to_registrant,
             is_primary: $participant->is_primary,
             age: $participant->age,
@@ -42,5 +42,24 @@ final class ParticipantData extends Data
             event_session_id: $participant->event_session_id,
             created_at: CarbonImmutable::make($participant->created_at),
         );
+    }
+
+    private static function resolveContactValue(EventRegistrationParticipant $participant, string $type): ?string
+    {
+        $contactMethod = $participant->contactMethods()
+            ->where('type', $type)
+            ->orderByDesc('is_primary')
+            ->orderBy('sort_order')
+            ->first();
+
+        $value = $contactMethod?->normalized_value ?? $contactMethod?->value;
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_trim($value);
+
+        return $value === '' ? null : $value;
     }
 }

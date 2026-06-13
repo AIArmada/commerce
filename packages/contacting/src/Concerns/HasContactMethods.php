@@ -11,10 +11,19 @@ use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Contacting\Support\NormalizesEmailAddress;
 use AIArmada\Contacting\Support\NormalizesPhoneNumber;
 use AIArmada\Contacting\Support\NormalizesUrl;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasContactMethods
 {
+    protected static function bootHasContactMethods(): void
+    {
+        static::deleting(function (Model $model): void {
+            /** @phpstan-ignore-next-line */
+            $model->contactMethods()->delete();
+        });
+    }
+
     /**
      * @return MorphMany<ContactMethod, $this>
      */
@@ -66,8 +75,6 @@ trait HasContactMethods
         if (function_exists('app')) {
             return app(CreateContactMethodAction::class)->execute($this, $data);
         }
-
-        $normalizer = new NormalizesEmailAddress;
 
         return (new CreateContactMethodAction(
             new NormalizeContactMethodAction(

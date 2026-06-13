@@ -13,6 +13,7 @@ use AIArmada\Checkout\States\AwaitingPayment;
 use AIArmada\Checkout\States\PaymentFailed;
 use AIArmada\Checkout\States\PaymentProcessing;
 use AIArmada\Checkout\States\Processing;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -181,18 +182,20 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                 : ($billable->name ?? null);
         }
 
-        $customerEmail = $billingData['email'] ?? $customer?->email;
+        $customerEmail = $this->cleanString($billingData['email'] ?? null)
+            ?? $this->resolveModelEmail($customer);
         if ($customerEmail === null && $billable !== null) {
             $customerEmail = method_exists($billable, 'chipEmail')
-                ? $billable->chipEmail()
-                : ($billable->email ?? null);
+                ? $this->cleanString($billable->chipEmail())
+                : ($billable instanceof Model ? $this->resolveModelEmail($billable) : null);
         }
 
-        $customerPhone = $billingData['phone'] ?? $customer?->phone;
+        $customerPhone = $this->cleanString($billingData['phone'] ?? null)
+            ?? $this->resolveModelPhone($customer);
         if ($customerPhone === null && $billable !== null) {
             $customerPhone = method_exists($billable, 'chipPhone')
-                ? $billable->chipPhone()
-                : ($billable->phone ?? null);
+                ? $this->cleanString($billable->chipPhone())
+                : ($billable instanceof Model ? $this->resolveModelPhone($billable) : null);
         }
 
         return new PaymentRequest(
@@ -246,6 +249,40 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         ]));
     }
 
+    private function resolveModelEmail(?Model $model): ?string
+    {
+        if ($model === null) {
+            return null;
+        }
+
+        $emailContactMethod = method_exists($model, 'contactMethods')
+            ? $model->contactMethods()
+                ->where('type', 'email')
+                ->orderByDesc('is_primary')
+                ->orderBy('sort_order')
+                ->first()
+            : null;
+
+        return $this->cleanString($emailContactMethod?->normalized_value ?? $emailContactMethod?->value ?? $model->getAttribute('email'));
+    }
+
+    private function resolveModelPhone(?Model $model): ?string
+    {
+        if ($model === null) {
+            return null;
+        }
+
+        $phoneContactMethod = method_exists($model, 'contactMethods')
+            ? $model->contactMethods()
+                ->where('type', 'phone')
+                ->orderByDesc('is_primary')
+                ->orderBy('sort_order')
+                ->first()
+            : null;
+
+        return $this->cleanString($phoneContactMethod?->normalized_value ?? $phoneContactMethod?->value ?? $model->getAttribute('phone'));
+    }
+
     private function ensureCallbackToken(CheckoutSession $session): string
     {
         $paymentData = $session->payment_data ?? [];
@@ -262,5 +299,16 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
         $session->update(['payment_data' => $paymentData]);
 
         return $callbackToken;
+    }
+
+    private function cleanString(mixed $value): ?string
+    {
+        if ($value === null || ! is_scalar($value)) {
+            return null;
+        }
+
+        $cleaned = mb_trim((string) $value);
+
+        return $cleaned === '' ? null : $cleaned;
     }
 }

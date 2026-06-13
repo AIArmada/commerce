@@ -20,7 +20,7 @@ final class FeedbackInvitationResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return config('filament-feedback.navigation.group', 'Feedback');
+        return config('filament-feedback.navigation.group');
     }
 
     public static function getNavigationIcon(): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Services;
 
+use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Events\EventRegistrationApproved;
 use AIArmada\Events\Events\EventRegistrationCancelled;
@@ -12,6 +13,7 @@ use AIArmada\Events\Events\EventRegistrationCreated;
 use AIArmada\Events\Events\EventRegistrationRejected;
 use AIArmada\Events\Events\EventRegistrationWaitlisted;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventRegistrationParticipant;
 use Carbon\CarbonImmutable;
 
 final class RegistrationService implements RegistrationServiceInterface
@@ -28,7 +30,11 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if (isset($data['participants'])) {
             foreach ($data['participants'] as $participantData) {
-                $registration->participants()->create(array_merge($participantData, $scopeFields));
+                $participant = $registration->participants()->create(array_merge($participantData, $scopeFields));
+
+                if ($participant instanceof EventRegistrationParticipant) {
+                    $this->syncParticipantContactMethods($participant, $participantData);
+                }
             }
         }
 
@@ -122,4 +128,44 @@ final class RegistrationService implements RegistrationServiceInterface
     }
 
     public function syncByOrder(string $orderId, string $orderType, string $eventType): void {}
+
+    /**
+     * @param  array<string, mixed>  $participantData
+     */
+    private function syncParticipantContactMethods(EventRegistrationParticipant $participant, array $participantData): void
+    {
+        $email = $this->cleanString($participantData['email'] ?? null);
+
+        if ($email !== null) {
+            $participant->addContactMethod(new ContactMethodData(
+                type: 'email',
+                purpose: 'general',
+                value: $email,
+                isPrimary: true,
+            ));
+        }
+
+        $phone = $this->cleanString($participantData['phone'] ?? null);
+
+        if ($phone !== null) {
+            $participant->addContactMethod(new ContactMethodData(
+                type: 'phone',
+                purpose: 'general',
+                value: $phone,
+                countryCode: config('contacting.defaults.country_code', 'MY'),
+                isPrimary: true,
+            ));
+        }
+    }
+
+    private function cleanString(mixed $value): ?string
+    {
+        if ($value === null || ! is_scalar($value)) {
+            return null;
+        }
+
+        $cleaned = mb_trim((string) $value);
+
+        return $cleaned === '' ? null : $cleaned;
+    }
 }

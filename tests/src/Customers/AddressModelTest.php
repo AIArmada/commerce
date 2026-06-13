@@ -7,6 +7,7 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Services\CustomerResolver;
+use AIArmada\Contacting\Data\ContactMethodData;
 
 describe('Address Model', function (): void {
     beforeEach(function (): void {
@@ -172,7 +173,7 @@ describe('Address Model', function (): void {
                 'city' => 'Kuala Lumpur',
                 'state' => 'WP',
                 'postcode' => '50000',
-                'country' => 'MY',
+                'country_code' => 'MY',
             ]);
 
             expect($address->full_address)->toContain('123 Main St')
@@ -192,9 +193,11 @@ describe('Address Model', function (): void {
                 'city' => 'Kuala Lumpur',
                 'state' => 'WP',
                 'postcode' => '50000',
-                'country' => 'MY',
-                'phone' => '+60123456789',
+                'country_code' => 'MY',
             ]);
+
+            $address->addContactMethod(ContactMethodData::phone('+60123456789', 'MY'));
+            $address->load('contactMethods');
 
             $formatted = $address->getFormattedAddress();
 

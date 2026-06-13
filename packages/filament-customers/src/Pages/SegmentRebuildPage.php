@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Pages;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Customers\Models\Segment;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -62,7 +63,9 @@ class SegmentRebuildPage extends Page
 
     public function rebuildSegment(string $segmentId): void
     {
-        $segment = Segment::find($segmentId);
+        $segment = (bool) config('customers.features.owner.enabled', false)
+            ? OwnerWriteGuard::findOrFailForOwner(Segment::class, $segmentId, includeGlobal: false)
+            : Segment::find($segmentId);
 
         if ($segment === null) {
             Notification::make()

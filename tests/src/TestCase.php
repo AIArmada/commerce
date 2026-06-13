@@ -6,6 +6,8 @@ namespace AIArmada\Commerce\Tests;
 
 use AIArmada\Addressing\AddressingServiceProvider;
 use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
+use AIArmada\Contacting\ContactingServiceProvider;
+use AIArmada\FilamentContacting\FilamentContactingServiceProvider;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Facades\Cart;
@@ -160,6 +162,8 @@ abstract class TestCase extends Orchestra
             FilamentDocsServiceProvider::class,
             FilamentSignalsServiceProvider::class,
             FilamentGrowthServiceProvider::class,
+            ContactingServiceProvider::class,
+            FilamentContactingServiceProvider::class,
             CustomersServiceProvider::class,
             VoucherServiceProvider::class,
             FilamentCartServiceProvider::class,
@@ -1272,6 +1276,7 @@ abstract class TestCase extends Orchestra
             $table->string('city');
             $table->string('state')->nullable();
             $table->string('postcode')->nullable();
+            $table->string('country_code', 2)->default('MY');
             $table->string('country')->default('MY');
             $table->string('phone')->nullable();
             $table->string('email')->nullable();

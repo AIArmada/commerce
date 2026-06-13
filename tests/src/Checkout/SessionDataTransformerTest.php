@@ -27,7 +27,7 @@ it('transforms address data into order schema', function (): void {
         'line1' => '123 Main St',
         'city' => 'Kuala Lumpur',
         'postcode' => '50000',
-        'country' => 'MY',
+        'country_code' => 'MY',
         'email' => 'jane@example.com',
         'phone' => '+60123456789',
     ]);

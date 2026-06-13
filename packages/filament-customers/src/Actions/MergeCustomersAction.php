@@ -6,35 +6,20 @@ namespace AIArmada\FilamentCustomers\Actions;
 
 use AIArmada\Customers\Events\CustomerUpdated;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Services\CustomerResolver;
 
 final class MergeCustomersAction
 {
-    /**
-     * Merge $source customer into $target customer.
-     * Transfers all addresses, notes, and related records,
-     * then deletes $source.
-     */
+    public function __construct(
+        private readonly CustomerResolver $customerResolver,
+    ) {}
+
     public function execute(Customer $target, Customer $source): Customer
     {
-        $target->load('addresses', 'notes');
+        $mergedCustomer = $this->customerResolver->mergeCustomers($source, $target);
 
-        $source->addresses()->update(['customer_id' => $target->id]);
-        $source->notes()->update(['customer_id' => $target->id]);
+        event(new CustomerUpdated($mergedCustomer));
 
-        if ($source->email && ! $target->email) {
-            $target->email = $source->email;
-        }
-
-        if ($source->phone && ! $target->phone) {
-            $target->phone = $source->phone;
-        }
-
-        $target->save();
-
-        event(new CustomerUpdated($target));
-
-        $source->delete();
-
-        return $target;
+        return $mergedCustomer;
     }
 }

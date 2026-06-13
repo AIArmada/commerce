@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Tables;
 
+use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\FilamentContacting\Support\ContactingFilamentConfig;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ExportBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -65,7 +71,7 @@ final class SocialProfileTable
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('platform')
-                    ->options(config('contacting.social_profiles.platforms', [])),
+                    ->options(SocialPlatform::options(config('contacting.social_profiles.platforms', []))),
 
                 Tables\Filters\TernaryFilter::make('is_primary'),
 
@@ -75,19 +81,19 @@ final class SocialProfileTable
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
 
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->visible(fn (): bool => ! $guard->socialProfilesReadOnly()),
 
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->visible(fn (): bool => ! $guard->socialProfilesReadOnly()),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make()
+                DeleteBulkAction::make()
                     ->visible(fn (): bool => ! $guard->socialProfilesReadOnly()),
 
-                Tables\Actions\ExportBulkAction::make()
+                ExportBulkAction::make()
                     ->visible(fn (): bool => $config->exportsEnabled()),
             ]);
     }

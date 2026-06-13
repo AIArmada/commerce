@@ -9,6 +9,7 @@ use AIArmada\FilamentContacting\Schemas\SocialProfileFormSchema;
 use AIArmada\FilamentContacting\Schemas\SocialProfileInfolistSchema;
 use AIArmada\FilamentContacting\Support\GuardsContactingUi;
 use AIArmada\FilamentContacting\Tables\SocialProfileTable;
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -18,7 +19,7 @@ final class SocialProfileResource extends Resource
 {
     protected static ?string $model = SocialProfile::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-share';
+    protected static BackedEnum | string | null $navigationIcon = 'heroicon-o-share';
 
     protected static ?int $navigationSort = 2;
 
@@ -27,9 +28,9 @@ final class SocialProfileResource extends Resource
         return config('filament-contacting.navigation.group');
     }
 
-    public static function getNavigationIcon(): string
+    public static function getNavigationIcon(): BackedEnum | string | null
     {
-        return (string) config('filament-contacting.navigation.icons.social_profiles', parent::getNavigationIcon());
+        return config('filament-contacting.navigation.icons.social_profiles', parent::getNavigationIcon());
     }
 
     public static function getEloquentQuery(): Builder

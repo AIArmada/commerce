@@ -497,7 +497,7 @@ final class ListSignalInteractionRules extends ListRecords
     }
 
     /**
-     * @return array<string, string>
+     * @return array<int, string>
      */
     private function previewCandidateOptions(): array
     {
@@ -518,7 +518,7 @@ final class ListSignalInteractionRules extends ListRecords
     }
 
     /**
-     * @return array<string, string>
+     * @return array<int, string>
      */
     private function previewCandidateDescriptions(): array
     {

@@ -33,6 +33,6 @@ abstract class ReportPage extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return config('filament-signals.navigation.group', 'Insights');
+        return config('filament-signals.navigation.group');
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAffiliates\AffiliatePanelProvider;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
@@ -67,6 +68,7 @@ it('AffiliatePanelProvider omits the payouts page when commission tracking is di
         PortalPrograms::class,
         PortalConversions::class,
         PortalSupport::class,
+        PortalCreatives::class,
     ])->not->toContain(PortalPayouts::class);
 });
 

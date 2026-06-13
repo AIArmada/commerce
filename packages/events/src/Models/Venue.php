@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
+use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Events\Database\Factories\VenueFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
@@ -42,6 +43,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $geocoding_source
  * @property string $status
  * @property string $visibility
+ * @property-read string|null $phone
+ * @property-read string|null $email
+ * @property-read string|null $website_url
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -86,6 +90,21 @@ final class Venue extends Model
         ];
     }
 
+    public function getPhoneAttribute(): ?string
+    {
+        return $this->resolvePrimaryContactValue('phone');
+    }
+
+    public function getEmailAttribute(): ?string
+    {
+        return $this->resolvePrimaryContactValue('email');
+    }
+
+    public function getWebsiteUrlAttribute(): ?string
+    {
+        return $this->resolvePrimaryContactValue('website');
+    }
+
     /**
      * @return BelongsTo<Venue, $this>
      */
@@ -124,6 +143,25 @@ final class Venue extends Model
     public function eventLocations(): MorphMany
     {
         return $this->morphMany(EventLocation::class, 'locationable');
+    }
+
+    private function resolvePrimaryContactValue(string $type): ?string
+    {
+        $contactMethod = $this->primaryContactMethod($type);
+
+        if (! $contactMethod instanceof ContactMethod) {
+            return null;
+        }
+
+        $value = $contactMethod->normalized_value ?? $contactMethod->value;
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = mb_trim($value);
+
+        return $value === '' ? null : $value;
     }
 
     protected static function newFactory(): VenueFactory

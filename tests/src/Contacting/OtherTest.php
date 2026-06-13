@@ -59,7 +59,7 @@ test('ContactLinksData constructor', function () {
 });
 
 test('migrations have no forbidden patterns', function () {
-    $migrationPath = realpath(__DIR__ . '/../../database/migrations');
+    $migrationPath = realpath(base_path('packages/contacting/database/migrations'));
     $files = glob("$migrationPath/*.php");
 
     foreach ($files as $file) {

@@ -36,6 +36,8 @@ use Spatie\Tags\HasTags;
  * @property string|null $user_id
  * @property string $first_name
  * @property string $last_name
+ * @property string $email
+ * @property string|null $phone
  * @property string|null $company
  * @property bool $is_guest
  * @property CustomerStatus $status
@@ -407,6 +409,8 @@ class Customer extends Model implements Auditable, HasMedia
         return [
             'first_name',
             'last_name',
+            'email',
+            'phone',
             'status',
             'accepts_marketing',
         ];

@@ -47,8 +47,6 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['socialable_type', 'socialable_id']);
-            $table->index(['owner_type', 'owner_id']);
             $table->index(['platform', 'purpose']);
             $table->index(['is_primary']);
             $table->index(['is_public']);

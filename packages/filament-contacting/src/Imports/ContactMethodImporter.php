@@ -7,6 +7,7 @@ namespace AIArmada\FilamentContacting\Imports;
 use AIArmada\Contacting\Models\ContactMethod;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
+use Filament\Actions\Imports\Models\Import;
 
 final class ContactMethodImporter extends Importer
 {
@@ -16,14 +17,14 @@ final class ContactMethodImporter extends Importer
     {
         return [
             ImportColumn::make('contactable_type')
-                ->required(),
+                ->requiredMapping(),
             ImportColumn::make('contactable_id')
-                ->required(),
+                ->requiredMapping(),
             ImportColumn::make('type')
-                ->required(),
+                ->requiredMapping(),
             ImportColumn::make('label'),
             ImportColumn::make('value')
-                ->required(),
+                ->requiredMapping(),
             ImportColumn::make('country_code'),
             ImportColumn::make('is_primary')
                 ->castStateUsing(fn (?string $state): bool => $state === 'true' || $state === '1' || $state === 'yes'),
@@ -61,5 +62,19 @@ final class ContactMethodImporter extends Importer
         $record->save();
 
         return $record;
+    }
+
+    public static function getCompletedNotificationBody(Import $import): string
+    {
+        $body = 'Your contact method import has completed and '
+            . number_format($import->successful_rows) . ' '
+            . str('row')->plural($import->successful_rows) . ' imported.';
+
+        if ($failedRowsCount = $import->getFailedRowsCount()) {
+            $body .= ' ' . number_format($failedRowsCount) . ' '
+                . str('row')->plural($failedRowsCount) . ' failed to import.';
+        }
+
+        return $body;
     }
 }

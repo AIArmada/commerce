@@ -28,7 +28,7 @@ it('FraudReviewPage has correct navigation icon', function (): void {
 });
 
 it('FraudReviewPage has correct navigation group', function (): void {
-    config(['filament-affiliates.navigation_group' => 'Partners']);
+    config(['filament-affiliates.navigation.group' => 'Partners']);
 
     expect(FraudReviewPage::getNavigationGroup())->toBe('Partners');
 });
@@ -55,7 +55,7 @@ it('PayoutBatchPage has correct navigation icon', function (): void {
 });
 
 it('PayoutBatchPage has correct navigation group', function (): void {
-    config(['filament-affiliates.navigation_group' => 'Partners']);
+    config(['filament-affiliates.navigation.group' => 'Partners']);
 
     expect(PayoutBatchPage::getNavigationGroup())->toBe('Partners');
 });
@@ -82,7 +82,7 @@ it('ReportsPage has correct navigation icon', function (): void {
 });
 
 it('ReportsPage has correct navigation group', function (): void {
-    config(['filament-affiliates.navigation_group' => 'Partners']);
+    config(['filament-affiliates.navigation.group' => 'Partners']);
 
     expect(ReportsPage::getNavigationGroup())->toBe('Partners');
 });

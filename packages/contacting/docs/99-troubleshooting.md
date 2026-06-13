@@ -26,9 +26,9 @@ OwnerContext::withOwner($owner, function () use ($institution) {
 
 **Problem**: Multiple contacts marked as primary for the same type and purpose.
 
-**Cause**: The `is_primary` flag was set directly on the model instead of using the Actions.
+**Cause**: Old data was written before the model-level save hooks existed, or a raw query/database update bypassed them.
 
-**Fix**: Always use `SetPrimaryContactMethodAction` or pass `is_primary: true` to `CreateContactMethodAction`. Direct model updates bypass the deduplication logic.
+**Fix**: Save the model normally so the primary uniqueness hooks can rebalance siblings. Use `SetPrimaryContactMethodAction` or pass `is_primary: true` to `CreateContactMethodAction` for explicit intent. Raw query updates can still bypass the hooks.
 
 ## Phone Normalization Surprises
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Database\Factories\ContactSnapshotFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -41,8 +43,12 @@ final class ContactSnapshot extends Model
 {
     use HasFactory;
     use HasUuids;
+    use HasOwner;
+    use HasOwnerScopeConfig;
 
     protected $guarded = [];
+
+    protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
     public function getTable(): string
     {

@@ -7,8 +7,6 @@ namespace AIArmada\FilamentContacting\Schemas;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
-use Ysfkaya\FilamentPhoneInput\Infolists\PhoneEntry;
-use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
 
 final class ContactMethodInfolistSchema
 {
@@ -25,10 +23,8 @@ final class ContactMethodInfolistSchema
 
                     TextEntry::make('label'),
 
-                    PhoneEntry::make('normalized_value')
-                        ->displayFormat(PhoneInputNumberType::INTERNATIONAL)
-                        ->countryColumn('country_code')
-                        ->label('Phone')
+                    TextEntry::make('display_value')
+                        ->label('Display Value')
                         ->visible(fn (?string $state): bool => $state !== null && $state !== ''),
 
                     TextEntry::make('value'),
@@ -61,7 +57,16 @@ final class ContactMethodInfolistSchema
             Section::make('Metadata')
                 ->schema([
                     TextEntry::make('metadata')
-                        ->json()
+                        ->formatStateUsing(function (?array $state): ?string {
+                            if (empty($state)) {
+                                return null;
+                            }
+
+                            return json_encode(
+                                $state,
+                                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+                            ) ?: null;
+                        })
                         ->visible(fn (?array $state): bool => ! empty($state)),
                 ]),
         ];

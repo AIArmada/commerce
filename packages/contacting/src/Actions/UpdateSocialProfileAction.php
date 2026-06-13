@@ -41,15 +41,6 @@ final class UpdateSocialProfileAction
             $profile->is_verified = $data->isVerified;
             $profile->metadata = $data->metadata;
 
-            if ($data->isPrimary) {
-                SocialProfile::where('socialable_type', $profile->socialable_type)
-                    ->where('socialable_id', $profile->socialable_id)
-                    ->where('platform', $data->platform)
-                    ->where('purpose', $data->purpose)
-                    ->where('id', '!=', $profile->id)
-                    ->update(['is_primary' => false]);
-            }
-
             $profile->save();
         });
 

@@ -10,8 +10,11 @@ use AIArmada\Feedback\Actions\RejectFeedbackResponseAction;
 use AIArmada\Feedback\Actions\ReviewFeedbackResponseAction;
 use AIArmada\Feedback\Enums\FeedbackResponseStatus;
 use AIArmada\Feedback\Models\FeedbackResponse;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
 use Filament\Resources\Resource;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +27,7 @@ final class FeedbackResponseResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return config('filament-feedback.navigation.group', 'Feedback');
+        return config('filament-feedback.navigation.group');
     }
 
     public static function getNavigationIcon(): string
@@ -76,10 +79,38 @@ final class FeedbackResponseResource extends Resource
                         '0' => 'Identified',
                         '1' => 'Anonymous',
                     ]),
-                Tables\Filters\Filter::make('submitted_at')
+                Filter::make('submitted_at')
+                    ->label('Submitted At')
                     ->form([
-                        Tables\Filters\Indicator::make('submitted_at'),
-                    ]),
+                        DatePicker::make('from')
+                            ->label('From'),
+                        DatePicker::make('until')
+                            ->label('Until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['from'] ?? null),
+                                fn (Builder $query): Builder => $query->whereDate('submitted_at', '>=', (string) $data['from'])
+                            )
+                            ->when(
+                                filled($data['until'] ?? null),
+                                fn (Builder $query): Builder => $query->whereDate('submitted_at', '<=', (string) $data['until'])
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+
+                        if (filled($data['from'] ?? null)) {
+                            $indicators[] = 'From ' . CarbonImmutable::parse((string) $data['from'])->toFormattedDateString();
+                        }
+
+                        if (filled($data['until'] ?? null)) {
+                            $indicators[] = 'Until ' . CarbonImmutable::parse((string) $data['until'])->toFormattedDateString();
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->headerActions([
                 Action::make('review')

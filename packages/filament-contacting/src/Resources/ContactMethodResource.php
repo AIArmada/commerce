@@ -13,12 +13,13 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use BackedEnum;
 
 final class ContactMethodResource extends Resource
 {
     protected static ?string $model = ContactMethod::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-phone';
+    protected static BackedEnum | string | null $navigationIcon = 'heroicon-o-phone';
 
     protected static ?int $navigationSort = 1;
 
@@ -27,9 +28,9 @@ final class ContactMethodResource extends Resource
         return config('filament-contacting.navigation.group');
     }
 
-    public static function getNavigationIcon(): string
+    public static function getNavigationIcon(): BackedEnum | string | null
     {
-        return (string) config('filament-contacting.navigation.icons.contact_methods', parent::getNavigationIcon());
+        return config('filament-contacting.navigation.icons.contact_methods', parent::getNavigationIcon());
     }
 
     public static function getEloquentQuery(): Builder

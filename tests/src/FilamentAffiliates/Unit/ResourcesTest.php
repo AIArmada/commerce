@@ -93,7 +93,7 @@ it('AffiliateResource has navigation sort from config', function (): void {
 });
 
 it('AffiliateResource has navigation group from config', function (): void {
-    config(['filament-affiliates.navigation_group' => 'Affiliates']);
+    config(['filament-affiliates.navigation.group' => 'Affiliates']);
 
     expect(AffiliateResource::getNavigationGroup())->toBe('Affiliates');
 });
@@ -363,7 +363,7 @@ it('AffiliateProgramResource exposes relation managers', function (): void {
 });
 
 it('AffiliateProgramResource has navigation group from config', function (): void {
-    config(['filament-affiliates.navigation_group' => 'Partners']);
+    config(['filament-affiliates.navigation.group' => 'Partners']);
 
     expect(AffiliateProgramResource::getNavigationGroup())->toBe('Partners');
 });
@@ -540,7 +540,7 @@ it('AffiliateFraudSignalResource is explicitly non-CRUD', function (): void {
 });
 
 it('AffiliateFraudSignalResource has navigation group from config', function (): void {
-    config(['filament-affiliates.navigation_group' => 'Partners']);
+    config(['filament-affiliates.navigation.group' => 'Partners']);
 
     expect(AffiliateFraudSignalResource::getNavigationGroup())->toBe('Partners');
 });

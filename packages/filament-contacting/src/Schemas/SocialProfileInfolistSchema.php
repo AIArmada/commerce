@@ -26,7 +26,7 @@ final class SocialProfileInfolistSchema
                     TextEntry::make('handle'),
 
                     TextEntry::make('url')
-                        ->url()
+                        ->url(fn (?string $state): ?string => $state)
                         ->visible(fn (?string $state): bool => $state !== null && $state !== ''),
 
                     TextEntry::make('display_name'),
@@ -57,7 +57,16 @@ final class SocialProfileInfolistSchema
             Section::make('Metadata')
                 ->schema([
                     TextEntry::make('metadata')
-                        ->json()
+                        ->formatStateUsing(function (?array $state): ?string {
+                            if (empty($state)) {
+                                return null;
+                            }
+
+                            return json_encode(
+                                $state,
+                                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+                            ) ?: null;
+                        })
                         ->visible(fn (?array $state): bool => ! empty($state)),
                 ]),
         ];

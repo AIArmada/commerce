@@ -13,7 +13,7 @@ use AIArmada\FilamentSignals\Resources\TrackedPropertyResource;
 uses(FilamentSignalsTestCase::class);
 
 it('reads resource navigation group and sort from configuration', function (): void {
-    config()->set('filament-signals.navigation_group', 'Analytics Ops');
+    config()->set('filament-signals.navigation.group', 'Analytics Ops');
     config()->set('filament-signals.resources.navigation_sort', [
         'properties' => 101,
         'goals' => 102,
