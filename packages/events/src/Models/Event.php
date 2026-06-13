@@ -438,7 +438,7 @@ final class Event extends Model
      */
     public static function metadataValue(string $key, mixed $default = null, ?string $slug = null): mixed
     {
-        $query = self::query();
+        $query = self::withoutOwnerScope();
 
         if ($slug !== null) {
             $query->where('slug', $slug);

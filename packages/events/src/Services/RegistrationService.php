@@ -10,6 +10,7 @@ use AIArmada\Events\Events\EventRegistrationApproved;
 use AIArmada\Events\Events\EventRegistrationCancelled;
 use AIArmada\Events\Events\EventRegistrationConfirmed;
 use AIArmada\Events\Events\EventRegistrationCreated;
+use Illuminate\Support\Arr;
 use AIArmada\Events\Events\EventRegistrationRejected;
 use AIArmada\Events\Events\EventRegistrationWaitlisted;
 use AIArmada\Events\Models\EventRegistration;
@@ -20,7 +21,7 @@ final class RegistrationService implements RegistrationServiceInterface
 {
     public function register(array $data): EventRegistration
     {
-        $registration = EventRegistration::create($data);
+        $registration = EventRegistration::create(Arr::except($data, ['items', 'participants', 'answers']));
 
         $scopeFields = [
             'event_id' => $registration->event_id,
@@ -30,7 +31,13 @@ final class RegistrationService implements RegistrationServiceInterface
 
         if (isset($data['participants'])) {
             foreach ($data['participants'] as $participantData) {
-                $participant = $registration->participants()->create(array_merge($participantData, $scopeFields));
+                $extraFields = Arr::only($participantData, ['email', 'phone', 'company', 'is_purchaser']);
+                $participantFields = array_merge(
+                    Arr::except($participantData, ['email', 'phone', 'company', 'is_purchaser']),
+                    $scopeFields,
+                    ['metadata' => array_filter(['contact' => $extraFields])],
+                );
+                $participant = $registration->participants()->create($participantFields);
 
                 if ($participant instanceof EventRegistrationParticipant) {
                     $this->syncParticipantContactMethods($participant, $participantData);
