@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCommerceSupport\Pages;
 
 use AIArmada\FilamentCommerceSupport\Settings\CommerceNavigationSettings;
-use AIArmada\CommerceSupport\Support\Filament\CommerceNavigation;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;

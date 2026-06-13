@@ -88,5 +88,4 @@ final class SeatMapManager extends Page implements HasTable
                 EmbeddedTable::make(),
             ]);
     }
-
 }
