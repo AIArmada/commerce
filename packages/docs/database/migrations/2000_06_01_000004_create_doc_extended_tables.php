@@ -100,7 +100,7 @@ return new class extends Migration
                 $table->{$jsonType}('snapshot');
                 $table->text('change_summary')->nullable();
                 $table->string('changed_by')->nullable();
-                $table->timestampTz('created_at');
+                $table->timestampTz('created_at')->nullable();
 
                 $table->unique(
                     ['doc_id', 'version_number'],

@@ -100,7 +100,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->string('changed_by')->nullable();
             $table->string('changed_by_type', 50)->default('user');
-            $table->timestampTz('created_at');
+            $table->timestampTz('created_at')->nullable();
 
             $table->index('doc_id', $statusTable . '_doc_id_index');
             $table->index('status', $statusTable . '_status_index');

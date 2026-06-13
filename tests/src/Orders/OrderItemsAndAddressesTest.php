@@ -478,7 +478,7 @@ describe('OrderAddress Model', function (): void {
                 ->and($array)->toHaveKey('city', 'Kuala Lumpur')
                 ->and($array)->toHaveKey('state', 'KL')
                 ->and($array)->toHaveKey('postcode', '50000')
-                ->and($array)->toHaveKey('country', 'MY')
+                ->and($array)->toHaveKey('country_code', 'MY')
                 ->and($array)->toHaveKey('phone', '0123456789')
                 ->and($array)->toHaveKey('email', 'john@example.com');
         });

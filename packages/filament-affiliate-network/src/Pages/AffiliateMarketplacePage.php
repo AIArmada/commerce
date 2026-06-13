@@ -15,6 +15,7 @@ use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -132,9 +133,16 @@ final class AffiliateMarketplacePage extends Page
         }
 
         // Public marketplace: find the user's affiliate regardless of owner — explicit global scope bypass.
+        // contact_email is a virtual attribute stored in contact_methods, not a DB column.
         $this->resolvedAffiliate = OwnerContext::withOwner(null, fn (): ?Affiliate => Affiliate::query()
             ->withoutOwnerScope()
-            ->where('contact_email', $email)
+            ->whereHas('contactMethods', function (Builder $query) use ($email): void {
+                $query->withoutGlobalScope(OwnerScope::class)
+                    ->where('type', 'email')
+                    ->where('purpose', 'general')
+                    ->where(fn (Builder $q) => $q->where('value', $email)
+                        ->orWhere('normalized_value', $email));
+            })
             ->whereState('status', Active::class)
             ->first());
 

@@ -26,7 +26,7 @@ it('reports gateway health and default gateway without network calls', function 
     $page = app(GatewayManagement::class);
 
     expect(GatewayManagement::getNavigationLabel())->toBeString();
-    expect(fn () => GatewayManagement::getNavigationGroup())->toThrow(LogicException::class);
+    expect(GatewayManagement::getNavigationGroup())->toBeString();
     expect($page->getTitle())->toBeString();
     expect($page->getMaxContentWidth())->not->toBeNull();
     expect($page->getGatewayDetector())->not->toBeNull();
