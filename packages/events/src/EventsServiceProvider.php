@@ -33,6 +33,7 @@ use AIArmada\Events\Contracts\EventSeatAllocator;
 use AIArmada\Events\Contracts\EventTranslationProvider;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Events\EventChangeNoticePublished;
+use AIArmada\Events\Events\EventRegistrationApproved;
 use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Integrations\NullEventEngagementManager;
 use AIArmada\Events\Listeners\DispatchEventChangeNoticeNotifications;
@@ -42,6 +43,7 @@ use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderPaid;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefunded;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventManagementAssignment;
+use AIArmada\Events\Notifications\EventWelcomeNotification;
 use AIArmada\Events\Policies\EventPolicy;
 use AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver;
 use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
@@ -60,11 +62,11 @@ use AIArmada\Events\Services\DefaultEventChangeNoticeWorkflow;
 use AIArmada\Events\Services\DefaultEventCheckInService;
 use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
+use AIArmada\Events\Services\DefaultEventPassDeliveryService;
 use AIArmada\Events\Services\DefaultEventPassIssuer;
 use AIArmada\Events\Services\DefaultEventSeatAllocator;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventQueryService;
-use AIArmada\Events\Services\NullEventPassDeliveryService;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Steps\CreateEventRegistrationsStep;
 use AIArmada\Events\Steps\IssueEventPassesStep;
@@ -75,6 +77,7 @@ use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -102,7 +105,7 @@ final class EventsServiceProvider extends PackageServiceProvider
 
         $this->app->bind(EventCheckInService::class, DefaultEventCheckInService::class);
         $this->app->bind(EventPassIssuer::class, DefaultEventPassIssuer::class);
-        $this->app->bind(EventPassDeliveryService::class, NullEventPassDeliveryService::class);
+        $this->app->bind(EventPassDeliveryService::class, DefaultEventPassDeliveryService::class);
         $this->app->bind(EventSeatAllocator::class, DefaultEventSeatAllocator::class);
         $this->app->bind(RegistrationServiceInterface::class, RegistrationService::class);
 
@@ -140,6 +143,21 @@ final class EventsServiceProvider extends PackageServiceProvider
             $dispatcher->listen(OrderRefunded::class, SyncEventOrderRegistrationsOnOrderRefunded::class);
             $dispatcher->listen(RegistrationCheckedIn::class, SyncEventOrderCompletionOnRegistrationCheckedIn::class);
         }
+
+        $this->app->make(Dispatcher::class)->listen(EventRegistrationApproved::class, function (EventRegistrationApproved $event): void {
+            if (! (bool) config('events.notifications.welcome.enabled', true)) {
+                return;
+            }
+
+            $notification = new EventWelcomeNotification($event->registration);
+            $recipient = $event->registration->routeNotificationForMail($notification);
+
+            if ($recipient === null) {
+                return;
+            }
+
+            Notification::route('mail', $recipient)->notify($notification);
+        });
 
         if (class_exists(FilamentAuthzServiceProvider::class)) {
             $this->app->make(Dispatcher::class)

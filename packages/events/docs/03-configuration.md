@@ -122,3 +122,26 @@ Defines allowed moderation transitions and reason codes. Each action specifies v
 ```
 
 Auto-detects commerce packages. When related packages are installed, integration features are automatically enabled. Custom resolvers can override default behavior.
+
+### Notifications
+
+```php
+'notifications' => [
+    'welcome' => [
+        'enabled' => env('EVENTS_WELCOME_NOTIFICATION_ENABLED', true),
+        'from_address' => env('EVENTS_WELCOME_FROM_ADDRESS', 'info@unfairadvantage.my'),
+        'from_name' => env('EVENTS_WELCOME_FROM_NAME'),
+        'event_name' => env('EVENTS_WELCOME_EVENT_NAME', 'AI Awakening'),
+        'brand_name' => env('EVENTS_WELCOME_BRAND_NAME', 'Unfair Advantage'),
+    ],
+    'ticket' => [
+        'enabled' => env('EVENTS_TICKET_NOTIFICATION_ENABLED', true),
+        'from_address' => env('EVENTS_TICKET_FROM_ADDRESS', 'info@unfairadvantage.my'),
+        'from_name' => env('EVENTS_TICKET_FROM_NAME'),
+        'event_name' => env('EVENTS_TICKET_EVENT_NAME', 'AI Awakening'),
+        'brand_name' => env('EVENTS_TICKET_BRAND_NAME', 'Unfair Advantage'),
+    ],
+]
+```
+
+The welcome notification is sent when a registration is approved. The ticket notification is sent after passes are issued.

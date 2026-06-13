@@ -107,3 +107,18 @@ Use `cart:mark-abandoned` to mark abandoned snapshots. The command uses this val
     'queue_name' => 'cart-sync',
 ],
 ```
+
+## Notifications
+
+```php
+'notifications' => [
+    'abandoned_cart' => [
+        'enabled' => env('FILAMENT_CART_ABANDONED_NOTIFICATION_ENABLED', true),
+        'from_address' => env('FILAMENT_CART_ABANDONED_FROM', 'info@unfairadvantage.my'),
+        'from_name' => env('FILAMENT_CART_ABANDONED_FROM_NAME'),
+        'brand_name' => env('FILAMENT_CART_ABANDONED_BRAND_NAME', 'Unfair Advantage'),
+    ],
+],
+```
+
+This notification is dispatched when an abandoned cart is marked on the `CartAbandoned` event.

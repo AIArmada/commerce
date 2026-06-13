@@ -173,4 +173,22 @@ return [
         'order_item_fulfillment_resolver' => null,
     ],
 
+    /* Notifications */
+    'notifications' => [
+        'welcome' => [
+            'enabled' => (bool) env('EVENTS_WELCOME_NOTIFICATION_ENABLED', true),
+            'from_address' => env('EVENTS_WELCOME_FROM_ADDRESS', 'info@unfairadvantage.my'),
+            'from_name' => env('EVENTS_WELCOME_FROM_NAME'),
+            'event_name' => env('EVENTS_WELCOME_EVENT_NAME', 'AI Awakening'),
+            'brand_name' => env('EVENTS_WELCOME_BRAND_NAME', 'Unfair Advantage'),
+        ],
+        'ticket' => [
+            'enabled' => (bool) env('EVENTS_TICKET_NOTIFICATION_ENABLED', true),
+            'from_address' => env('EVENTS_TICKET_FROM_ADDRESS', 'info@unfairadvantage.my'),
+            'from_name' => env('EVENTS_TICKET_FROM_NAME'),
+            'event_name' => env('EVENTS_TICKET_EVENT_NAME', 'AI Awakening'),
+            'brand_name' => env('EVENTS_TICKET_BRAND_NAME', 'Unfair Advantage'),
+        ],
+    ],
+
 ];
