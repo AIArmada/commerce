@@ -14,6 +14,8 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\EmbeddedTable;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -110,7 +112,9 @@ final class CheckInConsole extends Page implements HasTable
                 ->form([
                     Select::make('event_id')
                         ->label('Event')
-                        ->relationship('event', 'title', modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false))
+                        ->options(fn (): array => OwnerUiScope::apply(Event::query(), includeGlobal: false)
+                            ->pluck('title', 'id')
+                            ->all())
                         ->searchable()
                         ->required(),
                     TextInput::make('attendee_name')->label('Name'),
@@ -129,8 +133,11 @@ final class CheckInConsole extends Page implements HasTable
         ];
     }
 
-    public function getView(): string
+    public function content(Schema $schema): Schema
     {
-        return 'filament-panels::pages.simple';
+        return $schema
+            ->components([
+                EmbeddedTable::make(),
+            ]);
     }
 }

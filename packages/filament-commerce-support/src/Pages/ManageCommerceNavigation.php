@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCommerceSupport\Pages;
 
 use AIArmada\FilamentCommerceSupport\Settings\CommerceNavigationSettings;
+use AIArmada\CommerceSupport\Support\Filament\CommerceNavigation;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\EmbeddedSchema;
+use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use UnitEnum;
@@ -56,11 +60,11 @@ class ManageCommerceNavigation extends Page
                 Repeater::make('groups')
                     ->label(__('Navigation Groups'))
                     ->schema([
-                        TextInput::make('group_key')
+                        Select::make('group_key')
                             ->label(__('Group Key'))
-                            ->alphaDash()
-                            ->required()
-                            ->maxLength(64),
+                            ->options(fn (): array => $this->getGroupKeyOptions())
+                            ->searchable()
+                            ->required(),
 
                         TextInput::make('label')
                             ->label(__('Label'))
@@ -93,10 +97,12 @@ class ManageCommerceNavigation extends Page
                 Repeater::make('overrides')
                     ->label(__('Item Overrides'))
                     ->schema([
-                        TextInput::make('component')
+                        Select::make('component')
                             ->label(__('Component Class'))
+                            ->options(fn (): array => $this->getComponentOptions())
+                            ->searchable()
                             ->required()
-                            ->helperText(__('FQCN of the resource or page, e.g. AIArmada\\FilamentProducts\\Resources\\ProductResource'))
+                            ->helperText(__('FQCN of the resource or page'))
                             ->columnSpanFull(),
 
                         Toggle::make('hidden')
@@ -140,6 +146,14 @@ class ManageCommerceNavigation extends Page
             ->title(__('Navigation configuration saved.'))
             ->success()
             ->send();
+    }
+
+    public function content(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Form::make([EmbeddedSchema::make('form')]),
+            ]);
     }
 
     protected function getHeaderActions(): array
@@ -298,16 +312,97 @@ class ManageCommerceNavigation extends Page
     /**
      * @return array<string, string>
      */
-    private function getGroupOptions(): array
+    private function getComponentOptions(): array
     {
-        $settings = $this->resolveSettings();
+        $panel = Filament::getCurrentOrDefaultPanel();
         $options = [];
+
+        foreach ($panel->getResources() as $resource) {
+            $class = is_string($resource) ? $resource : $resource::class;
+            $label = $class::getNavigationLabel();
+            $group = $class::getNavigationGroup();
+            $groupPrefix = $group ? "[{$group}] " : '';
+            $options[$class] = "{$groupPrefix}[Resource] {$label} — {$class}";
+        }
+
+        foreach ($panel->getPages() as $page) {
+            $class = is_string($page) ? $page : $page::class;
+            $label = $class::getNavigationLabel();
+            $group = $class::getNavigationGroup();
+            $groupPrefix = $group ? "[{$group}] " : '';
+            $options[$class] = "{$groupPrefix}[Page] {$label} — {$class}";
+        }
+
+        foreach ($panel->getPageConfigurations() as $configuration) {
+            $page = $configuration->getPage();
+            $class = $page::class;
+            $label = $page::getNavigationLabel();
+            $group = $page::getNavigationGroup();
+            $groupPrefix = $group ? "[{$group}] " : '';
+            $options[$class] = "{$groupPrefix}[Page] {$label} — {$class}";
+        }
+
+        ksort($options);
+
+        return $options;
+    }
+
+    private function getGroupKeyOptions(): array
+    {
+        $defaultKeys = [
+            'Addressing' => 'Addressing',
+            'Affiliate Network' => 'Affiliate Network',
+            'Affiliate Portal' => 'Affiliate Portal',
+            'Authz' => 'Authz',
+            'Billing' => 'Billing',
+            'Catalog' => 'Catalog',
+            'CHIP Operations' => 'CHIP Operations',
+            'Contacting' => 'Contacting',
+            'CRM' => 'CRM',
+            'Documents' => 'Documents',
+            'E-commerce' => 'E-commerce',
+            'Engagement' => 'Engagement',
+            'Events' => 'Events',
+            'Feedback' => 'Feedback',
+            'Growth' => 'Growth',
+            'Insights' => 'Insights',
+            'Inventory' => 'Inventory',
+            'Marketing' => 'Marketing',
+            'Payments' => 'Payments',
+            'Pricing' => 'Pricing',
+            'Sales' => 'Sales',
+            'Settings' => 'Settings',
+            'Shipping' => 'Shipping',
+            'Tax' => 'Tax',
+            'Vouchers & Discounts' => 'Vouchers & Discounts',
+        ];
+
+        $keys = [];
+
+        foreach (config('commerce-support.filament.navigation.groups', []) as $key => $config) {
+            $label = is_array($config) ? ($config['label'] ?? $key) : $key;
+            $keys[$key] = $label;
+        }
+
+        $settings = $this->resolveSettings();
 
         foreach ($settings->groups as $key => $config) {
             $label = $config['label'] ?? $key;
-            $options[$key] = $label;
+            $keys[$key] = $label;
         }
 
-        return $options;
+        $keys = array_merge($defaultKeys, $keys);
+
+        ksort($keys);
+
+        return $keys;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function getGroupOptions(): array
+    {
+        return $this->getGroupKeyOptions();
     }
 }

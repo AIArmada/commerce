@@ -130,7 +130,7 @@ final class EventResource extends Resource
                     ->action(function (Event $record): void {
                         app(EventLifecycleWorkflow::class)->publish($record);
                     })
-                    ->visible(fn (Event $record) => $record->status === Event::DRAFT || $record->status === Event::PENDING_REVIEW)
+                    ->visible(fn (?Event $record) => $record !== null && ($record->status === Event::DRAFT || $record->status === Event::PENDING_REVIEW))
                     ->requiresConfirmation(),
                 Action::make('archive')
                     ->label('Archive')
@@ -139,7 +139,7 @@ final class EventResource extends Resource
                     ->action(function (Event $record): void {
                         app(EventLifecycleWorkflow::class)->archive($record);
                     })
-                    ->visible(fn (Event $record) => $record->status === Event::PUBLISHED)
+                    ->visible(fn (?Event $record) => $record !== null && $record->status === Event::PUBLISHED)
                     ->requiresConfirmation(),
                 Action::make('cancel')
                     ->label('Cancel')
@@ -151,7 +151,7 @@ final class EventResource extends Resource
                     ->action(function (array $data, Event $record): void {
                         app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
                     })
-                    ->visible(fn (Event $record) => ! in_array($record->status, ['cancelled', 'completed', 'archived']))
+                    ->visible(fn (?Event $record) => $record !== null && ! in_array($record->status, ['cancelled', 'completed', 'archived']))
                     ->requiresConfirmation(),
             ])
             ->actions([

@@ -92,6 +92,11 @@ final class EventPublicPreview extends Page
             ]);
     }
 
+    public function hasLogo(): bool
+    {
+        return false;
+    }
+
     public function getView(): string
     {
         return 'filament-panels::pages.simple';
