@@ -120,7 +120,7 @@ final class EventOccurrenceResource extends Resource
                     ->action(function (array $data, EventOccurrence $record): void {
                         app(EventLifecycleWorkflow::class)->delay($record, $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
                     })
-                    ->visible(fn (EventOccurrence $record) => $record->status === 'published' || $record->status === 'scheduled')
+                    ->visible(fn (?EventOccurrence $record) => in_array($record?->status, ['published', 'scheduled'], true))
                     ->requiresConfirmation(),
                 Action::make('postpone')
                     ->label('Postpone')
@@ -132,7 +132,7 @@ final class EventOccurrenceResource extends Resource
                     ->action(function (array $data, EventOccurrence $record): void {
                         app(EventLifecycleWorkflow::class)->postpone($record, $data['reason']);
                     })
-                    ->visible(fn (EventOccurrence $record) => $record->status === 'published' || $record->status === 'scheduled')
+                    ->visible(fn (?EventOccurrence $record) => in_array($record?->status, ['published', 'scheduled'], true))
                     ->requiresConfirmation(),
                 Action::make('cancel')
                     ->label('Cancel Occurrence')
@@ -144,7 +144,7 @@ final class EventOccurrenceResource extends Resource
                     ->action(function (array $data, EventOccurrence $record): void {
                         app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
                     })
-                    ->visible(fn (EventOccurrence $record) => ! in_array($record->status, ['cancelled', 'completed', 'archived']))
+                    ->visible(fn (?EventOccurrence $record) => ! in_array($record?->status, ['cancelled', 'completed', 'archived'], true))
                     ->requiresConfirmation(),
                 Action::make('complete')
                     ->label('Complete')

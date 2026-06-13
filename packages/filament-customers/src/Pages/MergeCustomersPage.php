@@ -61,14 +61,14 @@ final class MergeCustomersPage extends Page implements HasForms
                     ->placeholder('Search for the customer to keep...')
                     ->searchable()
                     ->getSearchResultsUsing(fn (string $search): array => $this->searchCustomers($search))
-                    ->getOptionLabelUsing(fn (string $id): string => $this->getCustomerLabel($id))
+                    ->getOptionLabelUsing(fn (string $value): string => $this->getCustomerLabel($value))
                     ->required(),
                 Select::make('sourceCustomerId')
                     ->label('Source Customer (merge from this one)')
                     ->placeholder('Search for the customer to merge from...')
                     ->searchable()
                     ->getSearchResultsUsing(fn (string $search): array => $this->searchCustomers($search))
-                    ->getOptionLabelUsing(fn (string $id): string => $this->getCustomerLabel($id))
+                    ->getOptionLabelUsing(fn (string $value): string => $this->getCustomerLabel($value))
                     ->required()
                     ->rules([
                         fn (callable $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {

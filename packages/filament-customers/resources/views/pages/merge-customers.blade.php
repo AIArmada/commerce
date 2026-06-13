@@ -8,7 +8,7 @@
             will be transferred to the target customer, and the source will be deleted.
         </x-slot>
 
-        <x-filament::grid class="gap-4">
+        <div class="grid gap-4">
             <form wire:submit="merge">
                 {{ $this->form }}
 
@@ -18,6 +18,6 @@
                     @endforeach
                 </div>
             </form>
-        </x-filament::grid>
+        </div>
     </x-filament::section>
 </x-filament-panels::page>
