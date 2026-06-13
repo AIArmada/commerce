@@ -171,7 +171,19 @@ final class CommerceNavigation
 
         $item->visible($item->isVisible() && self::visible($component));
         $item->label(self::label($component, $item->getLabel()));
-        $item->group(self::group($component, $item->getGroup()));
+
+        $effectiveGroup = self::group($component, $item->getGroup());
+        $item->group($effectiveGroup);
+
+        // If the item's group is hidden, hide the item too so the entire
+        // group (header + all its items) disappears from the sidebar.
+        if ($effectiveGroup !== null && $effectiveGroup !== '') {
+            $groupConfig = self::navigationConfig("groups.{$effectiveGroup}", []);
+            if (is_array($groupConfig) && ! empty($groupConfig['hidden'])) {
+                $item->visible(false);
+            }
+        }
+
         $item->parentItem(self::parentItem($component, $item->getParentItem()));
         $item->sort(self::sort($component, $item->getSort()));
 

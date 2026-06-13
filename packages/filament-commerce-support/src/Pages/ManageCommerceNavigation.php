@@ -168,17 +168,14 @@ class ManageCommerceNavigation extends Page
                 Repeater::make('sidebar')
                     ->label(__('Sidebar Menu'))
                     ->schema([
-                        Select::make('group_key')
+                        TextInput::make('group_key')
                             ->label(__('Group Key'))
-                            ->options(fn (): array => $this->getGroupKeyOptions())
-                            ->searchable()
-                            ->required()
-                            ->hidden(fn (string $operation, ?string $state): bool => ($state ?? '') === '__ungrouped__')
-                            ->disableOptionWhen(fn (string $value): bool => $value === '__ungrouped__'),
+                            ->placeholder(__('Select or type a group key, or leave empty for ungrouped items'))
+                            ->datalist(fn (): array => array_keys($this->getGroupKeyOptions()))
+                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
 
                         TextInput::make('label')
                             ->label(__('Group Label'))
-                            ->required()
                             ->maxLength(255)
                             ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
 
@@ -201,6 +198,11 @@ class ManageCommerceNavigation extends Page
 
                         Toggle::make('collapsed')
                             ->label(__('Collapsed by Default'))
+                            ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
+
+                        Toggle::make('hidden')
+                            ->label(__('Hide Entire Group'))
+                            ->helperText(__('Hide this group and all its items from the sidebar'))
                             ->hidden(fn (?string $state): bool => ($state ?? '') === '__ungrouped__'),
 
                         Repeater::make('items')
@@ -254,9 +256,11 @@ class ManageCommerceNavigation extends Page
                     ])
                     ->collapsible()
                     ->collapsed()
-                    ->itemLabel(fn (array $state): ?string => ($state['group_key'] ?? '') === '__ungrouped__'
+                    ->itemLabel(fn (array $state): ?string => (($state['group_key'] ?? '') === '__ungrouped__')
                         ? '— ' . __('Ungrouped Items') . ' —'
-                        : ($state['label'] ?? $state['group_key'] ?? $state['_index'] ?? ''))
+                        : (($state['group_key'] ?? '') === ''
+                            ? '— ' . __('Ungrouped Items') . ' —'
+                            : ($state['label'] ?? $state['group_key'] ?? $state['_index'] ?? '')))
                     ->addActionLabel(__('Add Group'))
                     ->reorderable()
                     ->columns(2),
@@ -279,14 +283,16 @@ class ManageCommerceNavigation extends Page
             $groupKey = $section['group_key'] ?? '';
 
             if ($groupKey === '' || $groupKey === '__ungrouped__') {
-                // Items in the ungrouped section: save with no group.
+                // Items in the ungrouped section: save with empty group.
                 $itemIndex = 0;
                 foreach ($section['items'] ?? [] as $item) {
                     $class = $item['component'] ?? '';
                     if ($class === '') {
                         continue;
                     }
-                    $submittedOverrides[$class] = $this->overrideFromSidebarItem($item, $itemIndex);
+                    $config = $this->overrideFromSidebarItem($item, $itemIndex);
+                    $config['group'] = '';
+                    $submittedOverrides[$class] = $config;
                     $itemIndex++;
                 }
                 continue;
@@ -307,6 +313,9 @@ class ManageCommerceNavigation extends Page
             }
             if (isset($section['collapsed'])) {
                 $groupConfig['collapsed'] = (bool) $section['collapsed'];
+            }
+            if (isset($section['hidden'])) {
+                $groupConfig['hidden'] = (bool) $section['hidden'];
             }
             $submittedGroups[$groupKey] = $groupConfig;
             $groupSortIndex++;
