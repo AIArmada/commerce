@@ -18,9 +18,9 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
-use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -101,6 +101,7 @@ final class CommissionRulesRelationManager extends RelationManager
                 ->afterStateUpdated(function (?string $state, Set $set): void {
                     if ($state === null) {
                         $set('conditions', null);
+
                         return;
                     }
 
@@ -110,6 +111,7 @@ final class CommissionRulesRelationManager extends RelationManager
 
                     if ($purchasableType === null) {
                         $set('conditions', null);
+
                         return;
                     }
 
