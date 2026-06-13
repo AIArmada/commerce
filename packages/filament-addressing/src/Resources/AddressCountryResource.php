@@ -25,11 +25,24 @@ final class AddressCountryResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-globe-alt';
 
-    protected static ?int $navigationSort = 80;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-addressing.navigation.group');
+    }
+
+    public static function getNavigationIcon(): BackedEnum | string | null
+    {
+        return config('filament-addressing.navigation.icons.countries', parent::getNavigationIcon());
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('filament-addressing.navigation.enabled', true);
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-addressing.navigation.sort', 80);
     }
 
     public static function getModel(): string
@@ -160,6 +173,7 @@ final class AddressCountryResource extends Resource
 
     public static function isReadOnly(): bool
     {
-        return (bool) config('filament-addressing.resources.countries.read_only', true);
+        return (bool) config('filament-addressing.resources.countries.read_only', true)
+            || ! (bool) config('filament-addressing.features.country_editing', false);
     }
 }

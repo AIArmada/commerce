@@ -22,11 +22,24 @@ final class AddressResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-map-pin';
 
-    protected static ?int $navigationSort = 82;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-addressing.navigation.group');
+    }
+
+    public static function getNavigationIcon(): BackedEnum | string | null
+    {
+        return config('filament-addressing.navigation.icons.addresses', parent::getNavigationIcon());
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('filament-addressing.navigation.enabled', true);
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-addressing.navigation.sort', 80) + 2;
     }
 
     public static function getModel(): string

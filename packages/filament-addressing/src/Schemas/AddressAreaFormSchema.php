@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAddressing\Schemas;
 
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Support\AddressAreaHierarchy;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
@@ -16,6 +17,9 @@ class AddressAreaFormSchema
 {
     public static function form(Schema $schema): Schema
     {
+        $record = $schema->getRecord();
+        $currentAreaId = $record instanceof AddressArea ? (string) $record->getKey() : null;
+
         return $schema
             ->schema([
                 Section::make('Identity')
@@ -58,7 +62,12 @@ class AddressAreaFormSchema
                             ->maxValue(10),
                         Select::make('parent_id')
                             ->label('Parent')
-                            ->options(fn (callable $get): array => self::getParentOptions($get('country_id')))
+                            ->options(
+                                fn (callable $get): array => AddressAreaHierarchy::parentOptions(
+                                    $get('country_id'),
+                                    $currentAreaId,
+                                ),
+                            )
                             ->searchable()
                             ->placeholder('None (top-level)'),
                     ])->columns(2),
@@ -122,19 +131,5 @@ class AddressAreaFormSchema
                         TextEntry::make('synced_at')->dateTime(),
                     ])->columns(2),
             ]);
-    }
-
-    private static function getParentOptions(?string $countryId): array
-    {
-        if ($countryId === null) {
-            return [];
-        }
-
-        return AddressArea::query()
-            ->where('country_id', $countryId)
-            ->orderBy('name')
-            ->get()
-            ->mapWithKeys(fn (AddressArea $area): array => [$area->id => $area->name])
-            ->toArray();
     }
 }

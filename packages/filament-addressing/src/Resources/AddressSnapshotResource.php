@@ -21,11 +21,24 @@ final class AddressSnapshotResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?int $navigationSort = 83;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-addressing.navigation.group');
+    }
+
+    public static function getNavigationIcon(): BackedEnum | string | null
+    {
+        return config('filament-addressing.navigation.icons.snapshots', parent::getNavigationIcon());
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('filament-addressing.navigation.enabled', true);
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-addressing.navigation.sort', 80) + 3;
     }
 
     public static function getModel(): string

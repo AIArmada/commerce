@@ -22,11 +22,24 @@ final class AddressAreaResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-map';
 
-    protected static ?int $navigationSort = 81;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-addressing.navigation.group');
+    }
+
+    public static function getNavigationIcon(): BackedEnum | string | null
+    {
+        return config('filament-addressing.navigation.icons.areas', parent::getNavigationIcon());
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('filament-addressing.navigation.enabled', true);
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-addressing.navigation.sort', 80) + 1;
     }
 
     public static function getModel(): string
@@ -54,10 +67,10 @@ final class AddressAreaResource extends Resource
         $pages = [
             'index' => ListAddressAreas::route('/'),
             'view' => ViewAddressArea::route('/{record}'),
-            'edit' => EditAddressArea::route('/{record}/edit'),
         ];
 
         if (! self::isReadOnly()) {
+            $pages['edit'] = EditAddressArea::route('/{record}/edit');
             $pages['create'] = CreateAddressArea::route('/create');
         }
 

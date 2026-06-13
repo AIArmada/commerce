@@ -142,3 +142,44 @@ it('records source_payload and synced_at', function (): void {
     expect($area->source_payload)->toBe(['external_id' => 'SGR-001']);
     expect($area->synced_at)->not->toBeNull();
 });
+
+it('fails when updating an area would create a hierarchy cycle', function (): void {
+    $source = new ArrayAddressAreaSource('test', [
+        new AddressAreaData(
+            source: 'test',
+            sourceId: 'root',
+            countryCode: 'MY',
+            type: 'state',
+            name: 'Selangor',
+        ),
+        new AddressAreaData(
+            source: 'test',
+            sourceId: 'child',
+            countryCode: 'MY',
+            type: 'district',
+            name: 'Petaling',
+            parentSourceId: 'root',
+        ),
+    ]);
+
+    $this->action->execute($source);
+
+    $result = $this->action->execute(new ArrayAddressAreaSource('test', [
+        new AddressAreaData(
+            source: 'test',
+            sourceId: 'root',
+            countryCode: 'MY',
+            type: 'state',
+            name: 'Selangor',
+            parentSourceId: 'child',
+        ),
+    ]));
+
+    expect($result->created)->toBe(0);
+    expect($result->updated)->toBe(0);
+    expect($result->hasFailures())->toBeTrue();
+    expect($result->failures[0]->reason)->toContain('cycle');
+
+    $root = AddressArea::where('source', 'test')->where('source_id', 'root')->first();
+    expect($root->parent_id)->toBeNull();
+});

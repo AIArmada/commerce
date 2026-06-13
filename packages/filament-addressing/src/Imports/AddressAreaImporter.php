@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAddressing\Imports;
 
+use AIArmada\Addressing\Actions\ImportAddressAreasAction;
+use AIArmada\Addressing\Data\AddressAreaData;
 use AIArmada\Addressing\Models\AddressArea;
-use AIArmada\Addressing\Models\AddressCountry;
-use Exception;
+use AIArmada\FilamentAddressing\Support\SingleAddressAreaSource;
+use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Illuminate\Support\Str;
+use JsonException;
 
 class AddressAreaImporter extends Importer
 {
@@ -60,6 +62,25 @@ class AddressAreaImporter extends Importer
                 ->label('Longitude')
                 ->numeric()
                 ->example('101.5183'),
+            ImportColumn::make('metadata')
+                ->label('Metadata')
+                ->example('{"source":"legacy"}')
+                ->castStateUsing(static function (?string $state): array {
+                    if ($state === null || mb_trim($state) === '') {
+                        return [];
+                    }
+
+                    try {
+                        $decoded = json_decode($state, true, 512, JSON_THROW_ON_ERROR);
+                    } catch (JsonException $exception) {
+                        throw new RowImportFailedException(
+                            'Invalid metadata JSON: ' . $exception->getMessage(),
+                            previous: $exception,
+                        );
+                    }
+
+                    return is_array($decoded) ? $decoded : [];
+                }),
         ];
     }
 
@@ -96,34 +117,78 @@ class AddressAreaImporter extends Importer
         $record = $this->record;
 
         if (! $record instanceof AddressArea) {
-            throw new Exception('Expected AddressArea record');
+            throw new RowImportFailedException('Expected AddressArea record');
         }
 
-        $countryCode = $this->data['country_code'] ?? '';
+        $areaData = $this->buildAddressAreaData();
+        $source = new SingleAddressAreaSource($areaData->source, $areaData);
 
-        $country = AddressCountry::where('iso2', $countryCode)->first();
+        $result = app(ImportAddressAreasAction::class)->execute($source);
 
-        if ($country === null) {
-            throw new Exception("Country not found for countryCode: {$countryCode}");
+        if ($result->hasFailures()) {
+            throw new RowImportFailedException(implode(
+                '; ',
+                array_map(
+                    static fn ($failure): string => $failure->reason,
+                    $result->failures,
+                ),
+            ));
         }
 
-        $parentSourceId = $this->data['parent_source_id'] ?? null;
+        $this->record = AddressArea::query()
+            ->where('source', $areaData->source)
+            ->where('source_id', $areaData->sourceId)
+            ->first() ?? $record;
+    }
 
-        if ($parentSourceId !== null && $parentSourceId !== '') {
-            $parent = AddressArea::query()
-                ->where('source', $this->data['source'] ?? '')
-                ->where('source_id', $parentSourceId)
-                ->first();
+    public function saveRecord(): void
+    {
+        // The core import action already persisted the row.
+    }
 
-            if ($parent === null) {
-                throw new Exception("Parent not found for parent_source_id: {$parentSourceId}");
-            }
+    private function buildAddressAreaData(): AddressAreaData
+    {
+        return new AddressAreaData(
+            source: (string) $this->data['source'],
+            sourceId: (string) $this->data['source_id'],
+            countryCode: (string) $this->data['country_code'],
+            type: (string) $this->data['type'],
+            name: (string) $this->data['name'],
+            nativeName: $this->nullableString($this->data['native_name'] ?? null),
+            code: $this->nullableString($this->data['code'] ?? null),
+            parentSourceId: $this->nullableString($this->data['parent_source_id'] ?? null),
+            level: $this->nullableInteger($this->data['level'] ?? null),
+            latitude: $this->nullableFloat($this->data['latitude'] ?? null),
+            longitude: $this->nullableFloat($this->data['longitude'] ?? null),
+            metadata: isset($this->data['metadata']) && is_array($this->data['metadata']) ? $this->data['metadata'] : [],
+        );
+    }
 
-            $record->parent_id = $parent->id;
+    private function nullableString(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
         }
 
-        $record->country_id = $country->id;
-        $record->slug = Str::slug($this->data['name']);
+        return (string) $value;
+    }
+
+    private function nullableInteger(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
+    }
+
+    private function nullableFloat(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (float) $value;
     }
 
     public static function getCompletedNotificationBody(Import $import): string

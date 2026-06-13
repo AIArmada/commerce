@@ -33,7 +33,10 @@ Sections are ordered as:
 ],
 ```
 
-Use this to control menu grouping and icons.
+Use this to control menu visibility, grouping, ordering, and icons.
+
+The `enabled` flag hides the adapter resources from Filament navigation while leaving the pages available by direct URL. The `sort` value is the base order for the country, area, address, and snapshot resources.
+Each resource reads its icon from `navigation.icons.*`.
 
 ## Tables
 
@@ -59,9 +62,15 @@ Use this to control menu grouping and icons.
 
 ### Country Editing
 
-Keep disabled unless you know you want to edit seeded ISO country/territory display metadata.
+Keep disabled unless you want to allow safe editing of seeded ISO country/territory display metadata.
+
+Country editing only becomes available when both `resources.countries.read_only` is `false` and `features.country_editing` is `true`.
 
 Do not edit ISO2 or ISO3 values from the UI.
+
+### Address Export
+
+Keep disabled unless you want the central Address resource to expose a built-in export action.
 
 ### Source And Provider Payloads
 

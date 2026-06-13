@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 use AIArmada\Addressing\Models\Address;
 use AIArmada\Addressing\Models\AddressArea;
 use AIArmada\Addressing\Models\AddressCountry;
