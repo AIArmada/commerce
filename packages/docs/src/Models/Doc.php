@@ -226,6 +226,7 @@ final class Doc extends Model implements Auditable
         $this->statusHistories()->create(array_merge([
             'status' => Paid::class,
             'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor(Paid::class, $this),
+            'created_at' => CarbonImmutable::now(),
         ], $ownerAttributes));
     }
 
@@ -247,6 +248,7 @@ final class Doc extends Model implements Auditable
             $this->statusHistories()->create(array_merge([
                 'status' => Sent::class,
                 'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor(Sent::class, $this),
+                'created_at' => CarbonImmutable::now(),
             ], $ownerAttributes));
         }
     }
@@ -269,6 +271,7 @@ final class Doc extends Model implements Auditable
             $this->statusHistories()->create(array_merge([
                 'status' => Cancelled::class,
                 'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor(Cancelled::class, $this),
+                'created_at' => CarbonImmutable::now(),
             ], $ownerAttributes));
         }
     }
@@ -294,6 +297,7 @@ final class Doc extends Model implements Auditable
             $this->statusHistories()->create(array_merge([
                 'status' => Overdue::class,
                 'notes' => "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor(Overdue::class, $this) . ' (automatic overdue detection)',
+                'created_at' => CarbonImmutable::now(),
             ], $ownerAttributes));
         }
     }

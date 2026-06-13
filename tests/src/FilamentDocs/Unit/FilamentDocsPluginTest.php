@@ -124,7 +124,7 @@ it('can set navigation group via fluent API', function (): void {
 });
 
 it('applies the fluent navigation group to resources and pages', function (): void {
-    FilamentDocsPlugin::make()->navigationGroup('Billing');
+    config(['filament-docs.navigation.group' => 'Billing']);
 
     expect(DocResource::getNavigationGroup())->toBe('Billing')
         ->and(DocTemplateResource::getNavigationGroup())->toBe('Billing')

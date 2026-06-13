@@ -108,7 +108,7 @@ final class CashierChipServiceProvider extends PackageServiceProvider
 
             $target = $prefix . $legacyMap[$shortName];
 
-            if (! class_exists($target) && ! interface_exists($target) && ! trait_exists($target)) {
+            if (! class_exists($target)) {
                 return;
             }
 

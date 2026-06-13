@@ -319,6 +319,7 @@ final class DocService implements DocServiceInterface
                 $statusHistory = $doc->statusHistories()->make([
                     'status' => PartiallyPaid::class,
                     'notes' => "Partial payment recorded: {$payment->amount}",
+                    'created_at' => CarbonImmutable::now(),
                 ]);
 
                 if (config('docs.owner.enabled', false)) {
@@ -371,6 +372,7 @@ final class DocService implements DocServiceInterface
             'snapshot' => $doc->toArray(),
             'change_summary' => $summary,
             'changed_by' => auth()->id(),
+            'created_at' => CarbonImmutable::now(),
         ]);
 
         if (config('docs.owner.enabled', false)) {
@@ -435,6 +437,7 @@ final class DocService implements DocServiceInterface
         $statusHistory = $doc->statusHistories()->make([
             'status' => $statusClass,
             'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor($statusClass, $doc),
+            'created_at' => CarbonImmutable::now(),
         ]);
 
         if (config('docs.owner.enabled', false)) {

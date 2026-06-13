@@ -47,7 +47,17 @@ final class DocStatusHistory extends Model implements Auditable
         'notes',
         'changed_by',
         'changed_by_type',
+        'created_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $history): void {
+            if ($history->created_at === null) {
+                $history->created_at = CarbonImmutable::now();
+            }
+        });
+    }
 
     public function getTable(): string
     {
@@ -70,6 +80,7 @@ final class DocStatusHistory extends Model implements Auditable
         return [
             'status' => DocStatus::class,
             'changed_by_type' => 'string',
+            'created_at' => 'immutable_datetime',
         ];
     }
 }

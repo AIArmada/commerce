@@ -25,9 +25,27 @@ jobs:
   tests:
     if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'tests' }}
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: commerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
-      DB_CONNECTION: sqlite
-      DB_DATABASE: ":memory:"
+      DB_CONNECTION: pgsql
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: commerce_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
     strategy:
       fail-fast: false
       matrix:
@@ -41,7 +59,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
-          extensions: intl, curl, json, mbstring, dom, pdo, pdo_sqlite, zip
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
           coverage: none
           tools: composer:v2
 
@@ -76,7 +94,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
-          extensions: intl, curl, json, mbstring, dom, pdo, pdo_sqlite, zip
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
           coverage: none
           tools: composer:v2
 
@@ -111,7 +129,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
-          extensions: intl, curl, json, mbstring, dom, pdo, pdo_sqlite, zip
+          extensions: intl, curl, json, mbstring, dom, pdo, pgsql, zip
           coverage: none
           tools: composer:v2
 

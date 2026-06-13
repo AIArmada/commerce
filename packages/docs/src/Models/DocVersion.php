@@ -46,7 +46,17 @@ final class DocVersion extends Model implements Auditable
         'snapshot',
         'change_summary',
         'changed_by',
+        'created_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $version): void {
+            if ($version->created_at === null) {
+                $version->created_at = CarbonImmutable::now();
+            }
+        });
+    }
 
     public function getTable(): string
     {
@@ -99,6 +109,7 @@ final class DocVersion extends Model implements Auditable
         return [
             'version_number' => 'integer',
             'snapshot' => 'array',
+            'created_at' => 'immutable_datetime',
         ];
     }
 }
