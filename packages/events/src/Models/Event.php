@@ -435,7 +435,6 @@ final class Event extends Model
 
     /**
      * Static shortcut for metadata() on the first event.
-     * Results are cached per request.
      */
     public static function metadataValue(string $key, mixed $default = null): mixed
     {
