@@ -21,6 +21,10 @@ test('HasContactMethods trait defines expected methods', function (): void {
     expect(in_array('primaryContactMethod', $methods))->toBeTrue();
     expect(in_array('contactMethodsOfType', $methods))->toBeTrue();
     expect(in_array('contactMethodsForPurpose', $methods))->toBeTrue();
+    expect(in_array('resolveEmail', $methods))->toBeTrue();
+    expect(in_array('resolveEmails', $methods))->toBeTrue();
+    expect(in_array('resolvePhone', $methods))->toBeTrue();
+    expect(in_array('resolvePhones', $methods))->toBeTrue();
     expect(in_array('addContactMethod', $methods))->toBeTrue();
 });
 

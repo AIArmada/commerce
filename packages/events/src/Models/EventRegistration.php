@@ -8,6 +8,7 @@ use AIArmada\Events\Database\Factories\EventRegistrationFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -60,6 +61,13 @@ final class EventRegistration extends Model
     use HasFactory;
     use UsesEventUuid;
 
+    public const array CAPACITY_BLOCKING_STATUSES = [
+        'pending',
+        'confirmed',
+        'checked_in',
+        'no_show',
+    ];
+
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',
         'registrant_type', 'registrant_id',
@@ -79,7 +87,7 @@ final class EventRegistration extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (EventRegistration $registration): void {
+        self::creating(function (EventRegistration $registration): void {
             if (blank($registration->registration_no)) {
                 $prefix = (string) config('events.codes.registration_prefix', 'REG');
                 $length = max(6, (int) config('events.codes.registration_length', 10));
@@ -171,6 +179,16 @@ final class EventRegistration extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(EventAttendance::class);
+    }
+
+    /**
+     * @param  Builder<EventRegistration>  $query
+     */
+    public function scopeByOrder(Builder $query, Model $order): void
+    {
+        $query
+            ->where('external_order_id', $order->getKey())
+            ->where('external_order_type', $order::class);
     }
 
     public function isPending(): bool
