@@ -16,11 +16,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-final class SeatMapManager extends Page
+final class SeatMapManager extends Page implements HasTable
 {
     use InteractsWithTable;
 

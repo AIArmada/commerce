@@ -16,6 +16,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,7 +26,7 @@ use InvalidArgumentException;
 use RuntimeException;
 use UnitEnum;
 
-final class ApprovalQueue extends Page
+final class ApprovalQueue extends Page implements HasTable
 {
     use InteractsWithTable;
 
