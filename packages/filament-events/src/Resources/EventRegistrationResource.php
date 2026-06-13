@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\Customers\Models\Customer;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\FilamentEvents\Actions\Exporter\EventRegistrationExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventRegistrationImporter;
@@ -53,9 +54,13 @@ final class EventRegistrationResource extends Resource
                     ->copyable(),
                 Tables\Columns\TextColumn::make('registrant.first_name')
                     ->label('Name')
-                    ->state(fn (EventRegistration $record): string => $record->registrant
-                        ? trim(($record->registrant->first_name ?? '') . ' ' . ($record->registrant->last_name ?? ''))
-                        : ($record->participants->first()?->name ?? ''))
+                    ->state(function (EventRegistration $record): string {
+                        $registrant = $record->registrant;
+                        if ($registrant instanceof Customer) {
+                            return trim(($registrant->first_name ?? '') . ' ' . ($registrant->last_name ?? ''));
+                        }
+                        return $record->participants->first()?->name ?? '';
+                    })
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query
                         ->whereHas('registrant', fn (Builder $q) => $q
                             ->where('first_name', 'like', "%{$search}%")
@@ -64,20 +69,33 @@ final class EventRegistrationResource extends Resource
                             ->where('name', 'like', "%{$search}%"))),
                 Tables\Columns\TextColumn::make('registrant.email')
                     ->label('Email')
-                    ->state(fn (EventRegistration $record): ?string => $record->registrant?->email
-                        ?? $record->participants->first()?->metadata['contact']['email'] ?? null)
+                    ->state(function (EventRegistration $record): ?string {
+                        $registrant = $record->registrant;
+                        if ($registrant instanceof Customer && $registrant->email) {
+                            return $registrant->email;
+                        }
+                        return $record->participants->first()?->metadata['contact']['email'] ?? null;
+                    })
                     ->copyable()
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query
                         ->whereHas('registrant', fn (Builder $q) => $q
                             ->where('email', 'like', "%{$search}%"))),
                 Tables\Columns\TextColumn::make('registrant.phone')
                     ->label('Phone')
-                    ->state(fn (EventRegistration $record): ?string => $record->registrant?->phone
-                        ?? $record->participants->first()?->metadata['contact']['phone'] ?? null)
+                    ->state(function (EventRegistration $record): ?string {
+                        $registrant = $record->registrant;
+                        if ($registrant instanceof Customer && $registrant->phone) {
+                            return $registrant->phone;
+                        }
+                        return $record->participants->first()?->metadata['contact']['phone'] ?? null;
+                    })
                     ->copyable(),
                 Tables\Columns\TextColumn::make('registrant.company')
                     ->label('Company')
-                    ->state(fn (EventRegistration $record): ?string => $record->registrant?->company ?? null),
+                    ->state(function (EventRegistration $record): ?string {
+                        $registrant = $record->registrant;
+                        return $registrant instanceof Customer ? $registrant->company : null;
+                    }),
                 Tables\Columns\TextColumn::make('event.title')
                     ->label('Event'),
                 Tables\Columns\TextColumn::make('registration_type')

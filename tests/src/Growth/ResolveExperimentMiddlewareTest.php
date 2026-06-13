@@ -167,17 +167,19 @@ it('rejects experiment middleware resolution outside the current owner scope', f
     ))->toThrow(AuthorizationException::class, 'Growth experiment is not accessible in the current owner scope.');
 });
 
-it('throws a clear exception when experiment slug is missing', function (): void {
+it('passes through when experiment slug is missing', function (): void {
     config()->set('growth.features.experiment_middleware.enabled', true);
 
     $request = Request::create('/sales-page', 'GET');
 
     growthPresentationBindRequest($request, growthPresentationCreateOwner());
 
-    expect(fn (): Response => app(ResolveExperiment::class)->handle(
+    $response = app(ResolveExperiment::class)->handle(
         $request,
         static fn (): Response => response('ok'),
-    ))->toThrow(InvalidArgumentException::class, 'Growth experiment slug is required.');
+    );
+
+    expect($response->getStatusCode())->toBe(200);
 });
 
 it('throws a clear exception for invalid anonymous id source configuration', function (): void {
