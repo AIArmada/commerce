@@ -6,7 +6,6 @@ namespace AIArmada\Contacting\Actions;
 
 use AIArmada\Contacting\Data\ContactLinksData;
 use AIArmada\Contacting\Models\ContactMethod;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
