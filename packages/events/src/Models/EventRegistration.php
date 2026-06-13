@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -59,6 +61,7 @@ use Illuminate\Support\Str;
 final class EventRegistration extends Model
 {
     use HasFactory;
+    use Notifiable;
     use UsesEventUuid;
 
     public const array CAPACITY_BLOCKING_STATUSES = [
@@ -207,6 +210,30 @@ final class EventRegistration extends Model
             'status' => 'completed',
             'approved_at' => $this->freshTimestamp(),
         ]);
+    }
+
+    /**
+     * @return array<string, string>|string|null
+     */
+    public function routeNotificationForMail(Notification $notification): array | string | null
+    {
+        $participant = $this->participants()
+            ->where('is_primary', true)
+            ->first() ?? $this->participants()->first();
+
+        if ($participant === null) {
+            return null;
+        }
+
+        $email = $participant->resolveEmail();
+
+        if ($email === null) {
+            return null;
+        }
+
+        $name = mb_trim((string) $participant->name);
+
+        return $name !== '' ? [$email => $name] : $email;
     }
 
     protected static function newFactory(): EventRegistrationFactory

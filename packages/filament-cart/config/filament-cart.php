@@ -106,4 +106,13 @@ return [
         'abandonment_detection_minutes' => 30,
     ],
 
+    /* Notifications */
+    'notifications' => [
+        'abandoned_cart' => [
+            'enabled' => (bool) env('FILAMENT_CART_ABANDONED_NOTIFICATION_ENABLED', true),
+            'from_address' => env('FILAMENT_CART_ABANDONED_FROM', 'info@unfairadvantage.my'),
+            'from_name' => env('FILAMENT_CART_ABANDONED_FROM_NAME'),
+            'brand_name' => env('FILAMENT_CART_ABANDONED_BRAND_NAME', 'Unfair Advantage'),
+        ],
+    ],
 ];

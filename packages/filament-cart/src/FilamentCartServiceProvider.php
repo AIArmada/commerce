@@ -18,8 +18,10 @@ use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\FilamentCart\Commands\MarkAbandonedCartsCommand;
+use AIArmada\FilamentCart\Events\CartAbandoned as CartAbandonedEvent;
 use AIArmada\FilamentCart\Listeners\ApplyGlobalConditions;
 use AIArmada\FilamentCart\Listeners\CleanupSnapshotOnCartMerged;
+use AIArmada\FilamentCart\Listeners\SendCartAbandonedNotification;
 use AIArmada\FilamentCart\Listeners\SyncCartOnEvent;
 use AIArmada\FilamentCart\Services\CartConditionBatchRemoval;
 use AIArmada\FilamentCart\Services\CartConditionValidator;
@@ -152,5 +154,10 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
 
         // Cart merge cleanup
         $this->app['events']->listen(CartMerged::class, CleanupSnapshotOnCartMerged::class);
+
+        // Abandoned cart recovery notification
+        if ((bool) config('filament-cart.notifications.abandoned_cart.enabled', true)) {
+            $this->app['events']->listen(CartAbandonedEvent::class, SendCartAbandonedNotification::class);
+        }
     }
 }

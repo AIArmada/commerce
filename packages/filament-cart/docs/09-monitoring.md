@@ -25,7 +25,9 @@ php artisan cart:mark-abandoned --minutes=45
 php artisan cart:mark-abandoned --dry-run
 ```
 
-This command only updates `checkout_abandoned_at` and emits `CartAbandoned`. It does not evaluate alert rules or send notifications.
+This command only updates `checkout_abandoned_at` and emits `CartAbandoned`.
+
+If `filament-cart.notifications.abandoned_cart.enabled` is true, the package also sends the abandoned-cart recovery notification from the event listener. Alert rules still remain separate and are handled by Signals.
 
 ## Alerts
 

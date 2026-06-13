@@ -4,7 +4,7 @@ title: Recovery
 
 # Recovery
 
-Cart-local recovery campaigns, templates, attempts, and message dispatching have been removed from Filament Cart.
+Cart-local recovery campaigns, templates, and retry attempts have been removed from Filament Cart.
 
 ## Current approach
 
@@ -15,6 +15,14 @@ Filament Cart tracks operational abandonment state only:
 - `last_activity_at`
 
 The `cart:mark-abandoned` command marks inactive checkout carts as abandoned and emits `CartAbandoned`.
+
+## Optional notifications
+
+The package now ships an optional abandoned-cart email listener for `CartAbandoned`.
+
+- Enable or disable it with `filament-cart.notifications.abandoned_cart.enabled`
+- The listener sends mail to the purchaser email found on the latest checkout session for the cart
+- If no recovery URL is available, the notification falls back to the application URL
 
 ## Optional follow-up workflows
 

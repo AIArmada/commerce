@@ -312,8 +312,7 @@ try {
         'error' => $e->getMessage(),
     ]);
     
-    return redirect()
-        ->route('checkout.retry', $session)
+    return redirect($session->payment_redirect_url ?? config('app.url'))
         ->with('error', 'Payment verification failed. Please try again.');
 }
 ```
