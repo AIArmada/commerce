@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\Event;
@@ -28,7 +29,7 @@ final class CreateRegistrationsForOrderItemAction
      */
     public function handle(EventOccurrence $occurrence, mixed $orderItem, array $participants, mixed $purchaser = null): Collection
     {
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $occurrence->event_id);
+        $this->resolveWithOwnerGuard(Event::class, $occurrence->event_id);
 
         /** @var class-string<Model> $orderClass */
         $orderClass = CommerceIntegration::requireModelClass('order_model', 'order fulfillment');
@@ -59,7 +60,7 @@ final class CreateRegistrationsForOrderItemAction
             throw new InvalidArgumentException('The selected order item must belong to an order.');
         }
 
-        OwnerWriteGuard::findOrFailForOwner($orderClass, $orderItem->order_id);
+        $this->resolveWithOwnerGuard($orderClass, $orderItem->order_id);
 
         if (! $orderItem->order instanceof Model || ! is_a($orderItem->order, $orderClass, true)) {
             throw new InvalidArgumentException(sprintf('The order item must belong to an instance of %s.', $orderClass));
@@ -131,5 +132,19 @@ final class CreateRegistrationsForOrderItemAction
         }
 
         return $registrations;
+    }
+
+    /**
+     * @param  class-string<Model>  $modelClass
+     */
+    private function resolveWithOwnerGuard(string $modelClass, int | string $id): void
+    {
+        if (method_exists($modelClass, 'ownerScopeConfig') && ! $modelClass::ownerScopeConfig()->enabled) {
+            $modelClass::query()->findOrFail($id);
+
+            return;
+        }
+
+        OwnerWriteGuard::findOrFailForOwner($modelClass, $id);
     }
 }
