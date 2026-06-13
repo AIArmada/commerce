@@ -114,7 +114,7 @@ class ManageCommerceNavigation extends Page
             ];
         }
 
-        // Add ungrouped items (items with no group or group not in mergedGroups)
+        // Add ungrouped items at the front — they appear first in the sidebar.
         $ungroupedItems = [];
         $sortIndex = 0;
         foreach ($mergedOverrides as $class => $override) {
@@ -125,15 +125,15 @@ class ManageCommerceNavigation extends Page
         }
 
         if ($ungroupedItems !== []) {
-            $sections[] = [
+            array_unshift($sections, [
                 'group_key' => '__ungrouped__',
                 'label' => __('Ungrouped'),
                 'icon' => '',
-                'sort' => 9999,
+                'sort' => -1,
                 'collapsible' => true,
                 'collapsed' => false,
                 'items' => $ungroupedItems,
-            ];
+            ]);
         }
 
         return $sections;
@@ -234,16 +234,29 @@ class ManageCommerceNavigation extends Page
                             ])
                             ->collapsible()
                             ->collapsed()
-                            ->itemLabel(fn (array $state): ?string => $state['display_label'] ?? $state['label'] ?? $state['component'] ?? null)
+                            ->itemLabel(function (array $state): ?string {
+                                $class = $state['component'] ?? '';
+                                if ($class === '') {
+                                    return null;
+                                }
+                                $label = $state['label'] ?? '';
+                                if ($label === '') {
+                                    $label = class_exists($class) && method_exists($class, 'getNavigationLabel')
+                                        ? $class::getNavigationLabel()
+                                        : class_basename($class);
+                                }
+                                $hidden = ! empty($state['hidden']);
+                                return $hidden ? "✕ {$label}" : $label;
+                            })
                             ->addActionLabel(__('Add Item to this Group'))
                             ->reorderable()
                             ->columns(2),
                     ])
                     ->collapsible()
                     ->collapsed()
-                    ->itemLabel(fn (array $state): ?string => $state['group_key'] === '__ungrouped__'
+                    ->itemLabel(fn (array $state): ?string => ($state['group_key'] ?? '') === '__ungrouped__'
                         ? '— ' . __('Ungrouped Items') . ' —'
-                        : ($state['label'] ?? $state['group_key'] ?? ''))
+                        : ($state['label'] ?? $state['group_key'] ?? $state['_index'] ?? ''))
                     ->addActionLabel(__('Add Group'))
                     ->reorderable()
                     ->columns(2),
@@ -255,12 +268,64 @@ class ManageCommerceNavigation extends Page
     {
         $settings = $this->resolveSettings();
 
-        $submittedGroups = $this->denormalizeGroupsFromForm($this->data['groups'] ?? []);
-        $submittedOverrides = $this->denormalizeOverridesFromForm($this->data['overrides'] ?? []);
+        // Denormalize the nested sidebar structure back into flat groups + overrides.
+        $sidebar = $this->data['sidebar'] ?? [];
 
-        // Build a map of old group key → new label for any renamed groups.
-        // group_key is the original group name; label is what the user typed.
-        // When they differ, items that reference the old group key must be updated.
+        $submittedGroups = [];
+        $submittedOverrides = [];
+
+        $groupSortIndex = 0;
+        foreach ($sidebar as $section) {
+            $groupKey = $section['group_key'] ?? '';
+
+            if ($groupKey === '' || $groupKey === '__ungrouped__') {
+                // Items in the ungrouped section: save with no group.
+                $itemIndex = 0;
+                foreach ($section['items'] ?? [] as $item) {
+                    $class = $item['component'] ?? '';
+                    if ($class === '') {
+                        continue;
+                    }
+                    $submittedOverrides[$class] = $this->overrideFromSidebarItem($item, $itemIndex);
+                    $itemIndex++;
+                }
+                continue;
+            }
+
+            // Save group config
+            $groupConfig = [];
+            $label = $section['label'] ?? $groupKey;
+            if ($label !== '' && $label !== $groupKey) {
+                $groupConfig['label'] = $label;
+            }
+            if (isset($section['icon']) && $section['icon'] !== '') {
+                $groupConfig['icon'] = $section['icon'];
+            }
+            $groupConfig['sort'] = $groupSortIndex;
+            if (isset($section['collapsible'])) {
+                $groupConfig['collapsible'] = (bool) $section['collapsible'];
+            }
+            if (isset($section['collapsed'])) {
+                $groupConfig['collapsed'] = (bool) $section['collapsed'];
+            }
+            $submittedGroups[$groupKey] = $groupConfig;
+            $groupSortIndex++;
+
+            // Save items in this group
+            $itemIndex = 0;
+            foreach ($section['items'] ?? [] as $item) {
+                $class = $item['component'] ?? '';
+                if ($class === '') {
+                    continue;
+                }
+                $itemConfig = $this->overrideFromSidebarItem($item, $itemIndex);
+                $itemConfig['group'] = $groupKey;
+                $submittedOverrides[$class] = $itemConfig;
+                $itemIndex++;
+            }
+        }
+
+        // Build group rename map
         $groupRenames = [];
         foreach ($submittedGroups as $key => $config) {
             $newLabel = $config['label'] ?? $key;
@@ -269,7 +334,7 @@ class ManageCommerceNavigation extends Page
             }
         }
 
-        // Apply group renames to item overrides so they point to the new group label.
+        // Apply group renames to item overrides
         if ($groupRenames !== []) {
             foreach ($submittedOverrides as $class => &$config) {
                 $currentGroup = $config['group'] ?? '';
@@ -280,11 +345,7 @@ class ManageCommerceNavigation extends Page
             unset($config);
         }
 
-        // Use true (untainted) defaults for the diff baseline.
-        // getDefaultGroups() reads from config that NavigationConfigurator
-        // merged with saved settings — that would make previously saved
-        // overrides match the tainted "default", silently dropping them
-        // on subsequent saves that touch different fields.
+        // True (untainted) defaults for diff baseline
         $trueDefaultGroups = $this->getTrueDefaultGroups();
         $trueDefaultOverrides = $this->getTrueDefaultOverrides();
 
@@ -298,26 +359,19 @@ class ManageCommerceNavigation extends Page
             unset($config);
         }
 
-        // Start from the currently persisted state so unmodified items
-        // that were previously saved are preserved.
-        $currentSavedGroups = $settings->groups ?? [];
-        $currentSavedOverrides = $settings->overrides ?? [];
-
-        $groupsToSave = $currentSavedGroups;
+        // For the unified sidebar form, always save the complete submitted
+        // state — the form represents the exact desired sidebar structure.
+        $groupsToSave = [];
         foreach ($submittedGroups as $key => $config) {
             if ($this->hasDifferences($trueDefaultGroups[$key] ?? [], $config)) {
                 $groupsToSave[$key] = $config;
-            } else {
-                unset($groupsToSave[$key]);
             }
         }
 
-        $overridesToSave = $currentSavedOverrides;
+        $overridesToSave = [];
         foreach ($submittedOverrides as $class => $config) {
             if ($this->hasDifferences($trueDefaultOverrides[$class] ?? [], $config)) {
                 $overridesToSave[$class] = $config;
-            } else {
-                unset($overridesToSave[$class]);
             }
         }
 
@@ -332,6 +386,33 @@ class ManageCommerceNavigation extends Page
             ->title(__('Navigation configuration saved.'))
             ->success()
             ->send();
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function overrideFromSidebarItem(array $item, int $index): array
+    {
+        $config = [];
+
+        if (isset($item['hidden'])) {
+            $config['hidden'] = (bool) $item['hidden'];
+        }
+
+        if (isset($item['label']) && $item['label'] !== '') {
+            $config['label'] = $item['label'];
+        }
+
+        $config['sort'] = $index + 1;
+
+        if (isset($item['parent_item']) && $item['parent_item'] !== '') {
+            $config['parent_item'] = $item['parent_item'];
+        }
+
+        // Always include group when it differs from the item's component default.
+        // When not set here, it's added by the caller for grouped items.
+        return $config;
     }
 
     /**
