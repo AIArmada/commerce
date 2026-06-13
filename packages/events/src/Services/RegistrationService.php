@@ -10,12 +10,12 @@ use AIArmada\Events\Events\EventRegistrationApproved;
 use AIArmada\Events\Events\EventRegistrationCancelled;
 use AIArmada\Events\Events\EventRegistrationConfirmed;
 use AIArmada\Events\Events\EventRegistrationCreated;
-use Illuminate\Support\Arr;
 use AIArmada\Events\Events\EventRegistrationRejected;
 use AIArmada\Events\Events\EventRegistrationWaitlisted;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationParticipant;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Arr;
 
 final class RegistrationService implements RegistrationServiceInterface
 {
