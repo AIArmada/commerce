@@ -1,6 +1,10 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\Addressing\Models\Address;
+use AIArmada\Addressing\Models\AddressArea;
+use AIArmada\Addressing\Models\AddressCountry;
+use AIArmada\Addressing\Models\AddressSnapshot;
 
 return [
     'navigation' => [
@@ -33,25 +37,25 @@ return [
         'countries' => [
             'enabled' => true,
             'read_only' => true,
-            'model' => \AIArmada\Addressing\Models\AddressCountry::class,
+            'model' => AddressCountry::class,
         ],
 
         'areas' => [
             'enabled' => true,
             'read_only' => false,
-            'model' => \AIArmada\Addressing\Models\AddressArea::class,
+            'model' => AddressArea::class,
         ],
 
         'addresses' => [
             'enabled' => false,
             'read_only' => false,
-            'model' => \AIArmada\Addressing\Models\Address::class,
+            'model' => Address::class,
         ],
 
         'snapshots' => [
             'enabled' => false,
             'read_only' => true,
-            'model' => \AIArmada\Addressing\Models\AddressSnapshot::class,
+            'model' => AddressSnapshot::class,
         ],
     ],
 ];
