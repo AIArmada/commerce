@@ -57,7 +57,7 @@ final class CommerceNavigation
                 if (! is_string($g) || $g === '' || array_key_exists($g, $groups)) {
                     return;
                 }
-                $groups[$g] = ['label' => $g];
+                $groups[$g] = ['label' => $g, 'collapsible' => true];
             };
             foreach ($panel->getResources() as $resource) {
                 $extractGroup(is_string($resource) ? $resource : $resource::class);
@@ -155,8 +155,12 @@ final class CommerceNavigation
             ->sortBy(fn (NavigationItem $item): int => $item->getSort())
             ->values();
 
+        $groups = collect(self::groupNavigationItems($items, $registeredGroups))
+            ->map(fn (NavigationGroup $g): NavigationGroup => $g->collapsible(true))
+            ->all();
+
         return (new NavigationBuilder)
-            ->groups(self::groupNavigationItems($items, $registeredGroups));
+            ->groups($groups);
     }
 
     public static function configureNavigationItem(NavigationItem $item, string $component): NavigationItem
