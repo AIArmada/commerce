@@ -93,11 +93,12 @@ class PortalCreatives extends PortalPage
             ->filter(fn (AffiliateProgram $program): bool => $program->getAttribute('pivot')->status === 'approved');
 
         return $programs
-            ->flatMap(fn (AffiliateProgram $program) => $program
-                ->creatives()
-                ->orderByDesc('created_at')
-                ->get()
-                ->each(fn (AffiliateProgramCreative $creative) => $creative->setRelation('program', $program))
+            ->flatMap(
+                fn (AffiliateProgram $program) => $program
+                    ->creatives()
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->each(fn (AffiliateProgramCreative $creative) => $creative->setRelation('program', $program))
             );
     }
 
