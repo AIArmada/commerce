@@ -48,6 +48,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property-read Collection<int, AffiliateProgramTier> $tiers
+ * @property-read AffiliateProgramMembership|null $pivot
  * @property-read Collection<int, AffiliateCommissionRule> $commissionRules
  * @property-read Collection<int, AffiliateCommissionPromotion> $commissionPromotions
  * @property-read Collection<int, Affiliate> $affiliates

@@ -64,6 +64,7 @@ use AIArmada\Affiliates\Strategies\LastTouchAttribution;
 use AIArmada\Affiliates\Strategies\LinearAttribution;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
+use AIArmada\Affiliates\Support\Middleware\CaptureAffiliateReferralFromPath;
 use AIArmada\Affiliates\Support\Middleware\HydratePublicAffiliateReferralContext;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
@@ -71,6 +72,7 @@ use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -214,8 +216,8 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $router = $this->app['router'];
         $router->aliasMiddleware('affiliates.cookie', TrackAffiliateCookie::class);
 
-        if (config('affiliates.cookies.auto_register_middleware', true)) {
-            $router->pushMiddlewareToGroup('web', TrackAffiliateCookie::class);
+        if (config('affiliates.cookies.auto_register_middleware', true) && $this->app->bound(Kernel::class)) {
+            $this->app->make(Kernel::class)->prependMiddleware(TrackAffiliateCookie::class);
         }
     }
 
@@ -229,9 +231,14 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             /** @var Router $router */
             $router = $this->app['router'];
             $router->aliasMiddleware('affiliates.public_context', HydratePublicAffiliateReferralContext::class);
+            $router->aliasMiddleware('affiliates.referral_path', CaptureAffiliateReferralFromPath::class);
 
             if (config('affiliates.public_pages.auto_register_middleware', true)) {
                 $router->pushMiddlewareToGroup('web', HydratePublicAffiliateReferralContext::class);
+
+                if ($this->app->bound(Kernel::class)) {
+                    $this->app->make(Kernel::class)->prependMiddleware(CaptureAffiliateReferralFromPath::class);
+                }
             }
         }
 

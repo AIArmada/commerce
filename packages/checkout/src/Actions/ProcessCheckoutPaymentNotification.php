@@ -8,6 +8,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Support\CheckoutNotificationCallbackResolver;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class ProcessCheckoutPaymentNotification
@@ -30,6 +31,14 @@ final class ProcessCheckoutPaymentNotification
 
         if ($sessionId === null) {
             Log::warning('Checkout payment notification missing session reference', $this->logContext($context));
+
+            return;
+        }
+
+        if (! Str::isUuid($sessionId)) {
+            Log::warning('Checkout payment notification has invalid session reference format', $this->logContext($context, [
+                'session_id' => $sessionId,
+            ]));
 
             return;
         }

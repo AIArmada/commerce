@@ -50,6 +50,7 @@ return [
             'profile' => true,
             'links' => true,
             'programs' => true,
+            'downlines' => true,
             'conversions' => true,
             'payouts' => true,
             'support_compliance' => true,

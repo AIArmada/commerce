@@ -7,6 +7,8 @@ namespace AIArmada\FilamentAffiliates\Pages\Portal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\CommerceSupport\Models\Permission;
+use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
 use Filament\Actions\Action;
@@ -17,6 +19,9 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\PermissionRegistrar;
+use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
+use Ysfkaya\FilamentPhoneInput\PhoneInputNumberType;
 
 class PortalRegistration extends FilamentRegister
 {
@@ -25,9 +30,21 @@ class PortalRegistration extends FilamentRegister
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.registration';
 
-    protected bool $registrationEnabled;
+    protected bool $registrationEnabled = true;
 
-    protected string $approvalMode;
+    protected string $approvalMode = 'auto';
+
+    public bool $isCodeChecking = false;
+
+    public bool $isCodeAvailable = false;
+
+    public string $codeAvailabilityMessage = '';
+
+    public bool $isReferralChecking = false;
+
+    public bool $isReferralValid = false;
+
+    public string $referralMessage = '';
 
     public function mount(): void
     {
@@ -64,11 +81,22 @@ class PortalRegistration extends FilamentRegister
     protected function handleRegistration(array $data): Model
     {
         $userData = $data;
-        unset($userData['affiliate_name'], $userData['website_url']);
+        unset($userData['affiliate_name'], $userData['phone'], $userData['referral_code'], $userData['affiliate_code']);
 
         $user = $this->getUserModel()::create($userData);
 
         $this->createAffiliateForUser($user, $data);
+
+        $guard = (string) config('filament-authz.guards.0', 'web');
+
+        $permission = Permission::findOrCreate('panel.affiliate', $guard);
+        $role = Role::findOrCreate('Affiliate', $guard);
+        $role->givePermissionTo($permission);
+
+        // @phpstan-ignore-next-line — assignRole comes from Spatie's HasRoles trait on the user model
+        $user->assignRole($role);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return $user;
     }
@@ -85,7 +113,7 @@ class PortalRegistration extends FilamentRegister
         }
 
         return match ($this->approvalMode) {
-            'auto' => __('Your affiliate account will be automatically activated.'),
+            'auto' => null,
             'open' => __('Your account will be created with pending status.'),
             'admin' => __('Your application will be reviewed by an administrator.'),
             default => null,
@@ -106,37 +134,187 @@ class PortalRegistration extends FilamentRegister
                 $this->getPasswordFormComponent(),
                 $this->getPasswordConfirmationFormComponent(),
                 $this->getAffiliateNameFormComponent(),
-                $this->getWebsiteUrlFormComponent(),
+                $this->getPhoneFormComponent(),
+                $this->getAffiliateCodeFormComponent(),
                 $this->getReferralCodeFormComponent(),
             ]);
     }
 
-    protected function getReferralCodeFormComponent(): Component
+    protected function getAffiliateCodeFormComponent(): Component
     {
-        return TextInput::make('referral_code')
-            ->label(__('Referral Code (optional)'))
-            ->helperText(__('If you were referred by an affiliate, enter their code here.'))
+        return TextInput::make('affiliate_code')
+            ->label(__('Affiliate Code'))
+            ->helperText(function (): string {
+                if ($this->isCodeChecking) {
+                    return __('Checking availability...');
+                }
+
+                if ($this->codeAvailabilityMessage !== '') {
+                    return $this->codeAvailabilityMessage;
+                }
+
+                return __('Choose your own affiliate code, or leave blank for auto-generated.');
+            })
             ->maxLength(255)
-            ->exists(
+            ->alphaDash()
+            ->live(debounce: 500)
+            ->afterStateUpdated(function (?string $state): void {
+                $this->checkCodeAvailability($state);
+            })
+            ->suffixIcon(function (): ?string {
+                if ($this->isCodeChecking) {
+                    return 'heroicon-m-arrow-path';
+                }
+
+                if ($this->codeAvailabilityMessage !== '') {
+                    return $this->isCodeAvailable
+                        ? 'heroicon-m-check-circle'
+                        : 'heroicon-m-x-circle';
+                }
+
+                return null;
+            })
+            ->suffixIconColor(function (): ?string {
+                if ($this->isCodeChecking) {
+                    return 'gray';
+                }
+
+                if ($this->codeAvailabilityMessage !== '') {
+                    return $this->isCodeAvailable ? 'success' : 'danger';
+                }
+
+                return null;
+            })
+            ->extraAttributes(
+                fn (): array => $this->isCodeChecking
+                ? ['style' => '--affiliate-code-checking: 1;']
+                : [],
+            )
+            ->unique(
                 table: config('affiliates.database.tables.affiliates', 'affiliate_affiliates'),
                 column: 'code',
             );
     }
 
+    public function checkCodeAvailability(?string $value): void
+    {
+        if ($value === null || $value === '') {
+            $this->isCodeChecking = false;
+            $this->codeAvailabilityMessage = '';
+            $this->isCodeAvailable = false;
+
+            return;
+        }
+
+        $this->isCodeChecking = true;
+        $this->codeAvailabilityMessage = '';
+
+        $exists = Affiliate::query()
+            ->whereRaw('LOWER(code) = ?', [mb_strtolower($value)])
+            ->exists();
+
+        $this->isCodeChecking = false;
+        $this->isCodeAvailable = ! $exists;
+        $this->codeAvailabilityMessage = $exists
+            ? __('This affiliate code is not available.')
+            : __('This affiliate code is available.');
+    }
+
+    protected function getReferralCodeFormComponent(): Component
+    {
+        return TextInput::make('referral_code')
+            ->label(__('Referral Code'))
+            ->helperText(function (): string {
+                if ($this->isReferralChecking) {
+                    return __('Checking referrer...');
+                }
+
+                if ($this->referralMessage !== '') {
+                    return $this->referralMessage;
+                }
+
+                return __('If you were referred by an affiliate, enter their code here.');
+            })
+            ->maxLength(255)
+            ->live(debounce: 500)
+            ->afterStateUpdated(function (?string $state): void {
+                $this->checkReferralCode($state);
+            })
+            ->suffixIcon(function (): ?string {
+                if ($this->isReferralChecking) {
+                    return 'heroicon-m-arrow-path';
+                }
+
+                if ($this->referralMessage !== '') {
+                    return $this->isReferralValid
+                        ? 'heroicon-m-check-circle'
+                        : 'heroicon-m-x-circle';
+                }
+
+                return null;
+            })
+            ->suffixIconColor(function (): ?string {
+                if ($this->isReferralChecking) {
+                    return 'gray';
+                }
+
+                if ($this->referralMessage !== '') {
+                    return $this->isReferralValid ? 'success' : 'danger';
+                }
+
+                return null;
+            })
+            ->extraAttributes(
+                fn (): array => $this->isReferralChecking
+                ? ['style' => '--affiliate-code-checking: 1;']
+                : [],
+            );
+    }
+
+    public function checkReferralCode(?string $value): void
+    {
+        if ($value === null || $value === '') {
+            $this->isReferralChecking = false;
+            $this->referralMessage = '';
+            $this->isReferralValid = false;
+
+            return;
+        }
+
+        $this->isReferralChecking = true;
+        $this->referralMessage = '';
+
+        $exists = Affiliate::query()
+            ->whereRaw('LOWER(code) = ?', [mb_strtolower($value)])
+            ->exists();
+
+        $this->isReferralChecking = false;
+        $this->isReferralValid = $exists;
+        $this->referralMessage = $exists
+            ? __('Valid referrer found.')
+            : __('No affiliate found with this code.');
+    }
+
     protected function getAffiliateNameFormComponent(): Component
     {
         return TextInput::make('affiliate_name')
-            ->label(__('Affiliate/Business Name'))
+            ->label(__('Affiliate / Business Name'))
             ->required()
             ->maxLength(255);
     }
 
-    protected function getWebsiteUrlFormComponent(): Component
+    protected function getPhoneFormComponent(): Component
     {
-        return TextInput::make('website_url')
-            ->label(__('Website URL'))
-            ->url()
-            ->maxLength(255);
+        return PhoneInput::make('phone')
+            ->label(__('Phone Number'))
+            ->required()
+            ->initialCountry('MY')
+            ->defaultCountry('MY')
+            ->displayNumberFormat(PhoneInputNumberType::NATIONAL)
+            ->inputNumberFormat(PhoneInputNumberType::E164)
+            ->validateFor('MY')
+            ->disableLookup()
+            ->nationalMode();
     }
 
     protected function createAffiliateForUser(Model $user, array $data): Affiliate
@@ -155,8 +333,12 @@ class PortalRegistration extends FilamentRegister
         $affiliateData = [
             'name' => $data['affiliate_name'],
             'contact_email' => $data['email'],
-            'website_url' => $data['website_url'] ?? null,
+            'phone' => $data['phone'] ?? null,
         ];
+
+        if (! empty($data['affiliate_code'])) {
+            $affiliateData['code'] = $data['affiliate_code'];
+        }
 
         $referrer = null;
 
@@ -164,10 +346,19 @@ class PortalRegistration extends FilamentRegister
             $referrer = Affiliate::query()
                 ->where('code', $data['referral_code'])
                 ->first();
+        }
 
-            if ($referrer) {
-                $affiliateData['parent_affiliate_id'] = $referrer->id;
+        if (! $referrer) {
+            $cookieName = config('affiliates.cookies.name', 'affiliate_session');
+            $cookieValue = request()->cookie($cookieName) ?? ($_COOKIE[$cookieName] ?? null);
+
+            if ($cookieValue) {
+                $referrer = app('affiliates')->findAffiliateByCookie($cookieValue);
             }
+        }
+
+        if ($referrer) {
+            $affiliateData['parent_affiliate_id'] = $referrer->id;
         }
 
         $affiliate = $registrationService->register($affiliateData, $owner);

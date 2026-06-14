@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -12,6 +15,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -25,9 +29,12 @@ final class ProgramsRelationManager extends RelationManager
     {
         return $schema->schema([
             Select::make('tier_id')
-                ->relationship('tier', 'name')
+                ->options(fn (): array => AffiliateProgramTier::query()
+                    ->pluck('name', 'id')
+                    ->toArray())
                 ->searchable()
-                ->preload(),
+                ->preload()
+                ->placeholder('No tiers configured'),
 
             Select::make('status')
                 ->options(MembershipStatus::class)
@@ -78,6 +85,40 @@ final class ProgramsRelationManager extends RelationManager
                 CreateAction::make(),
             ])
             ->actions([
+                Action::make('approve')
+                    ->label('Approve')
+                    ->color('success')
+                    ->icon('heroicon-o-check-circle')
+                    ->visible(fn (AffiliateProgram $record): bool => $record->pivot?->status === MembershipStatus::Pending)
+                    ->action(function (AffiliateProgram $record): void {
+                        $record->pivot->update([
+                            'status' => MembershipStatus::Approved,
+                            'approved_at' => now(),
+                        ]);
+
+                        Notification::make()
+                            ->title('Membership approved')
+                            ->success()
+                            ->send();
+                    }),
+
+                Action::make('reject')
+                    ->label('Reject')
+                    ->color('danger')
+                    ->icon('heroicon-o-x-circle')
+                    ->visible(fn (AffiliateProgram $record): bool => $record->pivot?->status === MembershipStatus::Pending)
+                    ->action(function (AffiliateProgram $record): void {
+                        $record->pivot->update([
+                            'status' => MembershipStatus::Rejected,
+                            'rejected_at' => now(),
+                        ]);
+
+                        Notification::make()
+                            ->title('Membership rejected')
+                            ->danger()
+                            ->send();
+                    }),
+
                 EditAction::make(),
                 DeleteAction::make(),
             ])

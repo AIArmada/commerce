@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
@@ -96,6 +97,38 @@ final class AffiliateForm
             Section::make('Commission Policy')
                 ->schema([
                     Grid::make(3)->schema([
+                        Select::make('apply_template')
+                            ->label('Commission Template')
+                            ->helperText('Select a template to auto-fill commission type and rate.')
+                            ->options(fn (): array => AffiliateCommissionTemplate::query()
+                                ->active()
+                                ->pluck('name', 'id')
+                                ->toArray())
+                            ->searchable()
+                            ->afterStateUpdated(function (string $state, Set $set, Get $get): void {
+                                $template = AffiliateCommissionTemplate::query()->find($state);
+
+                                if (! $template) {
+                                    return;
+                                }
+
+                                $rules = $template->getCommissionRules();
+                                $baseRule = collect($rules)->firstWhere('type', 'affiliate');
+
+                                if (! $baseRule) {
+                                    return;
+                                }
+
+                                $set('commission_type', $baseRule['commission_type']);
+
+                                $rate = (int) ($baseRule['rate'] ?? 0);
+
+                                $set('commission_rate', $baseRule['commission_type'] === CommissionType::Percentage->value
+                                    ? number_format($rate / 100, 2, '.', '')
+                                    : (string) $rate);
+                            })
+                            ->dehydrated(false),
+
                         Select::make('commission_type')
                             ->label('Type')
                             ->required()
@@ -129,6 +162,13 @@ final class AffiliateForm
                                 'IDR' => 'IDR',
                             ])
                             ->default($currency),
+
+                        TextInput::make('network_depth')
+                            ->label('Max Network Depth')
+                            ->numeric()
+                            ->minValue(0)
+                            ->helperText('How deep this affiliate\'s referral tree can go (0 = disabled). Falls back to global config when empty.')
+                            ->suffix('levels'),
                     ]),
                 ])
                 ->collapsible(),

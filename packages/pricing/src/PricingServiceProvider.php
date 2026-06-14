@@ -35,16 +35,33 @@ final class PricingServiceProvider extends PackageServiceProvider
         $this->app->singleton(Services\PriceCalculator::class);
         $this->app->alias(Services\PriceCalculator::class, PriceCalculatorInterface::class);
         $this->app->singleton(PricingIntegrationRegistrar::class);
+
+        $this->registerSettingsMigrationPath();
     }
 
     public function bootingPackage(): void
     {
-        if (! $this->app->runningInConsole()) {
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/../database/settings' => database_path('settings'),
+            ], 'pricing-settings');
+        }
+    }
+
+    private function registerSettingsMigrationPath(): void
+    {
+        $packagePath = __DIR__ . '/../database/settings';
+
+        if (! is_dir($packagePath)) {
             return;
         }
 
-        $this->publishes([
-            __DIR__ . '/../database/settings' => database_path('settings'),
-        ], 'pricing-settings');
+        $paths = config('settings.migrations_paths', []);
+
+        if (! in_array($packagePath, $paths, true)) {
+            $paths[] = $packagePath;
+
+            config(['settings.migrations_paths' => $paths]);
+        }
     }
 }
