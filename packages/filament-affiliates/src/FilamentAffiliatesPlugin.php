@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates;
 
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Pages\ManageAffiliateCommissionSettings;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
@@ -126,7 +127,9 @@ final class FilamentAffiliatesPlugin implements Plugin
     private function getPages(): array
     {
         $features = $this->getAdminFeatures();
-        $pages = [];
+        $pages = [
+            ManageAffiliateCommissionSettings::class,
+        ];
 
         if ($features['fraud_monitoring']) {
             $pages[] = FraudReviewPage::class;

@@ -54,10 +54,7 @@ final class ResolvePublicAffiliateReferralContext
             'default_voucher_code' => $resolvedAffiliate['default_voucher_code'],
             'checkout_url' => $this->destinationUrl('checkout', $resolvedAffiliate['code']),
             'home_url' => $this->destinationUrl('home', $resolvedAffiliate['code']),
-            'entry_url' => route(
-                (string) config('affiliates.public_pages.route.name', 'affiliate.referral.entry'),
-                ['affiliateCode' => $resolvedAffiliate['code']],
-            ),
+            'entry_url' => url('/r/' . $resolvedAffiliate['code']),
             'source' => $resolvedAffiliate['source'],
         ];
     }

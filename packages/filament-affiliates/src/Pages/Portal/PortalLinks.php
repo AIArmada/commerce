@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
-use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -12,7 +11,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
-use InvalidArgumentException;
 use Livewire\Attributes\Computed;
 
 class PortalLinks extends PortalPage
@@ -20,6 +18,8 @@ class PortalLinks extends PortalPage
     public string $targetUrl = '';
 
     public ?string $generatedLink = null;
+
+    public ?string $generatedShortLink = null;
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedLink;
 
@@ -79,14 +79,7 @@ class PortalLinks extends PortalPage
             return null;
         }
 
-        if (! config('affiliates.public_pages.enabled', true) || ! config('affiliates.public_pages.route.enabled', true)) {
-            return null;
-        }
-
-        $routePath = (string) config('affiliates.public_pages.route.path', 'r/{affiliateCode}');
-        $shortPath = str_replace('{affiliateCode}', $affiliate->code, $routePath);
-
-        return mb_rtrim((string) config('app.url'), '/') . '/' . mb_ltrim($shortPath, '/');
+        return mb_rtrim((string) config('app.url'), '/') . '/r/' . $affiliate->code;
     }
 
     public function generateLink(): void
@@ -106,23 +99,35 @@ class PortalLinks extends PortalPage
             $this->targetUrl = $this->resolvePublicUrl();
         }
 
-        try {
-            $this->generatedLink = app(AffiliateLinkGenerator::class)->generate(
-                $affiliate->code,
-                $this->targetUrl,
-            );
+        $allowedHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $targetHost = parse_url($this->targetUrl, PHP_URL_HOST);
 
+        if ($targetHost === null || $targetHost !== $allowedHost) {
             Notification::make()
-                ->title(__('Link generated successfully'))
-                ->success()
-                ->send();
-        } catch (InvalidArgumentException $e) {
-            Notification::make()
-                ->title(__('Failed to generate link'))
-                ->body(__('The provided URL is invalid or not allowed.'))
+                ->title(__('Invalid URL'))
+                ->body(__('Only links to :host are allowed.', ['host' => $allowedHost]))
                 ->danger()
                 ->send();
+
+            return;
         }
+
+        $param = config('affiliates.links.parameter', 'aff');
+
+        $this->generatedLink = $this->targetUrl
+            . (str_contains($this->targetUrl, '?') ? '&' : '?')
+            . $param . '=' . $affiliate->code;
+
+        $path = mb_ltrim((string) parse_url($this->targetUrl, PHP_URL_PATH), '/');
+
+        $this->generatedShortLink = mb_rtrim((string) config('app.url'), '/')
+            . ($path !== '' ? '/' . $path : '')
+            . '/r/' . $affiliate->code;
+
+        Notification::make()
+            ->title(__('Link generated successfully'))
+            ->success()
+            ->send();
     }
 
     protected function getHeaderActions(): array

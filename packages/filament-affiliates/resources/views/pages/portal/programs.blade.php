@@ -59,7 +59,7 @@
                         @if ($program['can_join'])
                             <x-filament::button
                                 color="primary"
-                                wire:click='joinProgram(@js($program["id"]))'
+                                wire:click="joinProgram('{{ $program['id'] }}')"
                             >
                                 {{ $program['join_label'] }}
                             </x-filament::button>
@@ -70,7 +70,7 @@
                         @elseif ($program['is_joined'])
                             <x-filament::button
                                 color="danger"
-                                wire:click='leaveProgram(@js($program["id"]))'
+                                wire:click="leaveProgram('{{ $program['id'] }}')"
                             >
                                 {{ $program['leave_label'] }}
                             </x-filament::button>

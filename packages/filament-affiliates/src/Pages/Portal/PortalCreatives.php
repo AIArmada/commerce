@@ -9,7 +9,6 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
-use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
@@ -25,12 +24,12 @@ class PortalCreatives extends PortalPage
 
     public static function getNavigationLabel(): string
     {
-        return __('Marketing Materials');
+        return __('Creatives');
     }
 
     public function getTitle(): string | Htmlable
     {
-        return __('Marketing Materials');
+        return __('Creatives');
     }
 
     /**
@@ -43,8 +42,13 @@ class PortalCreatives extends PortalPage
         if (! $affiliate) {
             return [
                 'hasAffiliate' => false,
-                'generalCreatives' => [],
-                'programCreatives' => [],
+                'assets' => [],
+                'campaigns' => [],
+                'categories' => [],
+                'formats' => [],
+                'platforms' => [],
+                'programs' => [],
+                'affiliateCode' => null,
             ];
         }
 
@@ -55,18 +59,33 @@ class PortalCreatives extends PortalPage
 
         $programCreatives = $this->getProgramCreatives($affiliate);
 
+        $allCreatives = collect($generalCreatives)
+            ->concat($programCreatives);
+
+        $assets = $this->mapAssets($allCreatives, $affiliate);
+
+        $campaigns = $assets->pluck('campaign')->filter()->unique()->values();
+        $categories = $assets->pluck('category')->filter()->unique()->values();
+        $formats = $assets->pluck('format')->filter()->unique()->values();
+        $platforms = $assets->pluck('platforms')->flatten()->filter()->unique()->values();
+        $programs = $assets->pluck('program')->filter()->unique()->values();
+
         return [
             'hasAffiliate' => true,
-            'affiliate' => $affiliate,
-            'generalCreatives' => $this->mapCreatives($generalCreatives, $affiliate),
-            'programCreatives' => $programCreatives,
+            'assets' => $assets,
+            'campaigns' => $campaigns,
+            'categories' => $categories,
+            'formats' => $formats,
+            'platforms' => $platforms,
+            'programs' => $programs,
+            'affiliateCode' => $affiliate->code,
         ];
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @return Collection<int, AffiliateProgramCreative>
      */
-    private function getProgramCreatives(Affiliate $affiliate): array
+    private function getProgramCreatives(Affiliate $affiliate): Collection
     {
         $programs = $affiliate->programs()
             ->withPivot('status')
@@ -74,65 +93,58 @@ class PortalCreatives extends PortalPage
             ->filter(fn (AffiliateProgram $program): bool => $program->getAttribute('pivot')->status === 'approved');
 
         return $programs
-            ->map(fn (AffiliateProgram $program) => [
-                'id' => $program->getKey(),
-                'name' => $program->name,
-                'creatives' => $this->mapCreatives(
-                    $program->creatives()->orderByDesc('created_at')->get(),
-                    $affiliate,
-                ),
-            ])
-            ->values()
-            ->all();
+            ->flatMap(fn (AffiliateProgram $program) => $program
+                ->creatives()
+                ->orderByDesc('created_at')
+                ->get()
+                ->each(fn (AffiliateProgramCreative $creative) => $creative->setRelation('program', $program))
+            );
     }
 
     /**
      * @param  Collection<int, AffiliateProgramCreative>  $creatives
-     * @return array<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
-    private function mapCreatives(Collection $creatives, Affiliate $affiliate): array
+    private function mapAssets(Collection $creatives, Affiliate $affiliate): Collection
     {
         return $creatives
-            ->map(fn (AffiliateProgramCreative $creative) => [
-                'id' => $creative->getKey(),
-                'name' => $creative->name,
-                'type' => $creative->type,
-                'description' => $creative->description,
-                'asset_url' => $creative->asset_url ?? $creative->getFirstMediaUrl('creative_asset'),
-                'width' => $creative->width,
-                'height' => $creative->height,
-                'destination_url' => $creative->destination_url,
-                'tracking_code' => $creative->tracking_code,
-                'tracking_url' => $creative->getTrackingUrl($affiliate),
-                'embed_code' => $creative->getEmbedCode($affiliate),
-                'dimensions' => $creative->getDimensions(),
-            ])
-            ->values()
-            ->all();
+            ->map(fn (AffiliateProgramCreative $creative) => $this->mapAsset($creative, $affiliate))
+            ->values();
     }
 
-    public function copyEmbedCode(string $creativeId): void
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapAsset(AffiliateProgramCreative $creative, Affiliate $affiliate): array
     {
-        $affiliate = $this->getAffiliate();
+        $metadata = $creative->metadata ?? [];
+        $campaign = $creative->program?->name ?? $metadata['campaign'] ?? 'General';
+        $defaultCategory = match ($creative->type) {
+            'banner' => 'Banners',
+            'image' => 'Images',
+            'video' => 'Videos',
+            'pdf', 'document' => 'Documents',
+            default => 'Other',
+        };
 
-        if (! $affiliate) {
-            return;
-        }
-
-        $creative = AffiliateProgramCreative::query()->find($creativeId);
-
-        if (! $creative) {
-            Notification::make()
-                ->title(__('Creative not found'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        Notification::make()
-            ->title(__('Embed code copied to clipboard'))
-            ->success()
-            ->send();
+        return [
+            'id' => $creative->getKey(),
+            'title' => $creative->name,
+            'description' => $creative->description ?? '',
+            'type' => $creative->type,
+            'program' => $creative->program?->name ?? 'General',
+            'format' => $metadata['format'] ?? mb_strtoupper(pathinfo((string) $creative->asset_url, PATHINFO_EXTENSION) ?: $creative->type),
+            'category' => $metadata['category'] ?? $defaultCategory,
+            'campaign' => $campaign,
+            'platforms' => $metadata['platforms'] ?? [],
+            'dimensions' => $creative->getDimensions() ?? '—',
+            'status' => $metadata['status'] ?? 'Approved',
+            'status_color' => $metadata['status_color'] ?? 'success',
+            'thumbnail' => $creative->getFirstMediaUrl('creative_asset', 'thumb') ?: $creative->asset_url,
+            'download_url' => $creative->asset_url,
+            'affiliate_url' => $creative->getTrackingUrl($affiliate),
+            'caption' => $metadata['caption'] ?? $creative->description ?? '',
+            'downloads' => $metadata['downloads'] ?? 0,
+        ];
     }
 }

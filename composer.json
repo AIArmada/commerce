@@ -3,7 +3,8 @@
     "description": "A powerful collection of commerce components for Laravel - build and ship e-commerce features fast.",
     "license": "MIT",
     "require": {
-        "php": "^8.4"
+        "php": "^8.4",
+        "ysfkaya/filament-phone-input": "^4.0"
     },
     "require-dev": {
         "aiarmada/commerce-support": "*",

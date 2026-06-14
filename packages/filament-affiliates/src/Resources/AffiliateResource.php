@@ -12,6 +12,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\EditAffiliate;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\ListAffiliates;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\Pages\ViewAffiliate;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ConversionsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\DownlinesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutHoldsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutMethodsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutsRelationManager;
@@ -97,6 +98,7 @@ final class AffiliateResource extends Resource
     public static function getRelations(): array
     {
         return [
+            DownlinesRelationManager::class,
             ConversionsRelationManager::class,
             ProgramsRelationManager::class,
             PayoutsRelationManager::class,

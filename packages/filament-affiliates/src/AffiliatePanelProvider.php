@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliates;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalDownlines;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
@@ -19,6 +20,8 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Assets\Css;
+use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -68,6 +71,7 @@ class AffiliatePanelProvider extends PanelProvider
             ])
             ->assets([
                 Css::make('affiliate-portal', __DIR__ . '/../resources/css/affiliate-portal.css'),
+                Css::make('app-styles', Vite::asset('resources/css/app.css')),
             ], 'aiarmada/filament-affiliates')
             ->pages($this->getPages())
             ->middleware($this->getMiddleware())
@@ -115,6 +119,8 @@ class AffiliatePanelProvider extends PanelProvider
                 'programs' => true,
                 'conversions' => true,
                 'payouts' => true,
+                'support_compliance' => true,
+                'creatives' => true,
             ]),
         ];
 
@@ -147,6 +153,10 @@ class AffiliatePanelProvider extends PanelProvider
 
         if ($features['programs'] ?? true) {
             $pages[] = PortalPrograms::class;
+        }
+
+        if ($features['downlines'] ?? true) {
+            $pages[] = PortalDownlines::class;
         }
 
         if ($features['conversions'] ?? true) {

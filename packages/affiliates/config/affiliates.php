@@ -234,7 +234,7 @@ return [
     'tracking' => [
         'attribution_ttl_days' => env('AFFILIATES_ATTRIBUTION_TTL_DAYS', 30),
         'max_attributions_per_identifier' => env('AFFILIATES_ATTRIBUTION_MAX', 5),
-        'block_self_referral' => env('AFFILIATES_BLOCK_SELF_REFERRAL', false),
+        'block_self_referral' => env('AFFILIATES_BLOCK_SELF_REFERRAL', true),
         'ip_rate_limit' => [
             'enabled' => env('AFFILIATES_IP_RATE_LIMIT_ENABLED', false),
             'max' => env('AFFILIATES_IP_RATE_LIMIT_MAX', 20),

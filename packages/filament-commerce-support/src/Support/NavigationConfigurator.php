@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCommerceSupport\Support;
 
 use AIArmada\FilamentCommerceSupport\Settings\CommerceNavigationSettings;
+use Illuminate\Database\QueryException;
+use Spatie\LaravelSettings\Exceptions\MissingSettings;
 
 class NavigationConfigurator
 {
@@ -31,25 +33,30 @@ class NavigationConfigurator
             self::$captured = true;
         }
 
-        $settings = app(CommerceNavigationSettings::class);
+        $settings = self::resolveSettings();
 
-        if ($settings->groups !== []) {
+        if ($settings === null) {
+            return;
+        }
+
+        $groups = self::resolveSetting($settings, 'groups', []);
+        $overrides = self::resolveSetting($settings, 'overrides', []);
+
+        if ($groups !== []) {
             config()->set('commerce-support.filament.navigation.groups', array_merge(
                 config('commerce-support.filament.navigation.groups', []),
-                $settings->groups,
+                $groups,
             ));
         }
 
-        if ($settings->overrides !== []) {
+        if ($overrides !== []) {
             $groupRenames = [];
-            foreach ($settings->groups as $key => $groupConfig) {
+            foreach ($groups as $key => $groupConfig) {
                 $newLabel = $groupConfig['label'] ?? $key;
                 if (is_string($newLabel) && $newLabel !== '' && $newLabel !== $key) {
                     $groupRenames[$key] = $newLabel;
                 }
             }
-
-            $overrides = $settings->overrides;
 
             if ($groupRenames !== []) {
                 foreach ($overrides as &$itemConfig) {
@@ -65,6 +72,24 @@ class NavigationConfigurator
                 config('commerce-support.filament.navigation.items', []),
                 $overrides,
             ));
+        }
+    }
+
+    private static function resolveSettings(): ?CommerceNavigationSettings
+    {
+        try {
+            return app(CommerceNavigationSettings::class);
+        } catch (QueryException | MissingSettings) {
+            return null;
+        }
+    }
+
+    private static function resolveSetting(CommerceNavigationSettings $settings, string $property, mixed $default = []): mixed
+    {
+        try {
+            return $settings->{$property};
+        } catch (QueryException | MissingSettings) {
+            return $default;
         }
     }
 }

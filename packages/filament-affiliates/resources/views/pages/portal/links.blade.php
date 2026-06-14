@@ -57,6 +57,8 @@
                                 />
                             </div>
                         </div>
+
+                        <p class="fia-portal-helper">{{ __('Works on any page — e.g. :url', ['url' => mb_rtrim((string) config("app.url"), "/") . '/checkout/r/' . $affiliateCode]) }}</p>
                     @endif
                 </div>
             </x-filament::section>
@@ -104,6 +106,22 @@
                                 />
                             </div>
                         </div>
+
+                        @if ($generatedShortLink && $generatedShortLink !== $generatedLink)
+                            <div class="fia-portal-field">
+                                <label class="fia-portal-label">{{ __('Short Generated Link') }}</label>
+
+                                <div class="fia-portal-inline-code">
+                                    <code class="fia-portal-code-box fia-portal-code-box--success">{{ $generatedShortLink }}</code>
+
+                                    <x-filament::icon-button
+                                        icon="heroicon-o-clipboard-document"
+                                        color="success"
+                                        x-on:click="navigator.clipboard.writeText('{{ $generatedShortLink }}'); $tooltip('Copied!')"
+                                    />
+                                </div>
+                            </div>
+                        @endif
                     @endif
                 </form>
             </x-filament::section>

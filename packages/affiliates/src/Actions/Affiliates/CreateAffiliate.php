@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -60,11 +61,15 @@ final class CreateAffiliate
             $affiliate->save();
 
             if ($email = $data['contact_email'] ?? null) {
-                $affiliate->addContactMethod(ContactMethodData::email($email, 'general'));
+                OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::email($email, 'general')));
             }
 
             if ($website = $data['website_url'] ?? null) {
-                $affiliate->addContactMethod(ContactMethodData::website($website));
+                OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::website($website)));
+            }
+
+            if ($phone = $data['phone'] ?? null) {
+                OwnerContext::withOwner($owner, fn () => $affiliate->addContactMethod(ContactMethodData::phone($phone, countryCode: 'MY', purpose: 'general')));
             }
 
             return $affiliate;
