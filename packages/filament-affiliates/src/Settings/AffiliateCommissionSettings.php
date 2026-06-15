@@ -8,7 +8,7 @@ use Spatie\LaravelSettings\Settings;
 
 class AffiliateCommissionSettings extends Settings
 {
-    public bool $multi_level_enabled = false;
+    public bool $multi_level_enabled = true;
 
     /** @var array<int, float> */
     public array $multi_level_rates = [0.1, 0.05];

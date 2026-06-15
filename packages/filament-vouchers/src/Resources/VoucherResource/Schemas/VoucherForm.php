@@ -356,10 +356,32 @@ final class VoucherForm
                                 ->numeric()
                                 ->required()
                                 ->minValue(0)
-                                ->formatStateUsing(fn ($state, Get $get): mixed => $state ?? ($get('share') !== null ? (int) round((float) $get('share') * 100) : null))
+                                ->step(fn (Get $get): string => $get('type') === 'fixed' ? '0.01' : '0.1')
+                                ->formatStateUsing(function ($state, Get $get): mixed {
+                                    if ($state === null) {
+                                        return $get('share') !== null ? (float) round((float) $get('share') * 100, 2) : null;
+                                    }
+
+                                    if ($get('type') === 'fixed') {
+                                        return number_format((int) $state / 100, 2, '.', '');
+                                    }
+
+                                    return $state;
+                                })
+                                ->dehydrateStateUsing(function ($state, Get $get): mixed {
+                                    if ($state === null || $state === '') {
+                                        return null;
+                                    }
+
+                                    if ($get('type') === 'fixed') {
+                                        return (int) round((float) $state * 100);
+                                    }
+
+                                    return (float) $state;
+                                })
                                 ->helperText(fn (Get $get): string => $get('type') === 'fixed'
-                                    ? 'Amount in cents (e.g., 100 = $1.00)'
-                                    : 'Percentage of base commission (e.g., 5 = 5%)'),
+                                    ? 'Amount in dollars (e.g., 50.00 for $50)'
+                                    : 'Percentage of commission (e.g., 5 = 5%)'),
                         ])
                         ->columns(3)
                         ->addActionLabel('Add Upline Level')
