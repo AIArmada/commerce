@@ -26,7 +26,7 @@ final class ValidatePromoCodeAction
     /**
      * @param  array<string, mixed>|Cart  $context  Cart or array with 'subtotal' key
      */
-    public function handle(string $code, array|Cart $context, string $currency = 'MYR'): PromoCodeValidationResult
+    public function handle(string $code, array | Cart $context, string $currency = 'MYR'): PromoCodeValidationResult
     {
         $code = mb_trim($code);
 
@@ -51,7 +51,7 @@ final class ValidatePromoCodeAction
         return PromoCodeValidationResult::invalid('This code is not valid. Check the spelling or try another code.');
     }
 
-    private function validateVoucher(string $code, array|Cart $context, int $subtotal, string $currency): ?PromoCodeValidationResult
+    private function validateVoucher(string $code, array | Cart $context, int $subtotal, string $currency): ?PromoCodeValidationResult
     {
         if (! interface_exists(VoucherServiceInterface::class)) {
             return null;
@@ -82,10 +82,10 @@ final class ValidatePromoCodeAction
         }
 
         $label = match ($voucherData->type) {
-            VoucherType::Fixed => '-'.MoneyFormatter::formatMinor($discount, $voucherData->currency),
-            VoucherType::Percentage => '-'.($voucherData->value / 100).'%',
+            VoucherType::Fixed => '-' . MoneyFormatter::formatMinor($discount, $voucherData->currency),
+            VoucherType::Percentage => '-' . ($voucherData->value / 100) . '%',
             VoucherType::FreeShipping => 'Free Shipping',
-            default => '-'.MoneyFormatter::formatMinor($discount, $voucherData->currency),
+            default => '-' . MoneyFormatter::formatMinor($discount, $voucherData->currency),
         };
 
         return PromoCodeValidationResult::valid(
@@ -96,7 +96,7 @@ final class ValidatePromoCodeAction
         );
     }
 
-    private function validatePromotion(string $code, array|Cart $context, int $subtotal, string $currency): ?PromoCodeValidationResult
+    private function validatePromotion(string $code, array | Cart $context, int $subtotal, string $currency): ?PromoCodeValidationResult
     {
         if (! interface_exists(PromotionServiceInterface::class)) {
             return null;
@@ -127,8 +127,8 @@ final class ValidatePromoCodeAction
         }
 
         $label = match ($promotion->type->value) {
-            'percentage' => '-'.$promotion->discount_value.'%',
-            default => '-'.MoneyFormatter::formatMinor($discount, $currency),
+            'percentage' => '-' . $promotion->discount_value . '%',
+            default => '-' . MoneyFormatter::formatMinor($discount, $currency),
         };
 
         return PromoCodeValidationResult::valid(
@@ -140,7 +140,7 @@ final class ValidatePromoCodeAction
     }
 
     private function resolveVoucherData(
-        VoucherValidationResult|array $validation,
+        VoucherValidationResult | array $validation,
         string $code,
         VoucherServiceInterface $voucherService,
     ): ?VoucherData {
@@ -169,7 +169,7 @@ final class ValidatePromoCodeAction
         return null;
     }
 
-    private function calculateDiscount(VoucherData $voucherData, int $subtotal, array|Cart $context): int
+    private function calculateDiscount(VoucherData $voucherData, int $subtotal, array | Cart $context): int
     {
         $calculator = $this->discountCalculator ?? app(VoucherDiscountCalculator::class);
         $cart = $context instanceof Cart ? $context : null;
@@ -177,7 +177,7 @@ final class ValidatePromoCodeAction
         return $calculator->calculate($voucherData, $subtotal, $cart);
     }
 
-    private function resolveSubtotal(array|Cart $context): int
+    private function resolveSubtotal(array | Cart $context): int
     {
         if ($context instanceof Cart) {
             return (int) $context->getRawSubtotalWithoutConditions();
