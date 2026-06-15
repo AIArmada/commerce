@@ -391,7 +391,7 @@ return [
     */
 
     'network' => [
-        'enabled' => env('AFFILIATES_NETWORK_ENABLED', false),
+        'enabled' => env('AFFILIATES_NETWORK_ENABLED', true),
         'max_depth' => env('AFFILIATES_NETWORK_MAX_DEPTH', 10),
     ],
 

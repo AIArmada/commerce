@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\FilamentAffiliates\Concerns\PortalPage;
 use BackedEnum;
@@ -48,29 +49,61 @@ class PortalConversions extends PortalPage implements HasTable
                 ->emptyStateDescription(__('You need an affiliate account to view conversions.'));
         }
 
+        $affiliateId = $affiliate->getKey();
+
+        $query = AffiliateConversion::query()
+            ->where('affiliate_id', $affiliateId);
+
+        if (config('affiliates.network.enabled', false)) {
+            $descendantIds = AffiliateNetwork::query()
+                ->where('ancestor_id', $affiliateId)
+                ->where('depth', '>', 0)
+                ->pluck('descendant_id')
+                ->toArray();
+
+            if ($descendantIds !== []) {
+                $query->orWhereIn('affiliate_id', $descendantIds);
+            }
+        }
+
         return $table
-            ->query(
-                AffiliateConversion::query()
-                    ->where('affiliate_id', $affiliate->getKey())
-            )
+            ->query($query)
             ->columns([
                 TextColumn::make('occurred_at')
                     ->label(__('Date'))
                     ->dateTime()
                     ->sortable(),
 
+                TextColumn::make('affiliate.code')
+                    ->label(__('Affiliate'))
+                    ->searchable()
+                    ->sortable()
+                    ->visible(fn (): bool => config('affiliates.network.enabled', false)),
+
                 TextColumn::make('voucher_code')
                     ->label(__('Source'))
                     ->badge()
-                    ->getStateUsing(fn (AffiliateConversion $record): string => match (true) {
-                        $record->channel === 'upline' => __('Downline'),
-                        $record->voucher_code !== null => __('Voucher'),
-                        default => __('Link'),
+                    ->getStateUsing(function (AffiliateConversion $record) use ($affiliateId): string {
+                        if ($record->affiliate_id !== $affiliateId) {
+                            return __('Network');
+                        }
+
+                        return match (true) {
+                            $record->channel === 'upline' => __('Downline'),
+                            $record->voucher_code !== null => __('Voucher'),
+                            default => __('Link'),
+                        };
                     })
-                    ->color(fn (AffiliateConversion $record): string => match (true) {
-                        $record->channel === 'upline' => 'warning',
-                        $record->voucher_code !== null => 'info',
-                        default => 'gray',
+                    ->color(function (AffiliateConversion $record) use ($affiliateId): string {
+                        if ($record->affiliate_id !== $affiliateId) {
+                            return 'success';
+                        }
+
+                        return match (true) {
+                            $record->channel === 'upline' => 'warning',
+                            $record->voucher_code !== null => 'info',
+                            default => 'gray',
+                        };
                     }),
 
                 TextColumn::make('external_reference')
@@ -103,9 +136,31 @@ class PortalConversions extends PortalPage implements HasTable
      */
     public function getViewData(): array
     {
+        $affiliate = $this->getAffiliate();
+
+        $ownConversions = $affiliate
+            ? (int) $affiliate->conversions()->count()
+            : 0;
+
+        $networkConversions = 0;
+
+        if ($affiliate && config('affiliates.network.enabled', false)) {
+            $descendantIds = AffiliateNetwork::query()
+                ->where('ancestor_id', $affiliate->getKey())
+                ->where('depth', '>', 0)
+                ->pluck('descendant_id')
+                ->toArray();
+
+            if ($descendantIds !== []) {
+                $networkConversions = (int) AffiliateConversion::query()
+                    ->whereIn('affiliate_id', $descendantIds)
+                    ->count();
+            }
+        }
+
         return [
             'hasAffiliate' => $this->hasAffiliate(),
-            'totalConversions' => $this->getTotalConversions(),
+            'totalConversions' => $ownConversions + $networkConversions,
             'totalEarnings' => $this->getTotalEarnings(),
             'pendingEarnings' => $this->getPendingEarnings(),
         ];
