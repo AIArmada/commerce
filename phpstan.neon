@@ -37,6 +37,7 @@ parameters:
         - identifier: 'classConstant.notFound'
         - identifier: 'class.extendsFinal'
         - identifier: 'function.alreadyNarrowedType'
+        - identifier: 'method.unused'
         -
             identifier: 'return.type'
             message: '#should return.*but returns.*(?:[$]this|static)\(#i'

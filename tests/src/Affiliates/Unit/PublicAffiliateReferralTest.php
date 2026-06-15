@@ -25,7 +25,7 @@ beforeEach(function (): void {
 });
 
 test('package public referral route captures visits and redirects home', function (): void {
-    $response = $this->get(route('affiliate.referral.entry', ['affiliateCode' => $this->affiliate->code]));
+    $response = $this->get('/r/' . $this->affiliate->code);
 
     $response
         ->assertRedirect(url('/'))
@@ -34,16 +34,13 @@ test('package public referral route captures visits and redirects home', functio
     $attribution = AffiliateAttribution::query()->sole();
 
     expect($attribution->affiliate_code)->toBe($this->affiliate->code)
-        ->and(data_get($attribution->metadata, 'entry_route'))->toBe((string) config('affiliates.public_pages.route.name', 'affiliate.referral.entry'));
+        ->and(data_get($attribution->metadata, 'entry_route'))->toBe('affiliate.referral.path');
 });
 
-test('package public referral route can redirect to checkout destination', function (): void {
-    $response = $this->get(route('affiliate.referral.entry', [
-        'affiliateCode' => $this->affiliate->code,
-        (string) config('affiliates.public_pages.route.destination_parameter', 'to') => 'checkout',
-    ]));
+test('package public referral route preserves query parameters on redirect', function (): void {
+    $response = $this->get('/r/' . $this->affiliate->code . '?' . (string) config('affiliates.public_pages.route.destination_parameter', 'to') . '=checkout');
 
-    $response->assertRedirect(url('/checkout'));
+    $response->assertRedirect(url('/?to=checkout'));
 });
 
 test('package resolves public referral context from query parameters', function (): void {

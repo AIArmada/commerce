@@ -48,10 +48,10 @@ class ManageCommerceNavigation extends Page
         $settings = $this->resolveSettings();
 
         $defaultGroups = $this->getDefaultGroups();
-        $mergedGroups = array_replace_recursive($defaultGroups, $settings->groups ?? []);
+        $mergedGroups = array_replace_recursive($defaultGroups, $settings->groups);
 
         $defaultOverrides = $this->getDefaultOverrides($mergedGroups);
-        $mergedOverrides = array_replace_recursive($defaultOverrides, $settings->overrides ?? []);
+        $mergedOverrides = array_replace_recursive($defaultOverrides, $settings->overrides);
 
         $this->data = [
             'sidebar' => $this->buildSidebarForForm($mergedGroups, $mergedOverrides),
@@ -74,7 +74,7 @@ class ManageCommerceNavigation extends Page
         $sections = [];
 
         // Build a set of used component classes to track what's assigned
-        $unassigned = array_keys($mergedOverrides);
+        $unassigned = array_fill_keys(array_keys($mergedOverrides), true);
 
         foreach ($mergedGroups as $key => $config) {
             $groupItems = [];
@@ -350,7 +350,7 @@ class ManageCommerceNavigation extends Page
         // Apply group renames to item overrides
         if ($groupRenames !== []) {
             foreach ($submittedOverrides as &$config) {
-                $currentGroup = $config['group'] ?? '';
+                $currentGroup = $config['group'];
                 if (isset($groupRenames[$currentGroup])) {
                     $config['group'] = $groupRenames[$currentGroup];
                 }
@@ -515,7 +515,7 @@ class ManageCommerceNavigation extends Page
 
         // Auto-populate from panel resources/pages so they show up in the form.
         $existingLabels = array_map(
-            static fn (array $g): string => mb_strtolower($g['label'] ?? ''),
+            static fn (array $g): string => mb_strtolower($g['label']),
             $groups,
         );
         $panel = Filament::getCurrentOrDefaultPanel();
@@ -850,7 +850,7 @@ class ManageCommerceNavigation extends Page
         // auto-populate. The sidebar groups are built from item group declarations,
         // not from explicit NavigationGroup panel registrations.
         $existingLabels = array_map(
-            static fn (array $g): string => mb_strtolower($g['label'] ?? ''),
+            static fn (array $g): string => mb_strtolower($g['label']),
             $groups,
         );
         $panel = Filament::getCurrentOrDefaultPanel();
@@ -961,14 +961,14 @@ class ManageCommerceNavigation extends Page
         }
 
         $settings = $this->resolveSettings();
-        $userGroups = $settings->groups ?? [];
+        $userGroups = $settings->groups;
 
         $itemIndex = 0;
         foreach ($defaults as $class => &$config) {
             $config['__item_index'] = $itemIndex++;
             $config['__label'] = method_exists($class, 'getNavigationLabel') ? $class::getNavigationLabel() : class_basename($class);
 
-            $groupKey = $config['group'] ?? '';
+            $groupKey = $config['group'];
             $config['__group_sort'] = 9999;
             if ($groupKey !== '') {
                 // If user explicitly saved a sort order, use it. Otherwise rely on panel registration order.
@@ -983,7 +983,8 @@ class ManageCommerceNavigation extends Page
         }
         unset($config);
 
-        uasort($defaults, function ($a, $b) {
+        /** @var array<string, array<string, mixed>> $defaults */
+        uasort($defaults, function (array $a, array $b): int {
             // 1. Group Sort
             if ($a['__group_sort'] !== $b['__group_sort']) {
                 return $a['__group_sort'] <=> $b['__group_sort'];

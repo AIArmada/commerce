@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Pages\ManageAffiliateCommissionSettings;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use AIArmada\FilamentAffiliates\Resources\AffiliateCommissionTemplateResource;
@@ -70,6 +71,7 @@ it('registers affiliate resources, pages, and widgets', function (): void {
     $panel->shouldReceive('pages')
         ->once()
         ->with([
+            ManageAffiliateCommissionSettings::class,
             FraudReviewPage::class,
             PayoutBatchPage::class,
             ReportsPage::class,
@@ -121,6 +123,7 @@ it('skips payout and program admin surfaces when commission tracking is disabled
     $panel->shouldReceive('pages')
         ->once()
         ->with([
+            ManageAffiliateCommissionSettings::class,
             FraudReviewPage::class,
             ReportsPage::class,
         ])
@@ -172,6 +175,7 @@ it('skips link admin surface when links feature is disabled', function (): void 
     $panel->shouldReceive('pages')
         ->once()
         ->with([
+            ManageAffiliateCommissionSettings::class,
             FraudReviewPage::class,
             PayoutBatchPage::class,
             ReportsPage::class,
@@ -225,6 +229,7 @@ it('skips commission template admin surface when commission management is disabl
     $panel->shouldReceive('pages')
         ->once()
         ->with([
+            ManageAffiliateCommissionSettings::class,
             FraudReviewPage::class,
             PayoutBatchPage::class,
             ReportsPage::class,
@@ -277,6 +282,7 @@ it('skips support and compliance admin surfaces when support compliance is disab
     $panel->shouldReceive('pages')
         ->once()
         ->with([
+            ManageAffiliateCommissionSettings::class,
             FraudReviewPage::class,
             PayoutBatchPage::class,
             ReportsPage::class,

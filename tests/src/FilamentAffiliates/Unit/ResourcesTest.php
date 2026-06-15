@@ -39,6 +39,7 @@ use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\ConversionsRelationManager;
+use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\DownlinesRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutHoldsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutMethodsRelationManager;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers\PayoutsRelationManager;
@@ -77,6 +78,7 @@ it('AffiliateResource has relations', function (): void {
     expect($relations)
         ->toBeArray()
         ->toBe([
+            DownlinesRelationManager::class,
             ConversionsRelationManager::class,
             ProgramsRelationManager::class,
             PayoutsRelationManager::class,

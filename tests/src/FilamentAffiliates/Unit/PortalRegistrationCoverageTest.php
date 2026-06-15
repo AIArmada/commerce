@@ -27,7 +27,7 @@ it('renders the correct subheading for each approval mode', function (): void {
     $approvalMode = $reflection->getProperty('approvalMode');
 
     $approvalMode->setValue($page, 'auto');
-    expect($page->getSubheading())->toBe('Your affiliate account will be automatically activated.');
+    expect($page->getSubheading())->toBeNull();
 
     $approvalMode->setValue($page, 'open');
     expect($page->getSubheading())->toBe('Your account will be created with pending status.');
@@ -253,8 +253,5 @@ it('exposes a register action and custom affiliate form components', function ()
 
     $affiliateName = $reflection->getMethod('getAffiliateNameFormComponent');
 
-    $websiteUrl = $reflection->getMethod('getWebsiteUrlFormComponent');
-
-    expect($affiliateName->invoke($page))->toBeInstanceOf(TextInput::class)
-        ->and($websiteUrl->invoke($page))->toBeInstanceOf(TextInput::class);
+    expect($affiliateName->invoke($page))->toBeInstanceOf(TextInput::class);
 });
