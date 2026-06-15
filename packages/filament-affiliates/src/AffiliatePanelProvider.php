@@ -14,6 +14,7 @@ use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalVouchers;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -120,6 +121,7 @@ class AffiliatePanelProvider extends PanelProvider
                 'payouts' => true,
                 'support_compliance' => true,
                 'creatives' => true,
+                'vouchers' => true,
             ]),
         ];
 
@@ -148,6 +150,12 @@ class AffiliatePanelProvider extends PanelProvider
 
         if ($features['links'] ?? true) {
             $pages[] = PortalLinks::class;
+            if ($features['creatives'] ?? true) {
+                $pages[] = PortalCreatives::class;
+            }
+            if ($features['vouchers'] ?? true) {
+                $pages[] = PortalVouchers::class;
+            }
         }
 
         if ($features['programs'] ?? true) {
@@ -168,10 +176,6 @@ class AffiliatePanelProvider extends PanelProvider
 
         if ($features['support_compliance'] ?? true) {
             $pages[] = PortalSupport::class;
-        }
-
-        if ($features['creatives'] ?? true) {
-            $pages[] = PortalCreatives::class;
         }
 
         return $pages;

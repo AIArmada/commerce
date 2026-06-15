@@ -55,6 +55,7 @@ return [
             'payouts' => true,
             'support_compliance' => true,
             'creatives' => true,
+            'vouchers' => true,
         ],
     ],
 

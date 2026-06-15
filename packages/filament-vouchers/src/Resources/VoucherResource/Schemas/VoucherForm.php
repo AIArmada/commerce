@@ -291,11 +291,22 @@ final class VoucherForm
                                 ->minValue(0)
                                 ->helperText(
                                     fn (Get $get): string => $get('affiliate_commission_type') === 'percentage'
-                                    ? 'Basis points (e.g., 1500 = 15%)'
-                                    : 'Cents (e.g., 5000 = 50.00)'
+                                    ? 'Enter as percentage (e.g., 15 for 15%)'
+                                    : 'Enter as amount (e.g., 50.00 for RM50)'
                                 )
                                 ->visible(fn (Get $get): bool => $get('affiliate_commission_type') !== null)
-                                ->suffix(fn (Get $get): string => $get('affiliate_commission_type') === 'percentage' ? 'bp' : null),
+                                ->suffix(fn (Get $get): string => $get('affiliate_commission_type') === 'percentage' ? '%' : '')
+                                ->live()
+                                ->formatStateUsing(
+                                    fn (?int $state, Get $get): ?string => $state !== null
+                                    ? number_format($state / 100, 2, '.', '')
+                                    : null
+                                )
+                                ->dehydrateStateUsing(
+                                    fn (?string $state, Get $get): ?int => $state !== null && $state !== ''
+                                    ? (int) round((float) $state * 100)
+                                    : null
+                                ),
 
                             Select::make('affiliate_program_id')
                                 ->label('Commission Program')
