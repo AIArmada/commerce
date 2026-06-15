@@ -6,14 +6,28 @@ use AIArmada\FilamentAffiliates\AffiliatePanelProvider;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalCreatives;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalDownlines;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPayouts;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalProfile;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalPrograms;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalSupport;
+use AIArmada\FilamentAffiliates\Pages\Portal\PortalVouchers;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+
+beforeEach(function (): void {
+    $buildDir = public_path('build');
+    if (! is_dir($buildDir)) {
+        mkdir($buildDir, 0755, true);
+    }
+    file_put_contents($buildDir . '/manifest.json', json_encode([
+        'resources/css/app.css' => [
+            'file' => 'assets/app.css',
+        ],
+    ]));
+});
 
 it('AffiliatePanelProvider can be instantiated', function (): void {
     $provider = new AffiliatePanelProvider(app());
@@ -65,10 +79,12 @@ it('AffiliatePanelProvider omits the payouts page when commission tracking is di
         PortalDashboard::class,
         PortalProfile::class,
         PortalLinks::class,
+        PortalCreatives::class,
+        PortalVouchers::class,
         PortalPrograms::class,
+        PortalDownlines::class,
         PortalConversions::class,
         PortalSupport::class,
-        PortalCreatives::class,
     ])->not->toContain(PortalPayouts::class);
 });
 

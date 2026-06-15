@@ -39,7 +39,7 @@ test('NormalizesPhoneNumber respects country codes for local numbers', function 
     $result = $normalizer->normalize('0123456789', 'MY');
 
     expect($result['normalized'])->toBe('+60123456789');
-    expect($result['display'])->toBe('+60123456789');
+    expect($result['display'])->toBe('+60 12-345 6789');
 });
 
 test('NormalizesUrl normalizes URLs', function (): void {

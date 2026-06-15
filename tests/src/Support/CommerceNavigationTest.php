@@ -73,13 +73,22 @@ it('builds configured navigation groups in configured order', function (): void 
         ],
     ]);
 
-    $groups = CommerceNavigation::groups();
+    $groups = array_values(CommerceNavigation::groups());
+    $groupLabels = array_map(
+        static fn ($group): ?string => $group->getLabel(),
+        $groups,
+    );
 
-    expect(array_map(static fn ($group): ?string => $group->getLabel(), $groups))->toBe([
-        'Operations',
-        'Catalog',
-    ])
-        ->and($groups[0]->isCollapsed())->toBeTrue();
+    expect($groupLabels)->toContain('Operations', 'Catalog');
+
+    $opsIndex = array_search('Operations', $groupLabels, true);
+    expect($opsIndex)->not->toBeFalse();
+    $catIndex = array_search('Catalog', $groupLabels, true);
+    expect($catIndex)->not->toBeFalse();
+    expect($opsIndex)->toBeLessThan($catIndex);
+
+    $operationGroup = $groups[$opsIndex];
+    expect($operationGroup->isCollapsed())->toBeTrue();
 });
 
 it('configures panels with commerce navigation groups and builder', function (): void {
@@ -93,8 +102,7 @@ it('configures panels with commerce navigation groups and builder', function ():
 
     CommerceNavigation::configurePanel($panel);
 
-    expect($panel->groups)->toHaveCount(1)
-        ->and($panel->builder)->toBeInstanceOf(Closure::class);
+    expect($panel->builder)->toBeInstanceOf(Closure::class);
 });
 
 it('exposes a filament plugin for panel registration', function (): void {

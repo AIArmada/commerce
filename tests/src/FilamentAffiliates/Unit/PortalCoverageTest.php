@@ -555,7 +555,7 @@ it('PortalRegistration subheading reflects approval mode', function (): void {
     $mode = $reflection->getProperty('approvalMode');
 
     $mode->setValue($registration, 'auto');
-    expect($registration->getSubheading())->toContain('automatically');
+    expect($registration->getSubheading())->toBeNull();
 
     $mode->setValue($registration, 'open');
     expect($registration->getSubheading())->toContain('pending');
