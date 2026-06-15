@@ -340,16 +340,28 @@ final class VoucherForm
                                 ->minValue(1)
                                 ->maxValue(50)
                                 ->helperText('Upline depth (1 = direct parent)'),
-                            TextInput::make('share')
-                                ->label('Share')
+
+                            Select::make('type')
+                                ->label('Type')
+                                ->options([
+                                    'percentage' => 'Percentage of commission',
+                                    'fixed' => 'Fixed amount',
+                                ])
+                                ->default('percentage')
+                                ->required()
+                                ->live(),
+
+                            TextInput::make('value')
+                                ->label('Value')
                                 ->numeric()
                                 ->required()
-                                ->minValue(0.001)
-                                ->maxValue(1)
-                                ->step(0.001)
-                                ->helperText('Share of base commission (0.05 = 5%)'),
+                                ->minValue(0)
+                                ->formatStateUsing(fn ($state, Get $get): mixed => $state ?? ($get('share') !== null ? (int) round((float) $get('share') * 100) : null))
+                                ->helperText(fn (Get $get): string => $get('type') === 'fixed'
+                                    ? 'Amount in cents (e.g., 100 = $1.00)'
+                                    : 'Percentage of base commission (e.g., 5 = 5%)'),
                         ])
-                        ->columns(2)
+                        ->columns(3)
                         ->addActionLabel('Add Upline Level')
                         ->defaultItems(0)
                         ->collapsible(),

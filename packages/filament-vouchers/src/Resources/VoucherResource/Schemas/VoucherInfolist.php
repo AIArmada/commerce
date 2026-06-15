@@ -218,7 +218,7 @@ final class VoucherInfolist
                         ->state(
                             static fn ($record): string => is_array($record->affiliate_upline_levels)
                                 ? collect($record->affiliate_upline_levels)
-                                    ->map(fn (array $level): string => 'Level ' . ($level['level'] ?? '?') . ': ' . number_format(($level['share'] ?? 0) * 100, 1) . '%')
+                                    ->map(static fn (array $level): string => self::formatUplineLevel($level, $record->currency ?? 'MYR'))
                                     ->implode(', ')
                                 : 'Global config'
                         )
@@ -289,5 +289,26 @@ final class VoucherInfolist
             ]);
 
         return $schema->components($components);
+    }
+
+    /**
+     * @param  array{level?: int, type?: string, value?: int, share?: float}  $level
+     */
+    private static function formatUplineLevel(array $level, string $currency = 'MYR'): string
+    {
+        $label = 'Level ' . ($level['level'] ?? '?') . ': ';
+
+        $type = $level['type'] ?? null;
+
+        if ($type === 'fixed') {
+            return $label . MoneyHelper::formatMoney((int) ($level['value'] ?? 0), $currency);
+        }
+
+        if ($type === 'percentage') {
+            return $label . ($level['value'] ?? 0) . '% of commission';
+        }
+
+        // Legacy: share as float (0.05 = 5%)
+        return $label . number_format(($level['share'] ?? 0) * 100, 1) . '%';
     }
 }

@@ -65,7 +65,7 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $affiliate_program_id
  * @property CommissionType|null $affiliate_commission_type
  * @property int|null $affiliate_commission_value
- * @property array<array{level:int, share:float}>|null $affiliate_upline_levels
+ * @property list<array{level: int, type: string, value: int|float}>|null $affiliate_upline_levels
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read int $times_used

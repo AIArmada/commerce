@@ -50,20 +50,20 @@ final class AllocateUplineCommissions
 
             if (is_array($overrideLevels)) {
                 usort($overrideLevels, static fn (array $a, array $b): int => ($a['level'] ?? 0) <=> ($b['level'] ?? 0));
-                $resolvedLevels = array_column($overrideLevels, 'share');
+                $resolvedLevels = $overrideLevels;
             }
 
             $current = $affiliate->parent;
             $depth = 0;
 
-            foreach ($resolvedLevels as $share) {
+            foreach ($resolvedLevels as $levelConfig) {
                 $depth++;
 
                 if (! $current) {
                     break;
                 }
 
-                $portion = (int) round($conversionData->commissionMinor * (float) $share);
+                $portion = self::resolvePortion($conversionData->commissionMinor, $levelConfig);
 
                 if ($portion > 0) {
                     $model = AffiliateConversion::create([
@@ -90,7 +90,7 @@ final class AllocateUplineCommissions
                         'metadata' => [
                             'upline_of' => $affiliate->getKey(),
                             'level' => $depth,
-                            'weight' => $share,
+                            'weight' => self::resolveWeight($levelConfig),
                             'base_conversion' => $conversionData->id,
                         ],
                         'owner_type' => $current->owner_type,
@@ -117,5 +117,53 @@ final class AllocateUplineCommissions
                 $current = $current->parent;
             }
         }
+    }
+
+    /**
+     * @param  int  $commissionMinor  Base commission in cents
+     * @param  array{type?: string, value?: int|float, share?: float}|float  $levelConfig  Level configuration
+     */
+    private static function resolvePortion(int $commissionMinor, array | float $levelConfig): int
+    {
+        if (is_array($levelConfig)) {
+            $type = $levelConfig['type'] ?? null;
+
+            if ($type === 'fixed') {
+                return (int) ($levelConfig['value'] ?? 0);
+            }
+
+            if ($type === 'percentage') {
+                return (int) round($commissionMinor * ((float) ($levelConfig['value'] ?? 0) / 100));
+            }
+
+            // Legacy: share as float (0.05 = 5%)
+            return (int) round($commissionMinor * (float) ($levelConfig['share'] ?? 0));
+        }
+
+        // Global config: flat float (0.05 = 5%)
+        return (int) round($commissionMinor * (float) $levelConfig);
+    }
+
+    /**
+     * @param  array{type?: string, value?: int|float, share?: float}|float  $levelConfig
+     */
+    private static function resolveWeight(array | float $levelConfig): float | int
+    {
+        if (is_array($levelConfig)) {
+            $type = $levelConfig['type'] ?? null;
+
+            if ($type === 'fixed') {
+                return (int) ($levelConfig['value'] ?? 0);
+            }
+
+            if ($type === 'percentage') {
+                return (float) ($levelConfig['value'] ?? 0);
+            }
+
+            // Legacy: share as float
+            return (float) ($levelConfig['share'] ?? 0);
+        }
+
+        return (float) $levelConfig;
     }
 }
