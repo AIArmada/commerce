@@ -14,14 +14,14 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('program_id');
+            $table->foreignUuid('program_id')->nullable();
             $table->string('type'); // banner, text_link, email
             $table->string('name');
             $table->text('description')->nullable();
             $table->integer('width')->nullable();
             $table->integer('height')->nullable();
             $table->string('asset_url', 2048)->nullable();
-            $table->string('destination_url');
+            $table->string('destination_url')->nullable();
             $table->string('tracking_code');
 
             $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'jsonb'));

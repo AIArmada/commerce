@@ -25,7 +25,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int|null $width
  * @property int|null $height
  * @property string $asset_url
- * @property string $destination_url
+ * @property string|null $destination_url
  * @property string $tracking_code
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
@@ -114,18 +114,25 @@ class AffiliateProgramCreative extends Model implements Auditable, HasMedia
             ]);
     }
 
-    public function getTrackingUrl(Affiliate $affiliate): string
+    public function getTrackingUrl(Affiliate $affiliate): ?string
     {
-        $baseUrl = $this->destination_url;
-        $separator = str_contains($baseUrl, '?') ? '&' : '?';
+        if ($this->destination_url === null) {
+            return null;
+        }
+
+        $separator = str_contains($this->destination_url, '?') ? '&' : '?';
         $param = config('affiliates.links.parameter', 'aff');
 
-        return $baseUrl . $separator . $param . '=' . $affiliate->code;
+        return $this->destination_url . $separator . $param . '=' . $affiliate->code;
     }
 
-    public function getEmbedCode(Affiliate $affiliate): string
+    public function getEmbedCode(Affiliate $affiliate): ?string
     {
         $trackingUrl = $this->getTrackingUrl($affiliate);
+
+        if ($trackingUrl === null) {
+            return null;
+        }
 
         return match ($this->type) {
             'banner' => sprintf(

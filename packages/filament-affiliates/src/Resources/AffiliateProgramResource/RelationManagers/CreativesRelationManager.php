@@ -58,8 +58,8 @@ final class CreativesRelationManager extends RelationManager
                 ->maxLength(2048),
 
             TextInput::make('destination_url')
-                ->required()
                 ->url()
+                ->helperText('Leave blank if this is a standalone asset with no fixed destination.')
                 ->maxLength(2048),
 
             TextInput::make('tracking_code')
