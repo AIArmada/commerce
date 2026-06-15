@@ -212,7 +212,7 @@ return [
         'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
         'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
         'multi_level' => [
-            'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', false),
+            'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', true),
             'levels' => array_filter(array_map('floatval', explode(',', (string) env('AFFILIATES_MULTI_LEVEL_LEVELS', '0.1,0.05')))), // percentages of commission (0.1 = 10%)
         ],
         'paypal' => [

@@ -89,7 +89,7 @@ class PortalConversions extends PortalPage implements HasTable
                         }
 
                         return match (true) {
-                            $record->channel === 'upline' => __('Downline'),
+                            $record->channel === 'upline' => __('Network'),
                             $record->voucher_code !== null => __('Voucher'),
                             default => __('Link'),
                         };
