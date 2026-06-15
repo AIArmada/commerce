@@ -107,7 +107,7 @@
 
                     <div class="fia-portal-detail-list">
                         <div class="fia-portal-detail-row">
-                            <span class="fia-portal-detail-label">{{ __('Code') }}</span>
+                            <span class="fia-portal-detail-label">{{ __('Affiliate') }}</span>
 
                             <div class="fia-portal-detail-value">
                                 <code class="fia-portal-code">{{ $affiliate->code }}</code>
@@ -216,6 +216,16 @@
                         {{ __('Coupon codes linked to your affiliate account. Share these with your audience to earn conversion credit.') }}
                     </x-slot>
 
+                    <x-slot name="headerEnd">
+                        <x-filament::link
+                            :href="route('filament.' . config('filament-affiliates.portal.panel_id', 'affiliate') . '.pages.portal-vouchers')"
+                            color="primary"
+                            size="sm"
+                        >
+                            {{ __('View All') }}
+                        </x-filament::link>
+                    </x-slot>
+
                     <div class="fia-portal-table-wrap">
                         <table class="fia-portal-table">
                             <thead>
@@ -224,6 +234,7 @@
                                     <th>{{ __('Name') }}</th>
                                     <th>{{ __('Type') }}</th>
                                     <th>{{ __('Value') }}</th>
+                                    <th>{{ __('Commission') }}</th>
                                     <th class="fia-portal-status">{{ __('Status') }}</th>
                                 </tr>
                             </thead>
@@ -251,6 +262,26 @@
                                         </td>
                                         <td>
                                             <span class="fia-portal-amount">{{ $voucher->value_label }}</span>
+                                        </td>
+                                        <td>
+                                            @php
+                                                $commissionType = $voucher->affiliate_commission_type;
+                                                $commissionValue = $voucher->affiliate_commission_value;
+                                                
+                                                $commissionLabel = __('—');
+                                                if ($commissionType && $commissionValue) {
+                                                    $commissionTypeValue = $commissionType instanceof \AIArmada\Affiliates\Enums\CommissionType 
+                                                        ? $commissionType->value 
+                                                        : (string) $commissionType;
+                                                    
+                                                    if ($commissionTypeValue === 'percentage') {
+                                                        $commissionLabel = ($commissionValue / 100) . '%';
+                                                    } else {
+                                                        $commissionLabel = $this->formatAmount($commissionValue, $voucher->currency ?? null);
+                                                    }
+                                                }
+                                            @endphp
+                                            <span class="fia-portal-amount">{{ $commissionLabel }}</span>
                                         </td>
                                         <td class="fia-portal-status">
                                             @php
@@ -284,12 +315,22 @@
                         {{ __('Affiliates you have referred. You earn commissions on their conversions.') }}
                     </x-slot>
 
+                    <x-slot name="headerEnd">
+                        <x-filament::link
+                            :href="route('filament.' . config('filament-affiliates.portal.panel_id', 'affiliate') . '.pages.portal-downlines')"
+                            color="primary"
+                            size="sm"
+                        >
+                            {{ __('View All') }}
+                        </x-filament::link>
+                    </x-slot>
+
                     <div class="fia-portal-table-wrap">
                         <table class="fia-portal-table">
                             <thead>
                                 <tr>
                                     <th>{{ __('Name') }}</th>
-                                    <th>{{ __('Code') }}</th>
+                                    <th>{{ __('Affiliate') }}</th>
                                     <th>{{ __('Rank') }}</th>
                                     <th>{{ __('Conversions') }}</th>
                                     <th class="fia-portal-status">{{ __('Status') }}</th>

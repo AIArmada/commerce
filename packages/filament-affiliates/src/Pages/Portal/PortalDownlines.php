@@ -27,12 +27,12 @@ class PortalDownlines extends PortalPage implements HasTable
 
     public static function getNavigationLabel(): string
     {
-        return __('Downlines');
+        return __('Network');
     }
 
     public function getTitle(): string | Htmlable
     {
-        return __('My Downlines');
+        return __('Your Network');
     }
 
     public function table(Table $table): Table
@@ -44,7 +44,7 @@ class PortalDownlines extends PortalPage implements HasTable
                 ->query(Affiliate::query()->whereNull('id'))
                 ->columns([])
                 ->emptyStateHeading(__('No affiliate account'))
-                ->emptyStateDescription(__('You need an affiliate account to view downlines.'));
+                ->emptyStateDescription(__('You need an affiliate account to view your network.'));
         }
 
         return $table
@@ -78,7 +78,7 @@ class PortalDownlines extends PortalPage implements HasTable
                     ->sortable(),
 
                 TextColumn::make('direct_downline_count')
-                    ->label(__('Their Downlines'))
+                    ->label(__('Network'))
                     ->numeric()
                     ->sortable(),
 

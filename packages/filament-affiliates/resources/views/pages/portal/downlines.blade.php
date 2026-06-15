@@ -14,15 +14,15 @@
                     <div class="fia-portal-summary">
                         <x-heroicon-o-users class="fia-portal-summary-icon fia-portal-summary-icon--primary" />
                         <p class="fia-portal-summary-value">{{ number_format($directDownlines) }}</p>
-                        <p class="fia-portal-summary-label">{{ __('Direct Downlines') }}</p>
-                    </div>
-                </x-filament::section>
+<p class="fia-portal-summary-label">{{ __('Direct Network') }}</p>
+                        </div>
+                    </x-filament::section>
 
                 <x-filament::section class="fia-portal-summary-card">
                     <div class="fia-portal-summary">
                         <x-heroicon-o-user-group class="fia-portal-summary-icon fia-portal-summary-icon--primary" />
                         <p class="fia-portal-summary-value">{{ number_format($totalDownlines) }}</p>
-                        <p class="fia-portal-summary-label">{{ __('Total Downlines') }}</p>
+                        <p class="fia-portal-summary-label">{{ __('Total Network') }}</p>
                     </div>
                 </x-filament::section>
 
@@ -37,7 +37,7 @@
 
             <x-filament::section>
                 <x-slot name="heading">
-                    {{ __('Downline Affiliates') }}
+                    {{ __('Network Affiliates') }}
                 </x-slot>
 
                 {{ $this->table }}
