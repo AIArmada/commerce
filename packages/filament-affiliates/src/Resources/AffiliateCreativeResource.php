@@ -143,8 +143,7 @@ final class AffiliateCreativeResource extends Resource
                     TextInput::make('destination_url')
                         ->label('Destination URL')
                         ->url()
-                        ->required()
-                        ->helperText('Where the affiliate link should point to.')
+                        ->helperText('Where the affiliate link should point to. Leave blank if this is a standalone asset with no fixed destination.')
                         ->maxLength(2048),
 
                     TextInput::make('tracking_code')

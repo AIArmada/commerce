@@ -14,6 +14,7 @@
 
             $assetsForJs = $assets->map(fn (array $asset): array => [
                 ...$asset,
+                'affiliate_url' => $asset['affiliate_url'] ?? $defaultAffiliateLink,
                 'search' => mb_strtolower(implode(' ', [
                     $asset['title'],
                     $asset['description'],
