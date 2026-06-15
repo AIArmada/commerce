@@ -13,7 +13,6 @@ final class FilamentProductsServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-products')
-            ->hasViews('filament-products')
             ->hasTranslations();
     }
 }
