@@ -187,7 +187,7 @@ final class OwnerTypeRegistry
             return $this->formatLabel($owner, $definition);
         }
 
-        if (method_exists($owner, 'getDisplayNameAttribute')) {
+        if (method_exists($owner, 'getDisplayNameAttribute') && $owner->hasAttribute('display_name')) {
             return (string) $owner->getAttribute('display_name');
         }
 
