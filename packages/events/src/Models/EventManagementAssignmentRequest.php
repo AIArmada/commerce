@@ -6,12 +6,12 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Enums\AssignmentRequestStatus;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Carbon\CarbonImmutable;
 
 /**
  * @property string $id
