@@ -8,6 +8,7 @@ use AIArmada\Contacting\Enums\SocialPlatform;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
+use AIArmada\Contacting\Support\SocialProfileConfig;
 use AIArmada\Customers\Models\Customer;
 
 test('SocialProfile model class exists', function (): void {
@@ -88,6 +89,7 @@ test('primary social profiles remain unique per socialable type and purpose', fu
 
 test('NormalizeSocialProfileAction normalizes @handle', function (): void {
     $action = new NormalizeSocialProfileAction(
+        new SocialProfileConfig,
         new NormalizesSocialHandle,
         new NormalizesUrl,
     );
@@ -98,6 +100,7 @@ test('NormalizeSocialProfileAction normalizes @handle', function (): void {
 
 test('NormalizeSocialProfileAction extracts handle from URL', function (): void {
     $action = new NormalizeSocialProfileAction(
+        new SocialProfileConfig,
         new NormalizesSocialHandle,
         new NormalizesUrl,
     );
@@ -109,6 +112,7 @@ test('NormalizeSocialProfileAction extracts handle from URL', function (): void 
 
 test('NormalizeSocialProfileAction handles null handle and URL', function (): void {
     $action = new NormalizeSocialProfileAction(
+        new SocialProfileConfig,
         new NormalizesSocialHandle,
         new NormalizesUrl,
     );

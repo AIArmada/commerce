@@ -78,6 +78,19 @@ CONTACTING_TABLE_PREFIX=org_
 
 ```php
 'social_profiles' => [
-    'platforms' => ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'x', 'threads', 'telegram', 'telegram_channel', 'telegram_group', 'whatsapp_channel', 'website', 'other'],
+    'platforms' => [
+        'facebook' => ['label' => 'Facebook', 'prefix' => 'www.facebook.com/'],
+        'instagram' => ['label' => 'Instagram', 'prefix' => 'www.instagram.com/'],
+        'tiktok' => ['label' => 'TikTok', 'prefix' => 'www.tiktok.com/@'],
+        'youtube' => ['label' => 'YouTube', 'prefix' => 'www.youtube.com/@'],
+        'linkedin' => ['label' => 'LinkedIn', 'prefix' => 'www.linkedin.com/in/'],
+        'x' => ['label' => 'X / Twitter', 'prefix' => 'x.com/'],
+        'threads' => ['label' => 'Threads', 'prefix' => 'www.threads.net/@'],
+        'telegram' => ['label' => 'Telegram', 'prefix' => 't.me/'],
+        'website' => ['label' => 'Website'],
+        'other' => ['label' => 'Other'],
+    ],
 ],
 ```
+
+You can add more platforms by adding a `label`, and optionally a `prefix` or `suffix` for URL normalization. Platforms without a URL pattern are still valid for manual entry and display only.

@@ -6,10 +6,12 @@ namespace AIArmada\Contacting\Actions;
 
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
+use AIArmada\Contacting\Support\SocialProfileConfig;
 
 final class NormalizeSocialProfileAction
 {
     public function __construct(
+        private readonly SocialProfileConfig $profileConfig,
         private readonly NormalizesSocialHandle $handleNormalizer,
         private readonly NormalizesUrl $urlNormalizer,
     ) {}
@@ -22,36 +24,25 @@ final class NormalizeSocialProfileAction
         $normalizedHandle = $this->handleNormalizer->normalize($handle);
         $normalizedUrl = $this->urlNormalizer->normalize($url);
 
-        // If URL exists and handle is missing, attempt simple extraction for known platforms
+        if ($normalizedHandle !== null && $normalizedUrl === null) {
+            $builtUrl = $this->profileConfig->buildUrl($platform, $normalizedHandle);
+
+            if ($builtUrl !== null) {
+                $normalizedUrl = $builtUrl;
+            }
+        }
+
         if ($normalizedHandle === null && $normalizedUrl !== null) {
-            $normalizedHandle = $this->extractHandleFromUrl($platform, $normalizedUrl);
+            $extractedHandle = $this->profileConfig->extractHandle($platform, $normalizedUrl);
+
+            if ($extractedHandle !== null) {
+                $normalizedHandle = $this->handleNormalizer->normalize($extractedHandle);
+            }
         }
 
         return [
             'normalized_url' => $normalizedUrl,
             'handle' => $normalizedHandle,
         ];
-    }
-
-    private function extractHandleFromUrl(string $platform, string $url): ?string
-    {
-        $patterns = [
-            'facebook' => '/facebook\.com\/([^\/\?#]+)/i',
-            'instagram' => '/instagram\.com\/([^\/\?#]+)/i',
-            'tiktok' => '/tiktok\.com\/(?:@)?([^\/\?#]+)/i',
-            'x' => '/x\.com\/([^\/\?#]+)/i',
-            'twitter' => '/twitter\.com\/([^\/\?#]+)/i',
-            'linkedin' => '/linkedin\.com\/in\/([^\/\?#]+)/i',
-            'youtube' => '/youtube\.com\/(?:c\/|channel\/|user\/|@)?([^\/\?#]+)/i',
-            'threads' => '/threads\.net\/(?:@)?([^\/\?#]+)/i',
-        ];
-
-        foreach ($patterns as $key => $pattern) {
-            if ($key === $platform && preg_match($pattern, $url, $matches)) {
-                return $matches[1];
-            }
-        }
-
-        return null;
     }
 }
