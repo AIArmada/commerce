@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
+use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Contacting\Support\NormalizesSocialHandle;
 use AIArmada\Contacting\Support\NormalizesUrl;
 use AIArmada\Contacting\Support\SocialProfileConfig;
@@ -274,7 +275,7 @@ test('normalize action handles @ prefix in extracted handle', function (): void 
 });
 
 test('profileUrl returns built URL from handle', function (): void {
-    $profile = new AIArmada\Contacting\Models\SocialProfile;
+    $profile = new SocialProfile;
     $profile->platform = 'facebook';
     $profile->handle = 'myPage';
 
@@ -282,7 +283,7 @@ test('profileUrl returns built URL from handle', function (): void {
 });
 
 test('profileUrl falls back to url when handle is null', function (): void {
-    $profile = new AIArmada\Contacting\Models\SocialProfile;
+    $profile = new SocialProfile;
     $profile->platform = 'website';
     $profile->handle = null;
     $profile->url = 'https://example.com';
@@ -291,7 +292,7 @@ test('profileUrl falls back to url when handle is null', function (): void {
 });
 
 test('profileUrl returns null for no-pattern platform with no url', function (): void {
-    $profile = new AIArmada\Contacting\Models\SocialProfile;
+    $profile = new SocialProfile;
     $profile->platform = 'signal';
     $profile->handle = 'myuser';
 
