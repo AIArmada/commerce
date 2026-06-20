@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
+use AIArmada\Contacting\Support\SocialProfileConfig;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -73,6 +74,17 @@ final class SocialProfile extends Model
             'valid_until' => 'immutable_datetime',
             'metadata' => 'array',
         ];
+    }
+
+    public function profileUrl(): ?string
+    {
+        $handle = $this->handle;
+
+        if ($handle === null || $handle === '') {
+            return $this->url;
+        }
+
+        return app(SocialProfileConfig::class)->buildUrl($this->platform, $handle) ?? $this->url;
     }
 
     /**

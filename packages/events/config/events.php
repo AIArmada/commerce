@@ -76,6 +76,7 @@ return [
             'event_submission_attachments' => env('EVENTS_TABLE_SUBMISSION_ATTACHMENTS', $tablePrefix . 'event_submission_attachments'),
             'event_approval_requests' => env('EVENTS_TABLE_APPROVAL_REQUESTS', $tablePrefix . 'event_approval_requests'),
             'event_management_assignments' => env('EVENTS_TABLE_MANAGEMENT_ASSIGNMENTS', $tablePrefix . 'event_management_assignments'),
+            'event_management_assignment_requests' => env('EVENTS_TABLE_MANAGEMENT_ASSIGNMENT_REQUESTS', $tablePrefix . 'event_management_assignment_requests'),
             'event_attributes' => env('EVENTS_TABLE_ATTRIBUTES', $tablePrefix . 'event_attributes'),
             'event_revisions' => env('EVENTS_TABLE_REVISIONS', $tablePrefix . 'event_revisions'),
             'event_search_documents' => env('EVENTS_TABLE_SEARCH_DOCUMENTS', $tablePrefix . 'event_search_documents'),
@@ -83,6 +84,9 @@ return [
             'event_availability_blocks' => env('EVENTS_TABLE_AVAILABILITY_BLOCKS', $tablePrefix . 'event_availability_blocks'),
             'event_templates' => env('EVENTS_TABLE_TEMPLATES', $tablePrefix . 'event_templates'),
             'event_template_items' => env('EVENTS_TABLE_TEMPLATE_ITEMS', $tablePrefix . 'event_template_items'),
+
+            // Module 11: Organizations
+            'organizations' => env('EVENTS_TABLE_ORGANIZATIONS', $tablePrefix . 'organizations'),
 
             // Module 8: Data Quality & Verification
             'event_verifications' => env('EVENTS_TABLE_VERIFICATIONS', $tablePrefix . 'event_verifications'),
