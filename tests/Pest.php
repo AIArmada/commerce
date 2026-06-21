@@ -58,6 +58,8 @@ pest()->extend(TestCase::class)->in(
     'src/Shipping',
     'src/Support',
     'src/FilamentCommerceSupport',
+    'src/Communications',
+    'src/FilamentCommunications',
 );
 
 pest()->extend(ProductsTestCase::class)->in('src/Products');

@@ -1,0 +1,42 @@
+{
+    "name": "aiarmada/filament-communications",
+    "description": "Filament v5 admin UI for the communications domain - manage messages, deliveries, templates, preferences, and suppressions",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "filament",
+        "communications",
+        "admin"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "aiarmada/communications": "self.version",
+        "aiarmada/commerce-support": "self.version",
+        "filament/filament": "^5.6.7",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Filament\\Communications\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Filament\\Communications\\FilamentCommunicationsServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
