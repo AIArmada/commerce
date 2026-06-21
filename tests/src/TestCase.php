@@ -12,6 +12,8 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\CheckoutServiceProvider;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Communications\CommunicationsServiceProvider;
+use AIArmada\Filament\Communications\FilamentCommunicationsServiceProvider;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Models\Permission;
@@ -180,6 +182,8 @@ abstract class TestCase extends Orchestra
             FilamentAddressingServiceProvider::class,
             ShippingServiceProvider::class,
             ProductsServiceProvider::class,
+            CommunicationsServiceProvider::class,
+            FilamentCommunicationsServiceProvider::class,
             FilamentShippingServiceProvider::class,
             FilamentCashierServiceProvider::class,
             TestPanelProvider::class,
@@ -342,6 +346,17 @@ abstract class TestCase extends Orchestra
         $app['config']->set('chip.owner.auto_assign_on_create', true);
         $app['config']->set('chip.is_sandbox', true);
 
+        // Configure communications settings for testing
+        $app['config']->set('communications.database.json_column_type', 'json');
+        $app['config']->set('communications.features.owner.enabled', true);
+        $app['config']->set('communications.features.owner.include_global', false);
+        $app['config']->set('communications.features.owner.auto_assign_on_create', true);
+        $app['config']->set('communications.features.native_capture', true);
+        $app['config']->set('communications.cache.idempotency_store', 'array');
+
+        // Configure filament-communications for testing
+        $app['config']->set('filament-communications.navigation.group', 'Communications');
+
         // Configure JNT settings for testing
         $app['config']->set('jnt.environment', 'testing');
         $app['config']->set('jnt.api_account', '640826271705595946'); // J&T official testing account
@@ -436,6 +451,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/signals/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/customers/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/checkout/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/communications/database/migrations');
     }
 
     protected function setUpDatabase(): void

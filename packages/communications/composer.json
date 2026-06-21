@@ -1,0 +1,53 @@
+{
+    "name": "aiarmada/communications",
+    "description": "Production-grade communications domain for Laravel - outbound, inbound, and internal communication recording with Laravel Notifications integration",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "communications",
+        "notifications",
+        "email",
+        "sms",
+        "webhook"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "aiarmada/commerce-support": "self.version",
+        "spatie/laravel-data": "^4.23",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "suggest": {
+        "aiarmada/filament-communications": "Filament admin UI for communications.",
+        "aiarmada/contacting": "Contact methods and social profiles for recipient resolution.",
+        "spatie/laravel-activitylog": "Human-readable business activity logging.",
+        "owen-it/laravel-auditing": "Compliance-grade model before/after auditing."
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Communications\\": "src/",
+            "AIArmada\\Communications\\Database\\Factories\\": "database/factories"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Communications\\CommunicationsServiceProvider"
+            ],
+            "aliases": {
+                "Communications": "AIArmada\\Communications\\Facades\\Communications"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
