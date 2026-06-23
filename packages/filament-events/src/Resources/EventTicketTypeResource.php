@@ -8,6 +8,8 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\FilamentEvents\Actions\Exporter\EventTicketTypeExporter;
 use AIArmada\FilamentEvents\Actions\Importer\EventTicketTypeImporter;
+use AIArmada\FilamentEvents\Resources\EventTicketTypeResource\RelationManagers\EventTicketTypeBundleProductsRelationManager;
+use AIArmada\FilamentEvents\Resources\EventTicketTypeResource\RelationManagers\EventTicketTypeComponentsRelationManager;
 use BackedEnum;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ImportAction;
@@ -19,6 +21,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class EventTicketTypeResource extends Resource
 {
@@ -28,7 +31,7 @@ final class EventTicketTypeResource extends Resource
 
     protected static ?int $navigationSort = 11;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
     }
@@ -55,7 +58,7 @@ final class EventTicketTypeResource extends Resource
                     ->badge(),
                 Tables\Columns\TextColumn::make('access_type')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (mixed $state): string => match ((string) $state) {
                         'public' => 'success',
                         'private' => 'danger',
                         'invite_only' => 'warning',
@@ -64,11 +67,12 @@ final class EventTicketTypeResource extends Resource
                 Tables\Columns\TextColumn::make('price')
                     ->money(fn (EventTicketType $record): string => $record->currency),
                 Tables\Columns\TextColumn::make('currency'),
-                Tables\Columns\TextColumn::make('quota')
+                Tables\Columns\TextColumn::make('getTotalOnHand')
+                    ->label('Stock')
                     ->numeric(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (mixed $state): string => match ((string) $state) {
                         'active' => 'success',
                         'inactive' => 'gray',
                         'sold_out' => 'danger',
@@ -125,7 +129,12 @@ final class EventTicketTypeResource extends Resource
                         TextEntry::make('price')
                             ->money(fn (EventTicketType $record): string => $record->currency),
                         TextEntry::make('currency'),
-                        TextEntry::make('quota')->numeric(),
+                        TextEntry::make('getTotalOnHand')
+                            ->label('Stock (On Hand)')
+                            ->numeric(),
+                        TextEntry::make('getTotalAvailable')
+                            ->label('Stock (Available)')
+                            ->numeric(),
                         TextEntry::make('admits_quantity')->numeric(),
                         TextEntry::make('min_quantity')->numeric(),
                         TextEntry::make('max_quantity')->numeric(),
@@ -136,6 +145,14 @@ final class EventTicketTypeResource extends Resource
                         TextEntry::make('sales_ends_at')->dateTime(),
                     ])->columns(2),
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            EventTicketTypeBundleProductsRelationManager::class,
+            EventTicketTypeComponentsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

@@ -6,6 +6,10 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRegistrationFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Events\States\RegistrationStatus\Completed;
+use AIArmada\Events\States\RegistrationStatus\Pending;
+use AIArmada\Events\States\RegistrationStatus\RegistrationStatus as RegistrationStatusState;
+use AIArmada\Events\States\RegistrationStatus\Waitlisted;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +23,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -46,11 +51,17 @@ use Illuminate\Support\Str;
  * @property CarbonImmutable|null $expired_at
  * @property string|null $status_reason
  * @property string|null $notes
+ * @property string|null $parent_registration_id
+ * @property bool $is_bundle_root
+ * @property array|null $pass_entitlements
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Event $event
  * @property-read EventOccurrence|null $occurrence
+ * @property-read EventSession|null $session
+ * @property-read EventRegistration|null $parentRegistration
+ * @property-read Collection<int, EventRegistration> $childRegistrations
  * @property-read Model|Eloquent $registrant
  * @property-read Collection<int, EventRegistrationParticipant> $participants
  * @property-read Collection<int, EventRegistrationAnswer> $answers
@@ -61,6 +72,7 @@ use Illuminate\Support\Str;
 final class EventRegistration extends Model
 {
     use HasFactory;
+    use HasStates;
     use Notifiable;
     use UsesEventUuid;
 
@@ -80,6 +92,7 @@ final class EventRegistration extends Model
         'registered_at', 'approved_at', 'completed_at', 'cancelled_at', 'rejected_at',
         'waitlisted_at', 'expired_at',
         'status_reason', 'notes',
+        'parent_registration_id', 'is_bundle_root', 'pass_entitlements',
         'metadata',
     ];
 
@@ -107,8 +120,11 @@ final class EventRegistration extends Model
     protected function casts(): array
     {
         return [
+            'status' => RegistrationStatusState::class,
             'total_participants' => 'integer',
             'total_amount' => 'decimal:2',
+            'is_bundle_root' => 'boolean',
+            'pass_entitlements' => 'array',
             'registered_at' => 'immutable_datetime',
             'approved_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
@@ -134,6 +150,14 @@ final class EventRegistration extends Model
     public function occurrence(): BelongsTo
     {
         return $this->belongsTo(EventOccurrence::class, 'event_occurrence_id');
+    }
+
+    /**
+     * @return BelongsTo<EventSession, $this>
+     */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(EventSession::class, 'event_session_id');
     }
 
     /**
@@ -185,6 +209,27 @@ final class EventRegistration extends Model
     }
 
     /**
+     * @return BelongsTo<EventRegistration, $this>
+     */
+    public function parentRegistration(): BelongsTo
+    {
+        return $this->belongsTo(EventRegistration::class, 'parent_registration_id');
+    }
+
+    /**
+     * @return HasMany<EventRegistration, $this>
+     */
+    public function childRegistrations(): HasMany
+    {
+        return $this->hasMany(EventRegistration::class, 'parent_registration_id');
+    }
+
+    public function getPassEntitlements(): array
+    {
+        return $this->pass_entitlements ?? [];
+    }
+
+    /**
      * @param  Builder<EventRegistration>  $query
      */
     public function scopeByOrder(Builder $query, Model $order): void
@@ -196,20 +241,18 @@ final class EventRegistration extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status instanceof Pending;
     }
 
     public function isWaitlisted(): bool
     {
-        return $this->status === 'waitlisted';
+        return $this->status instanceof Waitlisted;
     }
 
     public function complete(): void
     {
-        $this->update([
-            'status' => 'completed',
-            'approved_at' => $this->freshTimestamp(),
-        ]);
+        $this->approved_at = $this->freshTimestamp();
+        $this->status->transitionTo(Completed::class);
     }
 
     /**
@@ -258,9 +301,7 @@ final class EventRegistration extends Model
 
     public function promoteFromWaitlist(): void
     {
-        $this->update([
-            'status' => 'pending',
-            'waitlisted_at' => null,
-        ]);
+        $this->waitlisted_at = null;
+        $this->status->transitionTo(Pending::class);
     }
 }

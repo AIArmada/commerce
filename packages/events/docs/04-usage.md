@@ -4,21 +4,142 @@ title: Usage
 
 ## Creating Events
 
+### Free events
+
+```php
+$event = Event::create([
+    'title' => 'Free Workshop',
+    'pricing_mode' => PricingMode::Free,
+    'registration_mode' => RegistrationMode::Required,
+    'issue_passes_for_free' => true,
+]);
+```
+
+Use factory states for convenience:
+
+```php
+Event::factory()->free()->published()->create();
+Event::factory()->freeWithOptionalRegistration()->published()->create();
+Event::factory()->freeOpenDoor()->published()->create();
+Event::factory()->mixed()->published()->create();
+```
+
+### Inheritance chain
+
+Pricing and registration modes follow this resolution chain:
+
+1. Session override → Occurrence override → Event override → config default / auto-derive
+2. Accessors like `effectivePricingMode()` and `effectiveRegistrationMode()` walk the chain and return the resolved value
+
+### Free registration
+
+```php
+use AIArmada\Events\Actions\RegisterForFreeAction;
+
+$registrations = app(RegisterForFreeAction::class)->execute(
+    target: $occurrence,
+    participants: [
+        ['name' => 'Alice', 'email' => 'alice@example.com', 'is_primary' => true],
+    ],
+);
+```
+
+The `target` can be an `Event`, `EventOccurrence`, or `EventSession`. Each participant produces one registration.
+
+### Optional registrations (Interested → Confirmed)
+
+For events with `registration_mode = Optional`:
+
+```php
+use AIArmada\Events\Actions\RegisterForFreeAction;
+use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
+
+// Creates an Interested registration (no pass issued)
+$registrations = app(RegisterForFreeAction::class)->execute(
+    target: $occurrence,
+    participants: [['name' => 'Bob']],
+    options: ['with_pass' => false],
+);
+
+// Promote to confirmed + issue pass later
+$confirmed = app(PromoteInterestedToConfirmedAction::class)->execute(
+    $registrations->first(),
+);
+```
+
+### Open-door events (walk-in / headcount)
+
+For events with `registration_mode = None`:
+
+```php
+use AIArmada\Events\Actions\RecordWalkInAction;
+use AIArmada\Events\Actions\RecordHeadcountLogAction;
+
+// Walk-in: record attendance without a registration
+app(RecordWalkInAction::class)->execute(
+    target: $occurrence,
+    count: 3,
+    notes: 'Front desk check-in',
+);
+
+// Headcount: just increment a counter
+app(RecordHeadcountLogAction::class)->execute(
+    target: $occurrence,
+    count: 5,
+    intervalLabel: '10:00-10:15',
+    notes: 'Late arrivals from shuttle bus',
+);
+```
+
+### Per-level overrides
+
+Sessions and occurrences can override the parent's mode:
+
+```php
+$session = $occurrence->sessions()->create([
+    'title' => 'Premium Workshop',
+    'pricing_mode' => PricingMode::Paid,     // Override free event
+    'registration_mode' => RegistrationMode::Required,
+    'capacity' => 50,
+    ...
+]);
+```
+
+This allows mixed-mode setups where a free event has a paid add-on session, or vice-versa.
+Visibility follows the same event → occurrence → session fallback when a create flow leaves it unset.
+
+### Scopes
+
+```php
+// Query scopes
+Event::free()->get();              // pricing_mode = Free
+Event::mixed()->get();             // pricing_mode = Mixed
+Event::openDoor()->get();          // registration_mode = None
+
+// Eager load for N+1-safe accessors
+Event::withResolvedModes()->get(); // eager-loads ticketTypes for effectivePricingMode()
+```
+
+## Managing Events
+
 ```php
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\States\EventStatus;
 
 $event = Event::create([
     'title' => 'Annual Conference 2026',
     'slug' => 'annual-conference-2026',
     'summary' => 'A one-day tech conference for developers.',
     'type' => 'conference',
-    'status' => Event::DRAFT,
+    'status' => EventStatus\Draft::class,
     'visibility' => 'public',
     'delivery_mode' => 'physical',
 ]);
 ```
 
 ### Event lifecycle
+
+Status transitions are handled by `spatie/laravel-model-states`. Use the workflow service to transition with side effects:
 
 ```php
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
@@ -34,7 +155,19 @@ $workflow->reschedule($occurrence, $newStart, $newEnd);
 $workflow->complete($occurrence);
 ```
 
-Direct status mutation is allowed, but using the workflow service ensures lifecycle timestamps are stamped and domain events are dispatched.
+Direct transitions without side effects:
+
+```php
+use AIArmada\Events\States\EventStatus;
+use AIArmada\Events\States\OccurrenceStatus;
+use AIArmada\Events\States\RegistrationStatus;
+
+$event->status->transitionTo(EventStatus\Published::class);
+$occurrence->status->transitionTo(OccurrenceStatus\Cancelled::class);
+$registration->status->transitionTo(RegistrationStatus\Confirmed::class);
+```
+
+Use the workflow service when lifecycle timestamps and domain events are needed. Allowed transitions are defined in each state base class's `config()` method under `States/`.
 
 ## Managing Occurrences
 
@@ -306,11 +439,11 @@ AddEventTicketTypeToCartAction::make()->handle(
 );
 ```
 
-The action validates status, sales windows, min/max quantity, and remaining quota before adding. It handles cart merging — if the same ticket type is already in the cart, quantities and participants are merged rather than overwritten.
+The action validates status, sales windows, min/max quantity, and remaining quota before adding. It handles cart merging — if the same ticket type is already in the cart, quantities and participants are merged rather than overwritten. Session-scoped ticket types preserve `event_session_id` in the cart item attributes.
 
 ### Mixed carts (tickets + products)
 
-Ticket types and products can coexist in the same cart. The checkout pipeline runs pricing, discounts, shipping, tax, and payment uniformly. After order creation, `CreateEventRegistrationsStep` (auto-registered) selectively processes only order items where `purchasable instanceof EventTicketType`, creating registrations and passes. Product items flow through normal order fulfillment.
+Ticket types and products can coexist in the same cart. The checkout pipeline runs pricing, discounts, shipping, tax, and payment uniformly. After order creation, `CreateEventRegistrationsStep` (auto-registered) processes event ticket items by resolving the matching event, occurrence, or session scope from each `EventTicketType`, then creates registrations and passes. Product items flow through normal order fulfillment.
 
 ### Participant data
 
@@ -334,15 +467,19 @@ use AIArmada\Events\Actions\StartOccurrenceCheckoutAction;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 
-StartOccurrenceCheckoutAction::make()->handle($occurrence, $registration);
+$target = EventOccurrence::find('...');
+
+StartOccurrenceCheckoutAction::make()->handle($target, $registration);
 // Returns CheckoutSession from the commerce pipeline
 ```
 
+The first argument can be either an occurrence or a session.
+
 Override via config `events.integrations.checkout_intent_resolver` or by binding `EventCheckoutIntentResolver`.
 
-### Per-occurrence ticket types
+### Per-scope ticket types
 
-When a ticket type's `event_occurrence_id` is set, it is scoped to that specific occurrence. Both `AddEventTicketTypeToCartAction` (via attributes) and `CreateRegistrationsForOrderItemAction` (via validation) enforce occurrence-scoping. Ticket types without an occurrence are event-wide and can be registered for any occurrence of the event.
+When a ticket type's `event_occurrence_id` or `event_session_id` is set, it is scoped to that specific occurrence or session. Both `AddEventTicketTypeToCartAction` (via attributes) and `CreateRegistrationsFromOrderAction` (via validation) enforce scope matching. Ticket types without an occurrence or session are event-wide and can be registered for any matching scope.
 
 ## Extensibility via Contracts
 

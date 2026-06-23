@@ -6,8 +6,9 @@ namespace AIArmada\Events\Contracts;
 
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventSession;
 
 interface EventCheckoutIntentResolver
 {
-    public function resolve(EventOccurrence $occurrence, EventRegistration $registration): mixed;
+    public function resolve(EventOccurrence | EventSession $target, EventRegistration $registration): mixed;
 }

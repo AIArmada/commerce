@@ -14,6 +14,11 @@ use AIArmada\Events\Events\EventRegistrationRejected;
 use AIArmada\Events\Events\EventRegistrationWaitlisted;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationParticipant;
+use AIArmada\Events\States\RegistrationStatus\Cancelled;
+use AIArmada\Events\States\RegistrationStatus\Completed;
+use AIArmada\Events\States\RegistrationStatus\Confirmed;
+use AIArmada\Events\States\RegistrationStatus\Rejected;
+use AIArmada\Events\States\RegistrationStatus\Waitlisted;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 
@@ -64,18 +69,16 @@ final class RegistrationService implements RegistrationServiceInterface
 
     public function approve(EventRegistration $registration, mixed $actor = null): void
     {
-        $registration->update([
-            'status' => 'confirmed',
-            'approved_at' => CarbonImmutable::now(),
-        ]);
+        $registration->status->transitionTo(Confirmed::class);
+        $registration->update(['approved_at' => CarbonImmutable::now()]);
 
         event(new EventRegistrationApproved($registration));
     }
 
     public function cancel(EventRegistration $registration, ?string $reason = null, mixed $actor = null): void
     {
+        $registration->status->transitionTo(Cancelled::class);
         $registration->update([
-            'status' => 'cancelled',
             'cancelled_at' => CarbonImmutable::now(),
             'status_reason' => $reason,
         ]);
@@ -85,8 +88,8 @@ final class RegistrationService implements RegistrationServiceInterface
 
     public function reject(EventRegistration $registration, string $reason, mixed $actor = null): void
     {
+        $registration->status->transitionTo(Rejected::class);
         $registration->update([
-            'status' => 'rejected',
             'rejected_at' => CarbonImmutable::now(),
             'status_reason' => $reason,
         ]);
@@ -96,20 +99,16 @@ final class RegistrationService implements RegistrationServiceInterface
 
     public function waitlist(EventRegistration $registration): void
     {
-        $registration->update([
-            'status' => 'waitlisted',
-            'waitlisted_at' => CarbonImmutable::now(),
-        ]);
+        $registration->status->transitionTo(Waitlisted::class);
+        $registration->update(['waitlisted_at' => CarbonImmutable::now()]);
 
         event(new EventRegistrationWaitlisted($registration));
     }
 
     public function complete(EventRegistration $registration): void
     {
-        $registration->update([
-            'status' => 'completed',
-            'approved_at' => CarbonImmutable::now(),
-        ]);
+        $registration->status->transitionTo(Completed::class);
+        $registration->update(['approved_at' => CarbonImmutable::now()]);
 
         event(new EventRegistrationConfirmed($registration));
     }
@@ -119,6 +118,7 @@ final class RegistrationService implements RegistrationServiceInterface
         $registration = EventRegistration::create([
             'event_id' => $orderItemData['event_id'],
             'event_occurrence_id' => $orderItemData['event_occurrence_id'] ?? null,
+            'event_session_id' => $orderItemData['event_session_id'] ?? null,
             'registrant_type' => $orderItemData['registrant_type'] ?? null,
             'registrant_id' => $orderItemData['registrant_id'] ?? null,
             'registration_type' => $orderItemData['registration_type'] ?? 'standard',

@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Events\Traits;
 
 use AIArmada\Events\Models\EventSubmission;
+use AIArmada\Events\States\EventModerationStatus\Approved;
+use AIArmada\Events\States\EventModerationStatus\ChangesRequested;
+use AIArmada\Events\States\EventModerationStatus\Rejected;
 use Carbon\CarbonImmutable;
 
 trait ApprovesEventSubmissions
 {
     public function approveSubmission(EventSubmission $submission, ?string $notes = null): void
     {
+        $submission->status->transitionTo(Approved::class);
         $submission->update([
-            'status' => 'approved',
             'reviewed_at' => CarbonImmutable::now(),
             'metadata' => $this->mergeSubmissionReviewMetadata($submission, 'approved', null, $notes),
         ]);
@@ -20,8 +23,8 @@ trait ApprovesEventSubmissions
 
     public function rejectSubmission(EventSubmission $submission, string $reason, ?string $notes = null): void
     {
+        $submission->status->transitionTo(Rejected::class);
         $submission->update([
-            'status' => 'rejected',
             'reviewed_at' => CarbonImmutable::now(),
             'metadata' => $this->mergeSubmissionReviewMetadata($submission, 'rejected', $reason, $notes),
         ]);
@@ -29,8 +32,8 @@ trait ApprovesEventSubmissions
 
     public function requestSubmissionChanges(EventSubmission $submission, string $reason, ?string $notes = null): void
     {
+        $submission->status->transitionTo(ChangesRequested::class);
         $submission->update([
-            'status' => 'changes_requested',
             'reviewed_at' => CarbonImmutable::now(),
             'metadata' => $this->mergeSubmissionReviewMetadata($submission, 'changes_requested', $reason, $notes),
         ]);

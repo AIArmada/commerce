@@ -10,6 +10,7 @@ use AIArmada\Events\Actions\AddEventTicketTypeToCartAction;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventSession;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
@@ -21,7 +22,7 @@ final class DefaultEventCheckoutIntentResolver implements EventCheckoutIntentRes
         private readonly AddEventTicketTypeToCartAction $addToCart,
     ) {}
 
-    public function resolve(EventOccurrence $occurrence, EventRegistration $registration): mixed
+    public function resolve(EventOccurrence | EventSession $target, EventRegistration $registration): mixed
     {
         $registration->loadMissing('items.ticketType', 'participants');
 

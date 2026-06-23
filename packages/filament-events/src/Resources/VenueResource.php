@@ -17,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class VenueResource extends Resource
 {
@@ -26,7 +27,7 @@ final class VenueResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
     }
@@ -44,7 +45,7 @@ final class VenueResource extends Resource
                 Tables\Columns\TextColumn::make('country'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (mixed $state): string => match ((string) $state) {
                         'active' => 'success',
                         'inactive' => 'gray',
                         'closed' => 'danger',

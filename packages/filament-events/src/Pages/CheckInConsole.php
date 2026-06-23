@@ -29,8 +29,6 @@ final class CheckInConsole extends Page implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Events';
-
     protected static ?string $title = 'Check-In Console';
 
     protected static ?string $slug = 'events/check-in';
@@ -70,6 +68,11 @@ final class CheckInConsole extends Page implements HasTable
                     })
                     ->visible(fn (EventPass $record) => $record->status === 'issued' || $record->status === 'active'),
             ]);
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-events.navigation.group');
     }
 
     private function getFilteredQuery(): Builder

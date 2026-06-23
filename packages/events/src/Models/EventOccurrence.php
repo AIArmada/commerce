@@ -8,15 +8,20 @@ use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Database\Factories\EventOccurrenceFactory;
+use AIArmada\Events\Enums\PricingMode;
+use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -39,6 +44,9 @@ use Illuminate\Support\Carbon;
  * @property CarbonImmutable|null $archived_at
  * @property string|null $rescheduled_from_occurrence_id
  * @property string|null $rescheduled_to_occurrence_id
+ * @property string|null $pricing_mode
+ * @property string|null $registration_mode
+ * @property bool|null $issue_passes_for_free
  * @property string|null $status_reason
  * @property string|null $status_message
  * @property array|null $metadata
@@ -77,6 +85,7 @@ final class EventOccurrence extends Model
     use HasContactMethods;
     use HasFactory;
     use HasSocialProfiles;
+    use HasStates;
     use UsesEventUuid;
 
     public const DRAFT = 'draft';
@@ -102,6 +111,7 @@ final class EventOccurrence extends Model
         'title', 'slug',
         'starts_at', 'ends_at', 'timezone',
         'status', 'visibility', 'delivery_mode', 'capacity',
+        'pricing_mode', 'registration_mode', 'issue_passes_for_free',
         'published_at', 'delayed_at', 'postponed_at', 'rescheduled_at',
         'cancelled_at', 'completed_at', 'archived_at',
         'rescheduled_from_occurrence_id', 'rescheduled_to_occurrence_id',
@@ -117,6 +127,10 @@ final class EventOccurrence extends Model
     protected function casts(): array
     {
         return [
+            'status' => OccurrenceStatusState::class,
+            'pricing_mode' => PricingMode::class,
+            'registration_mode' => RegistrationMode::class,
+            'issue_passes_for_free' => 'boolean',
             'starts_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
             'published_at' => 'immutable_datetime',
@@ -370,6 +384,111 @@ final class EventOccurrence extends Model
     public function complete(): void
     {
         app(EventLifecycleWorkflow::class)->complete($this);
+    }
+
+    public function effectivePricingMode(): PricingMode
+    {
+        if ($this->pricing_mode !== null) {
+            return $this->pricing_mode instanceof PricingMode
+                ? $this->pricing_mode
+                : PricingMode::from($this->pricing_mode);
+        }
+
+        if (! config('events.features.free_only.auto_derive_pricing_from_ticket_types', true)) {
+            return PricingMode::Paid;
+        }
+
+        /** @var Collection<int, EventTicketType> $ticketTypes */
+        $ticketTypes = $this->relationLoaded('ticketTypes')
+            ? $this->getRelation('ticketTypes')
+            : $this->ticketTypes()->get(['id', 'event_occurrence_id', 'price']);
+
+        if ($ticketTypes->isEmpty()) {
+            return $this->event?->effectivePricingMode() ?? PricingMode::Paid;
+        }
+
+        $hasPaid = $ticketTypes->contains(fn ($t): bool => (float) $t->price > 0);
+        $hasFree = $ticketTypes->contains(fn ($t): bool => (float) $t->price === 0.0);
+
+        return match (true) {
+            $hasPaid && $hasFree => PricingMode::Mixed,
+            $hasPaid => PricingMode::Paid,
+            default => PricingMode::Free,
+        };
+    }
+
+    public function effectiveRegistrationMode(): RegistrationMode
+    {
+        if ($this->registration_mode !== null) {
+            return $this->registration_mode instanceof RegistrationMode
+                ? $this->registration_mode
+                : RegistrationMode::from($this->registration_mode);
+        }
+
+        return $this->event?->effectiveRegistrationMode() ?? RegistrationMode::Required;
+    }
+
+    public function isFree(): bool
+    {
+        return $this->effectivePricingMode()->isFreeOnly();
+    }
+
+    public function requiresRegistration(): bool
+    {
+        return $this->effectiveRegistrationMode()->isRequired();
+    }
+
+    public function isOpenDoor(): bool
+    {
+        return $this->effectiveRegistrationMode()->isOpenDoor();
+    }
+
+    public function shouldIssuePassesForFree(): bool
+    {
+        if ($this->issue_passes_for_free !== null) {
+            return (bool) $this->issue_passes_for_free;
+        }
+
+        return $this->event?->shouldIssuePassesForFree() ?? true;
+    }
+
+    /**
+     * @param  Builder<EventOccurrence>  $query
+     * @return Builder<EventOccurrence>
+     */
+    public function scopeWithResolvedModes(Builder $query): Builder
+    {
+        return $query->with([
+            'ticketTypes:id,event_occurrence_id,price',
+            'event.ticketTypes:id,event_id,price',
+        ]);
+    }
+
+    /**
+     * @param  Builder<EventOccurrence>  $query
+     * @return Builder<EventOccurrence>
+     */
+    public function scopeFree(Builder $query): Builder
+    {
+        return $query->where('pricing_mode', PricingMode::Free->value);
+    }
+
+    /**
+     * @param  Builder<EventOccurrence>  $query
+     * @return Builder<EventOccurrence>
+     */
+    public function scopeMixed(Builder $query): Builder
+    {
+        return $query->where('pricing_mode', PricingMode::Mixed->value);
+    }
+
+    /**
+     * @param  Builder<EventOccurrence>  $query
+     * @return Builder<EventOccurrence>
+     */
+    public function scopeOpenDoor(Builder $query): Builder
+    {
+        return $query->where('registration_mode', RegistrationMode::None->value);
     }
 
     public function capacityRemaining(): ?int

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
+use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventTicketType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,6 +18,7 @@ final class EventTicketTypeFactory extends Factory
     public function definition(): array
     {
         return [
+            'event_id' => Event::factory(),
             'name' => $this->faker->word() . ' Ticket',
             'code' => $this->faker->unique()->lexify('ticket_????'),
             'access_type' => 'general',
@@ -26,5 +28,10 @@ final class EventTicketTypeFactory extends Factory
             'status' => 'active',
             'visibility' => 'public',
         ];
+    }
+
+    public function freeTicket(): static
+    {
+        return $this->state(fn () => ['price' => 0]);
     }
 }

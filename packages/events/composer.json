@@ -22,14 +22,17 @@
         "php": "^8.4",
         "aiarmada/commerce-support": "self.version",
         "aiarmada/contacting": "self.version",
+        "aiarmada/inventory": "self.version",
         "spatie/laravel-data": "^4.23",
+        "spatie/laravel-model-states": "^2.0",
         "spatie/laravel-package-tools": "^1.16"
     },
     "suggest": {
         "aiarmada/products": "Enables product/variant relationships for tickets and merchandise.",
         "aiarmada/customers": "Enables customer-backed registrants and participants.",
         "aiarmada/orders": "Enables order-item fulfillment and event order completion sync.",
-        "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing."
+        "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing.",
+        "aiarmada/inventory": "Enables stock tracking and allocation for ticket types."
     },
     "autoload": {
         "psr-4": {

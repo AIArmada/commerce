@@ -6,13 +6,17 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
+use AIArmada\Events\Enums\PricingMode;
+use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\CodeEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -21,6 +25,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class EventResource extends Resource
 {
@@ -30,7 +35,7 @@ final class EventResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
     }
@@ -56,7 +61,7 @@ final class EventResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (mixed $state): string => match ((string) $state) {
                         'draft' => 'gray',
                         'pending_review' => 'warning',
                         'scheduled' => 'info',
@@ -69,7 +74,7 @@ final class EventResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('visibility')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (mixed $state): string => match ((string) $state) {
                         'public' => 'success',
                         'unlisted' => 'warning',
                         'private', 'internal' => 'danger',
@@ -77,7 +82,7 @@ final class EventResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('delivery_mode')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (mixed $state): string => match ((string) $state) {
                         'physical' => 'info',
                         'online' => 'success',
                         'hybrid' => 'warning',
@@ -130,7 +135,7 @@ final class EventResource extends Resource
                     ->action(function (Event $record): void {
                         app(EventLifecycleWorkflow::class)->publish($record);
                     })
-                    ->visible(fn (?Event $record) => $record !== null && ($record->status === Event::DRAFT || $record->status === Event::PENDING_REVIEW))
+                    ->visible(fn (?Event $record) => $record !== null && in_array((string) $record->status, [Event::DRAFT, Event::PENDING_REVIEW], true))
                     ->requiresConfirmation(),
                 Action::make('archive')
                     ->label('Archive')
@@ -139,7 +144,7 @@ final class EventResource extends Resource
                     ->action(function (Event $record): void {
                         app(EventLifecycleWorkflow::class)->archive($record);
                     })
-                    ->visible(fn (?Event $record) => $record !== null && $record->status === Event::PUBLISHED)
+                    ->visible(fn (?Event $record) => $record !== null && (string) $record->status === Event::PUBLISHED)
                     ->requiresConfirmation(),
                 Action::make('cancel')
                     ->label('Cancel')
@@ -151,7 +156,7 @@ final class EventResource extends Resource
                     ->action(function (array $data, Event $record): void {
                         app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
                     })
-                    ->visible(fn (?Event $record) => $record !== null && ! in_array($record->status, ['cancelled', 'completed', 'archived']))
+                    ->visible(fn (?Event $record) => $record !== null && ! in_array((string) $record->status, ['cancelled', 'completed', 'archived'], true))
                     ->requiresConfirmation(),
             ])
             ->actions([
@@ -194,6 +199,76 @@ final class EventResource extends Resource
             ]);
     }
 
+    public static function form(Schema $form): Schema
+    {
+        return $form
+            ->schema([
+                Section::make('Basic Details')
+                    ->schema([
+                        TextInput::make('title')->required()->maxLength(255),
+                        TextInput::make('slug')->required()->maxLength(255)->unique(ignoreRecord: true),
+                        Textarea::make('summary')->rows(3),
+                        Textarea::make('description')->rows(5),
+                    ])->columns(2),
+                Section::make('Lifecycle')
+                    ->schema([
+                        Select::make('status')
+                            ->options([
+                                Event::DRAFT => 'Draft',
+                                Event::PENDING_REVIEW => 'Pending Review',
+                                Event::SCHEDULED => 'Scheduled',
+                                Event::PUBLISHED => 'Published',
+                                Event::DELAYED => 'Delayed',
+                                Event::POSTPONED => 'Postponed',
+                                Event::CANCELLED => 'Cancelled',
+                                Event::COMPLETED => 'Completed',
+                                Event::ARCHIVED => 'Archived',
+                                Event::VOIDED => 'Voided',
+                                Event::EXPIRED => 'Expired',
+                            ])
+                            ->default(Event::DRAFT)
+                            ->hiddenOn('edit')
+                            ->required(),
+                        Select::make('visibility')
+                            ->options([
+                                Event::PUBLIC => 'Public',
+                                Event::UNLISTED => 'Unlisted',
+                                Event::PRIVATE => 'Private',
+                                Event::INTERNAL => 'Internal',
+                            ])
+                            ->default(Event::PUBLIC)
+                            ->hiddenOn('edit')
+                            ->required(),
+                        Select::make('delivery_mode')
+                            ->options([
+                                Event::DELIVERY_PHYSICAL => 'Physical',
+                                Event::DELIVERY_ONLINE => 'Online',
+                                Event::DELIVERY_HYBRID => 'Hybrid',
+                            ])
+                            ->default(Event::DELIVERY_PHYSICAL)
+                            ->hiddenOn('edit'),
+                    ])->columns(3),
+                Section::make('Pricing & Registration')
+                    ->schema([
+                        Select::make('pricing_mode')
+                            ->options(PricingMode::options())
+                            ->placeholder('Derive from ticket types'),
+                        Select::make('registration_mode')
+                            ->options(RegistrationMode::options())
+                            ->placeholder('Use config default'),
+                        Select::make('issue_passes_for_free')
+                            ->label('Issue passes for free registrations')
+                            ->nullable()
+                            ->options([
+                                1 => 'Issue passes',
+                                0 => 'Do not issue passes',
+                            ])
+                            ->placeholder('Inherit from parent/config')
+                            ->helperText('Leave blank to use the configured or inherited default.'),
+                    ])->columns(2),
+            ]);
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -211,7 +286,9 @@ final class EventResource extends Resource
     {
         return [
             'index' => EventResource\Pages\ListEvents::route('/'),
+            'create' => EventResource\Pages\CreateEvent::route('/create'),
             'view' => EventResource\Pages\ViewEvent::route('/{record}'),
+            'edit' => EventResource\Pages\EditEvent::route('/{record}/edit'),
         ];
     }
 }

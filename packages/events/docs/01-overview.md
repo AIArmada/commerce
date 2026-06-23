@@ -39,6 +39,9 @@ title: Events Overview
 | **Pass** | Actual issued credential (QR code, barcode) for access |
 | **Attendance** | Check-in record tracking who actually attended |
 | **Involvement** | People linked to event/occurrence/session with a role (speaker, organizer, sponsor) |
+| **Pricing Mode** | Defines whether an event is paid, free, or mixed (paid + free ticket types) |
+| **Registration Mode** | Defines whether registration is required, optional (no pass issued), or none (open door) |
+| **Open Door Mode** | Controls behavior when registration is none: block, walk-in, or headcount |
 
 ## Key Features
 
@@ -53,7 +56,29 @@ title: Events Overview
 - Change management with public updates and notification batches
 - Event submissions with approval workflows and reason codes
 - Series grouping and taxonomy/classification system
+- **State machines**: Event lifecycle, occurrence, registration, and moderation statuses use `spatie/laravel-model-states` for validated transitions
 - Extensibility seams: 15+ contracts for resolvers, workflows, and integrations
+- **Free-only mode**: Events can be marked as free with configurable registration behavior (required, optional, or open-door with walk-in/headcount tracking)
+
+## Free-Only Event Mode
+
+Events support three **pricing modes** (`PricingMode`):
+
+| Mode | Description |
+|---|---|
+| `Paid` | Requires ticket types with prices. Registrations go through the commerce checkout. |
+| `Free` | No ticket types needed. Registrations use `RegisterForFreeAction`. |
+| `Mixed` | Supports both paid ticket types and free registrations. |
+
+And three **registration modes** (`RegistrationMode`):
+
+| Mode | Description |
+|---|---|
+| `Required` | Registration is mandatory. Passes are issued. |
+| `Optional` | Registration is available but not required. Creates `Interested` status registrations without passes; promotable to `Confirmed` later. |
+| `None` | Open-door event. Behavior is controlled by `open_door_mode`: block (no registration), walk-in (use `RecordWalkInAction`), or headcount (use `RecordHeadcountLogAction`). |
+
+Each level (Event → Occurrence → Session) can override pricing and registration modes independently, with inheritance to child levels.
 
 ## Owner Scoping
 

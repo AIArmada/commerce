@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Support\EventWriteGuard;
 
 final class FulfillEventOrderAction
 {
     public function handle(EventRegistration $registration): void
     {
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $registration->event_id);
+        EventWriteGuard::findOrFail($registration->event_id);
 
         $registration->loadMissing('items');
 

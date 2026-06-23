@@ -8,8 +8,13 @@ use AIArmada\Events\Actions\CloneEventSessionAction;
 use AIArmada\Events\Actions\CreateEventSessionAction;
 use AIArmada\Events\Actions\DeleteEventSessionAction;
 use AIArmada\Events\Actions\UpdateEventSessionAction;
+use AIArmada\Events\Events\EventSessionCancelled;
+use AIArmada\Events\Events\EventSessionCompleted;
 use AIArmada\Events\Events\EventSessionCreated;
+use AIArmada\Events\Events\EventSessionDelayed;
 use AIArmada\Events\Events\EventSessionDeleted;
+use AIArmada\Events\Events\EventSessionPostponed;
+use AIArmada\Events\Events\EventSessionRescheduled;
 use AIArmada\Events\Events\EventSessionUpdated;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
@@ -44,8 +49,9 @@ it('creates a session under an occurrence', function (): void {
         ->title->toBe('Keynote Address')
         ->event_id->toBe($this->event->id)
         ->event_occurrence_id->toBe($this->occurrence->id)
-        ->status->toBe('scheduled')
         ->capacity->toBe(100);
+
+    expect($session->status->getValue())->toBe('scheduled');
 
     Illuminate\Support\Facades\Event::assertDispatched(EventSessionCreated::class, fn (EventSessionCreated $e) => $e->session->is($session));
 });
@@ -66,6 +72,20 @@ it('creates a session with auto-generated slug and sort order', function (): voi
 
     expect($session->slug)->toBe('workshop-b')
         ->and($session->sort_order)->toBe(6);
+});
+
+it('generates a slug when the slug input is blank', function (): void {
+    $session = app(CreateEventSessionAction::class)->handle(
+        $this->occurrence,
+        [
+            'title' => 'Workshop C',
+            'slug' => '',
+            'starts_at' => '2026-07-01 09:00:00',
+            'ends_at' => '2026-07-01 10:00:00',
+        ],
+    );
+
+    expect($session->slug)->toBe('workshop-c');
 });
 
 it('validates session title is required', function (): void {
@@ -122,7 +142,26 @@ it('tracks status changes via change chain', function (): void {
     ]);
 
     expect($session->fresh()->changeLogs)->toHaveCount(1)
-        ->and($session->fresh()->status)->toBe('cancelled');
+        ->and($session->fresh()->cancelled_at)->not->toBeNull()
+        ->and($session->fresh()->status->getValue())->toBe('cancelled');
+});
+
+it('tracks rescheduled status changes via change chain and timestamps', function (): void {
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'status' => 'scheduled',
+        'starts_at' => CarbonImmutable::parse('2026-07-01 09:00:00'),
+        'ends_at' => CarbonImmutable::parse('2026-07-01 10:00:00'),
+    ]);
+
+    app(UpdateEventSessionAction::class)->handle($session, [
+        'status' => 'rescheduled',
+    ]);
+
+    expect($session->fresh()->changeLogs)->toHaveCount(1)
+        ->and($session->fresh()->rescheduled_at)->not->toBeNull()
+        ->and($session->fresh()->status->getValue())->toBe('rescheduled');
 });
 
 it('does not dispatch change chain for non-status updates', function (): void {
@@ -140,6 +179,87 @@ it('does not dispatch change chain for non-status updates', function (): void {
     expect($session->fresh()->changeLogs)->toHaveCount(0);
 });
 
+it('supports lifecycle transitions on sessions', function (): void {
+    $startsAt = CarbonImmutable::parse('2026-07-01 09:00:00');
+    $endsAt = CarbonImmutable::parse('2026-07-01 10:00:00');
+    Illuminate\Support\Facades\Event::fake([
+        EventSessionCancelled::class,
+        EventSessionCompleted::class,
+        EventSessionDelayed::class,
+        EventSessionPostponed::class,
+        EventSessionRescheduled::class,
+    ]);
+
+    $createSession = function () use ($startsAt, $endsAt): EventSession {
+        return EventSession::factory()->create([
+            'event_id' => $this->event->id,
+            'event_occurrence_id' => $this->occurrence->id,
+            'status' => 'published',
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+        ]);
+    };
+
+    $delayed = $createSession();
+    $delayed->delay('Traffic on the route', $startsAt->addHour());
+
+    expect($delayed->fresh()->status->getValue())->toBe('delayed')
+        ->and($delayed->fresh()->delayed_at)->not->toBeNull()
+        ->and($delayed->fresh()->changeLogs)->toHaveCount(1);
+    Illuminate\Support\Facades\Event::assertDispatched(
+        EventSessionDelayed::class,
+        fn (EventSessionDelayed $event): bool => $event->session->is($delayed)
+            && $event->expectedStartsAt?->toDateTimeString() === $startsAt->addHour()->toDateTimeString(),
+    );
+
+    $postponed = $createSession();
+    $postponed->postpone('Venue unavailable');
+
+    expect($postponed->fresh()->status->getValue())->toBe('postponed')
+        ->and($postponed->fresh()->postponed_at)->not->toBeNull()
+        ->and($postponed->fresh()->changeLogs)->toHaveCount(1);
+    Illuminate\Support\Facades\Event::assertDispatched(
+        EventSessionPostponed::class,
+        fn (EventSessionPostponed $event): bool => $event->session->is($postponed),
+    );
+
+    $cancelled = $createSession();
+    $cancelled->cancel('Speaker unavailable');
+
+    expect($cancelled->fresh()->status->getValue())->toBe('cancelled')
+        ->and($cancelled->fresh()->cancelled_at)->not->toBeNull()
+        ->and($cancelled->fresh()->changeLogs)->toHaveCount(1);
+    Illuminate\Support\Facades\Event::assertDispatched(
+        EventSessionCancelled::class,
+        fn (EventSessionCancelled $event): bool => $event->session->is($cancelled),
+    );
+
+    $completed = $createSession();
+    $completed->complete();
+
+    expect($completed->fresh()->status->getValue())->toBe('completed')
+        ->and($completed->fresh()->completed_at)->not->toBeNull()
+        ->and($completed->fresh()->changeLogs)->toHaveCount(1);
+    Illuminate\Support\Facades\Event::assertDispatched(
+        EventSessionCompleted::class,
+        fn (EventSessionCompleted $event): bool => $event->session->is($completed),
+    );
+
+    $rescheduled = $createSession();
+    $rescheduled->reschedule($startsAt->addDay(), $endsAt->addDay());
+
+    expect($rescheduled->fresh()->status->getValue())->toBe('rescheduled')
+        ->and($rescheduled->fresh()->starts_at)->toEqual($startsAt->addDay())
+        ->and($rescheduled->fresh()->ends_at)->toEqual($endsAt->addDay())
+        ->and($rescheduled->fresh()->rescheduled_at)->not->toBeNull()
+        ->and($rescheduled->fresh()->changeLogs)->toHaveCount(1);
+    Illuminate\Support\Facades\Event::assertDispatched(
+        EventSessionRescheduled::class,
+        fn (EventSessionRescheduled $event): bool => $event->oldSession->starts_at?->toDateTimeString() === $startsAt->toDateTimeString()
+            && $event->newSession->starts_at?->toDateTimeString() === $startsAt->addDay()->toDateTimeString(),
+    );
+});
+
 it('archives a session on delete', function (): void {
     Illuminate\Support\Facades\Event::fake([EventSessionDeleted::class]);
 
@@ -153,7 +273,7 @@ it('archives a session on delete', function (): void {
     app(DeleteEventSessionAction::class)->handle($session);
 
     $fresh = $session->fresh();
-    expect($fresh->status)->toBe('archived')
+    expect($fresh->status->getValue())->toBe('archived')
         ->and($fresh->archived_at)->not->toBeNull();
 
     Illuminate\Support\Facades\Event::assertDispatched(EventSessionDeleted::class, fn (EventSessionDeleted $e) => $e->session->is($session));
@@ -181,10 +301,11 @@ it('clones a session with new slug', function (): void {
         ->slug->not->toBe('original-session')
         ->capacity->toBe(50)
         ->event_id->toBe($this->event->id)
-        ->status->toBe('scheduled')
         ->starts_at->toEqual($session->starts_at)
         ->ends_at->toEqual($session->ends_at)
         ->id->not->toBe($session->id);
+
+    expect($clone->status->getValue())->toBe('scheduled');
 
     Illuminate\Support\Facades\Event::assertDispatched(EventSessionCreated::class, fn (EventSessionCreated $e) => $e->session->is($clone));
 });

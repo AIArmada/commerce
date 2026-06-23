@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventSubmissionFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Events\States\EventModerationStatus\EventModerationStatus as EventModerationStatusState;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -34,6 +36,7 @@ use Illuminate\Support\Carbon;
 final class EventSubmission extends Model
 {
     use HasFactory;
+    use HasStates;
     use UsesEventUuid;
 
     protected $fillable = [
@@ -54,6 +57,7 @@ final class EventSubmission extends Model
     protected function casts(): array
     {
         return [
+            'status' => EventModerationStatusState::class,
             'submission_data' => 'array',
             'submitted_at' => 'immutable_datetime',
             'reviewed_at' => 'immutable_datetime',

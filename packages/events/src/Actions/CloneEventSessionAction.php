@@ -17,13 +17,19 @@ final class CloneEventSessionAction
      */
     public function handle(EventSession $session, array $options = []): EventSession
     {
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $session->event_id);
+        $this->resolveEventForWrite($session->event_id);
+
+        $title = blank($options['title'] ?? null)
+            ? $session->title . ' (Copy)'
+            : (string) $options['title'];
 
         $clone = EventSession::query()->create([
             'event_id' => $session->event_id,
             'event_occurrence_id' => $session->event_occurrence_id,
-            'title' => $options['title'] ?? $session->title . ' (Copy)',
-            'slug' => $options['slug'] ?? Str::slug($options['title'] ?? $session->title . ' Copy', '-') . '-' . Str::random(6),
+            'title' => $title,
+            'slug' => blank($options['slug'] ?? null)
+                ? Str::slug($title, '-') . '-' . Str::random(6)
+                : (string) $options['slug'],
             'summary' => $options['summary'] ?? $session->summary,
             'description' => $options['description'] ?? $session->description,
             'starts_at' => $options['starts_at'] ?? $session->starts_at,
@@ -40,5 +46,14 @@ final class CloneEventSessionAction
         event(new EventSessionCreated($clone));
 
         return $clone;
+    }
+
+    private function resolveEventForWrite(int | string $eventId): Event
+    {
+        if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
+            return Event::query()->findOrFail($eventId);
+        }
+
+        return OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
     }
 }

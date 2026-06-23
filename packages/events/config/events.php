@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use AIArmada\Products\Models\Product;
@@ -40,6 +41,7 @@ return [
             'event_registration_items' => env('EVENTS_TABLE_REGISTRATION_ITEMS', $tablePrefix . 'event_registration_items'),
             'event_ticket_types' => env('EVENTS_TABLE_TICKET_TYPES', $tablePrefix . 'event_ticket_types'),
             'event_ticket_type_components' => env('EVENTS_TABLE_TICKET_TYPE_COMPONENTS', $tablePrefix . 'event_ticket_type_components'),
+            'event_ticket_type_products' => env('EVENTS_TABLE_TICKET_TYPE_PRODUCTS', $tablePrefix . 'event_ticket_type_products'),
             'event_ticket_type_seating_options' => env('EVENTS_TABLE_TICKET_TYPE_SEATING_OPTIONS', $tablePrefix . 'event_ticket_type_seating_options'),
             'event_passes' => env('EVENTS_TABLE_PASSES', $tablePrefix . 'event_passes'),
             'event_seat_maps' => env('EVENTS_TABLE_SEAT_MAPS', $tablePrefix . 'event_seat_maps'),
@@ -88,6 +90,10 @@ return [
             // Module 11: Organizations
             'organizations' => env('EVENTS_TABLE_ORGANIZATIONS', $tablePrefix . 'organizations'),
 
+            // Free-only / RSVP mode (new in 000071–000072)
+            'event_walk_ins' => env('EVENTS_TABLE_WALK_INS', $tablePrefix . 'event_walk_ins'),
+            'event_headcount_logs' => env('EVENTS_TABLE_HEADCOUNT_LOGS', $tablePrefix . 'event_headcount_logs'),
+
             // Module 8: Data Quality & Verification
             'event_verifications' => env('EVENTS_TABLE_VERIFICATIONS', $tablePrefix . 'event_verifications'),
 
@@ -99,7 +105,21 @@ return [
 
     /* Features / Behavior */
     'features' => [
+        'auto_issue_passes' => env('EVENTS_AUTO_ISSUE_PASSES', true),
         'owner' => $ownerConfig,
+        'free_only' => [
+            'default_registration_mode' => env('EVENTS_DEFAULT_REGISTRATION_MODE', 'required'),
+            'auto_issue_passes_for_free' => env('EVENTS_AUTO_ISSUE_PASSES_FOR_FREE', true),
+            'auto_derive_pricing_from_ticket_types' => env('EVENTS_AUTO_DERIVE_PRICING', true),
+            'open_door_mode' => env('EVENTS_OPEN_DOOR_MODE', 'block'),
+        ],
+        'bundles' => [
+            'sub_ticket_cart_mode' => env('EVENTS_SUB_TICKET_CART_MODE', 'none'),
+        ],
+        'inventory' => [
+            'default_location_id' => env('EVENTS_DEFAULT_INVENTORY_LOCATION', 'default'),
+            'auto_register_quotas_on_migrate' => env('EVENTS_AUTO_REGISTER_QUOTAS', true),
+        ],
     ],
 
     /* Owner / Multi-tenancy */
@@ -150,14 +170,6 @@ return [
     ],
 
     'moderation' => [
-        'actions' => [
-            'submit' => ['from' => ['draft', 'pending', 'approved', 'changes_requested', 'rejected'], 'to' => 'pending', 'note_required' => false, 'reason_required' => false],
-            'approve' => ['from' => ['pending', 'changes_requested'], 'to' => 'approved', 'note_required' => false, 'reason_required' => false],
-            'request_changes' => ['from' => ['pending', 'approved'], 'to' => 'changes_requested', 'note_required' => true, 'reason_required' => true],
-            'reject' => ['from' => ['pending', 'approved', 'changes_requested'], 'to' => 'rejected', 'note_required' => true, 'reason_required' => true],
-            'cancel' => ['from' => ['pending', 'approved', 'changes_requested', 'rejected'], 'to' => 'pending', 'note_required' => false, 'reason_required' => false],
-            'reconsider' => ['from' => ['rejected', 'changes_requested'], 'to' => 'pending', 'note_required' => false, 'reason_required' => false],
-        ],
         'reason_codes' => [
             'approved_for_publish' => ['label' => 'Approved for Publish', 'note_required' => false],
             'needs_more_information' => ['label' => 'Needs More Information', 'note_required' => true],
@@ -173,6 +185,7 @@ return [
         'customer_model' => class_exists(Customer::class) ? Customer::class : null,
         'order_model' => class_exists(Order::class) ? Order::class : null,
         'order_item_model' => class_exists(OrderItem::class) ? OrderItem::class : null,
+        'inventory_location_model' => class_exists(InventoryLocation::class) ? InventoryLocation::class : null,
         'checkout_intent_resolver' => null,
         'order_item_fulfillment_resolver' => null,
     ],

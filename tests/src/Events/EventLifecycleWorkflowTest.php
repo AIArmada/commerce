@@ -11,11 +11,11 @@ beforeEach(function (): void {
 });
 
 it('publishes event', function (): void {
-    $event = Event::factory()->create();
+    $event = Event::factory()->create(['status' => 'scheduled']);
 
     $this->workflow->publish($event);
 
-    expect($event->fresh()->status)->toBe(Event::PUBLISHED);
+    expect($event->fresh()->status->getValue())->toBe(Event::PUBLISHED);
 });
 
 it('archives event', function (): void {
@@ -23,7 +23,7 @@ it('archives event', function (): void {
 
     $this->workflow->archive($event);
 
-    expect($event->fresh()->status)->toBe('archived');
+    expect($event->fresh()->status->getValue())->toBe('archived');
 });
 
 it('cancels occurrence', function (): void {
@@ -32,7 +32,7 @@ it('cancels occurrence', function (): void {
 
     $this->workflow->cancel($occurrence, 'Speaker unavailable');
 
-    expect($occurrence->fresh()->status)->toBe('cancelled');
+    expect($occurrence->fresh()->status->getValue())->toBe('cancelled');
 });
 
 it('delays occurrence', function (): void {
@@ -41,5 +41,5 @@ it('delays occurrence', function (): void {
 
     $this->workflow->delay($occurrence, 'Technical issues');
 
-    expect($occurrence->fresh()->status)->toBe('delayed');
+    expect($occurrence->fresh()->status->getValue())->toBe('delayed');
 });

@@ -21,13 +21,29 @@ final class OccurrenceRegistrationsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('registration_no')->searchable()->copyable(),
                 Tables\Columns\TextColumn::make('registration_type')->badge(),
-                Tables\Columns\TextColumn::make('status')->badge(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (mixed $state): string => match ((string) $state) {
+                        'pending', 'waitlisted', 'interested' => 'warning',
+                        'approved', 'confirmed', 'completed' => 'success',
+                        'cancelled', 'rejected', 'expired' => 'danger',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('total_participants'),
                 Tables\Columns\TextColumn::make('registered_at')->dateTime()->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options(['pending' => 'Pending', 'confirmed' => 'Confirmed', 'cancelled' => 'Cancelled']),
+                    ->options([
+                        'pending' => 'Pending',
+                        'interested' => 'Interested',
+                        'confirmed' => 'Confirmed',
+                        'waitlisted' => 'Waitlisted',
+                        'completed' => 'Completed',
+                        'cancelled' => 'Cancelled',
+                        'rejected' => 'Rejected',
+                        'expired' => 'Expired',
+                    ]),
             ])
             ->headerActions([])
             ->actions([ViewAction::make()]);

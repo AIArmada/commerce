@@ -6,9 +6,9 @@ namespace AIArmada\Events\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
-use AIArmada\Events\Models\EventRegistrationItem;
 use AIArmada\Events\Models\EventTicketType;
-use Illuminate\Database\Eloquent\Builder;
+use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Inventory\Models\InventoryLevel;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -79,38 +79,22 @@ final class AddEventTicketTypeToCartAction
             ));
         }
 
-        if ($ticketType->quota !== null && ! $skipQuotaValidation) {
-            /** @var array<int, string> $blockingStatuses */
-            $blockingStatuses = config('events.lifecycle.registration.capacity_blocking_statuses', [
-                'pending', 'confirmed', 'checked_in', 'no_show',
-            ]);
-
-            $sold = EventRegistrationItem::query()
-                ->where('event_ticket_type_id', $ticketType->getKey())
-                ->whereHas('registration', function (Builder $query) use ($blockingStatuses): void {
-                    $query->whereIn('status', $blockingStatuses);
-                })
-                ->sum('quantity');
-
-            $remaining = $ticketType->quota - $sold - $existingQuantity;
-
-            if ($remaining < 1) {
+        if (! $skipQuotaValidation && class_exists(InventoryLevel::class)) {
+            if (! $ticketType->hasInventory($totalQuantity)) {
                 throw new InvalidArgumentException(sprintf(
-                    '"%s" is sold out.',
-                    $ticketType->name,
-                ));
-            }
-
-            if ($quantity > $remaining) {
-                throw new InvalidArgumentException(sprintf(
-                    'Only %d ticket(s) remaining for "%s".',
-                    $remaining,
+                    '"%s" is sold out or has insufficient stock.',
                     $ticketType->name,
                 ));
             }
         }
 
-        return $this->addOrUpdateCartItem($cart, $ticketType, $totalQuantity, $mergedAttributes);
+        $cartItem = $this->addOrUpdateCartItem($cart, $ticketType, $totalQuantity, $mergedAttributes);
+
+        if (CommerceIntegration::aiArmadaCheckoutAvailable()) {
+            app(AutoAddRequiredTicketBundlesAction::class)->handle($cart, $ticketType, $quantity);
+        }
+
+        return $cartItem;
     }
 
     /**
@@ -138,6 +122,7 @@ final class AddEventTicketTypeToCartAction
             'purchasable_id' => $ticketType->getKey(),
             'event_id' => $ticketType->event_id,
             'event_occurrence_id' => $ticketType->event_occurrence_id,
+            'event_session_id' => $ticketType->event_session_id,
             'code' => $ticketType->code,
             'participants' => $mergedParticipants,
         ], $extraAttributes);

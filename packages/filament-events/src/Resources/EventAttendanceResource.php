@@ -17,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class EventAttendanceResource extends Resource
 {
@@ -26,7 +27,7 @@ final class EventAttendanceResource extends Resource
 
     protected static ?int $navigationSort = 12;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
     }

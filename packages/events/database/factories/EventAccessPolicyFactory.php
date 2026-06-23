@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
+use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAccessPolicy;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,6 +18,7 @@ final class EventAccessPolicyFactory extends Factory
     public function definition(): array
     {
         return [
+            'event_id' => Event::factory(),
             'registration_required' => false,
             'approval_required' => false,
             'payment_required' => false,

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Events\Enums\EventModerationStatus;
-use AIArmada\Events\Enums\EventStatus;
 use AIArmada\Events\Enums\EventVisibility;
-use AIArmada\Events\Enums\OccurrenceStatus;
-use AIArmada\Events\Enums\RegistrationStatus;
+use AIArmada\Events\States\EventModerationStatus\EventModerationStatus as EventModerationStatusState;
+use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
+use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
+use AIArmada\Events\States\RegistrationStatus\RegistrationStatus as RegistrationStatusState;
 use AIArmada\FilamentEvents\FilamentEventsPlugin;
 use AIArmada\FilamentEvents\FilamentEventsServiceProvider;
 use AIArmada\FilamentEvents\Pages\ApprovalQueue;
@@ -46,31 +46,45 @@ it('loads the filament events package config', function (): void {
         ->and(config('filament-events.resources.enabled.change_log'))->toBeTrue();
 });
 
+it('reads the configured navigation group from pages', function (): void {
+    config()->set('filament-events.navigation.group', 'Event Operations');
+
+    foreach ([
+        CheckInConsole::class,
+        NotificationCenter::class,
+        ApprovalQueue::class,
+        EventPublicPreview::class,
+        SeatMapManager::class,
+    ] as $page) {
+        expect($page::getNavigationGroup())->toBe('Event Operations');
+    }
+});
+
 it('exposes the current enum options', function (): void {
-    expect(EventStatus::options())->toMatchArray([
-        EventStatus::Draft->value => EventStatus::Draft->label(),
-        EventStatus::PendingReview->value => EventStatus::PendingReview->label(),
-        EventStatus::Published->value => EventStatus::Published->label(),
+    expect(EventStatusState::options())->toMatchArray([
+        'draft' => 'Draft',
+        'pending_review' => 'Pending Review',
+        'published' => 'Published',
     ])
-        ->and(EventModerationStatus::options())->toMatchArray([
-            EventModerationStatus::Pending->value => EventModerationStatus::Pending->label(),
-            EventModerationStatus::Approved->value => EventModerationStatus::Approved->label(),
-            EventModerationStatus::Rejected->value => EventModerationStatus::Rejected->label(),
+        ->and(EventModerationStatusState::options())->toMatchArray([
+            'pending' => 'Pending',
+            'approved' => 'Approved',
+            'rejected' => 'Rejected',
         ])
         ->and(EventVisibility::options())->toMatchArray([
             EventVisibility::Public->value => EventVisibility::Public->label(),
             EventVisibility::Unlisted->value => EventVisibility::Unlisted->label(),
             EventVisibility::Private->value => EventVisibility::Private->label(),
         ])
-        ->and(OccurrenceStatus::options())->toMatchArray([
-            OccurrenceStatus::Draft->value => OccurrenceStatus::Draft->label(),
-            OccurrenceStatus::Scheduled->value => OccurrenceStatus::Scheduled->label(),
-            OccurrenceStatus::Published->value => OccurrenceStatus::Published->label(),
-            OccurrenceStatus::Cancelled->value => OccurrenceStatus::Cancelled->label(),
+        ->and(OccurrenceStatusState::options())->toMatchArray([
+            'draft' => 'Draft',
+            'scheduled' => 'Scheduled',
+            'published' => 'Published',
+            'cancelled' => 'Cancelled',
         ])
-        ->and(RegistrationStatus::options())->toMatchArray([
-            RegistrationStatus::Pending->value => RegistrationStatus::Pending->label(),
-            RegistrationStatus::Confirmed->value => RegistrationStatus::Confirmed->label(),
-            RegistrationStatus::Cancelled->value => RegistrationStatus::Cancelled->label(),
+        ->and(RegistrationStatusState::options())->toMatchArray([
+            'pending' => 'Pending',
+            'confirmed' => 'Confirmed',
+            'cancelled' => 'Cancelled',
         ]);
 });

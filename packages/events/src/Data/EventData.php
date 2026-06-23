@@ -46,7 +46,7 @@ final class EventData extends Data
             title: $event->title,
             slug: $event->slug,
             summary: $event->summary,
-            status: $event->status,
+            status: $event->status->getValue(),
             visibility: $event->visibility,
             delivery_mode: $event->delivery_mode,
             timezone: $event->timezone,
