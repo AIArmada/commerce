@@ -12,6 +12,7 @@ use AIArmada\Communications\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 
 final class ReplayWebhookEventsCommand extends Command
 {
@@ -165,7 +166,7 @@ final class ReplayWebhookEventsCommand extends Command
             );
 
             return 'replayed';
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $event->failed_at = CarbonImmutable::now();
             $event->failure_message = $e->getMessage();
             $event->save();

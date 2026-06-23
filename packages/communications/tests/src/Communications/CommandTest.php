@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Communications\Console\Commands\ReconcileCommunicationStatusCommand;
 use AIArmada\Communications\Console\Commands\DispatchDueCommunicationsCommand;
 use AIArmada\Communications\Console\Commands\ExpireCommunicationsCommand;
 use AIArmada\Communications\Console\Commands\PruneCommunicationDataCommand;
+use AIArmada\Communications\Console\Commands\ReconcileCommunicationStatusCommand;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
 
 test('ReconcileCommunicationStatusCommand exists and can be instantiated', function (): void {
@@ -94,7 +95,7 @@ test('PruneCommunicationDataCommand accepts owner flag', function (): void {
 });
 
 test('all communication commands are registered', function (): void {
-    $kernel = app(Illuminate\Contracts\Console\Kernel::class);
+    $kernel = app(Kernel::class);
     $commands = $kernel->all();
 
     expect($commands)->toHaveKey('communications:reconcile');

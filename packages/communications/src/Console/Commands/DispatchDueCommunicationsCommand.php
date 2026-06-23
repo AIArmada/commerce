@@ -52,7 +52,7 @@ final class DispatchDueCommunicationsCommand extends Command
         $query = Communication::query()
             ->where('status', CommunicationStatus::Scheduled->value)
             ->where('scheduled_at', '<=', CarbonImmutable::now())
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>', CarbonImmutable::now());
             });

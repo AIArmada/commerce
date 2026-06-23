@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Jobs;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Contracts\IdempotencyLock;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Webhooks\Contracts\ProviderEventNormalizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
