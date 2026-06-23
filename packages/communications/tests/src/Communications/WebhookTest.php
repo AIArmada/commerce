@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
 
 test('NullCommunicationAuditRecorder can be instantiated', function (): void {
@@ -34,7 +35,7 @@ test('NullCommunicationAuditRecorder implements CommunicationAuditRecorder', fun
     $recorder = new NullCommunicationAuditRecorder;
 
     expect($recorder)->toBeInstanceOf(
-        AIArmada\Communications\Contracts\CommunicationAuditRecorder::class,
+        CommunicationAuditRecorder::class,
     );
 });
 

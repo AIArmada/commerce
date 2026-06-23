@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Communications\Actions\RecordTrackingInteractionAction;
+use AIArmada\Communications\Enums\CommunicationEventSource;
 use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationEvent;
 use AIArmada\Communications\Models\CommunicationTrackingToken;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 
 test('RecordTrackingInteractionAction exists and can be instantiated', function (): void {
     $action = app(RecordTrackingInteractionAction::class);
@@ -18,7 +20,7 @@ test('RecordTrackingInteractionAction exists and can be instantiated', function 
 test('RecordTrackingInteractionAction handle throws for non-existent token', function (): void {
     $action = app(RecordTrackingInteractionAction::class);
 
-    $nonExistentId = (string) Illuminate\Support\Str::uuid();
+    $nonExistentId = (string) Str::uuid();
 
     expect(fn () => $action->handle(
         tokenId: $nonExistentId,
@@ -28,19 +30,19 @@ test('RecordTrackingInteractionAction handle throws for non-existent token', fun
 
 test('RecordTrackingInteractionAction handle records interaction with valid token', function (): void {
     $delivery = new CommunicationDelivery;
-    $delivery->id = (string) Illuminate\Support\Str::uuid();
-    $delivery->communication_id = (string) Illuminate\Support\Str::uuid();
-    $delivery->recipient_id = (string) Illuminate\Support\Str::uuid();
+    $delivery->id = (string) Str::uuid();
+    $delivery->communication_id = (string) Str::uuid();
+    $delivery->recipient_id = (string) Str::uuid();
     $delivery->channel = 'email';
     $delivery->provider = 'ses';
     $delivery->status = DeliveryStatus::Sent;
     $delivery->save();
 
     $token = new CommunicationTrackingToken;
-    $token->id = (string) Illuminate\Support\Str::uuid();
+    $token->id = (string) Str::uuid();
     $token->delivery_id = $delivery->id;
     $token->kind = 'click';
-    $token->token_hash = hash('sha256', (string) Illuminate\Support\Str::random(32));
+    $token->token_hash = hash('sha256', (string) Str::random(32));
     $token->save();
 
     $action = app(RecordTrackingInteractionAction::class);
@@ -55,7 +57,7 @@ test('RecordTrackingInteractionAction handle records interaction with valid toke
     expect($event->event)->toBe('click');
     expect($event->delivery_id)->toBe($delivery->id);
     expect($event->metadata)->toBe(['url' => 'https://example.com']);
-    expect($event->source)->toBe(\AIArmada\Communications\Enums\CommunicationEventSource::Tracking);
+    expect($event->source)->toBe(CommunicationEventSource::Tracking);
 
     $token->refresh();
     expect($token->first_used_at)->not->toBeNull();
