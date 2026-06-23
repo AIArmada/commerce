@@ -23,17 +23,18 @@ use AIArmada\Communications\Contracts\QuietHoursResolver;
 use AIArmada\Communications\Contracts\RateLimiter;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Contracts\SuppressionResolver;
+use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAuditRecorder;
 use AIArmada\Communications\Listeners\AutoCaptureNotificationListener;
 use AIArmada\Communications\Listeners\RecordNativeNotificationSending;
 use AIArmada\Communications\Listeners\RecordNativeNotificationSent;
 use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Services\CommunicationRecorderService;
 use AIArmada\Communications\Services\NotifiableDestinationResolver;
+use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
 use AIArmada\Communications\Services\NullConsentResolver;
 use AIArmada\Communications\Services\NullContentRenderer;
 use AIArmada\Communications\Services\NullPreferenceResolver;
 use AIArmada\Communications\Services\NullQuietHoursResolver;
-use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
 use AIArmada\Communications\Services\NullRateLimiter;
 use AIArmada\Communications\Services\NullRecipientSnapshotResolver;
 use AIArmada\Communications\Services\NullSuppressionResolver;
@@ -107,7 +108,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
         ) {
             $this->app->singleton(
                 CommunicationAuditRecorder::class,
-                \AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAuditRecorder::class,
+                ActivitylogCommunicationAuditRecorder::class,
             );
         }
     }

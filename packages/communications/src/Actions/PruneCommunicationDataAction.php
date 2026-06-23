@@ -16,7 +16,7 @@ final class PruneCommunicationDataAction
 
         $pruned += DB::transaction(function () use ($before) {
             $query = Communication::query()
-                ->where(function ($q) use ($before) {
+                ->where(function ($q) use ($before): void {
                     $q->where('completed_at', '<', $before)
                         ->orWhere('failed_at', '<', $before)
                         ->orWhere('cancelled_at', '<', $before)
@@ -24,7 +24,7 @@ final class PruneCommunicationDataAction
                 });
 
             $count = $query->count();
-            $query->each(function (Communication $communication) {
+            $query->each(function (Communication $communication): void {
                 $communication->delete();
             });
 
