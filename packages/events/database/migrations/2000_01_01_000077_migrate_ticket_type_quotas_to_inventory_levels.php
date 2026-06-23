@@ -6,6 +6,7 @@ use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -27,25 +28,28 @@ return new class extends Migration
             return;
         }
 
-        $defaultLocation = $this->resolveDefaultLocation();
-
-        if ($defaultLocation === null) {
-            return;
-        }
-
         $tableName = config('events.database.tables.event_ticket_types', 'event_ticket_types');
 
         if (! Schema::hasColumn($tableName, 'quota')) {
             return;
         }
 
-        EventTicketType::query()
+        $defaultLocation = $this->resolveDefaultLocation();
+
+        if ($defaultLocation === null) {
+            return;
+        }
+
+        DB::table($tableName)
             ->whereNotNull('quota')
             ->where('quota', '>', 0)
-            ->each(function (EventTicketType $ticketType) use ($defaultLocation): void {
+            ->orderBy('id')
+            ->each(function (object $ticketType) use ($defaultLocation): void {
+                $morphClass = (new EventTicketType)->getMorphClass();
+
                 $exists = InventoryLevel::query()
-                    ->where('inventoryable_type', $ticketType->getMorphClass())
-                    ->where('inventoryable_id', $ticketType->getKey())
+                    ->where('inventoryable_type', $morphClass)
+                    ->where('inventoryable_id', $ticketType->id)
                     ->where('location_id', $defaultLocation->getKey())
                     ->exists();
 
@@ -54,8 +58,8 @@ return new class extends Migration
                 }
 
                 InventoryLevel::create([
-                    'inventoryable_type' => $ticketType->getMorphClass(),
-                    'inventoryable_id' => $ticketType->getKey(),
+                    'inventoryable_type' => $morphClass,
+                    'inventoryable_id' => $ticketType->id,
                     'location_id' => $defaultLocation->getKey(),
                     'quantity_on_hand' => (int) $ticketType->quota,
                     'quantity_reserved' => 0,

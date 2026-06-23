@@ -26,7 +26,7 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $event_id
  * @property string|null $event_occurrence_id
  * @property mixed|null $submission_data
- * @property string $status
+ * @property EventModerationStatusState $status
  * @property CarbonImmutable|null $submitted_at
  * @property CarbonImmutable|null $reviewed_at
  * @property array|null $metadata

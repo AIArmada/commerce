@@ -34,7 +34,7 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $registrant_id
  * @property string $registration_no
  * @property string $registration_type
- * @property string $status
+ * @property RegistrationStatusState $status
  * @property string $source
  * @property int $total_participants
  * @property int $total_amount
@@ -251,7 +251,7 @@ final class EventRegistration extends Model
 
     public function complete(): void
     {
-        $this->approved_at = $this->freshTimestamp();
+        $this->approved_at = CarbonImmutable::now();
         $this->status->transitionTo(Completed::class);
     }
 

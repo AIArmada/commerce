@@ -31,7 +31,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable $ends_at
  * @property string $timezone
- * @property string $status
+ * @property OccurrenceStatusState $status
  * @property string $visibility
  * @property string $delivery_mode
  * @property int|null $capacity

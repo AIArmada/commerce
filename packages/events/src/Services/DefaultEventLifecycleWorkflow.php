@@ -112,8 +112,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
     {
         $oldTarget = clone $target;
 
-        $target->starts_at = $newStartsAt;
-        $target->ends_at = $newEndsAt;
+        $target->starts_at = CarbonImmutable::createFromInterface($newStartsAt);
+        $target->ends_at = CarbonImmutable::createFromInterface($newEndsAt);
         $target->rescheduled_at = CarbonImmutable::now();
         $target->status->transitionTo(OccurrenceRescheduledState::class);
 

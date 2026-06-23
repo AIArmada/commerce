@@ -38,7 +38,7 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $summary
  * @property string|null $description
  * @property string $type
- * @property string $status
+ * @property EventStatusState $status
  * @property string $visibility
  * @property string $delivery_mode
  * @property string $timezone
