@@ -50,6 +50,7 @@ Add a many-to-many product bundle system (`EventTicketTypeProduct`) and full sub
 - **Inventory migration guard**: migration 000077 checks `Schema::hasTable('inventory_levels')` and `Schema::hasTable('inventory_locations')` — silently skips when tables don't exist (e.g. in-memory SQLite test envs).
 - **Cancellation cascade**: `CancelBundleChildrenOnParentCanceled` cancels children via `RegistrationServiceInterface::cancel()` (which fires `EventRegistrationCancelled` again — but children have `is_bundle_root = false`, so the listener skips them, avoiding infinite recursion).
 - **Spatie `$name` property fix**: v2.14.1 changed `getMorphClass()` to use `static::$name` (property) instead of `name()` method. All 38 state subclasses need `protected static string $name = 'xxx'` matching the `name()` return value.
+- **Addressing integration (Option B, exclusive storage)**: Config flag `events.integrations.addressing_enabled` (default `false`). When off, Venue/EventLocation use flat columns. When on, they use `addresses()` morphToMany via `addressables` pivot to the `Address` model. `AddressData` DTO is the uniform interface via `getPrimaryAddressData()`. Storage is exclusive per config — no dual-write. Addressing package is not hard-required; `class_exists(Address::class)` guards all paths.
 
 ## Next Steps
 1. **Fix pre-existing Spatie v2.14.1 transition registration**: `config()` in each base state class may need explicit transition class registration (or check if `registerStatesFromDirectory` or `registerState` handles this)
@@ -85,3 +86,24 @@ Add a many-to-many product bundle system (`EventTicketTypeProduct`) and full sub
 - **38 state subclasses** across `EventStatus/`, `OccurrenceStatus/`, `RegistrationStatus/`, `EventModerationStatus/`: added `protected static string $name` property
 - **5 models**: fixed `HasStates` trait import path
 - **4 state configs**: fixed `registerStatesFromDirectory` → explicit `registerState()`
+- **Addressing package upgrades**:
+  - `Addressable` model: added `scopeValidNow()` for correctly-filtered valid-from/valid-until queries
+  - `HasAddresses` trait: `primaryAddress()` and `addressesOfType()` now check `relationLoaded('addresses')` first, avoiding N+1 on eager-loaded collections
+  - `HasAddresses` trait: added `scopeWithPrimaryAddress()` for standard eager-load pattern
+  - Composite indexes: added `(country_code, city)` and `(country_code, postcode)` on `addresses`, `(addressable_type, addressable_id, is_primary)` on `addressables` — new migration `2001_01_01_000006`
+- **Addressing integration into events package (Option B, config-driven exclusive storage)**:
+  - Config key: `events.integrations.addressing_enabled` (default `false`, via `EVENTS_ADDRESSING_ENABLED`)
+  - New trait `Addressable` in `packages/events/src/Models/Concerns/Addressable.php` — when enabled, provides full `addresses()` morphToMany to `Address` via `addressables` pivot; when disabled, falls back to flat columns
+  - `getPrimaryAddressData(): ?AddressData` works with both backends — returns `AddressData` DTO uniformly
+  - Applied to `Venue` and `EventLocation` models
+  - No data sync issues: storage is exclusive per config flag, not dual-written
+  - No addressing package hard-require needed: `class_exists(Address::class)` guards all paths
+
+## Relevant Files (addressing integration)
+- `packages/addressing/src/Models/Addressable.php`: added `scopeValidNow()`
+- `packages/addressing/src/Traits/HasAddresses.php`: N+1 fix + `scopeWithPrimaryAddress()`
+- `packages/addressing/database/migrations/2001_01_01_000006_*`: composite indexes
+- `packages/events/src/Models/Concerns/Addressable.php`: new trait (config-driven addressing)
+- `packages/events/src/Models/Venue.php`: added `use Addressable`
+- `packages/events/src/Models/EventLocation.php`: added `use Addressable`
+- `packages/events/config/events.php`: added `integrations.addressing_enabled`

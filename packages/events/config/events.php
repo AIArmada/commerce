@@ -188,6 +188,7 @@ return [
         'inventory_location_model' => class_exists(InventoryLocation::class) ? InventoryLocation::class : null,
         'checkout_intent_resolver' => null,
         'order_item_fulfillment_resolver' => null,
+        'addressing_enabled' => (bool) env('EVENTS_ADDRESSING_ENABLED', false),
     ],
 
     /* Notifications */

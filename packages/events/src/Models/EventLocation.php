@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventLocationFactory;
+use AIArmada\Events\Models\Concerns\Addressable;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -64,6 +65,7 @@ use Illuminate\Support\Carbon;
  */
 final class EventLocation extends Model
 {
+    use Addressable;
     use HasFactory;
     use UsesEventUuid;
 
