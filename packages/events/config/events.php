@@ -116,6 +116,8 @@ return [
         'bundles' => [
             'sub_ticket_cart_mode' => env('EVENTS_SUB_TICKET_CART_MODE', 'none'),
         ],
+        'enforce_scope_capacity_on_paid_registrations' => (bool) env('EVENTS_ENFORCE_SCOPE_CAPACITY_PAID', false),
+
         'inventory' => [
             'default_location_id' => env('EVENTS_DEFAULT_INVENTORY_LOCATION', 'default'),
             'auto_register_quotas_on_migrate' => env('EVENTS_AUTO_REGISTER_QUOTAS', true),

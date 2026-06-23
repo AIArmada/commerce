@@ -28,7 +28,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $line1
  * @property string|null $line2
  * @property string|null $city
- * @property string|null $district
  * @property string|null $state
  * @property string|null $postcode
  * @property string|null $country_code
@@ -68,7 +67,7 @@ final class Venue extends Model
         'parent_venue_id',
         'name', 'slug', 'venue_type',
         'line1', 'line2',
-        'city', 'district', 'state', 'postcode', 'country_code', 'country',
+        'city', 'state', 'postcode', 'country_code', 'country',
         'latitude', 'longitude',
         'google_place_id', 'google_maps_url', 'waze_url', 'map_url',
         'directions',

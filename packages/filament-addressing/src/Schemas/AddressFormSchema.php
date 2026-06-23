@@ -30,10 +30,6 @@ class AddressFormSchema
             ->label('City / Locality')
             ->maxLength(255);
 
-        $fields[] = TextInput::make($prefix . 'district')
-            ->label('District')
-            ->maxLength(255);
-
         $fields[] = TextInput::make($prefix . 'state')
             ->label('State / Region')
             ->maxLength(255);

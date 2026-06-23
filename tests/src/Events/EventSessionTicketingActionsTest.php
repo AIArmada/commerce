@@ -11,16 +11,20 @@ use AIArmada\Events\Actions\FinalizeOccurredEventOrdersAction;
 use AIArmada\Events\Actions\FulfillEventOrderAction;
 use AIArmada\Events\Actions\StartOccurrenceCheckoutAction;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
+use AIArmada\Events\Data\TicketTypeData;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Models\InventoryLocation;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
     config()->set('checkout.owner.enabled', false);
     config()->set('orders.owner.enabled', false);
+    config()->set('inventory.owner.enabled', false);
 });
 
 afterEach(function (): void {
@@ -52,6 +56,52 @@ it('ensures ticket types for sessions', function (): void {
         ->and($ticketType->event_session_id)->toBe($session->id)
         ->and($ticketType->code)->toBe($session->id)
         ->and($ticketType->quota)->toBe($session->capacity);
+});
+
+it('syncs session ticket quotas to the default inventory location', function (): void {
+    $defaultLocation = InventoryLocation::getOrCreateDefault();
+
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create([
+        'event_id' => $event->id,
+        'timezone' => 'UTC',
+        'delivery_mode' => 'in_person',
+    ]);
+    $session = EventSession::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'status' => 'published',
+        'capacity' => 10,
+    ]);
+
+    $ticketType = app(EnsureTicketTypeForOccurrenceAction::class)->handle($session, [
+        'name' => 'Session Access',
+        'price' => 2500,
+    ]);
+
+    $level = InventoryLevel::query()
+        ->where('inventoryable_type', $ticketType->getMorphClass())
+        ->where('inventoryable_id', $ticketType->getKey())
+        ->where('location_id', $defaultLocation->id)
+        ->firstOrFail();
+
+    expect($level->quantity_on_hand)->toBe(10)
+        ->and($level->quantity_reserved)->toBe(0);
+    expect(TicketTypeData::fromTicketType($ticketType)->quota)->toBe(10);
+
+    $level->update(['quantity_reserved' => 4]);
+
+    app(EnsureTicketTypeForOccurrenceAction::class)->handle($session, [
+        'name' => 'Session Access',
+        'price' => 2500,
+        'quota' => 14,
+    ]);
+
+    $level->refresh();
+
+    expect($level->quantity_on_hand)->toBe(14)
+        ->and($level->quantity_reserved)->toBe(4)
+        ->and(TicketTypeData::fromTicketType($ticketType)->quota)->toBe(14);
 });
 
 it('adds session ticket types to the cart', function (): void {

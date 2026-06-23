@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Enums\PricingMode;
+use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Exceptions\EventIsFreeException;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventTicketType;
@@ -91,6 +92,15 @@ final class CreateRegistrationsFromOrderAction
 
         if ($existing !== null) {
             return $existing;
+        }
+
+        if ($this->shouldEnforceCapacity($expectedCount, $scope)) {
+            throw new EventCapacityExceededException(
+                sprintf(
+                    'The event scope does not have enough capacity for %d registrations.',
+                    $expectedCount,
+                ),
+            );
         }
 
         $registrations = new Collection;
@@ -209,5 +219,20 @@ final class CreateRegistrationsFromOrderAction
         }
 
         OwnerWriteGuard::findOrFailForOwner($modelClass, $id);
+    }
+
+    private function shouldEnforceCapacity(int $expectedCount, EventRegistrationScope $scope): bool
+    {
+        if (! config('events.features.enforce_scope_capacity_on_paid_registrations', false)) {
+            return false;
+        }
+
+        $remaining = $scope->capacityRemaining();
+
+        if ($remaining === null) {
+            return false;
+        }
+
+        return $expectedCount > $remaining;
     }
 }

@@ -29,6 +29,10 @@ final class TicketTypeData extends Data
 
     public static function fromTicketType(EventTicketType $ticketType): self
     {
+        $quota = $ticketType->inventoryLevels()->exists()
+            ? $ticketType->getTotalOnHand()
+            : null;
+
         return new self(
             id: $ticketType->id,
             name: $ticketType->name,
@@ -38,7 +42,7 @@ final class TicketTypeData extends Data
             seating_mode: $ticketType->seating_mode,
             price: $ticketType->price,
             currency: $ticketType->currency,
-            quota: $ticketType->quota,
+            quota: $quota,
             admits_quantity: $ticketType->admits_quantity,
             status: $ticketType->status,
             sales_starts_at: $ticketType->sales_starts_at,

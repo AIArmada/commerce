@@ -68,7 +68,6 @@ final class AddressSnapshotResource extends Resource
                         TextEntry::make('line1'),
                         TextEntry::make('line2'),
                         TextEntry::make('city'),
-                        TextEntry::make('district'),
                         TextEntry::make('state'),
                         TextEntry::make('postcode'),
                         TextEntry::make('country'),

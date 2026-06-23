@@ -40,6 +40,16 @@ Every table name is individually configurable via environment variables, allowin
 | `auto_derive_pricing_from_ticket_types` | When `true`, pricing mode is automatically inferred from ticket type prices (all free → Free, all paid → Paid, mixed → Mixed) |
 | `open_door_mode` | Default behavior for events with `registration_mode = none`. One of `block`, `walk_in`, `headcount`. |
 
+### Paid Registrations
+
+```php
+'features' => [
+    'enforce_scope_capacity_on_paid_registrations' => env('EVENTS_ENFORCE_SCOPE_CAPACITY_PAID', false),
+]
+```
+
+When enabled, paid registration flows stop before creating new confirmed registrations if the target occurrence or session has no remaining capacity. Replaying an order item that already has registrations remains idempotent.
+
 ### Owner Scoping
 
 ```php
@@ -70,6 +80,17 @@ Controls multi-tenancy behavior. When enabled, all queries are scoped to the cur
 ```
 
 Controls auto-generated registration number format.
+
+### Inventory Backfill
+
+```php
+'inventory' => [
+    'default_location_id' => env('EVENTS_DEFAULT_INVENTORY_LOCATION', 'default'),
+    'auto_register_quotas_on_migrate' => env('EVENTS_AUTO_REGISTER_QUOTAS', true),
+]
+```
+
+`default_location_id` is used by the legacy quota migration to resolve the inventory location token. Runtime ticket-type syncing uses the inventory package's default location and only seeds positive quotas.
 
 ### Lifecycle
 
