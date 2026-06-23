@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Services;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventPassIssuer;
 use AIArmada\Events\Events\EventPassIssued;
-use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Support\EventWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -19,11 +18,27 @@ final class DefaultEventPassIssuer implements EventPassIssuer
 {
     public function issuePassesFor(EventRegistration $registration): iterable
     {
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $registration->event_id);
+        EventWriteGuard::findOrFail($registration->event_id);
 
         $registration->loadMissing('items.ticketType');
 
         $passes = [];
+
+        if ($registration->items->isEmpty()) {
+            $pass = EventPass::query()->create([
+                'event_id' => $registration->event_id,
+                'event_occurrence_id' => $registration->event_occurrence_id,
+                'event_session_id' => $registration->event_session_id,
+                'event_registration_id' => $registration->id,
+                'pass_no' => 'PASS-' . mb_strtoupper(Str::random(10)),
+                'status' => 'issued',
+                'issued_at' => CarbonImmutable::now(),
+            ]);
+
+            event(new EventPassIssued($pass));
+
+            return [$pass];
+        }
 
         foreach ($registration->items as $item) {
             $ticketType = $item->ticketType;

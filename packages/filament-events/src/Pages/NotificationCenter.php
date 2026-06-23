@@ -32,8 +32,6 @@ final class NotificationCenter extends Page implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Events';
-
     protected static ?string $title = 'Notification Center';
 
     protected static ?string $slug = 'events/notifications';
@@ -115,6 +113,11 @@ final class NotificationCenter extends Page implements HasTable
                     }),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-events.navigation.group');
     }
 
     protected function getHeaderActions(): array

@@ -29,8 +29,6 @@ final class SeatMapManager extends Page implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-table-cells';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Events';
-
     protected static ?string $title = 'Seat Maps';
 
     protected static ?string $slug = 'events/seat-maps';
@@ -52,6 +50,11 @@ final class SeatMapManager extends Page implements HasTable
             ])
             ->filters([])
             ->actions([ViewAction::make()]);
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-events.navigation.group');
     }
 
     protected function getHeaderActions(): array

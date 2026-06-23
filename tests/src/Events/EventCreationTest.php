@@ -11,7 +11,7 @@ use AIArmada\Events\Models\EventOccurrence;
 it('creates an event in draft status', function (): void {
     $event = Event::factory()->create();
 
-    expect($event->status)->toBe(Event::DRAFT);
+    expect($event->status->getValue())->toBe(Event::DRAFT);
 });
 
 it('creates an event with an occurrence', function (): void {
@@ -38,22 +38,22 @@ it('creates an event with owner polymorphic reference', function (): void {
 });
 
 it('publishes event using lifecycle workflow', function (): void {
-    $event = Event::factory()->create();
+    $event = Event::factory()->create(['status' => 'scheduled']);
 
     app(EventLifecycleWorkflow::class)->publish($event);
     $event->refresh();
 
-    expect($event->status)->toBe(Event::PUBLISHED);
+    expect($event->status->getValue())->toBe(Event::PUBLISHED);
     expect($event->published_at)->not->toBeNull();
 });
 
 it('cancels event and creates change log', function (): void {
-    $event = Event::factory()->published()->create();
+    $event = Event::factory()->create(['status' => 'published']);
 
     app(EventLifecycleWorkflow::class)->cancel($event, 'Test cancellation');
     $event->refresh();
 
-    expect($event->status)->toBe('cancelled');
+    expect($event->status->getValue())->toBe('cancelled');
     expect($event->cancelled_at)->not->toBeNull();
     expect($event->changeLogs)->toHaveCount(1);
 });

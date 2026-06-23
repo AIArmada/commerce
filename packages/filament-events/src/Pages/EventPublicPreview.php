@@ -17,8 +17,6 @@ final class EventPublicPreview extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-eye';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Events';
-
     protected static ?string $title = 'Public Preview';
 
     protected static ?string $slug = 'events/public-preview';
@@ -39,6 +37,11 @@ final class EventPublicPreview extends Page
                 'materials', 'links', 'media', 'updates' => fn ($q) => $q->where('is_pinned', true),
             ]), includeGlobal: false)->find($event);
         }
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-events.navigation.group');
     }
 
     public function infolist(Schema $schema): Schema

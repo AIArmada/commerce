@@ -9,7 +9,11 @@ use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Events\Database\Factories\EventFactory;
+use AIArmada\Events\Enums\PricingMode;
+use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
+use AIArmada\Events\States\EventStatus\Published;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -45,6 +50,9 @@ use Illuminate\Support\Facades\URL;
  * @property CarbonImmutable|null $completed_at
  * @property string|null $status_reason
  * @property string|null $status_message
+ * @property string|null $pricing_mode
+ * @property string|null $registration_mode
+ * @property bool|null $issue_passes_for_free
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -82,6 +90,7 @@ final class Event extends Model
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasSocialProfiles;
+    use HasStates;
     use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
@@ -136,6 +145,7 @@ final class Event extends Model
         'title', 'slug', 'summary', 'description',
         'type', 'status', 'visibility', 'delivery_mode',
         'timezone', 'default_venue_id',
+        'pricing_mode', 'registration_mode', 'issue_passes_for_free',
         'published_at', 'cancelled_at', 'postponed_at', 'archived_at', 'completed_at',
         'status_reason', 'status_message',
         'metadata',
@@ -149,6 +159,10 @@ final class Event extends Model
     protected function casts(): array
     {
         return [
+            'status' => EventStatusState::class,
+            'pricing_mode' => PricingMode::class,
+            'registration_mode' => RegistrationMode::class,
+            'issue_passes_for_free' => 'boolean',
             'published_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',
             'postponed_at' => 'immutable_datetime',
@@ -376,6 +390,42 @@ final class Event extends Model
         return $query->where('visibility', self::PUBLIC);
     }
 
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeFree(Builder $query): Builder
+    {
+        return $query->where('pricing_mode', PricingMode::Free->value);
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeMixed(Builder $query): Builder
+    {
+        return $query->where('pricing_mode', PricingMode::Mixed->value);
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeOpenDoor(Builder $query): Builder
+    {
+        return $query->where('registration_mode', RegistrationMode::None->value);
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeWithResolvedModes(Builder $query): Builder
+    {
+        return $query->with(['ticketTypes:id,event_id,price']);
+    }
+
     protected static function newFactory(): EventFactory
     {
         return EventFactory::new();
@@ -383,7 +433,75 @@ final class Event extends Model
 
     public function isPubliclyVisible(): bool
     {
-        return $this->visibility === self::PUBLIC && $this->status === self::PUBLISHED;
+        return $this->visibility === self::PUBLIC && $this->status instanceof Published;
+    }
+
+    public function effectivePricingMode(): PricingMode
+    {
+        if ($this->pricing_mode !== null) {
+            return $this->pricing_mode instanceof PricingMode
+                ? $this->pricing_mode
+                : PricingMode::from($this->pricing_mode);
+        }
+
+        if (! config('events.features.free_only.auto_derive_pricing_from_ticket_types', true)) {
+            return PricingMode::Paid;
+        }
+
+        /** @var Collection<int, EventTicketType> $ticketTypes */
+        $ticketTypes = $this->relationLoaded('ticketTypes')
+            ? $this->getRelation('ticketTypes')
+            : $this->ticketTypes()->get(['id', 'event_id', 'price']);
+
+        if ($ticketTypes->isEmpty()) {
+            return PricingMode::Free;
+        }
+
+        $hasPaid = $ticketTypes->contains(fn ($t): bool => (float) $t->price > 0);
+        $hasFree = $ticketTypes->contains(fn ($t): bool => (float) $t->price === 0.0);
+
+        return match (true) {
+            $hasPaid && $hasFree => PricingMode::Mixed,
+            $hasPaid => PricingMode::Paid,
+            default => PricingMode::Free,
+        };
+    }
+
+    public function effectiveRegistrationMode(): RegistrationMode
+    {
+        if ($this->registration_mode !== null) {
+            return $this->registration_mode instanceof RegistrationMode
+                ? $this->registration_mode
+                : RegistrationMode::from($this->registration_mode);
+        }
+
+        $default = config('events.features.free_only.default_registration_mode', 'required');
+
+        return RegistrationMode::from($default);
+    }
+
+    public function isFree(): bool
+    {
+        return $this->effectivePricingMode()->isFreeOnly();
+    }
+
+    public function requiresRegistration(): bool
+    {
+        return $this->effectiveRegistrationMode()->isRequired();
+    }
+
+    public function isOpenDoor(): bool
+    {
+        return $this->effectiveRegistrationMode()->isOpenDoor();
+    }
+
+    public function shouldIssuePassesForFree(): bool
+    {
+        $default = (bool) config('events.features.free_only.auto_issue_passes_for_free', true);
+
+        return $this->issue_passes_for_free !== null
+            ? (bool) $this->issue_passes_for_free
+            : $default;
     }
 
     public function shareTitle(): string

@@ -34,12 +34,63 @@ use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\Sess
 use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionInvolvementsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionLocationsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionMaterialsRelationManager;
+use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionRegistrationsRelationManager;
+use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionTicketTypesRelationManager;
 use AIArmada\FilamentEvents\Resources\EventTicketTypeResource;
 use AIArmada\FilamentEvents\Resources\VenueResource;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Select;
 use Filament\Panel;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Concerns\InteractsWithSchemas;
+use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
+use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Livewire\Component as LivewireComponent;
+
+if (! function_exists('filamentEvents_makeSchemaLivewire')) {
+    function filamentEvents_makeSchemaLivewire(): LivewireComponent & HasSchemas
+    {
+        return new class extends LivewireComponent implements HasSchemas
+        {
+            use InteractsWithSchemas;
+
+            public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
+            {
+                return null;
+            }
+
+            public function getOldSchemaState(string $statePath): mixed
+            {
+                return null;
+            }
+
+            public function getSchemaComponent(
+                string $key,
+                bool $withHidden = false,
+                array $skipComponentsChildContainersWhileSearching = [],
+            ): Component | Action | ActionGroup | null {
+                return null;
+            }
+
+            public function getSchema(string $name): ?Schema
+            {
+                return null;
+            }
+
+            public function currentlyValidatingSchema(?Schema $schema): void {}
+
+            public function getDefaultTestingSchemaName(): ?string
+            {
+                return null;
+            }
+        };
+    }
+}
 
 afterEach(function (): void {
     if (class_exists(Mockery::class)) {
@@ -55,12 +106,30 @@ it('registers the event resource on a panel', function (): void {
     expect($panel->getResources())->toContain(EventResource::class);
 });
 
+it('reads the configured navigation group from resources', function (): void {
+    config()->set('filament-events.navigation.group', 'Event Operations');
+
+    foreach ([
+        EventResource::class,
+        EventOccurrenceResource::class,
+        EventSessionResource::class,
+        EventRegistrationResource::class,
+        EventTicketTypeResource::class,
+        EventAttendanceResource::class,
+        EventChangeLogResource::class,
+        VenueResource::class,
+    ] as $resource) {
+        expect($resource::getNavigationGroup())->toBe('Event Operations');
+    }
+});
+
 it('builds the current event resources and relation managers', function (): void {
     $table = Table::make(Mockery::mock(HasTable::class));
+    $schemaLivewire = filamentEvents_makeSchemaLivewire();
 
     foreach ([EventResource::class, EventOccurrenceResource::class, EventSessionResource::class, EventRegistrationResource::class, EventTicketTypeResource::class, EventAttendanceResource::class, EventChangeLogResource::class, VenueResource::class] as $resource) {
         expect($resource::table($table))->toBeInstanceOf(Table::class);
-        expect($resource::infolist(Schema::make()))->toBeInstanceOf(Schema::class);
+        expect($resource::infolist(Schema::make($schemaLivewire)))->toBeInstanceOf(Schema::class);
         expect($resource::getPages())->not->toBeEmpty();
     }
 
@@ -84,8 +153,90 @@ it('builds the current event resources and relation managers', function (): void
     expect(EventSessionResource::getRelations())
         ->toContain(SessionInvolvementsRelationManager::class)
         ->toContain(SessionLocationsRelationManager::class)
+        ->toContain(SessionRegistrationsRelationManager::class)
+        ->toContain(SessionTicketTypesRelationManager::class)
         ->toContain(SessionAttendancesRelationManager::class)
         ->toContain(SessionMaterialsRelationManager::class);
+
+    $flatten = function (array $components) use (&$flatten): array {
+        $all = [];
+
+        foreach ($components as $component) {
+            if (! is_object($component)) {
+                continue;
+            }
+
+            $all[] = $component;
+
+            if (method_exists($component, 'getChildComponents')) {
+                $all = [...$all, ...$flatten($component->getChildComponents())];
+            }
+        }
+
+        return $all;
+    };
+
+    $schemaLivewire = filamentEvents_makeSchemaLivewire();
+    $occurrenceFormComponents = collect($flatten(EventOccurrenceResource::form(Schema::make($schemaLivewire))->getComponents()));
+    $sessionFormComponents = collect($flatten(EventSessionResource::form(Schema::make($schemaLivewire))->getComponents()));
+
+    $occurrenceVisibility = $occurrenceFormComponents->first(function (object $component): bool {
+        return $component instanceof Select && $component->getName() === 'visibility';
+    });
+    $sessionVisibility = $sessionFormComponents->first(function (object $component): bool {
+        return $component instanceof Select && $component->getName() === 'visibility';
+    });
+    $sessionStartsAt = $sessionFormComponents->first(function (object $component): bool {
+        return $component instanceof DateTimePicker && $component->getName() === 'starts_at';
+    });
+    $sessionEndsAt = $sessionFormComponents->first(function (object $component): bool {
+        return $component instanceof DateTimePicker && $component->getName() === 'ends_at';
+    });
+
+    expect($occurrenceVisibility)
+        ->toBeInstanceOf(Select::class)
+        ->and($occurrenceVisibility?->getDefaultState())->toBeNull();
+
+    expect($sessionVisibility)
+        ->toBeInstanceOf(Select::class)
+        ->and($sessionVisibility?->getDefaultState())->toBeNull();
+
+    expect($sessionStartsAt)->toBeInstanceOf(DateTimePicker::class)
+        ->and($sessionEndsAt)->toBeInstanceOf(DateTimePicker::class);
+
+    $occurrenceTable = EventOccurrenceResource::table(Table::make(Mockery::mock(HasTable::class)));
+    $occurrenceFilters = array_map(static fn ($filter): string => $filter->getName(), $occurrenceTable->getFilters());
+    $occurrenceStatusFilter = collect($occurrenceTable->getFilters())->first(
+        static fn ($filter): bool => $filter->getName() === 'status',
+    );
+
+    expect($occurrenceFilters)->toContain('status', 'visibility', 'event_id');
+    expect($occurrenceStatusFilter?->getOptions())->toHaveKey('rescheduled');
+
+    $sessionTable = EventSessionResource::table(Table::make(Mockery::mock(HasTable::class)));
+    $sessionColumns = array_map(static fn ($column): string => $column->getName(), $sessionTable->getColumns());
+    $sessionFilters = array_map(static fn ($filter): string => $filter->getName(), $sessionTable->getFilters());
+    $sessionHeaderActions = array_map(static fn ($action): string => $action->getName(), $sessionTable->getHeaderActions());
+    $sessionStatusFilter = collect($sessionTable->getFilters())->first(
+        static fn ($filter): bool => $filter->getName() === 'status',
+    );
+
+    expect($sessionColumns)->toContain(
+        'event.title',
+        'occurrence.title',
+        'title',
+        'starts_at',
+        'ends_at',
+        'status',
+        'visibility',
+        'capacity',
+        'published_at',
+        'cancelled_at',
+        'sort_order',
+    );
+    expect($sessionFilters)->toContain('status', 'visibility', 'event_id', 'event_occurrence_id');
+    expect($sessionStatusFilter?->getOptions())->toHaveKey('rescheduled');
+    expect($sessionHeaderActions)->toContain('import', 'export', 'delay', 'postpone', 'cancel', 'complete');
 });
 
 it('keeps the current event resources owner scoped', function (): void {

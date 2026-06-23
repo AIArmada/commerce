@@ -6,6 +6,8 @@ namespace AIArmada\FilamentEvents\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
+use AIArmada\Events\Enums\PricingMode;
+use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\FilamentEvents\Actions\Exporter\EventOccurrenceExporter;
 use BackedEnum;
@@ -13,7 +15,9 @@ use Filament\Actions\Action;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -21,6 +25,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class EventOccurrenceResource extends Resource
 {
@@ -30,7 +35,7 @@ final class EventOccurrenceResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
     }
@@ -60,11 +65,11 @@ final class EventOccurrenceResource extends Resource
                     ->dateTime(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (mixed $state): string => match ((string) $state) {
                         'draft' => 'gray',
                         'scheduled' => 'info',
                         'published' => 'success',
-                        'delayed', 'postponed' => 'warning',
+                        'delayed', 'postponed', 'rescheduled' => 'warning',
                         'cancelled' => 'danger',
                         'completed' => 'success',
                         'archived' => 'gray',
@@ -87,6 +92,7 @@ final class EventOccurrenceResource extends Resource
                         'published' => 'Published',
                         'delayed' => 'Delayed',
                         'postponed' => 'Postponed',
+                        'rescheduled' => 'Rescheduled',
                         'cancelled' => 'Cancelled',
                         'completed' => 'Completed',
                         'archived' => 'Archived',
@@ -120,7 +126,7 @@ final class EventOccurrenceResource extends Resource
                     ->action(function (array $data, EventOccurrence $record): void {
                         app(EventLifecycleWorkflow::class)->delay($record, $data['reason'] ?? null, $data['expected_starts_at'] ?? null);
                     })
-                    ->visible(fn (?EventOccurrence $record) => in_array($record?->status, ['published', 'scheduled'], true))
+                    ->visible(fn (?EventOccurrence $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
                     ->requiresConfirmation(),
                 Action::make('postpone')
                     ->label('Postpone')
@@ -132,7 +138,7 @@ final class EventOccurrenceResource extends Resource
                     ->action(function (array $data, EventOccurrence $record): void {
                         app(EventLifecycleWorkflow::class)->postpone($record, $data['reason']);
                     })
-                    ->visible(fn (?EventOccurrence $record) => in_array($record?->status, ['published', 'scheduled'], true))
+                    ->visible(fn (?EventOccurrence $record) => in_array((string) ($record?->status ?? ''), ['published', 'scheduled'], true))
                     ->requiresConfirmation(),
                 Action::make('cancel')
                     ->label('Cancel Occurrence')
@@ -144,7 +150,7 @@ final class EventOccurrenceResource extends Resource
                     ->action(function (array $data, EventOccurrence $record): void {
                         app(EventLifecycleWorkflow::class)->cancel($record, $data['reason']);
                     })
-                    ->visible(fn (?EventOccurrence $record) => ! in_array($record?->status, ['cancelled', 'completed', 'archived'], true))
+                    ->visible(fn (?EventOccurrence $record) => ! in_array((string) ($record?->status ?? ''), ['cancelled', 'completed', 'archived'], true))
                     ->requiresConfirmation(),
                 Action::make('complete')
                     ->label('Complete')
@@ -153,7 +159,7 @@ final class EventOccurrenceResource extends Resource
                     ->action(function (EventOccurrence $record): void {
                         app(EventLifecycleWorkflow::class)->complete($record);
                     })
-                    ->visible(fn (?EventOccurrence $record) => $record?->status === 'published')
+                    ->visible(fn (?EventOccurrence $record) => (string) ($record?->status ?? '') === 'published')
                     ->requiresConfirmation(),
             ])
             ->actions([
@@ -187,9 +193,78 @@ final class EventOccurrenceResource extends Resource
                         TextEntry::make('published_at')->dateTime(),
                         TextEntry::make('delayed_at')->dateTime(),
                         TextEntry::make('postponed_at')->dateTime(),
+                        TextEntry::make('rescheduled_at')->dateTime(),
                         TextEntry::make('cancelled_at')->dateTime(),
                         TextEntry::make('completed_at')->dateTime(),
                         TextEntry::make('archived_at')->dateTime(),
+                    ])->columns(2),
+            ]);
+    }
+
+    public static function form(Schema $form): Schema
+    {
+        return $form
+            ->schema([
+                Section::make('Basic Details')
+                    ->schema([
+                        Select::make('event_id')
+                            ->label('Event')
+                            ->relationship(
+                                'event',
+                                'title',
+                                modifyQueryUsing: fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false),
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->hiddenOn('edit')
+                            ->required(),
+                        TextInput::make('title')->required()->maxLength(255),
+                        DateTimePicker::make('starts_at')->required(),
+                        DateTimePicker::make('ends_at')->required(),
+                    ])->columns(2),
+                Section::make('Lifecycle')
+                    ->schema([
+                        Select::make('status')
+                            ->options([
+                                EventOccurrence::DRAFT => 'Draft',
+                                EventOccurrence::SCHEDULED => 'Scheduled',
+                                EventOccurrence::PUBLISHED => 'Published',
+                                EventOccurrence::DELAYED => 'Delayed',
+                                EventOccurrence::POSTPONED => 'Postponed',
+                                EventOccurrence::RESCHEDULED => 'Rescheduled',
+                                EventOccurrence::CANCELLED => 'Cancelled',
+                                EventOccurrence::COMPLETED => 'Completed',
+                                EventOccurrence::ARCHIVED => 'Archived',
+                            ])
+                            ->default(EventOccurrence::SCHEDULED)
+                            ->hiddenOn('edit')
+                            ->required(),
+                        Select::make('visibility')
+                            ->options([
+                                'public' => 'Public',
+                                'unlisted' => 'Unlisted',
+                                'private' => 'Private',
+                            ])
+                            ->placeholder('Inherit from event')
+                            ->helperText('Leave blank to use the event visibility.'),
+                    ])->columns(2),
+                Section::make('Pricing & Registration')
+                    ->schema([
+                        Select::make('pricing_mode')
+                            ->options(PricingMode::options())
+                            ->placeholder('Inherit from event'),
+                        Select::make('registration_mode')
+                            ->options(RegistrationMode::options())
+                            ->placeholder('Inherit from event'),
+                        Select::make('issue_passes_for_free')
+                            ->label('Issue passes for free registrations')
+                            ->nullable()
+                            ->options([
+                                1 => 'Issue passes',
+                                0 => 'Do not issue passes',
+                            ])
+                            ->placeholder('Inherit from event')
+                            ->helperText('Leave blank to use the inherited or configured default.'),
                     ])->columns(2),
             ]);
     }
@@ -198,7 +273,9 @@ final class EventOccurrenceResource extends Resource
     {
         return [
             'index' => EventOccurrenceResource\Pages\ListEventOccurrences::route('/'),
+            'create' => EventOccurrenceResource\Pages\CreateEventOccurrence::route('/create'),
             'view' => EventOccurrenceResource\Pages\ViewEventOccurrence::route('/{record}'),
+            'edit' => EventOccurrenceResource\Pages\EditEventOccurrence::route('/{record}/edit'),
         ];
     }
 

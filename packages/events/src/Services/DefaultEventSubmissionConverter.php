@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Contracts\EventSubmissionConverter;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSubmission;
+use AIArmada\Events\States\EventModerationStatus\Converted;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -61,10 +62,8 @@ final class DefaultEventSubmissionConverter implements EventSubmissionConverter
             return $event;
         });
 
-        $submission->update([
-            'status' => 'converted',
-            'event_id' => $event->id,
-        ]);
+        $submission->status->transitionTo(Converted::class);
+        $submission->update(['event_id' => $event->id]);
 
         return $event;
     }

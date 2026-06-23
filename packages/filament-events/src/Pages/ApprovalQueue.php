@@ -34,8 +34,6 @@ final class ApprovalQueue extends Page implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-check-badge';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Events';
-
     protected static ?string $title = 'Approval Queue';
 
     protected static ?string $slug = 'events/approvals';
@@ -130,6 +128,11 @@ final class ApprovalQueue extends Page implements HasTable
                     ->visible(fn (EventApprovalRequest $record) => $record->status === 'pending'),
             ])
             ->defaultSort('created_at', 'asc');
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-events.navigation.group');
     }
 
     private function resolveSubmission(EventApprovalRequest $record): EventSubmission

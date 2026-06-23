@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Database\Factories;
 
+use AIArmada\Events\Enums\PricingMode;
+use AIArmada\Events\Enums\RegistrationMode;
+use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,6 +20,7 @@ final class EventOccurrenceFactory extends Factory
     public function definition(): array
     {
         return [
+            'event_id' => Event::factory(),
             'title' => $this->faker->sentence(3),
             'starts_at' => now()->addDays(rand(1, 30)),
             'ends_at' => now()->addDays(rand(1, 30))->addHours(2),
@@ -24,5 +28,41 @@ final class EventOccurrenceFactory extends Factory
             'status' => 'scheduled',
             'visibility' => 'public',
         ];
+    }
+
+    public function pricingMode(PricingMode $mode): static
+    {
+        return $this->state(fn () => ['pricing_mode' => $mode]);
+    }
+
+    public function registrationMode(RegistrationMode $mode): static
+    {
+        return $this->state(fn () => ['registration_mode' => $mode]);
+    }
+
+    public function free(): static
+    {
+        return $this->state(fn () => ['pricing_mode' => PricingMode::Free]);
+    }
+
+    public function paid(): static
+    {
+        return $this->state(fn () => ['pricing_mode' => PricingMode::Paid]);
+    }
+
+    public function freeWithOptionalRegistration(): static
+    {
+        return $this->state(fn () => [
+            'pricing_mode' => PricingMode::Free,
+            'registration_mode' => RegistrationMode::Optional,
+        ]);
+    }
+
+    public function freeOpenDoor(): static
+    {
+        return $this->state(fn () => [
+            'pricing_mode' => PricingMode::Free,
+            'registration_mode' => RegistrationMode::None,
+        ]);
     }
 }

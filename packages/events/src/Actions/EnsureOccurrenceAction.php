@@ -7,13 +7,16 @@ namespace AIArmada\Events\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
-use Carbon\CarbonImmutable;
 
 final class EnsureOccurrenceAction
 {
+    public function __construct(
+        private readonly CreateEventOccurrenceAction $createOccurrence,
+    ) {}
+
     public function handle(Event $event, array $attributes = []): EventOccurrence
     {
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $event->id);
+        $event = $this->resolveEventForWrite($event);
 
         $startsAt = $attributes['starts_at'] ?? null;
 
@@ -22,19 +25,18 @@ final class EnsureOccurrenceAction
             : $event->occurrences()->first();
 
         if (! $occurrence) {
-            $occurrence = $event->occurrences()->create([
-                'title' => $attributes['title'] ?? $event->title,
-                'starts_at' => $startsAt ?? CarbonImmutable::now()->addDay(),
-                'ends_at' => $attributes['ends_at'] ?? CarbonImmutable::now()->addDay()->addHours(2),
-                'timezone' => $attributes['timezone'] ?? $event->timezone ?? 'UTC',
-                'status' => $attributes['status'] ?? 'scheduled',
-                'visibility' => $attributes['visibility'] ?? $event->visibility ?? 'public',
-                'delivery_mode' => $attributes['delivery_mode'] ?? $event->delivery_mode,
-                'capacity' => $attributes['capacity'] ?? null,
-                'metadata' => $attributes['metadata'] ?? null,
-            ]);
+            return $this->createOccurrence->handle($event, $attributes);
         }
 
         return $occurrence;
+    }
+
+    private function resolveEventForWrite(Event $event): Event
+    {
+        if (method_exists(Event::class, 'ownerScopeConfig') && ! Event::ownerScopeConfig()->enabled) {
+            return Event::query()->findOrFail($event->id);
+        }
+
+        return OwnerWriteGuard::findOrFailForOwner(Event::class, $event->id);
     }
 }

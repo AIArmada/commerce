@@ -6,6 +6,7 @@ namespace AIArmada\Events\Actions;
 
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\States\RegistrationStatus\Waitlisted;
 
 final class PromoteWaitlistedRegistrationsAction
 {
@@ -15,7 +16,7 @@ final class PromoteWaitlistedRegistrationsAction
 
     public function handle(EventRegistration $registration): void
     {
-        if ($registration->status === 'waitlisted') {
+        if ($registration->status instanceof Waitlisted) {
             $this->registrationService->approve($registration);
         }
     }

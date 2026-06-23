@@ -9,7 +9,14 @@ use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Engagement\EngagementServiceProvider;
 use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
-use AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction;
+use AIArmada\Events\Actions\AutoAddRequiredTicketBundlesAction;
+use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
+use AIArmada\Events\Actions\ExpandTicketTypeComponentsAction;
+use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
+use AIArmada\Events\Actions\RecordAgentTicketSaleAction;
+use AIArmada\Events\Actions\RecordHeadcountLogAction;
+use AIArmada\Events\Actions\RecordWalkInAction;
+use AIArmada\Events\Actions\RegisterForFreeAction;
 use AIArmada\Events\Actions\SyncManagementAssignmentToAuthzAction;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
@@ -25,6 +32,7 @@ use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
 use AIArmada\Events\Contracts\EventPassDeliveryService;
 use AIArmada\Events\Contracts\EventPassIssuer;
 use AIArmada\Events\Contracts\EventReferenceResolver;
+use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchEngine;
 use AIArmada\Events\Contracts\EventSearchIndexer;
@@ -33,16 +41,22 @@ use AIArmada\Events\Contracts\EventSeatAllocator;
 use AIArmada\Events\Contracts\EventTranslationProvider;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Events\EventChangeNoticePublished;
+use AIArmada\Events\Events\EventFreeRegistrationConfirmed;
 use AIArmada\Events\Events\EventRegistrationApproved;
+use AIArmada\Events\Events\EventRegistrationCancelled;
 use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Integrations\NullEventEngagementManager;
+use AIArmada\Events\Listeners\CancelBundleChildrenOnParentCanceled;
 use AIArmada\Events\Listeners\DispatchEventChangeNoticeNotifications;
+use AIArmada\Events\Listeners\IssueEventPassesOnFreeRegistrationConfirmed;
+use AIArmada\Events\Listeners\ObserveEventTicketTypePricingConsistency;
 use AIArmada\Events\Listeners\SyncEventOrderCompletionOnRegistrationCheckedIn;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderCanceled;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderPaid;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefunded;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventManagementAssignment;
+use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Notifications\EventWelcomeNotification;
 use AIArmada\Events\Policies\EventPolicy;
 use AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver;
@@ -51,6 +65,7 @@ use AIArmada\Events\Resolvers\DefaultEventClassificationResolver;
 use AIArmada\Events\Resolvers\DefaultEventDisplayTimezoneResolver;
 use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
 use AIArmada\Events\Resolvers\DefaultEventReferenceResolver;
+use AIArmada\Events\Resolvers\DefaultEventRegistrationScopeResolver;
 use AIArmada\Events\Resolvers\DefaultEventSearchPayloadResolver;
 use AIArmada\Events\Resolvers\NullEventChangeNoticeNotificationDispatcher;
 use AIArmada\Events\Resolvers\NullEventCheckoutIntentResolver;
@@ -130,8 +145,24 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventSearchIndexer::class, NullEventSearchIndexer::class);
         $this->app->bind(EventTranslationProvider::class, NullEventTranslationProvider::class);
 
+        $this->app->bind(EventRegistrationScopeResolver::class, DefaultEventRegistrationScopeResolver::class);
+
+        $this->app->singleton(RegisterForFreeAction::class);
+        $this->app->singleton(PromoteInterestedToConfirmedAction::class);
+        $this->app->singleton(RecordWalkInAction::class);
+        $this->app->singleton(RecordHeadcountLogAction::class);
+        $this->app->singleton(AutoAddRequiredTicketBundlesAction::class);
+        $this->app->singleton(ExpandTicketTypeComponentsAction::class);
+        $this->app->singleton(RecordAgentTicketSaleAction::class);
+
         $this->app->make(Dispatcher::class)
             ->listen(EventChangeNoticePublished::class, DispatchEventChangeNoticeNotifications::class);
+
+        $this->app->make(Dispatcher::class)
+            ->listen(EventFreeRegistrationConfirmed::class, IssueEventPassesOnFreeRegistrationConfirmed::class);
+
+        $this->app->make(Dispatcher::class)
+            ->listen(EventRegistrationCancelled::class, CancelBundleChildrenOnParentCanceled::class);
 
         if (CommerceIntegration::aiArmadaOrderFulfillmentAvailable()) {
             $this->app->bind(EventOrderItemFulfillmentResolver::class, $this->fulfillmentResolverClass());
@@ -170,6 +201,8 @@ final class EventsServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        EventTicketType::observe(ObserveEventTicketTypePricingConsistency::class);
+
         if (! interface_exists(CheckoutStepRegistryInterface::class)) {
             return;
         }
@@ -181,7 +214,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         }
 
         $step = new CreateEventRegistrationsStep(
-            createRegistrations: $this->app->make(CreateRegistrationsForOrderItemAction::class),
+            createRegistrations: $this->app->make(CreateRegistrationsFromOrderAction::class),
         );
 
         if ($registry->has('create_event_registrations')) {

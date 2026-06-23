@@ -16,6 +16,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 final class EventRegistrationParticipantResource extends Resource
 {
@@ -30,7 +31,7 @@ final class EventRegistrationParticipantResource extends Resource
         return 'Participants';
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
     }
@@ -75,7 +76,7 @@ final class EventRegistrationParticipantResource extends Resource
                     ->label('Primary')
                     ->badge()
                     ->state(fn (EventRegistrationParticipant $record): string => $record->is_primary ? 'Yes' : 'No')
-                    ->color(fn (string $state): string => $state === 'Yes' ? 'success' : 'gray'),
+                    ->color(fn (mixed $state): string => (string) $state === 'Yes' ? 'success' : 'gray'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')

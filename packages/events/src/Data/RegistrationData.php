@@ -55,7 +55,7 @@ final class RegistrationData extends Data
             id: $registration->id,
             registration_no: $registration->registration_no,
             registration_type: $registration->registration_type,
-            status: $registration->status,
+            status: $registration->status->getValue(),
             source: $registration->source,
             total_participants: $registration->total_participants,
             total_amount: $registration->total_amount,

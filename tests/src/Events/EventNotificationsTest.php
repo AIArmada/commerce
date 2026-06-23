@@ -26,6 +26,7 @@ it('routes event registration mail notifications to the primary participant', fu
         $event = Event::factory()->create();
         $registration = EventRegistration::factory()->create([
             'event_id' => $event->id,
+            'status' => 'pending',
         ]);
 
         $participant = $registration->participants()->create([
@@ -60,6 +61,7 @@ it('sends a welcome notification when a registration is approved', function (): 
         $event = Event::factory()->create();
         $registration = EventRegistration::factory()->create([
             'event_id' => $event->id,
+            'status' => 'pending',
         ]);
 
         $participant = $registration->participants()->create([
@@ -96,6 +98,7 @@ it('delivers ticket notifications through the default delivery service', functio
         $registration = EventRegistration::factory()->create([
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
+            'status' => 'pending',
         ]);
 
         $participant = $registration->participants()->create([

@@ -3,10 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventAccessPolicy;
+use AIArmada\Events\Models\EventAudienceProfile;
+use AIArmada\Events\Models\EventClassification;
+use AIArmada\Events\Models\EventHeadcountLog;
+use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Models\EventTimeExpression;
+use AIArmada\Events\Models\EventWalkIn;
 use AIArmada\Events\Models\Venue;
 
 it('creates all core models via factories', function (): void {
@@ -30,4 +38,19 @@ it('creates all core models via factories', function (): void {
 
     $venue = Venue::factory()->create();
     expect($venue->exists)->toBeTrue();
+});
+
+it('creates related event models via their default factories', function (): void {
+    expect(EventOccurrence::factory()->create()->exists)->toBeTrue();
+    expect(EventSession::factory()->create()->exists)->toBeTrue();
+    expect(EventRegistration::factory()->create()->exists)->toBeTrue();
+    expect(EventTicketType::factory()->create()->exists)->toBeTrue();
+    expect(EventAccessPolicy::factory()->create()->exists)->toBeTrue();
+    expect(EventAudienceProfile::factory()->create()->exists)->toBeTrue();
+    expect(EventClassification::factory()->create()->exists)->toBeTrue();
+    expect(EventHeadcountLog::factory()->create()->exists)->toBeTrue();
+    expect(EventNotificationBatch::factory()->create()->exists)->toBeTrue();
+    expect(EventPass::factory()->create()->exists)->toBeTrue();
+    expect(EventTimeExpression::factory()->create()->exists)->toBeTrue();
+    expect(EventWalkIn::factory()->create()->exists)->toBeTrue();
 });

@@ -4,11 +4,9 @@ title: Usage
 
 ## Resources
 
-All resources are read-only views. Data entry is handled through the companion `aiarmada/events` domain package.
-
 ### Events
 
-`EventResource` manages event definitions with lifecycle actions on the list page.
+`EventResource` manages event definitions with lifecycle actions on the list page, and Create/Edit forms for event configuration.
 
 **Table columns:** title (searchable), status (badge, color-coded), visibility (badge), delivery_mode (badge), occurrences_count, published_at, updated_at.
 
@@ -19,13 +17,17 @@ All resources are read-only views. Data entry is handled through the companion `
 - **Archive** — archives published events
 - **Cancel** — cancels an event with a reason
 
+**Create/Edit form sections:**
+- **Pricing & Registration** — `pricing_mode` (select: paid/free/mixed), `registration_mode` (select: required/optional/none), `issue_passes_for_free` (tri-state select)
+- The inheritance chain is Event → Occurrence → Session; placeholder options indicate the fallback behavior at each level
+
 **Infolist sections:** Identity, Lifecycle, Ownership, Metadata.
 
 **Relation managers (on View page):** Occurrences, Sessions, Locations, Involvements, Registrations, Ticket Types, Attendances. All read-only.
 
 ### Occurrences
 
-`EventOccurrenceResource` manages scheduled runs.
+`EventOccurrenceResource` manages scheduled runs with Create/Edit forms for occurrence-level pricing and registration overrides.
 
 **Table columns:** event.title, title, starts_at (sortable), ends_at, status (badge), visibility (badge), capacity, published_at, cancelled_at.
 
@@ -33,13 +35,24 @@ All resources are read-only views. Data entry is handled through the companion `
 
 **Lifecycle actions:** Delay, Postpone, Cancel Occurrence, Complete.
 
+**Create/Edit form overrides:** Same Pricing & Registration fields as Event, with values inherited from the parent event when left unset. Visibility also inherits from the parent event when left unset.
+- Create forms also require the parent `event_id` and expose lifecycle defaults; edit forms keep the existing parent assignment unchanged.
+
 ### Sessions
 
-`EventSessionResource` manages agenda items within occurrences.
+`EventSessionResource` manages agenda items within occurrences, with Create/Edit forms for session-level overrides.
 
-**Table columns:** event.title, occurrence.title, title, starts_at, ends_at, status (badge), sort_order.
+**Table columns:** event.title, occurrence.title, title, starts_at, ends_at, status (badge), visibility (badge), capacity, published_at, cancelled_at, sort_order.
 
-**Filter:** status.
+**Filters:** status, visibility, event, occurrence.
+
+**Lifecycle actions:** Delay, Postpone, Cancel Session, Complete.
+
+**Create/Edit form overrides:** Same Pricing & Registration fields as Event/Occurrence, inherited from the parent occurrence/event when left unset. Sessions also require `starts_at` and `ends_at`, and visibility inherits from the parent occurrence when left unset.
+- Create forms also require the parent `event_occurrence_id` and expose lifecycle defaults; edit forms keep the existing parent assignment unchanged.
+- The lifecycle selector includes the same states as occurrences, including `rescheduled`.
+
+**Relation managers:** Involvements, Locations, Registrations, Ticket Types, Attendances, Materials.
 
 ### Venues
 

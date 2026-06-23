@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Support\EventWriteGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,7 +37,7 @@ final class BatchCreateOccurrencesAction
         array $occurrences,
         ?array $ticketTypeTemplate = null,
     ): Collection {
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $event->id);
+        EventWriteGuard::findOrFail($event);
 
         $created = new Collection;
 

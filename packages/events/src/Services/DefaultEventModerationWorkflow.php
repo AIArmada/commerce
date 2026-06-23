@@ -10,6 +10,10 @@ use AIArmada\Events\Events\EventSubmissionApproved;
 use AIArmada\Events\Events\EventSubmissionRejected;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSubmission;
+use AIArmada\Events\States\EventModerationStatus\Approved;
+use AIArmada\Events\States\EventModerationStatus\ChangesRequested;
+use AIArmada\Events\States\EventModerationStatus\Pending;
+use AIArmada\Events\States\EventModerationStatus\Rejected;
 use Carbon\CarbonImmutable;
 
 final class DefaultEventModerationWorkflow implements EventModerationWorkflow
@@ -18,21 +22,17 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
     {
         $this->guardSubmissionEvent($submission);
 
-        $submission->update([
-            'status' => 'pending',
-            'submitted_at' => CarbonImmutable::now(),
-        ]);
+        $submission->submitted_at = CarbonImmutable::now();
+        $submission->status->transitionTo(Pending::class);
     }
 
     public function approve(EventSubmission $submission, mixed $actor = null, ?string $notes = null): void
     {
         $this->guardSubmissionEvent($submission);
 
-        $submission->update([
-            'status' => 'approved',
-            'reviewed_at' => CarbonImmutable::now(),
-            'metadata' => $this->mergeReviewMetadata($submission, 'approved', null, $notes),
-        ]);
+        $submission->reviewed_at = CarbonImmutable::now();
+        $submission->metadata = $this->mergeReviewMetadata($submission, 'approved', null, $notes);
+        $submission->status->transitionTo(Approved::class);
 
         event(new EventSubmissionApproved($submission));
     }
@@ -41,11 +41,9 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
     {
         $this->guardSubmissionEvent($submission);
 
-        $submission->update([
-            'status' => 'rejected',
-            'reviewed_at' => CarbonImmutable::now(),
-            'metadata' => $this->mergeReviewMetadata($submission, 'rejected', $reason, $notes),
-        ]);
+        $submission->reviewed_at = CarbonImmutable::now();
+        $submission->metadata = $this->mergeReviewMetadata($submission, 'rejected', $reason, $notes);
+        $submission->status->transitionTo(Rejected::class);
 
         event(new EventSubmissionRejected($submission, $reason));
     }
@@ -54,11 +52,9 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
     {
         $this->guardSubmissionEvent($submission);
 
-        $submission->update([
-            'status' => 'changes_requested',
-            'reviewed_at' => CarbonImmutable::now(),
-            'metadata' => $this->mergeReviewMetadata($submission, 'changes_requested', $reason, $notes),
-        ]);
+        $submission->reviewed_at = CarbonImmutable::now();
+        $submission->metadata = $this->mergeReviewMetadata($submission, 'changes_requested', $reason, $notes);
+        $submission->status->transitionTo(ChangesRequested::class);
     }
 
     private function guardSubmissionEvent(EventSubmission $submission): void

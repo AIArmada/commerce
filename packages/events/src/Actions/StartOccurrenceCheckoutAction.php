@@ -7,6 +7,7 @@ namespace AIArmada\Events\Actions;
 use AIArmada\Events\Contracts\EventCheckoutIntentResolver;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventSession;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class StartOccurrenceCheckoutAction
@@ -17,8 +18,8 @@ final class StartOccurrenceCheckoutAction
         private readonly EventCheckoutIntentResolver $checkoutIntentResolver,
     ) {}
 
-    public function handle(EventOccurrence $occurrence, EventRegistration $registration): mixed
+    public function handle(EventOccurrence | EventSession $target, EventRegistration $registration): mixed
     {
-        return $this->checkoutIntentResolver->resolve($occurrence, $registration);
+        return $this->checkoutIntentResolver->resolve($target, $registration);
     }
 }

@@ -7,8 +7,7 @@ namespace AIArmada\Events\Steps;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\AbstractCheckoutStep;
-use AIArmada\Events\Actions\CreateRegistrationsForOrderItemAction;
-use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 {
     public function __construct(
-        private readonly CreateRegistrationsForOrderItemAction $createRegistrations,
+        private readonly CreateRegistrationsFromOrderAction $createRegistrations,
     ) {}
 
     public function getIdentifier(): string
@@ -74,16 +73,9 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
 
             $ticketType = $purchasable;
 
-            if ($ticketType->event_occurrence_id === null) {
-                continue;
-            }
+            $target = $this->resolveRegistrationTarget($ticketType);
 
-            /** @var EventOccurrence|null $occurrence */
-            $occurrence = $ticketType->relationLoaded('occurrence')
-                ? $ticketType->getRelation('occurrence')
-                : EventOccurrence::query()->find($ticketType->event_occurrence_id);
-
-            if ($occurrence === null) {
+            if ($target === null) {
                 continue;
             }
 
@@ -95,10 +87,10 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
             );
 
             $this->createRegistrations->handle(
-                occurrence: $occurrence,
-                orderItem: $orderItem,
-                participants: $participants,
-                purchaser: $order->getRelation('customer'),
+                $target,
+                $orderItem,
+                $participants,
+                $order->getRelation('customer'),
             );
 
             $created++;
@@ -175,6 +167,21 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
         }
 
         return $participants;
+    }
+
+    private function resolveRegistrationTarget(EventTicketType $ticketType): ?Model
+    {
+        $ticketType->loadMissing('event', 'occurrence', 'session');
+
+        if ($ticketType->event_session_id !== null) {
+            return $ticketType->session;
+        }
+
+        if ($ticketType->event_occurrence_id !== null) {
+            return $ticketType->occurrence;
+        }
+
+        return $ticketType->event;
     }
 
     private function resolveCustomerEmail(mixed $customer): ?string
