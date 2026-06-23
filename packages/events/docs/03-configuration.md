@@ -112,6 +112,34 @@ Controls auto-generated registration number format.
 
 Controls which statuses allow registration, check-in, and walk-in. `capacity_blocking_statuses` determines which registration statuses consume occurrence capacity. Statuses are managed through `spatie/laravel-model-states` — transitions are defined in each state base class's `config()` method under `States/`.
 
+### Synchronization
+
+```php
+'sync' => [
+    'attributes_to_metadata' => env('EVENTS_SYNC_ATTRIBUTES_TO_METADATA', true),
+    'audiences_to_metadata' => env('EVENTS_SYNC_AUDIENCES_TO_METADATA', true),
+    'time_expressions_to_metadata' => env('EVENTS_SYNC_TIME_EXPRESSIONS_TO_METADATA', true),
+    'classifications_to_facets' => env('EVENTS_SYNC_CLASSIFICATIONS_TO_FACETS', true),
+    'audiences_to_facets' => env('EVENTS_SYNC_AUDIENCES_TO_FACETS', true),
+    'build_search_documents' => env('EVENTS_SYNC_BUILD_SEARCH_DOCUMENTS', false),
+],
+
+'attribute_sync' => [
+    'attribute_keys' => null,
+    'audience_types' => null,
+    'taxonomy_codes' => null,
+    'always_rebuild' => env('EVENTS_ATTRIBUTE_SYNC_ALWAYS_REBUILD', true),
+],
+```
+
+These flags control the denormalized metadata projection and the search document rebuild pipeline for events, occurrences, and sessions.
+
+- `attributes_to_metadata`, `audiences_to_metadata`, and `time_expressions_to_metadata` keep the model `metadata` JSON blob in sync with the relation tables for each supported scope.
+- `classifications_to_facets` and `audiences_to_facets` add relation-backed facets to the search document payload.
+- `build_search_documents` enables automatic search document creation and removal for events, occurrences, and sessions. When it is disabled, the observers short-circuit and no documents are written.
+- `attribute_sync.attribute_keys`, `audience_types`, and `taxonomy_codes` let you narrow the synced records. Leave them `null` to sync everything.
+- `always_rebuild` removes stale non-reserved keys from `Event.metadata` when the attribute projection is rebuilt.
+
 ### Resolvers (extensibility seams)
 
 ```php
@@ -120,7 +148,14 @@ Controls which statuses allow registration, check-in, and walk-in. `capacity_blo
 'references' => ['resolver' => null],
 'timezone' => ['display_timezone_resolver' => null],
 'schedule' => ['resolver' => null],
-'search' => ['payload_resolver' => null, 'engine' => null],
+'search' => [
+    'payload_resolver' => null,
+    'engine' => null,
+    'indexer' => null,
+    'queue_indexing' => env('EVENTS_SEARCH_QUEUE_INDEXING', false),
+    'queue_connection' => env('EVENTS_SEARCH_QUEUE_CONNECTION'),
+    'queue_name' => env('EVENTS_SEARCH_QUEUE_NAME'),
+],
 'change_notices' => [
     'audience_resolver' => null,
     'notification_dispatcher' => null,
@@ -128,6 +163,8 @@ Controls which statuses allow registration, check-in, and walk-in. `capacity_blo
 ```
 
 Each resolver can be bound to a custom class for domain-specific behavior.
+
+`search.indexer` defaults to the package's built-in `EventSearchDocumentBuilder` when left `null`. That builder maintains search documents for events, occurrences, and sessions. Set it to `AIArmada\Events\Resolvers\NullEventSearchIndexer` if you want to disable automatic search indexing explicitly, or point it at a custom indexer implementation.
 
 ### Moderation
 

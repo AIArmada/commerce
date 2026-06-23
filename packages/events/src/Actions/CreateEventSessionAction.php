@@ -9,12 +9,17 @@ use AIArmada\Events\Events\EventSessionCreated;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class CreateEventSessionAction
 {
+    public function __construct(
+        private readonly EventContentNormalizer $contentNormalizer,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -24,7 +29,7 @@ final class CreateEventSessionAction
 
         $title = blank($attributes['title'] ?? null)
             ? throw new InvalidArgumentException('Session title is required.')
-            : (string) $attributes['title'];
+            : $this->contentNormalizer->normalizeTitle((string) $attributes['title']);
 
         $startsAt = blank($attributes['starts_at'] ?? null)
             ? CarbonImmutable::now()
@@ -53,8 +58,12 @@ final class CreateEventSessionAction
             'event_occurrence_id' => $occurrence->id,
             'title' => $title,
             'slug' => $slug,
-            'summary' => $attributes['summary'] ?? null,
-            'description' => $attributes['description'] ?? null,
+            'summary' => $this->contentNormalizer->normalizeSummary(
+                blank($attributes['summary'] ?? null) ? null : (string) $attributes['summary'],
+            ),
+            'description' => $this->contentNormalizer->normalizeDescription(
+                blank($attributes['description'] ?? null) ? null : (string) $attributes['description'],
+            ),
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
             'timezone' => blank($attributes['timezone'] ?? null)

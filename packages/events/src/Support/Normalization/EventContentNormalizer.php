@@ -17,7 +17,9 @@ final class EventContentNormalizer
             return null;
         }
 
-        return mb_trim(strip_tags($summary));
+        $normalized = mb_trim(strip_tags($summary));
+
+        return $normalized === '' ? null : $normalized;
     }
 
     public function normalizeDescription(?string $description): ?string
@@ -26,7 +28,9 @@ final class EventContentNormalizer
             return null;
         }
 
-        return mb_trim($description);
+        $normalized = mb_trim($description);
+
+        return $normalized === '' ? null : $normalized;
     }
 
     /**

@@ -56,6 +56,24 @@ it('creates a session under an occurrence', function (): void {
     Illuminate\Support\Facades\Event::assertDispatched(EventSessionCreated::class, fn (EventSessionCreated $e) => $e->session->is($session));
 });
 
+it('normalizes session content when creating a session', function (): void {
+    $session = app(CreateEventSessionAction::class)->handle(
+        $this->occurrence,
+        [
+            'title' => '  Opening   Keynote  ',
+            'summary' => '   ',
+            'description' => '  Opening keynote details  ',
+            'starts_at' => '2026-07-01 09:00:00',
+            'ends_at' => '2026-07-01 10:30:00',
+        ],
+    );
+
+    expect($session->title)->toBe('Opening Keynote')
+        ->and($session->slug)->toBe('opening-keynote')
+        ->and($session->summary)->toBeNull()
+        ->and($session->description)->toBe('Opening keynote details');
+});
+
 it('creates a session with auto-generated slug and sort order', function (): void {
     EventSession::factory()->create([
         'event_id' => $this->event->id,
@@ -178,6 +196,42 @@ it('does not dispatch change chain for non-status updates', function (): void {
 
     expect($session->fresh()->changeLogs)->toHaveCount(0);
 });
+
+it('normalizes editable session content during updates', function (): void {
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'title' => 'Original Title',
+        'summary' => 'Original summary',
+        'description' => 'Original description',
+        'starts_at' => CarbonImmutable::parse('2026-07-01 09:00:00'),
+        'ends_at' => CarbonImmutable::parse('2026-07-01 10:00:00'),
+    ]);
+
+    $result = app(UpdateEventSessionAction::class)->handle($session, [
+        'title' => '  Closing   Panel  ',
+        'summary' => '   ',
+        'description' => '  Updated description  ',
+    ]);
+
+    expect($result['session']->title)->toBe('Closing Panel')
+        ->and($result['session']->summary)->toBeNull()
+        ->and($result['session']->description)->toBe('Updated description');
+});
+
+it('rejects blank session titles during updates', function (): void {
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'title' => 'Original Title',
+        'starts_at' => CarbonImmutable::parse('2026-07-01 09:00:00'),
+        'ends_at' => CarbonImmutable::parse('2026-07-01 10:00:00'),
+    ]);
+
+    app(UpdateEventSessionAction::class)->handle($session, [
+        'title' => '   ',
+    ]);
+})->throws(InvalidArgumentException::class, 'Session title is required.');
 
 it('supports lifecycle transitions on sessions', function (): void {
     $startsAt = CarbonImmutable::parse('2026-07-01 09:00:00');
@@ -334,6 +388,31 @@ it('clones a session with overridden attributes', function (): void {
         ->title->toBe('Custom Clone')
         ->capacity->toBe(200)
         ->starts_at->toEqual($startsAt->addDay());
+});
+
+it('normalizes cloned session content', function (): void {
+    $session = EventSession::factory()->create([
+        'event_id' => $this->event->id,
+        'event_occurrence_id' => $this->occurrence->id,
+        'title' => 'Original',
+        'summary' => 'Original summary',
+        'description' => 'Original description',
+        'starts_at' => CarbonImmutable::parse('2026-07-01 09:00:00'),
+        'ends_at' => CarbonImmutable::parse('2026-07-01 10:00:00'),
+    ]);
+
+    $clone = app(CloneEventSessionAction::class)->handle($session, [
+        'title' => '  Panel   Discussion  ',
+        'slug' => 'panel-discussion-copy',
+        'summary' => '  <strong>Panel summary</strong>  ',
+        'description' => '  Panel details  ',
+    ]);
+
+    expect($clone)
+        ->title->toBe('Panel Discussion')
+        ->slug->toBe('panel-discussion-copy')
+        ->summary->toBe('Panel summary')
+        ->description->toBe('Panel details');
 });
 
 it('rejects cross-tenant session writes', function (): void {

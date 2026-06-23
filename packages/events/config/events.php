@@ -164,7 +164,32 @@ return [
     'references' => ['resolver' => null],
     'timezone' => ['display_timezone_resolver' => null],
     'schedule' => ['resolver' => null],
-    'search' => ['payload_resolver' => null, 'engine' => null],
+
+    'sync' => [
+        'attributes_to_metadata' => env('EVENTS_SYNC_ATTRIBUTES_TO_METADATA', true),
+        'audiences_to_metadata' => env('EVENTS_SYNC_AUDIENCES_TO_METADATA', true),
+        'time_expressions_to_metadata' => env('EVENTS_SYNC_TIME_EXPRESSIONS_TO_METADATA', true),
+        'classifications_to_facets' => env('EVENTS_SYNC_CLASSIFICATIONS_TO_FACETS', true),
+        'audiences_to_facets' => env('EVENTS_SYNC_AUDIENCES_TO_FACETS', true),
+        'build_search_documents' => env('EVENTS_SYNC_BUILD_SEARCH_DOCUMENTS', false),
+    ],
+
+    'attribute_sync' => [
+        // null = sync all; array = only these keys/types/codes
+        'attribute_keys' => null,
+        'audience_types' => null,
+        'taxonomy_codes' => null,
+        'always_rebuild' => env('EVENTS_ATTRIBUTE_SYNC_ALWAYS_REBUILD', true),
+    ],
+
+    'search' => [
+        'payload_resolver' => null,
+        'engine' => null,
+        'indexer' => null,
+        'queue_indexing' => env('EVENTS_SEARCH_QUEUE_INDEXING', false),
+        'queue_connection' => env('EVENTS_SEARCH_QUEUE_CONNECTION'),
+        'queue_name' => env('EVENTS_SEARCH_QUEUE_NAME'),
+    ],
 
     'change_notices' => [
         'audience_resolver' => null,

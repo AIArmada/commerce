@@ -9,12 +9,17 @@ use AIArmada\Events\Contracts\EventSubmissionConverter;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSubmission;
 use AIArmada\Events\States\EventModerationStatus\Converted;
+use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
 final class DefaultEventSubmissionConverter implements EventSubmissionConverter
 {
+    public function __construct(
+        private readonly EventContentNormalizer $contentNormalizer,
+    ) {}
+
     public function convert(EventSubmission $submission): Event
     {
         $data = $submission->submission_data ?? [];
@@ -24,11 +29,23 @@ final class DefaultEventSubmissionConverter implements EventSubmissionConverter
             throw new InvalidArgumentException('Event submissions must resolve to an owner model before conversion.');
         }
 
-        $event = OwnerContext::withOwner($owner, function () use ($data): Event {
+        $eventTitle = blank($data['title'] ?? null)
+            ? 'Untitled Event'
+            : $this->contentNormalizer->normalizeTitle((string) $data['title']);
+
+        $eventSummary = $this->contentNormalizer->normalizeSummary(
+            blank($data['summary'] ?? null) ? null : (string) $data['summary'],
+        );
+
+        $eventDescription = $this->contentNormalizer->normalizeDescription(
+            blank($data['description'] ?? null) ? null : (string) $data['description'],
+        );
+
+        $event = OwnerContext::withOwner($owner, function () use ($data, $eventDescription, $eventSummary, $eventTitle): Event {
             $event = Event::query()->create([
-                'title' => $data['title'] ?? 'Untitled Event',
-                'summary' => $data['summary'] ?? null,
-                'description' => $data['description'] ?? null,
+                'title' => $eventTitle,
+                'summary' => $eventSummary,
+                'description' => $eventDescription,
                 'type' => $data['type'] ?? null,
                 'status' => Event::DRAFT,
                 'visibility' => $data['visibility'] ?? Event::PUBLIC,
@@ -38,7 +55,7 @@ final class DefaultEventSubmissionConverter implements EventSubmissionConverter
 
             if (isset($data['starts_at'])) {
                 $event->occurrences()->create([
-                    'title' => $event->title,
+                    'title' => $eventTitle,
                     'starts_at' => CarbonImmutable::parse($data['starts_at']),
                     'ends_at' => isset($data['ends_at']) ? CarbonImmutable::parse($data['ends_at']) : CarbonImmutable::parse($data['starts_at'])->addHours(2),
                     'timezone' => $data['timezone'] ?? 'UTC',

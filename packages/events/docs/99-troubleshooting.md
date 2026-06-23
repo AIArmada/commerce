@@ -8,6 +8,18 @@ title: Troubleshooting
 
 Ensure the `events` database config key exists and the connection is valid. Check `EVENTS_JSON_COLUMN_TYPE` — use `jsonb` for PostgreSQL and `json` for MySQL if your MySQL version does not support native JSONB.
 
+### Search documents are not updating
+
+Check that `EVENTS_SYNC_BUILD_SEARCH_DOCUMENTS=true` and that `events.search.indexer` is not bound to `NullEventSearchIndexer`. The built-in `EventSearchDocumentBuilder` is used when the indexer config is left empty and covers events, occurrences, and sessions.
+
+If you changed event, occurrence, or session attribute, audience, classification, or time-expression records and expected the search document to move, make sure the relevant sync toggle is enabled:
+
+- `EVENTS_SYNC_ATTRIBUTES_TO_METADATA`
+- `EVENTS_SYNC_AUDIENCES_TO_METADATA`
+- `EVENTS_SYNC_TIME_EXPRESSIONS_TO_METADATA`
+- `EVENTS_SYNC_AUDIENCES_TO_FACETS`
+- `EVENTS_SYNC_CLASSIFICATIONS_TO_FACETS`
+
 ### Owner scoping not working
 
 Enable owner mode in config:

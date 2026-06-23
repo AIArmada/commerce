@@ -8,12 +8,17 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Events\EventOccurrenceCreated;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class CreateEventOccurrenceAction
 {
+    public function __construct(
+        private readonly EventContentNormalizer $contentNormalizer,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -23,7 +28,7 @@ final class CreateEventOccurrenceAction
 
         $title = blank($attributes['title'] ?? null)
             ? throw new InvalidArgumentException('Occurrence title is required.')
-            : (string) $attributes['title'];
+            : $this->contentNormalizer->normalizeTitle((string) $attributes['title']);
 
         $startsAt = blank($attributes['starts_at'] ?? null)
             ? CarbonImmutable::now()->addDay()
