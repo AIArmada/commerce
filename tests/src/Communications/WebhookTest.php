@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Contracts\IdempotencyLock;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
@@ -142,7 +143,7 @@ test('NullCommunicationAuditRecorder implements CommunicationAuditRecorder', fun
     $recorder = new NullCommunicationAuditRecorder;
 
     expect($recorder)->toBeInstanceOf(
-        AIArmada\Communications\Contracts\CommunicationAuditRecorder::class,
+        CommunicationAuditRecorder::class,
     );
 });
 
