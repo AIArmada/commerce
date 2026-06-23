@@ -29,15 +29,21 @@ describe('navigation configuration', function () use ($resources): void {
     });
 
     test('getNavigationGroup returns config value for all resources', function (string $resourceClass): void {
-        expect($resourceClass::getNavigationGroup())->toBe('Test Communications');
+        $group = $resourceClass::getNavigationGroup();
+        /** @phpstan-ignore argument.templateType */
+        expect($group)->toBe('Test Communications');
     })->with($resources);
 
     test('getNavigationSort returns config value for all resources', function (string $resourceClass): void {
-        expect($resourceClass::getNavigationSort())->toBe(80);
+        $sort = $resourceClass::getNavigationSort();
+        /** @phpstan-ignore argument.templateType */
+        expect($sort)->toBe(80);
     })->with($resources);
 
     test('getNavigationGroup is not null for all resources', function (string $resourceClass): void {
-        expect($resourceClass::getNavigationGroup())->not->toBeNull();
+        $group = $resourceClass::getNavigationGroup();
+        /** @phpstan-ignore argument.templateType */
+        expect($group)->not->toBeNull();
     })->with($resources);
 });
 
@@ -49,8 +55,11 @@ describe('resource methods', function () use ($resources): void {
     test('getPages returns array with index and view for all resources', function (string $resourceClass): void {
         $pages = $resourceClass::getPages();
 
+        /** @phpstan-ignore argument.templateType */
         expect($pages)->toBeArray();
+        /** @phpstan-ignore argument.templateType */
         expect($pages)->toHaveKey('index');
+        /** @phpstan-ignore argument.templateType */
         expect($pages)->toHaveKey('view');
     })->with($resources);
 });
