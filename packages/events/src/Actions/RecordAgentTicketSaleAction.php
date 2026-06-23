@@ -6,8 +6,10 @@ namespace AIArmada\Events\Actions;
 
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
+use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Support\EventRegistrationScope;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -48,6 +50,8 @@ final class RecordAgentTicketSaleAction
         $target = $ticketType->session ?? $ticketType->occurrence ?? $ticketType->event;
         $scope = $this->scopeResolver->resolve($target);
         $scopeData = $scope->toRegistrationData();
+
+        $this->enforceCapacity($quantity, $scope);
 
         $this->inventory->shipFromDefault($ticketType, $quantity, 'agent_sale', 'agent:' . ($agent?->getKey() ?? 'unknown'));
 
@@ -104,5 +108,28 @@ final class RecordAgentTicketSaleAction
             'phone' => $customerData['phone'] ?? null,
             'is_primary' => $index === 0,
         ];
+    }
+
+    private function enforceCapacity(int $quantity, EventRegistrationScope $scope): void
+    {
+        if (! config('events.features.enforce_scope_capacity_on_paid_registrations', false)) {
+            return;
+        }
+
+        $remaining = $scope->capacityRemaining();
+
+        if ($remaining === null) {
+            return;
+        }
+
+        if ($quantity > $remaining) {
+            throw new EventCapacityExceededException(
+                sprintf(
+                    'The event scope does not have enough capacity for %d agent sale registrations. Only %d remaining.',
+                    $quantity,
+                    $remaining,
+                ),
+            );
+        }
     }
 }

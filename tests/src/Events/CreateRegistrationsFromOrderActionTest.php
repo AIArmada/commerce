@@ -73,6 +73,63 @@ it('creates registrations for an order item using the order model as the externa
     });
 });
 
+it('returns existing registrations when replaying a paid order item after capacity is exhausted', function (): void {
+    config()->set('events.features.enforce_scope_capacity_on_paid_registrations', true);
+
+    OwnerContext::withOwner(null, function (): void {
+        $originalMorphMap = Relation::morphMap();
+        Relation::morphMap(['test-order' => Order::class], false);
+
+        try {
+            $event = Event::factory()->paid()->create();
+            $occurrence = EventOccurrence::factory()->create([
+                'event_id' => $event->id,
+                'capacity' => 1,
+            ]);
+            $ticketType = EventTicketType::factory()->create([
+                'event_id' => $event->id,
+                'price' => 1500,
+            ]);
+            $order = Order::factory()->create();
+            $orderItem = OrderItem::query()->create([
+                'id' => (string) Str::uuid(),
+                'order_id' => $order->id,
+                'purchasable_type' => $ticketType->getMorphClass(),
+                'purchasable_id' => $ticketType->id,
+                'name' => 'Event Ticket',
+                'sku' => 'EVENT-TICKET',
+                'quantity' => 1,
+                'unit_price' => 1500,
+                'discount_amount' => 0,
+                'tax_amount' => 0,
+                'currency' => 'MYR',
+            ]);
+
+            $participants = [
+                ['name' => 'Alice Example', 'email' => 'alice@example.com'],
+            ];
+
+            $firstPass = app(CreateRegistrationsFromOrderAction::class)->handle(
+                target: $occurrence,
+                orderItem: $orderItem->fresh(),
+                participants: $participants,
+            );
+
+            $replayed = app(CreateRegistrationsFromOrderAction::class)->handle(
+                target: $occurrence,
+                orderItem: $orderItem->fresh(),
+                participants: $participants,
+            );
+
+            expect($firstPass)->toHaveCount(1)
+                ->and($replayed)->toHaveCount(1)
+                ->and($replayed->first()?->is($firstPass->first()))->toBeTrue();
+        } finally {
+            Relation::morphMap($originalMorphMap, false);
+        }
+    });
+});
+
 it('creates registrations for occurrence-scoped ticket types on an occurrence', function (): void {
     OwnerContext::withOwner(null, function (): void {
         $originalMorphMap = Relation::morphMap();

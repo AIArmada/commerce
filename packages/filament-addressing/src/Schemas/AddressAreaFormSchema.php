@@ -54,7 +54,7 @@ class AddressAreaFormSchema
                             ->label('Type')
                             ->required()
                             ->maxLength(100)
-                            ->placeholder('e.g. state, province, district, city'),
+                            ->placeholder('e.g. state, province, city'),
                         TextInput::make('level')
                             ->label('Level')
                             ->numeric()

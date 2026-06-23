@@ -24,7 +24,6 @@ class AddressInfolistSchema
                 Section::make('Location')
                     ->schema([
                         TextEntry::make('city'),
-                        TextEntry::make('district'),
                         TextEntry::make('state'),
                         TextEntry::make('postcode'),
                         TextEntry::make('country'),

@@ -8,6 +8,8 @@ use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Inventory\Models\InventoryLocation;
 
 final class EnsureTicketTypeForOccurrenceAction
 {
@@ -41,7 +43,6 @@ final class EnsureTicketTypeForOccurrenceAction
             'access_type' => $attributes['access_type'] ?? 'general',
             'price' => $attributes['price'] ?? 0,
             'currency' => $attributes['currency'] ?? 'MYR',
-            'quota' => $attributes['quota'] ?? $target->capacity,
             'admits_quantity' => $attributes['admits_quantity'] ?? 1,
             'min_quantity' => $attributes['min_quantity'] ?? 1,
             'max_quantity' => $attributes['max_quantity'] ?? null,
@@ -52,8 +53,25 @@ final class EnsureTicketTypeForOccurrenceAction
             'sort_order' => $attributes['sort_order'] ?? 0,
         ]);
 
-        if ($ticketType->isDirty()) {
+        if ($ticketType->isDirty() || ! $ticketType->exists) {
             $ticketType->save();
+        }
+
+        $quantity = (int) ($attributes['quota'] ?? $target->capacity ?? 0);
+
+        if ($quantity > 0) {
+            $defaultLocation = InventoryLocation::getOrCreateDefault();
+
+            InventoryLevel::updateOrCreate(
+                [
+                    'inventoryable_type' => $ticketType->getMorphClass(),
+                    'inventoryable_id' => $ticketType->getKey(),
+                    'location_id' => $defaultLocation->getKey(),
+                ],
+                [
+                    'quantity_on_hand' => $quantity,
+                ],
+            );
         }
 
         return $ticketType;

@@ -24,8 +24,6 @@ class AddressExporter extends Exporter
                 ->label('Line 2'),
             ExportColumn::make('city')
                 ->label('City'),
-            ExportColumn::make('district')
-                ->label('District'),
             ExportColumn::make('state')
                 ->label('State'),
             ExportColumn::make('postcode')

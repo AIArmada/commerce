@@ -94,7 +94,6 @@ trait Addressable
             'line2' => $this->line2 ?? null,
             'line3' => $this->line3 ?? null,
             'city' => $this->city ?? null,
-            'district' => $this->district ?? null,
             'state' => $this->state ?? null,
             'postcode' => $this->postcode ?? null,
             'country' => $this->country ?? null,
