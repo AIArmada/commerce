@@ -8,10 +8,15 @@ use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Events\EventSessionCreated;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use Illuminate\Support\Str;
 
 final class CloneEventSessionAction
 {
+    public function __construct(
+        private readonly EventContentNormalizer $contentNormalizer,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $options
      */
@@ -21,7 +26,7 @@ final class CloneEventSessionAction
 
         $title = blank($options['title'] ?? null)
             ? $session->title . ' (Copy)'
-            : (string) $options['title'];
+            : $this->contentNormalizer->normalizeTitle((string) $options['title']);
 
         $clone = EventSession::query()->create([
             'event_id' => $session->event_id,
@@ -30,8 +35,12 @@ final class CloneEventSessionAction
             'slug' => blank($options['slug'] ?? null)
                 ? Str::slug($title, '-') . '-' . Str::random(6)
                 : (string) $options['slug'],
-            'summary' => $options['summary'] ?? $session->summary,
-            'description' => $options['description'] ?? $session->description,
+            'summary' => array_key_exists('summary', $options)
+                ? $this->contentNormalizer->normalizeSummary($options['summary'] !== null ? (string) $options['summary'] : null)
+                : $this->contentNormalizer->normalizeSummary($session->summary),
+            'description' => array_key_exists('description', $options)
+                ? $this->contentNormalizer->normalizeDescription($options['description'] !== null ? (string) $options['description'] : null)
+                : $this->contentNormalizer->normalizeDescription($session->description),
             'starts_at' => $options['starts_at'] ?? $session->starts_at,
             'ends_at' => $options['ends_at'] ?? $session->ends_at,
             'timezone' => $options['timezone'] ?? $session->timezone,

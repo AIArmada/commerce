@@ -56,6 +56,7 @@ title: Events Overview
 - Change management with public updates and notification batches
 - Event submissions with approval workflows and reason codes
 - Series grouping and taxonomy/classification system
+- Optional metadata sync and search document indexing for attributes, audiences, classifications, and time expressions across events, occurrences, and sessions
 - **State machines**: Event lifecycle, occurrence, registration, and moderation statuses use `spatie/laravel-model-states` for validated transitions
 - Extensibility seams: 15+ contracts for resolvers, workflows, and integrations
 - **Free-only mode**: Events can be marked as free with configurable registration behavior (required, optional, or open-door with walk-in/headcount tracking)

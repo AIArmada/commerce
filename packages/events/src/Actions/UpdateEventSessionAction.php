@@ -7,10 +7,16 @@ namespace AIArmada\Events\Actions;
 use AIArmada\Events\Events\EventSessionUpdated;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Events\Support\Normalization\EventContentNormalizer;
 use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 
 final class UpdateEventSessionAction
 {
+    public function __construct(
+        private readonly EventContentNormalizer $contentNormalizer,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      * @return array{changes: array<string, array{old: mixed, new: mixed}>, session: EventSession}
@@ -34,6 +40,22 @@ final class UpdateEventSessionAction
             $allowed['completed_at'],
             $allowed['archived_at'],
         );
+
+        if (array_key_exists('title', $allowed) && blank($allowed['title'])) {
+            throw new InvalidArgumentException('Session title is required.');
+        }
+
+        if (array_key_exists('title', $allowed)) {
+            $allowed['title'] = $this->contentNormalizer->normalizeTitle((string) $allowed['title']);
+        }
+
+        if (array_key_exists('summary', $allowed)) {
+            $allowed['summary'] = $this->contentNormalizer->normalizeSummary($allowed['summary'] !== null ? (string) $allowed['summary'] : null);
+        }
+
+        if (array_key_exists('description', $allowed)) {
+            $allowed['description'] = $this->contentNormalizer->normalizeDescription($allowed['description'] !== null ? (string) $allowed['description'] : null);
+        }
 
         if (array_key_exists('status', $allowed)) {
             $timestampField = match ((string) $allowed['status']) {

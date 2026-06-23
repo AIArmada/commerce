@@ -55,9 +55,22 @@ use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderCanceled;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderPaid;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefunded;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventAttribute;
+use AIArmada\Events\Models\EventAudience;
+use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventManagementAssignment;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Models\EventTimeExpression;
 use AIArmada\Events\Notifications\EventWelcomeNotification;
+use AIArmada\Events\Observers\EventAttributeObserver;
+use AIArmada\Events\Observers\EventAudienceObserver;
+use AIArmada\Events\Observers\EventClassificationObserver;
+use AIArmada\Events\Observers\EventObserver;
+use AIArmada\Events\Observers\EventOccurrenceObserver;
+use AIArmada\Events\Observers\EventSessionObserver;
+use AIArmada\Events\Observers\EventTimeExpressionObserver;
 use AIArmada\Events\Policies\EventPolicy;
 use AIArmada\Events\Resolvers\DefaultEventChangeNoticeAudienceResolver;
 use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
@@ -71,7 +84,6 @@ use AIArmada\Events\Resolvers\NullEventChangeNoticeNotificationDispatcher;
 use AIArmada\Events\Resolvers\NullEventCheckoutIntentResolver;
 use AIArmada\Events\Resolvers\NullEventOrderItemFulfillmentResolver;
 use AIArmada\Events\Resolvers\NullEventScheduleResolver;
-use AIArmada\Events\Resolvers\NullEventSearchIndexer;
 use AIArmada\Events\Resolvers\NullEventTranslationProvider;
 use AIArmada\Events\Services\DefaultEventChangeNoticeWorkflow;
 use AIArmada\Events\Services\DefaultEventCheckInService;
@@ -81,7 +93,9 @@ use AIArmada\Events\Services\DefaultEventPassDeliveryService;
 use AIArmada\Events\Services\DefaultEventPassIssuer;
 use AIArmada\Events\Services\DefaultEventSeatAllocator;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
+use AIArmada\Events\Services\EventMetadataSyncService;
 use AIArmada\Events\Services\EventQueryService;
+use AIArmada\Events\Services\EventSearchDocumentBuilder;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Steps\CreateEventRegistrationsStep;
 use AIArmada\Events\Steps\IssueEventPassesStep;
@@ -113,6 +127,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         Gate::policy(Event::class, EventPolicy::class);
 
         $this->app->singleton(EventQueryService::class);
+        $this->app->singleton(EventMetadataSyncService::class);
         $this->app->singleton(RegistrationService::class);
         $this->app->singleton(EventChangeNoticeWorkflow::class, DefaultEventChangeNoticeWorkflow::class);
         $this->app->singleton(EventModerationWorkflow::class, DefaultEventModerationWorkflow::class);
@@ -142,7 +157,8 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventChangeNoticeAudienceResolver::class, $this->changeNoticeAudienceResolverClass());
         $this->app->bind(EventChangeNoticeNotificationDispatcher::class, $this->changeNoticeNotificationDispatcherClass());
 
-        $this->app->bind(EventSearchIndexer::class, NullEventSearchIndexer::class);
+        $indexerClass = $this->searchIndexerClass();
+        $this->app->bind(EventSearchIndexer::class, fn (): EventSearchIndexer => app($indexerClass));
         $this->app->bind(EventTranslationProvider::class, NullEventTranslationProvider::class);
 
         $this->app->bind(EventRegistrationScopeResolver::class, DefaultEventRegistrationScopeResolver::class);
@@ -201,6 +217,28 @@ final class EventsServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        if (config('events.sync.build_search_documents')) {
+            Event::observe(EventObserver::class);
+            EventOccurrence::observe(EventOccurrenceObserver::class);
+            EventSession::observe(EventSessionObserver::class);
+        }
+
+        if (config('events.sync.attributes_to_metadata')) {
+            EventAttribute::observe(EventAttributeObserver::class);
+        }
+
+        if (config('events.sync.audiences_to_metadata') || config('events.sync.audiences_to_facets')) {
+            EventAudience::observe(EventAudienceObserver::class);
+        }
+
+        if (config('events.sync.time_expressions_to_metadata')) {
+            EventTimeExpression::observe(EventTimeExpressionObserver::class);
+        }
+
+        if (config('events.sync.classifications_to_facets')) {
+            EventClassification::observe(EventClassificationObserver::class);
+        }
+
         EventTicketType::observe(ObserveEventTicketTypePricingConsistency::class);
 
         if (! interface_exists(CheckoutStepRegistryInterface::class)) {
@@ -379,6 +417,21 @@ final class EventsServiceProvider extends PackageServiceProvider
         }
 
         throw new RuntimeException('The events.search.engine config value must be an EventSearchEngine class.');
+    }
+
+    private function searchIndexerClass(): string
+    {
+        $resolver = config('events.search.indexer');
+
+        if ($resolver === null) {
+            return EventSearchDocumentBuilder::class;
+        }
+
+        if (is_string($resolver) && is_a($resolver, EventSearchIndexer::class, true)) {
+            return $resolver;
+        }
+
+        throw new RuntimeException('The events.search.indexer config value must be an EventSearchIndexer class.');
     }
 
     private function changeNoticeAudienceResolverClass(): string

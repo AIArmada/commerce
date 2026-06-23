@@ -203,6 +203,8 @@ $session = $occurrence->sessions()->create([
 
 Sessions are agenda items within an occurrence.
 
+Content inputs are normalized server-side before persistence. Titles are trimmed and repeated whitespace is collapsed, and blank summary or description inputs are stored as `null`.
+
 ## Managing Venues
 
 ```php
@@ -495,3 +497,20 @@ app()->bind(EventSearchPayloadResolver::class, MySearchResolver::class);
 ```
 
 Available contracts: `RegistrationServiceInterface`, `EventLifecycleWorkflow`, `EventCheckInService`, `EventSearchPayloadResolver`, `EventDisplayTimezoneResolver`, `EventScheduleResolver`, and more.
+
+## Search Indexing
+
+When `events.sync.build_search_documents` is enabled, the package maintains `event_search_documents` automatically through the built-in search indexer for events, occurrences, and sessions.
+
+```php
+use AIArmada\Events\Services\EventSearchDocumentBuilder;
+
+$builder = app(EventSearchDocumentBuilder::class);
+$document = $builder->buildForEvent($event);
+$occurrenceDocument = $builder->buildForOccurrence($occurrence);
+$sessionDocument = $builder->buildForSession($session);
+```
+
+The generated payload includes the target content, the current `metadata` snapshot for that target, and relation-backed facets for audiences and classifications when those sync flags are enabled.
+
+Set `events.search.queue_indexing=true` to queue rebuilds instead of writing them synchronously. If you need to disable automatic indexing entirely, bind `events.search.indexer` to `AIArmada\Events\Resolvers\NullEventSearchIndexer`.
