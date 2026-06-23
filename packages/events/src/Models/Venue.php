@@ -8,6 +8,7 @@ use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Contacting\Concerns\HasSocialProfiles;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\Events\Database\Factories\VenueFactory;
+use AIArmada\Events\Models\Concerns\Addressable;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -57,6 +58,7 @@ use Illuminate\Support\Carbon;
  */
 final class Venue extends Model
 {
+    use Addressable;
     use HasContactMethods;
     use HasFactory;
     use HasSocialProfiles;

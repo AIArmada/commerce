@@ -128,12 +128,13 @@ Defines moderation reason codes. State transitions are defined in `States/EventM
     'product_model' => class_exists(...) ? Product::class : null,
     'customer_model' => class_exists(...) ? Customer::class : null,
     'order_model' => class_exists(...) ? Order::class : null,
+    'addressing_enabled' => env('EVENTS_ADDRESSING_ENABLED', false),
     'checkout_intent_resolver' => null,
     'order_item_fulfillment_resolver' => null,
 ]
 ```
 
-Auto-detects commerce packages. When related packages are installed, integration features are automatically enabled. Custom resolvers can override default behavior.
+Auto-detects commerce packages. When related packages are installed, integration features are automatically enabled. Set `addressing_enabled` to `true` only when the `aiarmada/addressing` package is installed and its migrations have been run. Custom resolvers can override default behavior.
 
 ### Notifications
 

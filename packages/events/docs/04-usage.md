@@ -222,6 +222,9 @@ $venue = Venue::create([
 ]);
 ```
 
+> [!info]
+> Set `events.integrations.addressing_enabled=true` to read venue and event location addresses from the shared addressing package. When the flag is off, the package continues to use the flat address columns.
+
 ## Managing Registrations
 
 ### Basic registration
