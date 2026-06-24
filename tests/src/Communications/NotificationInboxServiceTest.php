@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\NotificationInbox;
 use AIArmada\Communications\Services\NotificationInboxService;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
