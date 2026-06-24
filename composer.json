@@ -205,6 +205,8 @@
             "AIArmada\\Communications\\": "packages/communications/src",
             "AIArmada\\Communications\\Database\\Factories\\": "packages/communications/database/factories",
             "AIArmada\\Communications\\Tests\\": "tests/src/Communications/",
+            "AIArmada\\Moderation\\": "packages/moderation/src",
+            "AIArmada\\References\\": "packages/references/src",
             "AIArmada\\Filament\\Communications\\": "packages/filament-communications/src",
             "AIArmada\\Filament\\Communications\\Tests\\": "tests/src/FilamentCommunications/",
             "AIArmada\\FilamentCommerceSupport\\": "packages/filament-commerce-support/src",

@@ -26,6 +26,7 @@ title: Configuration
         'attachments' => 'communication_attachments',
         'references' => 'communication_references',
         'tracking_tokens' => 'communication_tracking_tokens',
+        'notification_inboxes' => 'notification_inboxes',
     ],
 ],
 ```
@@ -55,6 +56,18 @@ title: Configuration
 - `auto_capture_allowlist` - restrict auto capture to matching classes
 - `auto_capture_denylist` - exclude matching classes from auto capture
 - `auto_capture_ignored_channels` - skip selected notification channels
+
+## Inbox
+
+```php
+'database' => [
+    'tables' => [
+        'notification_inboxes' => 'notification_inboxes',
+    ],
+],
+```
+
+- `database.tables.notification_inboxes` stores the inbox rows used by `HasInbox`, `DispatchInboxNotificationAction`, and the inbox Livewire screen
 
 ## Integrations
 

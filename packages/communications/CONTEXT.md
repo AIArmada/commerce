@@ -11,8 +11,8 @@ family: communications
 ## Snapshot
 
 - Composer: `aiarmada/communications`
-- Role: Outbound, inbound, and internal communication recording, delivery tracking, template management, preference and suppression enforcement, and Laravel Notifications integration.
-- Search first: `src/Models`, `src/Actions`, `src/Contracts`, `src/Data`, `src/Enums`, `src/Events`, `src/Support`, `config`, `docs`
+- Role: Outbound, inbound, internal, and inbox communication recording, delivery tracking, template management, preference and suppression enforcement, and Laravel Notifications integration.
+- Search first: `src/Models`, `src/Actions`, `src/Contracts`, `src/Data`, `src/Enums`, `src/Events`, `src/Http`, `src/Services`, `src/Traits`, `src/Console`, `resources/views`, `config`, `docs`
 - Related: `filament-communications`, `commerce-support`, `contacting`
 
 ## Read next
@@ -29,6 +29,6 @@ family: communications
 - Owns communication-domain models, actions, services, resolvers, listeners, events, console commands, and persistence rules.
 - Complements Laravel Notifications — does not replace it, the queue, or Horizon.
 - Keeps Filament resources, pages, widgets, relation managers, and admin-only workflow actions in `filament-communications`.
-- Preserves owner-aware queries, explicit owner context, and polymorphic integrations.
+- Preserves owner-aware queries, explicit owner context, inbox scoping, and polymorphic integrations.
 - Prefers actions and workflow services for orchestration; keeps models and listeners thin.
 - Updates `docs/*.md` in the same pass when public behavior or config changes.
