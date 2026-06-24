@@ -59,10 +59,12 @@ jobs:
           - growth
           - inventory
           - jnt
+          - moderation
           - orders
           - pricing
           - products
           - promotions
+          - references
           - shipping
           - signals
           - tax

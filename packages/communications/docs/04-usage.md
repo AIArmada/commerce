@@ -47,6 +47,49 @@ class InvoicePaid extends BaseCommunicationNotification
 }
 ```
 
+## Inbox notifications
+
+```php
+use AIArmada\Communications\Actions\DispatchInboxNotificationAction;
+use AIArmada\Communications\Enums\NotificationFamily;
+use AIArmada\Communications\Enums\NotificationPriority;
+use AIArmada\Communications\Enums\NotificationTrigger;
+
+app(DispatchInboxNotificationAction::class)->handle(
+    recipient: $user,
+    title: 'System maintenance scheduled',
+    body: 'The platform will be offline from 01:00 to 02:00 UTC.',
+    family: NotificationFamily::SystemAnnouncement,
+    priority: NotificationPriority::Normal,
+    trigger: NotificationTrigger::ManualDispatch,
+);
+```
+
+`DispatchInboxNotificationAction` creates the communication record and the inbox row together.
+
+### Reading inbox entries on a model
+
+```php
+use AIArmada\Communications\Traits\HasInbox;
+use Illuminate\Database\Eloquent\Model;
+
+final class User extends Model
+{
+    use HasInbox;
+}
+
+$unreadCount = $user->unreadCount();
+$user->markAsRead((string) $inboxId);
+$user->markAllAsRead();
+$user->archiveRead();
+```
+
+`HasInbox` exposes the recipient inbox relation, unread counts, and read/archive helpers.
+
+### Live inbox screen
+
+The package registers the `communications.inbox-index` Livewire component for the inbox listing surface.
+
 ## Working with templates
 
 ```php
@@ -71,8 +114,11 @@ php artisan communications:expire
 
 # Reconcile aggregate statuses
 php artisan communications:reconcile
+
+# Prune archived inbox rows
+php artisan communications:prune-inboxes
 ```
 
 ## Owner scoping
 
-All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations.
+All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations. Inbox records follow the same owner boundary as the rest of the communications data.

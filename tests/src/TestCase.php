@@ -42,7 +42,9 @@ use AIArmada\FilamentSignals\FilamentSignalsServiceProvider;
 use AIArmada\FilamentVouchers\FilamentVouchersServiceProvider;
 use AIArmada\Growth\GrowthServiceProvider;
 use AIArmada\Jnt\JntServiceProvider;
+use AIArmada\Moderation\ModerationServiceProvider;
 use AIArmada\Products\ProductsServiceProvider;
+use AIArmada\References\ReferencesServiceProvider;
 use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Shipping\ShippingServiceProvider;
 use AIArmada\Signals\SignalsServiceProvider;
@@ -184,6 +186,8 @@ abstract class TestCase extends Orchestra
             ProductsServiceProvider::class,
             CommunicationsServiceProvider::class,
             FilamentCommunicationsServiceProvider::class,
+            ModerationServiceProvider::class,
+            ReferencesServiceProvider::class,
             FilamentShippingServiceProvider::class,
             FilamentCashierServiceProvider::class,
             TestPanelProvider::class,
@@ -382,6 +386,13 @@ abstract class TestCase extends Orchestra
         $app['config']->set('affiliate-network.database.table_prefix', 'affiliate_network_');
         $app['config']->set('affiliate-network.database.json_column_type', 'json');
 
+        // Configure moderation settings for testing
+        $app['config']->set('moderation.database.json_column_type', 'json');
+        $app['config']->set('moderation.features.owner.enabled', true);
+
+        // Configure references settings for testing
+        $app['config']->set('references.database.json_column_type', 'json');
+
         // Configure Spatie Permission settings for testing
         $app['config']->set('permission.models.permission', Permission::class);
         $app['config']->set('permission.models.role', Role::class);
@@ -452,6 +463,8 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/customers/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/checkout/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/communications/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/moderation/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/references/database/migrations');
     }
 
     protected function setUpDatabase(): void

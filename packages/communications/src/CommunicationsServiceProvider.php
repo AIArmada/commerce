@@ -7,6 +7,7 @@ namespace AIArmada\Communications;
 use AIArmada\Communications\Console\Commands\DispatchDueCommunicationsCommand;
 use AIArmada\Communications\Console\Commands\ExpireCommunicationsCommand;
 use AIArmada\Communications\Console\Commands\PruneCommunicationDataCommand;
+use AIArmada\Communications\Console\Commands\PruneNotificationInboxesCommand;
 use AIArmada\Communications\Console\Commands\ReconcileCommunicationStatusCommand;
 use AIArmada\Communications\Console\Commands\ReplayWebhookEventsCommand;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
@@ -23,6 +24,7 @@ use AIArmada\Communications\Contracts\QuietHoursResolver;
 use AIArmada\Communications\Contracts\RateLimiter;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Contracts\SuppressionResolver;
+use AIArmada\Communications\Http\Livewire\InboxIndex;
 use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAuditRecorder;
 use AIArmada\Communications\Listeners\AutoCaptureNotificationListener;
 use AIArmada\Communications\Listeners\RecordNativeNotificationSending;
@@ -45,6 +47,7 @@ use AIArmada\Communications\Support\PayloadRedactorService;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
+use Livewire\Livewire;
 use Spatie\Activitylog\ActivitylogServiceProvider;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -61,9 +64,11 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 DispatchDueCommunicationsCommand::class,
                 ExpireCommunicationsCommand::class,
                 PruneCommunicationDataCommand::class,
+                PruneNotificationInboxesCommand::class,
                 ReconcileCommunicationStatusCommand::class,
                 ReplayWebhookEventsCommand::class,
             ])
+            ->hasViews()
             ->hasMigrations([
                 '2000_01_01_000001_create_communication_batches_table',
                 '2000_01_01_000002_create_communication_threads_table',
@@ -80,6 +85,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 '2000_01_01_000013_create_communication_attachments_table',
                 '2000_01_01_000014_create_communication_references_table',
                 '2000_01_01_000015_create_communication_tracking_tokens_table',
+                '2000_01_01_000016_create_notification_inboxes_table',
             ]);
     }
 
@@ -115,6 +121,10 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        if (class_exists(Livewire::class)) {
+            Livewire::component('communications.inbox-index', InboxIndex::class);
+        }
+
         if (! (bool) config('communications.features.native_capture', true)) {
             return;
         }

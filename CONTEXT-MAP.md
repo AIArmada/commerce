@@ -109,6 +109,7 @@ Use these routing rules before editing code or docs.
 | affiliate routing across package boundaries | `docs/affiliates.md` | `affiliates`, `vouchers`, `checkout`, `filament-affiliates` |
 | shared owner rules, payment contracts, targeting engine, shared cache/file helpers | `commerce-support` | dependent package docs |
 | authz scopes, panel/page/widget authorization, impersonation | `filament-authz` | paired Filament package |
+| outbound, inbound, inbox, templates, preferences, and suppression records | `communications` | `filament-communications`, `contacting`, `commerce-support` |
 | customer records and customer admin | `customers` | `filament-customers` |
 | catalog records and product admin | `products` | `filament-products` |
 | stock, allocations, warehouses, costing | `inventory` | `filament-inventory` |
@@ -129,12 +130,17 @@ Use these routing rules before editing code or docs.
 | CHIP recurring billing | `cashier-chip` | `filament-cashier-chip`, `chip`, `cashier` |
 | business documents, PDFs, numbering, e-invoices | `docs` | `filament-docs`, `orders`, `checkout` |
 | event registrations and venues | `events` | `filament-events` |
+| blocks, bans, and moderation actions | `moderation` | `events`, `commerce-support` |
+| reference sources, slugs, and hierarchical citation parts | `references` | `events`, `commerce-support` |
 | analytics, alerts, reports, tracker ingestion | `signals` | `filament-signals`, `growth` |
 | bundle installation and package selection | `csuite` | `docs/index.md`, `docs/ai/package-manifests.json` |
 
 ## Family map
 
 - **Foundation**: `commerce-support`, `filament-authz`
+- **Communications**: `communications`, `filament-communications`
+- **Governance and safety**: `moderation`
+- **Knowledge and references**: `references`
 - **Catalog and identity**: `customers`, `filament-customers`, `products`, `filament-products`, `inventory`, `filament-inventory`, `pricing`, `filament-pricing`, `tax`, `filament-tax`
 - **Growth and incentives**: `promotions`, `filament-promotions`, `vouchers`, `filament-vouchers`, `affiliates`, `filament-affiliates`, `affiliate-network`, `filament-affiliate-network`, `growth`, `filament-growth`
 - **Checkout flow**: `cart`, `filament-cart`, `checkout`, `orders`, `filament-orders`, `shipping`, `filament-shipping`, `jnt`, `filament-jnt`

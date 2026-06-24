@@ -10,6 +10,16 @@
       "commerce-support",
       "filament-authz"
     ],
+    "communications": [
+      "communications",
+      "filament-communications"
+    ],
+    "governance-and-safety": [
+      "moderation"
+    ],
+    "knowledge-and-references": [
+      "references"
+    ],
     "catalog-and-identity": [
       "customers",
       "filament-customers",
@@ -97,6 +107,79 @@
         "troubleshooting": "packages/filament-authz/docs/99-troubleshooting.md"
       },
       "related_packages": [
+        "commerce-support"
+      ]
+    },
+    "communications": {
+      "composer": "aiarmada/communications",
+      "surface": "domain",
+      "family": "communications",
+      "paired_package": "filament-communications",
+      "summary": "Outbound, inbound, inbox, template, preference, and suppression records for Laravel communications.",
+      "canonical_docs": {
+        "overview": "packages/communications/docs/01-overview.md",
+        "installation": "packages/communications/docs/02-installation.md",
+        "configuration": "packages/communications/docs/03-configuration.md",
+        "usage": "packages/communications/docs/04-usage.md",
+        "troubleshooting": "packages/communications/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-communications",
+        "commerce-support",
+        "contacting"
+      ]
+    },
+    "filament-communications": {
+      "composer": "aiarmada/filament-communications",
+      "surface": "filament",
+      "family": "communications",
+      "paired_package": "communications",
+      "summary": "Filament v5 admin UI for communications messages, deliveries, threads, templates, preferences, suppressions, and batches.",
+      "canonical_docs": {
+        "overview": "packages/filament-communications/docs/01-overview.md",
+        "installation": "packages/filament-communications/docs/02-installation.md",
+        "configuration": "packages/filament-communications/docs/03-configuration.md",
+        "usage": "packages/filament-communications/docs/04-usage.md",
+        "troubleshooting": "packages/filament-communications/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "communications",
+        "commerce-support"
+      ]
+    },
+    "moderation": {
+      "composer": "aiarmada/moderation",
+      "surface": "domain",
+      "family": "governance-and-safety",
+      "paired_package": null,
+      "summary": "Blocking, bans, and moderation action records for Laravel models.",
+      "canonical_docs": {
+        "overview": "packages/moderation/docs/01-overview.md",
+        "installation": "packages/moderation/docs/02-installation.md",
+        "configuration": "packages/moderation/docs/03-configuration.md",
+        "usage": "packages/moderation/docs/04-usage.md",
+        "troubleshooting": "packages/moderation/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "events",
+        "commerce-support"
+      ]
+    },
+    "references": {
+      "composer": "aiarmada/references",
+      "surface": "domain",
+      "family": "knowledge-and-references",
+      "paired_package": null,
+      "summary": "Reference sources, slugs, and hierarchical citation parts for Laravel models.",
+      "canonical_docs": {
+        "overview": "packages/references/docs/01-overview.md",
+        "installation": "packages/references/docs/02-installation.md",
+        "configuration": "packages/references/docs/03-configuration.md",
+        "usage": "packages/references/docs/04-usage.md",
+        "troubleshooting": "packages/references/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "events",
         "commerce-support"
       ]
     },
