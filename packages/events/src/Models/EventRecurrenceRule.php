@@ -10,6 +10,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -122,6 +123,14 @@ final class EventRecurrenceRule extends Model
     public function session(): BelongsTo
     {
         return $this->belongsTo(EventSession::class, 'event_session_id');
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function recurrenceTarget(): MorphTo
+    {
+        return $this->morphTo(__FUNCTION__, 'recurrence_target_type', 'recurrence_target_id');
     }
 
     protected static function newFactory(): EventRecurrenceRuleFactory

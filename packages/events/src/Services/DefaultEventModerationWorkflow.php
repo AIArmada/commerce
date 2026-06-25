@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Services;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Events\EventSubmissionApproved;
 use AIArmada\Events\Events\EventSubmissionRejected;
-use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventSubmission;
 use AIArmada\Events\States\EventModerationStatus\Approved;
 use AIArmada\Events\States\EventModerationStatus\ChangesRequested;
 use AIArmada\Events\States\EventModerationStatus\Pending;
 use AIArmada\Events\States\EventModerationStatus\Rejected;
+use AIArmada\Events\Support\EventWriteGuard;
 use Carbon\CarbonImmutable;
 
 final class DefaultEventModerationWorkflow implements EventModerationWorkflow
@@ -63,7 +62,7 @@ final class DefaultEventModerationWorkflow implements EventModerationWorkflow
             return;
         }
 
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $submission->event_id);
+        EventWriteGuard::findOrFail($submission->event_id);
     }
 
     /**

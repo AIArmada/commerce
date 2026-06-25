@@ -55,14 +55,22 @@ use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderCanceled;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderPaid;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderRefunded;
 use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventApprovalRequest;
 use AIArmada\Events\Models\EventAttribute;
 use AIArmada\Events\Models\EventAudience;
+use AIArmada\Events\Models\EventAvailabilityBlock;
 use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventManagementAssignment;
+use AIArmada\Events\Models\EventManagementAssignmentRequest;
+use AIArmada\Events\Models\EventModerationAction;
 use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventRecurrenceRule;
+use AIArmada\Events\Models\EventReport;
+use AIArmada\Events\Models\EventRevision;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Models\EventTimeExpression;
+use AIArmada\Events\Models\EventVerification;
 use AIArmada\Events\Notifications\EventWelcomeNotification;
 use AIArmada\Events\Observers\EventAttributeObserver;
 use AIArmada\Events\Observers\EventAudienceObserver;
@@ -99,7 +107,10 @@ use AIArmada\Events\Services\EventSearchDocumentBuilder;
 use AIArmada\Events\Services\RegistrationService;
 use AIArmada\Events\Steps\CreateEventRegistrationsStep;
 use AIArmada\Events\Steps\IssueEventPassesStep;
+use AIArmada\Events\Support\EventOwnerScope;
+use AIArmada\Events\Support\EventSubmissionOwnerScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Events\Support\PolymorphicOwnerScope;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
 use AIArmada\Orders\Events\OrderCanceled;
 use AIArmada\Orders\Events\OrderPaid;
@@ -217,6 +228,18 @@ final class EventsServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        EventSubmissionOwnerScope::register();
+        EventOwnerScope::registerDefaults();
+        PolymorphicOwnerScope::register(EventApprovalRequest::class, 'approvable');
+        PolymorphicOwnerScope::register(EventAvailabilityBlock::class, 'blockable', 'event_id');
+        PolymorphicOwnerScope::register(EventManagementAssignment::class, 'manageable', 'event_id');
+        PolymorphicOwnerScope::register(EventManagementAssignmentRequest::class, 'manageable');
+        PolymorphicOwnerScope::register(EventModerationAction::class, 'actionable', 'event_id');
+        PolymorphicOwnerScope::register(EventRecurrenceRule::class, 'recurrenceTarget', 'event_id');
+        PolymorphicOwnerScope::register(EventReport::class, 'reportable', 'event_id');
+        PolymorphicOwnerScope::register(EventRevision::class, 'revisable', 'event_id');
+        PolymorphicOwnerScope::register(EventVerification::class, 'verifiable', 'event_id');
+
         if (config('events.sync.build_search_documents')) {
             Event::observe(EventObserver::class);
             EventOccurrence::observe(EventOccurrenceObserver::class);

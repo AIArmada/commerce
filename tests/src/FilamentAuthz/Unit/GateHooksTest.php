@@ -17,7 +17,7 @@ beforeEach(function (): void {
 
 describe('super admin bypass', function (): void {
     it('grants all permissions to super admin role', function (): void {
-        $superAdminRole = config('filament-authz.super_admin_role');
+        $superAdminRole = config('authz.super_admin_role');
         $role = Role::findOrCreate($superAdminRole, 'web');
         $this->user->assignRole($role);
 

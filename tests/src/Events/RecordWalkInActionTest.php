@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Actions\RecordWalkInAction;
+use AIArmada\Events\Events\WalkInRecorded;
 use AIArmada\Events\Exceptions\NotOpenDoorEventException;
 use AIArmada\Events\Exceptions\WrongOpenDoorModeException;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
+use Illuminate\Support\Facades\Event as EventFacade;
 
 beforeEach(function (): void {
     config()->set('events.features.free_only.open_door_mode', 'walk_in');
@@ -18,6 +20,8 @@ it('records a walk-in for an open-door event', function (): void {
     OwnerContext::withOwner(null, function (): void {
         $event = Event::factory()->freeOpenDoor()->published()->create();
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+
+        EventFacade::fake([WalkInRecorded::class]);
 
         $walkIn = app(RecordWalkInAction::class)->execute(
             target: $occurrence,
@@ -30,6 +34,11 @@ it('records a walk-in for an open-door event', function (): void {
         expect($walkIn->event_occurrence_id)->toBe($occurrence->id);
         expect($walkIn->count)->toBe(3);
         expect($walkIn->notes)->toBe('Walk-in group');
+
+        EventFacade::assertDispatched(
+            WalkInRecorded::class,
+            fn (WalkInRecorded $recorded): bool => $recorded->walkIn->is($walkIn),
+        );
     });
 });
 

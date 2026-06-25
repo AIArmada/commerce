@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Services\ImpersonateManager;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\FilamentAuthz\Http\Controllers\ImpersonateController;
-use AIArmada\FilamentAuthz\Services\ImpersonateManager;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Auth;
@@ -35,8 +35,8 @@ class ImpersonationCustomUser extends ImpersonationPlainUser
 }
 
 beforeEach(function (): void {
-    config()->set('filament-authz.scoped_to_tenant', false);
-    config()->set('filament-authz.impersonate.guard', 'web');
+    config()->set('authz.scopes.enforce', false);
+    config()->set('authz.impersonate.guard', 'web');
 });
 
 describe('ImpersonateController', function (): void {
@@ -61,7 +61,7 @@ describe('ImpersonateController', function (): void {
     });
 
     it('uses the impersonation manager session contract for route-based impersonation', function (): void {
-        $superAdminRole = Role::findOrCreate((string) config('filament-authz.super_admin_role'), 'web');
+        $superAdminRole = Role::findOrCreate((string) config('authz.super_admin_role'), 'web');
 
         $impersonator = User::query()->create([
             'name' => 'Impersonator',
@@ -154,7 +154,7 @@ describe('ImpersonateController', function (): void {
     });
 
     it('restores the impersonator when leaving through the route', function (): void {
-        $superAdminRole = Role::findOrCreate((string) config('filament-authz.super_admin_role'), 'web');
+        $superAdminRole = Role::findOrCreate((string) config('authz.super_admin_role'), 'web');
 
         $impersonator = User::query()->create([
             'name' => 'Leave Impersonator',

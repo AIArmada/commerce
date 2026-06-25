@@ -10,6 +10,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -83,6 +84,30 @@ final class EventManagementAssignment extends Model
     public function session(): BelongsTo
     {
         return $this->belongsTo(EventSession::class, 'event_session_id');
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function manageable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function manager(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function assignedBy(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     protected static function newFactory(): EventManagementAssignmentFactory

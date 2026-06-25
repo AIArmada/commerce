@@ -27,7 +27,7 @@ php artisan vendor:publish --provider="AIArmada\Events\EventsServiceProvider" --
 |---|---|---|
 | `EVENTS_TABLE_PREFIX` | (empty) | Prefix for all events tables |
 | `EVENTS_JSON_COLUMN_TYPE` | `jsonb` | JSON column type (`jsonb` or `json`) |
-| `EVENTS_OWNER_ENABLED` | `false` | Enable owner/multi-tenancy scoping |
+| `EVENTS_OWNER_ENABLED` | `true` | Enable owner/multi-tenancy scoping |
 | `EVENTS_OWNER_INCLUDE_GLOBAL` | `false` | Include global records in owner-scoped queries |
 | `EVENTS_OWNER_AUTO_ASSIGN` | `true` | Auto-assign owner on creation |
 | `EVENTS_TIMEZONE` | `APP_TIMEZONE` | Default timezone |

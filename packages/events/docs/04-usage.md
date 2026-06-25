@@ -378,7 +378,7 @@ $event->involvements()->create([
 
 ## Owner-Scoped Queries
 
-When `events.owner.enabled` is `true`, all models use the `HasOwner` trait with automatic scoping:
+When `events.features.owner.enabled` is `true`, event roots use `HasOwner`. Event-bound children inherit the event boundary, series/template children inherit their root boundary, submissions use their target owner before conversion, and polymorphic workflow records require an owner-safe parent:
 
 ```php
 // Automatically scoped to current owner

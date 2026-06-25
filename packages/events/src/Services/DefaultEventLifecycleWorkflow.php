@@ -34,6 +34,7 @@ use AIArmada\Events\States\OccurrenceStatus\Completed as OccurrenceCompletedStat
 use AIArmada\Events\States\OccurrenceStatus\Delayed as OccurrenceDelayedState;
 use AIArmada\Events\States\OccurrenceStatus\Postponed as OccurrencePostponedState;
 use AIArmada\Events\States\OccurrenceStatus\Rescheduled as OccurrenceRescheduledState;
+use AIArmada\Events\Support\EventWriteGuard;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 
@@ -41,6 +42,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 {
     public function publish(Event $event): void
     {
+        EventWriteGuard::findOrFail($event);
+
         $event->published_at = CarbonImmutable::now();
         $event->status->transitionTo(EventPublishedState::class);
 
@@ -51,6 +54,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function cancel(Event | EventOccurrence | EventSession $target, ?string $reason = null): void
     {
+        EventWriteGuard::findOrFail($target->event_id ?? $target->id);
+
         $target->cancelled_at = CarbonImmutable::now();
         $target->status_reason = $reason;
 
@@ -73,6 +78,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function postpone(Event | EventOccurrence | EventSession $target, ?string $reason = null): void
     {
+        EventWriteGuard::findOrFail($target->event_id ?? $target->id);
+
         $target->postponed_at = CarbonImmutable::now();
         $target->status_reason = $reason;
 
@@ -95,6 +102,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function delay(EventOccurrence | EventSession $target, ?string $reason = null, ?DateTimeInterface $expectedStartsAt = null): void
     {
+        EventWriteGuard::findOrFail($target->event_id);
+
         $target->delayed_at = CarbonImmutable::now();
         $target->status_reason = $reason;
         $target->status->transitionTo(OccurrenceDelayedState::class);
@@ -110,6 +119,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function reschedule(EventOccurrence | EventSession $target, DateTimeInterface $newStartsAt, DateTimeInterface $newEndsAt, array $options = []): EventOccurrence | EventSession
     {
+        EventWriteGuard::findOrFail($target->event_id);
+
         $oldTarget = clone $target;
 
         $target->starts_at = CarbonImmutable::createFromInterface($newStartsAt);
@@ -135,6 +146,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function complete(Event | EventOccurrence | EventSession $target): void
     {
+        EventWriteGuard::findOrFail($target->event_id ?? $target->id);
+
         $target->completed_at = CarbonImmutable::now();
 
         $target->status->transitionTo(
@@ -154,6 +167,8 @@ final class DefaultEventLifecycleWorkflow implements EventLifecycleWorkflow
 
     public function archive(Event | EventOccurrence $target, ?string $reason = null): void
     {
+        EventWriteGuard::findOrFail($target->event_id ?? $target->id);
+
         $target->archived_at = CarbonImmutable::now();
         $target->status_reason = $reason;
 

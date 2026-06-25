@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Events\Contracts\EventPassDeliveryService;
@@ -129,4 +130,39 @@ it('delivers ticket notifications through the default delivery service', functio
             },
         );
     });
+});
+
+it('restores owner context while rendering serialized queued notifications', function (): void {
+    config()->set('events.features.owner.enabled', true);
+    $owner = User::factory()->create();
+
+    [$welcome, $ticket] = OwnerContext::withOwner($owner, function (): array {
+        $event = Event::factory()->create();
+        $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+        $registration = EventRegistration::factory()->create([
+            'event_id' => $event->id,
+            'event_occurrence_id' => $occurrence->id,
+        ]);
+        $pass = EventPass::query()->create([
+            'event_id' => $event->id,
+            'event_occurrence_id' => $occurrence->id,
+            'event_registration_id' => $registration->id,
+            'pass_no' => 'PASS-QUEUED',
+            'status' => 'issued',
+            'issued_at' => now(),
+        ]);
+
+        return [
+            new EventWelcomeNotification($registration),
+            new EventTicketNotification($pass),
+        ];
+    });
+
+    $welcome = unserialize(serialize($welcome));
+    $ticket = unserialize(serialize($ticket));
+
+    expect($welcome->toMail(new AnonymousNotifiable)->subject)
+        ->toContain('Registration Confirmed')
+        ->and($ticket->toMail(new AnonymousNotifiable)->subject)
+        ->toContain('Your Ticket');
 });

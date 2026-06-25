@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Support\EventWriteGuard;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 
 final class SyncEventOrderCompletionAction
@@ -22,7 +21,7 @@ final class SyncEventOrderCompletionAction
             return;
         }
 
-        OwnerWriteGuard::findOrFailForOwner(Event::class, $attendance->event_id);
+        EventWriteGuard::findOrFail($attendance->event_id);
 
         $registration = EventRegistration::query()
             ->whereKey($attendance->event_registration_id)

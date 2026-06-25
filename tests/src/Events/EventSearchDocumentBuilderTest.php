@@ -458,7 +458,9 @@ describe('queued job serialization', function (): void {
 
         /** @var BuildEventSearchDocumentJob $restoredJob */
         $restoredJob = unserialize(serialize($job));
+        $restoredJob->handle();
 
-        expect($restoredJob->target->title)->toBe('Updated title');
+        expect(EventSearchDocument::where('event_id', $event->id)->first()?->title)
+            ->toBe('Updated title');
     });
 });

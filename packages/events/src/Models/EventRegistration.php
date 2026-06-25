@@ -48,6 +48,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonImmutable|null $cancelled_at
  * @property CarbonImmutable|null $rejected_at
  * @property CarbonImmutable|null $waitlisted_at
+ * @property CarbonImmutable|null $refunded_at
  * @property CarbonImmutable|null $expired_at
  * @property string|null $status_reason
  * @property string|null $notes
@@ -90,7 +91,7 @@ final class EventRegistration extends Model
         'total_participants', 'total_amount', 'currency',
         'external_order_id', 'external_order_type', 'payment_status',
         'registered_at', 'approved_at', 'completed_at', 'cancelled_at', 'rejected_at',
-        'waitlisted_at', 'expired_at',
+        'waitlisted_at', 'refunded_at', 'expired_at',
         'status_reason', 'notes',
         'parent_registration_id', 'is_bundle_root', 'pass_entitlements',
         'metadata',
@@ -122,7 +123,7 @@ final class EventRegistration extends Model
         return [
             'status' => RegistrationStatusState::class,
             'total_participants' => 'integer',
-            'total_amount' => 'decimal:2',
+            'total_amount' => 'integer',
             'is_bundle_root' => 'boolean',
             'pass_entitlements' => 'array',
             'registered_at' => 'immutable_datetime',
@@ -131,6 +132,7 @@ final class EventRegistration extends Model
             'cancelled_at' => 'immutable_datetime',
             'rejected_at' => 'immutable_datetime',
             'waitlisted_at' => 'immutable_datetime',
+            'refunded_at' => 'immutable_datetime',
             'expired_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
@@ -231,10 +233,11 @@ final class EventRegistration extends Model
 
     /**
      * @param  Builder<EventRegistration>  $query
+     * @return Builder<EventRegistration>
      */
-    public function scopeByOrder(Builder $query, Model $order): void
+    public function scopeByOrder(Builder $query, Model $order): Builder
     {
-        $query
+        return $query
             ->where('external_order_id', $order->getKey())
             ->where('external_order_type', $order::class);
     }
@@ -251,7 +254,7 @@ final class EventRegistration extends Model
 
     public function complete(): void
     {
-        $this->approved_at = CarbonImmutable::now();
+        $this->completed_at = CarbonImmutable::now();
         $this->status->transitionTo(Completed::class);
     }
 

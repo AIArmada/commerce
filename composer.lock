@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fc40149253ed1667cca88c4ac102d5ce",
+    "content-hash": "316f84b3aea72ae5636b13ef4b35030e",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -8062,8 +8062,45 @@
     ],
     "packages-dev": [
         {
+            "name": "aiarmada/authz",
+            "version": "dev-feature/authz-split",
+            "dist": {
+                "type": "path",
+                "url": "packages/authz",
+                "reference": "975ef3731065a76ce7ccc3079707198dffca3c78"
+            },
+            "require": {
+                "aiarmada/commerce-support": "self.version",
+                "php": "^8.4",
+                "spatie/laravel-permission": "^8.0.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\Authz\\AuthzServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\Authz\\": "src/"
+                },
+                "files": [
+                    "src/helpers.php"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Generic Spatie Permission wrapper with scoped authorization and impersonation for Laravel applications.",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "aiarmada/commerce-support",
-            "version": "dev-main",
+            "version": "dev-feature/authz-split",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce-support",
@@ -8120,6 +8157,41 @@
                 "issues": "https://github.com/aiarmada/commerce/issues",
                 "source": "https://github.com/aiarmada/commerce"
             },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "aiarmada/membership",
+            "version": "dev-feature/authz-split",
+            "dist": {
+                "type": "path",
+                "url": "packages/membership",
+                "reference": "91e0845ad7957d5bad0e46070068f3551cca4a20"
+            },
+            "require": {
+                "aiarmada/authz": "self.version",
+                "aiarmada/commerce-support": "self.version",
+                "lorisleiva/laravel-actions": "^2.10.1",
+                "php": "^8.4"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AIArmada\\Membership\\MembershipServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AIArmada\\Membership\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Multi-tenant membership management: applications, invitations, and member roles for Laravel applications.",
             "transport-options": {
                 "relative": true
             }
