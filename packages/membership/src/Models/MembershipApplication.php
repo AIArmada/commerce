@@ -31,9 +31,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 final class MembershipApplication extends Model
 {
-    use HasUuids;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasUuids;
 
     protected $fillable = [
         'subject_type',
