@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\PHPStan\TraitUsageHarness;
 
+use AIArmada\Authz\Concerns\HasAuthzScope;
 use AIArmada\Cart\Concerns\Buyable;
 use AIArmada\Cart\Contracts\BuyableInterface;
 use AIArmada\CommerceSupport\Models\AuthzScope;
@@ -12,7 +13,6 @@ use AIArmada\CommerceSupport\Traits\HasPaymentStatus;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Customers\Concerns\HasCustomerProfile;
 use AIArmada\FilamentAuthz\Concerns\CanBeImpersonated;
-use AIArmada\Authz\Concerns\HasAuthzScope;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
