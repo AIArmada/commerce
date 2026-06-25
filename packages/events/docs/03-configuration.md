@@ -9,8 +9,9 @@ The `config/events.php` file controls all Events package behavior.
 ### Database
 
 ```php
+$tablePrefix = env('EVENTS_TABLE_PREFIX', '');
+
 'database' => [
-    'table_prefix' => env('EVENTS_TABLE_PREFIX', ''),
     'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
         'events' => env('EVENTS_TABLE_EVENTS', $tablePrefix . 'events'),
@@ -25,11 +26,13 @@ Every table name is individually configurable via environment variables, allowin
 ### Free-Only Mode
 
 ```php
-'free_only' => [
-    'default_registration_mode' => env('EVENTS_DEFAULT_REGISTRATION_MODE', 'required'),
-    'auto_issue_passes_for_free' => env('EVENTS_AUTO_ISSUE_PASSES_FOR_FREE', true),
-    'auto_derive_pricing_from_ticket_types' => env('EVENTS_AUTO_DERIVE_PRICING', true),
-    'open_door_mode' => env('EVENTS_OPEN_DOOR_MODE', 'block'),
+'features' => [
+    'free_only' => [
+        'default_registration_mode' => env('EVENTS_DEFAULT_REGISTRATION_MODE', 'required'),
+        'auto_issue_passes_for_free' => env('EVENTS_AUTO_ISSUE_PASSES_FOR_FREE', true),
+        'auto_derive_pricing_from_ticket_types' => env('EVENTS_AUTO_DERIVE_PRICING', true),
+        'open_door_mode' => env('EVENTS_OPEN_DOOR_MODE', 'block'),
+    ],
 ],
 ```
 
@@ -53,14 +56,16 @@ When enabled, paid registration flows stop before creating new confirmed registr
 ### Owner Scoping
 
 ```php
-'owner' => [
-    'enabled' => env('EVENTS_OWNER_ENABLED', false),
-    'include_global' => env('EVENTS_OWNER_INCLUDE_GLOBAL', false),
-    'auto_assign_on_create' => env('EVENTS_OWNER_AUTO_ASSIGN', true),
+'features' => [
+    'owner' => [
+        'enabled' => env('EVENTS_OWNER_ENABLED', true),
+        'include_global' => env('EVENTS_OWNER_INCLUDE_GLOBAL', false),
+        'auto_assign_on_create' => env('EVENTS_OWNER_AUTO_ASSIGN', true),
+    ],
 ]
 ```
 
-Controls multi-tenancy behavior. When enabled, all queries are scoped to the current resolved owner. Global records are available when `include_global` is enabled.
+Controls multi-tenancy behavior. When enabled, event roots and children, series/template children, submissions, and polymorphic workflow records are scoped through an owner-safe parent. Global records are available when `include_global` is enabled, but mutating them still requires explicit global context.
 
 ### Defaults
 
@@ -84,9 +89,11 @@ Controls auto-generated registration number format.
 ### Inventory Backfill
 
 ```php
-'inventory' => [
-    'default_location_id' => env('EVENTS_DEFAULT_INVENTORY_LOCATION', 'default'),
-    'auto_register_quotas_on_migrate' => env('EVENTS_AUTO_REGISTER_QUOTAS', true),
+'features' => [
+    'inventory' => [
+        'default_location_id' => env('EVENTS_DEFAULT_INVENTORY_LOCATION', 'default'),
+        'auto_register_quotas_on_migrate' => env('EVENTS_AUTO_REGISTER_QUOTAS', true),
+    ],
 ]
 ```
 
@@ -144,7 +151,6 @@ These flags control the denormalized metadata projection and the search document
 
 ```php
 'classifications' => ['resolver' => null],
-'assets' => ['resolver' => null],
 'references' => ['resolver' => null],
 'timezone' => ['display_timezone_resolver' => null],
 'schedule' => ['resolver' => null],
@@ -165,19 +171,6 @@ These flags control the denormalized metadata projection and the search document
 Each resolver can be bound to a custom class for domain-specific behavior.
 
 `search.indexer` defaults to the package's built-in `EventSearchDocumentBuilder` when left `null`. That builder maintains search documents for events, occurrences, and sessions. Set it to `AIArmada\Events\Resolvers\NullEventSearchIndexer` if you want to disable automatic search indexing explicitly, or point it at a custom indexer implementation.
-
-### Moderation
-
-```php
-'moderation' => [
-    'reason_codes' => [
-        'approved_for_publish' => ['label' => 'Approved for Publish'],
-        'needs_more_information' => ['label' => 'Needs More Information', 'note_required' => true],
-    ],
-]
-```
-
-Defines moderation reason codes. State transitions are defined in `States/EventModerationStatus/EventModerationStatus.php` using `spatie/laravel-model-states`.
 
 ### Integrations
 
@@ -200,17 +193,17 @@ Auto-detects commerce packages. When related packages are installed, integration
 'notifications' => [
     'welcome' => [
         'enabled' => env('EVENTS_WELCOME_NOTIFICATION_ENABLED', true),
-        'from_address' => env('EVENTS_WELCOME_FROM_ADDRESS', 'info@unfairadvantage.my'),
-        'from_name' => env('EVENTS_WELCOME_FROM_NAME'),
-        'event_name' => env('EVENTS_WELCOME_EVENT_NAME', 'AI Awakening'),
-        'brand_name' => env('EVENTS_WELCOME_BRAND_NAME', 'Unfair Advantage'),
+        'from_address' => env('EVENTS_WELCOME_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
+        'from_name' => env('EVENTS_WELCOME_FROM_NAME', env('MAIL_FROM_NAME')),
+        'event_name' => env('EVENTS_WELCOME_EVENT_NAME', env('APP_NAME')),
+        'brand_name' => env('EVENTS_WELCOME_BRAND_NAME', env('APP_NAME')),
     ],
     'ticket' => [
         'enabled' => env('EVENTS_TICKET_NOTIFICATION_ENABLED', true),
-        'from_address' => env('EVENTS_TICKET_FROM_ADDRESS', 'info@unfairadvantage.my'),
-        'from_name' => env('EVENTS_TICKET_FROM_NAME'),
-        'event_name' => env('EVENTS_TICKET_EVENT_NAME', 'AI Awakening'),
-        'brand_name' => env('EVENTS_TICKET_BRAND_NAME', 'Unfair Advantage'),
+        'from_address' => env('EVENTS_TICKET_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
+        'from_name' => env('EVENTS_TICKET_FROM_NAME', env('MAIL_FROM_NAME')),
+        'event_name' => env('EVENTS_TICKET_EVENT_NAME', env('APP_NAME')),
+        'brand_name' => env('EVENTS_TICKET_BRAND_NAME', env('APP_NAME')),
     ],
 ]
 ```

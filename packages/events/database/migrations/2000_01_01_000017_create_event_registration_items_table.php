@@ -20,8 +20,8 @@ return new class extends Migration
             $table->uuid('event_registration_id')->index();
             $table->uuid('event_ticket_type_id')->index();
             $table->integer('quantity')->default(1);
-            $table->decimal('unit_price', 12, 2)->nullable();
-            $table->decimal('total_price', 12, 2)->nullable();
+            $table->bigInteger('unit_price')->nullable();
+            $table->bigInteger('total_price')->nullable();
             $table->string('currency')->nullable();
             $table->uuid('external_order_item_id')->nullable()->index();
             $table->string('external_order_item_type')->nullable()->index();

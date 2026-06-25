@@ -18,6 +18,7 @@ use AIArmada\Events\Observers\EventSessionObserver;
 use AIArmada\Events\Observers\EventTimeExpressionObserver;
 use AIArmada\Events\Services\EventMetadataSyncService;
 use AIArmada\Events\Services\EventSearchDocumentBuilder;
+use AIArmada\Events\Support\EventOwnerScope;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -80,6 +81,25 @@ it('indexes and removes search documents when the event changes', function (): v
     $observer->deleted($event);
 
     expect(EventSearchDocument::where('event_id', $event->id)->exists())->toBeFalse();
+});
+
+it('removes search documents after an owned event has been deleted', function (): void {
+    config()->set('events.features.owner.enabled', true);
+
+    OwnerContext::withOwner(null, function (): void {
+        $event = Event::factory()->create();
+        $observer = new EventObserver(app(EventSearchDocumentBuilder::class));
+
+        $observer->saved($event);
+        $eventId = $event->id;
+        $event->delete();
+        $observer->deleted($event);
+
+        expect(EventSearchDocument::query()
+            ->withoutGlobalScope(EventOwnerScope::class)
+            ->where('event_id', $eventId)
+            ->exists())->toBeFalse();
+    });
 });
 
 it('indexes and removes search documents when an occurrence changes', function (): void {

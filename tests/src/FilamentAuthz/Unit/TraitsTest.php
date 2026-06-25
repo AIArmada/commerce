@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Concerns\SyncsRolePermissions;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
-use AIArmada\FilamentAuthz\Concerns\SyncsRolePermissions;
 use Filament\Pages\Page;
 use Filament\Widgets\Widget;
 

@@ -14,6 +14,7 @@ afterEach(function (): void {
     unsetEnvVar('FILAMENT_CART_JSON_COLUMN_TYPE');
     unsetEnvVar('CASHIER_CHIP_JSON_COLUMN_TYPE');
     unsetEnvVar('PROMOTIONS_JSON_COLUMN_TYPE');
+    unsetEnvVar('MEMBERSHIP_JSON_COLUMN_TYPE');
 });
 
 it('resolves per-package override for hyphenated package keys', function (): void {
@@ -169,6 +170,29 @@ it('uses the configured json column type in the commerce support webhook migrati
         ->toContain("\$table->{\$jsonType}('payload')")
         ->not->toContain("->json('headers')")
         ->not->toContain("->json('payload')");
+});
+
+it('uses the configured json column type in the membership applications migration', function (): void {
+    $migration = file_get_contents(repoPath('packages/membership/database/migrations/2000_01_01_000001_create_membership_applications_table.php'));
+
+    expect($migration)
+        ->toBeString()
+        ->toContain("config('membership.database.json_column_type', commerce_json_column_type('membership', 'jsonb'))")
+        ->toContain("\$table->{\$jsonType}('meta')")
+        ->not->toContain("->jsonb('meta')");
+});
+
+it('uses configured membership table names in both migrations', function (): void {
+    $applications = file_get_contents(repoPath('packages/membership/database/migrations/2000_01_01_000001_create_membership_applications_table.php'));
+    $invitations = file_get_contents(repoPath('packages/membership/database/migrations/2000_01_01_000002_create_membership_invitations_table.php'));
+
+    expect($applications)
+        ->toBeString()
+        ->toContain("config('membership.database.tables.applications', 'membership_applications')");
+
+    expect($invitations)
+        ->toBeString()
+        ->toContain("config('membership.database.tables.invitations', 'membership_invitations')");
 });
 
 function unsetEnvVar(string $key): void

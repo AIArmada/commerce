@@ -9,6 +9,7 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 
 $tablePrefix = env('EVENTS_TABLE_PREFIX', '');
+$appName = env('APP_NAME', 'Laravel');
 $ownerConfig = [
     'enabled' => env('EVENTS_OWNER_ENABLED', true),
     'include_global' => env('EVENTS_OWNER_INCLUDE_GLOBAL', false),
@@ -19,7 +20,6 @@ return [
 
     /* Database */
     'database' => [
-        'table_prefix' => $tablePrefix,
         'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => [
             'events' => env('EVENTS_TABLE_EVENTS', $tablePrefix . 'events'),
@@ -113,9 +113,6 @@ return [
             'auto_derive_pricing_from_ticket_types' => env('EVENTS_AUTO_DERIVE_PRICING', true),
             'open_door_mode' => env('EVENTS_OPEN_DOOR_MODE', 'block'),
         ],
-        'bundles' => [
-            'sub_ticket_cart_mode' => env('EVENTS_SUB_TICKET_CART_MODE', 'none'),
-        ],
         'enforce_scope_capacity_on_paid_registrations' => (bool) env('EVENTS_ENFORCE_SCOPE_CAPACITY_PAID', false),
 
         'inventory' => [
@@ -123,9 +120,6 @@ return [
             'auto_register_quotas_on_migrate' => env('EVENTS_AUTO_REGISTER_QUOTAS', true),
         ],
     ],
-
-    /* Owner / Multi-tenancy */
-    'owner' => $ownerConfig,
 
     /* Defaults */
     'defaults' => [
@@ -160,7 +154,6 @@ return [
 
     /* Resolvers (extensibility seams) */
     'classifications' => ['resolver' => null],
-    'assets' => ['resolver' => null],
     'references' => ['resolver' => null],
     'timezone' => ['display_timezone_resolver' => null],
     'schedule' => ['resolver' => null],
@@ -196,15 +189,6 @@ return [
         'notification_dispatcher' => null,
     ],
 
-    'moderation' => [
-        'reason_codes' => [
-            'approved_for_publish' => ['label' => 'Approved for Publish', 'note_required' => false],
-            'needs_more_information' => ['label' => 'Needs More Information', 'note_required' => true],
-            'policy_violation' => ['label' => 'Policy Violation', 'note_required' => true],
-            'duplicate' => ['label' => 'Duplicate', 'note_required' => true],
-        ],
-    ],
-
     /* Integrations */
     'integrations' => [
         'product_model' => class_exists(Product::class) ? Product::class : null,
@@ -222,17 +206,17 @@ return [
     'notifications' => [
         'welcome' => [
             'enabled' => (bool) env('EVENTS_WELCOME_NOTIFICATION_ENABLED', true),
-            'from_address' => env('EVENTS_WELCOME_FROM_ADDRESS', 'info@unfairadvantage.my'),
-            'from_name' => env('EVENTS_WELCOME_FROM_NAME'),
-            'event_name' => env('EVENTS_WELCOME_EVENT_NAME', 'AI Awakening'),
-            'brand_name' => env('EVENTS_WELCOME_BRAND_NAME', 'Unfair Advantage'),
+            'from_address' => env('EVENTS_WELCOME_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+            'from_name' => env('EVENTS_WELCOME_FROM_NAME', env('MAIL_FROM_NAME', $appName)),
+            'event_name' => env('EVENTS_WELCOME_EVENT_NAME', $appName),
+            'brand_name' => env('EVENTS_WELCOME_BRAND_NAME', $appName),
         ],
         'ticket' => [
             'enabled' => (bool) env('EVENTS_TICKET_NOTIFICATION_ENABLED', true),
-            'from_address' => env('EVENTS_TICKET_FROM_ADDRESS', 'info@unfairadvantage.my'),
-            'from_name' => env('EVENTS_TICKET_FROM_NAME'),
-            'event_name' => env('EVENTS_TICKET_EVENT_NAME', 'AI Awakening'),
-            'brand_name' => env('EVENTS_TICKET_BRAND_NAME', 'Unfair Advantage'),
+            'from_address' => env('EVENTS_TICKET_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+            'from_name' => env('EVENTS_TICKET_FROM_NAME', env('MAIL_FROM_NAME', $appName)),
+            'event_name' => env('EVENTS_TICKET_EVENT_NAME', $appName),
+            'brand_name' => env('EVENTS_TICKET_BRAND_NAME', $appName),
         ],
     ],
 

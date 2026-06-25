@@ -4,6 +4,10 @@ title: Troubleshooting
 
 ## Common Issues
 
+### Money values appear 100 times too large or too small
+
+Ticket prices and registration totals use integer minor units. For example, `50000` with currency `MYR` represents MYR 500.00. Do not pass decimal major-unit values.
+
 ### Migrations fail
 
 Ensure the `events` database config key exists and the connection is valid. Check `EVENTS_JSON_COLUMN_TYPE` — use `jsonb` for PostgreSQL and `json` for MySQL if your MySQL version does not support native JSONB.

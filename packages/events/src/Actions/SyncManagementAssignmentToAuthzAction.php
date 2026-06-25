@@ -7,12 +7,14 @@ namespace AIArmada\Events\Actions;
 use AIArmada\Events\Models\EventManagementAssignment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 final class SyncManagementAssignmentToAuthzAction
 {
     public function handle(EventManagementAssignment $assignment): void
     {
-        if (! $this->filamentAuthzAvailable()) {
+        if (! $this->authzAvailable()) {
             return;
         }
 
@@ -22,7 +24,7 @@ final class SyncManagementAssignmentToAuthzAction
             return;
         }
 
-        $resolverClass = 'AIArmada\\FilamentAuthz\\Support\\AuthzScopeResolver';
+        $resolverClass = 'AIArmada\\Authz\\Support\\AuthzScopeResolver';
 
         if (! class_exists($resolverClass)) {
             return;
@@ -45,12 +47,14 @@ final class SyncManagementAssignmentToAuthzAction
 
     private function assignManagerToScope(Model $manager, string | int $scopeId): void
     {
-        $roleClass = 'Spatie\\Permission\\Models\\Role';
+        /** @var class-string<Role> $roleClass */
+        $roleClass = (string) config('permission.models.role', Role::class);
         $pivotTable = config('permission.table_names.model_has_roles', 'model_has_roles');
         $roleKey = config('permission.column_names.role_pivot_key', 'role_id');
         $modelMorphKey = config('permission.column_names.model_morph_key', 'model_id');
+        $teamKey = app(PermissionRegistrar::class)->teamsKey;
 
-        $role = app($roleClass)
+        $role = $roleClass::query()
             ->where('name', config('filament-authz.panel_user.name', 'panel_user'))
             ->first();
 
@@ -63,15 +67,15 @@ final class SyncManagementAssignmentToAuthzAction
                 $roleKey => $role->getKey(),
                 $modelMorphKey => $manager->getKey(),
                 'model_type' => $manager->getMorphClass(),
-                'team_id' => $scopeId,
+                $teamKey => $scopeId,
             ],
             [],
         );
     }
 
-    private function filamentAuthzAvailable(): bool
+    private function authzAvailable(): bool
     {
-        return class_exists('AIArmada\\FilamentAuthz\\Support\\AuthzScopeResolver')
-            && config('filament-authz.authz_scopes.enabled', false);
+        return class_exists('AIArmada\\Authz\\Support\\AuthzScopeResolver')
+            && config('authz.scopes.enabled', false);
     }
 }

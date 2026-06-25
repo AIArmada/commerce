@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
+use AIArmada\Authz\Services\WildcardPermissionResolver;
 
 beforeEach(function (): void {
     $this->resolver = new WildcardPermissionResolver;

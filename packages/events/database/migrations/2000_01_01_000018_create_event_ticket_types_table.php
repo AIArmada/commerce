@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('access_type')->index();
             $table->string('seating_mode')->nullable()->index();
-            $table->decimal('price', 12, 2)->nullable();
+            $table->bigInteger('price')->nullable();
             $table->string('currency')->nullable();
             $table->integer('quota')->nullable();
             $table->integer('admits_quantity')->default(1);

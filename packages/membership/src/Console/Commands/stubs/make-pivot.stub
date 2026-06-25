@@ -1,0 +1,18 @@
+<?php
+
+return new class extends \Illuminate\Database\Migrations\Migration
+{
+    public function up(): void
+    {
+        \Illuminate\Support\Facades\Schema::create('{{ table }}', function (\Illuminate\Database\Schema\Blueprint $table): void {
+            $table->foreignUuid('{{ subject_id_column }}');
+            $table->foreignUuid('user_id');
+            $table->string('role')->nullable();
+            $table->timestamp('joined_at')->nullable();
+            $table->timestamps();
+
+            $table->primary(['{{ subject_id_column }}', 'user_id']);
+            $table->index('user_id');
+        });
+    }
+};

@@ -31,8 +31,7 @@
         "aiarmada/products": "Enables product/variant relationships for tickets and merchandise.",
         "aiarmada/customers": "Enables customer-backed registrants and participants.",
         "aiarmada/orders": "Enables order-item fulfillment and event order completion sync.",
-        "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing.",
-        "aiarmada/inventory": "Enables stock tracking and allocation for ticket types."
+        "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing."
     },
     "autoload": {
         "psr-4": {

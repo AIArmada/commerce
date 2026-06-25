@@ -13,6 +13,7 @@ use AIArmada\Events\Models\EventClassification;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSearchDocument;
 use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Support\EventOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -39,19 +40,25 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
     {
         if ($target instanceof EventSearchDocument) {
             if ($target->event_session_id !== null) {
-                EventSearchDocument::where('event_session_id', $target->event_session_id)->delete();
+                $this->unscopedDocumentQuery()
+                    ->where('event_session_id', $target->event_session_id)
+                    ->delete();
 
                 return;
             }
 
             if ($target->event_occurrence_id !== null) {
-                EventSearchDocument::where('event_occurrence_id', $target->event_occurrence_id)->delete();
+                $this->unscopedDocumentQuery()
+                    ->where('event_occurrence_id', $target->event_occurrence_id)
+                    ->delete();
 
                 return;
             }
 
             if ($target->event_id !== null) {
-                EventSearchDocument::where('event_id', $target->event_id)->delete();
+                $this->unscopedDocumentQuery()
+                    ->where('event_id', $target->event_id)
+                    ->delete();
             }
 
             return;
@@ -149,10 +156,20 @@ final class EventSearchDocumentBuilder implements EventSearchIndexer
     private function deleteForTarget(Event | EventOccurrence | EventSession $target): void
     {
         match (true) {
-            $target instanceof Event => EventSearchDocument::where('event_id', $target->id)->delete(),
-            $target instanceof EventOccurrence => EventSearchDocument::where('event_occurrence_id', $target->id)->delete(),
-            $target instanceof EventSession => EventSearchDocument::where('event_session_id', $target->id)->delete(),
+            $target instanceof Event => $this->unscopedDocumentQuery()->where('event_id', $target->id)->delete(),
+            $target instanceof EventOccurrence => $this->unscopedDocumentQuery()->where('event_occurrence_id', $target->id)->delete(),
+            $target instanceof EventSession => $this->unscopedDocumentQuery()->where('event_session_id', $target->id)->delete(),
         };
+    }
+
+    /**
+     * Search documents can outlive a just-deleted parent during observer cleanup.
+     *
+     * @return Builder<EventSearchDocument>
+     */
+    private function unscopedDocumentQuery(): Builder
+    {
+        return EventSearchDocument::query()->withoutGlobalScope(EventOwnerScope::class);
     }
 
     private function buildDocument(Event | EventOccurrence | EventSession $target): EventSearchDocument

@@ -10,6 +10,6 @@ final class DefaultEventDisplayTimezoneResolver implements EventDisplayTimezoneR
 {
     public function resolve(?string $eventTimezone = null): string
     {
-        return config('events.display.timezone', config('app.timezone', 'UTC'));
+        return $eventTimezone ?? config('events.defaults.timezone', config('app.timezone', 'UTC'));
     }
 }

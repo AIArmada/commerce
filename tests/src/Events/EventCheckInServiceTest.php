@@ -49,3 +49,30 @@ it('infers the occurrence from the participant registration', function (): void 
         ->and($attendance->event_registration_participant_id)->toBe($participant->id)
         ->and($attendance->fresh()->logs)->toHaveCount(1);
 });
+
+it('reuses an active participant check-in', function (): void {
+    $event = Event::factory()->create();
+    $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
+    $registration = EventRegistration::factory()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+    ]);
+    $participant = $registration->participants()->create([
+        'event_id' => $event->id,
+        'event_occurrence_id' => $occurrence->id,
+        'name' => 'Participant One',
+    ]);
+    $service = app(EventCheckInService::class);
+    $payload = [
+        'event_id' => $event->id,
+        'event_registration_participant_id' => $participant->id,
+        'attendance_type' => 'registered',
+        'check_in_source' => 'kiosk',
+    ];
+
+    $first = $service->checkIn($payload);
+    $second = $service->checkIn($payload);
+
+    expect($second->is($first))->toBeTrue()
+        ->and($first->fresh()->logs)->toHaveCount(1);
+});
