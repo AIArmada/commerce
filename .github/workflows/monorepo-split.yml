@@ -15,6 +15,7 @@ jobs:
           - addressing
           - affiliate-network
           - affiliates
+          - authz
           - cart
           - cashier
           - cashier-chip
@@ -59,6 +60,7 @@ jobs:
           - growth
           - inventory
           - jnt
+          - membership
           - moderation
           - orders
           - pricing
