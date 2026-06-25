@@ -7,6 +7,7 @@ namespace AIArmada\Events\Actions;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Enums\OpenDoorMode;
+use AIArmada\Events\Events\WalkInRecorded;
 use AIArmada\Events\Exceptions\NotOpenDoorEventException;
 use AIArmada\Events\Exceptions\WrongOpenDoorModeException;
 use AIArmada\Events\Models\EventWalkIn;
@@ -31,7 +32,7 @@ final class RecordWalkInAction
 
         $this->validateOpenDoorMode($scope);
 
-        return EventWalkIn::create([
+        $walkIn = EventWalkIn::create([
             'event_id' => $scope->event->id,
             'event_occurrence_id' => $scope->occurrence?->id,
             'event_session_id' => $scope->session?->id,
@@ -41,6 +42,10 @@ final class RecordWalkInAction
             'recorded_by_id' => $recordedBy?->getKey(),
             'notes' => $notes,
         ]);
+
+        event(new WalkInRecorded($walkIn));
+
+        return $walkIn;
     }
 
     private function validateOpenDoorMode(EventRegistrationScope $scope): void

@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Events\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventChangeLog;
 use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventUpdate;
+use AIArmada\Events\Support\EventWriteGuard;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,7 +31,7 @@ final class DispatchEventChangeChainAction
         array $oldValue = [],
         array $newValue = [],
     ): void {
-        $event = OwnerWriteGuard::findOrFailForOwner(Event::class, $eventId);
+        $event = EventWriteGuard::findOrFail($eventId);
 
         if ($occurrenceId !== null) {
             $occurrence = EventOccurrence::query()
@@ -60,7 +59,7 @@ final class DispatchEventChangeChainAction
             }
         }
 
-        OwnerContext::withOwner($event, function () use (
+        OwnerContext::withOwner($event->owner, function () use (
             $changeCategory,
             $changeType,
             $event,

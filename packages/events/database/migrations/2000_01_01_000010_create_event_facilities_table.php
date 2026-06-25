@@ -23,7 +23,7 @@ return new class extends Migration
             $table->integer('quantity')->nullable();
             $table->integer('capacity')->nullable();
             $table->boolean('is_free')->nullable();
-            $table->decimal('fee_amount', 12, 2)->nullable();
+            $table->bigInteger('fee_amount')->nullable();
             $table->string('currency')->nullable();
             $table->string('location_label')->nullable();
             $table->text('notes')->nullable();

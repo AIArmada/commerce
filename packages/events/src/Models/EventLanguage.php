@@ -8,6 +8,7 @@ use AIArmada\Events\Database\Factories\EventLanguageFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -47,6 +48,12 @@ final class EventLanguage extends Model
             'sort_order' => 'integer',
             'metadata' => 'array',
         ];
+    }
+
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
     }
 
     protected static function newFactory(): EventLanguageFactory

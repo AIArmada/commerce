@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests;
 use AIArmada\Addressing\AddressingServiceProvider;
 use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
+use AIArmada\Authz\AuthzServiceProvider;
 use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\CheckoutServiceProvider;
@@ -174,6 +175,7 @@ abstract class TestCase extends Orchestra
             FilamentChipServiceProvider::class,
             PermissionServiceProvider::class,
             SluggableServiceProvider::class,
+            AuthzServiceProvider::class,
             FilamentAuthzServiceProvider::class,
             FilamentVouchersServiceProvider::class,
             AddressingServiceProvider::class,
@@ -419,9 +421,9 @@ abstract class TestCase extends Orchestra
 
         $app['config']->set('commerce-support.owner.team_type', User::class);
 
-        // Configure filament-authz settings for testing
-        $app['config']->set('filament-authz.guards', ['web', 'admin']);
-        $app['config']->set('filament-authz.super_admin_role', 'Super Admin');
+        // Configure authz settings for testing
+        $app['config']->set('authz.guards', ['web', 'admin']);
+        $app['config']->set('authz.super_admin_role', 'Super Admin');
 
         // Configure Spatie Media Library for testing
         $app['config']->set('media-library.media_model', Media::class);

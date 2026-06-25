@@ -2,17 +2,19 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Services\PermissionKeyBuilder;
 use AIArmada\FilamentAuthz\Authz;
-use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
-use AIArmada\FilamentAuthz\Services\PermissionKeyBuilder;
 
 beforeEach(function (): void {
     $this->keyBuilder = new PermissionKeyBuilder;
-    $this->discovery = new EntityDiscoveryService($this->keyBuilder);
-    $this->authz = new Authz($this->discovery, $this->keyBuilder);
+    $this->authz = new Authz($this->keyBuilder);
 });
 
 describe('Authz Service', function (): void {
+    it('is registered as a singleton by the Filament adapter', function (): void {
+        expect(app(Authz::class))->toBe(app(Authz::class));
+    });
+
     it('can build permission keys', function (): void {
         $permission = $this->authz->buildPermissionKey('Order', 'view');
 
@@ -30,7 +32,7 @@ describe('Authz Service', function (): void {
     });
 
     it('can get custom permissions from config', function (): void {
-        config()->set('filament-authz.custom_permissions', [
+        config()->set('authz.custom_permissions', [
             'export_data' => 'Export Data',
             'approve_posts',
         ]);
@@ -62,8 +64,8 @@ describe('Authz Service', function (): void {
 
 describe('Permission Key Builder', function (): void {
     it('builds keys with default separator', function (): void {
-        config()->set('filament-authz.permissions.separator', '.');
-        config()->set('filament-authz.permissions.case', 'kebab');
+        config()->set('authz.permissions.separator', '.');
+        config()->set('authz.permissions.case', 'kebab');
 
         $builder = new PermissionKeyBuilder;
         $key = $builder->build('Order', 'viewAny');
@@ -72,7 +74,7 @@ describe('Permission Key Builder', function (): void {
     });
 
     it('supports snake case', function (): void {
-        config()->set('filament-authz.permissions.case', 'snake');
+        config()->set('authz.permissions.case', 'snake');
 
         $builder = new PermissionKeyBuilder;
         $key = $builder->build('OrderItem', 'viewAny');
@@ -81,7 +83,7 @@ describe('Permission Key Builder', function (): void {
     });
 
     it('supports kebab case', function (): void {
-        config()->set('filament-authz.permissions.case', 'kebab');
+        config()->set('authz.permissions.case', 'kebab');
 
         $builder = new PermissionKeyBuilder;
         $key = $builder->build('OrderItem', 'viewAny');
@@ -90,7 +92,7 @@ describe('Permission Key Builder', function (): void {
     });
 
     it('supports camel case', function (): void {
-        config()->set('filament-authz.permissions.case', 'camel');
+        config()->set('authz.permissions.case', 'camel');
 
         $builder = new PermissionKeyBuilder;
         $key = $builder->build('OrderItem', 'viewAny');
@@ -99,7 +101,7 @@ describe('Permission Key Builder', function (): void {
     });
 
     it('supports pascal case', function (): void {
-        config()->set('filament-authz.permissions.case', 'pascal');
+        config()->set('authz.permissions.case', 'pascal');
 
         $builder = new PermissionKeyBuilder;
         $key = $builder->build('order_item', 'view_any');
@@ -108,7 +110,7 @@ describe('Permission Key Builder', function (): void {
     });
 
     it('supports upper snake case', function (): void {
-        config()->set('filament-authz.permissions.case', 'upper_snake');
+        config()->set('authz.permissions.case', 'upper_snake');
 
         $builder = new PermissionKeyBuilder;
         $key = $builder->build('OrderItem', 'viewAny');
@@ -117,7 +119,7 @@ describe('Permission Key Builder', function (): void {
     });
 
     it('supports lower case', function (): void {
-        config()->set('filament-authz.permissions.case', 'lower');
+        config()->set('authz.permissions.case', 'lower');
 
         $builder = new PermissionKeyBuilder;
         $key = $builder->build('OrderItem', 'ViewAny');
@@ -126,8 +128,8 @@ describe('Permission Key Builder', function (): void {
     });
 
     it('uses custom separator', function (): void {
-        config()->set('filament-authz.permissions.separator', '_');
-        config()->set('filament-authz.permissions.case', 'snake');
+        config()->set('authz.permissions.separator', '_');
+        config()->set('authz.permissions.case', 'snake');
 
         $builder = new PermissionKeyBuilder;
         $key = $builder->build('Order', 'view');

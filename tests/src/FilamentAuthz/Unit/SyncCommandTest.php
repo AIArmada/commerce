@@ -7,8 +7,8 @@ use AIArmada\CommerceSupport\Models\Role;
 
 beforeEach(function (): void {
     // Use single guard for predictable test output
-    config()->set('filament-authz.guards', ['web']);
-    config()->set('filament-authz.sync', [
+    config()->set('authz.guards', ['web']);
+    config()->set('authz.sync', [
         'permissions' => [
             'orders.view',
             'orders.create',

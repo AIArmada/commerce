@@ -21,6 +21,7 @@ use AIArmada\Events\Support\EventRegistrationScope;
 use AIArmada\Events\Support\EventWriteGuard;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 final class RegisterForFreeAction
 {
@@ -53,8 +54,6 @@ final class RegisterForFreeAction
             $this->throwOpenDoorException($scope);
         }
 
-        $this->checkCapacity($scope, count($participants));
-
         $withPass = $scope->requiresRegistration()
             ? true
             : ($options['with_pass'] ?? $scope->shouldIssuePasses);
@@ -62,28 +61,62 @@ final class RegisterForFreeAction
         $status = $withPass ? Confirmed::name() : Interested::name();
         $source = $withPass ? 'free_rsvp' : 'free_optional_rsvp';
 
-        $registrations = new Collection;
         $scopeData = $scope->toRegistrationData();
+        $registrations = DB::transaction(function () use (
+            $participants,
+            $registrant,
+            $scope,
+            $scopeData,
+            $source,
+            $status,
+        ): Collection {
+            $this->lockCapacityScope($scope);
+            $this->checkCapacity($scope, count($participants));
 
-        foreach ($participants as $participant) {
-            $registration = $this->registrations->register(array_merge($scopeData, [
-                'registrant_type' => $registrant?->getMorphClass(),
-                'registrant_id' => $registrant?->getKey(),
-                'registration_type' => 'individual',
-                'status' => $status,
-                'source' => $source,
-                'total_participants' => 1,
-                'total_amount' => null,
-                'currency' => null,
-                'payment_status' => null,
-                'participants' => [$participant],
-            ]));
+            $registrations = new Collection;
 
-            $registrations->push($registration);
+            foreach ($participants as $participant) {
+                $registrations->push($this->registrations->register(array_merge($scopeData, [
+                    'registrant_type' => $registrant?->getMorphClass(),
+                    'registrant_id' => $registrant?->getKey(),
+                    'registration_type' => 'individual',
+                    'status' => $status,
+                    'source' => $source,
+                    'total_participants' => 1,
+                    'total_amount' => null,
+                    'currency' => null,
+                    'payment_status' => null,
+                    'participants' => [$participant],
+                ])));
+            }
+
+            return $registrations;
+        });
+
+        foreach ($registrations as $registration) {
             $this->dispatchConfirmedEvent($registration, $withPass);
         }
 
         return $registrations;
+    }
+
+    private function lockCapacityScope(EventRegistrationScope $scope): void
+    {
+        if ($scope->session !== null) {
+            $scope->session->newQuery()
+                ->whereKey($scope->session->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            return;
+        }
+
+        if ($scope->occurrence !== null) {
+            $scope->occurrence->newQuery()
+                ->whereKey($scope->occurrence->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+        }
     }
 
     private function checkCapacity(EventRegistrationScope $scope, int $participantCount): void

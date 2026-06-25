@@ -60,6 +60,7 @@ title: Events Overview
 - **State machines**: Event lifecycle, occurrence, registration, and moderation statuses use `spatie/laravel-model-states` for validated transitions
 - Extensibility seams: 15+ contracts for resolvers, workflows, and integrations
 - **Free-only mode**: Events can be marked as free with configurable registration behavior (required, optional, or open-door with walk-in/headcount tracking)
+- Money values are stored as integer minor units with an explicit currency code.
 
 ## Free-Only Event Mode
 
@@ -83,7 +84,7 @@ Each level (Event → Occurrence → Session) can override pricing and registrat
 
 ## Owner Scoping
 
-All event models are owner-aware using `commerce-support` owner scoping. When `events.owner.enabled` is `true`, all queries are automatically scoped to the current owner. Global records are supported for shared events.
+Event roots use `commerce-support` owner scoping. Event-bound children inherit the event boundary, series and template children inherit their owning root, and pre-conversion submissions use their target owner. Polymorphic workflow records are resolved only through owner-safe parents. When `events.features.owner.enabled` is `true`, those queries require the current owner or explicit global context.
 
 ## Related Packages
 

@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class EloquentEventSearchEngine implements EventSearchEngine
 {
+    private const array SORTABLE_FIELDS = [
+        'created_at',
+        'title',
+        'published_at',
+        'updated_at',
+    ];
+
     public function search(array $criteria): Collection
     {
         $query = Event::query();
@@ -56,8 +63,12 @@ final class EloquentEventSearchEngine implements EventSearchEngine
             });
         }
 
-        $sortField = $criteria['sort'] ?? 'created_at';
-        $sortDir = $criteria['sort_dir'] ?? 'desc';
+        $sortField = in_array($criteria['sort'] ?? null, self::SORTABLE_FIELDS, true)
+            ? $criteria['sort']
+            : 'created_at';
+        $sortDir = in_array(mb_strtolower((string) ($criteria['sort_dir'] ?? 'desc')), ['asc', 'desc'], true)
+            ? mb_strtolower((string) $criteria['sort_dir'])
+            : 'desc';
 
         $query->orderBy($sortField, $sortDir);
 

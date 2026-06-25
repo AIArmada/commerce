@@ -8,6 +8,7 @@ use AIArmada\Events\Database\Factories\EventAudienceProfileFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -48,6 +49,12 @@ final class EventAudienceProfile extends Model
             'max_age' => 'integer',
             'metadata' => 'array',
         ];
+    }
+
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
     }
 
     protected static function newFactory(): EventAudienceProfileFactory
