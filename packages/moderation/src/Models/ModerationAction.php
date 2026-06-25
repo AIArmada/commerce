@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\Concerns\UsesModerationUuid;
 use Eloquent;
@@ -30,6 +32,8 @@ use Illuminate\Support\Carbon;
 final class ModerationAction extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use UsesModerationUuid;
 
     protected $fillable = [
@@ -37,6 +41,8 @@ final class ModerationAction extends Model
         'actioned_by_type', 'actioned_by_id',
         'type', 'reason', 'notes', 'metadata',
     ];
+
+    protected static string $ownerScopeConfigKey = 'moderation.features.owner';
 
     public function getTable(): string
     {

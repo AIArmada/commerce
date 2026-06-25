@@ -41,7 +41,17 @@ final class CommunicationTemplate extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'key',
+        'name',
+        'description',
+        'category',
+        'default_locale',
+        'status',
+        'published_at',
+        'disabled_at',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

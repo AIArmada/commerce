@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 use AIArmada\Engagement\Models\Bookmark;
-use AIArmada\Engagement\Models\BookmarkCollection;
-use AIArmada\Engagement\Models\BookmarkCollectionItem;
-use AIArmada\Engagement\Models\EngagementCounter;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
 use AIArmada\Engagement\Models\Reminder;
@@ -54,11 +51,6 @@ return [
         'default_channels' => ['mail', 'database'],
     ],
 
-    /* Subscriptions */
-    'subscriptions' => [
-        'matching_batch_size' => (int) env('ENGAGEMENT_SUBSCRIPTION_MATCHING_BATCH_SIZE', 100),
-    ],
-
     /* Notifications */
     'notifications' => [
         'reminder' => env('ENGAGEMENT_NOTIFICATION_REMINDER_CLASS', EngagementReminderNotification::class),
@@ -68,13 +60,10 @@ return [
     'models' => [
         'follow' => Follow::class,
         'bookmark' => Bookmark::class,
-        'bookmark_collection' => BookmarkCollection::class,
-        'bookmark_collection_item' => BookmarkCollectionItem::class,
         'response' => Response::class,
         'reaction' => Reaction::class,
         'subscription' => Subscription::class,
         'reminder' => Reminder::class,
         'share' => Share::class,
-        'engagement_counter' => EngagementCounter::class,
     ],
 ];

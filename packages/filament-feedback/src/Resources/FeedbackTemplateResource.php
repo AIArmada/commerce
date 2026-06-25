@@ -33,7 +33,10 @@ final class FeedbackTemplateResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: true);
+        return OwnerUiScope::apply(
+            parent::getEloquentQuery(),
+            includeGlobal: (bool) config('feedback.owner.include_global_templates', false),
+        );
     }
 
     public static function table(Table $table): Table
@@ -63,7 +66,7 @@ final class FeedbackTemplateResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(FeedbackTemplateStatus::options()),
             ])
-            ->headerActions([
+            ->actions([
                 Action::make('create_form')
                     ->label('Create Form From Template')
                     ->icon('heroicon-o-plus')

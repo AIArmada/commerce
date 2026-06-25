@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Feedback\Enums\FeedbackInvitationStatus;
 use AIArmada\Feedback\Models\FeedbackInvitation;
 use Carbon\CarbonImmutable;
@@ -15,7 +17,10 @@ final class ResolveFeedbackInvitationTokenAction
     {
         $tokenHash = hash('sha256', $rawToken);
 
-        $invitation = FeedbackInvitation::where('token_hash', $tokenHash)->first();
+        $invitation = FeedbackInvitation::query()
+            ->withoutOwnerScope()
+            ->where('token_hash', $tokenHash)
+            ->first();
 
         if ($invitation === null) {
             throw new RuntimeException('Invalid invitation token.');
@@ -34,9 +39,16 @@ final class ResolveFeedbackInvitationTokenAction
         }
 
         if ($invitation->expires_at !== null && CarbonImmutable::now()->isAfter($invitation->expires_at)) {
-            $invitation->forceFill([
-                'status' => FeedbackInvitationStatus::Expired,
-            ])->save();
+            $owner = OwnerTupleParser::fromTypeAndId(
+                $invitation->owner_type,
+                $invitation->owner_id,
+            )->toOwnerModel();
+
+            OwnerContext::withOwner($owner, function () use ($invitation): void {
+                $invitation->forceFill([
+                    'status' => FeedbackInvitationStatus::Expired,
+                ])->save();
+            });
 
             throw new RuntimeException('This invitation has expired.');
         }

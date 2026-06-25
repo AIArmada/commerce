@@ -28,11 +28,15 @@ AddMemberAction::run($team, $user, MemberRole::Editor);
 ```php
 use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
-$invitation = InviteMemberAction::run(
-    subject: $team,
-    email: 'member@example.com',
-    role: MemberRole::Viewer,
-    inviter: $administrator,
+$invitation = OwnerContext::withOwner(
+    $team,
+    fn () => InviteMemberAction::run(
+        subject: $team,
+        email: 'member@example.com',
+        role: MemberRole::Viewer,
+        inviter: $administrator,
+    ),
 );
 ```

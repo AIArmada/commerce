@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
+use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Models\Reminder;
 use BackedEnum;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Infolists;
@@ -16,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class ReminderResource extends Resource
@@ -30,6 +32,11 @@ final class ReminderResource extends Resource
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clock';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+    }
 
     public static function table(Table $table): Table
     {
@@ -72,14 +79,21 @@ final class ReminderResource extends Resource
             ])
             ->actions([
                 Action::make('cancel')
-                    ->action(fn (Reminder $record) => $record->update(['status' => Reminder::STATUS_CANCELLED]))
+                    ->visible(fn (Reminder $record): bool => in_array(
+                        $record->status,
+                        [Reminder::STATUS_PENDING, Reminder::STATUS_SCHEDULED],
+                        true,
+                    ))
+                    ->action(fn (Reminder $record) => app(ReminderManager::class)
+                        ->cancelReminder(
+                            $record->recipient,
+                            $record->remindable,
+                            $record->reminder_type,
+                        ))
                     ->requiresConfirmation(),
                 Action::make('mark sent')
                     ->label('Mark Sent')
-                    ->action(fn (Reminder $record) => $record->update([
-                        'status' => Reminder::STATUS_SENT,
-                        'sent_at' => CarbonImmutable::now(),
-                    ]))
+                    ->action(fn (Reminder $record) => app(ReminderManager::class)->markSent($record))
                     ->requiresConfirmation(),
             ]);
     }

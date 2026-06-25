@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\ResponseFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
@@ -14,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $responder_type
  * @property string $responder_id
  * @property string $respondable_type
@@ -33,7 +37,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 final class Response extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use UsesEngagementUuid;
+
+    protected static string $ownerScopeConfigKey = 'engagement.owner';
 
     public const STATUS_ACTIVE = 'active';
 

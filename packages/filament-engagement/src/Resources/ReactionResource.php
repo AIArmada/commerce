@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
+use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Reaction;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -15,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class ReactionResource extends Resource
@@ -29,6 +32,11 @@ final class ReactionResource extends Resource
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-star';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+    }
 
     public static function table(Table $table): Table
     {
@@ -63,11 +71,16 @@ final class ReactionResource extends Resource
             ->actions([
                 Action::make('remove')
                     ->visible(fn (Reaction $record): bool => $record->isActive())
-                    ->action(fn (Reaction $record) => $record->update(['status' => Reaction::STATUS_REMOVED]))
+                    ->action(fn (Reaction $record) => app(EngagementManager::class)
+                        ->removeReaction($record->reactor, $record->reactable, $record->reaction_type))
                     ->requiresConfirmation(),
                 Action::make('restore')
                     ->visible(fn (Reaction $record): bool => $record->isRemoved())
-                    ->action(fn (Reaction $record) => $record->update(['status' => Reaction::STATUS_ACTIVE]))
+                    ->action(fn (Reaction $record): Reaction => app(EngagementManager::class)
+                        ->react($record->reactor, $record->reactable, $record->reaction_type, [
+                            'source' => $record->source,
+                            'metadata' => $record->metadata,
+                        ]))
                     ->requiresConfirmation(),
             ]);
     }

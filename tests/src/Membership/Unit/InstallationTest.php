@@ -16,11 +16,17 @@ it('registers the membership service provider', function (): void {
 });
 
 it('creates membership applications table', function (): void {
-    expect(app('db')->getSchemaBuilder()->hasTable('membership_applications'))->toBeTrue();
+    $schema = app('db')->getSchemaBuilder();
+
+    expect($schema->hasTable('membership_applications'))->toBeTrue()
+        ->and($schema->hasColumns('membership_applications', ['owner_type', 'owner_id']))->toBeTrue();
 });
 
 it('creates membership invitations table', function (): void {
-    expect(app('db')->getSchemaBuilder()->hasTable('membership_invitations'))->toBeTrue();
+    $schema = app('db')->getSchemaBuilder();
+
+    expect($schema->hasTable('membership_invitations'))->toBeTrue()
+        ->and($schema->hasColumns('membership_invitations', ['owner_type', 'owner_id']))->toBeTrue();
 });
 
 it('has membership application model', function (): void {

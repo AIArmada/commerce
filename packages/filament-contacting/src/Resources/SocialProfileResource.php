@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\FilamentContacting\Schemas\SocialProfileFormSchema;
 use AIArmada\FilamentContacting\Schemas\SocialProfileInfolistSchema;
@@ -21,8 +22,6 @@ final class SocialProfileResource extends Resource
 
     protected static BackedEnum | string | null $navigationIcon = 'heroicon-o-share';
 
-    protected static ?int $navigationSort = 2;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-contacting.navigation.group');
@@ -33,9 +32,14 @@ final class SocialProfileResource extends Resource
         return config('filament-contacting.navigation.icons.social_profiles', parent::getNavigationIcon());
     }
 
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-contacting.navigation.sort', 70) + 1;
+    }
+
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery();
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     public static function table(Table $table): Table

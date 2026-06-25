@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Models\FeedbackTestimonial;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -14,12 +13,7 @@ final class FeedbackTestimonialsPendingWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $owner = OwnerContext::resolve();
-        $query = FeedbackTestimonial::query();
-
-        if ($owner !== null) {
-            $query = OwnerQuery::applyToEloquentBuilder($query, $owner, false);
-        }
+        $query = OwnerUiScope::apply(FeedbackTestimonial::query(), includeGlobal: false);
 
         $pending = (clone $query)->where('status', 'pending')->count();
         $approved = (clone $query)->where('status', 'approved')->count();

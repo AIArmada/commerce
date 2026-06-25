@@ -50,7 +50,25 @@ final class CommunicationEvent extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'communication_id',
+        'delivery_id',
+        'attempt_id',
+        'event',
+        'source',
+        'provider',
+        'provider_event_id',
+        'provider_message_id',
+        'occurred_at',
+        'received_at',
+        'signature_validated_at',
+        'processed_at',
+        'ignored_at',
+        'failed_at',
+        'payload',
+        'failure_message',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

@@ -22,6 +22,10 @@ final class RecordModerationAction
     ): ModerationAction {
         $this->validateOwnerScopedModel($actionable);
 
+        if ($actionedBy !== null) {
+            $this->validateOwnerScopedModel($actionedBy);
+        }
+
         return DB::transaction(function () use ($actionable, $actionedBy, $type, $reason, $metadata): ModerationAction {
             return ModerationAction::create([
                 'actionable_type' => $actionable->getMorphClass(),

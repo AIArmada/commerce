@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Models;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\NormalizeContactMethodAction;
 use AIArmada\Contacting\Database\Factories\ContactMethodFactory;
+use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,7 +52,25 @@ final class ContactMethod extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'contactable_type',
+        'contactable_id',
+        'type',
+        'purpose',
+        'label',
+        'value',
+        'normalized_value',
+        'display_value',
+        'country_code',
+        'is_primary',
+        'is_public',
+        'is_verified',
+        'verified_at',
+        'valid_from',
+        'valid_until',
+        'sort_order',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
@@ -210,33 +228,10 @@ final class ContactMethod extends Model
 
     private function guardContactableOwner(): void
     {
-        $contactable = $this->contactable;
-
-        if (! $contactable instanceof Model) {
-            return;
-        }
-
-        $contactableOwnerType = $contactable->getAttribute('owner_type');
-        $contactableOwnerId = $contactable->getAttribute('owner_id');
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
-            return;
-        }
-
-        if (
-            $owner !== null
-            && $contactableOwnerType === $owner->getMorphClass()
-            && (string) $contactableOwnerId === (string) $owner->getKey()
-        ) {
-            return;
-        }
-
-        if ($owner === null && $contactableOwnerType === null && $contactableOwnerId === null) {
-            return;
-        }
-
-        throw new InvalidArgumentException('Contact method contactable owner must match the contact method owner.');
+        app(ContactingModelReferenceGuard::class)->resolve(
+            $this->contactable_type,
+            $this->contactable_id,
+        );
     }
 
     protected static function newFactory(): ContactMethodFactory

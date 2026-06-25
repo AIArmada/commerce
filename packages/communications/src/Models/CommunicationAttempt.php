@@ -44,7 +44,22 @@ final class CommunicationAttempt extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'delivery_id',
+        'attempt_number',
+        'provider',
+        'provider_message_id',
+        'request_payload',
+        'response_payload',
+        'started_at',
+        'accepted_at',
+        'responded_at',
+        'failed_at',
+        'duration_ms',
+        'failure_code',
+        'failure_message',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

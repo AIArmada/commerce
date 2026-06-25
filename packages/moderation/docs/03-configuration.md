@@ -34,6 +34,7 @@ title: Configuration
 ```
 
 - `features.owner.enabled` turns owner-aware validation on or off for tenant-owned models
+- When enabled, blocks and moderation actions inherit the current owner and are isolated by the global owner scope
 
 ## Defaults
 

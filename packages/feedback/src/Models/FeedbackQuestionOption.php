@@ -34,7 +34,6 @@ final class FeedbackQuestionOption extends Model
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 
     protected $fillable = [
-        'owner_type', 'owner_id',
         'feedback_question_id',
         'label', 'value', 'score', 'order_column',
         'metadata',

@@ -6,6 +6,7 @@ namespace AIArmada\Membership\Actions;
 
 use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Enums\MemberRole;
+use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
@@ -16,6 +17,8 @@ final class ChangeMemberRoleAction
 
     public function handle(Model $subject, Model $user, MemberRole $role): void
     {
+        app(MembershipSubjectGuard::class)->validate($subject);
+
         /** @phpstan-ignore method.notFound */
         $member = $subject->members()->whereKey($user->getKey())->first();
 

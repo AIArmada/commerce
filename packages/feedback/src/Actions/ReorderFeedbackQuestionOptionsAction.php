@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Feedback\Models\FeedbackQuestion;
 use AIArmada\Feedback\Models\FeedbackQuestionOption;
 
 final class ReorderFeedbackQuestionOptionsAction
@@ -13,6 +15,8 @@ final class ReorderFeedbackQuestionOptionsAction
      */
     public function execute(string $questionId, array $order): void
     {
+        OwnerWriteGuard::findOrFailForOwner(FeedbackQuestion::class, $questionId);
+
         foreach ($order as $id => $position) {
             FeedbackQuestionOption::where('feedback_question_id', $questionId)
                 ->where('id', $id)

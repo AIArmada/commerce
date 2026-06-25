@@ -45,7 +45,19 @@ final class CommunicationThread extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'subject_type',
+        'subject_id',
+        'external_thread_id',
+        'channel',
+        'title',
+        'status',
+        'opened_at',
+        'last_communication_at',
+        'closed_at',
+        'archived_at',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

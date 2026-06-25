@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Models\Role;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Actions\ChangeMemberRoleAction;
 use AIArmada\Membership\Actions\RemoveMemberAction;
@@ -14,6 +15,7 @@ use AIArmada\Membership\Tests\MembershipTestCase;
 uses(MembershipTestCase::class);
 
 beforeEach(function (): void {
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
     $this->subject = TestSubject::query()->create(['name' => 'Test Subject']);
     $this->user = User::query()->create([
         'name' => 'User',

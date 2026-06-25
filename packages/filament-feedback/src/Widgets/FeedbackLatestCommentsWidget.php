@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use Filament\Widgets\Widget;
 
@@ -18,12 +17,10 @@ final class FeedbackLatestCommentsWidget extends Widget
 
     public function getComments(): array
     {
-        $owner = OwnerContext::resolve();
-        $query = FeedbackAnswer::query()->with(['response.form', 'question']);
-
-        if ($owner !== null) {
-            $query = OwnerQuery::applyToEloquentBuilder($query, $owner, false);
-        }
+        $query = OwnerUiScope::apply(
+            FeedbackAnswer::query()->with(['response.form', 'question']),
+            includeGlobal: false,
+        );
 
         return (clone $query)
             ->whereNotNull('text_value')

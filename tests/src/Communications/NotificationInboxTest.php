@@ -6,8 +6,10 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
+use AIArmada\Communications\Http\Livewire\InboxIndex;
 use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\NotificationInbox;
+use Illuminate\Support\Facades\Auth;
 
 beforeEach(function (): void {
     config()->set('communications.features.owner.enabled', false);
@@ -188,6 +190,45 @@ test('config-driven table name', function (): void {
 test('default table name from config', function (): void {
     $inbox = new NotificationInbox;
     expect($inbox->getTable())->toBe('notification_inboxes');
+});
+
+test('inbox component only reads and mutates the authenticated recipient notifications', function (): void {
+    $otherUser = User::create([
+        'name' => 'Other Inbox User',
+        'email' => 'other-inbox-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $ownInbox = NotificationInbox::create([
+        'recipient_type' => $this->user->getMorphClass(),
+        'recipient_id' => $this->user->id,
+        'family' => NotificationFamily::EventReminder,
+        'priority' => NotificationPriority::Normal,
+        'trigger' => NotificationTrigger::EventPublished,
+        'title' => 'Own notification',
+    ]);
+
+    $otherInbox = NotificationInbox::create([
+        'recipient_type' => $otherUser->getMorphClass(),
+        'recipient_id' => $otherUser->id,
+        'family' => NotificationFamily::EventReminder,
+        'priority' => NotificationPriority::Normal,
+        'trigger' => NotificationTrigger::EventPublished,
+        'title' => 'Other notification',
+    ]);
+
+    $this->actingAs($this->user);
+
+    Auth::login($this->user);
+
+    $component = app(InboxIndex::class);
+    $component->markAsRead($otherInbox->id);
+    $component->archive($otherInbox->id);
+    $component->markAsRead($ownInbox->id);
+
+    expect($ownInbox->fresh()->read_at)->not->toBeNull()
+        ->and($otherInbox->fresh()->read_at)->toBeNull()
+        ->and($otherInbox->fresh()->archived_at)->toBeNull();
 });
 
 test('can be created with read_at and archived_at timestamps', function (): void {

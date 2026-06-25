@@ -122,3 +122,5 @@ php artisan communications:prune-inboxes
 ## Owner scoping
 
 All tenant-owned queries are automatically scoped to the current owner when `communications.features.owner.enabled` is true. Use `OwnerContext::withOwner()` for scoped operations. Inbox records follow the same owner boundary as the rest of the communications data.
+
+Webhook payloads cannot select an owner. Bind `AIArmada\Communications\Contracts\WebhookOwnerResolver` to resolve a trusted owner model from provider-authenticated payload data. Returning `null` processes the event in explicit global context.

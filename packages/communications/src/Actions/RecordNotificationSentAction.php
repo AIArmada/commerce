@@ -9,6 +9,7 @@ use AIArmada\Communications\Events\DeliverySent;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
+use RuntimeException;
 
 final class RecordNotificationSentAction
 {
@@ -18,6 +19,10 @@ final class RecordNotificationSentAction
         ?string $providerMessageId = null,
     ): CommunicationDelivery {
         $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
+
+        if ($delivery->communication_id !== $communicationId) {
+            throw new RuntimeException('Delivery does not belong to the supplied communication.');
+        }
 
         $delivery->status = DeliveryStatus::Sent;
         $delivery->sent_at = CarbonImmutable::now();

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use Filament\Widgets\ChartWidget;
 
@@ -13,12 +12,7 @@ final class FeedbackResponseTrendWidget extends ChartWidget
 {
     protected function getData(): array
     {
-        $owner = OwnerContext::resolve();
-        $query = FeedbackResponse::query();
-
-        if ($owner !== null) {
-            $query = OwnerQuery::applyToEloquentBuilder($query, $owner, false);
-        }
+        $query = OwnerUiScope::apply(FeedbackResponse::query(), includeGlobal: false);
 
         $daily = (clone $query)
             ->where('status', 'submitted')

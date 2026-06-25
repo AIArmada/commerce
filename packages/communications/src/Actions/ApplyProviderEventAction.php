@@ -10,6 +10,7 @@ use AIArmada\Communications\Enums\DeliveryStatus;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class ApplyProviderEventAction
@@ -41,7 +42,7 @@ final class ApplyProviderEventAction
         'failed' => 'failed_at',
         'accept' => 'accepted_at',
         'suppress' => 'suppressed_at',
-        'unsubscribe' => 'suppressed_at',
+        'unsubscribe' => 'unsubscribed_at',
     ];
 
     public const DELIVERY_EVENTS = [
@@ -61,28 +62,34 @@ final class ApplyProviderEventAction
             throw new RuntimeException("Unknown provider event type: {$eventType}.");
         }
 
-        $event = $this->recordEvent($eventData);
+        return DB::transaction(function () use ($eventData, $eventType): CommunicationDelivery {
+            $delivery = CommunicationDelivery::query()
+                ->lockForUpdate()
+                ->findOrFail($eventData->deliveryId);
 
-        $delivery = CommunicationDelivery::query()->findOrFail($eventData->deliveryId);
+            $event = $this->recordEvent($eventData, $delivery);
 
-        $delivery->status = self::EVENT_STATUS_MAP[$eventType];
+            $delivery->status = self::EVENT_STATUS_MAP[$eventType];
 
-        $timestampColumn = self::EVENT_TIMESTAMP_MAP[$eventType];
+            $timestampColumn = self::EVENT_TIMESTAMP_MAP[$eventType];
 
-        if ($delivery->{$timestampColumn} === null) {
-            $delivery->{$timestampColumn} = CarbonImmutable::now();
-        }
+            if ($delivery->{$timestampColumn} === null) {
+                $delivery->{$timestampColumn} = CarbonImmutable::now();
+            }
 
-        $delivery->save();
+            $delivery->save();
 
-        $event->processed_at = CarbonImmutable::now();
-        $event->save();
+            $event->processed_at = CarbonImmutable::now();
+            $event->save();
 
-        return $delivery;
+            return $delivery;
+        });
     }
 
-    private function recordEvent(ProviderEventData $data): CommunicationEvent
-    {
+    private function recordEvent(
+        ProviderEventData $data,
+        CommunicationDelivery $delivery,
+    ): CommunicationEvent {
         if ($data->providerEventId !== null) {
             $exists = CommunicationEvent::query()
                 ->where('provider', $data->provider)
@@ -95,8 +102,8 @@ final class ApplyProviderEventAction
         }
 
         $event = new CommunicationEvent;
-        $event->communication_id = $data->communicationId;
-        $event->delivery_id = $data->deliveryId;
+        $event->communication_id = $data->communicationId ?? $delivery->communication_id;
+        $event->delivery_id = $delivery->id;
         $event->event = $data->eventType;
         $event->source = CommunicationEventSource::Provider;
         $event->provider = $data->provider;

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\RejectMembershipApplicationAction;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationRejected;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Event;
 uses(MembershipTestCase::class);
 
 beforeEach(function (): void {
-    Event::fake();
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
+    Event::fake([MembershipApplicationRejected::class]);
 
     $this->subject = TestSubject::query()->create(['name' => 'Test Subject']);
     $this->applicant = User::query()->create([
@@ -27,13 +29,13 @@ beforeEach(function (): void {
         'email' => 'reviewer@app.com',
         'password' => 'secret',
     ]);
-    $this->application = MembershipApplication::query()->create([
+    $this->application = $this->withMembershipOwner(fn (): MembershipApplication => MembershipApplication::query()->create([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'applicant_id' => $this->applicant->getKey(),
         'status' => ApplicationStatus::Pending,
         'justification' => 'Claiming this entity.',
-    ]);
+    ]));
 });
 
 it('rejects a pending application', function (): void {

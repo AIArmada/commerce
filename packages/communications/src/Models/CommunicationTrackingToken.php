@@ -40,7 +40,18 @@ final class CommunicationTrackingToken extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'delivery_id',
+        'kind',
+        'token_hash',
+        'target_url_ciphertext',
+        'target_host',
+        'expires_at',
+        'first_used_at',
+        'last_used_at',
+        'revoked_at',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

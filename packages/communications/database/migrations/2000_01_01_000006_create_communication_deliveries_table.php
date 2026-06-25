@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = config('communications.database.json_column_type', 'jsonb');
 
-        Schema::create(config('communications.database.tables.communication_deliveries', 'communication_deliveries'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('communications.database.tables.deliveries', 'communication_deliveries'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
             $table->foreignUuid('communication_id')->index();
@@ -47,6 +47,7 @@ return new class extends Migration
             $table->timestampTz('failed_at')->nullable()->index();
             $table->timestampTz('cancelled_at')->nullable();
             $table->timestampTz('expired_at')->nullable();
+            $table->timestampTz('suppressed_at')->nullable();
             $table->timestampTz('last_attempt_at')->nullable();
             $table->string('failure_code')->nullable();
             $table->text('failure_message')->nullable();

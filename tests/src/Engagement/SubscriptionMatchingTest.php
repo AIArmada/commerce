@@ -42,10 +42,12 @@ it('matches subscriptions for published events', function (): void {
         ]);
     });
 
-    $this->manager->subscribe($this->subscriber, $event, 'updates', [
-        'visibility' => 'public',
-        'delivery_mode' => 'online',
-    ]);
+    OwnerContext::withOwner($owner, function () use ($event): void {
+        $this->manager->subscribe($this->subscriber, $event, 'updates', [
+            'visibility' => 'public',
+            'delivery_mode' => 'online',
+        ]);
+    });
 
     event(new EventPublished($event));
 
@@ -93,10 +95,12 @@ it('matches subscriptions through the console command', function (): void {
         ]);
     });
 
-    $this->manager->subscribe($this->subscriber, $event, 'updates', [
-        'visibility' => 'public',
-        'delivery_mode' => 'online',
-    ]);
+    OwnerContext::withOwner($owner, function () use ($event): void {
+        $this->manager->subscribe($this->subscriber, $event, 'updates', [
+            'visibility' => 'public',
+            'delivery_mode' => 'online',
+        ]);
+    });
 
     EventFacade::fake([SubscriptionMatched::class]);
 
@@ -111,4 +115,26 @@ it('matches subscriptions through the console command', function (): void {
             && $matched->subject instanceof Event
             && $matched->trigger === 'event_published';
     });
+});
+
+it('matches global subscriptions for subjects without an owner relation', function (): void {
+    $subject = User::query()->create([
+        'name' => 'Global Subscription Subject',
+        'email' => 'global-subject-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    OwnerContext::withOwner(null, function () use ($subject): void {
+        $this->manager->subscribe($subject, $subject, 'updates');
+    });
+
+    EventFacade::fake([SubscriptionMatched::class]);
+
+    expect(Artisan::call('engagement:match-subscriptions', [
+        'subjectType' => User::class,
+        'subjectId' => $subject->id,
+        '--trigger' => 'user_updated',
+    ]))->toBe(0);
+
+    EventFacade::assertDispatched(SubscriptionMatched::class);
 });

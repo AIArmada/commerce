@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Communications\Actions\ApplyProviderEventAction;
+use AIArmada\Communications\Actions\TransitionDeliveryAction;
+use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationEventSource;
@@ -137,4 +140,48 @@ test('destination ciphertext fields work', function (): void {
     expect($fresh->destination_ciphertext)->toBe('encrypted_data');
     expect($fresh->destination_hash)->toBe('abc123hash');
     expect($fresh->destination_hint)->toBe('user@***.com');
+});
+
+test('suppressed deliveries persist their lifecycle timestamp', function (): void {
+    $delivery = app(TransitionDeliveryAction::class)->handle(
+        $this->delivery,
+        DeliveryStatus::Suppressed,
+    );
+
+    expect($delivery->status)->toBe(DeliveryStatus::Suppressed)
+        ->and($delivery->suppressed_at)->not->toBeNull();
+});
+
+test('unsubscribe provider events use unsubscribed_at', function (): void {
+    $delivery = app(ApplyProviderEventAction::class)->handle(new ProviderEventData(
+        provider: 'test',
+        providerEventId: 'unsubscribe-event',
+        providerMessageId: null,
+        eventType: 'unsubscribe',
+        occurredAt: CarbonImmutable::now(),
+        communicationId: $this->communication->id,
+        deliveryId: $this->delivery->id,
+    ));
+
+    expect($delivery->status)->toBe(DeliveryStatus::Unsubscribed)
+        ->and($delivery->unsubscribed_at)->not->toBeNull()
+        ->and($delivery->suppressed_at)->toBeNull();
+});
+
+test('provider events derive their communication from the delivery', function (): void {
+    app(ApplyProviderEventAction::class)->handle(new ProviderEventData(
+        provider: 'test',
+        providerEventId: 'delivery-event-without-communication',
+        providerMessageId: null,
+        eventType: 'delivery',
+        occurredAt: CarbonImmutable::now(),
+        deliveryId: $this->delivery->id,
+    ));
+
+    $event = CommunicationEvent::query()
+        ->where('provider_event_id', 'delivery-event-without-communication')
+        ->sole();
+
+    expect($event->communication_id)->toBe($this->communication->id)
+        ->and($event->delivery_id)->toBe($this->delivery->id);
 });

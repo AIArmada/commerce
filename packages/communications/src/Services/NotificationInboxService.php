@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Communications\Enums\NotificationFamily;
 use AIArmada\Communications\Enums\NotificationPriority;
 use AIArmada\Communications\Enums\NotificationTrigger;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class NotificationInboxService
 {
@@ -30,6 +32,8 @@ final class NotificationInboxService
         ?CarbonInterface $scheduledAt = null,
     ): NotificationInbox {
         $recipientModel = $recipient instanceof Model ? $recipient : $recipient->getParent();
+        $this->validateOwnedModel($recipientModel);
+        $this->validateOwnedModel($communication);
 
         return DB::transaction(function () use ($recipientModel, $communication, $family, $priority, $trigger, $title, $body, $data, $scheduledAt): NotificationInbox {
             $inbox = new NotificationInbox;
@@ -54,9 +58,9 @@ final class NotificationInboxService
         return $this->prunableQuery($before)->count();
     }
 
-    public function markAsRead(string $id): void
+    public function markAsRead(MorphMany | Model $recipient, string $id): void
     {
-        NotificationInbox::query()
+        $this->recipientRelation($recipient)
             ->where('id', $id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
@@ -67,9 +71,9 @@ final class NotificationInboxService
         $recipient->whereNull('read_at')->update(['read_at' => now()]);
     }
 
-    public function archive(string $id): void
+    public function archive(MorphMany | Model $recipient, string $id): void
     {
-        NotificationInbox::query()
+        $this->recipientRelation($recipient)
             ->where('id', $id)
             ->whereNull('archived_at')
             ->update(['archived_at' => now()]);
@@ -100,5 +104,23 @@ final class NotificationInboxService
             ->withoutOwnerScope()
             ->whereNotNull('archived_at')
             ->where('archived_at', '<', $before);
+    }
+
+    private function recipientRelation(MorphMany | Model $recipient): MorphMany
+    {
+        $recipientModel = $recipient instanceof Model ? $recipient : $recipient->getParent();
+        $this->validateOwnedModel($recipientModel);
+
+        return $recipient instanceof MorphMany
+            ? $recipient
+            : $recipient->morphMany(NotificationInbox::class, 'recipient');
+    }
+
+    private function validateOwnedModel(Model $model): void
+    {
+        try {
+            OwnerWriteGuard::findOrFailForOwner($model::class, $model->getKey());
+        } catch (InvalidArgumentException) {
+        }
     }
 }

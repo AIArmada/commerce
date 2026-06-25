@@ -20,11 +20,6 @@ return [
         ],
     ],
 
-    'tables' => [
-        'default_pagination' => 25,
-        'search_debounce' => '500ms',
-    ],
-
     'features' => [
         'country_editing' => false,
         'area_import' => true,

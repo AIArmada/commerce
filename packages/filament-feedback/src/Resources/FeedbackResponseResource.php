@@ -112,7 +112,7 @@ final class FeedbackResponseResource extends Resource
                         return $indicators;
                     }),
             ])
-            ->headerActions([
+            ->actions([
                 Action::make('review')
                     ->label('Review')
                     ->icon('heroicon-o-check')

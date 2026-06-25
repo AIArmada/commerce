@@ -59,3 +59,12 @@ it('creates a reminder via engagement manager', function (): void {
     expect($reminder)->toBeInstanceOf(Reminder::class)
         ->and($reminder->status)->toBe(Reminder::STATUS_PENDING);
 });
+
+it('unmutes a subscription through the domain manager', function (): void {
+    $subscription = $this->subscriptionManager->subscribe($this->actor, $this->subject);
+    $this->subscriptionManager->muteSubscription($subscription);
+    $this->subscriptionManager->unmuteSubscription($subscription);
+
+    expect($subscription->fresh()->status)->toBe(Subscription::STATUS_ACTIVE)
+        ->and($subscription->fresh()->muted_at)->toBeNull();
+});

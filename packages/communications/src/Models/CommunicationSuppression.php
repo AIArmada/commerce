@@ -45,7 +45,21 @@ final class CommunicationSuppression extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'recipient_type',
+        'recipient_id',
+        'destination_hash',
+        'channel',
+        'category',
+        'reason',
+        'source',
+        'starts_at',
+        'expires_at',
+        'lifted_at',
+        'created_by_type',
+        'created_by_id',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

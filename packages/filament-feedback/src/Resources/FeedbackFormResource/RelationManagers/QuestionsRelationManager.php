@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers;
 
 use AIArmada\Feedback\Actions\CreateFeedbackQuestionAction;
+use AIArmada\Feedback\Actions\DeleteFeedbackQuestionAction;
 use AIArmada\Feedback\Actions\UpdateFeedbackQuestionAction;
 use AIArmada\Feedback\Enums\FeedbackQuestionType;
 use AIArmada\Feedback\Models\FeedbackQuestion;
@@ -80,7 +81,10 @@ final class QuestionsRelationManager extends RelationManager
                     ->action(function (FeedbackQuestion $record, array $data): void {
                         app(UpdateFeedbackQuestionAction::class)->execute($record, $data);
                     }),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->action(function (FeedbackQuestion $record): void {
+                        app(DeleteFeedbackQuestionAction::class)->execute($record);
+                    }),
             ]);
     }
 }

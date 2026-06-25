@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Communications\Http\Middleware;
 
+use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 final class VerifyWebhookSignature
 {
+    public function __construct(
+        private readonly ProviderWebhookRegistrar $registrar,
+    ) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $provider = $request->route('provider');
@@ -18,10 +23,10 @@ final class VerifyWebhookSignature
             abort(401, 'Invalid webhook provider.');
         }
 
-        $secret = $this->resolveSecret($provider);
+        $secret = $this->registrar->getSecret($provider);
 
         if ($secret === null || $secret === '') {
-            return $next($request);
+            abort(401, 'Webhook secret is not configured.');
         }
 
         $signature = $request->header('X-Webhook-Signature');
@@ -37,22 +42,5 @@ final class VerifyWebhookSignature
         }
 
         return $next($request);
-    }
-
-    private function resolveSecret(string $provider): ?string
-    {
-        $secret = config("services.webhooks.{$provider}.secret");
-
-        if (is_string($secret) && $secret !== '') {
-            return $secret;
-        }
-
-        $fallback = config('services.webhooks.secret');
-
-        if (is_string($fallback) && $fallback !== '') {
-            return $fallback;
-        }
-
-        return null;
     }
 }

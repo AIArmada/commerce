@@ -37,7 +37,6 @@ final class FeedbackTemplate extends Model
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 
     protected $fillable = [
-        'owner_type', 'owner_id',
         'name', 'slug', 'purpose', 'category', 'status',
         'definition', 'settings', 'metadata',
         'published_at', 'archived_at',

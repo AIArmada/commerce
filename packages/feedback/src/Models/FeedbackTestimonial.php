@@ -56,7 +56,6 @@ final class FeedbackTestimonial extends Model
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 
     protected $fillable = [
-        'owner_type', 'owner_id',
         'feedback_response_id', 'feedback_answer_id',
         'subject_type', 'subject_id',
         'respondent_type', 'respondent_id',

@@ -55,6 +55,7 @@ test('RecordTrackingInteractionAction handle records interaction with valid toke
 
     expect($event)->toBeInstanceOf(CommunicationEvent::class);
     expect($event->event)->toBe('click');
+    expect($event->communication_id)->toBe($delivery->communication_id);
     expect($event->delivery_id)->toBe($delivery->id);
     expect($event->metadata)->toBe(['url' => 'https://example.com']);
     expect($event->source)->toBe(CommunicationEventSource::Tracking);

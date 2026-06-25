@@ -77,7 +77,7 @@ final class FeedbackFormResource extends Resource
                 Tables\Filters\SelectFilter::make('visibility')
                     ->options(FeedbackFormVisibility::options()),
             ])
-            ->headerActions([
+            ->actions([
                 Action::make('publish')
                     ->label('Publish')
                     ->icon('heroicon-o-check-circle')

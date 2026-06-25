@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentCommerceSupport\FilamentCommerceSupportPlugin;
+use AIArmada\FilamentCommerceSupport\Pages\ManageCommerceNavigation;
 use AIArmada\FilamentCommerceSupport\Settings\CommerceNavigationSettings;
 use AIArmada\FilamentCommerceSupport\Support\NavigationConfigurator;
 
@@ -14,6 +15,16 @@ beforeEach(function (): void {
         'packages' => [],
         'items' => [],
     ]);
+});
+
+it('uses config-driven settings navigation without a static group property', function (): void {
+    config()->set('filament-commerce-support.navigation.settings_group', 'Administration');
+    config()->set('filament-commerce-support.navigation.sort', 42);
+
+    expect(ManageCommerceNavigation::getNavigationGroup())->toBe('Administration')
+        ->and(ManageCommerceNavigation::getNavigationSort())->toBe(42)
+        ->and(file_get_contents(__DIR__ . '/../../../packages/filament-commerce-support/src/Pages/ManageCommerceNavigation.php'))
+        ->not->toContain('$navigationGroup');
 });
 
 it('has correct plugin id', function (): void {

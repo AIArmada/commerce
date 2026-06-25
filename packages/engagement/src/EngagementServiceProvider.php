@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement;
 
 use AIArmada\Engagement\Console\Commands\MatchSubscriptionsCommand;
+use AIArmada\Engagement\Console\Commands\SendDueRemindersCommand;
 use AIArmada\Engagement\Contracts\EngagementCounterService;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
@@ -39,6 +40,7 @@ final class EngagementServiceProvider extends PackageServiceProvider
             ->discoversMigrations()
             ->hasCommands([
                 MatchSubscriptionsCommand::class,
+                SendDueRemindersCommand::class,
             ]);
     }
 

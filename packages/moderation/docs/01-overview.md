@@ -13,7 +13,7 @@ title: Overview
 - Traits for models that can be blocked or recorded against
 - Actions that create the records in transactions
 - Configurable table names and JSON column type selection
-- Optional owner-scoped validation for tenant-owned models
+- Owner-scoped moderation records and validation for tenant-owned models
 
 ## What this package does not own
 

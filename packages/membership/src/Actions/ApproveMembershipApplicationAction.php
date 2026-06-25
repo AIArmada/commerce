@@ -21,12 +21,16 @@ final class ApproveMembershipApplicationAction
 
     public function handle(MembershipApplication $application, Model $reviewer, MemberRole $role, ?string $note = null): void
     {
-        if ($application->status !== ApplicationStatus::Pending) {
-            throw new RuntimeException('Only pending membership applications can be approved.');
-        }
+        $approvedApplication = DB::transaction(function () use ($application, $note, $reviewer, $role): MembershipApplication {
+            $lockedApplication = MembershipApplication::query()
+                ->lockForUpdate()
+                ->findOrFail($application->id);
 
-        DB::transaction(function () use ($application, $note, $reviewer, $role): void {
-            $application->update([
+            if ($lockedApplication->status !== ApplicationStatus::Pending) {
+                throw new RuntimeException('Only pending membership applications can be approved.');
+            }
+
+            $lockedApplication->update([
                 'status' => ApplicationStatus::Approved,
                 'granted_role' => $role->spatieRoleName(),
                 'reviewer_id' => $reviewer->getKey(),
@@ -35,24 +39,24 @@ final class ApproveMembershipApplicationAction
             ]);
 
             AddMemberAction::make()->handle(
-                $application->subject,
-                $application->applicant,
+                $lockedApplication->subject,
+                $lockedApplication->applicant,
                 $role,
             );
+
+            return $lockedApplication;
         });
 
-        $application->refresh();
-
-        MembershipApplicationApproved::dispatch($application);
+        MembershipApplicationApproved::dispatch($approvedApplication);
 
         if (app()->bound(MembershipApplicationNotifier::class)) {
-            app(MembershipApplicationNotifier::class)->notifyApproved($application);
+            app(MembershipApplicationNotifier::class)->notifyApproved($approvedApplication);
         }
 
         if (app()->bound(MembershipHook::class)) {
             app(MembershipHook::class)->onMemberAdded(
-                $application->subject,
-                $application->applicant,
+                $approvedApplication->subject,
+                $approvedApplication->applicant,
                 $role,
             );
         }

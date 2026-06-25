@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\RevokeInvitationAction;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Models\MembershipInvitation;
@@ -12,6 +13,7 @@ use AIArmada\Membership\Tests\MembershipTestCase;
 uses(MembershipTestCase::class);
 
 beforeEach(function (): void {
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
     $this->subject = TestSubject::query()->create(['name' => 'Test Subject']);
     $this->inviter = User::query()->create([
         'name' => 'Inviter',
@@ -23,14 +25,14 @@ beforeEach(function (): void {
         'email' => 'revoker@app.com',
         'password' => 'secret',
     ]);
-    $this->invitation = MembershipInvitation::query()->create([
+    $this->invitation = $this->withMembershipOwner(fn (): MembershipInvitation => MembershipInvitation::query()->create([
         'subject_type' => $this->subject->getMorphClass(),
         'subject_id' => $this->subject->getKey(),
         'email' => 'invitee@example.com',
         'role' => MemberRole::Admin->spatieRoleName(),
         'token' => bin2hex(random_bytes(32)),
         'invited_by' => $this->inviter->getKey(),
-    ]);
+    ]));
 });
 
 it('revokes a pending invitation', function (): void {

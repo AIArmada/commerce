@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\FilamentContacting\Schemas\ContactSnapshotInfolistSchema;
 use AIArmada\FilamentContacting\Tables\ContactSnapshotTable;
@@ -19,8 +20,6 @@ final class ContactSnapshotResource extends Resource
 
     protected static BackedEnum | string | null $navigationIcon = 'heroicon-o-archive-box';
 
-    protected static ?int $navigationSort = 3;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-contacting.navigation.group');
@@ -31,9 +30,14 @@ final class ContactSnapshotResource extends Resource
         return config('filament-contacting.navigation.icons.contact_snapshots', parent::getNavigationIcon());
     }
 
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-contacting.navigation.sort', 70) + 2;
+    }
+
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery();
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     public static function table(Table $table): Table

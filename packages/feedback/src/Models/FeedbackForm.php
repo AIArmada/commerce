@@ -60,7 +60,6 @@ final class FeedbackForm extends Model
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 
     protected $fillable = [
-        'owner_type', 'owner_id',
         'name', 'slug', 'purpose', 'status', 'visibility',
         'subject_type', 'subject_id',
         'is_anonymous_allowed', 'is_anonymity_optional',

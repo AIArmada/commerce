@@ -15,21 +15,17 @@ final class MembershipRoleSyncService
     {
         $name = $role->spatieRoleName();
         $guard = (string) config('auth.defaults.guard', 'web');
-        $teamsKey = app(PermissionRegistrar::class)->teamsKey;
-
-        $query = Role::query()->where('name', $name)->where('guard_name', $guard);
-
-        if ($teamId !== null) {
-            $query->where($teamsKey, $teamId);
-        } else {
-            $query->whereNull($teamsKey);
-        }
-
-        return $query->firstOrCreate([
+        $registrar = app(PermissionRegistrar::class);
+        $attributes = [
             'name' => $name,
             'guard_name' => $guard,
-            $teamsKey => $teamId,
-        ]);
+        ];
+
+        if ($registrar->teams) {
+            $attributes[$registrar->teamsKey] = $teamId;
+        }
+
+        return Role::query()->firstOrCreate($attributes);
     }
 
     public function syncAll(): int
@@ -54,9 +50,7 @@ final class MembershipRoleSyncService
         $previousTeamId = getPermissionsTeamId();
 
         try {
-            if ($teamId !== null) {
-                setPermissionsTeamId($teamId);
-            }
+            setPermissionsTeamId($teamId);
 
             $this->ensureExists($role, $teamId);
 
@@ -75,9 +69,7 @@ final class MembershipRoleSyncService
         $previousTeamId = getPermissionsTeamId();
 
         try {
-            if ($teamId !== null) {
-                setPermissionsTeamId($teamId);
-            }
+            setPermissionsTeamId($teamId);
 
             /** @phpstan-ignore method.notFound */
             $user->removeRole($role->spatieRoleName());

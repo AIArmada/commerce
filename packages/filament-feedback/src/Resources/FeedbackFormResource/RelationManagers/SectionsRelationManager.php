@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentFeedback\Resources\FeedbackFormResource\RelationManagers;
 
 use AIArmada\Feedback\Actions\CreateFeedbackSectionAction;
+use AIArmada\Feedback\Actions\DeleteFeedbackSectionAction;
 use AIArmada\Feedback\Actions\UpdateFeedbackSectionAction;
 use AIArmada\Feedback\Models\FeedbackSection;
 use Filament\Actions\CreateAction;
@@ -54,7 +55,10 @@ final class SectionsRelationManager extends RelationManager
                     ->action(function (FeedbackSection $record, array $data): void {
                         app(UpdateFeedbackSectionAction::class)->execute($record, $data);
                     }),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->action(function (FeedbackSection $record): void {
+                        app(DeleteFeedbackSectionAction::class)->execute($record);
+                    }),
             ]);
     }
 }

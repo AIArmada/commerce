@@ -39,7 +39,9 @@ class SuperAdminCommand extends Command
 
     public function handle(): int
     {
-        $this->initializeProhibitable();
+        if (! $this->initializeProhibitable()) {
+            return self::FAILURE;
+        }
 
         $superAdminRole = (string) config('authz.super_admin_role', 'super_admin');
         $guards = (array) config('authz.guards', ['web']);

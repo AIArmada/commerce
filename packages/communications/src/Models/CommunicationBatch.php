@@ -49,7 +49,26 @@ final class CommunicationBatch extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'purpose',
+        'category',
+        'status',
+        'idempotency_key',
+        'laravel_batch_id',
+        'requested_count',
+        'planned_count',
+        'queued_count',
+        'completed_count',
+        'failed_count',
+        'scheduled_at',
+        'started_at',
+        'completed_at',
+        'cancelled_at',
+        'failed_at',
+        'expires_at',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

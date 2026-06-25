@@ -38,7 +38,6 @@ final class FeedbackSection extends Model
     protected static string $ownerScopeConfigKey = 'feedback.owner';
 
     protected $fillable = [
-        'owner_type', 'owner_id',
         'feedback_form_id', 'key', 'title', 'description', 'order_column',
         'settings', 'metadata',
     ];

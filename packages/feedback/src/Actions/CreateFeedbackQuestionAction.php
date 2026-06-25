@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Actions;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackQuestion;
+use AIArmada\Feedback\Models\FeedbackSection;
+use InvalidArgumentException;
 
 final class CreateFeedbackQuestionAction
 {
@@ -25,6 +29,16 @@ final class CreateFeedbackQuestionAction
         array $scoringRules = [],
         array $settings = [],
     ): FeedbackQuestion {
+        OwnerWriteGuard::findOrFailForOwner(FeedbackForm::class, $formId);
+
+        if ($sectionId !== null) {
+            $section = OwnerWriteGuard::findOrFailForOwner(FeedbackSection::class, $sectionId);
+
+            if ($section->feedback_form_id !== $formId) {
+                throw new InvalidArgumentException('The feedback section does not belong to the selected form.');
+            }
+        }
+
         return FeedbackQuestion::create([
             'feedback_form_id' => $formId,
             'feedback_section_id' => $sectionId,

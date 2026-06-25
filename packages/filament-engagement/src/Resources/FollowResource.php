@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
+use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Follow;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -33,7 +35,8 @@ final class FollowResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->latest('followed_at');
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false)
+            ->latest('followed_at');
     }
 
     public static function table(Table $table): Table
@@ -80,23 +83,40 @@ final class FollowResource extends Resource
             ])
             ->actions([
                 Action::make('mute')
-                    ->action(fn (Follow $record) => $record->update(['status' => 'muted']))
+                    ->action(fn (Follow $record): Follow => app(EngagementManager::class)
+                        ->muteFollow($record->follower, $record->followable))
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isActive()),
                 Action::make('unmute')
-                    ->action(fn (Follow $record) => $record->update(['status' => 'active']))
+                    ->action(fn (Follow $record): Follow => app(EngagementManager::class)
+                        ->unmuteFollow($record->follower, $record->followable))
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isMuted()),
                 Action::make('unfollow')
-                    ->action(fn (Follow $record) => $record->update(['status' => 'unfollowed']))
+                    ->action(fn (Follow $record) => app(EngagementManager::class)
+                        ->unfollow($record->follower, $record->followable))
                     ->requiresConfirmation()
                     ->visible(fn (Follow $record) => $record->isActive()),
             ])
             ->bulkActions([
                 BulkAction::make('mute')
-                    ->action(fn ($records) => $records->each->update(['status' => 'muted'])),
+                    ->action(function ($records): void {
+                        foreach ($records as $record) {
+                            if ($record instanceof Follow && $record->isActive()) {
+                                app(EngagementManager::class)
+                                    ->muteFollow($record->follower, $record->followable);
+                            }
+                        }
+                    }),
                 BulkAction::make('unfollow')
-                    ->action(fn ($records) => $records->each->update(['status' => 'unfollowed'])),
+                    ->action(function ($records): void {
+                        foreach ($records as $record) {
+                            if ($record instanceof Follow && $record->isActive()) {
+                                app(EngagementManager::class)
+                                    ->unfollow($record->follower, $record->followable);
+                            }
+                        }
+                    }),
             ])
             ->defaultSort('followed_at', 'desc');
     }

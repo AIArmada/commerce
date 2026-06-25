@@ -10,8 +10,10 @@ use AIArmada\Engagement\Events\SubscriptionCancelled;
 use AIArmada\Engagement\Events\SubscriptionCreated;
 use AIArmada\Engagement\Events\SubscriptionMatched;
 use AIArmada\Engagement\Events\SubscriptionMuted;
+use AIArmada\Engagement\Events\SubscriptionUnmuted;
 use AIArmada\Engagement\Models\Subscription;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use InvalidArgumentException;
 
@@ -23,7 +25,9 @@ final class DefaultSubscriptionManager implements SubscriptionManager
 
     public function subscribe(mixed $subscriber, mixed $subject = null, string $subscriptionType = 'updates', array $criteria = [], array $options = []): Subscription
     {
-        $this->policy->canSubscribe($subscriber, $subject, $subscriptionType);
+        if (! $this->policy->canSubscribe($subscriber, $subject, $subscriptionType)) {
+            throw new AuthorizationException('Subscribing to this subject is not authorized.');
+        }
 
         $criteria = $this->normalizeCriteria($criteria);
 
@@ -38,6 +42,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
                 'status' => Subscription::STATUS_ACTIVE,
                 'criteria' => $criteria,
                 'unsubscribed_at' => null,
+                'muted_at' => null,
                 'subscribed_at' => CarbonImmutable::now(),
                 'source' => $options['source'] ?? null,
                 'metadata' => $options['metadata'] ?? null,
@@ -86,6 +91,17 @@ final class DefaultSubscriptionManager implements SubscriptionManager
     {
         $subscription->update(['status' => 'muted', 'muted_at' => CarbonImmutable::now()]);
         event(new SubscriptionMuted($subscription));
+
+        return $subscription;
+    }
+
+    public function unmuteSubscription(Subscription $subscription): Subscription
+    {
+        $subscription->update([
+            'status' => Subscription::STATUS_ACTIVE,
+            'muted_at' => null,
+        ]);
+        event(new SubscriptionUnmuted($subscription));
 
         return $subscription;
     }

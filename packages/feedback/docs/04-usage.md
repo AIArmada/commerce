@@ -9,11 +9,14 @@ title: Usage
 ```php
 use AIArmada\Feedback\Actions\CreateFeedbackFormAction;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
-$form = app(CreateFeedbackFormAction::class)->execute(
-    new CreateFeedbackFormData(
-        name: 'Post-Event Feedback',
-        purpose: 'post_event_feedback',
+$form = OwnerContext::withOwner($tenant, fn () =>
+    app(CreateFeedbackFormAction::class)->execute(
+        new CreateFeedbackFormData(
+            name: 'Post-Event Feedback',
+            purpose: 'post_event_feedback',
+        )
     )
 );
 ```
@@ -81,6 +84,9 @@ $result = app(SendFeedbackInvitationAction::class)->execute(
 
 $url = $result['url']; // Send this to the user
 ```
+
+The raw invitation token is only available when the invitation is created. Store or
+send the returned URL immediately; only its hash is persisted.
 
 ## Submit response
 

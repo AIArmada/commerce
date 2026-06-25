@@ -25,7 +25,6 @@ return [
         'relation_managers' => true,
         'imports' => false,
         'exports' => true,
-        'snapshots' => true,
         'verification_badges' => true,
         'open_url_actions' => true,
     ],

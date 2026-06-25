@@ -44,6 +44,9 @@ test('config default values are correct', function (): void {
 test('navigation config has required keys', function (): void {
     expect(config('filament-contacting.navigation.group'))->toBe('Contacting');
     expect(config('filament-contacting.navigation.icons.contact_methods'))->toBe('heroicon-o-phone');
+    expect(ContactMethodResource::getNavigationSort())->toBe(70);
+    expect(SocialProfileResource::getNavigationSort())->toBe(71);
+    expect(ContactSnapshotResource::getNavigationSort())->toBe(72);
 });
 
 test('table config has required keys', function (): void {

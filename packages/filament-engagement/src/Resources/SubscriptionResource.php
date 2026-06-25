@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
+use AIArmada\Engagement\Contracts\SubscriptionManager;
 use AIArmada\Engagement\Models\Subscription;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -15,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class SubscriptionResource extends Resource
@@ -29,6 +32,11 @@ final class SubscriptionResource extends Resource
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+    }
 
     public static function table(Table $table): Table
     {
@@ -65,13 +73,21 @@ final class SubscriptionResource extends Resource
             ])
             ->actions([
                 Action::make('mute')
-                    ->action(fn (Subscription $record) => $record->update(['status' => Subscription::STATUS_MUTED]))
+                    ->action(fn (Subscription $record): Subscription => app(SubscriptionManager::class)
+                        ->muteSubscription($record))
                     ->requiresConfirmation(),
                 Action::make('unmute')
-                    ->action(fn (Subscription $record) => $record->update(['status' => Subscription::STATUS_ACTIVE]))
+                    ->action(fn (Subscription $record): Subscription => app(SubscriptionManager::class)
+                        ->unmuteSubscription($record))
                     ->requiresConfirmation(),
                 Action::make('unsubscribe')
-                    ->action(fn (Subscription $record) => $record->update(['status' => Subscription::STATUS_UNSUBSCRIBED]))
+                    ->action(fn (Subscription $record) => app(SubscriptionManager::class)
+                        ->unsubscribe(
+                            $record->subscriber,
+                            $record->subscribable,
+                            $record->subscription_type,
+                            $record->criteria ?? [],
+                        ))
                     ->requiresConfirmation(),
             ]);
     }

@@ -38,9 +38,6 @@ title: Configuration
 
 ```php
 'defaults' => [
-    'form_status' => 'draft',
-    'visibility' => 'private',
-    'response_status' => 'draft',
     'invitation_expiry_days' => 14,
 ],
 ```
@@ -49,11 +46,7 @@ title: Configuration
 
 ```php
 'features' => [
-    'anonymous_responses' => true,
-    'invitations' => true,
     'testimonials' => true,
-    'templates' => true,
-    'analytics' => true,
 ],
 ```
 
@@ -61,8 +54,6 @@ title: Configuration
 
 ```php
 'http' => [
-    'routes_enabled' => false,
     'route_prefix' => 'feedback',
-    'middleware' => ['web'],
 ],
 ```

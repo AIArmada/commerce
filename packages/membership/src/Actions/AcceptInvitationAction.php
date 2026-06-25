@@ -18,37 +18,43 @@ final class AcceptInvitationAction
 
     public function handle(MembershipInvitation $invitation, Model $user): void
     {
-        if (! $invitation->isValid()) {
-            throw new RuntimeException('Invitation is no longer valid.');
-        }
-
         $userEmail = method_exists($user, 'getEmailForVerification')
             ? $user->getEmailForVerification()
             : $user->getAttribute('email');
 
-        if (! is_string($userEmail) || mb_strtolower($userEmail) !== $invitation->email) {
-            throw new RuntimeException('Invitation email does not match the accepting user.');
-        }
+        $acceptedInvitation = DB::transaction(function () use ($invitation, $user, $userEmail): MembershipInvitation {
+            $lockedInvitation = MembershipInvitation::query()
+                ->lockForUpdate()
+                ->findOrFail($invitation->id);
 
-        $role = MemberRole::fromSpatieRoleName($invitation->role);
+            if (! $lockedInvitation->isValid()) {
+                throw new RuntimeException('Invitation is no longer valid.');
+            }
 
-        if ($role === null) {
-            throw new RuntimeException('Invitation contains an invalid membership role.');
-        }
+            if (! is_string($userEmail) || mb_strtolower($userEmail) !== $lockedInvitation->email) {
+                throw new RuntimeException('Invitation email does not match the accepting user.');
+            }
 
-        DB::transaction(function () use ($invitation, $role, $user): void {
-            $invitation->update([
+            $role = MemberRole::fromSpatieRoleName($lockedInvitation->role);
+
+            if ($role === null) {
+                throw new RuntimeException('Invitation contains an invalid membership role.');
+            }
+
+            $lockedInvitation->update([
                 'accepted_at' => now(),
                 'accepted_by' => $user->getKey(),
             ]);
 
             AddMemberAction::make()->handle(
-                $invitation->subject,
+                $lockedInvitation->subject,
                 $user,
                 $role,
             );
+
+            return $lockedInvitation;
         });
 
-        MembershipInvitationAccepted::dispatch($invitation->fresh());
+        MembershipInvitationAccepted::dispatch($acceptedInvitation->fresh());
     }
 }

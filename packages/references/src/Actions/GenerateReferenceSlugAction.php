@@ -11,15 +11,29 @@ final class GenerateReferenceSlugAction
 {
     public function execute(Reference $reference, ?string $source = null): string
     {
-        $field = $source ?? 'title';
+        $field = $source ?? (string) config('references.slug.source', 'title');
+        $maxLength = max(1, (int) config('references.slug.max_length', 200));
 
-        $slug = Str::slug((string) $reference->getAttribute($field));
+        $baseSlug = Str::limit(
+            Str::slug((string) $reference->getAttribute($field)),
+            $maxLength,
+            '',
+        );
 
-        $baseSlug = $slug;
+        if ($baseSlug === '') {
+            $baseSlug = Str::limit('reference', $maxLength, '');
+        }
+
+        $slug = $baseSlug;
         $suffix = 1;
 
         while ($this->slugExists($slug, $reference)) {
-            $slug = $baseSlug . '-' . $suffix;
+            $suffixValue = '-' . $suffix;
+            $slug = Str::limit(
+                $baseSlug,
+                max(1, $maxLength - mb_strlen($suffixValue)),
+                '',
+            ) . $suffixValue;
             $suffix++;
         }
 

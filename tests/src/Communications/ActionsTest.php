@@ -7,10 +7,14 @@ use AIArmada\Communications\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Actions\CreateCommunicationAction;
 use AIArmada\Communications\Actions\CreateSuppressionAction;
 use AIArmada\Communications\Actions\LiftSuppressionAction;
+use AIArmada\Communications\Actions\PlanCommunicationDeliveriesAction;
+use AIArmada\Communications\Actions\RecordNotificationSendingAction;
+use AIArmada\Communications\Actions\RecordProviderEventAction;
 use AIArmada\Communications\Actions\RedactCommunicationPayloadAction;
 use AIArmada\Communications\Actions\RenderCommunicationContentAction;
 use AIArmada\Communications\Contracts\CommunicationRecorder;
 use AIArmada\Communications\Data\CommunicationContextData;
+use AIArmada\Communications\Data\PlannedDeliveryData;
 use AIArmada\Communications\Data\ProviderEventData;
 use AIArmada\Communications\Data\RenderedContentData;
 use AIArmada\Communications\Enums\CommunicationCategory;
@@ -28,6 +32,7 @@ use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
 use AIArmada\Communications\Models\CommunicationTemplate;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 
 test('CreateCommunicationAction creates communication and dispatches event', function (): void {
@@ -195,6 +200,114 @@ test('CommunicationRecorderService records failure', function (): void {
     $freshDelivery = $delivery->fresh();
     expect($freshDelivery->status->value)->toBe('failed');
     expect($freshDelivery->failure_message)->toBe('Connection timeout');
+});
+
+test('notification delivery transitions reject mismatched communication ids', function (): void {
+    $communication = Communication::create([
+        'direction' => CommunicationDirection::Outbound,
+        'category' => CommunicationCategory::Transactional,
+        'priority' => CommunicationPriority::Normal,
+        'purpose' => 'delivery-owner',
+        'status' => CommunicationStatus::Draft,
+    ]);
+    $otherCommunication = Communication::create([
+        'direction' => CommunicationDirection::Outbound,
+        'category' => CommunicationCategory::Transactional,
+        'priority' => CommunicationPriority::Normal,
+        'purpose' => 'other-delivery-owner',
+        'status' => CommunicationStatus::Draft,
+    ]);
+    $recipient = CommunicationRecipient::create([
+        'communication_id' => $communication->id,
+        'role' => 'to',
+    ]);
+    $delivery = CommunicationDelivery::create([
+        'communication_id' => $communication->id,
+        'recipient_id' => $recipient->id,
+        'channel' => 'mail',
+        'provider' => 'array',
+        'status' => DeliveryStatus::Pending,
+        'attempt_count' => 0,
+        'max_attempts' => 3,
+    ]);
+
+    expect(fn () => app(RecordNotificationSendingAction::class)->handle(
+        $otherCommunication->id,
+        $delivery->id,
+    ))->toThrow(RuntimeException::class, 'Delivery does not belong to the supplied communication.');
+
+    expect($delivery->fresh()->status)->toBe(DeliveryStatus::Pending);
+});
+
+test('planned deliveries require recipients and content from the same communication', function (): void {
+    $communication = Communication::create([
+        'direction' => CommunicationDirection::Outbound,
+        'category' => CommunicationCategory::Transactional,
+        'priority' => CommunicationPriority::Normal,
+        'purpose' => 'planned-delivery-owner',
+        'status' => CommunicationStatus::Draft,
+    ]);
+    $otherCommunication = Communication::create([
+        'direction' => CommunicationDirection::Outbound,
+        'category' => CommunicationCategory::Transactional,
+        'priority' => CommunicationPriority::Normal,
+        'purpose' => 'planned-delivery-other',
+        'status' => CommunicationStatus::Draft,
+    ]);
+    $otherRecipient = CommunicationRecipient::create([
+        'communication_id' => $otherCommunication->id,
+        'role' => 'to',
+    ]);
+
+    $plan = new PlannedDeliveryData(
+        recipientId: $otherRecipient->id,
+        channel: 'mail',
+        destinationHash: hash('sha256', 'recipient@example.com'),
+        destinationHint: 'r***@example.com',
+        destinationCiphertext: 'encrypted',
+    );
+
+    expect(fn () => app(PlanCommunicationDeliveriesAction::class)->handle(
+        $communication->id,
+        [$plan],
+    ))->toThrow(ModelNotFoundException::class);
+
+    expect(CommunicationDelivery::query()
+        ->where('communication_id', $communication->id)
+        ->count())->toBe(0);
+});
+
+test('provider events derive and validate their communication links', function (): void {
+    $communication = Communication::create([
+        'direction' => CommunicationDirection::Outbound,
+        'category' => CommunicationCategory::Transactional,
+        'priority' => CommunicationPriority::Normal,
+        'purpose' => 'provider-link-owner',
+        'status' => CommunicationStatus::Draft,
+    ]);
+    $recipient = CommunicationRecipient::create([
+        'communication_id' => $communication->id,
+        'role' => 'to',
+    ]);
+    $delivery = CommunicationDelivery::create([
+        'communication_id' => $communication->id,
+        'recipient_id' => $recipient->id,
+        'channel' => 'mail',
+        'provider' => 'array',
+        'status' => DeliveryStatus::Pending,
+        'attempt_count' => 0,
+        'max_attempts' => 3,
+    ]);
+
+    $event = app(RecordProviderEventAction::class)->handle(
+        provider: 'test',
+        providerEventId: 'provider-derived-communication',
+        event: 'delivery',
+        deliveryId: $delivery->id,
+    );
+
+    expect($event->communication_id)->toBe($communication->id)
+        ->and($event->delivery_id)->toBe($delivery->id);
 });
 
 test('CommunicationRecorderService cancels communication', function (): void {

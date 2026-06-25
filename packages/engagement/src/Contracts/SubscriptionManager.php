@@ -14,6 +14,8 @@ interface SubscriptionManager
 
     public function muteSubscription(Subscription $subscription): Subscription;
 
+    public function unmuteSubscription(Subscription $subscription): Subscription;
+
     /** @return iterable<Subscription> */
     public function matchingSubscriptions(mixed $subject, string $trigger, array $context = []): iterable;
 }

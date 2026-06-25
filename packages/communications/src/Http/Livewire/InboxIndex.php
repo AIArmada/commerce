@@ -7,6 +7,9 @@ namespace AIArmada\Communications\Http\Livewire;
 use AIArmada\Communications\Models\NotificationInbox;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -23,7 +26,7 @@ final class InboxIndex extends Component
     #[Computed]
     public function inboxItems(): LengthAwarePaginator
     {
-        $query = NotificationInbox::query()->recent();
+        $query = $this->recipientQuery()->recent();
 
         if ($this->filter === 'unread') {
             $query->unread();
@@ -36,7 +39,7 @@ final class InboxIndex extends Component
 
     public function markAsRead(string $id): void
     {
-        NotificationInbox::query()
+        $this->recipientQuery()
             ->where('id', $id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
@@ -44,14 +47,14 @@ final class InboxIndex extends Component
 
     public function markAllAsRead(): void
     {
-        NotificationInbox::query()
+        $this->recipientQuery()
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
     }
 
     public function archive(string $id): void
     {
-        NotificationInbox::query()
+        $this->recipientQuery()
             ->where('id', $id)
             ->whereNull('archived_at')
             ->update(['archived_at' => now()]);
@@ -59,12 +62,31 @@ final class InboxIndex extends Component
 
     public function setFilter(string $filter): void
     {
-        $this->filter = $filter;
+        $this->filter = in_array($filter, ['all', 'unread', 'archived'], true)
+            ? $filter
+            : 'all';
         $this->resetPage();
     }
 
     public function render(): View
     {
         return view('communications::livewire.inbox-index');
+    }
+
+    /**
+     * @return Builder<NotificationInbox>
+     */
+    private function recipientQuery(): Builder
+    {
+        $recipient = Auth::user();
+        $query = NotificationInbox::query();
+
+        if (! $recipient instanceof Model) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->where('recipient_type', $recipient->getMorphClass())
+            ->where('recipient_id', $recipient->getKey());
     }
 }

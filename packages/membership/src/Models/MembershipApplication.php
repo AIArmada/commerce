@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -30,6 +32,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 final class MembershipApplication extends Model
 {
     use HasUuids;
+    use HasOwner;
+    use HasOwnerScopeConfig;
 
     protected $fillable = [
         'subject_type',
@@ -44,6 +48,10 @@ final class MembershipApplication extends Model
         'cancelled_at',
         'meta',
     ];
+
+    protected static string $ownerScopeConfigKey = 'membership.features.owner';
+
+    protected static bool $ownerScopeEnabledByDefault = true;
 
     public function getTable(): string
     {

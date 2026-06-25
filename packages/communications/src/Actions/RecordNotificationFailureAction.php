@@ -9,6 +9,7 @@ use AIArmada\Communications\Events\DeliveryFailed;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
+use RuntimeException;
 
 final class RecordNotificationFailureAction
 {
@@ -19,6 +20,10 @@ final class RecordNotificationFailureAction
         ?string $failureCode = null,
     ): CommunicationDelivery {
         $delivery = CommunicationDelivery::query()->findOrFail($deliveryId);
+
+        if ($delivery->communication_id !== $communicationId) {
+            throw new RuntimeException('Delivery does not belong to the supplied communication.');
+        }
 
         $delivery->status = DeliveryStatus::Failed;
         $delivery->failed_at = CarbonImmutable::now();

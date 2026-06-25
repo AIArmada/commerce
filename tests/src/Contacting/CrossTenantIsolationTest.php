@@ -3,11 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Contacting\Actions\CreateContactSnapshotAction;
 use AIArmada\Contacting\Data\ContactMethodData;
 use AIArmada\Contacting\Data\SocialProfileData;
 use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Models\ContactSnapshot;
 use AIArmada\Contacting\Models\SocialProfile;
 use AIArmada\Customers\Models\Customer;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
@@ -119,12 +122,32 @@ it('blocks cross-owner contacting writes', function (): void {
 
     expect(fn (): ContactMethod => OwnerContext::withOwner($ownerA, function () use ($customerB): ContactMethod {
         return $customerB->addContactMethod(ContactMethodData::email('cross-owner-' . uniqid() . '@example.com'));
-    }))->toThrow(InvalidArgumentException::class);
+    }))->toThrow(AuthorizationException::class);
 
     expect(fn (): SocialProfile => OwnerContext::withOwner($ownerA, function () use ($customerB): SocialProfile {
         return $customerB->addSocialProfile(new SocialProfileData(
             platform: 'facebook',
             handle: 'cross-owner-' . uniqid(),
         ));
-    }))->toThrow(InvalidArgumentException::class);
+    }))->toThrow(AuthorizationException::class);
+
+    expect(fn (): ContactMethod => OwnerContext::withOwner($ownerA, function () use ($customerB): ContactMethod {
+        return ContactMethod::query()->create([
+            'contactable_type' => $customerB->getMorphClass(),
+            'contactable_id' => $customerB->getKey(),
+            'type' => 'email',
+            'purpose' => 'general',
+            'value' => 'raw-cross-owner-' . uniqid() . '@example.com',
+        ]);
+    }))->toThrow(AuthorizationException::class);
+
+    $contactMethodB = OwnerContext::withOwner($ownerB, function () use ($customerB): ContactMethod {
+        return $customerB->addContactMethod(ContactMethodData::email('snapshot-source-' . uniqid() . '@example.com'));
+    });
+
+    expect(fn (): ContactSnapshot => (new CreateContactSnapshotAction)->fromContactMethod(
+        $customerA,
+        $contactMethodB,
+        'cross-owner',
+    ))->toThrow(AuthorizationException::class);
 });

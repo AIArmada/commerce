@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationCancelled;
 use AIArmada\Membership\Models\MembershipApplication;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
@@ -16,15 +17,23 @@ final class CancelMembershipApplicationAction
 
     public function handle(MembershipApplication $application): void
     {
-        if ($application->status !== ApplicationStatus::Pending) {
-            throw new RuntimeException('Only pending membership applications can be cancelled.');
-        }
+        $cancelledApplication = DB::transaction(function () use ($application): MembershipApplication {
+            $lockedApplication = MembershipApplication::query()
+                ->lockForUpdate()
+                ->findOrFail($application->id);
 
-        $application->update([
-            'status' => ApplicationStatus::Cancelled,
-            'cancelled_at' => now(),
-        ]);
+            if ($lockedApplication->status !== ApplicationStatus::Pending) {
+                throw new RuntimeException('Only pending membership applications can be cancelled.');
+            }
 
-        MembershipApplicationCancelled::dispatch($application);
+            $lockedApplication->update([
+                'status' => ApplicationStatus::Cancelled,
+                'cancelled_at' => now(),
+            ]);
+
+            return $lockedApplication;
+        });
+
+        MembershipApplicationCancelled::dispatch($cancelledApplication);
     }
 }

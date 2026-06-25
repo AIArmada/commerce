@@ -71,7 +71,31 @@ final class Communication extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'batch_id',
+        'thread_id',
+        'parent_id',
+        'subject_type',
+        'subject_id',
+        'sender_type',
+        'sender_id',
+        'direction',
+        'category',
+        'priority',
+        'purpose',
+        'status',
+        'idempotency_key',
+        'locale',
+        'timezone',
+        'scheduled_at',
+        'queued_at',
+        'processing_at',
+        'completed_at',
+        'cancelled_at',
+        'failed_at',
+        'expires_at',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentContacting\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Contacting\Models\ContactMethod;
 use AIArmada\FilamentContacting\Schemas\ContactMethodFormSchema;
 use AIArmada\FilamentContacting\Schemas\ContactMethodInfolistSchema;
@@ -21,8 +22,6 @@ final class ContactMethodResource extends Resource
 
     protected static BackedEnum | string | null $navigationIcon = 'heroicon-o-phone';
 
-    protected static ?int $navigationSort = 1;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-contacting.navigation.group');
@@ -33,9 +32,14 @@ final class ContactMethodResource extends Resource
         return config('filament-contacting.navigation.icons.contact_methods', parent::getNavigationIcon());
     }
 
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-contacting.navigation.sort', 70);
+    }
+
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery();
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     public static function table(Table $table): Table

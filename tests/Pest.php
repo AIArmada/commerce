@@ -8,6 +8,7 @@ if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSig
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Commerce\Tests\Feedback\FeedbackTestCase;
 use AIArmada\Commerce\Tests\FilamentAuthz\FilamentAuthzTestCase;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
@@ -17,6 +18,11 @@ use AIArmada\Commerce\Tests\Products\ProductsTestCase;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Communications\PackageTests\TestCase as CommunicationsPackageTestCase;
+use AIArmada\Filament\Communications\PackageTests\TestCase as FilamentCommunicationsPackageTestCase;
+
+require_once __DIR__ . '/../packages/communications/tests/TestCase.php';
+require_once __DIR__ . '/../packages/filament-communications/tests/TestCase.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -73,6 +79,14 @@ pest()->extend(InventoryTestCase::class)->in('src/Inventory');
 pest()->extend(FilamentInventoryTestCase::class)->in('src/FilamentInventory');
 
 pest()->extend(FilamentAuthzTestCase::class)->in('src/FilamentAuthzScoped');
+
+pest()->extend(FeedbackTestCase::class)->in('src/Feedback');
+
+pest()->extend(CommunicationsPackageTestCase::class)
+    ->in('../packages/communications/tests/src');
+
+pest()->extend(FilamentCommunicationsPackageTestCase::class)
+    ->in('../packages/filament-communications/tests/src');
 
 // CashierChip tests use their own CashierChipTestCase via uses() in each test file
 // Cashier (unified) tests use their own CashierTestCase via uses() in each test file

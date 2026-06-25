@@ -23,8 +23,14 @@ return [
     ],
     'features' => [
         'team_scoped_roles' => true,
+        'owner' => [
+            'enabled' => true,
+            'include_global' => false,
+            'auto_assign_on_create' => true,
+        ],
     ],
 ];
 ```
 
 Keep `hash_tokens` enabled in production. The plaintext token is available only on `MembershipInvitationSent`.
+When owner scoping is enabled, resolve the current owner before reading or mutating applications and invitations.

@@ -27,37 +27,14 @@ return [
     ],
 
     'defaults' => [
-        'form_status' => 'draft',
-        'visibility' => 'private',
-        'response_status' => 'draft',
         'invitation_expiry_days' => 14,
     ],
 
     'features' => [
-        'anonymous_responses' => true,
-        'invitations' => true,
         'testimonials' => true,
-        'templates' => true,
-        'analytics' => true,
-    ],
-
-    'integrations' => [
-        'events' => true,
-        'certificates' => true,
-        'engagement' => true,
     ],
 
     'http' => [
-        'routes_enabled' => false,
         'route_prefix' => 'feedback',
-        'middleware' => ['web'],
-    ],
-
-    'cache' => [
-        'analytics_ttl_seconds' => 300,
-    ],
-
-    'logging' => [
-        'enabled' => false,
     ],
 ];

@@ -21,8 +21,15 @@ final class CommunicationPolicy
 
     public function view(User $user, Communication $communication): bool
     {
-        return $this->ownerResolver->resolve() === null
-            || $communication->owner_id === $this->ownerResolver->resolve()?->getKey();
+        $owner = $this->ownerResolver->resolve();
+
+        if ($owner === null) {
+            return $communication->owner_type === null
+                && $communication->owner_id === null;
+        }
+
+        return $communication->owner_type === $owner->getMorphClass()
+            && (string) $communication->owner_id === (string) $owner->getKey();
     }
 
     public function create(User $user): bool

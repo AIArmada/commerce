@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
@@ -25,6 +26,7 @@ use AIArmada\Engagement\Events\ResponseCreated;
 use AIArmada\Engagement\Events\ShareCompleted;
 use AIArmada\Engagement\Events\ShareCreated;
 use AIArmada\Engagement\Models\Bookmark;
+use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\Engagement\Models\Reaction;
@@ -32,6 +34,7 @@ use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Response;
 use AIArmada\Engagement\Models\Share;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
 
 final class DefaultEngagementManager implements EngagementManager
@@ -44,7 +47,10 @@ final class DefaultEngagementManager implements EngagementManager
 
     public function follow(mixed $actor, mixed $subject, array $options = []): Follow
     {
-        $this->policy->canFollow($actor, $subject);
+        $this->authorize(
+            $this->policy->canFollow($actor, $subject),
+            'Following this subject is not authorized.',
+        );
 
         $existing = Follow::query()
             ->where('follower_type', $actor->getMorphClass())
@@ -74,7 +80,8 @@ final class DefaultEngagementManager implements EngagementManager
             'followable_type' => $subject->getMorphClass(),
             'followable_id' => $subject->getKey(),
             'status' => 'active',
-            'notification_level' => $options['notification_level'] ?? null,
+            'notification_level' => $options['notification_level']
+                ?? config('engagement.defaults.follow_notification_level', 'all'),
             'followed_at' => CarbonImmutable::now(),
             'source' => $options['source'] ?? null,
             'metadata' => $options['metadata'] ?? null,
@@ -135,6 +142,11 @@ final class DefaultEngagementManager implements EngagementManager
 
     public function bookmark(mixed $actor, mixed $subject, array $options = []): Bookmark
     {
+        $this->authorize(
+            $this->policy->canBookmark($actor, $subject),
+            'Bookmarking this subject is not authorized.',
+        );
+
         $existing = Bookmark::query()
             ->where('bookmarker_type', $actor->getMorphClass())
             ->where('bookmarker_id', $actor->getKey())
@@ -208,21 +220,25 @@ final class DefaultEngagementManager implements EngagementManager
 
     public function respond(mixed $actor, mixed $subject, string $responseType, array $options = []): Response
     {
-        $this->policy->canRespond($actor, $subject, $responseType);
+        $this->authorize(
+            $this->policy->canRespond($actor, $subject, $responseType),
+            'Responding to this subject is not authorized.',
+        );
 
         $existing = Response::query()
             ->where('responder_type', $actor->getMorphClass())
             ->where('responder_id', $actor->getKey())
             ->where('respondable_type', $subject->getMorphClass())
             ->where('respondable_id', $subject->getKey())
-            ->where('status', 'active')
             ->first();
 
         if ($existing) {
             $oldType = $existing->response_type;
             $existing->update([
                 'response_type' => $responseType,
+                'status' => Response::STATUS_ACTIVE,
                 'changed_at' => CarbonImmutable::now(),
+                'cancelled_at' => null,
                 'metadata' => array_merge(
                     (array) $existing->metadata,
                     ['previous_response_type' => $oldType],
@@ -240,7 +256,8 @@ final class DefaultEngagementManager implements EngagementManager
             'respondable_id' => $subject->getKey(),
             'response_type' => $responseType,
             'status' => 'active',
-            'visibility' => $options['visibility'] ?? 'public',
+            'visibility' => $options['visibility']
+                ?? config('engagement.defaults.response_visibility', 'public'),
             'responded_at' => CarbonImmutable::now(),
             'source' => $options['source'] ?? null,
             'metadata' => $options['metadata'] ?? null,
@@ -269,7 +286,10 @@ final class DefaultEngagementManager implements EngagementManager
 
     public function react(mixed $actor, mixed $subject, string $reactionType, array $options = []): Reaction
     {
-        $this->policy->canReact($actor, $subject, $reactionType);
+        $this->authorize(
+            $this->policy->canReact($actor, $subject, $reactionType),
+            'Reacting to this subject is not authorized.',
+        );
 
         $existing = Reaction::query()
             ->where('reactor_type', $actor->getMorphClass())
@@ -368,6 +388,9 @@ final class DefaultEngagementManager implements EngagementManager
 
     public function addBookmarkToCollection(mixed $actor, mixed $bookmark, mixed $collection, array $options = []): void
     {
+        $bookmark = OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey());
+        $collection = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey());
+
         BookmarkCollectionItem::query()->firstOrCreate([
             'bookmark_collection_id' => $collection->getKey(),
             'bookmark_id' => $bookmark->getKey(),
@@ -381,6 +404,9 @@ final class DefaultEngagementManager implements EngagementManager
 
     public function removeBookmarkFromCollection(mixed $actor, mixed $bookmark, mixed $collection, array $options = []): void
     {
+        $bookmark = OwnerWriteGuard::findOrFailForOwner(Bookmark::class, $bookmark->getKey());
+        $collection = OwnerWriteGuard::findOrFailForOwner(BookmarkCollection::class, $collection->getKey());
+
         $item = BookmarkCollectionItem::query()
             ->where('bookmark_collection_id', $collection->getKey())
             ->where('bookmark_id', $bookmark->getKey())
@@ -389,6 +415,13 @@ final class DefaultEngagementManager implements EngagementManager
         if ($item) {
             $item->update(['removed_at' => CarbonImmutable::now()]);
             event(new BookmarkRemovedFromCollection($bookmark, $collection));
+        }
+    }
+
+    private function authorize(bool $allowed, string $message): void
+    {
+        if (! $allowed) {
+            throw new AuthorizationException($message);
         }
     }
 }
