@@ -258,7 +258,7 @@ Schema::create('event_registrations', function (Blueprint $table) {
     $table->string('source')->index();
 
     $table->integer('total_participants')->default(1);
-    $table->decimal('total_amount', 12, 2)->nullable();
+    $table->bigInteger('total_amount')->nullable();
     $table->string('currency')->nullable();
 
     $table->uuid('external_order_id')->nullable()->index();

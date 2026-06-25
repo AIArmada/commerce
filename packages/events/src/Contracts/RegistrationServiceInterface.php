@@ -20,7 +20,7 @@ interface RegistrationServiceInterface
 
     public function complete(EventRegistration $registration): void;
 
-    public function createFromOrderItem(array $orderItemData, ?string $orderItemId = null, ?string $orderItemType = null): void;
+    public function refund(EventRegistration $registration, ?string $reason = null): void;
 
-    public function syncByOrder(string $orderId, string $orderType, string $eventType): void;
+    public function createFromOrderItem(array $orderItemData): void;
 }

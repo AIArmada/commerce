@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Events\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -37,7 +38,10 @@ final class EventWalkIn extends Model
 {
     use HasFactory;
     use HasOwner;
+    use HasOwnerScopeConfig;
     use UsesEventUuid;
+
+    protected static string $ownerScopeConfigKey = 'events.features.owner';
 
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',

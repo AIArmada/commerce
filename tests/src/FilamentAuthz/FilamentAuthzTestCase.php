@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\FilamentAuthz;
 
+use AIArmada\Authz\Support\AuthzScopeTeamResolver;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;
-use AIArmada\FilamentAuthz\Support\AuthzScopeTeamResolver;
 use DateInterval;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -42,7 +42,7 @@ abstract class FilamentAuthzTestCase extends BaseTestCase
             'expiration_time' => DateInterval::createFromDateString('24 hours'),
         ]);
 
-        $app['config']->set('filament-authz.authz_scopes.enabled', true);
+        $app['config']->set('authz.scopes.enabled', true);
         $app['config']->set('filament-authz.scoped_to_tenant', true);
         $app['config']->set('auth.providers.users.model', User::class);
     }

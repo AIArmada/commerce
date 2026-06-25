@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('status')->index();
             $table->string('source')->index();
             $table->integer('total_participants')->default(1);
-            $table->decimal('total_amount', 12, 2)->nullable();
+            $table->bigInteger('total_amount')->nullable();
             $table->string('currency')->nullable();
             $table->string('external_order_id')->nullable()->index();
             $table->string('external_order_type')->nullable()->index();
@@ -36,6 +36,7 @@ return new class extends Migration
             $table->timestampTz('cancelled_at')->nullable();
             $table->timestampTz('rejected_at')->nullable();
             $table->timestampTz('waitlisted_at')->nullable();
+            $table->timestampTz('refunded_at')->nullable()->index();
             $table->timestampTz('expired_at')->nullable();
             $table->text('status_reason')->nullable();
             $table->text('notes')->nullable();

@@ -30,3 +30,23 @@ it('has uuid primary keys in all create table migrations', function (): void {
         }
     }
 });
+
+it('stores event money as integer minor units', function (): void {
+    $dir = __DIR__ . '/../../../packages/events/database/migrations/';
+
+    foreach ([
+        '2000_01_01_000009_create_venue_facilities_table.php',
+        '2000_01_01_000010_create_event_facilities_table.php',
+        '2000_01_01_000014_create_event_registrations_table.php',
+        '2000_01_01_000017_create_event_registration_items_table.php',
+        '2000_01_01_000018_create_event_ticket_types_table.php',
+    ] as $filename) {
+        $content = file_get_contents($dir . $filename);
+
+        expect($content)->not->toContain("decimal('price'")
+            ->and($content)->not->toContain("decimal('fee_amount'")
+            ->and($content)->not->toContain("decimal('unit_price'")
+            ->and($content)->not->toContain("decimal('total_price'")
+            ->and($content)->not->toContain("decimal('total_amount'");
+    }
+});

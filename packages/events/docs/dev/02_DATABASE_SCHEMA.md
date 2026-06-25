@@ -510,7 +510,7 @@ venue_facilities
 - quantity integer nullable
 - capacity integer nullable
 - is_free boolean nullable
-- fee_amount decimal(12,2) nullable
+- fee_amount bigint nullable
 - currency string nullable
 - location_label string nullable
 - notes text nullable
@@ -539,7 +539,7 @@ event_facilities
 - quantity integer nullable
 - capacity integer nullable
 - is_free boolean nullable
-- fee_amount decimal(12,2) nullable
+- fee_amount bigint nullable
 - currency string nullable
 - location_label string nullable
 - notes text nullable
@@ -711,7 +711,7 @@ event_registrations
 - source string index
 
 - total_participants integer default 1
-- total_amount decimal(12,2) nullable
+- total_amount bigint nullable
 - currency string nullable
 
 - external_order_id uuid nullable index
@@ -828,8 +828,8 @@ event_registration_items
 - event_ticket_type_id uuid index
 
 - quantity integer default 1
-- unit_price decimal(12,2) nullable
-- total_price decimal(12,2) nullable
+- unit_price bigint nullable
+- total_price bigint nullable
 - currency string nullable
 
 - external_order_item_id uuid nullable index
@@ -861,7 +861,7 @@ event_ticket_types
 - access_type string index
 - seating_mode string nullable index
 
-- price decimal(12,2) nullable
+- price bigint nullable
 - currency string nullable
 - quota integer nullable
 

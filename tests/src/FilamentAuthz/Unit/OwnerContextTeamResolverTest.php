@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Authz\Support\AuthzScopeContext;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerContextTeamResolver;
-use AIArmada\FilamentAuthz\Support\AuthzScopeContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
