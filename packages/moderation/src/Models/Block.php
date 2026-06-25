@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Moderation\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Concerns\UsesModerationUuid;
@@ -38,6 +40,8 @@ use Illuminate\Support\Carbon;
 final class Block extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use UsesModerationUuid;
 
     protected $fillable = [
@@ -47,6 +51,8 @@ final class Block extends Model
         'lifted_at', 'lifted_by_type', 'lifted_by_id',
         'metadata',
     ];
+
+    protected static string $ownerScopeConfigKey = 'moderation.features.owner';
 
     public function getTable(): string
     {

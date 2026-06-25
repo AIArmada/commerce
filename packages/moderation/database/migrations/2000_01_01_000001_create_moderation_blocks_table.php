@@ -14,7 +14,8 @@ return new class extends Migration
 
         Schema::create(config('moderation.database.tables.blocks', 'moderation_blocks'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('blockable');
+            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('blockable');
             $table->nullableUuidMorphs('blocked_by');
             $table->string('reason');
             $table->string('status')->default('active');

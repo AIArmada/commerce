@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = config('communications.database.json_column_type', 'jsonb');
 
-        Schema::create(config('communications.database.tables.communication_threads', 'communication_threads'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('communications.database.tables.threads', 'communication_threads'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
             $table->string('subject_type')->nullable();

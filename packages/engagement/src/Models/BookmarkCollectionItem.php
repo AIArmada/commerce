@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\BookmarkCollectionItemFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
@@ -13,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $bookmark_collection_id
  * @property string $bookmark_id
  * @property int $sort_order
@@ -28,7 +32,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class BookmarkCollectionItem extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use UsesEngagementUuid;
+
+    protected static string $ownerScopeConfigKey = 'engagement.owner';
 
     protected $fillable = [
         'bookmark_collection_id',

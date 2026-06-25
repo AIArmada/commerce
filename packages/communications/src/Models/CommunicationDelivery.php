@@ -75,7 +75,45 @@ final class CommunicationDelivery extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'communication_id',
+        'recipient_id',
+        'content_id',
+        'channel',
+        'provider',
+        'provider_account_key',
+        'provider_message_id',
+        'status',
+        'destination_ciphertext',
+        'destination_hash',
+        'destination_hint',
+        'attempt_count',
+        'max_attempts',
+        'cost_minor',
+        'cost_currency',
+        'scheduled_at',
+        'queued_at',
+        'sending_at',
+        'accepted_at',
+        'sent_at',
+        'received_at',
+        'delivered_at',
+        'opened_at',
+        'read_at',
+        'clicked_at',
+        'replied_at',
+        'bounced_at',
+        'complained_at',
+        'unsubscribed_at',
+        'failed_at',
+        'cancelled_at',
+        'expired_at',
+        'suppressed_at',
+        'last_attempt_at',
+        'failure_code',
+        'failure_message',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

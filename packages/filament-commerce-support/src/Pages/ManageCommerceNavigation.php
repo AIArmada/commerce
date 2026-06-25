@@ -20,6 +20,7 @@ use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use UnitEnum;
 
@@ -29,10 +30,6 @@ class ManageCommerceNavigation extends Page
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bars-3';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Settings';
-
-    protected static ?int $navigationSort = 100;
-
     public static function getNavigationLabel(): string
     {
         return __('Navigation');
@@ -41,6 +38,28 @@ class ManageCommerceNavigation extends Page
     public function getTitle(): string
     {
         return __('Navigation Manager');
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-commerce-support.navigation.settings_group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-commerce-support.navigation.sort');
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+        $permission = config('filament-commerce-support.navigation.permission');
+
+        if ($user === null || ! is_string($permission) || $permission === '') {
+            return false;
+        }
+
+        return Gate::forUser($user)->allows($permission);
     }
 
     public function mount(): void
@@ -590,13 +609,18 @@ class ManageCommerceNavigation extends Page
         } catch (MissingSettings) {
             // Seed the missing rows so spatie/laravel-settings can load/save.
             $group = 'commerce-navigation';
+            $table = config('settings.repositories.database.table') ?: 'settings';
+            $connection = config('settings.repositories.database.connection');
+
             foreach (['groups', 'overrides'] as $name) {
-                DB::table('settings')->insertOrIgnore([
-                    'group' => $group,
-                    'name' => $name,
-                    'locked' => false,
-                    'payload' => '[]',
-                ]);
+                DB::connection(is_string($connection) ? $connection : null)
+                    ->table((string) $table)
+                    ->insertOrIgnore([
+                        'group' => $group,
+                        'name' => $name,
+                        'locked' => false,
+                        'payload' => '[]',
+                    ]);
             }
 
             app()->forgetInstance(CommerceNavigationSettings::class);

@@ -29,18 +29,23 @@ final class SubmitFeedbackResponseAction
 
     public function execute(SubmitFeedbackResponseData $data): FeedbackResponse
     {
-        /** @var FeedbackForm $form */
-        $form = FeedbackForm::with('questions.options')->findOrFail($data->formId);
+        return DB::transaction(function () use ($data): FeedbackResponse {
+            /** @var FeedbackForm $form */
+            $form = FeedbackForm::with('questions.options')
+                ->lockForUpdate()
+                ->findOrFail($data->formId);
 
-        $this->assertFormAcceptingSubmissions($form, $data);
+            $this->assertFormAcceptingSubmissions($form, $data);
+            $this->assertSubmittedQuestionsBelongToForm($form, $data);
 
-        $invitation = null;
-        if ($data->invitationId !== null) {
-            $invitation = FeedbackInvitation::findOrFail($data->invitationId);
-            $this->assertInvitationValid($invitation);
-        }
+            $invitation = null;
+            if ($data->invitationId !== null) {
+                $invitation = FeedbackInvitation::query()
+                    ->lockForUpdate()
+                    ->findOrFail($data->invitationId);
+                $this->assertInvitationValid($invitation, $form);
+            }
 
-        return DB::transaction(function () use ($form, $data, $invitation): FeedbackResponse {
             $response = $this->startResponse->execute(
                 form: $form,
                 respondentType: $data->respondentType,
@@ -137,8 +142,12 @@ final class SubmitFeedbackResponseAction
         }
     }
 
-    private function assertInvitationValid(FeedbackInvitation $invitation): void
+    private function assertInvitationValid(FeedbackInvitation $invitation, FeedbackForm $form): void
     {
+        if ($invitation->feedback_form_id !== $form->id) {
+            throw new RuntimeException('This invitation does not belong to the selected form.');
+        }
+
         if ($invitation->status === FeedbackInvitationStatus::Expired) {
             throw new RuntimeException('This invitation has expired.');
         }
@@ -155,6 +164,30 @@ final class SubmitFeedbackResponseAction
             $invitation->forceFill(['status' => FeedbackInvitationStatus::Expired])->save();
 
             throw new RuntimeException('This invitation has expired.');
+        }
+    }
+
+    private function assertSubmittedQuestionsBelongToForm(
+        FeedbackForm $form,
+        SubmitFeedbackResponseData $data,
+    ): void {
+        $questions = $form->questions->keyBy('id');
+        $seenQuestionIds = [];
+        $seenQuestionKeys = [];
+
+        foreach ($data->answers as $answer) {
+            $question = $questions->get($answer->questionId);
+
+            if ($question === null || $question->key !== $answer->questionKey) {
+                throw new RuntimeException('A submitted answer references a question outside the selected form.');
+            }
+
+            if (isset($seenQuestionIds[$answer->questionId]) || isset($seenQuestionKeys[$answer->questionKey])) {
+                throw new RuntimeException('A question may only be answered once per response.');
+            }
+
+            $seenQuestionIds[$answer->questionId] = true;
+            $seenQuestionKeys[$answer->questionKey] = true;
         }
     }
 }

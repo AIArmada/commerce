@@ -25,6 +25,8 @@ it('has uuid primary keys in all engagement migrations', function (): void {
     foreach ($files as $file) {
         $content = file_get_contents($file);
 
-        expect($content)->toContain("uuid('id')->primary()");
+        if (str_contains($content, 'Schema::create(')) {
+            expect($content)->toContain("uuid('id')->primary()");
+        }
     }
 });

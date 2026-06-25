@@ -16,8 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
- * @property string $owner_type
- * @property string $owner_id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $name
  * @property string|null $slug
  * @property string|null $description
@@ -54,8 +54,6 @@ final class BookmarkCollection extends Model
     public const VISIBILITY_PUBLIC = 'public';
 
     protected $fillable = [
-        'owner_type',
-        'owner_id',
         'name',
         'slug',
         'description',

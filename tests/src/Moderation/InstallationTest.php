@@ -26,6 +26,8 @@ test('config publishes and reads correctly', function (): void {
 test('both tables exist after migration', function (): void {
     expect(Schema::hasTable('moderation_blocks'))->toBeTrue('Expected moderation_blocks table to exist');
     expect(Schema::hasTable('moderation_actions'))->toBeTrue('Expected moderation_actions table to exist');
+    expect(Schema::hasColumns('moderation_blocks', ['owner_type', 'owner_id']))->toBeTrue();
+    expect(Schema::hasColumns('moderation_actions', ['owner_type', 'owner_id']))->toBeTrue();
 });
 
 test('model classes instantiate with correct table names', function (): void {
@@ -52,4 +54,12 @@ test('helper functions config sources resolve correctly', function (): void {
     expect(config('moderation.database.tables.blocks'))->toBe('moderation_blocks');
     expect(config('moderation.database.tables.moderation_actions'))->toBe('moderation_actions');
     expect(config('moderation.database.json_column_type'))->toBeString()->not->toBeEmpty();
+});
+
+test('blockable morph uses a UUID column', function (): void {
+    $column = collect(Schema::getColumns('moderation_blocks'))
+        ->firstWhere('name', 'blockable_id');
+
+    expect($column)->not->toBeNull()
+        ->and((string) $column['type_name'])->toContain('varchar');
 });

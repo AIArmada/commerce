@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
+use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Response;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -15,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class ResponseResource extends Resource
@@ -29,6 +32,11 @@ final class ResponseResource extends Resource
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-hand-thumb-up';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
+    }
 
     public static function table(Table $table): Table
     {
@@ -70,11 +78,17 @@ final class ResponseResource extends Resource
             ->actions([
                 Action::make('cancel')
                     ->visible(fn (Response $record): bool => $record->isActive())
-                    ->action(fn (Response $record) => $record->update(['status' => Response::STATUS_CANCELLED]))
+                    ->action(fn (Response $record) => app(EngagementManager::class)
+                        ->cancelResponse($record->responder, $record->respondable))
                     ->requiresConfirmation(),
                 Action::make('restore')
                     ->visible(fn (Response $record): bool => $record->isCancelled())
-                    ->action(fn (Response $record) => $record->update(['status' => Response::STATUS_ACTIVE]))
+                    ->action(fn (Response $record): Response => app(EngagementManager::class)
+                        ->respond($record->responder, $record->respondable, $record->response_type, [
+                            'visibility' => $record->visibility,
+                            'source' => $record->source,
+                            'metadata' => $record->metadata,
+                        ]))
                     ->requiresConfirmation(),
             ]);
     }

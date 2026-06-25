@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Models\FeedbackForm;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -15,16 +14,8 @@ final class FeedbackOverviewWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $owner = OwnerContext::resolve();
-        $includeGlobal = false;
-
-        $formQuery = FeedbackForm::query();
-        $responseQuery = FeedbackResponse::query();
-
-        if ($owner !== null) {
-            $formQuery = OwnerQuery::applyToEloquentBuilder($formQuery, $owner, $includeGlobal);
-            $responseQuery = OwnerQuery::applyToEloquentBuilder($responseQuery, $owner, $includeGlobal);
-        }
+        $formQuery = OwnerUiScope::apply(FeedbackForm::query(), includeGlobal: false);
+        $responseQuery = OwnerUiScope::apply(FeedbackResponse::query(), includeGlobal: false);
 
         $totalForms = (clone $formQuery)->count();
         $publishedForms = (clone $formQuery)->where('status', 'published')->count();

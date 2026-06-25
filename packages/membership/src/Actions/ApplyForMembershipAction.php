@@ -8,6 +8,7 @@ use AIArmada\Membership\Contracts\MembershipApplicationNotifier;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Events\MembershipApplicationSubmitted;
 use AIArmada\Membership\Models\MembershipApplication;
+use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Illuminate\Database\Eloquent\Model;
 use Lorisleiva\Actions\Concerns\AsAction;
 use ValueError;
@@ -18,6 +19,8 @@ final class ApplyForMembershipAction
 
     public function handle(Model $subject, Model $user, string $justification, array $meta = []): MembershipApplication
     {
+        app(MembershipSubjectGuard::class)->validate($subject);
+
         if ($justification === '') {
             throw new ValueError('Justification cannot be empty.');
         }

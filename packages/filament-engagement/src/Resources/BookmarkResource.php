@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentEngagement\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
+use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\Bookmark;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -33,7 +35,8 @@ final class BookmarkResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->latest('bookmarked_at');
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false)
+            ->latest('bookmarked_at');
     }
 
     public static function table(Table $table): Table
@@ -78,17 +81,30 @@ final class BookmarkResource extends Resource
             ])
             ->actions([
                 Action::make('remove')
-                    ->action(fn (Bookmark $record) => $record->update(['status' => 'removed']))
+                    ->action(fn (Bookmark $record) => app(EngagementManager::class)
+                        ->removeBookmark($record->bookmarker, $record->bookmarkable))
                     ->requiresConfirmation()
                     ->visible(fn (Bookmark $record) => $record->isActive()),
                 Action::make('restore')
-                    ->action(fn (Bookmark $record) => $record->update(['status' => 'active']))
+                    ->action(fn (Bookmark $record): Bookmark => app(EngagementManager::class)
+                        ->bookmark($record->bookmarker, $record->bookmarkable, [
+                            'notes' => $record->notes,
+                            'source' => $record->source,
+                            'metadata' => $record->metadata,
+                        ]))
                     ->requiresConfirmation()
                     ->visible(fn (Bookmark $record) => $record->isRemoved()),
             ])
             ->bulkActions([
                 BulkAction::make('remove')
-                    ->action(fn ($records) => $records->each->update(['status' => 'removed'])),
+                    ->action(function ($records): void {
+                        foreach ($records as $record) {
+                            if ($record instanceof Bookmark && $record->isActive()) {
+                                app(EngagementManager::class)
+                                    ->removeBookmark($record->bookmarker, $record->bookmarkable);
+                            }
+                        }
+                    }),
             ])
             ->defaultSort('bookmarked_at', 'desc');
     }

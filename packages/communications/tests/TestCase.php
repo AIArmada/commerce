@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Communications\Tests;
+namespace AIArmada\Communications\PackageTests;
 
 use AIArmada\CommerceSupport\SupportServiceProvider;
 use AIArmada\Communications\CommunicationsServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelData\LaravelDataServiceProvider;
 
@@ -19,6 +20,7 @@ abstract class TestCase extends Orchestra
     {
         return [
             LaravelDataServiceProvider::class,
+            LivewireServiceProvider::class,
             SupportServiceProvider::class,
             CommunicationsServiceProvider::class,
         ];

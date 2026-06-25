@@ -12,7 +12,8 @@ title: Troubleshooting
 ## Settings page not appearing
 
 1. Confirm the plugin is registered on the panel
-2. Check the panel user has access to the "Settings" navigation group
+2. Verify `filament-commerce-support.navigation.enabled` is `true`
+3. Check the panel user is authorized for the configured `navigation.permission` Gate ability
 
 ## Contributor interface
 

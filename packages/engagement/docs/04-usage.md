@@ -42,6 +42,7 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Traits\CanBookmark;
 use AIArmada\Engagement\Traits\HasBookmarks;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 
 class User extends Model { use CanBookmark; }
 class Event extends Model { use HasBookmarks; }
@@ -56,12 +57,10 @@ app(EngagementManager::class)->removeBookmark($user, $event);
 app(EngagementManager::class)->archiveBookmark($user, $event);
 
 // Create collections
-$collection = BookmarkCollection::create([
-    'owner_type' => $user->getMorphClass(),
-    'owner_id' => $user->id,
+$collection = OwnerContext::withOwner($tenant, fn () => BookmarkCollection::create([
     'name' => 'Tech Events 2026',
     'visibility' => 'private',
-]);
+]));
 
 // Organize bookmarks into collections
 app(EngagementManager::class)->addBookmarkToCollection($user, $bookmark, $collection);
@@ -282,3 +281,6 @@ use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 
 app()->bind(EngagementPolicyResolver::class, MyPolicyResolver::class);
 ```
+
+Policy resolver methods are enforced. Returning `false` causes the corresponding
+operation to throw `AuthorizationException`.

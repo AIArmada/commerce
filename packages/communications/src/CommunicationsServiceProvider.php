@@ -24,6 +24,7 @@ use AIArmada\Communications\Contracts\QuietHoursResolver;
 use AIArmada\Communications\Contracts\RateLimiter;
 use AIArmada\Communications\Contracts\RecipientSnapshotResolver;
 use AIArmada\Communications\Contracts\SuppressionResolver;
+use AIArmada\Communications\Contracts\WebhookOwnerResolver;
 use AIArmada\Communications\Http\Livewire\InboxIndex;
 use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAuditRecorder;
 use AIArmada\Communications\Listeners\AutoCaptureNotificationListener;
@@ -44,6 +45,11 @@ use AIArmada\Communications\Support\AutoCaptureState;
 use AIArmada\Communications\Support\DestinationProtectorService;
 use AIArmada\Communications\Support\IdempotencyLockService;
 use AIArmada\Communications\Support\PayloadRedactorService;
+use AIArmada\Communications\Webhooks\Contracts\ProviderEventNormalizer;
+use AIArmada\Communications\Webhooks\Contracts\ProviderWebhookRegistrar;
+use AIArmada\Communications\Webhooks\Normalizers\NullProviderEventNormalizer;
+use AIArmada\Communications\Webhooks\Registrars\ProviderWebhookRegistrarService;
+use AIArmada\Communications\Webhooks\WebhookOwnerResolver as DefaultWebhookOwnerResolver;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Notifications\Events\NotificationSent;
@@ -86,6 +92,8 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 '2000_01_01_000014_create_communication_references_table',
                 '2000_01_01_000015_create_communication_tracking_tokens_table',
                 '2000_01_01_000016_create_notification_inboxes_table',
+                '2000_01_01_000017_reconcile_configured_communication_table_names',
+                '2000_01_01_000018_add_suppressed_at_to_communication_deliveries',
             ]);
     }
 
@@ -107,6 +115,9 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
         $this->app->bind(PreferenceResolver::class, NullPreferenceResolver::class);
         $this->app->bind(QuietHoursResolver::class, NullQuietHoursResolver::class);
         $this->app->bind(RateLimiter::class, NullRateLimiter::class);
+        $this->app->bind(ProviderEventNormalizer::class, NullProviderEventNormalizer::class);
+        $this->app->bind(ProviderWebhookRegistrar::class, ProviderWebhookRegistrarService::class);
+        $this->app->bind(WebhookOwnerResolver::class, DefaultWebhookOwnerResolver::class);
 
         if (
             (bool) config('communications.integrations.activitylog.enabled', false)

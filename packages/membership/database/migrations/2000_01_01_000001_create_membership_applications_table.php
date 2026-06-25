@@ -16,6 +16,7 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
+            $table->nullableMorphs('owner');
             $table->string('subject_type');
             $table->uuid('subject_id');
             $table->foreignUuid('applicant_id')->nullable();

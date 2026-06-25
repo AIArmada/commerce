@@ -7,6 +7,7 @@ namespace AIArmada\Membership\Actions;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationSent;
 use AIArmada\Membership\Models\MembershipInvitation;
+use AIArmada\Membership\Support\MembershipSubjectGuard;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -18,6 +19,8 @@ final class InviteMemberAction
 
     public function handle(Model $subject, string $email, MemberRole $role, Model $inviter, ?CarbonInterface $expiresAt = null): MembershipInvitation
     {
+        app(MembershipSubjectGuard::class)->validate($subject);
+
         $tokenLength = max(32, (int) config('membership.invitations.token_length', 64));
         $token = Str::random($tokenLength);
 

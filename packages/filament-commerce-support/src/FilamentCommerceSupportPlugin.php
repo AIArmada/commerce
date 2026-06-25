@@ -40,7 +40,9 @@ class FilamentCommerceSupportPlugin implements Plugin
             }
         }
 
-        $panel->pages([ManageCommerceNavigation::class]);
+        if ((bool) config('filament-commerce-support.navigation.enabled', true)) {
+            $panel->pages([ManageCommerceNavigation::class]);
+        }
     }
 
     public function boot(Panel $panel): void

@@ -48,7 +48,20 @@ final class NotificationInbox extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'recipient_type',
+        'recipient_id',
+        'communication_id',
+        'family',
+        'priority',
+        'trigger',
+        'title',
+        'body',
+        'data',
+        'read_at',
+        'archived_at',
+        'scheduled_at',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

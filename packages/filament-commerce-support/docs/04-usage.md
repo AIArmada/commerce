@@ -6,6 +6,9 @@ title: Usage
 
 Navigate to **Settings → Navigation** in your Filament panel.
 
+The authenticated panel user must be authorized for the configured
+`filament-commerce-support.navigation.permission` Gate ability.
+
 ### Groups
 
 Define navigation groups with:
@@ -44,4 +47,4 @@ Override navigation settings for any registered resource or page by its fully qu
 ],
 ```
 
-The settings page remains accessible but overrides are not applied.
+The settings page is removed from the panel and overrides are not applied.

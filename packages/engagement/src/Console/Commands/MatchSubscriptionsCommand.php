@@ -49,7 +49,9 @@ final class MatchSubscriptionsCommand extends Command
 
         $query = $modelClass::query();
 
-        if (in_array(HasOwner::class, class_uses_recursive($modelClass), true)) {
+        $usesOwnerScope = in_array(HasOwner::class, class_uses_recursive($modelClass), true);
+
+        if ($usesOwnerScope) {
             $query = $query->withoutGlobalScope(OwnerScope::class);
         }
 
@@ -62,10 +64,14 @@ final class MatchSubscriptionsCommand extends Command
             return self::FAILURE;
         }
 
-        $model->loadMissing('owner');
+        $owner = null;
 
-        /** @var Model|null $owner */
-        $owner = $model->getRelation('owner');
+        if ($usesOwnerScope) {
+            $model->loadMissing('owner');
+
+            /** @var Model|null $owner */
+            $owner = $model->getRelation('owner');
+        }
         $context = $this->buildMatchContext($model);
 
         OwnerContext::withOwner($owner, function () use ($model, $trigger, $context): void {

@@ -10,6 +10,7 @@ use AIArmada\Communications\Models\CommunicationEvent;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final class PruneCommunicationDataCommand extends Command
 {
@@ -22,10 +23,16 @@ final class PruneCommunicationDataCommand extends Command
 
     public function handle(): int
     {
-        return OwnerContext::withOwner(
-            owner: $this->resolveOwner(),
-            callback: fn (): int => $this->process(),
-        );
+        try {
+            return OwnerContext::withOwner(
+                owner: $this->resolveOwner(),
+                callback: fn (): int => $this->process(),
+            );
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
     }
 
     private function resolveOwner(): ?Model
@@ -42,9 +49,7 @@ final class PruneCommunicationDataCommand extends Command
             return OwnerContext::fromTypeAndId($type, $id);
         }
 
-        $this->error('Invalid --owner format. Use "TypeClass:id" (e.g. "App\Models\Team:1").');
-
-        exit(self::FAILURE);
+        throw new InvalidArgumentException('Invalid --owner format. Use "TypeClass:id" (e.g. "App\Models\Team:1").');
     }
 
     private function process(): int

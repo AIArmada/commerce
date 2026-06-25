@@ -11,6 +11,7 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\NotificationInbox;
 use AIArmada\Communications\Services\NotificationInboxService;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
     config()->set('communications.features.owner.enabled', false);
@@ -85,7 +86,7 @@ test('can mark as read', function (): void {
 
     expect($inbox->read_at)->toBeNull();
 
-    $this->service->markAsRead($inbox->id);
+    $this->service->markAsRead($this->user, $inbox->id);
 
     $fresh = NotificationInbox::find($inbox->id);
     expect($fresh->read_at)->not->toBeNull();
@@ -133,10 +134,32 @@ test('can archive', function (): void {
 
     expect($inbox->archived_at)->toBeNull();
 
-    $this->service->archive($inbox->id);
+    $this->service->archive($this->user, $inbox->id);
 
     $fresh = NotificationInbox::find($inbox->id);
     expect($fresh->archived_at)->not->toBeNull();
+});
+
+test('cannot mutate another recipients inbox entry', function (): void {
+    $otherUser = User::create([
+        'name' => 'Other Recipient',
+        'email' => 'other-recipient-' . uniqid() . '@example.com',
+        'password' => 'secret',
+    ]);
+    $inbox = $this->service->create(
+        recipient: $otherUser,
+        communication: $this->communication,
+        family: NotificationFamily::EventReminder,
+        priority: NotificationPriority::Normal,
+        trigger: NotificationTrigger::EventPublished,
+        title: 'Other Recipient Inbox',
+    );
+
+    $this->service->markAsRead($this->user, $inbox->id);
+    $this->service->archive($this->user, $inbox->id);
+
+    expect($inbox->fresh()->read_at)->toBeNull()
+        ->and($inbox->fresh()->archived_at)->toBeNull();
 });
 
 test('prune removes archived entries older than the threshold', function (): void {
@@ -176,21 +199,33 @@ test('prune removes archived entries older than the threshold', function (): voi
 
 test('prune removes archived entries across owners', function (): void {
     config()->set('communications.features.owner.enabled', true);
+    Model::clearBootedModels();
 
+    $currentOwner = OwnerContext::resolve();
     $otherOwner = User::create([
         'name' => 'Other Owner',
         'email' => 'owner-' . uniqid() . '@example.com',
         'password' => 'secret',
     ]);
 
-    $currentOwnerInbox = $this->service->create(
-        recipient: $this->user,
-        communication: $this->communication,
-        family: NotificationFamily::EventReminder,
-        priority: NotificationPriority::Normal,
-        trigger: NotificationTrigger::EventPublished,
-        title: 'Current Owner Archived',
-    );
+    $currentOwnerInbox = OwnerContext::withOwner($currentOwner, function (): NotificationInbox {
+        $communication = Communication::create([
+            'direction' => 'internal',
+            'category' => 'internal',
+            'priority' => 'normal',
+            'purpose' => 'current-owner-prune-test',
+            'status' => 'completed',
+        ]);
+
+        return $this->service->create(
+            recipient: $this->user,
+            communication: $communication,
+            family: NotificationFamily::EventReminder,
+            priority: NotificationPriority::Normal,
+            trigger: NotificationTrigger::EventPublished,
+            title: 'Current Owner Archived',
+        );
+    });
 
     $otherOwnerInbox = OwnerContext::withOwner($otherOwner, function () use ($otherOwner): NotificationInbox {
         $communication = Communication::create([

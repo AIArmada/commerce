@@ -6,11 +6,11 @@ namespace AIArmada\Authz\Services;
 
 use AIArmada\Authz\Events\LeaveImpersonation;
 use AIArmada\Authz\Events\TakeImpersonation;
-use Exception;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Application;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * ImpersonateManager service.
@@ -112,14 +112,22 @@ class ImpersonateManager
      */
     public function take(Authenticatable $from, Authenticatable $to, ?string $guardName = null, ?string $backTo = null): bool
     {
+        if ($this->isImpersonating()) {
+            return false;
+        }
+
         $guardName = $guardName ?? $this->getDefaultGuard();
+        $currentGuard = $this->getCurrentAuthGuardName();
+
+        if ($currentGuard === null) {
+            return false;
+        }
 
         try {
-            $currentGuard = $this->getCurrentAuthGuardName();
-
             session()->put(self::SESSION_KEY, $from->getAuthIdentifier());
             session()->put(self::SESSION_GUARD, $currentGuard);
             session()->put(self::SESSION_GUARD_USING, $guardName);
+            session()->forget(self::SESSION_BACK_TO);
 
             if ($backTo !== null) {
                 // Sanitize the back-to URL: only allow same-host absolute URLs
@@ -151,7 +159,12 @@ class ImpersonateManager
 
             session()->save();
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            $this->restoreUser($from, $currentGuard);
+            session()->forget('password_hash_' . $guardName);
+            $this->clear();
+            session()->save();
+
             report($e);
 
             return false;
@@ -172,7 +185,16 @@ class ImpersonateManager
         }
 
         try {
-            $impersonated = $this->app['auth']->guard($this->getImpersonatorGuardUsingName())->user();
+            $impersonatedGuardName = $this->getImpersonatorGuardUsingName();
+            $impersonatorGuardName = $this->getImpersonatorGuardName();
+
+            if ($impersonatedGuardName === null || $impersonatorGuardName === null) {
+                $this->clear();
+
+                return false;
+            }
+
+            $impersonated = $this->app['auth']->guard($impersonatedGuardName)->user();
             $impersonator = $this->getImpersonator();
 
             if ($impersonator === null) {
@@ -181,8 +203,8 @@ class ImpersonateManager
                 return false;
             }
 
-            $currentGuard = $this->app['auth']->guard($this->getCurrentAuthGuardName());
-            $impersonatorGuard = $this->app['auth']->guard($this->getImpersonatorGuardName());
+            $currentGuard = $this->app['auth']->guard($impersonatedGuardName);
+            $impersonatorGuard = $this->app['auth']->guard($impersonatorGuardName);
 
             // Use quiet methods if available
             if (method_exists($currentGuard, 'quietLogout')) {
@@ -194,13 +216,11 @@ class ImpersonateManager
             } else {
                 // Fallback
                 $impersonatorGuard->setUser($impersonator);
-                $guardName = $this->getImpersonatorGuardName() ?? 'web';
-                session()->put($this->getAuthSessionKey($guardName), $impersonator->getAuthIdentifier());
+                session()->put($this->getAuthSessionKey($impersonatorGuardName), $impersonator->getAuthIdentifier());
             }
 
-            // Update password hash in session for the restored user
-            $restoredGuardName = $this->getImpersonatorGuardName() ?? 'web';
-            $this->updatePasswordHashInSession($impersonator, $restoredGuardName);
+            $this->updatePasswordHashInSession($impersonator, $impersonatorGuardName);
+            session()->forget('password_hash_' . $impersonatedGuardName);
 
             $this->clear();
 
@@ -210,7 +230,10 @@ class ImpersonateManager
                 $this->app['events']->dispatch(new LeaveImpersonation($impersonator, $impersonated));
             }
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            $this->clear();
+            session()->save();
+
             report($e);
 
             return false;
@@ -345,5 +368,22 @@ class ImpersonateManager
         $hashedPassword = $guard->hashPasswordForCookie($passwordHash);
 
         session()->put('password_hash_' . $guardName, $hashedPassword);
+    }
+
+    private function restoreUser(Authenticatable $user, string $guardName): void
+    {
+        try {
+            $guard = $this->app['auth']->guard($guardName);
+
+            if (method_exists($guard, 'quietLogin')) {
+                $guard->quietLogin($user);
+            } else {
+                $guard->setUser($user);
+                session()->put($this->getAuthSessionKey($guardName), $user->getAuthIdentifier());
+            }
+
+            $this->updatePasswordHashInSession($user, $guardName);
+        } catch (Throwable) {
+        }
     }
 }

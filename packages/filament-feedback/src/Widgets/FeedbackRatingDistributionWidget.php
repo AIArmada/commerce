@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Widgets;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Models\FeedbackAnswer;
 use Filament\Widgets\ChartWidget;
 
@@ -13,12 +12,7 @@ final class FeedbackRatingDistributionWidget extends ChartWidget
 {
     protected function getData(): array
     {
-        $owner = OwnerContext::resolve();
-        $query = FeedbackAnswer::query();
-
-        if ($owner !== null) {
-            $query = OwnerQuery::applyToEloquentBuilder($query, $owner, false);
-        }
+        $query = OwnerUiScope::apply(FeedbackAnswer::query(), includeGlobal: false);
 
         $distribution = (clone $query)
             ->whereNotNull('number_value')

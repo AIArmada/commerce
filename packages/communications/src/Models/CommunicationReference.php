@@ -34,7 +34,13 @@ final class CommunicationReference extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'communication_id',
+        'reference_type',
+        'reference_id',
+        'role',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

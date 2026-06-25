@@ -7,6 +7,7 @@ namespace AIArmada\Contacting\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Database\Factories\ContactSnapshotFactory;
+use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -46,7 +47,23 @@ final class ContactSnapshot extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'snapshotable_type',
+        'snapshotable_id',
+        'snapshot_type',
+        'source_id',
+        'source_type',
+        'reason',
+        'label',
+        'channel',
+        'value',
+        'normalized_value',
+        'url',
+        'display_value',
+        'is_public',
+        'payload',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
@@ -105,6 +122,21 @@ final class ContactSnapshot extends Model
     public function scopePublic(Builder $query): Builder
     {
         return $query->where('is_public', true);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (ContactSnapshot $snapshot): void {
+            $snapshot->guardSnapshotableOwner();
+        });
+    }
+
+    private function guardSnapshotableOwner(): void
+    {
+        app(ContactingModelReferenceGuard::class)->resolve(
+            $this->snapshotable_type,
+            $this->snapshotable_id,
+        );
     }
 
     protected static function newFactory(): ContactSnapshotFactory

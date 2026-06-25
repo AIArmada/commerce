@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
+
 $tablePrefix = env('COMMUNICATIONS_TABLE_PREFIX', '');
 
 return [
@@ -67,7 +69,7 @@ return [
 
     /* Webhooks */
     'webhooks' => [
-        'middleware' => ['api'],
+        'middleware' => ['api', VerifyWebhookSignature::class],
         'providers' => [],
         'route_name_prefix' => env('COMMUNICATIONS_WEBHOOKS_ROUTE_NAME_PREFIX', 'communications.webhooks.'),
     ],

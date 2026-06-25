@@ -54,7 +54,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
             $table->index(['status', 'visibility']);
         });
 
@@ -74,7 +73,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
             $table->index(['feedback_form_id', 'order_column']);
         });
 
@@ -105,7 +103,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
             $table->index(['feedback_form_id', 'key']);
             $table->index(['feedback_form_id', 'order_column']);
         });
@@ -126,7 +123,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
             $table->index(['feedback_question_id', 'order_column']);
         });
 
@@ -161,9 +157,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
-            $table->index(['subject_type', 'subject_id']);
-            $table->index(['respondent_type', 'respondent_id']);
             $table->index(['feedback_form_id', 'status']);
             $table->index(['submitted_at']);
         });
@@ -190,7 +183,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
             $table->index(['feedback_response_id', 'feedback_question_id']);
             $table->index(['feedback_question_id', 'number_value']);
             $table->index(['feedback_question_id', 'score']);
@@ -220,8 +212,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
-            $table->index(['recipient_type', 'recipient_id']);
             $table->index(['feedback_form_id', 'status']);
         });
 
@@ -245,7 +235,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
             $table->index(['purpose', 'status']);
         });
 
@@ -278,9 +267,6 @@ return new class extends Migration
 
             $table->timestampsTz();
 
-            $table->index(['owner_type', 'owner_id']);
-            $table->index(['subject_type', 'subject_id']);
-            $table->index(['respondent_type', 'respondent_id']);
             $table->index(['status', 'published_at']);
         });
     }

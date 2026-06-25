@@ -19,6 +19,10 @@ title: Usage
 
 **Bulk actions:** Mute, Unfollow.
 
+Lifecycle actions delegate to the core engagement service contracts, so timestamps,
+events, policy checks, and owner enforcement remain consistent with non-Filament
+entry points.
+
 ### Bookmarks
 
 `BookmarkResource` provides list and view for bookmark records.
@@ -128,6 +132,8 @@ The `EngagementOverviewWidget` shows 5 stat cards:
 - **Active Responses** — total responses with `active` status
 - **Active Subscriptions** — total subscriptions with `active` status
 - **Due Reminders** — reminders with `pending` or `scheduled` status
+
+All resource and widget queries are restricted to the resolved commerce owner.
 
 ## Disabling resources
 

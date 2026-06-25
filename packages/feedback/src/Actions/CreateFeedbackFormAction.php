@@ -7,11 +7,18 @@ namespace AIArmada\Feedback\Actions;
 use AIArmada\Feedback\Data\CreateFeedbackFormData;
 use AIArmada\Feedback\Events\FeedbackFormCreated;
 use AIArmada\Feedback\Models\FeedbackForm;
+use AIArmada\Feedback\Support\FeedbackModelReferenceGuard;
 
 final class CreateFeedbackFormAction
 {
+    public function __construct(
+        private readonly FeedbackModelReferenceGuard $referenceGuard,
+    ) {}
+
     public function execute(CreateFeedbackFormData $data): FeedbackForm
     {
+        $this->referenceGuard->resolve($data->subjectType, $data->subjectId);
+
         $form = FeedbackForm::create([
             'name' => $data->name,
             'slug' => $data->slug,

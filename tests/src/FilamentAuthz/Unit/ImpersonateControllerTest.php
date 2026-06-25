@@ -241,6 +241,32 @@ describe('ImpersonateController', function (): void {
         session()->forget('password_hash_web');
 
         expect($manager->leave())->toBeTrue()
-            ->and(session()->has('password_hash_web'))->toBeTrue();
+            ->and(session()->has('password_hash_web'))->toBeTrue()
+            ->and(session()->has('password_hash_admin'))->toBeFalse();
+    });
+
+    it('restores the actor and clears session state when impersonation fails', function (): void {
+        $impersonator = User::query()->create([
+            'name' => 'Failed Impersonator',
+            'email' => 'failed-impersonator@example.com',
+            'password' => 'secret',
+        ]);
+
+        $target = User::query()->create([
+            'name' => 'Failed Target',
+            'email' => 'failed-target@example.com',
+            'password' => 'secret',
+        ]);
+
+        $this->actingAs($impersonator, 'web');
+
+        $manager = app(ImpersonateManager::class);
+
+        expect($manager->take($impersonator, $target, 'missing-guard'))->toBeFalse()
+            ->and($manager->isImpersonating())->toBeFalse()
+            ->and(Auth::guard('web')->id())->toBe($impersonator->getAuthIdentifier())
+            ->and(session()->has(ImpersonateManager::SESSION_GUARD))->toBeFalse()
+            ->and(session()->has(ImpersonateManager::SESSION_GUARD_USING))->toBeFalse()
+            ->and(session()->has(ImpersonateManager::SESSION_BACK_TO))->toBeFalse();
     });
 });

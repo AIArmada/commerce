@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
@@ -11,6 +12,7 @@ use AIArmada\Membership\Tests\MembershipTestCase;
 uses(MembershipTestCase::class);
 
 beforeEach(function (): void {
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
     $this->subject = TestSubject::query()->create(['name' => 'Test Subject']);
     $this->applicant = User::query()->create([
         'name' => 'Applicant',

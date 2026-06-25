@@ -40,11 +40,14 @@ final class ProcessWebhookEventJob implements ShouldBeUnique, ShouldQueue
     ): void {
         $fingerprint = $this->fingerprint();
 
-        if ($lock->exists($fingerprint)) {
+        if (! $lock->acquire(
+            $fingerprint,
+            (int) config('communications.cache.idempotency_ttl', 3600),
+        )) {
             return;
         }
 
-        $lock->acquire($fingerprint, 3600);
+        $completed = false;
 
         try {
             OwnerContext::withOwner(
@@ -54,8 +57,12 @@ final class ProcessWebhookEventJob implements ShouldBeUnique, ShouldQueue
                     $applyAction->handle($eventData);
                 },
             );
+
+            $completed = true;
         } finally {
-            $lock->release($fingerprint);
+            if (! $completed) {
+                $lock->release($fingerprint);
+            }
         }
     }
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\BookmarkFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
@@ -16,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string $bookmarker_type
  * @property string $bookmarker_id
  * @property string $bookmarkable_type
@@ -34,7 +38,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 final class Bookmark extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use UsesEngagementUuid;
+
+    protected static string $ownerScopeConfigKey = 'engagement.owner';
 
     public const STATUS_ACTIVE = 'active';
 

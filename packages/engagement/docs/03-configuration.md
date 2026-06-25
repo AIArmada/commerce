@@ -41,6 +41,20 @@ All table names are individually configurable via environment variables.
 - `follow_notification_level`: Controls default notification behavior for new follows (`all`, `highlights`, `none`).
 - `response_visibility`: Controls default visibility of responses (`public`, `private`, `connections_only`).
 
+### Owner scoping
+
+```php
+'owner' => [
+    'enabled' => env('ENGAGEMENT_OWNER_ENABLED', true),
+    'include_global' => env('ENGAGEMENT_OWNER_INCLUDE_GLOBAL', false),
+    'auto_assign_on_create' => env('ENGAGEMENT_OWNER_AUTO_ASSIGN', true),
+]
+```
+
+All persisted engagement records use the `commerce-support` owner boundary. Create,
+query, and mutate them inside an `OwnerContext`; cross-tenant reads and writes are
+blocked by default.
+
 ### Reminder
 
 ```php
@@ -51,16 +65,6 @@ All table names are individually configurable via environment variables.
 ```
 
 Controls how many reminders are processed per scheduled run and which notification channels to use by default. Reminders use Laravel Notifications for delivery.
-
-### Subscriptions
-
-```php
-'subscriptions' => [
-    'matching_batch_size' => (int) env('ENGAGEMENT_SUBSCRIPTION_MATCHING_BATCH_SIZE', 100),
-]
-```
-
-Controls how many subscriptions are evaluated per cycle for match-based notifications.
 
 ### Notifications
 
@@ -83,8 +87,7 @@ Override the notification class used for reminder delivery. Your custom class mu
     'subscription' => Subscription::class,
     'reminder' => Reminder::class,
     'share' => Share::class,
-    'interaction_counter' => InteractionCounter::class,
 ]
 ```
 
-All models are configurable, allowing you to extend and replace any model with your own subclass.
+These service-created models are configurable, allowing you to extend and replace them with your own subclasses.

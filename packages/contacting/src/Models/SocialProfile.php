@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Contacting\Models;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Contacting\Actions\NormalizeSocialProfileAction;
 use AIArmada\Contacting\Database\Factories\SocialProfileFactory;
+use AIArmada\Contacting\Support\ContactingModelReferenceGuard;
 use AIArmada\Contacting\Support\SocialProfileConfig;
 use Carbon\CarbonImmutable;
 use Eloquent;
@@ -54,7 +54,26 @@ final class SocialProfile extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'socialable_type',
+        'socialable_id',
+        'platform',
+        'purpose',
+        'label',
+        'handle',
+        'url',
+        'normalized_url',
+        'display_name',
+        'external_id',
+        'is_primary',
+        'is_public',
+        'is_verified',
+        'verified_at',
+        'valid_from',
+        'valid_until',
+        'sort_order',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
@@ -220,33 +239,10 @@ final class SocialProfile extends Model
 
     private function guardSocialableOwner(): void
     {
-        $socialable = $this->socialable;
-
-        if (! $socialable instanceof Model) {
-            return;
-        }
-
-        $socialableOwnerType = $socialable->getAttribute('owner_type');
-        $socialableOwnerId = $socialable->getAttribute('owner_id');
-        $owner = OwnerContext::resolve();
-
-        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
-            return;
-        }
-
-        if (
-            $owner !== null
-            && $socialableOwnerType === $owner->getMorphClass()
-            && (string) $socialableOwnerId === (string) $owner->getKey()
-        ) {
-            return;
-        }
-
-        if ($owner === null && $socialableOwnerType === null && $socialableOwnerId === null) {
-            return;
-        }
-
-        throw new InvalidArgumentException('Social profile socialable owner must match the social profile owner.');
+        app(ContactingModelReferenceGuard::class)->resolve(
+            $this->socialable_type,
+            $this->socialable_id,
+        );
     }
 
     protected static function newFactory(): SocialProfileFactory

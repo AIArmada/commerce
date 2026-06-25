@@ -46,7 +46,24 @@ final class CommunicationPreference extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'recipient_type',
+        'recipient_id',
+        'channel',
+        'category',
+        'locale',
+        'timezone',
+        'quiet_hours_start',
+        'quiet_hours_end',
+        'quiet_hours_timezone',
+        'enabled_at',
+        'disabled_at',
+        'opted_in_at',
+        'opted_out_at',
+        'verified_at',
+        'source',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

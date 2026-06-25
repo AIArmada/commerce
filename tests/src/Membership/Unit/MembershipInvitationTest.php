@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Models\MembershipInvitation;
 use AIArmada\Membership\Tests\Fixtures\TestSubject;
 use AIArmada\Membership\Tests\MembershipTestCase;
@@ -10,6 +11,7 @@ use AIArmada\Membership\Tests\MembershipTestCase;
 uses(MembershipTestCase::class);
 
 beforeEach(function (): void {
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
     $this->subject = TestSubject::query()->create(['name' => 'Test Subject']);
     $this->inviter = User::query()->create([
         'name' => 'Inviter',

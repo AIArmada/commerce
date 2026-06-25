@@ -44,7 +44,20 @@ final class CommunicationAttachment extends Model
     use HasOwnerScopeConfig;
     use HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'communication_id',
+        'content_id',
+        'attachable_type',
+        'attachable_id',
+        'storage_disk',
+        'storage_path',
+        'filename',
+        'mime_type',
+        'size_bytes',
+        'checksum',
+        'inline_content_id',
+        'metadata',
+    ];
 
     protected static string $ownerScopeConfigKey = 'communications.features.owner';
 

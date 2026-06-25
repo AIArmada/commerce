@@ -14,6 +14,7 @@ use AIArmada\Engagement\Events\ReminderSent;
 use AIArmada\Engagement\Models\Reminder;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 
 final class DefaultReminderManager implements ReminderManager
 {
@@ -23,7 +24,9 @@ final class DefaultReminderManager implements ReminderManager
 
     public function setReminder(mixed $recipient, mixed $subject, string $reminderType, array $options = []): Reminder
     {
-        $this->policy->canSetReminder($recipient, $subject, $reminderType);
+        if (! $this->policy->canSetReminder($recipient, $subject, $reminderType)) {
+            throw new AuthorizationException('Setting this reminder is not authorized.');
+        }
 
         $remindAt = $options['remind_at'] ?? null;
         $offsetMinutes = $options['offset_minutes'] ?? null;

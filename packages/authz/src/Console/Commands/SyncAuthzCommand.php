@@ -21,7 +21,9 @@ class SyncAuthzCommand extends Command
 
     public function handle(): int
     {
-        $this->initializeProhibitable();
+        if (! $this->initializeProhibitable()) {
+            return self::FAILURE;
+        }
 
         $config = (array) config('authz.sync');
         $permissions = (array) ($config['permissions'] ?? []);

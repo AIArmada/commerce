@@ -30,6 +30,10 @@ final class BlockEntityAction
 
         $this->validateOwnerScopedModel($blockable);
 
+        if ($blockedBy !== null) {
+            $this->validateOwnerScopedModel($blockedBy);
+        }
+
         return DB::transaction(function () use ($blockable, $blockedBy, $reason, $notes, $expiresAt, $metadata): Block {
             return Block::create([
                 'blockable_type' => $blockable->getMorphClass(),

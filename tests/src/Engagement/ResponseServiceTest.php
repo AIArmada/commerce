@@ -62,3 +62,13 @@ it('changes response', function (): void {
     $response = Response::query()->where('status', 'active')->first();
     expect($response->response_type)->toBe('going');
 });
+
+it('restores a cancelled response without creating a duplicate', function (): void {
+    $this->manager->respond($this->actor, $this->subject, 'interested');
+    $this->manager->cancelResponse($this->actor, $this->subject);
+    $restored = $this->manager->respond($this->actor, $this->subject, 'going');
+
+    expect($restored->status)->toBe(Response::STATUS_ACTIVE)
+        ->and($restored->cancelled_at)->toBeNull()
+        ->and(Response::query()->count())->toBe(1);
+});

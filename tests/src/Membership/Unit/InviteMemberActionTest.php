@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Actions\InviteMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Events\MembershipInvitationSent;
@@ -14,7 +15,8 @@ use Illuminate\Support\Facades\Event;
 uses(MembershipTestCase::class);
 
 beforeEach(function (): void {
-    Event::fake();
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
+    Event::fake([MembershipInvitationSent::class]);
 
     $this->subject = TestSubject::query()->create(['name' => 'Test Subject']);
     $this->inviter = User::query()->create([

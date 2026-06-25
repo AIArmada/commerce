@@ -6,6 +6,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Communications\Actions\ApplyProviderEventAction;
 use AIArmada\Communications\Contracts\CommunicationAuditRecorder;
 use AIArmada\Communications\Contracts\IdempotencyLock;
+use AIArmada\Communications\Contracts\WebhookOwnerResolver;
 use AIArmada\Communications\Enums\CommunicationCategory;
 use AIArmada\Communications\Enums\CommunicationDirection;
 use AIArmada\Communications\Enums\CommunicationPriority;
@@ -52,13 +53,13 @@ beforeEach(function (): void {
     });
 
     Config::set('communications.http.route_prefix', 'communications');
-    Config::set('communications.webhooks.middleware', ['api']);
+    Config::set('services.webhooks.sendgrid.secret', 'test-secret');
 });
 
 test('route returns 202 for valid webhook request', function (): void {
     Queue::fake();
 
-    $response = $this->postJson('communications/webhooks/sendgrid', [
+    $response = postSignedCommunicationsWebhook($this, [
         'event' => 'delivery.delivered',
         'delivery_id' => 'test-delivery-id',
     ]);
@@ -70,7 +71,7 @@ test('route returns 202 for valid webhook request', function (): void {
 test('job is dispatched on valid webhook request', function (): void {
     Queue::fake();
 
-    $this->postJson('communications/webhooks/sendgrid', [
+    postSignedCommunicationsWebhook($this, [
         'event' => 'delivery.delivered',
         'delivery_id' => 'test-delivery-id',
     ]);
@@ -83,7 +84,7 @@ test('job is dispatched on valid webhook request', function (): void {
 
 test('route uses configurable middleware', function (): void {
     $middleware = config('communications.webhooks.middleware');
-    expect($middleware)->toBe(['api']);
+    expect($middleware)->toContain('api', VerifyWebhookSignature::class);
 });
 
 test('provider webhook registrar falls back to services secrets', function (): void {
@@ -115,7 +116,7 @@ test('signature middleware aborts on missing signature when secret is set', func
         return $route;
     });
 
-    $middleware = new VerifyWebhookSignature;
+    $middleware = new VerifyWebhookSignature(new ProviderWebhookRegistrarService);
 
     try {
         $middleware->handle($request, fn ($req) => response()->json(['status' => 'ok']));
@@ -176,10 +177,81 @@ test('signature middleware accepts valid signature', function (): void {
         return $route;
     });
 
-    $middleware = new VerifyWebhookSignature;
+    $middleware = new VerifyWebhookSignature(new ProviderWebhookRegistrarService);
     $response = $middleware->handle($request, fn ($req) => response()->json(['status' => 'ok']));
 
     expect($response->getStatusCode())->toBe(200);
+});
+
+test('signature middleware rejects providers without a configured secret', function (): void {
+    Config::set('services.webhooks.sendgrid.secret');
+    Config::set('services.webhooks.secret');
+
+    $request = Request::create(
+        'communications/webhooks/sendgrid',
+        'POST',
+        [],
+        [],
+        [],
+        ['CONTENT_TYPE' => 'application/json'],
+        json_encode(['event' => 'delivery.delivered'])
+    );
+
+    $request->setRouteResolver(function () use ($request) {
+        $route = Route::post('communications/webhooks/{provider}', [WebhookController::class, 'handle']);
+        $route->bind($request);
+        $route->setParameter('provider', 'sendgrid');
+
+        return $route;
+    });
+
+    expect(fn () => (new VerifyWebhookSignature(new ProviderWebhookRegistrarService))
+        ->handle($request, fn ($req) => response()->json(['status' => 'ok'])))
+        ->toThrow(HttpException::class);
+});
+
+test('webhook payload cannot choose its owner context', function (): void {
+    Queue::fake();
+
+    postSignedCommunicationsWebhook($this, [
+        'event' => 'delivery.delivered',
+        '__owner_type' => WebhookTestOwner::class,
+        '__owner_id' => 'attacker-owner',
+    ]);
+
+    Queue::assertPushed(ProcessWebhookEventJob::class, function (ProcessWebhookEventJob $job): bool {
+        return $job->ownerType === null
+            && $job->ownerId === null
+            && ! array_key_exists('__owner_type', $job->payload)
+            && ! array_key_exists('__owner_id', $job->payload);
+    });
+});
+
+test('webhook owner context comes from the configured resolver', function (): void {
+    Queue::fake();
+
+    $owner = WebhookTestOwner::query()->create(['name' => 'Resolved Owner']);
+
+    app()->instance(WebhookOwnerResolver::class, new class($owner) implements WebhookOwnerResolver
+    {
+        public function __construct(
+            private readonly Model $owner,
+        ) {}
+
+        public function resolve(string $provider, array $payload): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    postSignedCommunicationsWebhook($this, [
+        'event' => 'delivery.delivered',
+    ]);
+
+    Queue::assertPushed(ProcessWebhookEventJob::class, function (ProcessWebhookEventJob $job) use ($owner): bool {
+        return $job->ownerType === $owner->getMorphClass()
+            && $job->ownerId === (string) $owner->getKey();
+    });
 });
 
 test('process webhook job restores owner context before applying the event', function (): void {
@@ -227,12 +299,123 @@ test('process webhook job restores owner context before applying the event', fun
         ownerId: (string) $owner->getKey(),
         ownerType: WebhookTestOwner::class,
     );
+    $lock = new TrackingWebhookLock;
 
     $job->handle(
         new NullProviderEventNormalizer,
         app(ApplyProviderEventAction::class),
-        app(IdempotencyLock::class),
+        $lock,
     );
 
-    expect($delivery->fresh()->status->value)->toBe('delivered');
+    expect($delivery->fresh()->status->value)->toBe('delivered')
+        ->and($lock->acquireCalls)->toBe(1)
+        ->and($lock->lastTtlSeconds)->toBe(3600)
+        ->and($lock->releaseCalls)->toBe(0);
 });
+
+test('process webhook job stops when it cannot acquire the idempotency lock', function (): void {
+    $lock = new RejectingWebhookLock;
+    $job = new ProcessWebhookEventJob(
+        provider: 'sendgrid',
+        payload: ['event' => 'unknown'],
+    );
+
+    $job->handle(
+        new NullProviderEventNormalizer,
+        app(ApplyProviderEventAction::class),
+        $lock,
+    );
+
+    expect($lock->acquireCalls)->toBe(1)
+        ->and($lock->releaseCalls)->toBe(0);
+});
+
+test('process webhook job releases its idempotency lock after failure', function (): void {
+    $lock = new TrackingWebhookLock;
+    $job = new ProcessWebhookEventJob(
+        provider: 'sendgrid',
+        payload: ['event' => 'unknown'],
+    );
+
+    expect(fn () => $job->handle(
+        new NullProviderEventNormalizer,
+        app(ApplyProviderEventAction::class),
+        $lock,
+    ))->toThrow(RuntimeException::class);
+
+    expect($lock->acquireCalls)->toBe(1)
+        ->and($lock->releaseCalls)->toBe(1);
+});
+
+/**
+ * @param  array<string, mixed>  $payload
+ */
+function postSignedCommunicationsWebhook(object $testCase, array $payload)
+{
+    $body = json_encode($payload, JSON_THROW_ON_ERROR);
+    $signature = hash_hmac('sha256', $body, 'test-secret');
+
+    return $testCase->call(
+        'POST',
+        'communications/webhooks/sendgrid',
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+        ],
+        $body,
+    );
+}
+
+final class RejectingWebhookLock implements IdempotencyLock
+{
+    public int $acquireCalls = 0;
+
+    public int $releaseCalls = 0;
+
+    public function acquire(string $key, int $ttlSeconds): bool
+    {
+        $this->acquireCalls++;
+
+        return false;
+    }
+
+    public function release(string $key): void
+    {
+        $this->releaseCalls++;
+    }
+
+    public function exists(string $key): bool
+    {
+        return false;
+    }
+}
+
+final class TrackingWebhookLock implements IdempotencyLock
+{
+    public int $acquireCalls = 0;
+
+    public int $releaseCalls = 0;
+
+    public ?int $lastTtlSeconds = null;
+
+    public function acquire(string $key, int $ttlSeconds): bool
+    {
+        $this->acquireCalls++;
+        $this->lastTtlSeconds = $ttlSeconds;
+
+        return true;
+    }
+
+    public function release(string $key): void
+    {
+        $this->releaseCalls++;
+    }
+
+    public function exists(string $key): bool
+    {
+        return $this->acquireCalls > $this->releaseCalls;
+    }
+}

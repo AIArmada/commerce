@@ -41,10 +41,6 @@ Each resource reads its icon from `navigation.icons.*`.
 ## Tables
 
 ```php
-'tables' => [
-    'default_pagination' => 25,
-    'search_debounce' => '500ms',
-],
 ```
 
 ## Features

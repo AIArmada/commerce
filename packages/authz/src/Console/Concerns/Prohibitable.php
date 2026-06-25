@@ -33,12 +33,14 @@ trait Prohibitable
     /**
      * Initialize the command and check prohibition.
      */
-    protected function initializeProhibitable(): void
+    protected function initializeProhibitable(): bool
     {
-        if (static::$prohibited) {
-            $this->components->error('This command is prohibited in this environment.');
-
-            exit(1);
+        if (! static::$prohibited) {
+            return true;
         }
+
+        $this->components->error('This command is prohibited in this environment.');
+
+        return false;
     }
 }

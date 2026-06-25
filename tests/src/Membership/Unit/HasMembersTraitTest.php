@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Membership\Enums\ApplicationStatus;
 use AIArmada\Membership\Models\MembershipApplication;
 use AIArmada\Membership\Models\MembershipInvitation;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 uses(MembershipTestCase::class);
 
 beforeEach(function (): void {
+    request()->attributes->remove(OwnerContext::REQUEST_KEY);
     $this->subject = TestSubject::query()->create(['name' => 'Test Subject']);
     $this->subject2 = TestSubject::query()->create(['name' => 'Test Subject 2']);
     $this->user = User::query()->create([

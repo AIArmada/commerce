@@ -65,4 +65,4 @@ $visibleComments = Comment::query()->whereNotBlocked()->get();
 
 ## Owner-scoped models
 
-If the moderated model uses `HasOwner`, make sure the current owner context is set before creating moderation records. The package validates owner-scoped models through `commerce-support` guards and still allows global models when that is intentional.
+When owner mode is enabled, set an owner context before creating or querying moderation records. The package validates owner-scoped targets and actors through `commerce-support` guards; use explicit global context for intentional global moderation.

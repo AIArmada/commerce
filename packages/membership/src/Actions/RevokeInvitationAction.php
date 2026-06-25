@@ -6,6 +6,7 @@ namespace AIArmada\Membership\Actions;
 
 use AIArmada\Membership\Models\MembershipInvitation;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 final class RevokeInvitationAction
@@ -14,9 +15,15 @@ final class RevokeInvitationAction
 
     public function handle(MembershipInvitation $invitation, Model $actor): void
     {
-        $invitation->update([
-            'revoked_at' => now(),
-            'revoked_by' => $actor->getKey(),
-        ]);
+        DB::transaction(function () use ($actor, $invitation): void {
+            $lockedInvitation = MembershipInvitation::query()
+                ->lockForUpdate()
+                ->findOrFail($invitation->id);
+
+            $lockedInvitation->update([
+                'revoked_at' => now(),
+                'revoked_by' => $actor->getKey(),
+            ]);
+        });
     }
 }

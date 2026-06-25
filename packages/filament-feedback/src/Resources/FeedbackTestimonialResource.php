@@ -68,7 +68,7 @@ final class FeedbackTestimonialResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(FeedbackTestimonialStatus::options()),
             ])
-            ->headerActions([
+            ->actions([
                 Action::make('approve')
                     ->label('Approve')
                     ->icon('heroicon-o-check')

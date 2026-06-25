@@ -98,12 +98,21 @@ Optional integrations can be enabled explicitly when the package is installed:
 ## Webhooks
 
 ```php
+use AIArmada\Communications\Http\Middleware\VerifyWebhookSignature;
+
 'webhooks' => [
-    'middleware' => ['api'],
-    'providers' => [],
+    'middleware' => ['api', VerifyWebhookSignature::class],
+    'providers' => [
+        'provider-name' => [
+            'secret' => env('PROVIDER_WEBHOOK_SECRET'),
+        ],
+    ],
     'route_name_prefix' => 'communications.webhooks.',
 ],
 ```
+
+The default middleware fails closed unless the provider has a secret and sends
+`X-Webhook-Signature` as the SHA-256 HMAC of the raw request body.
 
 ## Cache
 

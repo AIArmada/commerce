@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentFeedback\Exports;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Feedback\Models\FeedbackResponse;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
@@ -53,17 +52,6 @@ final class FeedbackResponsesExport extends Exporter
 
     public function query(): Builder
     {
-        $query = FeedbackResponse::query();
-        $owner = OwnerContext::resolve();
-
-        if ($owner !== null) {
-            $query = OwnerQuery::applyToEloquentBuilder(
-                $query,
-                $owner,
-                false,
-            );
-        }
-
-        return $query;
+        return OwnerUiScope::apply(FeedbackResponse::query(), includeGlobal: false);
     }
 }

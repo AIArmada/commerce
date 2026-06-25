@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Communications\Actions\PublishTemplateAction;
 use AIArmada\Communications\Events\TemplatePublished;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
@@ -18,14 +19,8 @@ test('PublishTemplateAction handle throws for non-existent version', function ()
 
     $nonExistentId = (string) Str::uuid();
 
-    try {
-        $action->handle($nonExistentId);
-    } catch (Throwable $e) {
-        file_put_contents('/tmp/pest_trace.txt', get_class($e) . ': ' . $e->getMessage() . "\n\n" . $e->getTraceAsString());
-
-        throw $e;
-    }
-})->throws(Throwable::class);
+    $action->handle($nonExistentId);
+})->throws(ModelNotFoundException::class);
 
 test('TemplatePublished event has correct properties', function (): void {
     $event = new TemplatePublished(

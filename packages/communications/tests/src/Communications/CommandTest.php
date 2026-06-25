@@ -7,7 +7,33 @@ use AIArmada\Communications\Console\Commands\ExpireCommunicationsCommand;
 use AIArmada\Communications\Console\Commands\PruneCommunicationDataCommand;
 use AIArmada\Communications\Console\Commands\ReconcileCommunicationStatusCommand;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
+
+final class CommunicationsCommandTestOwner extends Model
+{
+    use HasUuids;
+
+    protected $fillable = ['name'];
+
+    public function getTable(): string
+    {
+        return 'communications_command_test_owners';
+    }
+}
+
+beforeEach(function (): void {
+    Schema::create('communications_command_test_owners', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    $this->owner = CommunicationsCommandTestOwner::query()->create(['name' => 'Command Owner']);
+});
 
 test('ReconcileCommunicationStatusCommand exists and can be instantiated', function (): void {
     $command = app(ReconcileCommunicationStatusCommand::class);
@@ -25,7 +51,7 @@ test('ReconcileCommunicationStatusCommand dry-run returns success with no commun
 test('ReconcileCommunicationStatusCommand accepts owner flag', function (): void {
     $exitCode = Artisan::call('communications:reconcile', [
         '--dry-run' => true,
-        '--owner' => 'App\Models\Team:1',
+        '--owner' => $this->owner->getMorphClass() . ':' . $this->owner->getKey(),
     ]);
 
     expect($exitCode)->toBe(ReconcileCommunicationStatusCommand::SUCCESS);
@@ -51,7 +77,7 @@ test('DispatchDueCommunicationsCommand dry-run returns success', function (): vo
 test('DispatchDueCommunicationsCommand accepts owner flag', function (): void {
     $exitCode = Artisan::call('communications:dispatch-due', [
         '--dry-run' => true,
-        '--owner' => 'App\Models\Team:1',
+        '--owner' => $this->owner->getMorphClass() . ':' . $this->owner->getKey(),
     ]);
 
     expect($exitCode)->toBe(DispatchDueCommunicationsCommand::SUCCESS);
@@ -67,7 +93,7 @@ test('ExpireCommunicationsCommand dry-run returns success', function (): void {
 test('ExpireCommunicationsCommand accepts owner flag', function (): void {
     $exitCode = Artisan::call('communications:expire', [
         '--dry-run' => true,
-        '--owner' => 'App\Models\Team:1',
+        '--owner' => $this->owner->getMorphClass() . ':' . $this->owner->getKey(),
     ]);
 
     expect($exitCode)->toBe(ExpireCommunicationsCommand::SUCCESS);
@@ -88,7 +114,7 @@ test('PruneCommunicationDataCommand dry-run returns success', function (): void 
 test('PruneCommunicationDataCommand accepts owner flag', function (): void {
     $exitCode = Artisan::call('communications:prune', [
         '--dry-run' => true,
-        '--owner' => 'App\Models\Team:1',
+        '--owner' => $this->owner->getMorphClass() . ':' . $this->owner->getKey(),
     ]);
 
     expect($exitCode)->toBe(PruneCommunicationDataCommand::SUCCESS);

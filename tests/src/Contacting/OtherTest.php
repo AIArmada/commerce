@@ -6,6 +6,8 @@ use AIArmada\Contacting\Actions\BuildContactLinksAction;
 use AIArmada\Contacting\Data\ContactLinksData;
 use AIArmada\Contacting\Data\ContactSnapshotData;
 use AIArmada\Contacting\Models\ContactMethod;
+use AIArmada\Contacting\Models\ContactSnapshot;
+use AIArmada\Contacting\Models\SocialProfile;
 
 test('BuildContactLinksAction builds mailto link', function (): void {
     $action = new BuildContactLinksAction;
@@ -59,8 +61,10 @@ test('ContactLinksData constructor', function (): void {
 });
 
 test('migrations have no forbidden patterns', function (): void {
-    $migrationPath = realpath(base_path('packages/contacting/database/migrations'));
+    $migrationPath = realpath(__DIR__ . '/../../../packages/contacting/database/migrations');
     $files = glob("$migrationPath/*.php");
+
+    expect($files)->not->toBeEmpty();
 
     foreach ($files as $file) {
         $content = file_get_contents($file);
@@ -68,3 +72,17 @@ test('migrations have no forbidden patterns', function (): void {
         expect($content)->not->toContain('->cascadeOnDelete(');
     }
 });
+
+test('contact models do not mass assign owner columns', function (string $modelClass): void {
+    $model = new $modelClass([
+        'owner_type' => 'attacker',
+        'owner_id' => 'attacker-id',
+    ]);
+
+    expect($model->owner_type)->toBeNull()
+        ->and($model->owner_id)->toBeNull();
+})->with([
+    ContactMethod::class,
+    ContactSnapshot::class,
+    SocialProfile::class,
+]);
