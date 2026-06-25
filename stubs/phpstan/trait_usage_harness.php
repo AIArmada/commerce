@@ -12,7 +12,7 @@ use AIArmada\CommerceSupport\Traits\HasPaymentStatus;
 use AIArmada\CommerceSupport\Traits\OwnerContextJob;
 use AIArmada\Customers\Concerns\HasCustomerProfile;
 use AIArmada\FilamentAuthz\Concerns\CanBeImpersonated;
-use AIArmada\FilamentAuthz\Concerns\HasAuthzScope;
+use AIArmada\Authz\Concerns\HasAuthzScope;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
