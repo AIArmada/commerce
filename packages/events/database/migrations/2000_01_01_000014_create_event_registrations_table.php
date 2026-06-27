@@ -42,6 +42,10 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
+
+            $table->string('parent_registration_id', 36)->nullable()->index();
+            $table->boolean('is_bundle_root')->default(false)->index();
+            $table->{$jsonType}('pass_entitlements')->nullable();
         });
     }
 };

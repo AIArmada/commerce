@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -32,5 +33,11 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
         });
+
+        if (DB::getDriverName() === 'pgsql' && config('events.database.json_column_type', 'jsonb') === 'jsonb') {
+            $searchTable = config('events.database.tables.event_search_documents', 'event_search_documents');
+            DB::statement("CREATE INDEX IF NOT EXISTS {$searchTable}_facets_gin_idx ON {$searchTable} USING GIN (facets jsonb_path_ops)");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$searchTable}_facets_gin_default_idx ON {$searchTable} USING GIN (facets)");
+        }
     }
 };

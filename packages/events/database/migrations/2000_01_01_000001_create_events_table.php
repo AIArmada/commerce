@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -39,6 +40,15 @@ return new class extends Migration
             $table->text('status_message')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
+
+            $table->string('pricing_mode')->nullable()->index();
+            $table->string('registration_mode')->nullable()->index();
+            $table->boolean('issue_passes_for_free')->default(true);
         });
+
+        if (DB::getDriverName() === 'pgsql' && config('events.database.json_column_type', 'jsonb') === 'jsonb') {
+            $eventsTable = config('events.database.tables.events', 'events');
+            DB::statement("CREATE INDEX IF NOT EXISTS {$eventsTable}_metadata_gin_idx ON {$eventsTable} USING GIN (metadata jsonb_path_ops)");
+        }
     }
 };

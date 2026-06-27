@@ -38,6 +38,11 @@ return new class extends Migration
             $table->text('status_message')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
+
+            $table->string('pricing_mode')->nullable()->index();
+            $table->string('registration_mode')->nullable()->index();
+            $table->boolean('issue_passes_for_free')->default(true);
+            $table->timestampTz('rescheduled_at')->nullable()->index();
         });
     }
 };

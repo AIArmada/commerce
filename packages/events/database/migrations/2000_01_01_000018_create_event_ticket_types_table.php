@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('seating_mode')->nullable()->index();
             $table->bigInteger('price')->nullable();
             $table->string('currency')->nullable();
-            $table->integer('quota')->nullable();
             $table->integer('admits_quantity')->default(1);
             $table->integer('min_quantity')->nullable();
             $table->integer('max_quantity')->nullable();
