@@ -35,9 +35,7 @@ describe('ShippingDashboard', function (): void {
     });
 
     it('has navigation sort order of 0', function (): void {
-        $reflection = new ReflectionProperty(ShippingDashboard::class, 'navigationSort');
-
-        expect($reflection->getValue(null))->toBe(0);
+        expect(ShippingDashboard::getNavigationSort())->toBe(0);
     });
 
     it('has correct slug', function (): void {
@@ -81,9 +79,7 @@ describe('ManifestPage', function (): void {
     });
 
     it('has navigation sort order of 5', function (): void {
-        $reflection = new ReflectionProperty(ManifestPage::class, 'navigationSort');
-
-        expect($reflection->getValue(null))->toBe(5);
+        expect(ManifestPage::getNavigationSort())->toBe(5);
     });
 
     it('has correct slug', function (): void {

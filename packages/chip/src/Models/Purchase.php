@@ -53,6 +53,13 @@ class Purchase extends ChipModel
         'user_id',
         'billing_template_id',
         'client_id',
+        'status',
+        'payment_method',
+        'total_minor',
+        'refund_amount_minor',
+        'failure_reason',
+        'failed_at',
+        'refunded_at',
         'payment',
         'issuer_details',
         'transaction_data',
@@ -70,6 +77,7 @@ class Purchase extends ChipModel
         'issued',
         'due',
         'refund_availability',
+        'refundable_amount',
         'currency_conversion',
         'payment_method_whitelist',
         'success_redirect',
@@ -86,6 +94,8 @@ class Purchase extends ChipModel
         'marked_as_paid',
         'order_id',
         'metadata',
+        'created_at',
+        'updated_at',
     ];
 
     public function amount(): Attribute

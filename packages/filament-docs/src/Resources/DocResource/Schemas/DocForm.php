@@ -303,12 +303,14 @@ final class DocForm
         $docType = $get('doc_type') ?: $record?->doc_type;
 
         if (is_string($templateId) && $templateId !== '') {
+            /** @var \Illuminate\Database\Eloquent\Builder<\AIArmada\Docs\Models\DocTemplate> $query */
             $query = OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false);
 
             if (is_string($docType) && $docType !== '') {
                 $query->where('doc_type', $docType);
             }
 
+            /** @var \AIArmada\Docs\Models\DocTemplate|null */
             return $query->find($templateId);
         }
 
@@ -320,10 +322,12 @@ final class DocForm
             return null;
         }
 
+        /** @var \Illuminate\Database\Eloquent\Builder<\AIArmada\Docs\Models\DocTemplate> $query */
         $query = OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false)
             ->where('doc_type', $docType)
             ->where('is_default', true);
 
+        /** @var \AIArmada\Docs\Models\DocTemplate|null */
         return $query->first();
     }
 }
