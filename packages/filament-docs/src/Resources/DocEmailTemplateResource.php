@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocType;
@@ -29,6 +30,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
@@ -253,6 +255,17 @@ final class DocEmailTemplateResource extends Resource
     public static function getNavigationSort(): ?int
     {
         return config('filament-docs.resources.navigation_sort.email_templates', 91);
+    }
+
+    /**
+     * @return EloquentBuilder<DocEmailTemplate>
+     */
+    public static function getEloquentQuery(): EloquentBuilder
+    {
+        /** @var EloquentBuilder<DocEmailTemplate> $query */
+        $query = parent::getEloquentQuery();
+
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
     private static function scopeUniqueRuleToOwner(Unique $rule): Unique

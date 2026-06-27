@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests\Tax;
 use AIArmada\Commerce\Tests\TestCase as BaseTestCase;
 use AIArmada\Tax\TaxServiceProvider;
 use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
+use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
 
 abstract class TaxTestCase extends BaseTestCase
 {
@@ -43,7 +44,7 @@ abstract class TaxTestCase extends BaseTestCase
 
         // Configure Spatie Laravel Settings
         $app['config']->set('settings.repositories.database', [
-            'type' => 'database',
+            'type' => DatabaseSettingsRepository::class,
             'model' => 'Spatie\\LaravelSettings\\Models\\SettingsProperty',
             'table' => 'settings',
             'connection' => 'testing',
@@ -51,7 +52,7 @@ abstract class TaxTestCase extends BaseTestCase
         $app['config']->set('settings.default_repository', 'database');
         $app['config']->set('settings.repositories', [
             'database' => [
-                'type' => 'database',
+                'type' => DatabaseSettingsRepository::class,
                 'model' => 'Spatie\\LaravelSettings\\Models\\SettingsProperty',
                 'table' => 'settings',
                 'connection' => 'testing',

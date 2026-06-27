@@ -26,11 +26,14 @@ class ShipmentResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTruck;
 
-    protected static ?int $navigationSort = 1;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-shipping.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-shipping.resources.navigation_sort.shipments');
     }
 
     /**

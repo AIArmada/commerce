@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource\Pages\CreateDocTemplate;
@@ -18,6 +19,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
@@ -117,5 +119,16 @@ final class DocTemplateResource extends Resource
     public static function getNavigationSort(): ?int
     {
         return config('filament-docs.resources.navigation_sort.doc_templates', 20);
+    }
+
+    /**
+     * @return Builder<DocTemplate>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<DocTemplate> $query */
+        $query = parent::getEloquentQuery();
+
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 }

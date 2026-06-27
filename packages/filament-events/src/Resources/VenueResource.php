@@ -25,11 +25,16 @@ final class VenueResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-map-pin';
 
-    protected static ?int $navigationSort = 4;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-events.resources.navigation_sort.venue');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function table(Table $table): Table

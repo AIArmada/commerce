@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Models\AffiliateLink;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\CreateAffiliateLink;
 use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource\Pages\EditAffiliateLink;
@@ -78,7 +79,7 @@ final class AffiliateLinkResource extends Resource
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $query;
 
-        return $modelQuery;
+        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema

@@ -19,6 +19,9 @@ return [
     ],
     'super_admin_role' => 'super_admin',
     'guards' => ['web'],
+    'users' => [
+        'email_column' => 'email',
+    ],
     'wildcard_permissions' => true,
     'permissions' => [
         'separator' => '.',

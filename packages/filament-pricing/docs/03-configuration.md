@@ -6,6 +6,35 @@ title: Configuration
 
 The Filament Pricing package relies on configuration from the base `aiarmada/pricing` package.
 
+## Filament Package Configuration
+
+The admin navigation and fallback promotion resource are configured in `config/filament-pricing.php`:
+
+```php
+'navigation' => [
+    'group' => 'Pricing',
+    'settings_group' => 'Settings',
+],
+
+'features' => [
+    'promotions' => true,
+],
+
+'resources' => [
+    'navigation_sort' => [
+        'price_lists' => 1,
+        'promotions' => 2,
+    ],
+],
+
+'pages' => [
+    'navigation_sort' => [
+        'settings' => 10,
+        'price_simulator' => 99,
+    ],
+],
+```
+
 ## Base Package Configuration
 
 See [Pricing Package Configuration](../../pricing/docs/03-configuration.md) for all configuration options.

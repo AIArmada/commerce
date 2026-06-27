@@ -24,11 +24,14 @@ final class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
 
-    protected static ?int $navigationSort = 6;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-engagement.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-engagement.resources.navigation_sort.subscription');
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell';

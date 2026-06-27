@@ -13,6 +13,7 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\Gateways\Chip\ChipCheckoutBuilder;
 use AIArmada\Cashier\Gateways\Chip\ChipCustomer;
 use AIArmada\Cashier\Gateways\Chip\ChipPayment;
@@ -166,12 +167,16 @@ class ChipGateway extends AbstractGateway
 
             return new Chip\ChipCheckout($purchase);
         } catch (Throwable $e) {
+            if ($this->isNotFoundException($e)) {
+                return null;
+            }
+
             Log::warning('Failed to retrieve CHIP checkout', [
                 'session_id' => $sessionId,
                 'error' => $e->getMessage(),
             ]);
 
-            return null;
+            throw GatewayRetrievalException::create('chip', 'checkout session', $sessionId, $e);
         }
     }
 
@@ -195,7 +200,7 @@ class ChipGateway extends AbstractGateway
                 'error' => $e->getMessage(),
             ]);
 
-            return null;
+            throw GatewayRetrievalException::create('chip', 'subscription', $subscriptionId, $e);
         }
     }
 
@@ -209,12 +214,16 @@ class ChipGateway extends AbstractGateway
 
             return new ChipPayment(new Payment($purchase));
         } catch (Throwable $e) {
+            if ($this->isNotFoundException($e)) {
+                return null;
+            }
+
             Log::warning('Failed to retrieve CHIP payment', [
                 'payment_id' => $paymentId,
                 'error' => $e->getMessage(),
             ]);
 
-            return null;
+            throw GatewayRetrievalException::create('chip', 'payment', $paymentId, $e);
         }
     }
 
@@ -229,13 +238,30 @@ class ChipGateway extends AbstractGateway
 
             return new Chip\ChipInvoice($purchase);
         } catch (Throwable $e) {
+            if ($this->isNotFoundException($e)) {
+                return null;
+            }
+
             Log::warning('Failed to retrieve CHIP invoice', [
                 'invoice_id' => $invoiceId,
                 'error' => $e->getMessage(),
             ]);
 
-            return null;
+            throw GatewayRetrievalException::create('chip', 'invoice', $invoiceId, $e);
         }
+    }
+
+    private function isNotFoundException(Throwable $e): bool
+    {
+        if ((int) $e->getCode() === 404) {
+            return true;
+        }
+
+        if (method_exists($e, 'getStatusCode') && (int) $e->getStatusCode() === 404) {
+            return true;
+        }
+
+        return str_contains(mb_strtolower($e->getMessage()), 'not found');
     }
 
     /**

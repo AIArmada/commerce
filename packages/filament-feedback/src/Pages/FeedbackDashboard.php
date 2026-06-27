@@ -20,11 +20,16 @@ final class FeedbackDashboard extends Dashboard
 {
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static ?int $navigationSort = 10;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-feedback.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-feedback.pages.navigation_sort.dashboard');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public function getWidgets(): array

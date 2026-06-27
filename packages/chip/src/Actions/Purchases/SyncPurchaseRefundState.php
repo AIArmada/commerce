@@ -57,12 +57,12 @@ final class SyncPurchaseRefundState
             ? PurchaseStatus::REFUNDED->value
             : PurchaseStatus::PARTIALLY_REFUNDED->value;
 
-        $purchase->update([
+        $purchase->forceFill([
             'status' => $status,
             'refund_amount_minor' => $cumulativeRefundAmount,
             'refundable_amount' => $purchaseTotal > 0 ? max(0, $purchaseTotal - $cumulativeRefundAmount) : 0,
             'refunded_at' => now(),
-        ]);
+        ])->save();
 
         return $purchase->refresh();
     }

@@ -111,6 +111,7 @@ return [
         'brand_name' => 'Billing Portal',
         'primary_color' => '#6366f1',
         'auth_guard' => 'web',
+        'login_enabled' => true,
         'features' => [
             'subscriptions' => true,
             'payment_methods' => true,
@@ -255,6 +256,7 @@ Configure the customer-facing billing portal:
     'brand_name' => 'My App Billing',     // Brand name
     'primary_color' => '#6366f1',         // Primary color (hex)
     'auth_guard' => 'web',                // Auth guard to use
+    'login_enabled' => true,              // Register the panel login route
     'features' => [
         'subscriptions' => true,          // Show subscriptions
         'payment_methods' => true,        // Show payment methods

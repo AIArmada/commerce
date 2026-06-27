@@ -23,8 +23,6 @@ class PortalPayouts extends PortalPage implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBanknotes;
 
-    protected static ?int $navigationSort = 3;
-
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.payouts';
 

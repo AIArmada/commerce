@@ -17,8 +17,6 @@ final class BillingDashboard extends BaseDashboard
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static ?int $navigationSort = 0;
-
     protected static string $routePath = 'billing-dashboard';
 
     protected static ?string $slug = 'billing-dashboard';
@@ -31,6 +29,11 @@ final class BillingDashboard extends BaseDashboard
     public static function getNavigationGroup(): ?string
     {
         return config('filament-cashier.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cashier.pages.navigation_sort.billing_dashboard');
     }
 
     public function getTitle(): string

@@ -111,7 +111,7 @@ final class DocRenderService
 
         $shareLink->save();
         $shareLink->setRelation('doc', $doc);
-        $shareLink->plainToken = $plainToken;
+        $shareLink->setPlainToken($plainToken);
 
         return $shareLink;
     }

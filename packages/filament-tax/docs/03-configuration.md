@@ -20,27 +20,6 @@ This creates `config/filament-tax.php`:
 return [
     /*
     |--------------------------------------------------------------------------
-    | Navigation
-    |--------------------------------------------------------------------------
-    */
-    'navigation' => [
-        'group' => 'Tax',
-        'sort' => 100,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tables
-    |--------------------------------------------------------------------------
-    */
-    'tables' => [
-        'polling' => false,
-        'date_format' => 'M j, Y',
-        'datetime_format' => 'M j, Y g:i A',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Features
     |--------------------------------------------------------------------------
     */
@@ -50,7 +29,27 @@ return [
         'rates' => true,
         'exemptions' => true,
         'widgets' => true,
-        'settings' => true,
+        'settings_page' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Certificates
+    |--------------------------------------------------------------------------
+    */
+    'certificates' => [
+        'disk' => env('TAX_CERTIFICATES_DISK', 'local'),
+        'directory' => 'tax-exemptions',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Navigation
+    |--------------------------------------------------------------------------
+    */
+    'navigation' => [
+        'group' => 'Tax',
+        'settings_group' => 'Settings',
     ],
 
     /*
@@ -59,21 +58,17 @@ return [
     |--------------------------------------------------------------------------
     */
     'resources' => [
-        'zones' => [
-            'navigation_icon' => 'heroicon-o-globe-alt',
-            'navigation_sort' => 1,
+        'navigation_sort' => [
+            'zones' => 1,
+            'classes' => 2,
+            'rates' => 2,
+            'exemptions' => 4,
         ],
-        'classes' => [
-            'navigation_icon' => 'heroicon-o-tag',
-            'navigation_sort' => 2,
-        ],
-        'rates' => [
-            'navigation_icon' => 'heroicon-o-calculator',
-            'navigation_sort' => 3,
-        ],
-        'exemptions' => [
-            'navigation_icon' => 'heroicon-o-shield-check',
-            'navigation_sort' => 4,
+    ],
+
+    'pages' => [
+        'navigation_sort' => [
+            'settings' => 11,
         ],
     ],
 ];
@@ -87,17 +82,12 @@ The plugin supports fluent configuration in your panel provider:
 use AIArmada\FilamentTax\FilamentTaxPlugin;
 
 FilamentTaxPlugin::make()
-    // Navigation
-    ->navigationGroup('Tax Management')
-    ->navigationSort(50)
-    
-    // Features
     ->zones(true)
     ->classes(true)
     ->rates(true)
     ->exemptions(true)
     ->widgets(true)
-    ->settings(true);
+    ->settingsPage(true);
 ```
 
 ### Feature Toggles
@@ -145,36 +135,12 @@ Enable/disable dashboard widgets:
 FilamentTaxPlugin::make()->widgets(true);
 ```
 
-#### `->settings(bool $enabled)`
+#### `->settingsPage(bool $enabled)`
 
 Enable/disable the Tax Settings page.
 
 ```php
-FilamentTaxPlugin::make()->settings(true);
-```
-
-### Navigation
-
-#### `->navigationGroup(?string $group)`
-
-Set the navigation group for all tax resources.
-
-```php
-FilamentTaxPlugin::make()->navigationGroup('Store Settings');
-```
-
-Set to `null` to show resources at root level:
-
-```php
-FilamentTaxPlugin::make()->navigationGroup(null);
-```
-
-#### `->navigationSort(int $sort)`
-
-Control the position of the Tax group in navigation.
-
-```php
-FilamentTaxPlugin::make()->navigationSort(100);
+FilamentTaxPlugin::make()->settingsPage(true);
 ```
 
 ## Panel-Specific Configuration
@@ -195,7 +161,7 @@ class AdminPanelProvider extends PanelProvider
                     ->rates(true)
                     ->exemptions(true)
                     ->widgets(true)
-                    ->settings(true),
+                    ->settingsPage(true),
             ]);
     }
 }
@@ -213,7 +179,7 @@ class StaffPanelProvider extends PanelProvider
                     ->rates(true)
                     ->exemptions(true)
                     ->widgets(true)
-                    ->settings(false), // No settings
+                    ->settingsPage(false), // No settings
             ]);
     }
 }
@@ -231,84 +197,23 @@ class CustomerPanelProvider extends PanelProvider
                     ->rates(false)
                     ->exemptions(true) // Only exemptions
                     ->widgets(false)
-                    ->settings(false),
+                    ->settingsPage(false),
             ]);
     }
 }
 ```
 
-## Table Configuration
-
-### Polling
-
-Enable automatic table refresh:
-
-```php
-// config/filament-tax.php
-'tables' => [
-    'polling' => '30s', // Refresh every 30 seconds
-],
-```
-
-Or disable polling:
-
-```php
-'tables' => [
-    'polling' => false,
-],
-```
-
-### Date Formats
-
-Customize date display format:
-
-```php
-'tables' => [
-    'date_format' => 'Y-m-d',        // 2024-01-15
-    'datetime_format' => 'Y-m-d H:i', // 2024-01-15 14:30
-],
-```
-
-## Resource Configuration
-
-### Icons
-
-Customize navigation icons per resource:
-
-```php
-'resources' => [
-    'zones' => [
-        'navigation_icon' => 'heroicon-o-map',
-    ],
-    'classes' => [
-        'navigation_icon' => 'heroicon-o-squares-2x2',
-    ],
-    'rates' => [
-        'navigation_icon' => 'heroicon-o-percentage',
-    ],
-    'exemptions' => [
-        'navigation_icon' => 'heroicon-o-document-check',
-    ],
-],
-```
-
-### Sort Order
+## Resource Navigation
 
 Control resource ordering within the Tax group:
 
 ```php
 'resources' => [
-    'zones' => [
-        'navigation_sort' => 1,
-    ],
-    'classes' => [
-        'navigation_sort' => 2,
-    ],
-    'rates' => [
-        'navigation_sort' => 3,
-    ],
-    'exemptions' => [
-        'navigation_sort' => 4,
+    'navigation_sort' => [
+        'zones' => 1,
+        'classes' => 2,
+        'rates' => 2,
+        'exemptions' => 4,
     ],
 ],
 ```

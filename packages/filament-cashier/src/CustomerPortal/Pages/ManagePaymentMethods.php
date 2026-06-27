@@ -17,14 +17,17 @@ final class ManagePaymentMethods extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBanknotes;
 
-    protected static ?int $navigationSort = 2;
-
     /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.manage-payment-methods';
 
     public static function getNavigationLabel(): string
     {
         return __('filament-cashier::portal.payment_methods.title');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cashier.billing_portal.navigation_sort.payment_methods');
     }
 
     public function getTitle(): string

@@ -54,7 +54,7 @@ describe('PaymentRefunded event', function (): void {
             ->and($event->getCurrency())->toBe('MYR')
             ->and($event->getPurchaseId())->toBeNull()
             ->and($event->getReference())->toBeNull()
-            ->and($event->isTest())->toBeTrue();
+            ->and($event->isTest())->toBeFalse();
     });
 
     it('returns false for isTest when explicitly set', function (): void {
@@ -426,7 +426,7 @@ describe('WebhookReceived event', function (): void {
             ->and($event->getClientId())->toBeNull()
             ->and($event->getAmount())->toBe(0)
             ->and($event->getCurrency())->toBe('MYR')
-            ->and($event->isTest())->toBeTrue();
+            ->and($event->isTest())->toBeFalse();
     });
 
     it('gets amount from nested purchase data', function (): void {

@@ -39,4 +39,19 @@ return [
         'group' => 'Tax',
         'settings_group' => 'Settings',
     ],
+
+    'resources' => [
+        'navigation_sort' => [
+            'zones' => 1,
+            'classes' => 2,
+            'rates' => 2,
+            'exemptions' => 4,
+        ],
+    ],
+
+    'pages' => [
+        'navigation_sort' => [
+            'settings' => 11,
+        ],
+    ],
 ];

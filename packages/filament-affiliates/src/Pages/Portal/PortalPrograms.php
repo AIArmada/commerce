@@ -19,8 +19,6 @@ class PortalPrograms extends PortalPage
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedRectangleGroup;
 
-    protected static ?int $navigationSort = 2;
-
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.programs';
 

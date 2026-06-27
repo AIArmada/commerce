@@ -36,7 +36,10 @@ abstract class ChipIntegerModel extends Model
 
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $guarded = [
+        'owner_type',
+        'owner_id',
+    ];
 
     /**
      * The primary key type.

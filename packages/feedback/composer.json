@@ -32,8 +32,7 @@
     },
     "autoload": {
         "psr-4": {
-            "AIArmada\\Feedback\\": "src/",
-            "AIArmada\\Feedback\\Database\\Factories\\": "database/factories"
+            "AIArmada\\Feedback\\": "src/"
         }
     },
     "extra": {

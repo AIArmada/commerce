@@ -30,8 +30,6 @@ public function panel(Panel $panel): Panel
 }
 ```
 
-## Environment variables
+## Configuration
 
-| Variable | Default | Description |
-|---|---|---|
-| `FILAMENT_EVENTS_NAVIGATION_GROUP` | `Events` | Navigation group label |
+Navigation labels and resource registration are configured in `config/filament-events.php` after publishing the package config.

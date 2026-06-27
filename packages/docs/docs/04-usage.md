@@ -146,6 +146,24 @@ $docs = Doc::with(['template', 'statusHistories', 'docable'])
 
 When owner mode is enabled, the package models use `HasOwner` and follow the configured owner-scoping rules from `commerce-support`.
 
+## Recording Payments
+
+Use `DocService::recordPayment()` for document payments. Payment statuses are backed by `DocPaymentStatus`; supported values are `paid`, `refunded`, `failed`, and `voided`.
+
+```php
+use AIArmada\Docs\Enums\DocPaymentStatus;
+use AIArmada\Docs\Services\DocService;
+
+$payment = app(DocService::class)->recordPayment($document, [
+    'status' => DocPaymentStatus::Paid,
+    'amount' => 100.00,
+    'currency' => 'MYR',
+    'payment_method' => 'bank_transfer',
+    'reference' => 'PAY-123',
+    'paid_at' => now(),
+]);
+```
+
 ## Rendering and Share Links
 
 `DocService` delegates HTML/PDF rendering and share-link generation to `DocRenderService`.
@@ -164,6 +182,8 @@ $pdf = $renderer->renderPdf($document);
 $shareLink = $renderer->createShareLink($document, new ShareLinkData(
     allowedActions: [ShareLinkAction::View, ShareLinkAction::Pdf],
 ));
+
+$plainToken = $shareLink->plainToken();
 ```
 
 Share links resolve the document back inside its owner or explicit-global context, then serve either the HTML customer view or inline PDF with hardened response headers.

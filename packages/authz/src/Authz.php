@@ -85,7 +85,7 @@ class Authz
 
     public function clearCache(): void
     {
-        //
+        $this->flushPermissionCache();
     }
 
     protected function flushPermissionCache(?Authorizable $user = null): void

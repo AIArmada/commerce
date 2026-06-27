@@ -7,6 +7,9 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Support\TemplateBlockRegistry;
+use AIArmada\FilamentDocs\Resources\DocEmailTemplateResource;
+use AIArmada\FilamentDocs\Resources\DocSequenceResource;
+use AIArmada\FilamentDocs\Resources\DocTemplateResource;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -64,5 +67,32 @@ it('allows mutation for rows owned by current tenant', function (): void {
         DocsOwnerScope::assertCanMutateRecord($ownedTemplate, 'Template not found.');
 
         expect(true)->toBeTrue();
+    });
+});
+
+it('applies explicit owner filters to docs template resources', function (): void {
+    config()->set('docs.owner.enabled', true);
+    config()->set('docs.owner.include_global', false);
+
+    $owner = User::query()->create([
+        'name' => 'Resource Owner',
+        'email' => 'docs-resource-owner@example.test',
+        'password' => bcrypt('password'),
+    ]);
+
+    $resources = [
+        DocTemplateResource::class,
+        DocSequenceResource::class,
+        DocEmailTemplateResource::class,
+    ];
+
+    OwnerContext::withOwner($owner, function () use ($resources): void {
+        foreach ($resources as $resource) {
+            $sql = $resource::getEloquentQuery()->toSql();
+
+            expect($sql)
+                ->toContain('owner_type')
+                ->toContain('owner_id');
+        }
     });
 });

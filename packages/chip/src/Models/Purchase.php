@@ -39,6 +39,55 @@ use Illuminate\Support\Arr;
  */
 class Purchase extends ChipModel
 {
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'type',
+        'created_on',
+        'updated_on',
+        'client',
+        'purchase',
+        'brand_id',
+        'company_id',
+        'user_id',
+        'billing_template_id',
+        'client_id',
+        'payment',
+        'issuer_details',
+        'transaction_data',
+        'status_history',
+        'viewed_on',
+        'send_receipt',
+        'is_test',
+        'is_recurring_token',
+        'recurring_token',
+        'skip_capture',
+        'force_recurring',
+        'reference',
+        'reference_generated',
+        'notes',
+        'issued',
+        'due',
+        'refund_availability',
+        'currency_conversion',
+        'payment_method_whitelist',
+        'success_redirect',
+        'failure_redirect',
+        'cancel_redirect',
+        'success_callback',
+        'invoice_url',
+        'checkout_url',
+        'direct_post_url',
+        'creator_agent',
+        'platform',
+        'product',
+        'created_from_ip',
+        'marked_as_paid',
+        'order_id',
+        'metadata',
+    ];
+
     public function amount(): Attribute
     {
         return Attribute::get(function (): ?int {
@@ -192,8 +241,8 @@ class Purchase extends ChipModel
             'skip_capture' => 'boolean',
             'force_recurring' => 'boolean',
             'marked_as_paid' => 'boolean',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'created_at' => 'immutable_datetime',
+            'updated_at' => 'immutable_datetime',
         ];
     }
 }

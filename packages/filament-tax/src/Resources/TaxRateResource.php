@@ -22,11 +22,16 @@ final class TaxRateResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-calculator';
 
-    protected static ?int $navigationSort = 2;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-tax.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-tax.resources.navigation_sort.rates');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     protected static ?string $recordTitleAttribute = 'name';

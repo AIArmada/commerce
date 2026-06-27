@@ -24,11 +24,14 @@ final class BookmarkCollectionResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-folder';
 
-    protected static ?int $navigationSort = 3;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-engagement.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-engagement.resources.navigation_sort.collection');
     }
 
     public static function getEloquentQuery(): Builder

@@ -25,11 +25,16 @@ class CustomerResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
 
-    protected static ?int $navigationSort = 1;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-customers.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-customers.resources.navigation_sort.customers');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     protected static ?string $recordTitleAttribute = 'email';

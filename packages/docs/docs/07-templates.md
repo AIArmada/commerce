@@ -113,6 +113,8 @@ $shareLink = app(DocRenderService::class)->createShareLink(
         expiresAt: CarbonImmutable::now()->addDays(14),
     ),
 );
+
+$plainToken = $shareLink->plainToken();
 ```
 
 ## Rich Content

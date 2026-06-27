@@ -171,6 +171,16 @@ test('AffiliateCommissionRule calculateCommission for fixed type', function (): 
     expect($rule->calculateCommission(10000))->toBe(500);
 });
 
+test('AffiliateCommissionRule calculateCommission handles persisted string commission type', function (): void {
+    $rule = new AffiliateCommissionRule;
+    $rule->setRawAttributes([
+        'commission_type' => CommissionType::Percentage->value,
+        'commission_value' => 2500,
+    ], true);
+
+    expect($rule->calculateCommission(20000))->toBe(5000);
+});
+
 test('AffiliateCommissionRule scopeActive filters correctly', function (): void {
     $program = AffiliateProgram::create([
         'name' => 'Active Rule Test',

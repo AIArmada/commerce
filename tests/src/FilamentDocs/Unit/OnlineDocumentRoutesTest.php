@@ -48,13 +48,13 @@ it('renders public share links by hashed token only', function (): void {
         allowedActions: [ShareLinkAction::View],
     ));
 
-    $this->get(route('docs.share.show', ['token' => $shareLink->plainToken]))
+    $this->get(route('docs.share.show', ['token' => $shareLink->plainToken()]))
         ->assertSuccessful()
         ->assertSee('INV-SHARE');
 
     $shareLink->revoke();
 
-    $this->get(route('docs.share.show', ['token' => $shareLink->plainToken]))
+    $this->get(route('docs.share.show', ['token' => $shareLink->plainToken()]))
         ->assertNotFound();
 });
 
@@ -67,7 +67,7 @@ it('serves public share routes with private no-store headers', function (): void
         allowedActions: [ShareLinkAction::View, ShareLinkAction::Pdf],
     ));
 
-    $this->get(route('docs.share.show', ['token' => $shareLink->plainToken]))
+    $this->get(route('docs.share.show', ['token' => $shareLink->plainToken()]))
         ->assertSuccessful()
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertHeader('Referrer-Policy', 'no-referrer')
@@ -83,7 +83,7 @@ it('serves public share routes with private no-store headers', function (): void
 
     Pdf::shouldReceive('html')->once()->andReturn($pdfBuilderMock);
 
-    $this->get(route('docs.share.pdf', ['token' => $shareLink->plainToken]))
+    $this->get(route('docs.share.pdf', ['token' => $shareLink->plainToken()]))
         ->assertSuccessful()
         ->assertHeader('Content-Type', 'application/pdf')
         ->assertHeader('Cache-Control', 'no-store, private')
@@ -110,7 +110,7 @@ it('renders owner scoped public share links without ambient owner context', func
         allowedActions: [ShareLinkAction::View],
     )));
 
-    $this->get(route('docs.share.show', ['token' => $shareLink->plainToken]))
+    $this->get(route('docs.share.show', ['token' => $shareLink->plainToken()]))
         ->assertSuccessful()
         ->assertSee('INV-OWNER-SHARE');
 

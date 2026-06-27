@@ -33,11 +33,14 @@ final class ConditionResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Conditions';
 
-    protected static ?int $navigationSort = 33;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cart.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cart.resources.navigation_sort.conditions');
     }
 
     public static function form(Schema $schema): Schema

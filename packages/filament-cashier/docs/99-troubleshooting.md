@@ -189,6 +189,7 @@ Check auth guard configuration:
 ```php
 'billing_portal' => [
     'auth_guard' => 'web', // Must match your auth guard
+    'login_enabled' => true,
 ],
 ```
 

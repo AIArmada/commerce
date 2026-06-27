@@ -17,14 +17,17 @@ final class ViewInvoices extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
-    protected static ?int $navigationSort = 3;
-
     /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.view-invoices';
 
     public static function getNavigationLabel(): string
     {
         return __('filament-cashier::portal.invoices.title');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cashier.billing_portal.navigation_sort.invoices');
     }
 
     public function getTitle(): string

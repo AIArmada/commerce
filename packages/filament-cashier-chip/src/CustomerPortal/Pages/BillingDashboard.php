@@ -25,8 +25,6 @@ final class BillingDashboard extends Page
 
     protected static ?string $slug = 'cashier-chip-dashboard';
 
-    protected static ?int $navigationSort = 0;
-
     public static function getNavigationLabel(): string
     {
         return __('filament-cashier-chip::filament-cashier-chip.dashboard.title');
@@ -35,6 +33,13 @@ final class BillingDashboard extends Page
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cashier-chip.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-cashier-chip.billing.navigation_sort.dashboard');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public function getTitle(): string

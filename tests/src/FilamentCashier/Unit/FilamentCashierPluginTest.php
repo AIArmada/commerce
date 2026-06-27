@@ -77,6 +77,12 @@ it('can enable customer portal mode', function (): void {
     expect($plugin->customerPortalMode(true))->toBeInstanceOf(FilamentCashierPlugin::class);
 });
 
+it('defines the billing portal login toggle in config', function (): void {
+    $config = require __DIR__ . '/../../../../packages/filament-cashier/config/filament-cashier.php';
+
+    expect($config['billing_portal'])->toHaveKey('login_enabled', true);
+});
+
 it('gateway detector can be instantiated', function (): void {
     $detector = new GatewayDetector;
 

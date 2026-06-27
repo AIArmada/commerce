@@ -23,11 +23,16 @@ class SegmentRebuildPage extends Page
 
     protected static ?string $slug = 'segment-rebuild';
 
-    protected static ?int $navigationSort = 99;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-customers.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-customers.pages.navigation_sort.segment_rebuild');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function getNavigationLabel(): string

@@ -13,8 +13,6 @@ class PortalDashboard extends PortalPage
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedHome;
 
-    protected static ?int $navigationSort = -2;
-
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.dashboard';
 

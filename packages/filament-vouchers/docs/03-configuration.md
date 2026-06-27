@@ -19,7 +19,9 @@ php artisan vendor:publish --tag=filament-vouchers-config
 ### Navigation Group
 
 ```php
-'navigation_group' => 'Vouchers & Discounts',
+'navigation' => [
+    'group' => 'Vouchers & Discounts',
+],
 ```
 
 Controls the navigation group label for voucher resources. Set to `null` to place resources at the root level.
@@ -45,14 +47,25 @@ How frequently voucher tables poll for updates. Set to `null` to disable polling
 ```php
 'resources' => [
     'navigation_sort' => [
-        'vouchers' => 40,
-        'voucher_usage' => 41,
-        'voucher_wallets' => 42,
+        'vouchers' => 10,
+        'voucher_usage' => 20,
+        'voucher_wallets' => 30,
     ],
 ],
 ```
 
 Control the order of resources in the navigation sidebar.
+
+### Page Navigation Sort
+
+```php
+'pages' => [
+    'navigation_sort' => [
+        'stacking_configuration' => 100,
+        'targeting_configuration' => 101,
+    ],
+],
+```
 
 ### Order Resource
 
@@ -95,15 +108,24 @@ Leave unset to only allow global vouchers (records where `owner_type` and `owner
 ```php
 // config/filament-vouchers.php
 return [
-    'navigation_group' => 'Marketing',
+    'navigation' => [
+        'group' => 'Vouchers & Discounts',
+    ],
     'default_currency' => 'MYR',
     'polling_interval' => 30,
 
     'resources' => [
         'navigation_sort' => [
             'vouchers' => 10,
-            'voucher_usage' => 11,
-            'voucher_wallets' => 12,
+            'voucher_usage' => 20,
+            'voucher_wallets' => 30,
+        ],
+    ],
+
+    'pages' => [
+        'navigation_sort' => [
+            'stacking_configuration' => 100,
+            'targeting_configuration' => 101,
         ],
     ],
 

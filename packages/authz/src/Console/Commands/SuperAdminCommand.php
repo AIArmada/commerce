@@ -202,11 +202,7 @@ class SuperAdminCommand extends Command
      */
     protected function getEmailColumn(string $userModel): string
     {
-        if (method_exists($userModel, 'getEmailForVerification')) {
-            return 'email';
-        }
-
-        return 'email';
+        return (string) config('authz.users.email_column', 'email');
     }
 
     /**

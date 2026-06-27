@@ -22,8 +22,6 @@ class ShippingDashboard extends Page
 
     protected static ?string $slug = 'shipping-dashboard';
 
-    protected static ?int $navigationSort = 0;
-
     public static function getNavigationLabel(): string
     {
         return 'Dashboard';
@@ -31,7 +29,12 @@ class ShippingDashboard extends Page
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return 'Shipping';
+        return config('filament-shipping.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-shipping.pages.navigation_sort.dashboard');
     }
 
     public function getTitle(): string

@@ -14,6 +14,8 @@ use AIArmada\FilamentEvents\Pages\CheckInConsole;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
 use AIArmada\FilamentEvents\Pages\NotificationCenter;
 use AIArmada\FilamentEvents\Pages\SeatMapManager;
+use AIArmada\FilamentEvents\Resources\EventChangeLogResource;
+use AIArmada\FilamentEvents\Resources\EventRegistrationParticipantResource;
 use AIArmada\FilamentEvents\Resources\EventResource;
 use AIArmada\FilamentEvents\Widgets\EventStatsWidget;
 
@@ -27,6 +29,8 @@ it('exposes the plugin resources, pages, and widgets', function (): void {
     expect($plugin->getId())->toBe('filament-events')
         ->and($resources)->toContain(
             EventResource::class,
+            EventRegistrationParticipantResource::class,
+            EventChangeLogResource::class,
         )
         ->and($pages)->toContain(
             CheckInConsole::class,
@@ -43,6 +47,7 @@ it('loads the filament events package config', function (): void {
 
     expect(config('filament-events.navigation.group'))->toBe('Events')
         ->and(config('filament-events.resources.enabled.event'))->toBeTrue()
+        ->and(config('filament-events.resources.enabled.registration_participant'))->toBeTrue()
         ->and(config('filament-events.resources.enabled.change_log'))->toBeTrue();
 });
 

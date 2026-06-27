@@ -28,11 +28,16 @@ final class ManagePricingSettings extends Page
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-currency-dollar';
 
-    protected static ?int $navigationSort = 10;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-pricing.navigation.settings_group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-pricing.pages.navigation_sort.settings');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     /** @var view-string */

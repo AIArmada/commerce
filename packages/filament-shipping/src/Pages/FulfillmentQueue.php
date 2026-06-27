@@ -43,11 +43,14 @@ class FulfillmentQueue extends Page implements HasTable
     /** @var view-string */
     protected string $view = 'filament-shipping::pages.fulfillment-queue';
 
-    protected static ?int $navigationSort = 1;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-shipping.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-shipping.pages.navigation_sort.fulfillment_queue');
     }
 
     protected static ?string $title = 'Fulfillment Queue';

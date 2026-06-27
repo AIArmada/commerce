@@ -117,7 +117,7 @@ describe('ProcessChipWebhook', function (): void {
 
 describe('WebhookRetryManager', function (): void {
     it('retries a failed webhook', function (): void {
-        $webhook = Webhook::create([
+        $webhook = Webhook::forceCreate([
             'name' => Webhook::WEBHOOK_NAME,
             'url' => 'https://example.test/webhooks',
             'title' => 'Failed webhook',
@@ -140,7 +140,7 @@ describe('WebhookRetryManager', function (): void {
     });
 
     it('determines should retry for failed webhooks', function (): void {
-        $webhook = Webhook::create([
+        $webhook = Webhook::forceCreate([
             'name' => Webhook::WEBHOOK_NAME,
             'url' => 'https://example.test/webhooks',
             'title' => 'Retryable webhook',
@@ -160,7 +160,7 @@ describe('WebhookRetryManager', function (): void {
     });
 
     it('should not retry processed webhooks', function (): void {
-        $webhook = Webhook::create([
+        $webhook = Webhook::forceCreate([
             'name' => Webhook::WEBHOOK_NAME,
             'url' => 'https://example.test/webhooks',
             'title' => 'Processed webhook',

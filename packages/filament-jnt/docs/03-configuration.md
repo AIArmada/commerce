@@ -29,7 +29,9 @@ return [
     | Navigation
     |--------------------------------------------------------------------------
     */
-    'navigation_group' => 'Shipping',
+    'navigation' => [
+        'group' => 'Shipping'
+    ],
     'navigation_badge_color' => 'primary',
 
     /*
@@ -79,12 +81,14 @@ return [
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `navigation_group` | `string` | `'Shipping'` | Navigation group label |
+| `navigation.group` | `string` | `'Shipping'` | Navigation group label |
 | `navigation_badge_color` | `string` | `'primary'` | Badge color for counts |
 
 **Example**:
 ```php
-'navigation_group' => 'Logistics',
+'navigation' => [
+        'group' => 'Shipping'
+    ],
 'navigation_badge_color' => 'success',
 ```
 

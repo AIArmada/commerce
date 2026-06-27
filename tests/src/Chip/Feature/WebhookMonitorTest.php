@@ -15,7 +15,7 @@ describe('WebhookMonitor without database', function (): void {
     it('calculates health metrics from stored webhooks', function (): void {
         $since = CarbonImmutable::parse('2026-04-22 08:00:00');
 
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Processed webhook',
             'event' => 'purchase.paid',
             'events' => ['purchase.paid'],
@@ -30,7 +30,7 @@ describe('WebhookMonitor without database', function (): void {
             'callback' => 'http://example.com/webhook',
         ]);
 
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Failed webhook',
             'event' => 'purchase.failed',
             'events' => ['purchase.failed'],
@@ -45,7 +45,7 @@ describe('WebhookMonitor without database', function (): void {
             'callback' => 'http://example.com/webhook',
         ]);
 
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Pending webhook',
             'event' => 'purchase.created',
             'events' => ['purchase.created'],
@@ -60,7 +60,7 @@ describe('WebhookMonitor without database', function (): void {
             'callback' => 'http://example.com/webhook',
         ]);
 
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Old webhook',
             'event' => 'purchase.old',
             'events' => ['purchase.old'],
@@ -88,7 +88,7 @@ describe('WebhookMonitor without database', function (): void {
     it('groups hourly webhook volume using stored timestamps', function (): void {
         $since = CarbonImmutable::parse('2026-04-22 10:00:00');
 
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Hour one processed',
             'event' => 'purchase.paid',
             'events' => ['purchase.paid'],
@@ -102,7 +102,7 @@ describe('WebhookMonitor without database', function (): void {
             'callback' => 'http://example.com/webhook',
         ]);
 
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Hour one failed',
             'event' => 'purchase.failed',
             'events' => ['purchase.failed'],
@@ -116,7 +116,7 @@ describe('WebhookMonitor without database', function (): void {
             'callback' => 'http://example.com/webhook',
         ]);
 
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Hour two processed',
             'event' => 'purchase.created',
             'events' => ['purchase.created'],

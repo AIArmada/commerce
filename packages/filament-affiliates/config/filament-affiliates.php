@@ -57,6 +57,18 @@ return [
             'creatives' => true,
             'vouchers' => true,
         ],
+        'navigation_sort' => [
+            'dashboard' => -2,
+            'profile' => -1,
+            'links' => 1,
+            'programs' => 2,
+            'conversions' => 2,
+            'creatives' => 2,
+            'downlines' => 3,
+            'payouts' => 3,
+            'vouchers' => 3,
+            'support' => 5,
+        ],
     ],
 
     /* Integrations */
@@ -90,6 +102,7 @@ return [
     'pages' => [
         'navigation_sort' => [
             'reports' => 10,
+            'commission_settings' => 5,
             'payout_batch' => 12,
             'fraud_review' => 15,
         ],

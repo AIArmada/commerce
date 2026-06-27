@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource\Pages\ListAffiliateRankHistories;
 use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource\Pages\ViewAffiliateRankHistory;
@@ -73,7 +74,7 @@ final class AffiliateRankHistoryResource extends Resource
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $query;
 
-        return $modelQuery;
+        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema

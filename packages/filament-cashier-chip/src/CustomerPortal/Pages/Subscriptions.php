@@ -21,8 +21,6 @@ class Subscriptions extends Page
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedArrowPath;
 
-    protected static ?int $navigationSort = 10;
-
     /** @var view-string */
     protected string $view = 'filament-cashier-chip::pages.subscriptions';
 
@@ -36,6 +34,13 @@ class Subscriptions extends Page
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cashier-chip.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-cashier-chip.billing.navigation_sort.subscriptions');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function shouldRegisterNavigation(): bool

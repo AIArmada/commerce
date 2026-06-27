@@ -18,7 +18,9 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'navigation_group' => 'Marketing',
+    'navigation' => [
+        'group' => 'Marketing'
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -62,7 +64,9 @@ return [
 Control which navigation group the promotions resource appears under:
 
 ```php
-'navigation_group' => 'Marketing',
+'navigation' => [
+        'group' => 'Marketing'
+    ],
 ```
 
 Set to `null` to display in the root navigation.

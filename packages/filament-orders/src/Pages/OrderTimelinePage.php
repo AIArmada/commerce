@@ -16,11 +16,17 @@ class OrderTimelinePage extends ListRecords
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clock';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Sales';
-
-    protected static ?int $navigationSort = 6;
-
     protected static ?string $title = 'Order Timeline';
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-orders.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-orders.pages.navigation_sort.timeline');
+    }
 
     public static function getNavigationLabel(): string
     {

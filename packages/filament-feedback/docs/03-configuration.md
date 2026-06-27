@@ -9,8 +9,6 @@ title: Configuration
 ```php
 'navigation' => [
     'group' => 'Feedback',
-    'icon' => 'heroicon-o-chat-bubble-left-right',
-    'sort' => 70,
 ],
 ```
 
@@ -25,27 +23,22 @@ title: Configuration
         'feedback_template' => true,
         'feedback_testimonial' => true,
     ],
+    'navigation_sort' => [
+        'feedback_form' => 1,
+        'feedback_response' => 2,
+        'feedback_invitation' => 3,
+        'feedback_template' => 4,
+        'feedback_testimonial' => 5,
+    ],
 ],
 ```
 
-## Feature toggles
+## Page Navigation
 
 ```php
-'features' => [
-    'forms' => true,
-    'responses' => true,
-    'invitations' => true,
-    'templates' => true,
-    'testimonials' => true,
-    'analytics_dashboard' => true,
-    'exports' => true,
-],
-```
-
-## Table defaults
-
-```php
-'tables' => [
-    'default_pagination' => 25,
+'pages' => [
+    'navigation_sort' => [
+        'dashboard' => 10,
+    ],
 ],
 ```

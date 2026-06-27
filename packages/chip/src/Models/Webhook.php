@@ -51,7 +51,36 @@ class Webhook extends WebhookCall
 
     public $timestamps = true;
 
-    public $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'url',
+        'headers',
+        'payload',
+        'exception',
+        'title',
+        'events',
+        'callback',
+        'all_events',
+        'public_key',
+        'event_type',
+        'event',
+        'signature',
+        'verified',
+        'processed',
+        'processing_error',
+        'processing_attempts',
+        'idempotency_key',
+        'retry_count',
+        'last_retry_at',
+        'last_error',
+        'processing_time_ms',
+        'ip_address',
+        'created_on',
+        'updated_on',
+    ];
 
     /**
      * @var array<string, string>
@@ -136,12 +165,12 @@ class Webhook extends WebhookCall
      */
     public function markProcessed(float $processingTimeMs = 0): self
     {
-        $this->update([
+        $this->forceFill([
             'status' => 'processed',
             'processed' => true,
             'processed_at' => now(),
             'processing_time_ms' => $processingTimeMs,
-        ]);
+        ])->save();
 
         return $this;
     }
@@ -151,10 +180,10 @@ class Webhook extends WebhookCall
      */
     public function markFailed(Throwable $exception): self
     {
-        $this->update([
+        $this->forceFill([
             'status' => 'failed',
             'last_error' => $exception->getMessage(),
-        ]);
+        ])->save();
 
         return $this;
     }
@@ -164,10 +193,10 @@ class Webhook extends WebhookCall
      */
     public function markForRetry(string $reason): self
     {
-        $this->update([
+        $this->forceFill([
             'status' => 'failed',
             'last_error' => $reason,
-        ]);
+        ])->save();
 
         return $this;
     }

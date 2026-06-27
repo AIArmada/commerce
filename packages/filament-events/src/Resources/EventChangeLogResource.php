@@ -26,11 +26,16 @@ final class EventChangeLogResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?int $navigationSort = 99;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-events.resources.navigation_sort.change_log');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     /* @phpstan-ignore return.type */

@@ -20,6 +20,7 @@ use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\O
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\OccurrenceRegistrationsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\OccurrenceSessionsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\OccurrenceTicketTypesRelationManager;
+use AIArmada\FilamentEvents\Resources\EventRegistrationParticipantResource;
 use AIArmada\FilamentEvents\Resources\EventRegistrationResource;
 use AIArmada\FilamentEvents\Resources\EventResource;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\AttendancesRelationManager;
@@ -114,6 +115,7 @@ it('reads the configured navigation group from resources', function (): void {
         EventOccurrenceResource::class,
         EventSessionResource::class,
         EventRegistrationResource::class,
+        EventRegistrationParticipantResource::class,
         EventTicketTypeResource::class,
         EventAttendanceResource::class,
         EventChangeLogResource::class,
@@ -127,7 +129,7 @@ it('builds the current event resources and relation managers', function (): void
     $table = Table::make(Mockery::mock(HasTable::class));
     $schemaLivewire = filamentEvents_makeSchemaLivewire();
 
-    foreach ([EventResource::class, EventOccurrenceResource::class, EventSessionResource::class, EventRegistrationResource::class, EventTicketTypeResource::class, EventAttendanceResource::class, EventChangeLogResource::class, VenueResource::class] as $resource) {
+    foreach ([EventResource::class, EventOccurrenceResource::class, EventSessionResource::class, EventRegistrationResource::class, EventRegistrationParticipantResource::class, EventTicketTypeResource::class, EventAttendanceResource::class, EventChangeLogResource::class, VenueResource::class] as $resource) {
         expect($resource::table($table))->toBeInstanceOf(Table::class);
         expect($resource::infolist(Schema::make($schemaLivewire)))->toBeInstanceOf(Schema::class);
         expect($resource::getPages())->not->toBeEmpty();

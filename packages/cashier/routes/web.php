@@ -14,10 +14,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('api')->prefix('cashier')->name('cashier.')->group(function (): void {
-    // Stripe webhooks (if using laravel/cashier, it will register its own routes)
-    // Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->name('stripe.webhook');
-
-    // CHIP webhooks (if using aiarmada/cashier-chip, it will register its own routes)
-    // Route::post('chip/webhook', [ChipWebhookController::class, 'handleWebhook'])->name('chip.webhook');
-});
+Route::middleware('api')->prefix('cashier')->name('cashier.')->group(function (): void {});

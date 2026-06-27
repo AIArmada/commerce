@@ -9,7 +9,9 @@ Configuration is defined in `config/filament-signals.php`.
 ## Navigation
 
 ```php
-'navigation_group' => 'Insights',
+'navigation' => [
+    'group' => 'Insights',
+],
 ```
 
 ## Features
@@ -77,6 +79,7 @@ Feature flags in this plugin only control whether the Filament UI is registered.
         'saved_reports' => 32,
         'alert_rules' => 33,
         'alert_logs' => 34,
+        'interaction_rules' => 35,
     ],
 ],
 ```

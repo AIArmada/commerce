@@ -16,5 +16,14 @@ return [
             'subscription' => true,
             'reminder' => true,
         ],
+        'navigation_sort' => [
+            'follow' => 1,
+            'bookmark' => 2,
+            'collection' => 3,
+            'response' => 4,
+            'reaction' => 5,
+            'subscription' => 6,
+            'reminder' => 7,
+        ],
     ],
 ];

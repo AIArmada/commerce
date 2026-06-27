@@ -21,8 +21,6 @@ class ManageAffiliateCommissionSettings extends Page
 
     protected static ?string $navigationLabel = 'Commission Settings';
 
-    protected static ?int $navigationSort = 5;
-
     protected static ?string $slug = 'affiliate-commission-settings';
 
     /** @var view-string */
@@ -31,6 +29,13 @@ class ManageAffiliateCommissionSettings extends Page
     public static function getNavigationGroup(): ?string
     {
         return config('filament-affiliates.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-affiliates.pages.navigation_sort.commission_settings');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public function getTitle(): string | Htmlable

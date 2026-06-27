@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Pages;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
@@ -79,10 +80,10 @@ final class PendingApprovalsPage extends Page implements HasTable
             return 0;
         }
 
-        $query = DocApproval::query()
+        $query = OwnerUiScope::apply(DocApproval::query(), includeGlobal: false)
             ->where('assigned_to', $userId)
             ->where('status', DocApprovalStatus::Pending)
-            ->whereHas('doc');
+            ->whereHas('doc', static fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false));
 
         return $query->count();
     }
@@ -135,7 +136,7 @@ final class PendingApprovalsPage extends Page implements HasTable
             ->filters([
                 SelectFilter::make('doc_type')
                     ->label(__('Document Type'))
-                    ->options(fn (): array => Doc::query()
+                    ->options(fn (): array => OwnerUiScope::apply(Doc::query(), includeGlobal: false)
                         ->distinct()
                         ->pluck('doc_type', 'doc_type')
                         ->toArray()),
@@ -214,12 +215,12 @@ final class PendingApprovalsPage extends Page implements HasTable
             return DocApproval::query()->whereRaw('1 = 0');
         }
 
-        $query = DocApproval::query()
+        $query = OwnerUiScope::apply(DocApproval::query(), includeGlobal: false)
             ->with(['doc', 'requestedBy'])
             ->where('assigned_to', $userId)
             ->where('status', DocApprovalStatus::Pending);
 
-        return $query->whereHas('doc');
+        return $query->whereHas('doc', static fn (Builder $query): Builder => OwnerUiScope::apply($query, includeGlobal: false));
     }
 
     /**
@@ -243,7 +244,7 @@ final class PendingApprovalsPage extends Page implements HasTable
         abort_unless((string) $approval->assigned_to === (string) $userId, 403);
         abort_unless($approval->status === DocApprovalStatus::Pending, 403);
 
-        $doc = Doc::query()
+        $doc = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
             ->whereKey($approval->doc_id)
             ->first();
 

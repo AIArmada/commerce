@@ -115,11 +115,30 @@ class Subscription extends Model
     public const STATUS_PAUSED = 'paused';
 
     /**
-     * The attributes that are not mass assignable.
-     *
-     * @var array<int, string>
+     * @var list<string>
      */
-    protected $guarded = [];
+    protected $fillable = [
+        'billable_type',
+        'billable_id',
+        'type',
+        'chip_price',
+        'quantity',
+        'recurring_token',
+        'billing_interval',
+        'billing_interval_count',
+        'trial_ends_at',
+        'next_billing_at',
+        'ends_at',
+        'canceled_at',
+        'paused_at',
+        'past_due_at',
+        'trial_started_at',
+        'renewed_at',
+        'coupon_id',
+        'coupon_discount',
+        'coupon_duration',
+        'coupon_applied_at',
+    ];
 
     /**
      * The relations to eager load on every query.
@@ -676,7 +695,7 @@ class Subscription extends Model
                 $quantity = is_array($priceValue) ? ($priceValue['quantity'] ?? 1) : 1;
                 $quantity = max(1, (int) $quantity);
 
-                $this->items()->create([
+                $this->createTrustedSubscriptionItem([
                     'owner_type' => $this->owner_type,
                     'owner_id' => $this->owner_id,
                     'chip_id' => 'si_' . uniqid() . '_' . time(),
@@ -760,7 +779,7 @@ class Subscription extends Model
      */
     public function markAsCanceled(): void
     {
-        $this->fill([
+        $this->forceFill([
             'chip_status' => self::STATUS_CANCELED,
             'ends_at' => now(),
             'canceled_at' => now(),
@@ -783,7 +802,7 @@ class Subscription extends Model
         // Finally, we will remove the ending timestamp from the user's record in the
         // local database to indicate that the subscription is active again and is
         // no longer "canceled". Then we shall save this record in the database.
-        $this->fill([
+        $this->forceFill([
             'chip_status' => self::STATUS_ACTIVE,
             'ends_at' => null,
             'canceled_at' => null,
@@ -1002,7 +1021,7 @@ class Subscription extends Model
             throw SubscriptionUpdateFailure::duplicatePrice($this, $price);
         }
 
-        $this->items()->create([
+        $this->createTrustedSubscriptionItem([
             'owner_type' => $this->owner_type,
             'owner_id' => $this->owner_id,
             'chip_id' => 'si_' . uniqid() . '_' . time(),
@@ -1115,7 +1134,7 @@ class Subscription extends Model
      */
     public function pause(): static
     {
-        $this->fill([
+        $this->forceFill([
             'chip_status' => self::STATUS_PAUSED,
             'paused_at' => now(),
         ])->save();
@@ -1130,7 +1149,7 @@ class Subscription extends Model
      */
     public function unpause(): static
     {
-        $this->fill([
+        $this->forceFill([
             'chip_status' => self::STATUS_ACTIVE,
             'paused_at' => null,
         ])->save();
@@ -1253,6 +1272,19 @@ class Subscription extends Model
     protected function resolveOwner(): ?Model
     {
         return OwnerContext::resolve();
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function createTrustedSubscriptionItem(array $attributes): SubscriptionItem
+    {
+        /** @var SubscriptionItem $item */
+        $item = $this->items()->make();
+        $item->forceFill($attributes);
+        $item->save();
+
+        return $item;
     }
 
     /**

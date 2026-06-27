@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Pages;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
@@ -55,7 +56,7 @@ final class AgingReportPage extends Page implements HasTable
     {
         return $table
             ->query(
-                Doc::query()
+                OwnerUiScope::apply(Doc::query(), includeGlobal: false)
                     ->whereIn('status', [
                         DocStatus::normalize(Pending::class),
                         DocStatus::normalize(Sent::class),
@@ -196,7 +197,7 @@ final class AgingReportPage extends Page implements HasTable
      */
     public function getAgingSummary(): array
     {
-        $docs = Doc::query()
+        $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
             ->select(['id', 'due_date', 'total'])
             ->whereIn('status', [
                 DocStatus::normalize(Pending::class),

@@ -286,6 +286,9 @@ $payment = $user->chargeWithGateway(1000, $paymentMethodId, 'stripe', [
 ]);
 ```
 
+Mutable Stripe operations are also protected by `cashier.payment_operations.rate_limiting`. Tune the
+attempt window in [Configuration](03-configuration.md) for your gateway quota and checkout traffic.
+
 ### 4. Keep Gateway-Native APIs for Gateway-Native Features
 
 The wrapper is great for unified reads and common write flows. For gateway-specific setup intents,

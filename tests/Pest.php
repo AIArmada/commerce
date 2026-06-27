@@ -18,6 +18,7 @@ use AIArmada\Commerce\Tests\Products\ProductsTestCase;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -26,10 +27,12 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 
 pest()->extend(TestCase::class)->in(
     'src/Addressing',
+    'src/Authz',
     'src/FilamentAddressing',
     'src/Cart',
     'src/Checkout',
     'src/Chip',
+    'src/CommerceSupport',
     'src/Contacting',
     'src/Docs',
     'src/Events',

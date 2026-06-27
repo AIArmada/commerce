@@ -174,7 +174,7 @@ describe('WebhookRetryManager', function (): void {
 
         $manager = app(WebhookRetryManager::class);
 
-        $webhook = Webhook::create([
+        $webhook = Webhook::forceCreate([
             'title' => 'Pending refund webhook',
             'event' => 'purchase.pending_refund',
             'events' => ['purchase.pending_refund'],
@@ -215,7 +215,7 @@ describe('WebhookRetryManager', function (): void {
         $manager = app(WebhookRetryManager::class);
 
         $webhook = OwnerContext::withOwner($owner, function () use ($owner, $purchaseId): Webhook {
-            return Webhook::create([
+            return Webhook::forceCreate([
                 'title' => 'Owned pending refund webhook',
                 'event' => 'purchase.pending_refund',
                 'events' => ['purchase.pending_refund'],

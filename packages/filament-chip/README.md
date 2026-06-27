@@ -43,7 +43,9 @@ php artisan vendor:publish --tag="filament-chip-config"
 Key options in `config/filament-chip.php`:
 
 ```php
-'navigation_group' => 'CHIP Operations',
+'navigation' => [
+        'group' => 'CHIP Operations'
+    ],
 'polling_interval' => '45s',
 'tables' => [
     'created_on_format' => 'Y-m-d H:i:s',

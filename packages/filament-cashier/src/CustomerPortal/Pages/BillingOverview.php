@@ -15,14 +15,17 @@ final class BillingOverview extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedHome;
 
-    protected static ?int $navigationSort = 0;
-
     /** @var view-string */
     protected string $view = 'filament-cashier::customer-portal.billing-overview';
 
     public static function getNavigationLabel(): string
     {
         return __('filament-cashier::portal.overview.title');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cashier.billing_portal.navigation_sort.overview');
     }
 
     public function getTitle(): string

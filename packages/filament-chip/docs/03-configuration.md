@@ -41,6 +41,12 @@ return [
             'company_statements' => 60,
         ],
     ],
+
+    'pages' => [
+        'navigation_sort' => [
+            'analytics_dashboard' => 99,
+        ],
+    ],
 ];
 ```
 
@@ -98,6 +104,18 @@ return [
 
 These values control sidebar ordering when the corresponding resource is registered in the panel.
 
+## Page Navigation Sort
+
+```php
+'pages' => [
+    'navigation_sort' => [
+        'analytics_dashboard' => 99,
+    ],
+],
+```
+
+This controls the analytics dashboard page position.
+
 ## Plugin Registration
 
 ```php
@@ -109,7 +127,7 @@ $panel->plugin(FilamentChipPlugin::make());
 By default, the plugin registers:
 
 - Page: `AnalyticsDashboardPage`
-- Resources: `PurchaseResource`, `ClientResource`
+- Resources: `PurchaseResource`, `ClientResource`, `PaymentResource`, `RefundResource`, `SendInstructionResource`, `BankAccountResource`
 - Widgets: `ChipStatsWidget`, `RevenueChartWidget`, `RecentTransactionsWidget`
 
 Optional resources/widgets can be registered explicitly in your panel provider.

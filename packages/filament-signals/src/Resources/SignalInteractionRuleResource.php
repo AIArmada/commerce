@@ -27,8 +27,6 @@ final class SignalInteractionRuleResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-cursor-arrow-rays';
 
-    protected static ?int $navigationSort = 35;
-
     protected static ?string $recordTitleAttribute = 'name';
 
     /**

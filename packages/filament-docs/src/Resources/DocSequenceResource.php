@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
@@ -26,6 +27,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
@@ -243,5 +245,16 @@ final class DocSequenceResource extends Resource
     public static function getNavigationSort(): ?int
     {
         return config('filament-docs.resources.navigation_sort.sequences', 90);
+    }
+
+    /**
+     * @return Builder<DocSequence>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<DocSequence> $query */
+        $query = parent::getEloquentQuery();
+
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 }

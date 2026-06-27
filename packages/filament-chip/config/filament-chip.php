@@ -48,4 +48,10 @@ return [
             'company_statements' => 60,
         ],
     ],
+
+    'pages' => [
+        'navigation_sort' => [
+            'analytics_dashboard' => 99,
+        ],
+    ],
 ];

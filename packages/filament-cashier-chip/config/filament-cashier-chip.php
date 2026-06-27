@@ -56,6 +56,7 @@ return [
     'billing' => [
         'billable_model' => null,
         'panel_id' => 'billing',
+        'auth_guard' => 'web',
         'features' => [
             'subscriptions' => true,
             'payment_methods' => true,
@@ -67,6 +68,12 @@ return [
         ],
         'redirects' => [
             'after_payment_method_added' => null,
+        ],
+        'navigation_sort' => [
+            'dashboard' => 0,
+            'subscriptions' => 10,
+            'payment_methods' => 20,
+            'invoices' => 30,
         ],
     ],
 

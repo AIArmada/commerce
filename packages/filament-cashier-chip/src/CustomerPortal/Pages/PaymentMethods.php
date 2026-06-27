@@ -19,8 +19,6 @@ class PaymentMethods extends Page
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
 
-    protected static ?int $navigationSort = 20;
-
     /** @var view-string */
     protected string $view = 'filament-cashier-chip::pages.payment-methods';
 
@@ -34,6 +32,13 @@ class PaymentMethods extends Page
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cashier-chip.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-cashier-chip.billing.navigation_sort.payment_methods');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function shouldRegisterNavigation(): bool

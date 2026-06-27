@@ -8,6 +8,7 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Support\PaymentOperationLimiter;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
@@ -260,7 +261,12 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
      */
     public function create(?string $paymentMethod = null, array $options = []): SubscriptionContract
     {
-        $subscription = $this->builder->create($paymentMethod, $options);
+        $subscription = PaymentOperationLimiter::run(
+            $this->gateway(),
+            'create_subscription',
+            $this->billable,
+            fn () => $this->builder->create($paymentMethod, $options),
+        );
 
         return new StripeSubscription($subscription);
     }

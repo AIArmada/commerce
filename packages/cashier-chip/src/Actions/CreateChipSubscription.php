@@ -92,7 +92,8 @@ final class CreateChipSubscription
             $subscription->setRelation('billable', $owner);
 
             foreach ($items as $item) {
-                $subscription->items()->create([
+                $subscriptionItem = $subscription->items()->make();
+                $subscriptionItem->forceFill([
                     ...$ownerAttributes,
                     'chip_id' => Str::uuid()->toString(),
                     'chip_product' => $item['product'] ?? null,
@@ -100,6 +101,7 @@ final class CreateChipSubscription
                     'quantity' => $item['quantity'] ?? 1,
                     'unit_amount' => $item['unit_amount'] ?? null,
                 ]);
+                $subscriptionItem->save();
             }
 
             if ($couponId && $couponDiscount > 0) {

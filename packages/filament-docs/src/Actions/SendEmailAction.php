@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Actions;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Services\DocEmailService;
@@ -46,7 +47,7 @@ final class SendEmailAction
                     ->label(__('Email Template'))
                     ->options(function (?Doc $record = null): array {
                         /** @var Builder<DocEmailTemplate> $query */
-                        $query = DocEmailTemplate::query()
+                        $query = OwnerUiScope::apply(DocEmailTemplate::query(), includeGlobal: false)
                             ->where('is_active', true)
                             ->orderBy('name');
 
@@ -85,7 +86,7 @@ final class SendEmailAction
 
             $template = null;
             if (! empty($data['template_id'])) {
-                $template = DocEmailTemplate::query()
+                $template = OwnerUiScope::apply(DocEmailTemplate::query(), includeGlobal: false)
                     ->where('is_active', true)
                     ->where('doc_type', $record->doc_type)
                     ->find($data['template_id']);

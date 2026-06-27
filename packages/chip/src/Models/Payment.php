@@ -31,6 +31,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Payment extends ChipModel
 {
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'purchase_id',
+        'payment_type',
+        'is_outgoing',
+        'currency',
+        'pending_unfreeze_on',
+        'description',
+        'paid_on',
+        'remote_paid_on',
+        'created_on',
+        'updated_on',
+    ];
+
     public function paidOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['paid_on'] ?? null));

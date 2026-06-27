@@ -23,11 +23,14 @@ class ShippingRateResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCurrencyDollar;
 
-    protected static ?int $navigationSort = 3;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-shipping.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-shipping.resources.navigation_sort.rates');
     }
 
     protected static ?string $navigationLabel = 'Shipping Rates';

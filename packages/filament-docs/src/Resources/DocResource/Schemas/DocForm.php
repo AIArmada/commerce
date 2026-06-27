@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\Schemas;
 
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Enums\DocMergeTag;
 use AIArmada\Docs\Enums\DocTemplateBlockType;
 use AIArmada\Docs\Models\Doc;
@@ -69,18 +69,11 @@ final class DocForm
                                 Select::make('doc_template_id')
                                     ->label('Template')
                                     ->options(function (Get $get): array {
-                                        $query = DocTemplate::query();
+                                        $query = OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false);
 
                                         $docType = $get('doc_type');
                                         if (is_string($docType) && $docType !== '') {
                                             $query->where('doc_type', $docType);
-                                        }
-
-                                        if (config('docs.owner.enabled', false)) {
-                                            $includeGlobal = (bool) config('docs.owner.include_global', false);
-                                            $owner = OwnerContext::resolve();
-
-                                            $query->forOwner($owner, $includeGlobal);
                                         }
 
                                         /** @var array<string, string> $options */
@@ -310,7 +303,7 @@ final class DocForm
         $docType = $get('doc_type') ?: $record?->doc_type;
 
         if (is_string($templateId) && $templateId !== '') {
-            $query = DocTemplate::query();
+            $query = OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false);
 
             if (is_string($docType) && $docType !== '') {
                 $query->where('doc_type', $docType);
@@ -327,16 +320,9 @@ final class DocForm
             return null;
         }
 
-        $query = DocTemplate::query()
+        $query = OwnerUiScope::apply(DocTemplate::query(), includeGlobal: false)
             ->where('doc_type', $docType)
             ->where('is_default', true);
-
-        if (config('docs.owner.enabled', false)) {
-            $includeGlobal = (bool) config('docs.owner.include_global', false);
-            $owner = OwnerContext::resolve();
-
-            $query->forOwner($owner, $includeGlobal);
-        }
 
         return $query->first();
     }

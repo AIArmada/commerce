@@ -24,8 +24,6 @@ final class EventRegistrationParticipantResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    protected static ?int $navigationSort = 11;
-
     public static function getNavigationLabel(): string
     {
         return 'Participants';
@@ -34,6 +32,13 @@ final class EventRegistrationParticipantResource extends Resource
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-events.resources.navigation_sort.registration_participant');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function getNavigationBadge(): ?string

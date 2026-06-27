@@ -40,11 +40,16 @@ final class MergeCustomersPage extends Page implements HasForms
 
     protected static ?string $title = 'Merge Customers';
 
-    protected static ?int $navigationSort = 10;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-customers.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-customers.pages.navigation_sort.merge_customers');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function shouldRegisterNavigation(): bool

@@ -13,8 +13,6 @@ class PortalVouchers extends PortalPage
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTicket;
 
-    protected static ?int $navigationSort = 3;
-
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.vouchers';
 

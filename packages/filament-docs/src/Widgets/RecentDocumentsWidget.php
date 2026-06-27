@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\FilamentDocs\Resources\DocResource;
@@ -27,7 +28,7 @@ final class RecentDocumentsWidget extends BaseWidget
     {
         return $table
             ->query(
-                Doc::query()
+                OwnerUiScope::apply(Doc::query(), includeGlobal: false)
                     ->latest()
                     ->limit(10)
             )

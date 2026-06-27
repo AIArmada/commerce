@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Pages\ListAffiliateConversions;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Pages\ViewAffiliateConversion;
@@ -25,7 +26,7 @@ final class AffiliateConversionResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery();
+        return OwnerUiScope::apply(parent::getEloquentQuery(), includeGlobal: false);
     }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedReceiptPercent;

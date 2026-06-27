@@ -32,11 +32,14 @@ final class CartItemResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Cart Items';
 
-    protected static ?int $navigationSort = 31;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cart.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cart.resources.navigation_sort.cart_items');
     }
 
     public static function form(Schema $schema): Schema

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Draft;
@@ -19,7 +20,7 @@ final class DocStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $docs = Doc::query();
+        $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false);
 
         $totalDocs = (clone $docs)->count();
         $draftCount = (clone $docs)->where('status', DocStatus::normalize(Draft::class))->count();

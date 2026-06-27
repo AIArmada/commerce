@@ -25,8 +25,6 @@ final class ManageSubscriptions extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
 
-    protected static ?int $navigationSort = 1;
-
     public int $perGatewayLimit = 50;
 
     public bool $hasMoreSubscriptions = false;
@@ -39,6 +37,11 @@ final class ManageSubscriptions extends Page
     public static function getNavigationLabel(): string
     {
         return __('filament-cashier::portal.subscriptions.title');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cashier.billing_portal.navigation_sort.subscriptions');
     }
 
     public function getTitle(): string
