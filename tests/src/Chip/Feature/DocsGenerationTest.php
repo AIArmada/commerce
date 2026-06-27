@@ -27,7 +27,7 @@ describe('GenerateDocOnPayment', function (): void {
     });
 
     it('creates a purchase model and checks doc exists', function (): void {
-        $purchase = Purchase::create([
+        $purchase = tap(new Purchase, fn (Purchase $p) => $p->forceFill([
             'id' => 'purchase-doc-test-123',
             'type' => 'purchase',
             'status' => 'paid',
@@ -53,7 +53,7 @@ describe('GenerateDocOnPayment', function (): void {
             'skip_capture' => false,
             'force_recurring' => false,
             'marked_as_paid' => false,
-        ]);
+        ])->save());
 
         expect($purchase->exists)->toBeTrue();
         expect($purchase->status)->toBe('paid');

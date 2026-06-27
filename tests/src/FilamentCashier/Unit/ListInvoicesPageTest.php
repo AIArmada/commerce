@@ -40,7 +40,7 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
 
     Auth::guard()->setUser($user);
 
-    $purchaseA = Purchase::query()->create([
+    $purchaseA = tap(new Purchase, fn (Purchase $p) => $p->forceFill([
         'id' => (string) Str::uuid(),
         'type' => 'purchase',
         'created_on' => Carbon::parse('2025-01-01 00:00:00')->timestamp,
@@ -92,9 +92,9 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
         ],
         'created_at' => Carbon::parse('2025-01-01 00:00:00'),
         'updated_at' => Carbon::parse('2025-01-01 00:00:00'),
-    ]);
+    ])->save());
 
-    $purchaseB = Purchase::query()->create([
+    $purchaseB = tap(new Purchase, fn (Purchase $p) => $p->forceFill([
         'id' => (string) Str::uuid(),
         'type' => 'purchase',
         'created_on' => Carbon::parse('2025-01-02 00:00:00')->timestamp,
@@ -146,7 +146,7 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
         ],
         'created_at' => Carbon::parse('2025-01-02 00:00:00'),
         'updated_at' => Carbon::parse('2025-01-02 00:00:00'),
-    ]);
+    ])->save());
 
     $page = app(ListInvoices::class);
 
