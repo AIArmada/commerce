@@ -194,7 +194,8 @@ it('renders stats and chart data for the current owner', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    $alertA = SignalAlertLog::query()->create([
+    $alertA = new SignalAlertLog;
+    $alertA->forceFill([
         'signal_alert_rule_id' => $ruleA->id,
         'tracked_property_id' => $propertyA->id,
         'metric_key' => 'revenue_minor',
@@ -204,15 +205,16 @@ it('renders stats and chart data for the current owner', function (): void {
         'severity' => 'critical',
         'title' => 'Revenue alert',
         'message' => 'Revenue crossed the threshold.',
-        'is_read' => false,
         'created_at' => CarbonImmutable::now(),
         'updated_at' => CarbonImmutable::now(),
     ]);
+    $alertA->save();
     $alertA->assignOwner($ownerA)->save();
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
 
-    $alertB = SignalAlertLog::query()->create([
+    $alertB = new SignalAlertLog;
+    $alertB->forceFill([
         'signal_alert_rule_id' => $ruleB->id,
         'tracked_property_id' => $propertyB->id,
         'metric_key' => 'events',
@@ -222,10 +224,10 @@ it('renders stats and chart data for the current owner', function (): void {
         'severity' => 'warning',
         'title' => 'Other owner alert',
         'message' => 'This should not be visible.',
-        'is_read' => false,
         'created_at' => CarbonImmutable::now(),
         'updated_at' => CarbonImmutable::now(),
     ]);
+    $alertB->save();
     $alertB->assignOwner($ownerB)->save();
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));

@@ -11,7 +11,7 @@ use AIArmada\Inventory\Events\InventoryShipped;
 use AIArmada\Inventory\Events\InventoryTransferred;
 use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\OutOfInventory;
-use AIArmada\Inventory\Exceptions\InsufficientStockException;
+use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
@@ -75,7 +75,7 @@ class InventoryServiceTest extends InventoryTestCase
 
     public function test_throws_when_shipping_more_than_available(): void
     {
-        $this->expectException(InsufficientStockException::class);
+        $this->expectException(InsufficientInventoryException::class);
 
         $this->inventoryService->receive($this->item, $this->locationA->id, 2);
 
@@ -91,7 +91,7 @@ class InventoryServiceTest extends InventoryTestCase
 
         $level->update(['quantity_reserved' => 15]);
 
-        $this->expectException(InsufficientStockException::class);
+        $this->expectException(InsufficientInventoryException::class);
 
         $this->inventoryService->ship($this->item, $this->locationA->id, 10);
     }

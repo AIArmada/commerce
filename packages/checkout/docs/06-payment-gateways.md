@@ -256,11 +256,16 @@ Route::post('/webhooks/stripe', StripeWebhookController::class);
 The checkout package listens for payment completion events:
 
 ```php
+use AIArmada\Checkout\Events\PaymentCompleted;
+use AIArmada\Checkout\Facades\Checkout;
+use AIArmada\Checkout\States\AwaitingPayment;
+use Illuminate\Support\Facades\Event;
+
 // Handle payment completed from gateway webhook
-Event::listen(PaymentCompleted::class, function ($event) {
-    $session = CheckoutSession::where('payment_id', $event->paymentId)->first();
-    
-    if ($session && $session->status === CheckoutStatus::AwaitingPayment) {
+Event::listen(PaymentCompleted::class, function (PaymentCompleted $event): void {
+    $session = $event->session;
+
+    if ($session->status instanceof AwaitingPayment) {
         Checkout::processStep($session, 'create_order');
     }
 });

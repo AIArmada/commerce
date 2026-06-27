@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Console\Commands\HealthCheckCommand;
+use AIArmada\Jnt\Console\Commands\Health\HealthCheckCommand;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 

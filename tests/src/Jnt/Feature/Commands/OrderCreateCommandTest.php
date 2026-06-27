@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Console\Commands\OrderCreateCommand;
+use AIArmada\Jnt\Console\Commands\Orders\OrderCreateCommand;
 use Illuminate\Support\Facades\Http;
 
 test('order create command creates order with command-line options', function (): void {
