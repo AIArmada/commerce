@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\AttributeSet;
 use AIArmada\Products\Policies\Concerns\HandlesOwnerScoping;
 use Illuminate\Auth\Access\HandlesAuthorization;
-use Illuminate\Database\Eloquent\Model;
 
 final class AttributeSetPolicy
 {

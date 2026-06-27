@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;

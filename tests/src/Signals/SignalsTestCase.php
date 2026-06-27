@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\Signals;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\SupportServiceProvider as CommerceSupportServiceProvider;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Signals\SignalsServiceProvider;
 use DateInterval;
 use Illuminate\Database\Schema\Blueprint;

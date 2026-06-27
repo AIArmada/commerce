@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;
 

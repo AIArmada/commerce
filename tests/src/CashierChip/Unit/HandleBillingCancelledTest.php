@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Listeners\HandleBillingCancelled;
-use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Events\BillingCancelled;

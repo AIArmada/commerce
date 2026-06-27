@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
-use AIArmada\Engagement\Models\BookmarkCollectionItem;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\BookmarkCollectionFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;

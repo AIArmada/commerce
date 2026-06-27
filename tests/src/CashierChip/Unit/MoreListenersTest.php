@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Listeners\HandlePurchasePaymentFailure;
 use AIArmada\CashierChip\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Listeners\HandleSubscriptionChargeFailure;
-use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaymentFailure;

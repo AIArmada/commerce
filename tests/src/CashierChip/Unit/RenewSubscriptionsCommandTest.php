@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;

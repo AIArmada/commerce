@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;

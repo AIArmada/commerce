@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
