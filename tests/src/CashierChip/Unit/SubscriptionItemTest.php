@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
@@ -14,7 +15,7 @@ beforeEach(function (): void {
     $this->subscription = $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
         'quantity' => 1,
     ]);
@@ -126,7 +127,7 @@ it('can check if on trial', function (): void {
     expect($this->item->onTrial())->toBeFalse();
 
     $this->subscription->update([
-        'chip_status' => Subscription::STATUS_TRIALING,
+        'chip_status' => SubscriptionStatus::Trialing,
         'trial_ends_at' => now()->addDays(14),
     ]);
 
@@ -165,7 +166,7 @@ it('has correct casts', function (): void {
 
 it('guards against incomplete subscription updates', function (): void {
     $this->subscription->update([
-        'chip_status' => Subscription::STATUS_INCOMPLETE,
+        'chip_status' => SubscriptionStatus::Incomplete,
     ]);
 
     $this->item->updateQuantity(5);

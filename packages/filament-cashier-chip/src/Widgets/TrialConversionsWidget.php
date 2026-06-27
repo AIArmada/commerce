@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
@@ -46,7 +47,7 @@ final class TrialConversionsWidget extends BaseWidget
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();
 
-        $trialsEnded = $this->subscriptionModel()::query()
+        $trialsEnded = $this->subscriptionQuery()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
             ->count();
@@ -55,10 +56,10 @@ final class TrialConversionsWidget extends BaseWidget
             return 0.0;
         }
 
-        $converted = $this->subscriptionModel()::query()
+        $converted = $this->subscriptionQuery()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-            ->where('chip_status', Subscription::STATUS_ACTIVE)
+            ->where('chip_status', SubscriptionStatus::Active->value)
             ->whereNull('ends_at')
             ->count();
 
@@ -70,7 +71,7 @@ final class TrialConversionsWidget extends BaseWidget
         $startOfMonth = now()->subMonth()->startOfMonth();
         $endOfMonth = now()->subMonth()->endOfMonth();
 
-        $trialsEnded = $this->subscriptionModel()::query()
+        $trialsEnded = $this->subscriptionQuery()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
             ->count();
@@ -79,10 +80,10 @@ final class TrialConversionsWidget extends BaseWidget
             return 0.0;
         }
 
-        $converted = $this->subscriptionModel()::query()
+        $converted = $this->subscriptionQuery()
             ->whereNotNull('trial_ends_at')
             ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-            ->where('chip_status', Subscription::STATUS_ACTIVE)
+            ->where('chip_status', SubscriptionStatus::Active->value)
             ->whereNull('ends_at')
             ->count();
 
@@ -91,7 +92,7 @@ final class TrialConversionsWidget extends BaseWidget
 
     private function getActiveTrialsCount(): int
     {
-        return $this->subscriptionModel()::query()
+        return $this->subscriptionQuery()
             ->whereOnTrial()
             ->count();
     }
@@ -146,7 +147,7 @@ final class TrialConversionsWidget extends BaseWidget
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
-            $trialsEnded = $this->subscriptionModel()::query()
+            $trialsEnded = $this->subscriptionQuery()
                 ->whereNotNull('trial_ends_at')
                 ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
                 ->count();
@@ -157,10 +158,10 @@ final class TrialConversionsWidget extends BaseWidget
                 continue;
             }
 
-            $converted = $this->subscriptionModel()::query()
+            $converted = $this->subscriptionQuery()
                 ->whereNotNull('trial_ends_at')
                 ->whereBetween('trial_ends_at', [$startOfMonth, $endOfMonth])
-                ->where('chip_status', Subscription::STATUS_ACTIVE)
+                ->where('chip_status', SubscriptionStatus::Active->value)
                 ->whereNull('ends_at')
                 ->count();
 

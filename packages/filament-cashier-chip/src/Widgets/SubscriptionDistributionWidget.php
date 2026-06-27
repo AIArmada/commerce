@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Widgets\ChartWidget;
@@ -64,19 +65,19 @@ final class SubscriptionDistributionWidget extends ChartWidget
     private function getDistributionData(): array
     {
         $statuses = [
-            Subscription::STATUS_ACTIVE => 'Active',
-            Subscription::STATUS_TRIALING => 'Trialing',
-            Subscription::STATUS_CANCELED => 'Canceled',
-            Subscription::STATUS_PAST_DUE => 'Past Due',
-            Subscription::STATUS_PAUSED => 'Paused',
-            Subscription::STATUS_INCOMPLETE => 'Incomplete',
+            SubscriptionStatus::Active->value => 'Active',
+            SubscriptionStatus::Trialing->value => 'Trialing',
+            SubscriptionStatus::Canceled->value => 'Canceled',
+            SubscriptionStatus::PastDue->value => 'Past Due',
+            SubscriptionStatus::Paused->value => 'Paused',
+            SubscriptionStatus::Incomplete->value => 'Incomplete',
         ];
 
         $labels = [];
         $counts = [];
 
         foreach ($statuses as $status => $label) {
-            $count = $this->subscriptionModel()::query()
+            $count = $this->subscriptionQuery()
                 ->where('chip_status', $status)
                 ->count();
 

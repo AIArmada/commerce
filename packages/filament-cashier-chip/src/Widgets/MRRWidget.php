@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
@@ -38,7 +39,7 @@ final class MRRWidget extends BaseWidget
 
     private function calculateMRR(): int
     {
-        return $this->subscriptionModel()::query()
+        return $this->subscriptionQuery()
             ->whereActive()
             ->with('items')
             ->get()
@@ -59,8 +60,8 @@ final class MRRWidget extends BaseWidget
 
     private function calculatePreviousMRR(): int
     {
-        return $this->subscriptionModel()::query()
-            ->where('chip_status', Subscription::STATUS_ACTIVE)
+        return $this->subscriptionQuery()
+            ->where('chip_status', SubscriptionStatus::Active->value)
             ->where('created_at', '<', now()->subMonth())
             ->with('items')
             ->get()
@@ -123,8 +124,8 @@ final class MRRWidget extends BaseWidget
             $startOfMonth = $date->copy()->startOfMonth();
             $endOfMonth = $date->copy()->endOfMonth();
 
-            $monthMrr = $this->subscriptionModel()::query()
-                ->where('chip_status', Subscription::STATUS_ACTIVE)
+            $monthMrr = $this->subscriptionQuery()
+                ->where('chip_status', SubscriptionStatus::Active->value)
                 ->where('created_at', '<=', $endOfMonth)
                 ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')

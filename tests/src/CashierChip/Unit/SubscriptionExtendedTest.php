@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
@@ -51,7 +52,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_INCOMPLETE,
+            'chip_status' => SubscriptionStatus::Incomplete,
         ]);
 
         $this->assertTrue($subscription->incomplete());
@@ -61,7 +62,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_PAST_DUE,
+            'chip_status' => SubscriptionStatus::PastDue,
         ]);
 
         $this->assertTrue($subscription->pastDue());
@@ -71,7 +72,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'trial_ends_at' => null,
             'ends_at' => null,
         ]);
@@ -83,7 +84,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'trial_ends_at' => Carbon::now()->addDays(7),
         ]);
 
@@ -94,7 +95,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'ends_at' => Carbon::now()->addDays(7),
         ]);
 
@@ -195,10 +196,10 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_INCOMPLETE,
+            'chip_status' => SubscriptionStatus::Incomplete,
         ]);
         Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $this->assertEquals(1, Subscription::query()->incomplete()->count());
@@ -208,10 +209,10 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_PAST_DUE,
+            'chip_status' => SubscriptionStatus::PastDue,
         ]);
         Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $this->assertEquals(1, Subscription::query()->pastDue()->count());
@@ -338,7 +339,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'ends_at' => null,
         ]);
 
@@ -349,7 +350,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_TRIALING,
+            'chip_status' => SubscriptionStatus::Trialing,
             'trial_ends_at' => Carbon::now()->addDays(7),
         ]);
 
@@ -360,7 +361,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'ends_at' => Carbon::now()->addDay(),
         ]);
 
@@ -371,7 +372,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_CANCELED,
+            'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::now()->subDay(),
         ]);
 
@@ -400,7 +401,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'next_billing_at' => Carbon::now()->addDays(15),
         ]);
 
@@ -414,7 +415,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $trialEnd = Carbon::now()->addDays(7);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_TRIALING,
+            'chip_status' => SubscriptionStatus::Trialing,
             'trial_ends_at' => $trialEnd,
         ]);
 
@@ -427,12 +428,12 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $subscription->cancelNow();
 
-        $this->assertEquals(Subscription::STATUS_CANCELED, $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Canceled, $subscription->chip_status);
         $this->assertNotNull($subscription->ends_at);
     }
 
@@ -440,25 +441,25 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $subscription->markAsCanceled();
 
-        $this->assertEquals(Subscription::STATUS_CANCELED, $subscription->fresh()->chip_status);
+        $this->assertEquals(SubscriptionStatus::Canceled, $subscription->fresh()->chip_status);
     }
 
     public function test_resume(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'ends_at' => Carbon::now()->addDay(),
         ]);
 
         $subscription->resume();
 
-        $this->assertEquals(Subscription::STATUS_ACTIVE, $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
         $this->assertNull($subscription->ends_at);
     }
 
@@ -466,7 +467,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'ends_at' => null,
         ]);
 
@@ -479,7 +480,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_PAST_DUE,
+            'chip_status' => SubscriptionStatus::PastDue,
         ]);
 
         $this->assertTrue($subscription->hasIncompletePayment());
@@ -489,7 +490,7 @@ class SubscriptionExtendedTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_INCOMPLETE,
+            'chip_status' => SubscriptionStatus::Incomplete,
         ]);
 
         $this->assertTrue($subscription->hasIncompletePayment());

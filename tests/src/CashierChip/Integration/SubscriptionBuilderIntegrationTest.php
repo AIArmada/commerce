@@ -6,6 +6,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Integration;
 
 use AIArmada\CashierChip\Checkout;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
@@ -22,7 +23,7 @@ class SubscriptionBuilderIntegrationTest extends CashierChipTestCase
         $this->assertInstanceOf(Subscription::class, $subscription);
         $this->assertEquals('default', $subscription->type);
         $this->assertEquals('price_monthly_100', $subscription->chip_price);
-        $this->assertEquals(Subscription::STATUS_ACTIVE, $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
     }
 
     public function test_can_create_subscription_with_trial(): void
@@ -34,7 +35,7 @@ class SubscriptionBuilderIntegrationTest extends CashierChipTestCase
             ->create();
 
         $this->assertInstanceOf(Subscription::class, $subscription);
-        $this->assertEquals(Subscription::STATUS_TRIALING, $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Trialing, $subscription->chip_status);
         $this->assertTrue($subscription->onTrial());
         $this->assertNotNull($subscription->trial_ends_at);
     }
@@ -48,7 +49,7 @@ class SubscriptionBuilderIntegrationTest extends CashierChipTestCase
             ->skipTrial()
             ->create();
 
-        $this->assertEquals(Subscription::STATUS_ACTIVE, $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
         $this->assertNull($subscription->trial_ends_at);
     }
 

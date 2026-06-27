@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use App\Models\User;
@@ -51,7 +52,7 @@ final class BillingShowcaseSeeder extends Seeder
         // Create subscriptions for admin - demonstrating different states
         $this->createSubscription($admin, [
             'type' => 'Pro Monthly',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'chip_price' => 'price_pro_monthly',
             'billing_interval' => 'month',
             'next_billing_at' => Carbon::now()->addDays(15),
@@ -59,7 +60,7 @@ final class BillingShowcaseSeeder extends Seeder
 
         $this->createSubscription($admin, [
             'type' => 'Team Storage',
-            'chip_status' => Subscription::STATUS_TRIALING,
+            'chip_status' => SubscriptionStatus::Trialing,
             'chip_price' => 'price_storage_50gb',
             'billing_interval' => 'month',
             'trial_ends_at' => Carbon::now()->addDays(7),
@@ -91,7 +92,7 @@ final class BillingShowcaseSeeder extends Seeder
             'user_id' => $user->id,
             'type' => $attributes['type'] ?? 'default',
             'chip_id' => 'sub_'.Str::random(40),
-            'chip_status' => $attributes['chip_status'] ?? Subscription::STATUS_ACTIVE,
+            'chip_status' => $attributes['chip_status'] ?? SubscriptionStatus::Active,
             'chip_price' => $attributes['chip_price'] ?? null,
             'quantity' => $attributes['quantity'] ?? 1,
             'billing_interval' => $attributes['billing_interval'] ?? 'month',

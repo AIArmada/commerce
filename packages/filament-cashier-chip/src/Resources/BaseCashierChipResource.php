@@ -53,11 +53,15 @@ abstract class BaseCashierChipResource extends Resource
 
         $owner = OwnerContext::resolve();
 
-        $includeGlobal = (bool) config('cashier-chip.features.owner.include_global', false);
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            sprintf('%s requires an owner context or explicit global context.', static::class),
+        );
+
         $model = $query->getModel();
 
         if ($model === null) {
-            return $query;
+            return $query->whereRaw('1 = 0');
         }
 
         $ownerTypeColumn = 'owner_type';
@@ -74,7 +78,7 @@ abstract class BaseCashierChipResource extends Resource
         return OwnerQuery::applyToEloquentBuilder(
             $query,
             $owner,
-            $includeGlobal,
+            false,
             $ownerTypeColumn,
             $ownerIdColumn,
         );

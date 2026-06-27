@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Engagement\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Engagement\Models\BookmarkCollectionItem;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\BookmarkCollectionFactory;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
@@ -64,6 +65,13 @@ final class BookmarkCollection extends Model
         'is_system',
         'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (BookmarkCollection $collection): void {
+            $collection->items()->each(fn (BookmarkCollectionItem $item) => $item->delete());
+        });
+    }
 
     public function getTable(): string
     {

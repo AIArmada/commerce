@@ -105,7 +105,39 @@ class Product extends Model implements Auditable, Buyable, HasMedia, Inventoryab
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'name',
+        'slug',
+        'description',
+        'short_description',
+        'sku',
+        'barcode',
+        'type',
+        'status',
+        'visibility',
+        'price',
+        'compare_price',
+        'cost',
+        'currency',
+        'weight',
+        'length',
+        'width',
+        'height',
+        'weight_unit',
+        'dimension_unit',
+        'is_featured',
+        'is_taxable',
+        'requires_shipping',
+        'supports_variants',
+        'tracks_inventory',
+        'meta_title',
+        'meta_description',
+        'tax_class',
+        'metadata',
+        'published_at',
+    ];
 
     /**
      * @var array<string, class-string>

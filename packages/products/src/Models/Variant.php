@@ -72,7 +72,25 @@ class Variant extends Model implements Auditable, HasMedia, Inventoryable, Price
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'product_id',
+        'name',
+        'sku',
+        'barcode',
+        'price',
+        'compare_price',
+        'cost',
+        'weight',
+        'length',
+        'width',
+        'height',
+        'is_default',
+        'is_enabled',
+        'deactivated_at',
+        'metadata',
+    ];
 
     protected function casts(): array
     {

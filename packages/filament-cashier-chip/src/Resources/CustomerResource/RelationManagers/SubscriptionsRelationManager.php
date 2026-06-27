@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use Filament\Actions\Action;
@@ -108,16 +109,16 @@ final class SubscriptionsRelationManager extends RelationManager
             ->emptyStateDescription('This customer has no subscriptions yet.');
     }
 
-    private static function getStatusColor(string $status): string
+    private static function getStatusColor(SubscriptionStatus $status): string
     {
         return match ($status) {
-            Subscription::STATUS_ACTIVE => 'success',
-            Subscription::STATUS_TRIALING => 'warning',
-            Subscription::STATUS_CANCELED => 'danger',
-            Subscription::STATUS_PAST_DUE => 'danger',
-            Subscription::STATUS_PAUSED => 'gray',
-            Subscription::STATUS_INCOMPLETE => 'warning',
-            Subscription::STATUS_UNPAID => 'danger',
+            SubscriptionStatus::Active => 'success',
+            SubscriptionStatus::Trialing => 'warning',
+            SubscriptionStatus::Canceled => 'danger',
+            SubscriptionStatus::PastDue => 'danger',
+            SubscriptionStatus::Paused => 'gray',
+            SubscriptionStatus::Incomplete => 'warning',
+            SubscriptionStatus::Unpaid => 'danger',
             default => 'gray',
         };
     }

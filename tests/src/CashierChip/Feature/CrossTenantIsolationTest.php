@@ -3,11 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Payment\StoredPaymentMethod;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -66,6 +69,28 @@ it('scopes reads and blocks cross-tenant subscription item writes', function ():
         'quantity' => 1,
         'unit_amount' => 1_000,
     ]))->toThrow(AuthorizationException::class);
+});
+
+it('fails closed for explicit owner scopes without a resolved owner', function (): void {
+    config()->set('cashier-chip.features.owner.enabled', true);
+    config()->set('cashier-chip.features.owner.include_global', false);
+
+    bindCashierChipOwner(null);
+
+    expect(fn (): int => Subscription::query()->forOwner()->count())
+        ->toThrow(NoCurrentOwnerException::class);
+
+    expect(fn (): int => SubscriptionItem::query()->forOwner()->count())
+        ->toThrow(NoCurrentOwnerException::class);
+
+    expect(fn (): int => StoredPaymentMethod::query()->forOwner()->count())
+        ->toThrow(NoCurrentOwnerException::class);
+
+    OwnerContext::withOwner(null, function (): void {
+        expect(Subscription::query()->forOwner()->count())->toBe(0);
+        expect(SubscriptionItem::query()->forOwner()->count())->toBe(0);
+        expect(StoredPaymentMethod::query()->forOwner()->count())->toBe(0);
+    });
 });
 
 it('blocks subscription creation when billable differs from owner and owner-scoped validation is unavailable', function (): void {

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Database\Factories;
 
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -32,7 +34,7 @@ final class SubscriptionFactory extends Factory
             'billable_id' => method_exists($model, 'factory') ? $model::factory() : null,
             'type' => 'default',
             'chip_id' => 'sub_' . Str::random(40),
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'chip_price' => null,
             'quantity' => null,
             'trial_ends_at' => null,
@@ -110,7 +112,7 @@ final class SubscriptionFactory extends Factory
     public function active(): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
     }
 
@@ -120,7 +122,7 @@ final class SubscriptionFactory extends Factory
     public function trialing(?DateTimeInterface $trialEndsAt = null): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_TRIALING,
+            'chip_status' => SubscriptionStatus::Trialing,
             'trial_ends_at' => $trialEndsAt ?? Carbon::now()->addDays(14),
         ]);
     }
@@ -131,7 +133,7 @@ final class SubscriptionFactory extends Factory
     public function canceled(): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_CANCELED,
+            'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::now(),
         ]);
     }
@@ -142,7 +144,7 @@ final class SubscriptionFactory extends Factory
     public function onGracePeriod(): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'ends_at' => Carbon::now()->addDays(7),
         ]);
     }
@@ -153,7 +155,7 @@ final class SubscriptionFactory extends Factory
     public function incomplete(): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_INCOMPLETE,
+            'chip_status' => SubscriptionStatus::Incomplete,
         ]);
     }
 
@@ -163,7 +165,7 @@ final class SubscriptionFactory extends Factory
     public function incompleteAndExpired(): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_INCOMPLETE_EXPIRED,
+            'chip_status' => SubscriptionStatus::IncompleteExpired,
         ]);
     }
 
@@ -173,7 +175,7 @@ final class SubscriptionFactory extends Factory
     public function pastDue(): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_PAST_DUE,
+            'chip_status' => SubscriptionStatus::PastDue,
         ]);
     }
 
@@ -183,7 +185,7 @@ final class SubscriptionFactory extends Factory
     public function unpaid(): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_UNPAID,
+            'chip_status' => SubscriptionStatus::Unpaid,
         ]);
     }
 
@@ -193,7 +195,7 @@ final class SubscriptionFactory extends Factory
     public function paused(): static
     {
         return $this->state([
-            'chip_status' => Subscription::STATUS_PAUSED,
+            'chip_status' => SubscriptionStatus::Paused,
         ]);
     }
 

@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Exceptions;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 
-final class InvalidCustomer extends Exception
+final class InvalidCustomer extends CashierChipException
 {
     /**
      * Create a new InvalidCustomer exception for missing customer.

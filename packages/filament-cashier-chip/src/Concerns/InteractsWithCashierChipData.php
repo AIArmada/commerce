@@ -6,6 +6,8 @@ namespace AIArmada\FilamentCashierChip\Concerns;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use Illuminate\Database\Eloquent\Builder;
 
 trait InteractsWithCashierChipData
 {
@@ -13,6 +15,19 @@ trait InteractsWithCashierChipData
     {
         /** @var class-string<Subscription> */
         return Cashier::$subscriptionModel;
+    }
+
+    /**
+     * @return Builder<Subscription>
+     */
+    protected function subscriptionQuery(): Builder
+    {
+        $model = $this->subscriptionModel();
+
+        /** @var Builder<Subscription> $query */
+        $query = $model::query();
+
+        return OwnerUiScope::apply($query, includeGlobal: false);
     }
 
     protected function formatCurrency(int $amount): string

@@ -16,7 +16,7 @@ Add the wrapper trait and the traits from the gateway packages you actually inst
 
 namespace App\Models;
 
-use AIArmada\Cashier\Billable as CashierBillable;
+use AIArmada\Cashier\Concerns\Billable as CashierBillable;
 use AIArmada\CashierChip\Billable as ChipBillable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Cashier\Billable as StripeBillable;
@@ -46,25 +46,18 @@ default driver everywhere.
 - [Multi-gateway](07-multi-gateway.md) — selecting, mixing, and querying multiple gateways
 - [Webhooks](08-webhooks.md) — gateway webhook ownership and unified events
 
-## 4. Two Billable traits
-
-The package ships two `Billable` traits with different responsibilities:
-
-| Trait | Location | Purpose |
-|---|---|---|
-| `CashierBillable` | `src/Billable.php` (root) | **Gateway management entrypoint** — resolves the active gateway, delegates to `ManagesGateway`. Add this to your model. |
-| `Concerns\Billable` | `src/Concerns/Billable.php` | **Model query helpers** — `getSubscriptions()`, `subscription()`, etc. Re-exported automatically by the root trait. You only need to add the root trait. |
-
-The root `Billable` trait re-exports `Concerns\Billable` via `use`. When you add the root trait to your model, both behaviors are available:
+## 4. Billable trait
 
 ```php
-use AIArmada\Cashier\Billable as CashierBillable;
+use AIArmada\Cashier\Concerns\Billable as CashierBillable;
 
 class User extends Authenticatable
 {
     use StripeBillable, ChipBillable, CashierBillable;
 }
 ```
+
+The `Concerns\Billable` trait is the package-owned gateway management entrypoint. Add it alongside the gateway-specific traits for the gateways you install.
 
 ## 5. Contracts-to-implementations matrix
 

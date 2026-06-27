@@ -12,6 +12,7 @@ use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Invoice\Invoice;
@@ -97,22 +98,6 @@ class Subscription extends Model
     use Prorates;
 
     protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
-
-    public const STATUS_ACTIVE = 'active';
-
-    public const STATUS_CANCELED = 'canceled';
-
-    public const STATUS_INCOMPLETE = 'incomplete';
-
-    public const STATUS_INCOMPLETE_EXPIRED = 'incomplete_expired';
-
-    public const STATUS_PAST_DUE = 'past_due';
-
-    public const STATUS_TRIALING = 'trialing';
-
-    public const STATUS_UNPAID = 'unpaid';
-
-    public const STATUS_PAUSED = 'paused';
 
     /**
      * @var list<string>
@@ -207,6 +192,11 @@ class Subscription extends Model
         $owner ??= $this->resolveOwner();
         $includeGlobal ??= (bool) config('cashier-chip.features.owner.include_global', false);
 
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            sprintf('%s requires an owner context or explicit global context.', self::class),
+        );
+
         return $this->scopeForOwnerUsingTrait($query, $owner, $includeGlobal);
     }
 
@@ -274,7 +264,7 @@ class Subscription extends Model
      */
     public function incomplete(): bool
     {
-        return $this->chip_status === self::STATUS_INCOMPLETE;
+        return $this->chip_status === SubscriptionStatus::Incomplete;
     }
 
     /**
@@ -282,7 +272,7 @@ class Subscription extends Model
      */
     public function scopeWhereIncomplete(Builder $query): void
     {
-        $query->where('chip_status', self::STATUS_INCOMPLETE);
+        $query->where('chip_status', SubscriptionStatus::Incomplete);
     }
 
     /**
@@ -298,7 +288,7 @@ class Subscription extends Model
      */
     public function pastDue(): bool
     {
-        return $this->chip_status === self::STATUS_PAST_DUE;
+        return $this->chip_status === SubscriptionStatus::PastDue;
     }
 
     /**
@@ -306,7 +296,7 @@ class Subscription extends Model
      */
     public function scopeWherePastDue(Builder $query): void
     {
-        $query->where('chip_status', self::STATUS_PAST_DUE);
+        $query->where('chip_status', SubscriptionStatus::PastDue);
     }
 
     /**
@@ -323,10 +313,10 @@ class Subscription extends Model
     public function active(): bool
     {
         return ! $this->ended() &&
-            (! Cashier::$deactivateIncomplete || $this->chip_status !== self::STATUS_INCOMPLETE) &&
-            $this->chip_status !== self::STATUS_INCOMPLETE_EXPIRED &&
-            (! Cashier::$deactivatePastDue || $this->chip_status !== self::STATUS_PAST_DUE) &&
-            $this->chip_status !== self::STATUS_UNPAID;
+            (! Cashier::$deactivateIncomplete || $this->chip_status !== SubscriptionStatus::Incomplete) &&
+            $this->chip_status !== SubscriptionStatus::IncompleteExpired &&
+            (! Cashier::$deactivatePastDue || $this->chip_status !== SubscriptionStatus::PastDue) &&
+            $this->chip_status !== SubscriptionStatus::Unpaid;
     }
 
     /**
@@ -340,15 +330,15 @@ class Subscription extends Model
                     $query->whereNotNull('ends_at')
                         ->where('ends_at', '>', Carbon::now());
                 });
-        })->where('chip_status', '!=', self::STATUS_INCOMPLETE_EXPIRED)
-            ->where('chip_status', '!=', self::STATUS_UNPAID);
+        })->where('chip_status', '!=', SubscriptionStatus::IncompleteExpired)
+            ->where('chip_status', '!=', SubscriptionStatus::Unpaid);
 
         if (Cashier::$deactivatePastDue) {
-            $query->where('chip_status', '!=', self::STATUS_PAST_DUE);
+            $query->where('chip_status', '!=', SubscriptionStatus::PastDue);
         }
 
         if (Cashier::$deactivateIncomplete) {
-            $query->where('chip_status', '!=', self::STATUS_INCOMPLETE);
+            $query->where('chip_status', '!=', SubscriptionStatus::Incomplete);
         }
     }
 
@@ -782,7 +772,7 @@ class Subscription extends Model
     public function markAsCanceled(): void
     {
         $this->forceFill([
-            'chip_status' => self::STATUS_CANCELED,
+            'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => now(),
             'canceled_at' => now(),
         ])->save();
@@ -805,7 +795,7 @@ class Subscription extends Model
         // local database to indicate that the subscription is active again and is
         // no longer "canceled". Then we shall save this record in the database.
         $this->forceFill([
-            'chip_status' => self::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'ends_at' => null,
             'canceled_at' => null,
         ])->save();
@@ -1118,7 +1108,7 @@ class Subscription extends Model
      */
     public function paused(): bool
     {
-        return $this->chip_status === self::STATUS_PAUSED;
+        return $this->chip_status === SubscriptionStatus::Paused;
     }
 
     /**
@@ -1126,7 +1116,7 @@ class Subscription extends Model
      */
     public function scopeWherePaused(Builder $query): void
     {
-        $query->where('chip_status', self::STATUS_PAUSED);
+        $query->where('chip_status', SubscriptionStatus::Paused);
     }
 
     /**
@@ -1137,7 +1127,7 @@ class Subscription extends Model
     public function pause(): static
     {
         $this->forceFill([
-            'chip_status' => self::STATUS_PAUSED,
+            'chip_status' => SubscriptionStatus::Paused,
             'paused_at' => now(),
         ])->save();
 
@@ -1152,7 +1142,7 @@ class Subscription extends Model
     public function unpause(): static
     {
         $this->forceFill([
-            'chip_status' => self::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'paused_at' => null,
         ])->save();
 
@@ -1305,6 +1295,7 @@ class Subscription extends Model
     protected function casts(): array
     {
         return [
+            'chip_status' => SubscriptionStatus::class,
             'ends_at' => 'immutable_datetime',
             'canceled_at' => 'immutable_datetime',
             'paused_at' => 'immutable_datetime',
@@ -1407,20 +1398,20 @@ class Subscription extends Model
     /**
      * Calculate the current status based on subscription state.
      */
-    protected function calculateCurrentStatus(): string
+    protected function calculateCurrentStatus(): SubscriptionStatus
     {
         if ($this->ended()) {
-            return self::STATUS_CANCELED;
+            return SubscriptionStatus::Canceled;
         }
 
         if ($this->onTrial()) {
-            return self::STATUS_TRIALING;
+            return SubscriptionStatus::Trialing;
         }
 
         if ($this->onGracePeriod()) {
-            return self::STATUS_CANCELED;
+            return SubscriptionStatus::Canceled;
         }
 
-        return self::STATUS_ACTIVE;
+        return SubscriptionStatus::Active;
     }
 }

@@ -8,6 +8,7 @@ use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
@@ -30,7 +31,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'billable')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'next_billing_at' => Carbon::now()->subDay(),
             'chip_price' => 'price_123',
         ]);
@@ -44,7 +45,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         // Subscription with null owner should be skipped
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'billable')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
 
@@ -69,7 +70,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         $user->updateDefaultPaymentMethod($token['id']);
 
         $subscription = Subscription::factory()->for($user, 'billable')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
 
@@ -97,7 +98,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
         $subscription = Subscription::factory()->for($user, 'billable')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
 
@@ -112,7 +113,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         $subscription->refresh();
 
-        $this->assertSame(Subscription::STATUS_PAST_DUE, $subscription->chip_status);
+        $this->assertSame(SubscriptionStatus::PastDue, $subscription->chip_status);
 
         Event::assertDispatched(SubscriptionRenewalFailed::class);
         Event::assertNotDispatched(SubscriptionRenewed::class);
@@ -132,7 +133,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         $user->updateDefaultPaymentMethod($token['id']);
 
         $subscription = Subscription::factory()->for($user, 'billable')->create([
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
 
@@ -147,7 +148,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
 
         $subscription->refresh();
 
-        $this->assertSame(Subscription::STATUS_PAST_DUE, $subscription->chip_status);
+        $this->assertSame(SubscriptionStatus::PastDue, $subscription->chip_status);
 
         Event::assertDispatched(SubscriptionRenewalFailed::class);
         Event::assertNotDispatched(SubscriptionRenewed::class);

@@ -79,6 +79,11 @@ final class StoredPaymentMethod extends Model
         $owner ??= OwnerContext::resolve();
         $includeGlobal ??= (bool) config('cashier-chip.features.owner.include_global', false);
 
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            sprintf('%s requires an owner context or explicit global context.', self::class),
+        );
+
         return $this->scopeForOwnerUsingTrait($query, $owner, $includeGlobal);
     }
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Growth\Models\Assignment;
@@ -55,7 +56,7 @@ it('seeds chip billing and analytics showcase data for the active demo owner', f
         ->and($admin->default_pm_id)->not->toBeNull()
         ->and(Subscription::query()->count())->toBe(2)
         ->and(Subscription::query()->pluck('chip_status')->all())
-        ->toContain(Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING)
+        ->toContain(SubscriptionStatus::Active, SubscriptionStatus::Trialing)
         ->and(TrackedProperty::query()->count())->toBe(1)
         ->and(TrackedProperty::query()->first()?->domain)->toBe('cdemo.test')
         ->and(Experiment::query()->count())->toBe(1)

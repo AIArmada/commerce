@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaid;
@@ -81,7 +82,7 @@ it('updates subscription to active on payment success', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_PAST_DUE,
+        'chip_status' => SubscriptionStatus::PastDue,
         'chip_price' => 'price_monthly',
         'billing_interval' => 'month',
         'billing_interval_count' => 1,
@@ -99,7 +100,7 @@ it('updates subscription to active on payment success', function (): void {
 
     $subscription = $this->user->subscription('standard');
 
-    expect($subscription->chip_status)->toBe(Subscription::STATUS_ACTIVE);
+    expect($subscription->chip_status)->toBe(SubscriptionStatus::Active);
     expect($subscription->next_billing_at)->not->toBeNull();
 });
 
@@ -107,7 +108,7 @@ it('updates subscription to past due on payment failure', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
@@ -123,7 +124,7 @@ it('updates subscription to past due on payment failure', function (): void {
 
     $subscription = $this->user->subscription('standard');
 
-    expect($subscription->chip_status)->toBe(Subscription::STATUS_PAST_DUE);
+    expect($subscription->chip_status)->toBe(SubscriptionStatus::PastDue);
 });
 
 it('handles missing client id gracefully', function (): void {

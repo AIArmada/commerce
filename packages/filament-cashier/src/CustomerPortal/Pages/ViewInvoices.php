@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
-use AIArmada\Cashier\Support\CurrencyFormatter;
 use AIArmada\Cashier\Support\GatewayDetector;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -86,7 +86,7 @@ final class ViewInvoices extends Page
                         'id' => $invoice->id,
                         'gateway' => 'chip',
                         'number' => $invoice->number ?? $invoice->id,
-                        'amount' => CurrencyFormatter::format((int) ($invoice->amount ?? 0), $currency),
+                        'amount' => MoneyFormatter::formatMinor((int) ($invoice->amount ?? 0), $currency),
                         'date' => $createdAt?->format('M d, Y') ?? 'N/A',
                         'status' => $invoice->status ?? 'unknown',
                         'download_url' => $invoice->pdf_url ?? null,

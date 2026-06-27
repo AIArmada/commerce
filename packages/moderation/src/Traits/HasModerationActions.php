@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Moderation\Traits;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Moderation\Actions\RecordModerationAction;
+use AIArmada\Moderation\Contracts\RecordsModerationAction;
 use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\ModerationAction;
 use Illuminate\Database\Eloquent\Model;
@@ -31,8 +31,8 @@ trait HasModerationActions
     ): ModerationAction {
         $actionedBy = $this->resolveActionedBy($actionedById, $actionedByType);
 
-        /** @var RecordModerationAction $action */
-        $action = app(RecordModerationAction::class);
+        /** @var RecordsModerationAction $action */
+        $action = app(RecordsModerationAction::class);
 
         return $action->execute(
             actionable: $this,

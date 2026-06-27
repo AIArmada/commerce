@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Support;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -81,7 +82,7 @@ final readonly class UnifiedSubscription
 
     public function formattedAmount(): string
     {
-        return CurrencyFormatter::format($this->amount, $this->currency);
+        return MoneyFormatter::formatMinor($this->amount, $this->currency);
     }
 
     public function billingCycle(): string

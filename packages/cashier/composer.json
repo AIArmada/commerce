@@ -23,7 +23,7 @@
     },
     "suggest": {
         "aiarmada/cashier-chip": "Required for CHIP payment gateway support",
-        "laravel/cashier": "Required for Stripe payment gateway support"
+        "laravel/cashier": "Required for Stripe payment gateway support. Without it, calling the stripe gateway throws a clear error."
     },
     "autoload": {
         "psr-4": {

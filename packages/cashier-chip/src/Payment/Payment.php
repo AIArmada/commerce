@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Payment;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CashierChip\Enums\PaymentStatus;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Contracts\Support\Arrayable;
@@ -23,36 +24,6 @@ use ReturnTypeWillChange;
 class Payment implements Arrayable, Jsonable, JsonSerializable
 {
     use ForwardsCalls;
-
-    /**
-     * The status for a successful purchase.
-     */
-    public const STATUS_SUCCESS = 'success';
-
-    /**
-     * The status for a pending purchase.
-     */
-    public const STATUS_PENDING = 'pending';
-
-    /**
-     * The status for an expired purchase.
-     */
-    public const STATUS_EXPIRED = 'expired';
-
-    /**
-     * The status for a failed purchase.
-     */
-    public const STATUS_FAILED = 'failed';
-
-    /**
-     * The status for a cancelled purchase.
-     */
-    public const STATUS_CANCELLED = 'cancelled';
-
-    /**
-     * The status for a refunded purchase.
-     */
-    public const STATUS_REFUNDED = 'refunded';
 
     /**
      * The related customer instance.
@@ -137,7 +108,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isSucceeded(): bool
     {
-        return in_array($this->status(), [self::STATUS_SUCCESS, 'paid'], true);
+        return in_array($this->status(), [PaymentStatus::Success->value, 'paid'], true);
     }
 
     /**
@@ -145,7 +116,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isPending(): bool
     {
-        return $this->status() === self::STATUS_PENDING;
+        return $this->status() === PaymentStatus::Pending->value;
     }
 
     /**
@@ -153,7 +124,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isExpired(): bool
     {
-        return $this->status() === self::STATUS_EXPIRED;
+        return $this->status() === PaymentStatus::Expired->value;
     }
 
     /**
@@ -161,7 +132,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isFailed(): bool
     {
-        return $this->status() === self::STATUS_FAILED;
+        return $this->status() === PaymentStatus::Failed->value;
     }
 
     /**
@@ -169,7 +140,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isCancelled(): bool
     {
-        return $this->status() === self::STATUS_CANCELLED;
+        return $this->status() === PaymentStatus::Cancelled->value;
     }
 
     /**
@@ -177,7 +148,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isRefunded(): bool
     {
-        return $this->status() === self::STATUS_REFUNDED;
+        return $this->status() === PaymentStatus::Refunded->value;
     }
 
     /**

@@ -65,7 +65,23 @@ class Category extends Model implements Auditable, HasMedia
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'parent_id',
+        'name',
+        'slug',
+        'description',
+        'position',
+        'is_featured',
+        'status',
+        'visibility',
+        'hidden_at',
+        'archived_at',
+        'meta_title',
+        'meta_description',
+        'metadata',
+    ];
 
     protected function casts(): array
     {

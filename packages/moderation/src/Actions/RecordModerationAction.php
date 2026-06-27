@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Moderation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Moderation\Contracts\RecordsModerationAction;
 use AIArmada\Moderation\Enums\ModerationActionType;
 use AIArmada\Moderation\Models\ModerationAction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class RecordModerationAction
+final class RecordModerationAction implements RecordsModerationAction
 {
     public function execute(
         Model $actionable,

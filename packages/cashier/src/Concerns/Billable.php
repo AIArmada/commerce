@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Concerns;
 
+use AIArmada\Cashier\Cashier;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -21,7 +22,7 @@ use Throwable;
  * Add this trait to your User model (or any billable model):
  *
  * ```php
- * use AIArmada\Cashier\Billable as CashierBillable;
+ * use AIArmada\Cashier\Concerns\Billable as CashierBillable;
  * use Laravel\Cashier\Billable as StripeBillable;
  * use AIArmada\CashierChip\Billable as ChipBillable;
  *

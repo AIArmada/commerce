@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Support;
 
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 
 /**
  * Shared subscription status formatting utilities.
@@ -16,14 +16,14 @@ trait FormatsSubscriptionStatus
 {
     protected static function getStatusColor(string $status): string
     {
-        return match ($status) {
-            Subscription::STATUS_ACTIVE => 'success',
-            Subscription::STATUS_TRIALING => 'warning',
-            Subscription::STATUS_CANCELED => 'danger',
-            Subscription::STATUS_PAST_DUE => 'danger',
-            Subscription::STATUS_PAUSED => 'gray',
-            Subscription::STATUS_INCOMPLETE => 'warning',
-            Subscription::STATUS_UNPAID => 'danger',
+        return match (SubscriptionStatus::tryFrom($status)) {
+            SubscriptionStatus::Active => 'success',
+            SubscriptionStatus::Trialing => 'warning',
+            SubscriptionStatus::Canceled => 'danger',
+            SubscriptionStatus::PastDue => 'danger',
+            SubscriptionStatus::Paused => 'gray',
+            SubscriptionStatus::Incomplete => 'warning',
+            SubscriptionStatus::Unpaid => 'danger',
             default => 'gray',
         };
     }
@@ -31,14 +31,14 @@ trait FormatsSubscriptionStatus
     protected static function formatStatus(string $status): string
     {
         return match ($status) {
-            Subscription::STATUS_ACTIVE => __('filament-cashier-chip::filament-cashier-chip.subscription.status.active'),
-            Subscription::STATUS_TRIALING => __('filament-cashier-chip::filament-cashier-chip.subscription.status.trialing'),
-            Subscription::STATUS_CANCELED => __('filament-cashier-chip::filament-cashier-chip.subscription.status.canceled'),
-            Subscription::STATUS_PAST_DUE => __('filament-cashier-chip::filament-cashier-chip.subscription.status.past_due'),
-            Subscription::STATUS_PAUSED => __('filament-cashier-chip::filament-cashier-chip.subscription.status.paused'),
-            Subscription::STATUS_INCOMPLETE => __('filament-cashier-chip::filament-cashier-chip.subscription.status.incomplete'),
-            Subscription::STATUS_INCOMPLETE_EXPIRED => __('filament-cashier-chip::filament-cashier-chip.subscription.status.incomplete_expired'),
-            Subscription::STATUS_UNPAID => __('filament-cashier-chip::filament-cashier-chip.subscription.status.unpaid'),
+            SubscriptionStatus::Active->value => __('filament-cashier-chip::filament-cashier-chip.subscription.status.active'),
+            SubscriptionStatus::Trialing->value => __('filament-cashier-chip::filament-cashier-chip.subscription.status.trialing'),
+            SubscriptionStatus::Canceled->value => __('filament-cashier-chip::filament-cashier-chip.subscription.status.canceled'),
+            SubscriptionStatus::PastDue->value => __('filament-cashier-chip::filament-cashier-chip.subscription.status.past_due'),
+            SubscriptionStatus::Paused->value => __('filament-cashier-chip::filament-cashier-chip.subscription.status.paused'),
+            SubscriptionStatus::Incomplete->value => __('filament-cashier-chip::filament-cashier-chip.subscription.status.incomplete'),
+            SubscriptionStatus::IncompleteExpired->value => __('filament-cashier-chip::filament-cashier-chip.subscription.status.incomplete_expired'),
+            SubscriptionStatus::Unpaid->value => __('filament-cashier-chip::filament-cashier-chip.subscription.status.unpaid'),
             default => ucfirst($status),
         };
     }

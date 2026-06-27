@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Actions;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
@@ -60,7 +61,7 @@ final class CreateChipSubscription
             );
         }
 
-        $status = $trialEndsAt ? Subscription::STATUS_TRIALING : Subscription::STATUS_ACTIVE;
+        $status = $trialEndsAt ? SubscriptionStatus::Trialing : SubscriptionStatus::Active;
         $firstItem = Arr::first($items);
         $isSinglePrice = count($items) === 1;
 

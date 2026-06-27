@@ -304,17 +304,17 @@ $status->isResumable()  // true for OnGracePeriod, Paused
 
 ## Currency Formatting
 
-Use the `CurrencyFormatter` utility:
+Use the shared `MoneyFormatter` utility:
 
 ```php
-use AIArmada\FilamentCashier\Support\CurrencyFormatter;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 
-CurrencyFormatter::format(2900, 'USD');         // "$29.00"
-CurrencyFormatter::format(9900, 'MYR');         // "RM99.00"
-CurrencyFormatter::formatWithCode(2900, 'USD'); // "29.00 USD"
-CurrencyFormatter::getSymbol('MYR');            // "RM"
-CurrencyFormatter::isZeroDecimal('JPY');        // true
-CurrencyFormatter::formatAuto(10000, 'JPY');    // "¥10,000"
+MoneyFormatter::formatMinor(2900, 'USD');         // "$29.00"
+MoneyFormatter::formatMinor(9900, 'MYR');         // "RM99.00"
+MoneyFormatter::formatMinorWithCode(2900, 'USD'); // "29.00 USD"
+MoneyFormatter::symbol('MYR');                    // "RM"
+MoneyFormatter::precisionFor('JPY') === 0;        // true
+MoneyFormatter::formatMinor(10000, 'JPY');        // "¥10,000"
 ```
 
 ## Events

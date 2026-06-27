@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Cashier\Fixtures;
 
-use AIArmada\Cashier\Billable;
+use AIArmada\Cashier\Concerns\Billable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**

@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Support\CurrencyFormatter;
 use AIArmada\Cashier\Support\UnifiedInvoice;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
-use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\FilamentCashier\Components\GatewayBadge;
 use AIArmada\FilamentCashier\CustomerPortal\BillingPanelProvider;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\BillingOverview;
@@ -253,7 +254,7 @@ it('covers the filament-cashier public surface', function (): void {
         'billable_id' => $dbUser->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $chipSubscriptionId,
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_basic',
         'quantity' => 1,
         'owner_type' => $dbUser->getMorphClass(),
@@ -289,20 +290,20 @@ it('covers the filament-cashier public surface', function (): void {
 
     expect(app()->bound(FilamentCashierPlugin::class))->toBeTrue();
 
-    expect(CurrencyFormatter::getSymbol('usd'))->toBe('$');
-    expect(CurrencyFormatter::getSymbol('sgd'))->toBe('S$');
-    expect(CurrencyFormatter::getSymbol('aud'))->toBe('A$');
-    expect(CurrencyFormatter::getSymbol('cad'))->toBe('C$');
-    expect(CurrencyFormatter::getSymbol('zzz'))->toBe('ZZZ ');
-    expect(CurrencyFormatter::format(12345, 'USD'))->toBe('$123.45');
-    expect(CurrencyFormatter::format(12345, 'SGD'))->toBe('S$123.45');
-    expect(CurrencyFormatter::format(12345, 'AUD'))->toBe('A$123.45');
-    expect(CurrencyFormatter::format(12345, 'CAD'))->toBe('C$123.45');
-    expect(CurrencyFormatter::formatWithCode(12345, 'usd'))->toBe('123.45 USD');
-    expect(CurrencyFormatter::isZeroDecimal('JPY'))->toBeTrue();
-    expect(CurrencyFormatter::getPrecision('JPY'))->toBe(0);
-    expect(CurrencyFormatter::formatAuto(12345, 'JPY'))->toBe('¥12,345');
-    expect(CurrencyFormatter::formatAuto(12345, 'USD'))->toBe('$123.45');
+    expect(MoneyFormatter::symbol('usd'))->toBe('$');
+    expect(MoneyFormatter::symbol('sgd'))->toBe('S$');
+    expect(MoneyFormatter::symbol('aud'))->toBe('A$');
+    expect(MoneyFormatter::symbol('cad'))->toBe('C$');
+    expect(MoneyFormatter::symbol('zzz'))->toBe('ZZZ ');
+    expect(MoneyFormatter::formatMinor(12345, 'USD'))->toBe('$123.45');
+    expect(MoneyFormatter::formatMinor(12345, 'SGD'))->toBe('S$123.45');
+    expect(MoneyFormatter::formatMinor(12345, 'AUD'))->toBe('A$123.45');
+    expect(MoneyFormatter::formatMinor(12345, 'CAD'))->toBe('C$123.45');
+    expect(MoneyFormatter::formatMinorWithCode(12345, 'usd'))->toBe('123.45 USD');
+    expect(MoneyFormatter::precisionFor('JPY') === 0)->toBeTrue();
+    expect(MoneyFormatter::precisionFor('JPY'))->toBe(0);
+    expect(MoneyFormatter::formatMinor(12345, 'JPY'))->toBe('¥12,345');
+    expect(MoneyFormatter::formatMinor(12345, 'USD'))->toBe('$123.45');
 
     $badge = new GatewayBadge('stripe');
     expect($badge->label)->toBe('Stripe');
@@ -420,7 +421,7 @@ it('covers the filament-cashier public surface', function (): void {
     ]);
 
     $unifiedStripeSub = UnifiedSubscription::fromStripe($stripeSubscription);
-    expect($unifiedStripeSub->formattedAmount())->toBe(CurrencyFormatter::format(
+    expect($unifiedStripeSub->formattedAmount())->toBe(MoneyFormatter::formatMinor(
         0,
         (string) config('cashier.gateways.stripe.currency', config('cashier.currency', 'MYR')),
     ));

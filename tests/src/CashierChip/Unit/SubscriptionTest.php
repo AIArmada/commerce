@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\PaymentMethod;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
@@ -18,65 +19,65 @@ class SubscriptionTest extends CashierChipTestCase
 {
     public function test_can_check_active_status()
     {
-        $subscription = new Subscription(['chip_status' => Subscription::STATUS_ACTIVE]);
+        $subscription = new Subscription(['chip_status' => SubscriptionStatus::Active]);
         $this->assertTrue($subscription->active());
         $this->assertFalse($subscription->onTrial());
 
-        $subscription->chip_status = Subscription::STATUS_TRIALING;
+        $subscription->chip_status = SubscriptionStatus::Trialing;
         $subscription->trial_ends_at = Carbon::now()->addDay();
         $this->assertTrue($subscription->onTrial());
         $this->assertTrue($subscription->active()); // trialing is active
 
-        $subscription->chip_status = Subscription::STATUS_PAST_DUE;
+        $subscription->chip_status = SubscriptionStatus::PastDue;
         $this->assertFalse($subscription->active());
 
-        $subscription->chip_status = Subscription::STATUS_UNPAID;
+        $subscription->chip_status = SubscriptionStatus::Unpaid;
         $this->assertFalse($subscription->active());
 
-        $subscription->chip_status = Subscription::STATUS_CANCELED;
+        $subscription->chip_status = SubscriptionStatus::Canceled;
         $subscription->ends_at = Carbon::now()->subDay();
         $this->assertFalse($subscription->active());
 
-        $subscription->chip_status = Subscription::STATUS_INCOMPLETE;
+        $subscription->chip_status = SubscriptionStatus::Incomplete;
         $this->assertFalse($subscription->active());
     }
 
     public function test_can_check_valid_status()
     {
-        $subscription = new Subscription(['chip_status' => Subscription::STATUS_ACTIVE]);
+        $subscription = new Subscription(['chip_status' => SubscriptionStatus::Active]);
         $this->assertTrue($subscription->valid());
 
-        $subscription->chip_status = Subscription::STATUS_PAST_DUE;
+        $subscription->chip_status = SubscriptionStatus::PastDue;
         $this->assertFalse($subscription->valid());
 
-        $subscription->chip_status = Subscription::STATUS_CANCELED;
+        $subscription->chip_status = SubscriptionStatus::Canceled;
         $subscription->ends_at = Carbon::now()->subDay();
         $this->assertFalse($subscription->valid());
     }
 
     public function test_can_check_incomplete()
     {
-        $subscription = new Subscription(['chip_status' => Subscription::STATUS_INCOMPLETE]);
+        $subscription = new Subscription(['chip_status' => SubscriptionStatus::Incomplete]);
         $this->assertTrue($subscription->incomplete());
 
-        $subscription->chip_status = Subscription::STATUS_INCOMPLETE_EXPIRED;
+        $subscription->chip_status = SubscriptionStatus::IncompleteExpired;
         $this->assertFalse($subscription->incomplete()); // wait, check logic
 
-        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $subscription->chip_status = SubscriptionStatus::Active;
         $this->assertFalse($subscription->incomplete());
     }
 
     public function test_can_check_canceled()
     {
-        $subscription = new Subscription(['chip_status' => Subscription::STATUS_CANCELED, 'ends_at' => Carbon::now()]);
+        $subscription = new Subscription(['chip_status' => SubscriptionStatus::Canceled, 'ends_at' => Carbon::now()]);
         $this->assertTrue($subscription->canceled());
 
-        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $subscription->chip_status = SubscriptionStatus::Active;
         $subscription->ends_at = null;
         $this->assertFalse($subscription->canceled());
 
         // Grace period cancellation
-        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $subscription->chip_status = SubscriptionStatus::Active;
         $subscription->ends_at = Carbon::now()->addDay();
         $this->assertTrue($subscription->onGracePeriod());
         $this->assertTrue($subscription->canceled());
@@ -88,12 +89,12 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_can_check_ended()
     {
         $subscription = new Subscription([
-            'chip_status' => Subscription::STATUS_CANCELED,
+            'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::now()->subDay(),
         ]);
         $this->assertTrue($subscription->ended());
 
-        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $subscription->chip_status = SubscriptionStatus::Active;
         $subscription->ends_at = null;
         $this->assertFalse($subscription->ended());
 
@@ -105,17 +106,17 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_has_incomplete_payment()
     {
         $subscription = new Subscription([
-            'chip_status' => Subscription::STATUS_PAST_DUE,
+            'chip_status' => SubscriptionStatus::PastDue,
         ]);
         // Mock latestPayment?
         // Method uses $this->pastDue() || $this->isIncomplete().
 
         $this->assertTrue($subscription->hasIncompletePayment());
 
-        $subscription->chip_status = Subscription::STATUS_INCOMPLETE;
+        $subscription->chip_status = SubscriptionStatus::Incomplete;
         $this->assertTrue($subscription->hasIncompletePayment());
 
-        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $subscription->chip_status = SubscriptionStatus::Active;
         $this->assertFalse($subscription->hasIncompletePayment());
     }
 
@@ -138,12 +139,12 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_can_cancel_immediately()
     {
         $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
-        $subscription = Subscription::factory()->for($user, 'owner')->create(['chip_status' => Subscription::STATUS_ACTIVE]);
+        $subscription = Subscription::factory()->for($user, 'owner')->create(['chip_status' => SubscriptionStatus::Active]);
 
         $subscription->cancelNow();
 
         $this->assertTrue($subscription->canceled());
-        $this->assertEquals(Subscription::STATUS_CANCELED, $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Canceled, $subscription->chip_status);
         $this->assertNotNull($subscription->ends_at);
     }
 
@@ -151,7 +152,7 @@ class SubscriptionTest extends CashierChipTestCase
     {
         $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
         $subscription = Subscription::factory()->for($user, 'owner')->create([
-            'chip_status' => Subscription::STATUS_CANCELED,
+            'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::tomorrow(),
         ]);
 
@@ -160,13 +161,13 @@ class SubscriptionTest extends CashierChipTestCase
         $this->assertTrue($subscription->active());
         $this->assertFalse($subscription->canceled());
         $this->assertNull($subscription->ends_at);
-        $this->assertEquals(Subscription::STATUS_ACTIVE, $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
     }
 
     public function test_resume_throws_exception_if_not_on_grace_period()
     {
         $subscription = new Subscription([
-            'chip_status' => Subscription::STATUS_CANCELED,
+            'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::yesterday(),
         ]);
 
@@ -237,8 +238,8 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_scope_active()
     {
         $user = User::create(['email' => 'u1', 'name' => 'U1', 'chip_id' => 'c1']);
-        Subscription::factory()->for($user, 'billable')->create(['chip_status' => Subscription::STATUS_ACTIVE]);
-        Subscription::factory()->for($user, 'billable')->create(['chip_status' => Subscription::STATUS_CANCELED, 'ends_at' => Carbon::now()->subDay()]);
+        Subscription::factory()->for($user, 'billable')->create(['chip_status' => SubscriptionStatus::Active]);
+        Subscription::factory()->for($user, 'billable')->create(['chip_status' => SubscriptionStatus::Canceled, 'ends_at' => Carbon::now()->subDay()]);
 
         // Use query()->active()
         $this->assertEquals(1, Subscription::query()->active()->count());

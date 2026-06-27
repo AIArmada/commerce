@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
@@ -69,7 +71,7 @@ it('scopes SubscriptionResource queries to the current owner', function (): void
         'billable_id' => (string) $ownerB->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . Str::random(40),
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'billing_interval' => 'month',
         'billing_interval_count' => 1,
         'recurring_token' => 'tok_' . Str::random(32),
@@ -150,7 +152,7 @@ it('fails closed when owner scoping is enabled but no owner can be resolved', fu
         'billable_id' => (string) $owner->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . Str::random(40),
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'billing_interval' => 'month',
         'billing_interval_count' => 1,
         'recurring_token' => 'tok_' . Str::random(32),
@@ -174,6 +176,9 @@ it('fails closed when owner scoping is enabled but no owner can be resolved', fu
 
     bindFilamentCashierChipOwner(null);
 
-    expect(SubscriptionResource::getEloquentQuery()->whereKey($subscription->id)->exists())->toBeFalse();
-    expect(InvoiceResource::getEloquentQuery()->whereKey($purchase->id)->exists())->toBeFalse();
+    expect(fn (): bool => SubscriptionResource::getEloquentQuery()->whereKey($subscription->id)->exists())
+        ->toThrow(NoCurrentOwnerException::class);
+
+    expect(fn (): bool => InvoiceResource::getEloquentQuery()->whereKey($purchase->id)->exists())
+        ->toThrow(NoCurrentOwnerException::class);
 });

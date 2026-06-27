@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\CustomerPortal\Pages;
 
 use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithBillable;
 use BackedEnum;
@@ -196,9 +197,9 @@ class Subscriptions extends Page
     {
         if (class_exists('\AIArmada\CashierChip\Subscription')) {
             return [
-                Subscription::STATUS_ACTIVE,
-                Subscription::STATUS_TRIALING,
-                Subscription::STATUS_PAST_DUE,
+                SubscriptionStatus::Active->value,
+                SubscriptionStatus::Trialing->value,
+                SubscriptionStatus::PastDue->value,
             ];
         }
 

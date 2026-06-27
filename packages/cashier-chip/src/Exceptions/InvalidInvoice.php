@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Exceptions;
 
 use AIArmada\CashierChip\Invoice\Invoice;
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 
-class InvalidInvoice extends Exception
+class InvalidInvoice extends CashierChipException
 {
     /**
      * Create a new InvalidInvoice instance for invalid owner.

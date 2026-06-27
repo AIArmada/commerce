@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
@@ -40,20 +41,20 @@ final class ChurnRateWidget extends BaseWidget
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();
 
-        $startCount = $this->subscriptionModel()::query()
+        $startCount = $this->subscriptionQuery()
             ->where('created_at', '<', $startOfMonth)
             ->where(function ($query) use ($startOfMonth): void {
                 $query->whereNull('ends_at')
                     ->orWhere('ends_at', '>=', $startOfMonth);
             })
-            ->whereIn('chip_status', [Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING])
+            ->whereIn('chip_status', [SubscriptionStatus::Active->value, SubscriptionStatus::Trialing->value])
             ->count();
 
         if ($startCount === 0) {
             return 0.0;
         }
 
-        $churned = $this->subscriptionModel()::query()
+        $churned = $this->subscriptionQuery()
             ->whereNotNull('ends_at')
             ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
             ->count();
@@ -66,7 +67,7 @@ final class ChurnRateWidget extends BaseWidget
         $startOfMonth = now()->subMonth()->startOfMonth();
         $endOfMonth = now()->subMonth()->endOfMonth();
 
-        $startCount = $this->subscriptionModel()::query()
+        $startCount = $this->subscriptionQuery()
             ->where('created_at', '<', $startOfMonth)
             ->where(function ($query) use ($startOfMonth): void {
                 $query->whereNull('ends_at')
@@ -78,7 +79,7 @@ final class ChurnRateWidget extends BaseWidget
             return 0.0;
         }
 
-        $churned = $this->subscriptionModel()::query()
+        $churned = $this->subscriptionQuery()
             ->whereNotNull('ends_at')
             ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
             ->count();
@@ -136,7 +137,7 @@ final class ChurnRateWidget extends BaseWidget
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
-            $startCount = $this->subscriptionModel()::query()
+            $startCount = $this->subscriptionQuery()
                 ->where('created_at', '<', $startOfMonth)
                 ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
@@ -150,7 +151,7 @@ final class ChurnRateWidget extends BaseWidget
                 continue;
             }
 
-            $churned = $this->subscriptionModel()::query()
+            $churned = $this->subscriptionQuery()
                 ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
                 ->count();

@@ -49,7 +49,15 @@ class AttributeSet extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'name',
+        'code',
+        'description',
+        'is_default',
+        'position',
+    ];
 
     protected function casts(): array
     {

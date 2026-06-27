@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\Support;
+namespace AIArmada\CommerceSupport\Tests;
 
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;

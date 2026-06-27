@@ -6,12 +6,14 @@ namespace AIArmada\Products\Policies;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Collection;
+use AIArmada\Products\Policies\Concerns\HandlesOwnerScoping;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Database\Eloquent\Model;
 
 final class CollectionPolicy
 {
     use HandlesAuthorization;
+    use HandlesOwnerScoping;
 
     private function canAccessCollection(Collection $collection): bool
     {
@@ -32,30 +34,6 @@ final class CollectionPolicy
         $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
         return $includeGlobal && $this->isGlobalModel($collection);
-    }
-
-    private function belongsToOwner(Model $model, Model $owner): bool
-    {
-        if (! method_exists($model, 'belongsToOwner')) {
-            return false;
-        }
-
-        /** @var bool $belongs */
-        $belongs = $model->belongsToOwner($owner);
-
-        return $belongs;
-    }
-
-    private function isGlobalModel(Model $model): bool
-    {
-        if (! method_exists($model, 'isGlobal')) {
-            return false;
-        }
-
-        /** @var bool $isGlobal */
-        $isGlobal = $model->isGlobal();
-
-        return $isGlobal;
     }
 
     public function viewAny(mixed $user): bool

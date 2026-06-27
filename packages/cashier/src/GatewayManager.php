@@ -7,6 +7,7 @@ namespace AIArmada\Cashier;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Exceptions\GatewayNotFoundException;
 use Illuminate\Support\Manager;
+use Laravel\Cashier\Cashier;
 
 /**
  * Gateway Manager - Factory pattern for resolving payment gateways.
@@ -53,7 +54,13 @@ class GatewayManager extends Manager
      */
     public function supportedGateways(): array
     {
-        return array_keys($this->config->get('cashier.gateways', []));
+        $gateways = array_keys($this->config->get('cashier.gateways', []));
+
+        if (! class_exists(Cashier::class) && in_array('stripe', $gateways, true)) {
+            $gateways = array_values(array_diff($gateways, ['stripe']));
+        }
+
+        return $gateways;
     }
 
     /**
@@ -61,6 +68,10 @@ class GatewayManager extends Manager
      */
     public function supportsGateway(string $name): bool
     {
+        if ($name === 'stripe' && ! class_exists(Cashier::class)) {
+            return false;
+        }
+
         return in_array($name, $this->supportedGateways(), true);
     }
 
@@ -79,6 +90,12 @@ class GatewayManager extends Manager
      */
     protected function createStripeDriver(): GatewayContract
     {
+        if (! class_exists(Cashier::class)) {
+            throw new GatewayNotFoundException(
+                'Stripe gateway requires the [laravel/cashier] package. Run: composer require laravel/cashier'
+            );
+        }
+
         $config = $this->config->get('cashier.gateways.stripe', []);
 
         return $this->buildGateway('stripe', Gateways\StripeGateway::class, $config);

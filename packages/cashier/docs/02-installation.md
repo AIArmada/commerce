@@ -37,6 +37,11 @@ composer require laravel/cashier
 composer require aiarmada/cashier-chip
 ```
 
+The Stripe and CHIP packages are optional. Without `laravel/cashier` installed, the cashier
+package loads cleanly and `GatewayManager` simply reports Stripe as unavailable. Attempting to
+resolve the `stripe` gateway without it throws `GatewayNotFoundException` with a clear message
+pointing to `composer require laravel/cashier`.
+
 ### Step 3: Publish Configuration
 
 ```bash
@@ -111,7 +116,7 @@ Add the wrapper trait **and** the traits from the gateway packages you install:
 
 namespace App\Models;
 
-use AIArmada\Cashier\Billable as CashierBillable;
+use AIArmada\Cashier\Concerns\Billable as CashierBillable;
 use AIArmada\CashierChip\Billable as ChipBillable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Cashier\Billable as StripeBillable;

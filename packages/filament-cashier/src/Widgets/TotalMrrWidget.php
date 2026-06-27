@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
-use AIArmada\Cashier\Support\CurrencyFormatter;
 use AIArmada\Cashier\Support\GatewayDetector;
 use AIArmada\Cashier\Support\OwnerScopedQuery;
 use AIArmada\Cashier\Support\UnifiedSubscription;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Collection;
@@ -124,6 +124,6 @@ final class TotalMrrWidget extends StatsOverviewWidget
 
     protected function formatCurrency(int $amountInCents, string $currency): string
     {
-        return CurrencyFormatter::format($amountInCents, $currency);
+        return MoneyFormatter::formatMinor($amountInCents, $currency);
     }
 }
