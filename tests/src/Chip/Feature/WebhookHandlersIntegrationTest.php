@@ -230,7 +230,7 @@ describe('Webhook Handlers Integration', function (): void {
          */
         function createTestPurchase(array $overrides = []): Purchase
         {
-            return Purchase::create(array_merge([
+            return tap(new Purchase, fn (Purchase $p) => $p->forceFill(array_merge([
                 'id' => 'purchase-' . uniqid(),
                 'type' => 'purchase',
                 'status' => 'created',
@@ -253,7 +253,7 @@ describe('Webhook Handlers Integration', function (): void {
                 'skip_capture' => false,
                 'force_recurring' => false,
                 'marked_as_paid' => false,
-            ], $overrides));
+            ], $overrides))->save());
         }
 
         /**
@@ -404,7 +404,7 @@ describe('Webhook Handlers Integration', function (): void {
                 'refundable_amount' => 5000,
             ]);
 
-            Payment::create([
+            tap(new Payment, fn (Payment $pmt) => $pmt->forceFill([
                 'id' => 'refund-payment-existing',
                 'purchase_id' => $purchase->id,
                 'payment_type' => 'refund',
@@ -416,7 +416,7 @@ describe('Webhook Handlers Integration', function (): void {
                 'pending_amount' => 0,
                 'created_on' => time() - 60,
                 'updated_on' => time() - 60,
-            ]);
+            ])->save());
 
             $payload = createPayloadWithPurchase('payment.refunded', $purchase, [
                 'id' => 'refund-payment-final',

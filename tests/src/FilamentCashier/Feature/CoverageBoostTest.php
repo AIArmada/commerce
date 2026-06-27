@@ -247,7 +247,7 @@ it('covers the filament-cashier public surface', function (): void {
 
     // Seed one CHIP subscription + item to exercise CHIP branches (no external API calls).
     $chipSubscriptionId = (string) Str::uuid();
-    Subscription::query()->create([
+    $subscription = Subscription::query()->create([
         'id' => $chipSubscriptionId,
         'billable_type' => $dbUser->getMorphClass(),
         'billable_id' => $dbUser->getKey(),
@@ -262,6 +262,12 @@ it('covers the filament-cashier public surface', function (): void {
         'created_at' => now(),
         'updated_at' => now(),
     ]);
+
+    // Subscription has no creating handler for auto-assign, so set owner explicitly
+    // so SubscriptionItem::creating can verify ownership.
+    $subscription->setAttribute('owner_type', $dbUser->getMorphClass());
+    $subscription->setAttribute('owner_id', (string) $dbUser->getKey());
+    $subscription->save();
 
     SubscriptionItem::query()->create([
         'id' => (string) Str::uuid(),

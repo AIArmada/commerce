@@ -317,9 +317,9 @@ describe('ClientData', function (): void {
 });
 
 describe('Client Model', function (): void {
-    it('is unguarded', function (): void {
+    it('guards owner columns from mass assignment', function (): void {
         $client = new Client;
-        expect($client->getGuarded())->toBe([]);
+        expect($client->getGuarded())->toBe(['owner_type', 'owner_id']);
     });
 
     it('casts attributes correctly', function (): void {
