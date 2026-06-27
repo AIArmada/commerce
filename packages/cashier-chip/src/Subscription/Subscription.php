@@ -53,7 +53,7 @@ use LogicException;
  * @property string $billable_id
  * @property string $type
  * @property string $chip_id
- * @property string $chip_status
+ * @property SubscriptionStatus $chip_status
  * @property string|null $chip_price
  * @property int|null $quantity
  * @property string|null $recurring_token
