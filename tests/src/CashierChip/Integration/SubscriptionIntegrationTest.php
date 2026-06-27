@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Integration;
 
 use AIArmada\CashierChip\Discount;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;

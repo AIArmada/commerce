@@ -6,6 +6,4 @@ namespace AIArmada\CashierChip\Exceptions;
 
 use Exception;
 
-abstract class CashierChipException extends Exception
-{
-}
+abstract class CashierChipException extends Exception {}
