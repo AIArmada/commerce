@@ -29,6 +29,7 @@ function createPurchase(array $attributes): Purchase
         'status_history' => [],
     ], $attributes));
     $purchase->save();
+
     return $purchase;
 }
 

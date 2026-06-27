@@ -34,5 +34,4 @@ return new class extends Migration
             DB::statement("CREATE INDEX IF NOT EXISTS chip_customers_metadata_gin_index ON \"{$table}\" USING GIN (\"metadata\")");
         }
     }
-
 };
