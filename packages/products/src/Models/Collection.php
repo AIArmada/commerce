@@ -63,7 +63,26 @@ class Collection extends Model implements Auditable, HasMedia
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'name',
+        'slug',
+        'description',
+        'type',
+        'conditions',
+        'position',
+        'is_featured',
+        'status',
+        'visibility',
+        'hidden_at',
+        'archived_at',
+        'published_at',
+        'unpublished_at',
+        'meta_title',
+        'meta_description',
+        'metadata',
+    ];
 
     protected function casts(): array
     {

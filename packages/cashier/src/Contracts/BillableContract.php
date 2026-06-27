@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Contracts;
 
-use AIArmada\Cashier\Billable;
+use AIArmada\Cashier\Concerns\Billable;
 use Illuminate\Support\Collection;
 
 /**

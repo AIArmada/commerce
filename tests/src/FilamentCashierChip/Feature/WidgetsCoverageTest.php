@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
+use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCashierChip\Widgets\ActiveSubscribersWidget;
 use AIArmada\FilamentCashierChip\Widgets\AttentionRequiredWidget;
@@ -32,7 +34,7 @@ function filamentCashierChip_createSubscriptionWithItem(Model $owner, array $sub
             'billable_id' => (string) $owner->getKey(),
             'type' => 'default',
             'chip_id' => 'sub_' . Str::uuid()->toString(),
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'billing_interval' => 'month',
             'billing_interval_count' => 1,
             'quantity' => 1,
@@ -53,21 +55,21 @@ function filamentCashierChip_createSubscriptionWithItem(Model $owner, array $sub
         return $subscription;
     });
 
-    return $subscription->refresh();
+    return OwnerContext::withOwner($owner, fn (): Subscription => $subscription->refresh());
 }
 
 it('covers all dashboard widgets code paths', function (): void {
     $user = $this->createUser();
 
     filamentCashierChip_createSubscriptionWithItem($user, [
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'created_at' => now()->subMonths(2),
     ], [
         'unit_amount' => 25_00,
     ]);
 
     filamentCashierChip_createSubscriptionWithItem($user, [
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'created_at' => now()->subDays(2),
         'coupon_id' => 'coupon_test',
         'coupon_discount' => 5_00,
@@ -76,30 +78,30 @@ it('covers all dashboard widgets code paths', function (): void {
     ]);
 
     filamentCashierChip_createSubscriptionWithItem($user, [
-        'chip_status' => Subscription::STATUS_TRIALING,
+        'chip_status' => SubscriptionStatus::Trialing,
         'trial_ends_at' => now()->addDays(2),
         'created_at' => now()->subDays(7),
     ]);
 
     filamentCashierChip_createSubscriptionWithItem($user, [
-        'chip_status' => Subscription::STATUS_PAST_DUE,
+        'chip_status' => SubscriptionStatus::PastDue,
     ]);
 
     filamentCashierChip_createSubscriptionWithItem($user, [
-        'chip_status' => Subscription::STATUS_INCOMPLETE,
+        'chip_status' => SubscriptionStatus::Incomplete,
     ]);
 
     filamentCashierChip_createSubscriptionWithItem($user, [
-        'chip_status' => Subscription::STATUS_UNPAID,
+        'chip_status' => SubscriptionStatus::Unpaid,
     ]);
 
     filamentCashierChip_createSubscriptionWithItem($user, [
-        'chip_status' => Subscription::STATUS_CANCELED,
+        'chip_status' => SubscriptionStatus::Canceled,
         'ends_at' => now()->addDays(2),
     ]);
 
     filamentCashierChip_createSubscriptionWithItem($user, [
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'created_at' => now()->subMonths(1)->startOfMonth()->addDay(),
         'trial_ends_at' => now()->subMonth()->endOfMonth()->subDay(),
     ]);
@@ -180,4 +182,40 @@ it('covers all dashboard widgets code paths', function (): void {
     $descriptionMethod = new ReflectionMethod(AttentionRequiredWidget::class, 'buildDescription');
     expect($descriptionMethod->invoke($attentionWidget, 0, 0, 0, 0, 0))->toBe('All subscriptions healthy');
     expect($descriptionMethod->invoke($attentionWidget, 1, 2, 3, 4, 5))->toBeString();
+});
+
+it('scopes dashboard widget subscription queries to the current owner', function (): void {
+    config()->set('cashier-chip.features.owner.enabled', true);
+    config()->set('cashier-chip.features.owner.include_global', false);
+    config()->set('cashier-chip.features.owner.auto_assign_on_create', true);
+
+    $ownerA = $this->createUser([
+        'email' => 'filament-cashier-chip-widget-owner-a@example.com',
+    ]);
+
+    $ownerB = $this->createUser([
+        'email' => 'filament-cashier-chip-widget-owner-b@example.com',
+    ]);
+
+    filamentCashierChip_createSubscriptionWithItem($ownerA, [
+        'chip_status' => SubscriptionStatus::Active,
+    ]);
+
+    filamentCashierChip_createSubscriptionWithItem($ownerB, [
+        'chip_status' => SubscriptionStatus::Active,
+    ]);
+
+    $widget = app(ActiveSubscribersWidget::class);
+    $activeSubscribersMethod = new ReflectionMethod(ActiveSubscribersWidget::class, 'getActiveSubscribersCount');
+
+    OwnerContext::withOwner($ownerA, function () use ($activeSubscribersMethod, $widget): void {
+        expect($activeSubscribersMethod->invoke($widget))->toBe(1);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($activeSubscribersMethod, $widget): void {
+        expect($activeSubscribersMethod->invoke($widget))->toBe(1);
+    });
+
+    expect(fn (): int => $activeSubscribersMethod->invoke($widget))
+        ->toThrow(NoCurrentOwnerException::class);
 });

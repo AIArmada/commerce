@@ -9,7 +9,7 @@ use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
 use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
-use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Schemas\SubscriptionForm;

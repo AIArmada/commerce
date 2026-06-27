@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Exceptions;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 
-final class CustomerAlreadyCreated extends Exception
+final class CustomerAlreadyCreated extends CashierChipException
 {
     /**
      * Create a new CustomerAlreadyCreated exception.

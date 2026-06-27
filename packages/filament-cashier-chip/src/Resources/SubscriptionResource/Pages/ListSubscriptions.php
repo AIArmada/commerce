@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use Filament\Actions\Action;
@@ -40,8 +41,8 @@ final class ListSubscriptions extends ListRecords
                 ->modalDescription('Are you sure you want to pause all active subscriptions? This action will prevent billing for all subscribers.')
                 ->action(function (): void {
                     $count = Subscription::query()
-                        ->where('chip_status', Subscription::STATUS_ACTIVE)
-                        ->update(['chip_status' => Subscription::STATUS_PAUSED]);
+                        ->where('chip_status', SubscriptionStatus::Active->value)
+                        ->update(['chip_status' => SubscriptionStatus::Paused->value]);
 
                     Notification::make()
                         ->title('Subscriptions Paused')
@@ -59,8 +60,8 @@ final class ListSubscriptions extends ListRecords
                 ->modalDescription('Are you sure you want to resume all paused subscriptions? This will re-enable billing for all paused subscribers.')
                 ->action(function (): void {
                     $count = Subscription::query()
-                        ->where('chip_status', Subscription::STATUS_PAUSED)
-                        ->update(['chip_status' => Subscription::STATUS_ACTIVE]);
+                        ->where('chip_status', SubscriptionStatus::Paused->value)
+                        ->update(['chip_status' => SubscriptionStatus::Active->value]);
 
                     Notification::make()
                         ->title('Subscriptions Resumed')

@@ -6,6 +6,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\Payment\StoredPaymentMethod;
 use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
@@ -21,7 +22,7 @@ final class MassAssignmentTest extends CashierChipTestCase
             'owner_type' => 'tenant',
             'owner_id' => 'tenant-123',
             'chip_id' => 'sub_external',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $this->assertSame('user', $subscription->billable_type);

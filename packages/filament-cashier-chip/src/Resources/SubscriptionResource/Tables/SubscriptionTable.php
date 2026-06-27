@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Tables;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;
 use Filament\Actions\ViewAction;
@@ -136,13 +137,13 @@ final class SubscriptionTable
                 SelectFilter::make('chip_status')
                     ->label('Status')
                     ->options([
-                        Subscription::STATUS_ACTIVE => 'Active',
-                        Subscription::STATUS_TRIALING => 'Trialing',
-                        Subscription::STATUS_CANCELED => 'Canceled',
-                        Subscription::STATUS_PAST_DUE => 'Past Due',
-                        Subscription::STATUS_PAUSED => 'Paused',
-                        Subscription::STATUS_INCOMPLETE => 'Incomplete',
-                        Subscription::STATUS_UNPAID => 'Unpaid',
+                        SubscriptionStatus::Active->value => 'Active',
+                        SubscriptionStatus::Trialing->value => 'Trialing',
+                        SubscriptionStatus::Canceled->value => 'Canceled',
+                        SubscriptionStatus::PastDue->value => 'Past Due',
+                        SubscriptionStatus::Paused->value => 'Paused',
+                        SubscriptionStatus::Incomplete->value => 'Incomplete',
+                        SubscriptionStatus::Unpaid->value => 'Unpaid',
                     ]),
 
                 TernaryFilter::make('on_trial')
@@ -175,7 +176,7 @@ final class SubscriptionTable
                 Filter::make('past_due')
                     ->label('Past Due')
                     ->toggle()
-                    ->query(fn (Builder $query): Builder => $query->where('chip_status', Subscription::STATUS_PAST_DUE)),
+                    ->query(fn (Builder $query): Builder => $query->where('chip_status', SubscriptionStatus::PastDue->value)),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->actions([
                 ViewAction::make()

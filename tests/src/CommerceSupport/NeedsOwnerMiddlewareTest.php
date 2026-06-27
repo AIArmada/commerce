@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Events\OwnerNotResolvedForRequestEvent;
+use AIArmada\CommerceSupport\Exceptions\CommerceException;
 use AIArmada\CommerceSupport\Exceptions\NoCurrentOwnerException;
 use AIArmada\CommerceSupport\Middleware\NeedsOwner;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -66,5 +67,9 @@ describe('NeedsOwner middleware', function (): void {
         Event::assertDispatched(OwnerNotResolvedForRequestEvent::class, function (OwnerNotResolvedForRequestEvent $event): bool {
             return $event->request->path() === 'tenant/orders';
         });
+    });
+
+    it('uses the commerce exception hierarchy', function (): void {
+        expect(new NoCurrentOwnerException('Missing owner'))->toBeInstanceOf(CommerceException::class);
     });
 });

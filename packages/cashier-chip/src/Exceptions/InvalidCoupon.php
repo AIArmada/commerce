@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Exceptions;
 
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
-use Exception;
 
 /**
  * Exception thrown when a coupon is invalid.
  *
  * Provides Stripe-compatible static factory methods.
  */
-class InvalidCoupon extends Exception
+class InvalidCoupon extends CashierChipException
 {
     /**
      * Create a new exception for a coupon that was not found.

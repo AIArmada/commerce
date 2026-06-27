@@ -13,7 +13,7 @@ use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\CheckoutServiceProvider;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\Cashier\Fixtures;
 
-use AIArmada\Cashier\Billable;
+use AIArmada\Cashier\Concerns\Billable;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Foundation\Auth\User as Authenticatable;

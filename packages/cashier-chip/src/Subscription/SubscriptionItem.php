@@ -101,6 +101,13 @@ class SubscriptionItem extends Model
         $owner ??= $this->resolveOwner();
         $includeGlobal ??= (bool) config('cashier-chip.features.owner.include_global', false);
 
+        if (! is_string($owner)) {
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                sprintf('%s requires an owner context or explicit global context.', self::class),
+            );
+        }
+
         return $this->scopeForOwnerUsingTrait($query, $owner, $includeGlobal);
     }
 

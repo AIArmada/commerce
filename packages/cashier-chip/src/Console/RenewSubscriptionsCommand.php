@@ -6,10 +6,13 @@ namespace AIArmada\CashierChip\Console;
 
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
-use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CommerceSupport\Support\OwnerBatchRunner;
+use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
+use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -110,7 +113,7 @@ class RenewSubscriptionsCommand extends Command
 
                     if ($payment && $payment->isSucceeded()) {
                         $subscription->forceFill([
-                            'chip_status' => Subscription::STATUS_ACTIVE,
+                            'chip_status' => SubscriptionStatus::Active,
                             'next_billing_at' => now()->add(
                                 $subscription->billing_interval ?? 'month',
                                 $subscription->billing_interval_count ?? 1
@@ -187,7 +190,7 @@ class RenewSubscriptionsCommand extends Command
     protected function markAsPastDue(Subscription $subscription): void
     {
         $subscription->forceFill([
-            'chip_status' => Subscription::STATUS_PAST_DUE,
+            'chip_status' => SubscriptionStatus::PastDue,
             'past_due_at' => now(),
         ])->save();
     }

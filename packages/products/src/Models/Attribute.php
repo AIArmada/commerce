@@ -63,7 +63,27 @@ class Attribute extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'code',
+        'name',
+        'description',
+        'type',
+        'validation',
+        'options',
+        'is_required',
+        'is_filterable',
+        'is_searchable',
+        'is_comparable',
+        'is_visible_on_front',
+        'is_visible_on_admin',
+        'position',
+        'suffix',
+        'placeholder',
+        'help_text',
+        'default_value',
+    ];
 
     protected function casts(): array
     {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Moderation\Traits;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
-use AIArmada\Moderation\Actions\BlockEntityAction;
+use AIArmada\Moderation\Contracts\BlocksEntity;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Block;
@@ -58,8 +58,8 @@ trait HasBlocks
     ): Block {
         $blockedBy = $this->resolveBlockedBy($blockedById, $blockedByType);
 
-        /** @var BlockEntityAction $action */
-        $action = app(BlockEntityAction::class);
+        /** @var BlocksEntity $action */
+        $action = app(BlocksEntity::class);
 
         return $action->execute(
             blockable: $this,

@@ -10,6 +10,7 @@ use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Listeners\HandlePurchasePaymentFailure;
 use AIArmada\CashierChip\Listeners\HandlePurchasePreauthorized;
 use AIArmada\CashierChip\Listeners\HandleSubscriptionChargeFailure;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
@@ -71,7 +72,7 @@ class MoreListenersTest extends CashierChipTestCase
 
         $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $purchaseData = [
@@ -87,7 +88,7 @@ class MoreListenersTest extends CashierChipTestCase
         $listener = new HandlePurchasePaymentFailure;
         OwnerContext::withOwner($user, fn (): null => tap(null, fn () => $listener->handle($event)));
 
-        $this->assertEquals(Subscription::STATUS_PAST_DUE, $subscription->fresh()->chip_status);
+        $this->assertEquals(SubscriptionStatus::PastDue, $subscription->fresh()->chip_status);
     }
 
     public function test_handle_purchase_preauthorized_saves_recurring_token(): void
@@ -166,7 +167,7 @@ class MoreListenersTest extends CashierChipTestCase
 
         $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $purchaseData = [
@@ -195,7 +196,7 @@ class MoreListenersTest extends CashierChipTestCase
 
         $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $purchaseData = [
@@ -211,7 +212,7 @@ class MoreListenersTest extends CashierChipTestCase
         $listener = new HandleSubscriptionChargeFailure;
         OwnerContext::withOwner($user, fn (): null => tap(null, fn () => $listener->handle($event)));
 
-        $this->assertEquals(Subscription::STATUS_PAST_DUE, $subscription->fresh()->chip_status);
+        $this->assertEquals(SubscriptionStatus::PastDue, $subscription->fresh()->chip_status);
     }
 
     public function test_handle_subscription_charge_failure_returns_early_without_subscription_type(): void

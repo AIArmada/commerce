@@ -51,7 +51,16 @@ class AttributeGroup extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'name',
+        'code',
+        'description',
+        'position',
+        'visibility',
+        'hidden_at',
+    ];
 
     protected function casts(): array
     {

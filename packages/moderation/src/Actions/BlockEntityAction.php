@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Moderation\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Moderation\Contracts\BlocksEntity;
 use AIArmada\Moderation\Enums\BlockReason;
 use AIArmada\Moderation\Enums\BlockStatus;
 use AIArmada\Moderation\Models\Block;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-final class BlockEntityAction
+final class BlockEntityAction implements BlocksEntity
 {
     public function execute(
         Model $blockable,

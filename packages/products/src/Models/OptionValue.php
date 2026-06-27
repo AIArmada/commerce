@@ -50,7 +50,16 @@ class OptionValue extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'option_id',
+        'name',
+        'position',
+        'swatch_color',
+        'swatch_image',
+        'metadata',
+    ];
 
     protected function casts(): array
     {

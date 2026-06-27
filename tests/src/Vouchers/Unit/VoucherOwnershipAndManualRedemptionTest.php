@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
+use AIArmada\CommerceSupport\Tests\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;

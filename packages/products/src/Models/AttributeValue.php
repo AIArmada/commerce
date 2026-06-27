@@ -51,7 +51,15 @@ class AttributeValue extends Model implements Auditable
 
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'attribute_id',
+        'attributable_type',
+        'attributable_id',
+        'value',
+        'locale',
+    ];
 
     public function getTable(): string
     {

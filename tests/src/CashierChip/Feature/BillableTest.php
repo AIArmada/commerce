@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
@@ -100,7 +101,7 @@ it('can check if subscribed', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
@@ -114,7 +115,7 @@ it('can check if subscribed to specific price', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
@@ -126,7 +127,7 @@ it('can get specific subscription', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
@@ -144,14 +145,14 @@ it('can have multiple subscriptions', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-1',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
     $this->user->subscriptions()->create([
         'type' => 'swimming',
         'chip_id' => 'test-sub-2',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_swimming',
     ]);
 
@@ -166,7 +167,7 @@ it('can check if on trial', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_TRIALING,
+        'chip_status' => SubscriptionStatus::Trialing,
         'chip_price' => 'price_monthly',
         'trial_ends_at' => Carbon::now()->addDays(14),
     ]);
@@ -195,14 +196,14 @@ it('can get only active subscriptions', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'active',
         'chip_id' => 'test-sub-1',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
     $this->user->subscriptions()->create([
         'type' => 'canceled',
         'chip_id' => 'test-sub-2',
-        'chip_status' => Subscription::STATUS_CANCELED,
+        'chip_status' => SubscriptionStatus::Canceled,
         'chip_price' => 'price_monthly',
         'ends_at' => Carbon::now()->subDay(),
     ]);
@@ -217,14 +218,14 @@ it('can get only canceled subscriptions', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'active',
         'chip_id' => 'test-sub-1',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
     $this->user->subscriptions()->create([
         'type' => 'canceled',
         'chip_id' => 'test-sub-2',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
         'ends_at' => Carbon::now()->addDays(7),
     ]);
@@ -239,14 +240,14 @@ it('can get only recurring subscriptions', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'recurring',
         'chip_id' => 'test-sub-1',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
     $this->user->subscriptions()->create([
         'type' => 'trial',
         'chip_id' => 'test-sub-2',
-        'chip_status' => Subscription::STATUS_TRIALING,
+        'chip_status' => SubscriptionStatus::Trialing,
         'chip_price' => 'price_monthly',
         'trial_ends_at' => Carbon::now()->addDays(14),
     ]);
@@ -261,14 +262,14 @@ it('can get subscriptions on trial', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'active',
         'chip_id' => 'test-sub-1',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
     $this->user->subscriptions()->create([
         'type' => 'trial',
         'chip_id' => 'test-sub-2',
-        'chip_status' => Subscription::STATUS_TRIALING,
+        'chip_status' => SubscriptionStatus::Trialing,
         'chip_price' => 'price_monthly',
         'trial_ends_at' => Carbon::now()->addDays(14),
     ]);
@@ -283,14 +284,14 @@ it('can get subscriptions on grace period', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'active',
         'chip_id' => 'test-sub-1',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
     $this->user->subscriptions()->create([
         'type' => 'grace',
         'chip_id' => 'test-sub-2',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
         'ends_at' => Carbon::now()->addDays(7),
     ]);
@@ -305,14 +306,14 @@ it('can get ended subscriptions', function (): void {
     $this->user->subscriptions()->create([
         'type' => 'active',
         'chip_id' => 'test-sub-1',
-        'chip_status' => Subscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
     $this->user->subscriptions()->create([
         'type' => 'ended',
         'chip_id' => 'test-sub-2',
-        'chip_status' => Subscription::STATUS_CANCELED,
+        'chip_status' => SubscriptionStatus::Canceled,
         'chip_price' => 'price_monthly',
         'ends_at' => Carbon::now()->subDay(),
     ]);

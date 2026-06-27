@@ -444,17 +444,28 @@ $cashier->client(): ClientApi
 
 ---
 
-## Constants
+## Enums
 
-### Subscription Status
+### SubscriptionStatus
 
 ```php
-Subscription::STATUS_ACTIVE = 'active'
-Subscription::STATUS_CANCELED = 'canceled'
-Subscription::STATUS_INCOMPLETE = 'incomplete'
-Subscription::STATUS_INCOMPLETE_EXPIRED = 'incomplete_expired'
-Subscription::STATUS_PAST_DUE = 'past_due'
-Subscription::STATUS_TRIALING = 'trialing'
-Subscription::STATUS_UNPAID = 'unpaid'
-Subscription::STATUS_PAUSED = 'paused'
+SubscriptionStatus::Active
+SubscriptionStatus::Canceled
+SubscriptionStatus::Incomplete
+SubscriptionStatus::IncompleteExpired
+SubscriptionStatus::PastDue
+SubscriptionStatus::Trialing
+SubscriptionStatus::Unpaid
+SubscriptionStatus::Paused
+```
+
+### PaymentStatus
+
+```php
+PaymentStatus::Success
+PaymentStatus::Pending
+PaymentStatus::Expired
+PaymentStatus::Failed
+PaymentStatus::Cancelled
+PaymentStatus::Refunded
 ```

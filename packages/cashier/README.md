@@ -104,7 +104,7 @@ CASHIER_CHIP_CURRENCY_LOCALE=ms_MY
 Add **all** billable traits to your User model:
 
 ```php
-use AIArmada\Cashier\Billable as CashierBillable;
+use AIArmada\Cashier\Concerns\Billable as CashierBillable;
 use Laravel\Cashier\Billable as StripeBillable;
 use AIArmada\CashierChip\Billable as ChipBillable;
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
@@ -139,7 +140,7 @@ class ManagesSubscriptionsTest extends CashierChipTestCase
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'billable')->create([
             'type' => 'default',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         $this->assertTrue($user->subscribed('default'));
@@ -150,7 +151,7 @@ class ManagesSubscriptionsTest extends CashierChipTestCase
         $user = $this->createUser(['chip_id' => 'cli_123']);
         Subscription::factory()->for($user, 'billable')->create([
             'type' => 'default',
-            'chip_status' => Subscription::STATUS_PAST_DUE,
+            'chip_status' => SubscriptionStatus::PastDue,
         ]);
 
         $this->assertTrue($user->hasIncompletePayment('default'));

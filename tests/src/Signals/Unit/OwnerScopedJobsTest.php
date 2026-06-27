@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Signals\SignalsTestCase;
-use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Signals\Jobs\EvaluateSignalAlertsForEvent;
 use AIArmada\Signals\Jobs\ReverseGeocodeSessionJob;

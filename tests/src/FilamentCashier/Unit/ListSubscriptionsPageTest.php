@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription as ChipSubscription;
 use AIArmada\CashierChip\Subscription\SubscriptionItem as ChipSubscriptionItem;
-use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\ListSubscriptions;
 use Illuminate\Database\Eloquent\Model;
@@ -88,7 +89,7 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
         'billable_id' => (string) $user->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $activeId,
-        'chip_status' => ChipSubscription::STATUS_ACTIVE,
+        'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_basic_monthly',
         'quantity' => 1,
         'billing_interval' => 'month',
@@ -107,7 +108,7 @@ it('lists CHIP subscriptions as unified subscriptions and applies tabs and filte
         'billable_id' => (string) $user->getKey(),
         'type' => 'default',
         'chip_id' => 'sub_' . $canceledId,
-        'chip_status' => ChipSubscription::STATUS_CANCELED,
+        'chip_status' => SubscriptionStatus::Canceled,
         'chip_price' => 'price_basic_monthly',
         'quantity' => 1,
         'billing_interval' => 'month',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
@@ -40,22 +41,22 @@ final class ActiveSubscribersWidget extends BaseWidget
 
     private function getActiveSubscribersCount(): int
     {
-        return $this->subscriptionModel()::query()
+        return $this->subscriptionQuery()
             ->whereActive()
             ->count();
     }
 
     private function getTrialingCount(): int
     {
-        return $this->subscriptionModel()::query()
+        return $this->subscriptionQuery()
             ->whereOnTrial()
             ->count();
     }
 
     private function getPreviousActiveCount(): int
     {
-        return $this->subscriptionModel()::query()
-            ->where('chip_status', Subscription::STATUS_ACTIVE)
+        return $this->subscriptionQuery()
+            ->where('chip_status', SubscriptionStatus::Active->value)
             ->where('created_at', '<', now()->subMonth())
             ->count();
     }
@@ -101,13 +102,13 @@ final class ActiveSubscribersWidget extends BaseWidget
             $date = now()->subMonths($i);
             $endOfMonth = $date->copy()->endOfMonth();
 
-            $count = $this->subscriptionModel()::query()
+            $count = $this->subscriptionQuery()
                 ->where('created_at', '<=', $endOfMonth)
                 ->where(function ($query) use ($endOfMonth): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $endOfMonth);
                 })
-                ->whereIn('chip_status', [Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING])
+                ->whereIn('chip_status', [SubscriptionStatus::Active->value, SubscriptionStatus::Trialing->value])
                 ->count();
 
             $chart[] = $count;

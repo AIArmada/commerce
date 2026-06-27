@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Exceptions;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 
-final class InvalidPaymentMethod extends Exception
+final class InvalidPaymentMethod extends CashierChipException
 {
     /**
      * Create a new InvalidPaymentMethod exception for invalid owner.

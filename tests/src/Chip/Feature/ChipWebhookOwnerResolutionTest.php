@@ -10,7 +10,7 @@ use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;

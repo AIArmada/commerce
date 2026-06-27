@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 use AIArmada\CashierChip\Actions\CancelChipSubscription;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Commerce\Tests\TestCase;
 use Illuminate\Support\Facades\Event;
@@ -19,14 +20,14 @@ describe('CancelChipSubscription', function (): void {
         $subscription = Subscription::factory()->create([
             'billable_type' => 'user',
             'billable_id' => '1',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         app(CancelChipSubscription::class)->cancel($subscription);
 
         $subscription->refresh();
 
-        expect($subscription->chip_status)->toBe(Subscription::STATUS_CANCELED);
+        expect($subscription->chip_status)->toBe(SubscriptionStatus::Canceled);
         expect($subscription->ends_at)->not->toBeNull();
 
         Event::assertDispatched(SubscriptionCanceled::class);
@@ -38,14 +39,14 @@ describe('CancelChipSubscription', function (): void {
         $subscription = Subscription::factory()->create([
             'billable_type' => 'user',
             'billable_id' => '1',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
         ]);
 
         app(CancelChipSubscription::class)->markPastDue($subscription, 'Card declined');
 
         $subscription->refresh();
 
-        expect($subscription->chip_status)->toBe(Subscription::STATUS_PAST_DUE);
+        expect($subscription->chip_status)->toBe(SubscriptionStatus::PastDue);
 
         Event::assertDispatched(SubscriptionRenewalFailed::class, function (SubscriptionRenewalFailed $event): bool {
             return str_contains($event->reason, 'Card declined');

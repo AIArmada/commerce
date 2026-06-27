@@ -74,7 +74,7 @@ Add the `Billable` trait to your User model (or any billable model):
 
 namespace App\Models;
 
-use AIArmada\Cashier\Billable;
+use AIArmada\Cashier\Concerns\Billable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable

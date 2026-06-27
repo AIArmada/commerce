@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Widgets;
 
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithCashierChipData;
 use Filament\Support\Icons\Heroicon;
@@ -21,29 +22,29 @@ final class AttentionRequiredWidget extends BaseWidget
         $now = now();
         $inThreeDays = $now->copy()->addDays(3);
 
-        $trialsEndingSoon = $this->subscriptionModel()::query()
+        $trialsEndingSoon = $this->subscriptionQuery()
             ->whereNotNull('trial_ends_at')
             ->where('trial_ends_at', '>=', $now)
             ->where('trial_ends_at', '<=', $inThreeDays)
-            ->where('chip_status', Subscription::STATUS_TRIALING)
+            ->where('chip_status', SubscriptionStatus::Trialing->value)
             ->count();
 
-        $pastDue = $this->subscriptionModel()::query()
-            ->where('chip_status', Subscription::STATUS_PAST_DUE)
+        $pastDue = $this->subscriptionQuery()
+            ->where('chip_status', SubscriptionStatus::PastDue->value)
             ->count();
 
-        $gracePeriodEnding = $this->subscriptionModel()::query()
+        $gracePeriodEnding = $this->subscriptionQuery()
             ->whereNotNull('ends_at')
             ->where('ends_at', '>=', $now)
             ->where('ends_at', '<=', $inThreeDays)
             ->count();
 
-        $incomplete = $this->subscriptionModel()::query()
-            ->where('chip_status', Subscription::STATUS_INCOMPLETE)
+        $incomplete = $this->subscriptionQuery()
+            ->where('chip_status', SubscriptionStatus::Incomplete->value)
             ->count();
 
-        $unpaid = $this->subscriptionModel()::query()
-            ->where('chip_status', Subscription::STATUS_UNPAID)
+        $unpaid = $this->subscriptionQuery()
+            ->where('chip_status', SubscriptionStatus::Unpaid->value)
             ->count();
 
         $totalAttention = $trialsEndingSoon + $pastDue + $gracePeriodEnding + $incomplete + $unpaid;

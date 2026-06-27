@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Listeners\HandleBillingCancelled;
+use AIArmada\CashierChip\Enums\SubscriptionStatus;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Events\BillingCancelled;
@@ -25,7 +26,7 @@ class HandleBillingCancelledTest extends CashierChipTestCase
 
         $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'recurring_token' => 'tok_123',
         ]);
 
@@ -43,7 +44,7 @@ class HandleBillingCancelledTest extends CashierChipTestCase
         OwnerContext::withOwner($user, fn (): null => tap(null, fn () => $listener->handle($event)));
 
         $subscription->refresh();
-        $this->assertEquals('canceled', $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Canceled, $subscription->chip_status);
         $this->assertNotNull($subscription->ends_at);
 
         Event::assertDispatched(SubscriptionCanceled::class, function ($e) use ($subscription) {
@@ -62,7 +63,7 @@ class HandleBillingCancelledTest extends CashierChipTestCase
 
         $subscription = Subscription::factory()->for($user, 'owner')->for($user, 'billable')->create([
             'type' => 'default',
-            'chip_status' => Subscription::STATUS_ACTIVE,
+            'chip_status' => SubscriptionStatus::Active,
             'recurring_token' => 'tok_123',
         ]);
 
@@ -80,7 +81,7 @@ class HandleBillingCancelledTest extends CashierChipTestCase
         OwnerContext::withOwner(null, fn (): null => tap(null, fn () => $listener->handle($event)));
 
         $subscription->refresh();
-        $this->assertEquals(Subscription::STATUS_ACTIVE, $subscription->chip_status);
+        $this->assertEquals(SubscriptionStatus::Active, $subscription->chip_status);
         $this->assertNull($subscription->ends_at);
 
         Event::assertNotDispatched(SubscriptionCanceled::class);

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cashier\Billable;
+use AIArmada\Cashier\Concerns\Billable;
 use AIArmada\Cashier\Concerns\ManagesGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
