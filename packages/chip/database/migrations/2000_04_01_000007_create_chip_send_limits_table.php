@@ -44,5 +44,4 @@ return new class extends Migration
             $table->index(['currency', 'from_settlement']);
         });
     }
-
 };

@@ -51,5 +51,4 @@ return new class extends Migration
             $table->index('reference');
         });
     }
-
 };

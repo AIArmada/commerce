@@ -52,5 +52,4 @@ return new class extends Migration
             $table->index('paid_on');
         });
     }
-
 };
