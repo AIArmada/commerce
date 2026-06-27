@@ -9,6 +9,15 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+function forceCreatePurchase(array $attributes): Purchase
+{
+    return tap(new Purchase, fn (Purchase $p) => $p->forceFill($attributes)->save());
+}
+
+function forceCreateBankAccount(array $attributes): BankAccount
+{
+    return tap(new BankAccount, fn (BankAccount $b) => $b->forceFill($attributes)->save());
+}
 
 beforeEach(function (): void {
     Schema::dropIfExists('tenants');
@@ -89,7 +98,7 @@ it('scopes reads to the current owner by default', function (): void {
     });
 
     Purchase::withoutEvents(function () use ($ownerA, $ownerB): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '11111111-1111-1111-1111-111111111111',
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
@@ -97,7 +106,7 @@ it('scopes reads to the current owner by default', function (): void {
             'purchase' => ['amount' => 1000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '22222222-2222-2222-2222-222222222222',
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => (string) $ownerB->getKey(),
@@ -105,7 +114,7 @@ it('scopes reads to the current owner by default', function (): void {
             'purchase' => ['amount' => 2000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '33333333-3333-3333-3333-333333333333',
             'owner_type' => null,
             'owner_id' => null,
@@ -146,7 +155,7 @@ it('can optionally include global rows when explicitly requested', function (): 
     });
 
     Purchase::withoutEvents(function () use ($ownerA): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '11111111-1111-1111-1111-111111111111',
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
@@ -154,7 +163,7 @@ it('can optionally include global rows when explicitly requested', function (): 
             'purchase' => ['amount' => 1000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '33333333-3333-3333-3333-333333333333',
             'owner_type' => null,
             'owner_id' => null,
@@ -195,7 +204,7 @@ it('treats forOwner(null) as global-only (never current owner)', function (): vo
     });
 
     Purchase::withoutEvents(function () use ($ownerA): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '11111111-1111-1111-1111-111111111111',
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
@@ -203,7 +212,7 @@ it('treats forOwner(null) as global-only (never current owner)', function (): vo
             'purchase' => ['amount' => 1000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '33333333-3333-3333-3333-333333333333',
             'owner_type' => null,
             'owner_id' => null,
@@ -226,7 +235,7 @@ it('fails closed when current owner is missing for owner-protected scopes', func
     });
 
     Purchase::withoutEvents(function (): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '11111111-1111-1111-1111-111111111111',
             'owner_type' => null,
             'owner_id' => null,
@@ -236,7 +245,7 @@ it('fails closed when current owner is missing for owner-protected scopes', func
     });
 
     BankAccount::withoutEvents(function (): void {
-        BankAccount::create([
+        forceCreateBankAccount([
             'id' => 1,
             'owner_type' => null,
             'owner_id' => null,
@@ -264,7 +273,7 @@ it('allows current-owner scopes when global context is explicit', function (): v
     });
 
     Purchase::withoutEvents(function (): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '11111111-1111-1111-1111-111111111111',
             'owner_type' => null,
             'owner_id' => null,
@@ -274,7 +283,7 @@ it('allows current-owner scopes when global context is explicit', function (): v
     });
 
     BankAccount::withoutEvents(function (): void {
-        BankAccount::create([
+        forceCreateBankAccount([
             'id' => 1,
             'owner_type' => null,
             'owner_id' => null,
@@ -333,7 +342,7 @@ it('scopes integer-ID models too (option lists must be owner-safe)', function ()
     });
 
     BankAccount::withoutEvents(function () use ($ownerA, $ownerB): void {
-        BankAccount::create([
+        forceCreateBankAccount([
             'id' => 1,
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
@@ -343,7 +352,7 @@ it('scopes integer-ID models too (option lists must be owner-safe)', function ()
             'bank_code' => 'MBBEMYKL',
         ]);
 
-        BankAccount::create([
+        forceCreateBankAccount([
             'id' => 2,
             'owner_type' => $ownerB->getMorphClass(),
             'owner_id' => (string) $ownerB->getKey(),
@@ -399,7 +408,7 @@ it('rejects cross-tenant reads', function (): void {
     // Create a purchase for OwnerA
     $purchaseId = '11111111-1111-1111-1111-111111111111';
     Purchase::withoutEvents(function () use ($ownerA, $purchaseId): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => $purchaseId,
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
@@ -464,7 +473,7 @@ it('rejects cross-tenant writes on direct record mutation', function (): void {
 
     // Create a purchase for OwnerA
     Purchase::withoutEvents(function () use ($ownerA): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '11111111-1111-1111-1111-111111111111',
             'owner_type' => $ownerA->getMorphClass(),
             'owner_id' => (string) $ownerA->getKey(),
@@ -540,7 +549,7 @@ it('protects global rows from cross-tenant writes', function (): void {
     // Create a global (ownerless) purchase
     $globalPurchaseId = '99999999-9999-9999-9999-999999999999';
     Purchase::withoutEvents(function () use ($globalPurchaseId): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => $globalPurchaseId,
             'owner_type' => null,
             'owner_id' => null,

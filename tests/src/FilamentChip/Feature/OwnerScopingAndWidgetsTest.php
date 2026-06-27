@@ -13,6 +13,11 @@ use AIArmada\FilamentChip\Widgets\RevenueChartWidget;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+
+function forceCreatePurchase(array $attributes): Purchase
+{
+    return tap(new Purchase, fn (Purchase $p) => $p->forceFill($attributes)->save());
+}
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
@@ -96,7 +101,7 @@ it('scopes filament resource queries to the current owner', function (): void {
     });
 
     Purchase::withoutEvents(function () use ($ownerA, $ownerB): void {
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'owner_type' => $ownerA->getMorphClass(),
@@ -104,7 +109,7 @@ it('scopes filament resource queries to the current owner', function (): void {
             'purchase' => ['amount' => 1000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'owner_type' => $ownerB->getMorphClass(),
@@ -112,7 +117,7 @@ it('scopes filament resource queries to the current owner', function (): void {
             'purchase' => ['amount' => 2000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'owner_type' => null,
@@ -126,14 +131,14 @@ it('scopes filament resource queries to the current owner', function (): void {
 
 it('computes payment method breakdown without including test mode purchases', function (): void {
     Purchase::withoutEvents(function (): void {
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'purchase' => ['amount' => 1000],
             'payment' => ['payment_type' => 'fpx'],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => true,
             'purchase' => ['amount' => 9999],
@@ -163,14 +168,14 @@ it('generates revenue data for the last 30 days', function (): void {
     $today = now();
 
     Purchase::withoutEvents(function () use ($today): void {
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'created_on' => $today->copy()->startOfDay()->getTimestamp(),
             'purchase' => ['amount' => 1000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'created_on' => $today->copy()->endOfDay()->getTimestamp(),
@@ -237,7 +242,7 @@ it('resource rejects cross-tenant reads', function (): void {
 
     // Create purchases for both owners
     Purchase::withoutEvents(function () use ($ownerA, $ownerB): void {
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '11111111-1111-1111-1111-111111111111',
             'status' => 'paid',
             'is_test' => false,
@@ -246,7 +251,7 @@ it('resource rejects cross-tenant reads', function (): void {
             'purchase' => ['amount' => 1000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'id' => '22222222-2222-2222-2222-222222222222',
             'status' => 'paid',
             'is_test' => false,
@@ -328,7 +333,7 @@ it('widget metrics reject cross-tenant data', function (): void {
 
     // Create purchases for both owners
     Purchase::withoutEvents(function () use ($ownerA, $ownerB, $today): void {
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'owner_type' => $ownerA->getMorphClass(),
@@ -338,7 +343,7 @@ it('widget metrics reject cross-tenant data', function (): void {
             'payment' => ['payment_type' => 'fpx'],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'owner_type' => $ownerB->getMorphClass(),
@@ -400,7 +405,7 @@ it('renders chip stats using explicit global context when no owner is resolved',
     app()->forgetInstance(OwnerResolverInterface::class);
 
     OwnerContext::withOwner(null, static function (): void {
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'created_on' => now()->getTimestamp(),
@@ -422,7 +427,7 @@ it('renders revenue chart using explicit global context when no owner is resolve
     app()->forgetInstance(OwnerResolverInterface::class);
 
     OwnerContext::withOwner(null, static function (): void {
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'created_on' => now()->getTimestamp(),
@@ -446,14 +451,14 @@ it('builds recent transactions query using explicit global context when no owner
     app()->forgetInstance(OwnerResolverInterface::class);
 
     OwnerContext::withOwner(null, static function (): void {
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => false,
             'created_on' => now()->getTimestamp(),
             'purchase' => ['amount' => 1000],
         ]);
 
-        Purchase::create([
+        forceCreatePurchase([
             'status' => 'paid',
             'is_test' => true,
             'created_on' => now()->getTimestamp(),

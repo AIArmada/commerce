@@ -39,7 +39,6 @@ class Payment extends ChipModel
         'payment_type',
         'is_outgoing',
         'currency',
-        'amount',
         'pending_unfreeze_on',
         'description',
         'paid_on',

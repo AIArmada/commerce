@@ -407,7 +407,7 @@ describe('ProcessChipWebhook', function (): void {
     });
 
     it('synchronizes a local purchase for completed refund webhooks', function (): void {
-        $purchase = Purchase::create([
+        $purchase = tap(new Purchase, fn (Purchase $p) => $p->forceFill([
             'id' => 'purchase-123',
             'type' => 'purchase',
             'status' => 'paid',
@@ -436,7 +436,7 @@ describe('ProcessChipWebhook', function (): void {
             'skip_capture' => false,
             'force_recurring' => false,
             'marked_as_paid' => false,
-        ]);
+        ])->save());
 
         $payload = [
             'event_type' => 'payment.refunded',
@@ -480,7 +480,7 @@ describe('ProcessChipWebhook', function (): void {
     it('accumulates refund totals when webhook payload storage is disabled', function (): void {
         config(['chip.webhooks.store_webhooks' => false]);
 
-        $purchase = Purchase::create([
+        $purchase = tap(new Purchase, fn (Purchase $p) => $p->forceFill([
             'id' => 'purchase-storeless-refund-123',
             'type' => 'purchase',
             'status' => 'paid',
@@ -509,7 +509,7 @@ describe('ProcessChipWebhook', function (): void {
             'skip_capture' => false,
             'force_recurring' => false,
             'marked_as_paid' => false,
-        ]);
+        ])->save());
 
         $firstWebhookCall = WebhookCall::create([
             'name' => Webhook::WEBHOOK_NAME,
