@@ -14,7 +14,7 @@ beforeEach(function (): void {
 
 function createPurchase(array $attributes): Purchase
 {
-    return Purchase::create(array_merge([
+    return tap(new Purchase, fn (Purchase $p) => $p->forceFill(array_merge([
         'id' => uniqid('p-'),
         'type' => 'purchase',
         'brand_id' => 'brand-1',
@@ -26,7 +26,7 @@ function createPurchase(array $attributes): Purchase
         'issuer_details' => [],
         'transaction_data' => [],
         'status_history' => [],
-    ], $attributes));
+    ], $attributes)))->save();
 }
 
 it('calculates revenue metrics', function (): void {
