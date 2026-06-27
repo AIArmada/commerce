@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Engagement\Contracts\EngagementManager;
+use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Models\Follow;
 
 beforeEach(function (): void {
@@ -36,14 +37,14 @@ beforeEach(function (): void {
 it('creates a follow', function (): void {
     $follow = $this->manager->follow($this->actor, $this->subject);
 
-    expect($follow->status)->toBe(Follow::STATUS_ACTIVE);
+    expect($follow->status)->toBe(FollowStatus::Active);
 });
 
 it('prevents duplicate active follows', function (): void {
     $this->manager->follow($this->actor, $this->subject);
     $second = $this->manager->follow($this->actor, $this->subject);
 
-    expect($second->status)->toBe(Follow::STATUS_ACTIVE);
+    expect($second->status)->toBe(FollowStatus::Active);
 });
 
 it('unfollows without deleting', function (): void {
@@ -51,5 +52,5 @@ it('unfollows without deleting', function (): void {
     $this->manager->unfollow($this->actor, $this->subject);
 
     $follow = Follow::query()->first();
-    expect($follow->status)->toBe('unfollowed');
+    expect($follow->status)->toBe(FollowStatus::Unfollowed);
 });

@@ -249,7 +249,7 @@ The implementation pass fixed all P0-P3 verified defects that were safe to chang
 | P4 concrete | Done | `CQ20`-`CQ22` (cashier-chip portion), `CS4` (cashier-chip portion), `R35` (cashier-chip portion), `I3a`, `I3b`, `I3c`, `CQ1`, `CQ2`, `CQ4`, `CQ5`, `CQ6`, `CQ10`, `CQ11`, `CQ12`, `CQ14`, `CQ15`, `CQ16`, `CQ17`, `CQ18`, `CQ19`, `CQ23`, `CQ28`, `CQ29`, `OS5`, `A3`, `A4`, `A6`, `CS1`, `R27`, `R29`, `R31` verified subset, `R34`, `R37`, `R38`, `R39`, `R40`, `R41`; CHIP/customers migration `down()` cleanup was also completed and removed from this ledger by request. |
 | False/stale | Settled no fix | `B7`, `B11`, `S7`, `S8`, `Z1`-`Z11`, `I4`, `DOC1`, `DOC2`, `CFG3`, `CQ13`, `CQ24`, `CQ26`, `CQ30`, `R8`-`R10`, `R15`, `R22`, `R32`, `R43`; partial stale portions remain documented in Corrections. |
 | Runtime-unverified | Settled pending reproduction | `B6b`, `B13b`; no source fix should be made until a failing test or runtime proof exists. |
-| Product/API/dependency decisions | Deferred | `CQ20`-`CQ22` (engagement/signals only), `CS3`, `CS4` (engagement/signals only), `R35` (engagement/signals only). |
+| Product/API/dependency decisions | Deferred | `CS3` only — action pattern mismatch between cashier and cashier-chip. |
 
 ### Completed Fix Notes
 
@@ -273,10 +273,12 @@ The implementation pass fixed all P0-P3 verified defects that were safe to chang
 - CS3: Cashier-chip action pattern keeps plain classes. Adding `AsAction` requires new dep for zero behavioral gain. Skipped.
 - CQ3/R28: Affiliate balance logic already well-factored into private static helpers. Lifecycle tests exist. Skipped.
 - CQ20-22/CS4/R35: Cashier-chip enum standardization completed — `SubscriptionStatus` (8 backed cases) + `PaymentStatus` (6 backed cases). Constants removed from models. Enums used throughout cashier-chip (6 src files, factory), filament-cashier-chip (12 src files), demo (2 files), and tests (14 files). Docs updated. 625 total tests pass (6 pre-existing failures).
+- CQ20/CQ22/CS4/R35: Engagement enum standardization completed — 8 enums (`FollowStatus`, `BookmarkStatus`, `BookmarkCollectionStatus`, `ResponseStatus`, `ReactionStatus`, `SubscriptionStatus`, `ReminderStatus`, `ShareStatus`), 8 models updated (constants removed, enum casts added, `is*()`/scope methods use enums), 8 factories updated, 5 cross-package files updated, 10 test files updated. All 42 engagement + filament-engagement tests pass. PHPStan level 6 clean.
+- CQ21/CS4/R35: Signals enum standardization settled no-fix — signals uses `is_active` booleans, not STATUS_* constants. No enums needed.
 
 ### Deferred Fix Notes
 
-- Enum standardization across engagement (8 models with STATUS_* constants) and signals (no STATUS_*). (`CQ20`-`CQ22`, `CS4`, `R35` — engagement/signals only)
+- Signals enums: not applicable (uses `is_active` booleans, not STATUS_* constants). (`CQ21`, `CS4`, `R35` — signals only, settled no-fix)
 
 ## Verification Run
 

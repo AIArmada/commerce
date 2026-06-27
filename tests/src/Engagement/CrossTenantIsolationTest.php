@@ -5,6 +5,13 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\Engagement\Enums\BookmarkStatus;
+use AIArmada\Engagement\Enums\FollowStatus;
+use AIArmada\Engagement\Enums\ReactionStatus;
+use AIArmada\Engagement\Enums\ReminderStatus;
+use AIArmada\Engagement\Enums\ResponseStatus;
+use AIArmada\Engagement\Enums\ShareStatus;
+use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
@@ -80,14 +87,14 @@ it('isolates every tenant-owned engagement record type', function (): void {
             'follower_id' => fake()->uuid(),
             'followable_type' => 'subject',
             'followable_id' => fake()->uuid(),
-            'status' => Follow::STATUS_ACTIVE,
+            'status' => FollowStatus::Active,
         ],
         Bookmark::class => [
             'bookmarker_type' => 'user',
             'bookmarker_id' => fake()->uuid(),
             'bookmarkable_type' => 'subject',
             'bookmarkable_id' => fake()->uuid(),
-            'status' => Bookmark::STATUS_ACTIVE,
+            'status' => BookmarkStatus::Active,
         ],
         BookmarkCollectionItem::class => [
             'bookmark_collection_id' => fake()->uuid(),
@@ -99,7 +106,7 @@ it('isolates every tenant-owned engagement record type', function (): void {
             'respondable_type' => 'subject',
             'respondable_id' => fake()->uuid(),
             'response_type' => 'going',
-            'status' => Response::STATUS_ACTIVE,
+            'status' => ResponseStatus::Active,
             'visibility' => 'private',
         ],
         Reaction::class => [
@@ -108,13 +115,13 @@ it('isolates every tenant-owned engagement record type', function (): void {
             'reactable_type' => 'subject',
             'reactable_id' => fake()->uuid(),
             'reaction_type' => 'like',
-            'status' => Reaction::STATUS_ACTIVE,
+            'status' => ReactionStatus::Active,
         ],
         Subscription::class => [
             'subscriber_type' => 'user',
             'subscriber_id' => fake()->uuid(),
             'subscription_type' => 'updates',
-            'status' => Subscription::STATUS_ACTIVE,
+            'status' => SubscriptionStatus::Active,
         ],
         Reminder::class => [
             'recipient_type' => 'user',
@@ -122,12 +129,12 @@ it('isolates every tenant-owned engagement record type', function (): void {
             'remindable_type' => 'subject',
             'remindable_id' => fake()->uuid(),
             'reminder_type' => 'follow_up',
-            'status' => Reminder::STATUS_PENDING,
+            'status' => ReminderStatus::Pending,
         ],
         Share::class => [
             'shareable_type' => 'subject',
             'shareable_id' => fake()->uuid(),
-            'status' => Share::STATUS_CREATED,
+            'status' => ShareStatus::Created,
         ],
         EngagementCounter::class => [
             'subject_type' => 'subject',

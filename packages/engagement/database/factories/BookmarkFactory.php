@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Database\Factories;
 
+use AIArmada\Engagement\Enums\BookmarkStatus;
 use AIArmada\Engagement\Models\Bookmark;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,7 +18,7 @@ final class BookmarkFactory extends Factory
     public function definition(): array
     {
         return [
-            'status' => Bookmark::STATUS_ACTIVE,
+            'status' => BookmarkStatus::Active,
             'bookmarked_at' => now(),
         ];
     }

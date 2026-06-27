@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Database\Factories;
 
+use AIArmada\Engagement\Enums\ReactionStatus;
 use AIArmada\Engagement\Models\Reaction;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,7 @@ final class ReactionFactory extends Factory
     {
         return [
             'reaction_type' => 'like',
-            'status' => Reaction::STATUS_ACTIVE,
+            'status' => ReactionStatus::Active,
             'reacted_at' => now(),
         ];
     }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Enums\ReminderStatus;
+use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Models\Reminder;
 use AIArmada\Engagement\Models\Subscription;
 
@@ -40,7 +42,7 @@ it('creates a subscription', function (): void {
     $subscription = $this->subscriptionManager->subscribe($this->actor, $this->subject, 'updates');
 
     expect($subscription)->toBeInstanceOf(Subscription::class)
-        ->and($subscription->status)->toBe(Subscription::STATUS_ACTIVE);
+        ->and($subscription->status)->toBe(SubscriptionStatus::Active);
 });
 
 it('unsubscribes via status change', function (): void {
@@ -57,7 +59,7 @@ it('creates a reminder via engagement manager', function (): void {
     ]);
 
     expect($reminder)->toBeInstanceOf(Reminder::class)
-        ->and($reminder->status)->toBe(Reminder::STATUS_PENDING);
+        ->and($reminder->status)->toBe(ReminderStatus::Pending);
 });
 
 it('unmutes a subscription through the domain manager', function (): void {
@@ -65,6 +67,6 @@ it('unmutes a subscription through the domain manager', function (): void {
     $this->subscriptionManager->muteSubscription($subscription);
     $this->subscriptionManager->unmuteSubscription($subscription);
 
-    expect($subscription->fresh()->status)->toBe(Subscription::STATUS_ACTIVE)
+    expect($subscription->fresh()->status)->toBe(SubscriptionStatus::Active)
         ->and($subscription->fresh()->muted_at)->toBeNull();
 });

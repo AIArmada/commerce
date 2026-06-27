@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\ResponseFactory;
+use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,14 +43,6 @@ final class Response extends Model
     use UsesEngagementUuid;
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
-
-    public const STATUS_ACTIVE = 'active';
-
-    public const STATUS_CHANGED = 'changed';
-
-    public const STATUS_CANCELLED = 'cancelled';
-
-    public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
         'responder_type',
@@ -94,7 +87,7 @@ final class Response extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('status', ResponseStatus::Active);
     }
 
     /**
@@ -137,12 +130,12 @@ final class Response extends Model
 
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === ResponseStatus::Active;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === self::STATUS_CANCELLED;
+        return $this->status === ResponseStatus::Cancelled;
     }
 
     protected static function newFactory(): ResponseFactory
@@ -156,6 +149,7 @@ final class Response extends Model
     protected function casts(): array
     {
         return [
+            'status' => ResponseStatus::class,
             'metadata' => 'array',
             'responded_at' => 'immutable_datetime',
             'changed_at' => 'immutable_datetime',

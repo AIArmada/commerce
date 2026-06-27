@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\Respondable;
+use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Models\Response;
 
 beforeEach(function (): void {
@@ -68,7 +69,7 @@ it('restores a cancelled response without creating a duplicate', function (): vo
     $this->manager->cancelResponse($this->actor, $this->subject);
     $restored = $this->manager->respond($this->actor, $this->subject, 'going');
 
-    expect($restored->status)->toBe(Response::STATUS_ACTIVE)
+    expect($restored->status)->toBe(ResponseStatus::Active)
         ->and($restored->cancelled_at)->toBeNull()
         ->and(Response::query()->count())->toBe(1);
 });

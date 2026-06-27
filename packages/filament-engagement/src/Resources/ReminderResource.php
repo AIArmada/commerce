@@ -7,6 +7,7 @@ namespace AIArmada\FilamentEngagement\Resources;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\JsonDisplay;
 use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Models\Reminder;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -84,7 +85,7 @@ final class ReminderResource extends Resource
                 Action::make('cancel')
                     ->visible(fn (Reminder $record): bool => in_array(
                         $record->status,
-                        [Reminder::STATUS_PENDING, Reminder::STATUS_SCHEDULED],
+                        [ReminderStatus::Pending, ReminderStatus::Scheduled],
                         true,
                     ))
                     ->action(fn (Reminder $record) => app(ReminderManager::class)

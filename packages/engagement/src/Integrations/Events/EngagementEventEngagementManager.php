@@ -8,6 +8,7 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementStateResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Models\Share;
 use AIArmada\Events\Contracts\EventEngagementManager as EventEngagementManagerContract;
 
@@ -70,7 +71,7 @@ final class EngagementEventEngagementManager implements EventEngagementManagerCo
             ->where('sharer_id', $actor->getKey())
             ->where('shareable_type', $eventTarget->getMorphClass())
             ->where('shareable_id', $eventTarget->getKey())
-            ->whereIn('status', [Share::STATUS_CREATED, Share::STATUS_SHARED])
+            ->whereIn('status', [ShareStatus::Created, ShareStatus::Shared])
             ->first();
 
         return [

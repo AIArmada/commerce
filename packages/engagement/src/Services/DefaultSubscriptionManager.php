@@ -6,6 +6,7 @@ namespace AIArmada\Engagement\Services;
 
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\SubscriptionManager;
+use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Events\SubscriptionCancelled;
 use AIArmada\Engagement\Events\SubscriptionCreated;
 use AIArmada\Engagement\Events\SubscriptionMatched;
@@ -34,12 +35,12 @@ final class DefaultSubscriptionManager implements SubscriptionManager
         $existing = $this->findMatchingSubscription($subscriber, $subject, $subscriptionType, $criteria);
 
         if ($existing !== null) {
-            if ($existing->status === Subscription::STATUS_ACTIVE) {
+            if ($existing->status === SubscriptionStatus::Active) {
                 return $existing;
             }
 
             $existing->update([
-                'status' => Subscription::STATUS_ACTIVE,
+                'status' => SubscriptionStatus::Active,
                 'criteria' => $criteria,
                 'unsubscribed_at' => null,
                 'muted_at' => null,
@@ -59,7 +60,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
             'subscribable_id' => $subject?->getKey(),
             'subscription_type' => $subscriptionType,
             'criteria' => $criteria,
-            'status' => 'active',
+            'status' => SubscriptionStatus::Active,
             'notification_level' => $options['notification_level'] ?? null,
             'subscribed_at' => CarbonImmutable::now(),
             'source' => $options['source'] ?? null,
@@ -78,18 +79,18 @@ final class DefaultSubscriptionManager implements SubscriptionManager
             $subject,
             $subscriptionType,
             $this->normalizeCriteria($criteria),
-            Subscription::STATUS_ACTIVE,
+            SubscriptionStatus::Active->value,
         );
 
         if ($subscription !== null) {
-            $subscription->update(['status' => 'unsubscribed', 'unsubscribed_at' => CarbonImmutable::now()]);
+            $subscription->update(['status' => SubscriptionStatus::Unsubscribed, 'unsubscribed_at' => CarbonImmutable::now()]);
             event(new SubscriptionCancelled($subscription));
         }
     }
 
     public function muteSubscription(Subscription $subscription): Subscription
     {
-        $subscription->update(['status' => 'muted', 'muted_at' => CarbonImmutable::now()]);
+        $subscription->update(['status' => SubscriptionStatus::Muted, 'muted_at' => CarbonImmutable::now()]);
         event(new SubscriptionMuted($subscription));
 
         return $subscription;
@@ -98,7 +99,7 @@ final class DefaultSubscriptionManager implements SubscriptionManager
     public function unmuteSubscription(Subscription $subscription): Subscription
     {
         $subscription->update([
-            'status' => Subscription::STATUS_ACTIVE,
+            'status' => SubscriptionStatus::Active,
             'muted_at' => null,
         ]);
         event(new SubscriptionUnmuted($subscription));

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Database\Factories;
 
+use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Models\Subscription;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,7 @@ final class SubscriptionFactory extends Factory
     {
         return [
             'subscription_type' => 'updates',
-            'status' => Subscription::STATUS_ACTIVE,
+            'status' => SubscriptionStatus::Active,
             'subscribed_at' => now(),
         ];
     }

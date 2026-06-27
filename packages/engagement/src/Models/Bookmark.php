@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\BookmarkFactory;
+use AIArmada\Engagement\Enums\BookmarkStatus;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,12 +44,6 @@ final class Bookmark extends Model
     use UsesEngagementUuid;
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
-
-    public const STATUS_ACTIVE = 'active';
-
-    public const STATUS_REMOVED = 'removed';
-
-    public const STATUS_ARCHIVED = 'archived';
 
     protected $fillable = [
         'bookmarker_type',
@@ -99,7 +94,7 @@ final class Bookmark extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('status', BookmarkStatus::Active);
     }
 
     /**
@@ -108,7 +103,7 @@ final class Bookmark extends Model
      */
     public function scopeRemoved(Builder $query): Builder
     {
-        return $query->where('status', 'removed');
+        return $query->where('status', BookmarkStatus::Removed);
     }
 
     /**
@@ -117,7 +112,7 @@ final class Bookmark extends Model
      */
     public function scopeArchived(Builder $query): Builder
     {
-        return $query->where('status', 'archived');
+        return $query->where('status', BookmarkStatus::Archived);
     }
 
     /**
@@ -142,17 +137,17 @@ final class Bookmark extends Model
 
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === BookmarkStatus::Active;
     }
 
     public function isRemoved(): bool
     {
-        return $this->status === self::STATUS_REMOVED;
+        return $this->status === BookmarkStatus::Removed;
     }
 
     public function isArchived(): bool
     {
-        return $this->status === self::STATUS_ARCHIVED;
+        return $this->status === BookmarkStatus::Archived;
     }
 
     protected static function newFactory(): BookmarkFactory
@@ -166,6 +161,7 @@ final class Bookmark extends Model
     protected function casts(): array
     {
         return [
+            'status' => BookmarkStatus::class,
             'metadata' => 'array',
             'bookmarked_at' => 'immutable_datetime',
             'removed_at' => 'immutable_datetime',

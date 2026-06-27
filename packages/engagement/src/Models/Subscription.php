@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\SubscriptionFactory;
+use AIArmada\Engagement\Enums\SubscriptionStatus;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,14 +45,6 @@ final class Subscription extends Model
     use UsesEngagementUuid;
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
-
-    public const STATUS_ACTIVE = 'active';
-
-    public const STATUS_MUTED = 'muted';
-
-    public const STATUS_UNSUBSCRIBED = 'unsubscribed';
-
-    public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
         'subscriber_type',
@@ -98,7 +91,7 @@ final class Subscription extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('status', SubscriptionStatus::Active);
     }
 
     /**
@@ -132,17 +125,17 @@ final class Subscription extends Model
 
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === SubscriptionStatus::Active;
     }
 
     public function isMuted(): bool
     {
-        return $this->status === self::STATUS_MUTED;
+        return $this->status === SubscriptionStatus::Muted;
     }
 
     public function isUnsubscribed(): bool
     {
-        return $this->status === self::STATUS_UNSUBSCRIBED;
+        return $this->status === SubscriptionStatus::Unsubscribed;
     }
 
     protected static function newFactory(): SubscriptionFactory
@@ -156,6 +149,7 @@ final class Subscription extends Model
     protected function casts(): array
     {
         return [
+            'status' => SubscriptionStatus::class,
             'criteria' => 'array',
             'notification_preferences' => 'array',
             'metadata' => 'array',

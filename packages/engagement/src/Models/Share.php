@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\ShareFactory;
+use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -46,16 +47,6 @@ final class Share extends Model
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
 
-    public const STATUS_CREATED = 'created';
-
-    public const STATUS_SHARED = 'shared';
-
-    public const STATUS_REVOKED = 'revoked';
-
-    public const STATUS_EXPIRED = 'expired';
-
-    public const STATUS_FAILED = 'failed';
-
     protected $fillable = [
         'sharer_type', 'sharer_id', 'shareable_type', 'shareable_id',
         'channel', 'destination', 'share_url', 'share_token', 'message',
@@ -82,22 +73,23 @@ final class Share extends Model
 
     public function isCreated(): bool
     {
-        return $this->status === self::STATUS_CREATED;
+        return $this->status === ShareStatus::Created;
     }
 
     public function isShared(): bool
     {
-        return $this->status === self::STATUS_SHARED;
+        return $this->status === ShareStatus::Shared;
     }
 
     public function isFailed(): bool
     {
-        return $this->status === self::STATUS_FAILED;
+        return $this->status === ShareStatus::Failed;
     }
 
     protected function casts(): array
     {
         return [
+            'status' => ShareStatus::class,
             'metadata' => 'array',
             'share_intent_at' => 'immutable_datetime',
             'shared_at' => 'immutable_datetime',

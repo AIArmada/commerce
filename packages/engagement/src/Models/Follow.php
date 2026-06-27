@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\FollowFactory;
+use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,14 +43,6 @@ final class Follow extends Model
     use UsesEngagementUuid;
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
-
-    public const STATUS_ACTIVE = 'active';
-
-    public const STATUS_MUTED = 'muted';
-
-    public const STATUS_UNFOLLOWED = 'unfollowed';
-
-    public const STATUS_BLOCKED = 'blocked';
 
     protected $fillable = [
         'follower_type',
@@ -94,7 +87,7 @@ final class Follow extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('status', FollowStatus::Active);
     }
 
     /**
@@ -103,7 +96,7 @@ final class Follow extends Model
      */
     public function scopeMuted(Builder $query): Builder
     {
-        return $query->where('status', 'muted');
+        return $query->where('status', FollowStatus::Muted);
     }
 
     /**
@@ -112,7 +105,7 @@ final class Follow extends Model
      */
     public function scopeUnfollowed(Builder $query): Builder
     {
-        return $query->where('status', 'unfollowed');
+        return $query->where('status', FollowStatus::Unfollowed);
     }
 
     /**
@@ -146,17 +139,17 @@ final class Follow extends Model
 
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === FollowStatus::Active;
     }
 
     public function isMuted(): bool
     {
-        return $this->status === self::STATUS_MUTED;
+        return $this->status === FollowStatus::Muted;
     }
 
     public function isUnfollowed(): bool
     {
-        return $this->status === self::STATUS_UNFOLLOWED;
+        return $this->status === FollowStatus::Unfollowed;
     }
 
     protected static function newFactory(): FollowFactory
@@ -170,6 +163,7 @@ final class Follow extends Model
     protected function casts(): array
     {
         return [
+            'status' => FollowStatus::class,
             'notification_preferences' => 'array',
             'metadata' => 'array',
             'followed_at' => 'immutable_datetime',

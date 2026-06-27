@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\ReactionFactory;
+use AIArmada\Engagement\Enums\ReactionStatus;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,10 +40,6 @@ final class Reaction extends Model
     use UsesEngagementUuid;
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
-
-    public const STATUS_ACTIVE = 'active';
-
-    public const STATUS_REMOVED = 'removed';
 
     protected $fillable = [
         'reactor_type',
@@ -84,7 +81,7 @@ final class Reaction extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('status', ReactionStatus::Active);
     }
 
     /**
@@ -118,12 +115,12 @@ final class Reaction extends Model
 
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return $this->status === ReactionStatus::Active;
     }
 
     public function isRemoved(): bool
     {
-        return $this->status === self::STATUS_REMOVED;
+        return $this->status === ReactionStatus::Removed;
     }
 
     /**
@@ -132,6 +129,7 @@ final class Reaction extends Model
     protected function casts(): array
     {
         return [
+            'status' => ReactionStatus::class,
             'metadata' => 'array',
             'reacted_at' => 'immutable_datetime',
             'removed_at' => 'immutable_datetime',

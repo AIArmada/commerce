@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Console\Commands;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerTuple\OwnerTupleParser;
 use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Events\ReminderDue;
 use AIArmada\Engagement\Models\Reminder;
 use Carbon\CarbonImmutable;
@@ -32,7 +33,7 @@ final class SendDueRemindersCommand extends Command
 
         $reminders = Reminder::query()
             ->withoutOwnerScope()
-            ->whereIn('status', [Reminder::STATUS_PENDING, Reminder::STATUS_SCHEDULED])
+            ->whereIn('status', [ReminderStatus::Pending, ReminderStatus::Scheduled])
             ->where('remind_at', '<=', $now)
             ->where(function ($query) use ($now): void {
                 $query->whereNull('expires_at')
@@ -43,7 +44,7 @@ final class SendDueRemindersCommand extends Command
             ->cursor();
 
         foreach ($reminders as $reminder) {
-            if ($reminder->status !== Reminder::STATUS_PENDING && $reminder->status !== Reminder::STATUS_SCHEDULED) {
+            if ($reminder->status !== ReminderStatus::Pending && $reminder->status !== ReminderStatus::Scheduled) {
                 continue;
             }
 

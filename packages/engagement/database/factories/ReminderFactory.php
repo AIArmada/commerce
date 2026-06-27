@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Database\Factories;
 
+use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Models\Reminder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,7 @@ final class ReminderFactory extends Factory
     {
         return [
             'reminder_type' => 'event',
-            'status' => Reminder::STATUS_PENDING,
+            'status' => ReminderStatus::Pending,
         ];
     }
 }
