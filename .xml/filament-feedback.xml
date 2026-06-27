@@ -5,13 +5,13 @@
          colors="true"
 >
     <testsuites>
-        <testsuite name="CommerceSupport">
-            <directory>../tests/src/CommerceSupport</directory>
+        <testsuite name="FilamentFeedback">
+            <directory>../tests/src/FilamentFeedback</directory>
         </testsuite>
     </testsuites>
     <source>
         <include>
-            <directory>../packages/commerce-support/src</directory>
+            <directory>../packages/filament-feedback/src</directory>
         </include>
     </source>
     <php>

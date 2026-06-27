@@ -5,13 +5,13 @@
          colors="true"
 >
     <testsuites>
-        <testsuite name="CommerceSupport">
-            <directory>../tests/src/CommerceSupport</directory>
+        <testsuite name="Addressing">
+            <directory>../tests/src/Addressing</directory>
         </testsuite>
     </testsuites>
     <source>
         <include>
-            <directory>../packages/commerce-support/src</directory>
+            <directory>../packages/addressing/src</directory>
         </include>
     </source>
     <php>

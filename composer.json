@@ -101,7 +101,7 @@
             "AIArmada\\Chip\\": "packages/chip/src",
             "AIArmada\\Chip\\Tests\\": "tests/src/Chip/",
             "AIArmada\\CommerceSupport\\": "packages/commerce-support/src",
-            "AIArmada\\CommerceSupport\\Tests\\": "tests/src/Support/",
+            "AIArmada\\CommerceSupport\\Tests\\": "tests/src/CommerceSupport/",
             "AIArmada\\Contacting\\": "packages/contacting/src",
             "AIArmada\\Contacting\\Database\\Factories\\": "packages/contacting/database/factories",
             "AIArmada\\Contacting\\Tests\\": "tests/src/Contacting/",
