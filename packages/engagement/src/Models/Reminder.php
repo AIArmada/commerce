@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\ReminderFactory;
+use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,18 +49,6 @@ final class Reminder extends Model
     use UsesEngagementUuid;
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
-
-    public const STATUS_PENDING = 'pending';
-
-    public const STATUS_SCHEDULED = 'scheduled';
-
-    public const STATUS_SENT = 'sent';
-
-    public const STATUS_CANCELLED = 'cancelled';
-
-    public const STATUS_FAILED = 'failed';
-
-    public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
         'remindable_type',
@@ -110,7 +99,7 @@ final class Reminder extends Model
      */
     public function scopePending(Builder $query): Builder
     {
-        return $query->whereIn('status', ['pending', 'scheduled']);
+        return $query->whereIn('status', [ReminderStatus::Pending, ReminderStatus::Scheduled]);
     }
 
     /**
@@ -144,22 +133,22 @@ final class Reminder extends Model
 
     public function isPending(): bool
     {
-        return $this->status === self::STATUS_PENDING;
+        return $this->status === ReminderStatus::Pending;
     }
 
     public function isSent(): bool
     {
-        return $this->status === self::STATUS_SENT;
+        return $this->status === ReminderStatus::Sent;
     }
 
     public function isFailed(): bool
     {
-        return $this->status === self::STATUS_FAILED;
+        return $this->status === ReminderStatus::Failed;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === self::STATUS_CANCELLED;
+        return $this->status === ReminderStatus::Cancelled;
     }
 
     /**
@@ -168,6 +157,7 @@ final class Reminder extends Model
     protected function casts(): array
     {
         return [
+            'status' => ReminderStatus::class,
             'offset_minutes' => 'integer',
             'metadata' => 'array',
             'remind_at' => 'immutable_datetime',

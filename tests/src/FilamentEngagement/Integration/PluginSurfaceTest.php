@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Models\Follow;
 use AIArmada\FilamentEngagement\FilamentEngagementPlugin;
 use AIArmada\FilamentEngagement\FilamentEngagementServiceProvider;
@@ -60,7 +61,7 @@ it('scopes engagement resources to the current owner', function (): void {
             'follower_id' => $owner->id,
             'followable_type' => $owner->getMorphClass(),
             'followable_id' => $owner->id,
-            'status' => Follow::STATUS_ACTIVE,
+            'status' => FollowStatus::Active,
         ]));
     }
 

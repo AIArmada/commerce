@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Database\Factories;
 
+use AIArmada\Engagement\Enums\ResponseStatus;
 use AIArmada\Engagement\Models\Response;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,7 @@ final class ResponseFactory extends Factory
     {
         return [
             'response_type' => $this->faker->randomElement(['interested', 'going', 'maybe']),
-            'status' => Response::STATUS_ACTIVE,
+            'status' => ResponseStatus::Active,
             'visibility' => 'public',
             'responded_at' => now(),
         ];

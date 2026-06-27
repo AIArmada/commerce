@@ -9,6 +9,8 @@ use AIArmada\Engagement\Contracts\EngagementManager;
 use AIArmada\Engagement\Contracts\EngagementPolicyResolver;
 use AIArmada\Engagement\Contracts\ReminderManager;
 use AIArmada\Engagement\Contracts\ShareUrlGenerator;
+use AIArmada\Engagement\Enums\ResponseStatus;
+use AIArmada\Engagement\Enums\ShareStatus;
 use AIArmada\Engagement\Events\BookmarkAddedToCollection;
 use AIArmada\Engagement\Events\BookmarkArchived;
 use AIArmada\Engagement\Events\BookmarkCreated;
@@ -236,7 +238,7 @@ final class DefaultEngagementManager implements EngagementManager
             $oldType = $existing->response_type;
             $existing->update([
                 'response_type' => $responseType,
-                'status' => Response::STATUS_ACTIVE,
+                'status' => ResponseStatus::Active,
                 'changed_at' => CarbonImmutable::now(),
                 'cancelled_at' => null,
                 'metadata' => array_merge(
@@ -366,7 +368,7 @@ final class DefaultEngagementManager implements EngagementManager
             'destination' => $options['destination'] ?? null,
             'share_token' => $options['token'] ?? Str::random(16),
             'message' => $options['message'] ?? null,
-            'status' => Share::STATUS_CREATED,
+            'status' => ShareStatus::Created,
             'share_intent_at' => CarbonImmutable::now(),
             'metadata' => $options['metadata'] ?? null,
         ]);
@@ -377,7 +379,7 @@ final class DefaultEngagementManager implements EngagementManager
             $shareUrl = $this->shareUrlGenerator->generateShareUrl($subject, $options);
             $share->update([
                 'share_url' => $shareUrl,
-                'status' => Share::STATUS_SHARED,
+                'status' => ShareStatus::Shared,
                 'shared_at' => CarbonImmutable::now(),
             ]);
             event(new ShareCompleted($share));

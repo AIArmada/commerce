@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
+use AIArmada\Engagement\Enums\BookmarkStatus;
 use AIArmada\Engagement\Models\Bookmark;
 use AIArmada\Engagement\Models\BookmarkCollection;
 use AIArmada\Engagement\Models\BookmarkCollectionItem;
@@ -21,12 +23,12 @@ it('deletes bookmark collection items when a collection is deleted', function ()
         'bookmarker_id' => $this->owner->getKey(),
         'bookmarkable_type' => $this->owner->getMorphClass(),
         'bookmarkable_id' => $this->owner->getKey(),
-        'status' => Bookmark::STATUS_ACTIVE,
+        'status' => BookmarkStatus::Active,
     ]);
     $collection = BookmarkCollection::query()->create([
         'name' => 'Cascade Test',
         'visibility' => BookmarkCollection::VISIBILITY_PRIVATE,
-        'status' => BookmarkCollection::STATUS_ACTIVE,
+        'status' => BookmarkCollectionStatus::Active,
     ]);
     BookmarkCollectionItem::query()->create([
         'bookmark_collection_id' => $collection->id,
@@ -47,17 +49,17 @@ it('does not delete other collections items when one collection is deleted', fun
         'bookmarker_id' => $this->owner->getKey(),
         'bookmarkable_type' => $this->owner->getMorphClass(),
         'bookmarkable_id' => $this->owner->getKey(),
-        'status' => Bookmark::STATUS_ACTIVE,
+        'status' => BookmarkStatus::Active,
     ]);
     $collectionA = BookmarkCollection::query()->create([
         'name' => 'A',
         'visibility' => BookmarkCollection::VISIBILITY_PRIVATE,
-        'status' => BookmarkCollection::STATUS_ACTIVE,
+        'status' => BookmarkCollectionStatus::Active,
     ]);
     $collectionB = BookmarkCollection::query()->create([
         'name' => 'B',
         'visibility' => BookmarkCollection::VISIBILITY_PRIVATE,
-        'status' => BookmarkCollection::STATUS_ACTIVE,
+        'status' => BookmarkCollectionStatus::Active,
     ]);
     BookmarkCollectionItem::query()->create([
         'bookmark_collection_id' => $collectionA->id,

@@ -7,6 +7,7 @@ namespace AIArmada\Engagement\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Engagement\Database\Factories\BookmarkCollectionFactory;
+use AIArmada\Engagement\Enums\BookmarkCollectionStatus;
 use AIArmada\Engagement\Models\Concerns\UsesEngagementUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -40,12 +41,6 @@ final class BookmarkCollection extends Model
     use UsesEngagementUuid;
 
     protected static string $ownerScopeConfigKey = 'engagement.owner';
-
-    public const STATUS_ACTIVE = 'active';
-
-    public const STATUS_ARCHIVED = 'archived';
-
-    public const STATUS_LOCKED = 'locked';
 
     public const VISIBILITY_PRIVATE = 'private';
 
@@ -91,6 +86,7 @@ final class BookmarkCollection extends Model
     protected function casts(): array
     {
         return [
+            'status' => BookmarkCollectionStatus::class,
             'is_default' => 'boolean',
             'is_system' => 'boolean',
             'metadata' => 'array',

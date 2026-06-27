@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Engagement\Database\Factories;
 
+use AIArmada\Engagement\Enums\FollowStatus;
 use AIArmada\Engagement\Models\Follow;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,18 +18,18 @@ final class FollowFactory extends Factory
     public function definition(): array
     {
         return [
-            'status' => Follow::STATUS_ACTIVE,
+            'status' => FollowStatus::Active,
             'followed_at' => now(),
         ];
     }
 
     public function active(): static
     {
-        return $this->state(fn () => ['status' => Follow::STATUS_ACTIVE]);
+        return $this->state(fn () => ['status' => FollowStatus::Active]);
     }
 
     public function muted(): static
     {
-        return $this->state(fn () => ['status' => Follow::STATUS_MUTED, 'muted_at' => now()]);
+        return $this->state(fn () => ['status' => FollowStatus::Muted, 'muted_at' => now()]);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Engagement\Contracts\ReminderManager;
+use AIArmada\Engagement\Enums\ReminderStatus;
 use AIArmada\Engagement\Models\Reminder;
 use Illuminate\Support\Facades\Artisan;
 
@@ -43,7 +44,7 @@ it('only dispatches pending or scheduled reminders', function (): void {
 
     $due = $this->manager->dueReminders();
     expect($due)->not->toBeEmpty();
-    expect($due->first()->status)->toBeIn(['pending', 'scheduled']);
+    expect($due->first()->status)->toBeIn([ReminderStatus::Pending, ReminderStatus::Scheduled]);
 
     foreach ($due as $reminder) {
         $this->manager->markSent($reminder);
@@ -60,13 +61,13 @@ it('marks sent reminders with sent_at', function (): void {
         'recipient_type' => 'user',
         'recipient_id' => 'user-1',
         'reminder_type' => 'before_start',
-        'status' => Reminder::STATUS_PENDING,
+        'status' => ReminderStatus::Pending,
         'remind_at' => now()->subMinute(),
     ]);
 
     $this->manager->markSent($reminder);
 
-    expect($reminder->fresh()->status)->toBe(Reminder::STATUS_SENT);
+    expect($reminder->fresh()->status)->toBe(ReminderStatus::Sent);
     expect($reminder->fresh()->sent_at)->not->toBeNull();
 });
 
@@ -77,13 +78,13 @@ it('marks failed reminders with failure_reason', function (): void {
         'recipient_type' => 'user',
         'recipient_id' => 'user-1',
         'reminder_type' => 'before_start',
-        'status' => Reminder::STATUS_PENDING,
+        'status' => ReminderStatus::Pending,
         'remind_at' => now()->subMinute(),
     ]);
 
     $this->manager->markFailed($reminder, 'Channel unavailable');
 
-    expect($reminder->fresh()->status)->toBe(Reminder::STATUS_FAILED);
+    expect($reminder->fresh()->status)->toBe(ReminderStatus::Failed);
     expect($reminder->fresh()->failure_reason)->toBe('Channel unavailable');
 });
 
@@ -108,6 +109,6 @@ it('processes due reminders across owners', function (): void {
     }
 
     expect(Artisan::call('engagement:send-due-reminders'))->toBe(0)
-        ->and(Reminder::query()->withoutOwnerScope()->where('status', Reminder::STATUS_SENT)->count())
+        ->and(Reminder::query()->withoutOwnerScope()->where('status', ReminderStatus::Sent)->count())
         ->toBe(2);
 });
