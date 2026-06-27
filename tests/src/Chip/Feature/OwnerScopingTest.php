@@ -9,6 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+
 function forceCreatePurchase(array $attributes): Purchase
 {
     return tap(new Purchase, fn (Purchase $p) => $p->forceFill($attributes)->save());
