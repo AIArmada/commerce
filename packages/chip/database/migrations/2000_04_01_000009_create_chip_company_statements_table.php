@@ -45,10 +45,4 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
-    {
-        $tablePrefix = config('chip.database.table_prefix', 'chip_');
-
-        Schema::dropIfExists($tablePrefix . 'company_statements');
-    }
 };

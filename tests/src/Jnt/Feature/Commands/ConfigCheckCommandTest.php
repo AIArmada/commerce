@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Console\Commands\ConfigCheckCommand;
+use AIArmada\Jnt\Console\Commands\Orders\ConfigCheckCommand;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 

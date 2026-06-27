@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Inventory\Exceptions\InsufficientStockException;
+use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
@@ -187,7 +187,7 @@ it('blocks mutations against locations outside current owner scope', function ()
     setInventoryOwnerResolver($ownerA);
 
     expect(fn () => $service->ship($inventoryable, $locationB->id, 1))
-        ->toThrow(InsufficientStockException::class);
+        ->toThrow(InsufficientInventoryException::class);
 });
 
 it('treats a null resolved owner as global-only (never owner_type-only corrupt rows)', function (): void {

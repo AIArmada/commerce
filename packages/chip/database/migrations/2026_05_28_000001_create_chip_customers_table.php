@@ -35,8 +35,4 @@ return new class extends Migration
         }
     }
 
-    public function down(): void
-    {
-        Schema::dropIfExists((string) config('chip.database.table_prefix', 'chip_') . 'customers');
-    }
 };

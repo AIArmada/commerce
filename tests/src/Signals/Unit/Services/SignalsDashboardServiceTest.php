@@ -196,7 +196,8 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));
 
-    $logA = SignalAlertLog::query()->create([
+    $logA = new SignalAlertLog;
+    $logA->forceFill([
         'signal_alert_rule_id' => $ruleA->id,
         'tracked_property_id' => $propertyA->id,
         'metric_key' => 'revenue_minor',
@@ -206,17 +207,16 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         'severity' => 'critical',
         'title' => 'Revenue threshold reached',
         'message' => 'Revenue exceeded the configured threshold.',
-        'is_read' => false,
-    ]);
-    $logA->forceFill([
         'created_at' => CarbonImmutable::parse('2026-03-10 11:00:00'),
         'updated_at' => CarbonImmutable::parse('2026-03-10 11:00:00'),
-    ])->save();
+    ]);
+    $logA->save();
     $logA->assignOwner($ownerA)->save();
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerB));
 
-    $logB = SignalAlertLog::query()->create([
+    $logB = new SignalAlertLog;
+    $logB->forceFill([
         'signal_alert_rule_id' => $ruleB->id,
         'tracked_property_id' => $propertyB->id,
         'metric_key' => 'events',
@@ -226,12 +226,10 @@ it('builds dashboard metrics and respects owner scoping', function (): void {
         'severity' => 'warning',
         'title' => 'Other owner alert',
         'message' => 'This alert belongs to another owner.',
-        'is_read' => false,
-    ]);
-    $logB->forceFill([
         'created_at' => CarbonImmutable::parse('2026-03-10 11:00:00'),
         'updated_at' => CarbonImmutable::parse('2026-03-10 11:00:00'),
-    ])->save();
+    ]);
+    $logB->save();
     $logB->assignOwner($ownerB)->save();
 
     app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($ownerA));

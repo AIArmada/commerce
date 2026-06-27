@@ -180,8 +180,6 @@ The source mixes explicit severities, section-level severities, and roadmap phas
 | CS2 | filament packages | Four owner-scoping patterns in Filament. | Partially true | Verified examples: direct `forOwner`, `OwnerUiScope`, parent query relying on global scopes, `withoutGlobalScopes`. | Define a Filament owner-scoping standard before broad refactor. | Cross-tenant resource/widget tests. |
 | CS3 | `cashier`, `cashier-chip` | Action pattern mismatch: `cashier` uses Actions, `cashier-chip` plain classes. | True | Cashier has `src/Actions/*`; cashier-chip has plain action classes without `AsAction`. | Optional consistency; do not change without API decision. | Action tests if converted. |
 | CS4 | `engagement`, `signals`, `cashier-chip` | PHP enums and class constants are inconsistent. | Partially true | True for engagement/cashier-chip; signals has status-like strings but many are response payloads. | Do not blanket-convert; evaluate persisted lifecycle statuses. | Status tests. |
-| CS5 | `chip`, `customers` | `down()` methods violate monorepo convention. | Partially true | `chip` has 9 `down()` across 10 migrations; `customers` has 7/7. Monorepo says no `down()` required, not strictly forbidden in the pasted database rules. | Cleanup only in migration-style pass; avoid churn. | Migration smoke tests if changed. |
-| CS6 | all packages | No `CHANGELOG.md` in 57 packages. | Requires product approval | No package changelogs found, but user explicitly excluded creating 57 changelogs in this pass. | Do not include in remediation unless separately approved. | N/A. |
 | CS7 | `checkout`, `chip`, `docs` | No package-local test config. | Partially true | Same as I2. | Same as I2. | Same as I2. |
 | R1 | payment packages | Replace `$guarded = []` with `$fillable`. | Derived from true finding | Backed by S1/B4. | P1 security fix. | Mass-assignment tests. |
 | R2 | `filament-affiliates` | Add owner scoping to six resources. | Derived from true finding | Backed by S2 true portion. | P1 owner fix. | Cross-tenant Filament tests. |
@@ -207,7 +205,6 @@ The source mixes explicit severities, section-level severities, and roadmap phas
 | R22 | filament packages | Add tests to filament-inventory/products. | False | Z4/Z5 are false. | Add targeted tests only when changing behavior. | Targeted tests. |
 | R23 | 18 packages | Add base exception hierarchies. | Partially true | EXC rows are mostly true, but this is architecture debt, not urgent defect. | P4 only, package-by-package with actual thrown exceptions. | Exception contract tests. |
 | R24 | docs | Fix flat `navigation_group` docs. | Derived from true finding | Backed by DOCN rows. | P3 docs fix. | Docs grep. |
-| R25 | all packages | Add `CHANGELOG.md` to all packages. | Requires product approval | CS6; user excluded documentation-only creations beyond `FIX.md`. | Do not do without approval. | N/A. |
 | R26 | filament packages | Fix navigation violations. | Derived from true finding | Backed by NAV rows. | P3 Filament rule fix. | Static grep/tests. |
 | R27 | `cashier` | Remove duplicate `Billable` trait and `CurrencyFormatter`. | Partially true | CQ1/CQ2 true portions; public API impact unknown. | P4 cleanup with BC decision. | Trait/helper usage tests. |
 | R28 | `affiliates` | Extract balance logic. | Derived from true finding | Backed by CQ3. | P4 refactor. | Conversion lifecycle tests. |
@@ -218,7 +215,6 @@ The source mixes explicit severities, section-level severities, and roadmap phas
 | R33 | `tax` | Add missing composer deps. | Partially true | DEP1 true for four/five packages; verify exact package names/versions. | P3 dependency fix. | Composer/PHPStan/tests. |
 | R34 | `products`, `customers` | Standardize `$fillable`. | Derived from true finding | Backed by CQ4/CQ5. | P4 consistency unless security-sensitive fields are exposed. | Mass-assignment tests. |
 | R35 | `engagement`, `signals`, `cashier-chip` | Standardize PHP enums. | Partially true | CQ20-CQ22/CS4. | P4 architecture, not defect. | Status tests. |
-| R36 | `chip`, `customers` | Remove `down()` methods. | Partially true | CS5 true for existence but not mandatory defect. | P4 style cleanup only if approved. | Migration smoke tests. |
 | R37 | `references` | Fix `getPart()` type hint. | Derived from true finding | Backed by CQ23. | P4 consistency. | Reference helper tests. |
 | R38 | `inventory` | Remove deprecated exception. | Derived from true finding | Backed by CQ19. | P4 breaking cleanup. | Exception tests. |
 | R39 | `inventory` | Mark models `final`. | Derived from true finding | Backed by CQ18. | P4 consistency. | PHPStan/tests. |
@@ -250,10 +246,10 @@ The implementation pass fixed all P0-P3 verified defects that were safe to chang
 | P1 | Done | `B1`, `B2`, `B3`, `B4`, true portions of `B5`, `B13`, `S1`-`S6`, `S9`, `S10`, `R1`-`R7`, `R11`, `R12`, `R14`, `R17`, `R18`. |
 | P2 | Done | `B6a`, `B9`, `B12`, `B14`, `OS3`, `R13`, `R16`, `R20`, and the verified `filament-pricing` owner-scoping portion of `R42`. |
 | P3 | Done | `NAV1`-`NAV5`, `DOCN1`-`DOCN9`, true portions of `DOCP1`-`DOCP3`, true portion of `DEP1`, `CFG1`, `CFG2`, `CQ7`-`CQ9`, `R21`, `R24`, `R26`, `R30`, `R33`. |
-| P4 concrete | Done | `I3a`, `I3b`, `I3c`, `CQ6`, `CQ11`, `CQ14`, `CQ16`, `CQ17`, `CQ23`, `R31` verified subset, `R37`. |
+| P4 concrete | Done | `I3a`, `I3b`, `I3c`, `CQ6`, `CQ11`, `CQ14`, `CQ15`, `CQ16`, `CQ17`, `CQ18`, `CQ19`, `CQ23`, `CQ29`, `R31` verified subset, `R37`, `R38`, `R39`, `R40`, `R41`; CHIP/customers migration `down()` cleanup was also completed and removed from this ledger by request. |
 | False/stale | Settled no fix | `B11`, `S7`, `S8`, `Z1`-`Z11`, `I4`, `DOC1`, `DOC2`, `CFG3`, `CQ13`, `CQ30`, `R8`-`R10`, `R15`, `R22`, `R32`, `R43`; partial stale portions remain documented in Corrections. |
 | Runtime-unverified | Settled pending reproduction | `B6b`, `B13b`, `A6`, `R19`; no source fix should be made until a failing test or runtime proof exists. |
-| Product/API/dependency decisions | Deferred | `B7` split-interface idea, `I2`, exception hierarchy rows, `DEP2`, `CQ1`-`CQ5`, `CQ10`, `CQ12`, `CQ15`, `CQ18`-`CQ22`, `CQ24`-`CQ29`, `A1`-`A5`, `A7`, `A8` duplicate of fixed `OS3`, `CS1`-`CS7`, `R23`, `R25`, `R27`-`R29`, `R34`-`R36`, `R38`-`R41`. |
+| Product/API/dependency decisions | Deferred | `B7` split-interface idea, `I2`, exception hierarchy rows, `DEP2`, `CQ1`-`CQ5`, `CQ10`, `CQ12`, `CQ20`-`CQ22`, `CQ24`-`CQ28`, `A1`-`A5`, `A7`, `A8` duplicate of fixed `OS3`, `CS1`-`CS4`, `CS7`, `R23`, `R27`-`R29`, `R34`, `R35`. |
 
 ### Completed Fix Notes
 
@@ -261,12 +257,11 @@ The implementation pass fixed all P0-P3 verified defects that were safe to chang
 - Owner-scope fixes use existing commerce-support primitives and package patterns rather than database constraints or UI-only filtering.
 - Filament navigation violations were corrected by replacing static navigation properties with config-backed `getNavigationGroup()` / `getNavigationSort()` methods and nested config keys.
 - Public behavior/config changes were synced to owning package docs in the same pass.
-- Documentation-only creations such as package-wide `CHANGELOG.md` files were not created because they were explicitly out of scope and require product approval.
 
 ### Deferred Fix Notes
 
 - `DEP2` is real, but changing `aiarmada/cashier` from optional Stripe support to a hard `laravel/cashier` dependency would change package install semantics. It is deferred pending an approved dependency-boundary decision: either require Laravel Cashier or isolate Stripe adapter classes from standalone autoload.
-- Exception base classes, `final` model changes, enum conversions, duplicate public API cleanup, legacy JNT command removal, and checkout dependency reshaping are breaking or architecture-wide changes. They need a separate pass with explicit compatibility decisions and focused tests.
+- Exception base classes, enum conversions, duplicate public API cleanup, and checkout dependency reshaping are architecture-wide changes. They need a separate pass with explicit design decisions and focused tests.
 - `CQ10` is a public class removal/integration decision for `filament-addressing`; no removal was made without confirming downstream usage.
 - Products/customers `$guarded = ['id']` standardization is valid consistency work, but it is outside the critical payment/owner-scope fix set and needs model-by-model mass-assignment tests.
 
