@@ -15,7 +15,6 @@ final class PaymentOperationLimiter
     /**
      * @template TReturn
      *
-     * @param  BillableContract|string|null  $subject
      * @param  Closure(): TReturn  $callback
      * @return TReturn
      */
