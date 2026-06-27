@@ -95,19 +95,23 @@ it('creates revocable action-limited share links', function (): void {
         allowedActions: [ShareLinkAction::View],
     ));
 
-    expect($shareLink->plainToken)->toBeString()
-        ->and($shareLink->token_hash)->not->toBe($shareLink->plainToken)
-        ->and($shareLink->allows(ShareLinkAction::View))->toBeTrue()
-        ->and($shareLink->allows(ShareLinkAction::Pdf))->toBeFalse();
+    $plainToken = $shareLink->plainToken();
 
-    $resolved = app(DocRenderService::class)->resolveShareLink($shareLink->plainToken, ShareLinkAction::View);
+    expect($plainToken)->toBeString()
+        ->and($shareLink->token_hash)->not->toBe($plainToken)
+        ->and($shareLink->allows(ShareLinkAction::View))->toBeTrue()
+        ->and($shareLink->allows(ShareLinkAction::Pdf))->toBeFalse()
+        ->and($shareLink->toArray())->not->toHaveKey('plainToken')
+        ->and($shareLink->toJson())->not->toContain($plainToken);
+
+    $resolved = app(DocRenderService::class)->resolveShareLink($plainToken, ShareLinkAction::View);
 
     expect($resolved->id)->toBe($shareLink->id)
         ->and($resolved->fresh()->access_count)->toBe(1);
 
     $shareLink->revoke();
 
-    expect(fn (): mixed => app(DocRenderService::class)->resolveShareLink($shareLink->plainToken, ShareLinkAction::View))
+    expect(fn (): mixed => app(DocRenderService::class)->resolveShareLink($plainToken, ShareLinkAction::View))
         ->toThrow(NotFoundHttpException::class);
 });
 

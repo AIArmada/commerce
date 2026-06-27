@@ -21,8 +21,6 @@ final class SignalAlertRuleResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell-alert';
 
-    protected static ?int $navigationSort = 33;
-
     protected static ?string $recordTitleAttribute = 'name';
 
     /**

@@ -13,6 +13,7 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use AIArmada\Cashier\Exceptions\GatewayRetrievalException;
 use AIArmada\Cashier\Gateways\Stripe\StripeCheckoutBuilder;
 use AIArmada\Cashier\Gateways\Stripe\StripeCustomer;
 use AIArmada\Cashier\Gateways\Stripe\StripeInvoice;
@@ -20,10 +21,12 @@ use AIArmada\Cashier\Gateways\Stripe\StripePayment;
 use AIArmada\Cashier\Gateways\Stripe\StripePaymentMethod;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscription;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
+use AIArmada\Cashier\Support\PaymentOperationLimiter;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Cashier;
 use Laravel\Cashier\Payment;
 use SensitiveParameter;
+use Stripe\Exception\InvalidRequestException;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 use Throwable;
@@ -114,7 +117,12 @@ class StripeGateway extends AbstractGateway
      */
     public function charge(BillableContract $billable, int $amount, #[SensitiveParameter] ?string $paymentMethod = null, array $options = []): PaymentContract
     {
-        $payment = $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $options]);
+        $payment = PaymentOperationLimiter::run(
+            $this->name(),
+            'charge',
+            $billable,
+            fn (): mixed => $this->callBillableMethod($billable, 'charge', [$amount, $paymentMethod, $options]),
+        );
 
         return new StripePayment($payment);
     }
@@ -126,15 +134,21 @@ class StripeGateway extends AbstractGateway
      */
     public function refund(string $paymentId, ?int $amount = null): mixed
     {
-        $refund = $this->client()->refunds->create([
-            'payment_intent' => $paymentId,
-            'amount' => $amount,
-        ]);
+        return PaymentOperationLimiter::run(
+            $this->name(),
+            'refund',
+            'payment:' . $paymentId,
+            function () use ($paymentId, $amount): StripePayment {
+                $this->client()->refunds->create([
+                    'payment_intent' => $paymentId,
+                    'amount' => $amount,
+                ]);
 
-        // Retrieve the updated payment
-        $payment = $this->client()->paymentIntents->retrieve($paymentId);
+                $payment = $this->client()->paymentIntents->retrieve($paymentId);
 
-        return new StripePayment(new Payment($payment));
+                return new StripePayment(new Payment($payment));
+            },
+        );
     }
 
     /**
@@ -162,8 +176,14 @@ class StripeGateway extends AbstractGateway
             $session = $this->client()->checkout->sessions->retrieve($sessionId);
 
             return new Stripe\StripeCheckout($session);
-        } catch (Throwable) {
-            return null;
+        } catch (InvalidRequestException $e) {
+            if ($e->getHttpStatus() === 404) {
+                return null;
+            }
+
+            throw GatewayRetrievalException::create('stripe', 'checkout session', $sessionId, $e);
+        } catch (Throwable $e) {
+            throw GatewayRetrievalException::create('stripe', 'checkout session', $sessionId, $e);
         }
     }
 
@@ -176,8 +196,14 @@ class StripeGateway extends AbstractGateway
             $subscription = $this->client()->subscriptions->retrieve($subscriptionId);
 
             return new StripeSubscription($subscription);
-        } catch (Throwable) {
-            return null;
+        } catch (InvalidRequestException $e) {
+            if ($e->getHttpStatus() === 404) {
+                return null;
+            }
+
+            throw GatewayRetrievalException::create('stripe', 'subscription', $subscriptionId, $e);
+        } catch (Throwable $e) {
+            throw GatewayRetrievalException::create('stripe', 'subscription', $subscriptionId, $e);
         }
     }
 
@@ -190,8 +216,14 @@ class StripeGateway extends AbstractGateway
             $paymentIntent = $this->client()->paymentIntents->retrieve($paymentId);
 
             return new StripePayment(new Payment($paymentIntent));
-        } catch (Throwable) {
-            return null;
+        } catch (InvalidRequestException $e) {
+            if ($e->getHttpStatus() === 404) {
+                return null;
+            }
+
+            throw GatewayRetrievalException::create('stripe', 'payment', $paymentId, $e);
+        } catch (Throwable $e) {
+            throw GatewayRetrievalException::create('stripe', 'payment', $paymentId, $e);
         }
     }
 
@@ -204,8 +236,14 @@ class StripeGateway extends AbstractGateway
             $invoice = $this->client()->invoices->retrieve($invoiceId);
 
             return new StripeInvoice($invoice);
-        } catch (Throwable) {
-            return null;
+        } catch (InvalidRequestException $e) {
+            if ($e->getHttpStatus() === 404) {
+                return null;
+            }
+
+            throw GatewayRetrievalException::create('stripe', 'invoice', $invoiceId, $e);
+        } catch (Throwable $e) {
+            throw GatewayRetrievalException::create('stripe', 'invoice', $invoiceId, $e);
         }
     }
 

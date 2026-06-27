@@ -16,8 +16,6 @@ final class GatewaySetup extends Page
     /** @var view-string */
     protected string $view = 'filament-cashier::pages.gateway-setup';
 
-    protected static ?int $navigationSort = 100;
-
     public static function getNavigationLabel(): string
     {
         return __('filament-cashier::gateway.setup.title');
@@ -26,6 +24,11 @@ final class GatewaySetup extends Page
     public static function getNavigationGroup(): ?string
     {
         return config('filament-cashier.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cashier.pages.navigation_sort.gateway_setup');
     }
 
     public function getTitle(): string

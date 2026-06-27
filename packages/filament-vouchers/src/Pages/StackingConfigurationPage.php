@@ -42,11 +42,16 @@ final class StackingConfigurationPage extends Page implements HasForms
 
     protected static ?string $title = 'Voucher Stacking Configuration';
 
-    protected static ?int $navigationSort = 100;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-vouchers.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-vouchers.pages.navigation_sort.stacking_configuration');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function canAccess(): bool

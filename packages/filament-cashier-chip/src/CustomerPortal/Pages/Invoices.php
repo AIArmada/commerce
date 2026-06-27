@@ -18,8 +18,6 @@ class Invoices extends Page
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
-    protected static ?int $navigationSort = 30;
-
     /** @var view-string */
     protected string $view = 'filament-cashier-chip::pages.invoices';
 
@@ -33,6 +31,13 @@ class Invoices extends Page
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cashier-chip.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-cashier-chip.billing.navigation_sort.invoices');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function shouldRegisterNavigation(): bool

@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Enums\DocPaymentStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +21,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  *
  * @property string $id
  * @property string $doc_id
- * @property string $status
+ * @property DocPaymentStatus $status
  * @property string $amount
  * @property string $currency
  * @property string $payment_method
@@ -103,7 +104,7 @@ final class DocPayment extends Model implements Auditable
     protected function casts(): array
     {
         return [
-            'status' => 'string',
+            'status' => DocPaymentStatus::class,
             'amount' => 'decimal:2',
             'paid_at' => 'immutable_datetime',
             'refunded_at' => 'immutable_datetime',

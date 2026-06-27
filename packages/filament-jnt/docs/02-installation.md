@@ -241,7 +241,9 @@ Check config for group name:
 
 ```php
 // config/filament-jnt.php
-'navigation_group' => 'Shipping',
+'navigation' => [
+        'group' => 'Shipping'
+    ],
 ```
 
 ---

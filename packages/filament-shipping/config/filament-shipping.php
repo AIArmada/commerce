@@ -60,5 +60,23 @@ return [
 
     'navigation' => [
         'group' => 'Shipping',
+        'sort' => 40,
+    ],
+
+    'pages' => [
+        'navigation_sort' => [
+            'dashboard' => 0,
+            'fulfillment_queue' => 1,
+            'manifest' => 5,
+        ],
+    ],
+
+    'resources' => [
+        'navigation_sort' => [
+            'shipments' => 1,
+            'zones' => 2,
+            'rates' => 3,
+            'returns' => 3,
+        ],
     ],
 ];

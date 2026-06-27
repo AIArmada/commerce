@@ -13,6 +13,10 @@ return [
     'pages' => [
         'timeline' => true,
         'fulfillment' => true,
+        'navigation_sort' => [
+            'fulfillment' => 5,
+            'timeline' => 6,
+        ],
     ],
 
     /* Payment Gateways */
@@ -20,5 +24,10 @@ return [
         'stripe' => 'Stripe',
         'chip' => 'CHIP',
         'manual' => 'Manual',
+    ],
+
+    /* Features */
+    'features' => [
+        'enable_invoice_download' => true,
     ],
 ];

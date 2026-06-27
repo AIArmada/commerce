@@ -17,8 +17,6 @@ class PortalCreatives extends PortalPage
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedPhoto;
 
-    protected static ?int $navigationSort = 2;
-
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.creatives';
 

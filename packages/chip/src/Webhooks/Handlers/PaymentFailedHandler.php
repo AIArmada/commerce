@@ -30,10 +30,10 @@ class PaymentFailedHandler implements WebhookHandler
             ?? 'Unknown payment failure';
 
         // Update local status
-        $localPurchase->update([
+        $localPurchase->forceFill([
             'status' => PurchaseStatus::ERROR,
             'failure_reason' => $failureReason,
-        ]);
+        ])->save();
 
         // Dispatch Laravel event
         PurchasePaymentFailure::dispatch(

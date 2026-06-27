@@ -307,6 +307,6 @@ class WebhookReceived
      */
     public function isTest(): bool
     {
-        return $this->payload['is_test'] ?? true;
+        return (bool) ($this->payload['is_test'] ?? false);
     }
 }

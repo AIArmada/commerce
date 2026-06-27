@@ -14,6 +14,12 @@ use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateCreativeResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateLinkResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateRankHistoryResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateSupportTicketResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -27,6 +33,33 @@ beforeEach(function (): void {
     AffiliatePayout::query()->delete();
     Affiliate::query()->delete();
 
+});
+
+it('applies explicit owner filters to affiliate resources that list tenant-owned data', function (): void {
+    $owner = User::create([
+        'name' => 'Resource Owner',
+        'email' => 'affiliate-resource-owner@example.com',
+        'password' => 'secret',
+    ]);
+
+    $resources = [
+        AffiliateConversionResource::class,
+        AffiliateCreativeResource::class,
+        AffiliateLinkResource::class,
+        AffiliateRankHistoryResource::class,
+        AffiliateSupportTicketResource::class,
+        AffiliateTaxDocumentResource::class,
+    ];
+
+    OwnerContext::withOwner($owner, function () use ($resources): void {
+        foreach ($resources as $resource) {
+            $sql = $resource::getEloquentQuery()->toSql();
+
+            expect($sql)
+                ->toContain('owner_type')
+                ->toContain('owner_id');
+        }
+    });
 });
 
 it('prevents cross-tenant reads and writes on admin payout and fraud pages', function (): void {

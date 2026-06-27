@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Services\Tax\TaxDocumentService;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource\Pages\ListAffiliateTaxDocuments;
 use AIArmada\FilamentAffiliates\Resources\AffiliateTaxDocumentResource\Pages\ViewAffiliateTaxDocument;
@@ -72,17 +73,10 @@ final class AffiliateTaxDocumentResource extends Resource
         /** @var Builder<AffiliateTaxDocument> $query */
         $query = parent::getEloquentQuery();
 
-        if (! (bool) config('affiliates.owner.enabled', false)) {
-            /** @var Builder<Model> $unscopedQuery */
-            $unscopedQuery = $query;
-
-            return $unscopedQuery;
-        }
-
         /** @var Builder<Model> $modelQuery */
         $modelQuery = $query;
 
-        return $modelQuery;
+        return OwnerUiScope::apply($modelQuery, includeGlobal: false);
     }
 
     public static function form(Schema $schema): Schema

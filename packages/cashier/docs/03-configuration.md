@@ -47,6 +47,17 @@ resolve them:
 `laravel/cashier`, and CHIP still relies on `aiarmada/chip` or `aiarmada/cashier-chip` for the
 rest of their gateway-specific configuration.
 
+## Payment operations
+
+The `payment_operations.rate_limiting` section protects mutable gateway calls such as Stripe charges,
+refunds, and paid subscription creation:
+
+| Key | Purpose |
+| --- | --- |
+| `payment_operations.rate_limiting.enabled` | Enable rate limiting for mutable payment operations |
+| `payment_operations.rate_limiting.max_attempts` | Maximum attempts per gateway, operation, and billable/payment subject |
+| `payment_operations.rate_limiting.decay_seconds` | Window length in seconds before attempts are released |
+
 ## Integrations
 
 The optional `cart` section controls the tight integration with `aiarmada/cart`:

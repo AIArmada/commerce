@@ -36,7 +36,19 @@ final class StoredPaymentMethod extends Model
 
     protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'billable_type',
+        'billable_id',
+        'recurring_token',
+        'type',
+        'brand',
+        'last_four',
+        'is_default',
+        'metadata',
+    ];
 
     public function getTable(): string
     {

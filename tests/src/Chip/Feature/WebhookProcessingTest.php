@@ -673,7 +673,7 @@ describe('WebhookMonitor', function (): void {
             // Create test webhooks with explicit recent timestamps
             $now = now();
 
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook 1',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -685,7 +685,7 @@ describe('WebhookMonitor', function (): void {
                 'callback' => 'http://example.com/webhook',
             ]);
 
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook 2',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -697,7 +697,7 @@ describe('WebhookMonitor', function (): void {
                 'callback' => 'http://example.com/webhook',
             ]);
 
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook 3',
                 'event' => 'purchase.failed',
                 'events' => ['purchase.failed'],
@@ -719,7 +719,7 @@ describe('WebhookMonitor', function (): void {
 
         it('filters by since date', function (): void {
             // Old webhook
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -732,7 +732,7 @@ describe('WebhookMonitor', function (): void {
             ]);
 
             // Recent webhook
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -760,9 +760,9 @@ describe('WebhookMonitor', function (): void {
 
     describe('getEventDistribution', function (): void {
         it('returns event counts', function (): void {
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.cancelled'], 'event' => 'purchase.cancelled', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.cancelled'], 'event' => 'purchase.cancelled', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
 
             $distribution = $this->monitor->getEventDistribution();
 
@@ -781,7 +781,7 @@ describe('WebhookMonitor', function (): void {
 
     describe('getFailureBreakdown', function (): void {
         it('returns failure counts by error', function (): void {
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -793,7 +793,7 @@ describe('WebhookMonitor', function (): void {
                 'callback' => 'http://example.com/webhook',
             ]);
 
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -805,7 +805,7 @@ describe('WebhookMonitor', function (): void {
                 'callback' => 'http://example.com/webhook',
             ]);
 
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -825,7 +825,7 @@ describe('WebhookMonitor', function (): void {
         });
 
         it('uses Unknown for null errors', function (): void {
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -845,8 +845,8 @@ describe('WebhookMonitor', function (): void {
 
     describe('getPendingWebhooks', function (): void {
         it('returns pending webhooks', function (): void {
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'pending', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'pending', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
 
             $pending = $this->monitor->getPendingWebhooks();
 
@@ -855,9 +855,9 @@ describe('WebhookMonitor', function (): void {
         });
 
         it('respects limit parameter', function (): void {
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'pending', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'pending', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'pending', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'pending', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'pending', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'pending', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
 
             $pending = $this->monitor->getPendingWebhooks(2);
 
@@ -865,7 +865,7 @@ describe('WebhookMonitor', function (): void {
         });
 
         it('orders by oldest first', function (): void {
-            $oldWebhook = Webhook::create([
+            $oldWebhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -877,7 +877,7 @@ describe('WebhookMonitor', function (): void {
                 'callback' => 'http://example.com/webhook',
             ]);
 
-            $newWebhook = Webhook::create([
+            $newWebhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -897,8 +897,8 @@ describe('WebhookMonitor', function (): void {
 
     describe('getRecentFailures', function (): void {
         it('returns failed webhooks', function (): void {
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'failed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'failed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'processed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
 
             $failures = $this->monitor->getRecentFailures();
 
@@ -907,9 +907,9 @@ describe('WebhookMonitor', function (): void {
         });
 
         it('respects limit parameter', function (): void {
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'failed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'failed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
-            Webhook::create(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'failed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'failed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'failed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
+            Webhook::forceCreate(['title' => 'Test Webhook', 'events' => ['purchase.paid'], 'event' => 'purchase.paid', 'payload' => [], 'status' => 'failed', 'created_on' => time(), 'updated_on' => time(), 'callback' => 'http://example.com/webhook']);
 
             $failures = $this->monitor->getRecentFailures(2);
 
@@ -917,7 +917,7 @@ describe('WebhookMonitor', function (): void {
         });
 
         it('orders by newest first', function (): void {
-            $oldWebhook = Webhook::create([
+            $oldWebhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -929,7 +929,7 @@ describe('WebhookMonitor', function (): void {
                 'callback' => 'http://example.com/webhook',
             ]);
 
-            $newWebhook = Webhook::create([
+            $newWebhook = Webhook::forceCreate([
                 'title' => 'Test Webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],

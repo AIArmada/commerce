@@ -112,7 +112,7 @@ class OrdersTable
                     ->icon('heroicon-o-document-arrow-down')
                     ->url(fn (Order $record) => route('filament-orders.invoice.download', $record))
                     ->openUrlInNewTab()
-                    ->visible(fn (Order $record) => $record->isPaid()),
+                    ->visible(fn (Order $record) => (bool) config('filament-orders.features.enable_invoice_download', true) && $record->isPaid()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

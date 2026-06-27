@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources;
 
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -72,7 +73,7 @@ final class AffiliateCreativeResource extends Resource
         /** @var Builder<AffiliateProgramCreative> $query */
         $query = parent::getEloquentQuery();
 
-        return $query->general();
+        return OwnerUiScope::apply($query->general(), includeGlobal: false);
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-photo';

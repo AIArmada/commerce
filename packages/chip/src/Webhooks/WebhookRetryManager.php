@@ -59,12 +59,12 @@ class WebhookRetryManager
                 $result = $this->dispatchAction->execute($webhook->event, $payload, $retryOwner ?? null);
 
                 if ($result->isSuccess()) {
-                    $webhook->update([
+                    $webhook->forceFill([
                         'status' => 'processed',
                         'processed' => true,
                         'processed_at' => now(),
                         'last_error' => null,
-                    ]);
+                    ])->save();
                 } else {
                     $webhook->update([
                         'last_error' => $result->message,

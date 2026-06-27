@@ -144,17 +144,12 @@ Server-side validation in action handlers still relies on the core events packag
 
 ## Disabling resources
 
-Individual resources can be disabled via config or plugin methods:
+Individual resources can be disabled via config:
 
 ```php
-// Via config
 'resources' => [
     'enabled' => [
         'venue' => false,
     ],
 ],
-
-// Via plugin
-FilamentEventsPlugin::make()
-    ->resources(['venue' => false]);
 ```

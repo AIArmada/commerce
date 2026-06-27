@@ -45,7 +45,9 @@ public function panel(Panel $panel): Panel
 // config/filament-jnt.php
 return [
     // Navigation group for all J&T resources
-    'navigation_group' => 'Shipping',
+    'navigation' => [
+        'group' => 'Shipping'
+    ],
 
     // Badge color for navigation items
     'navigation_badge_color' => 'primary',

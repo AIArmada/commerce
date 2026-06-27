@@ -65,3 +65,11 @@ it('FilamentCustomersServiceProvider publishes views', function (): void {
     expect($matchedKey)->not->toBeNull();
     expect($paths[$matchedKey])->toBe(resource_path('views/vendor/filament-customers'));
 });
+
+it('FilamentCustomers config defines plugin feature toggles', function (): void {
+    $config = require __DIR__ . '/../../../../packages/filament-customers/config/filament-customers.php';
+
+    expect($config['features'])->toHaveKey('merge_customers', true)
+        ->and($config['features'])->toHaveKey('segment_rebuild', false)
+        ->and($config['features'])->toHaveKey('address_validation', false);
+});

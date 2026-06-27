@@ -142,18 +142,15 @@ Register the plugin on multiple panels:
 
 ```php
 // AdminPanelProvider
-$panel->plugin(
-    FilamentChipPlugin::make()
-        ->navigationGroup('Payments')
-);
+$panel->plugin(FilamentChipPlugin::make());
 
 // TenantPanelProvider
 $panel->plugin(
     FilamentChipPlugin::make()
-        ->navigationGroup('Billing')
-        ->resources([
-            // Subset of resources for tenant panel
-            PurchaseResource::class,
-        ])
+        ->operatorResources()
+        ->developerResources(false)
+        ->regulatorResources(false)
 );
 ```
+
+The navigation group is read from `filament-chip.navigation.group`.

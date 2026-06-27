@@ -243,7 +243,7 @@ Common issues and solutions for the Filament Tax plugin.
 
 1. Enable settings in plugin:
    ```php
-   FilamentTaxPlugin::make()->settings(true);
+   FilamentTaxPlugin::make()->settingsPage(true);
    ```
 
 2. Check route registration:
@@ -333,13 +333,7 @@ Bulk write handlers revalidate each selected record with `OwnerWriteGuard::findO
    }
    ```
 
-3. Disable table polling:
-   ```php
-   // config/filament-tax.php
-   'tables' => [
-       'polling' => false,
-   ],
-   ```
+3. Disable expensive resources or widgets for panels that do not need them.
 
 ### Widget Queries Slow
 
@@ -378,7 +372,7 @@ Bulk write handlers revalidate each selected record with `OwnerWriteGuard::findO
    
    // StaffPanel - limited
    FilamentTaxPlugin::make()
-       ->settings(false)
+       ->settingsPage(false)
        ->widgets(false);
    
    // CustomerPanel - none

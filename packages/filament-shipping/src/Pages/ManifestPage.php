@@ -43,8 +43,6 @@ class ManifestPage extends Page implements HasTable
 
     protected static ?string $slug = 'shipping-manifests';
 
-    protected static ?int $navigationSort = 5;
-
     public static function getNavigationLabel(): string
     {
         return 'Manifests';
@@ -52,7 +50,12 @@ class ManifestPage extends Page implements HasTable
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return 'Shipping';
+        return config('filament-shipping.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-shipping.pages.navigation_sort.manifest');
     }
 
     public function getTitle(): string

@@ -29,14 +29,19 @@ class AnalyticsDashboardPage extends Page
 
     protected static ?string $slug = 'chip/analytics';
 
-    protected static ?int $navigationSort = 99;
-
     /** @var view-string */
     protected string $view = 'filament-chip::pages.analytics-dashboard';
 
     public static function getNavigationGroup(): ?string
     {
         return config('filament-chip.navigation.group', 'Payments');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-chip.pages.navigation_sort.analytics_dashboard');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function shouldRegisterNavigation(): bool

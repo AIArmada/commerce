@@ -25,11 +25,14 @@ class ReturnAuthorizationResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedArrowUturnLeft;
 
-    protected static ?int $navigationSort = 3;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-shipping.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-shipping.resources.navigation_sort.returns');
     }
 
     protected static ?string $navigationLabel = 'Returns';

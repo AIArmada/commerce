@@ -331,7 +331,7 @@ class ViewOrder extends ViewRecord
 
                     return $user ? Gate::forUser($user)->allows('view', $record) : false;
                 })
-                ->visible(fn (Order $record) => $record->isPaid()),
+                ->visible(fn (Order $record) => (bool) config('filament-orders.features.enable_invoice_download', true) && $record->isPaid()),
         ];
     }
 

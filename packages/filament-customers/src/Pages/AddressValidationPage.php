@@ -23,11 +23,16 @@ class AddressValidationPage extends Page
 
     protected static ?string $slug = 'address-validation';
 
-    protected static ?int $navigationSort = 100;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-customers.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-customers.pages.navigation_sort.address_validation');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function getNavigationLabel(): string

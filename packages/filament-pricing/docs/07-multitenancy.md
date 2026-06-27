@@ -90,18 +90,13 @@ private function resolveOwner(): ?Model
     return OwnerContext::resolve();
 }
 
-private function scopeQueryForOwner(
-    string $modelClass, 
-    Builder $query, 
-    ?Model $owner
-): Builder {
-    $model = new $modelClass;
-
-    if (method_exists($model, 'scopeForOwner')) {
-        return $model->scopeForOwner($query, $owner);
-    }
-
-    return $query;
+private function scopeQueryForOwner(Builder $query, ?Model $owner): Builder
+{
+    return OwnerQuery::applyToEloquentBuilder(
+        $query,
+        $owner,
+        (bool) config('products.features.owner.include_global', false),
+    );
 }
 ```
 

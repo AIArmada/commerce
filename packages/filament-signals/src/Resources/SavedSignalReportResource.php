@@ -21,13 +21,11 @@ final class SavedSignalReportResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bookmark-square';
 
-    protected static ?int $navigationSort = 32;
-
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['trackedProperty', 'segment']);
+        return SavedSignalReport::query()->forOwner()->with(['trackedProperty', 'segment']);
     }
 
     public static function getNavigationGroup(): string | UnitEnum | null

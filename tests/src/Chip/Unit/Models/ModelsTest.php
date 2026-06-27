@@ -38,9 +38,9 @@ describe('ChipModel base class', function (): void {
         expect($webhook->getTable())->toBe('webhook_calls');
     });
 
-    it('uses guarded property', function (): void {
+    it('guards owner tuple on base models', function (): void {
         $purchase = new Purchase;
-        expect($purchase->getGuarded())->toBe([]);
+        expect($purchase->getGuarded())->toBe(['owner_type', 'owner_id']);
     });
 
     it('has owner relationship', function (): void {
@@ -131,9 +131,27 @@ describe('ChipIntegerModel base class', function (): void {
 });
 
 describe('Purchase model', function (): void {
-    it('has fillable attributes', function (): void {
+    it('protects owner status and amount fields from mass assignment', function (): void {
         $purchase = new Purchase;
-        expect($purchase->getGuarded())->toBe([]);
+        $purchase->fill([
+            'type' => 'purchase',
+            'reference' => 'order-123',
+            'owner_type' => 'App\\Models\\User',
+            'owner_id' => 'user-123',
+            'status' => 'paid',
+            'total_minor' => 10000,
+            'refund_amount_minor' => 500,
+            'refundable_amount' => 9500,
+        ]);
+
+        expect($purchase->type)->toBe('purchase')
+            ->and($purchase->reference)->toBe('order-123')
+            ->and($purchase->owner_type)->toBeNull()
+            ->and($purchase->owner_id)->toBeNull()
+            ->and($purchase->status)->toBeNull()
+            ->and($purchase->total_minor)->toBeNull()
+            ->and($purchase->refund_amount_minor)->toBeNull()
+            ->and($purchase->refundable_amount)->toBeNull();
     });
 
     it('has payments relationship', function (): void {
@@ -215,6 +233,17 @@ describe('Purchase model', function (): void {
             ->and($timeline[0]['status'])->toBe('created')
             ->and($timeline[1]['status'])->toBe('paid');
     });
+
+    it('casts eloquent timestamps to immutable dates', function (): void {
+        $purchase = new Purchase;
+        $purchase->forceFill([
+            'created_at' => '2026-06-27 10:00:00',
+            'updated_at' => '2026-06-27 11:00:00',
+        ]);
+
+        expect($purchase->created_at)->toBeInstanceOf(CarbonImmutable::class)
+            ->and($purchase->updated_at)->toBeInstanceOf(CarbonImmutable::class);
+    });
 });
 
 describe('Client model', function (): void {
@@ -253,6 +282,30 @@ describe('Client model', function (): void {
 });
 
 describe('Payment model', function (): void {
+    it('protects owner and amount fields from mass assignment', function (): void {
+        $payment = new Payment([
+            'purchase_id' => 'purchase-123',
+            'payment_type' => 'purchase',
+            'currency' => 'MYR',
+            'owner_type' => 'App\\Models\\User',
+            'owner_id' => 'user-123',
+            'amount' => 10000,
+            'net_amount' => 9700,
+            'fee_amount' => 300,
+            'pending_amount' => 50,
+        ]);
+
+        expect($payment->purchase_id)->toBe('purchase-123')
+            ->and($payment->payment_type)->toBe('purchase')
+            ->and($payment->currency)->toBe('MYR')
+            ->and($payment->owner_type)->toBeNull()
+            ->and($payment->owner_id)->toBeNull()
+            ->and($payment->amount)->toBeNull()
+            ->and($payment->net_amount)->toBeNull()
+            ->and($payment->fee_amount)->toBeNull()
+            ->and($payment->pending_amount)->toBeNull();
+    });
+
     it('has purchase relationship', function (): void {
         $payment = new Payment;
         expect($payment->purchase())->toBeInstanceOf(BelongsTo::class);
@@ -334,6 +387,24 @@ describe('Webhook model', function (): void {
         expect($casts['headers'])->toBe('array');
         expect($casts['verified'])->toBe('boolean');
         expect($casts['processed'])->toBe('boolean');
+    });
+
+    it('protects owner and processing state from mass assignment', function (): void {
+        $webhook = new Webhook([
+            'event' => 'purchase.paid',
+            'payload' => ['id' => 'purchase_123'],
+            'owner_type' => 'App\\Models\\User',
+            'owner_id' => 'user-123',
+            'status' => 'processed',
+            'processed_at' => now(),
+        ]);
+
+        expect($webhook->event)->toBe('purchase.paid')
+            ->and($webhook->payload)->toBe(['id' => 'purchase_123'])
+            ->and($webhook->owner_type)->toBeNull()
+            ->and($webhook->owner_id)->toBeNull()
+            ->and($webhook->status)->toBeNull()
+            ->and($webhook->processed_at)->toBeNull();
     });
 });
 

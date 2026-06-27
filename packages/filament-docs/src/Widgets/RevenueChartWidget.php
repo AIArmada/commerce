@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Paid;
@@ -30,7 +31,7 @@ final class RevenueChartWidget extends ChartWidget
             $labels[] = $date->format('M d');
         }
 
-        $totalsByDate = Doc::query()
+        $totalsByDate = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
             ->where('status', DocStatus::normalize(Paid::class))
             ->whereBetween('paid_at', [$startDate, $today->endOfDay()])
             ->selectRaw('DATE(paid_at) as paid_date, SUM(total) as total_sum')

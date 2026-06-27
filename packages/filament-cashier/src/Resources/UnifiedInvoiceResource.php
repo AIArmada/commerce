@@ -34,8 +34,6 @@ final class UnifiedInvoiceResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
-    protected static ?int $navigationSort = 20;
-
     public static function getNavigationSort(): ?int
     {
         return (int) config('filament-cashier.resources.navigation_sort.invoices', 20);

@@ -49,7 +49,9 @@ php artisan vendor:publish --tag=filament-promotions-config
 ```php
 // config/filament-promotions.php
 return [
-    'navigation_group' => 'Marketing',
+    'navigation' => [
+        'group' => 'Marketing'
+    ],
 
     'resources' => [
         'navigation_sort' => [

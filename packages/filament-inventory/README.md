@@ -95,7 +95,9 @@ Table of items below reorder point:
 ```php
 // config/filament-inventory.php
 return [
-    'navigation_group' => 'Inventory',
+    'navigation' => [
+        'group' => 'Inventory',
+    ],
     
     'resources' => [
         'navigation_sort' => [
@@ -105,8 +107,6 @@ return [
             'allocations' => 40,
         ],
     ],
-    
-    'polling_interval' => '45s',
 ];
 ```
 

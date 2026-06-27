@@ -4,11 +4,39 @@ title: Configuration
 
 # Configuration
 
-`filament-customers` does not publish a dedicated package config file.
+`filament-customers` publishes `config/filament-customers.php` for navigation and optional page toggles.
+
+## Package Config
+
+```php
+return [
+    'navigation' => [
+        'group' => 'CRM',
+    ],
+    'features' => [
+        'merge_customers' => true,
+        'segment_rebuild' => false,
+        'address_validation' => false,
+    ],
+    'resources' => [
+        'navigation_sort' => [
+            'customers' => 1,
+            'segments' => 2,
+        ],
+    ],
+    'pages' => [
+        'navigation_sort' => [
+            'merge_customers' => 10,
+            'segment_rebuild' => 99,
+            'address_validation' => 100,
+        ],
+    ],
+];
+```
 
 ## Where configuration happens
 
-This package is configured through three surfaces:
+This package is configured through these surfaces:
 
 ### Panel plugin registration
 
@@ -63,11 +91,15 @@ That means:
 - submitted IDs are revalidated server-side before sync or mutation,
 - bulk actions authorize records individually.
 
-## No published config tag
+## Publishing Config
 
-Because this package has no dedicated config file, there is no `vendor:publish` step for plugin-specific configuration.
+Publish the package config when you need to customize navigation or optional page availability:
 
-If you need different navigation, forms, tables, or widgets, extend the resources/widgets in your application or replace them at the panel level.
+```bash
+php artisan vendor:publish --tag=filament-customers-config
+```
+
+If you need different forms, tables, or widgets, extend the resources/widgets in your application or replace them at the panel level.
 
 ## Read next
 

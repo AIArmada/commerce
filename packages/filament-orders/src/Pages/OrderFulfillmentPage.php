@@ -17,11 +17,17 @@ class OrderFulfillmentPage extends ListRecords
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-cube';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Sales';
-
-    protected static ?int $navigationSort = 5;
-
     protected static ?string $title = 'Fulfillment';
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-orders.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-orders.pages.navigation_sort.fulfillment');
+    }
 
     public static function getNavigationLabel(): string
     {

@@ -70,9 +70,11 @@ final class StoreWebhookData
     {
         $owner = $this->resolveOwner();
 
-        $purchase = Purchase::updateOrCreate(
-            ['id' => $payload['id']],
+        $purchase = Purchase::query()->find($payload['id']) ?? new Purchase;
+        $purchase->forceFill(
             [
+                'id' => $payload['id'],
+
                 // Core fields
                 'type' => $payload['type'],
                 'created_on' => $payload['created_on'],
@@ -137,6 +139,7 @@ final class StoreWebhookData
                 'created_from_ip' => $payload['created_from_ip'] ?? null,
             ]
         );
+        $purchase->save();
 
         if ($owner !== null && ! $purchase->hasOwner()) {
             $purchase->assignOwner($owner)->save();
@@ -240,8 +243,8 @@ final class StoreWebhookData
             $paymentMatch['owner_id'] = (string) $owner->getKey();
         }
 
-        $payment = Payment::updateOrCreate(
-            $paymentMatch,
+        $payment = Payment::query()->where($paymentMatch)->first() ?? new Payment;
+        $payment->forceFill(
             array_merge($paymentId !== null ? ['id' => $paymentId] : [], [
                 'purchase_id' => $purchaseId,
                 'payment_type' => $paymentData['payment_type'] ?? null,
@@ -259,6 +262,7 @@ final class StoreWebhookData
                 'updated_on' => $payload['updated_on'] ?? null,
             ])
         );
+        $payment->save();
 
         if ($owner !== null && ! $payment->hasOwner()) {
             $payment->assignOwner($owner)->save();

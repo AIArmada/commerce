@@ -96,7 +96,9 @@ The `CartStatsWidget` displays key metrics on your dashboard:
 // config/filament-cart.php
 
 return [
-    'navigation_group' => 'E-Commerce',
+    'navigation' => [
+        'group' => 'E-Commerce'
+    ],
     'polling_interval' => 30,
     'enable_global_conditions' => true,
     'dynamic_rules_factory' => \AIArmada\Cart\Services\BuiltInRulesFactory::class,

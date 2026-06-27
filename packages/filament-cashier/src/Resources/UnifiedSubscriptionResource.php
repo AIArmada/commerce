@@ -39,8 +39,6 @@ final class UnifiedSubscriptionResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
 
-    protected static ?int $navigationSort = 10;
-
     public static function getNavigationSort(): ?int
     {
         return (int) config('filament-cashier.resources.navigation_sort.subscriptions', 10);

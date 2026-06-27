@@ -144,7 +144,9 @@ Customize the navigation group:
 
 ```php
 // config/filament-promotions.php
-'navigation_group' => 'Your Group',
+'navigation' => [
+        'group' => 'Marketing'
+    ],
 ```
 
 Or set to `null` for root navigation.

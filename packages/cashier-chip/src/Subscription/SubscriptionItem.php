@@ -55,11 +55,14 @@ class SubscriptionItem extends Model
     protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
 
     /**
-     * The attributes that are not mass assignable.
-     *
-     * @var array<int, string>
+     * @var list<string>
      */
-    protected $guarded = [];
+    protected $fillable = [
+        'subscription_id',
+        'chip_product',
+        'chip_price',
+        'quantity',
+    ];
 
     #[Override]
     public function getTable(): string
@@ -235,7 +238,7 @@ class SubscriptionItem extends Model
         }
 
         return DB::transaction(function () use ($price, $options): static {
-            $this->fill([
+            $this->forceFill([
                 'chip_product' => $options['product'] ?? $this->chip_product,
                 'chip_price' => $price,
                 'unit_amount' => isset($options['unit_amount']) ? (int) $options['unit_amount'] : $this->unit_amount,

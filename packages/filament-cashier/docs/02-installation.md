@@ -222,6 +222,7 @@ For a customer-facing billing portal, use the `BillingPanelProvider`:
     'brand_name' => 'My App Billing',
     'primary_color' => '#6366f1',
     'auth_guard' => 'web',
+    'login_enabled' => true,
     'features' => [
         'subscriptions' => true,
         'payment_methods' => true,

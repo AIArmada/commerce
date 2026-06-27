@@ -18,14 +18,17 @@ class LiveDashboardPage extends Page
 
     protected static ?string $slug = 'cart-live';
 
-    protected static ?int $navigationSort = 5;
-
     /** @var view-string */
     protected string $view = 'filament-cart::pages.live-dashboard';
 
     public static function getNavigationGroup(): ?string
     {
         return config('filament-cart.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cart.pages.navigation_sort.live_dashboard');
     }
 
     public static function canAccess(): bool

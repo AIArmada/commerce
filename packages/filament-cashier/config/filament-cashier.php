@@ -70,6 +70,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pages
+    |--------------------------------------------------------------------------
+    */
+    'pages' => [
+        'navigation_sort' => [
+            'billing_dashboard' => 0,
+            'gateway_management' => 50,
+            'gateway_setup' => 100,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Currency Conversion
     |--------------------------------------------------------------------------
     */
@@ -94,6 +107,13 @@ return [
         'brand_name' => env('FILAMENT_CASHIER_BRAND_NAME', 'Billing Portal'),
         'primary_color' => env('FILAMENT_CASHIER_PRIMARY_COLOR', '#6366f1'),
         'auth_guard' => 'web',
+        'login_enabled' => true,
+        'navigation_sort' => [
+            'overview' => 0,
+            'subscriptions' => 1,
+            'payment_methods' => 2,
+            'invoices' => 3,
+        ],
         'features' => [
             'subscriptions' => true,
             'payment_methods' => true,

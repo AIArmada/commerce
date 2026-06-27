@@ -5,11 +5,12 @@
 | Field | Value |
 |---|---|
 | Verification date | 2026-06-27 |
+| Implementation status date | 2026-06-28 |
 | Target baseline | Current working tree, not the historical audit commit |
-| Current HEAD | `4af108305` |
+| Current HEAD | `08d2be19c` |
 | Source file | `docs/audit/FINDINGS.md` |
 | Historical audit commit in source | `7d1dc95fa` |
-| Planned mutation for this pass | Create this file only |
+| Mutation scope | Verification pass created this file only; implementation pass changed source, tests, package docs, and this status ledger |
 | Existing worktree changes preserved | `ANCHORED_SUMMARY.md` deleted; `docs/audit/` untracked |
 
 ## Verification Rules Applied
@@ -239,60 +240,54 @@ The source mixes explicit severities, section-level severities, and roadmap phas
 - `FraudDetectionService` is not currently a method-not-found crash because the present `FraudRule` contract requires both methods.
 - `DocShareLink::$plainToken` is public and should be hardened, but normal Eloquent JSON leakage was not proven.
 
-## Remediation Plan
+## Implementation Status
 
-### P0: Unblock Verification And CI
+The implementation pass fixed all P0-P3 verified defects that were safe to change under the monorepo rules, plus the concrete P4 consistency items that did not require product approval or a breaking public API decision. Remaining rows are settled as false/stale, unverified runtime claims, or deferred architecture/product decisions.
 
-1. Fix `FixedOwnerResolver` PSR-4 path without changing imports.
-2. Run `composer dump-autoload`.
-3. Run representative affected suites, for example `./vendor/bin/pest --parallel tests/src/CommerceSupport tests/src/Chip tests/src/FilamentPromotions`.
-4. Record any remaining suite blockers before source fixes depend on test feedback.
+| Bucket | Status | Completed or settled rows |
+|---|---|---|
+| P0 | Done | `I1`, `R7`; moved shared test owner fixtures to their PSR-4 paths and regenerated autoloads. |
+| P1 | Done | `B1`, `B2`, `B3`, `B4`, true portions of `B5`, `B13`, `S1`-`S6`, `S9`, `S10`, `R1`-`R7`, `R11`, `R12`, `R14`, `R17`, `R18`. |
+| P2 | Done | `B6a`, `B9`, `B12`, `B14`, `OS3`, `R13`, `R16`, `R20`, and the verified `filament-pricing` owner-scoping portion of `R42`. |
+| P3 | Done | `NAV1`-`NAV5`, `DOCN1`-`DOCN9`, true portions of `DOCP1`-`DOCP3`, true portion of `DEP1`, `CFG1`, `CFG2`, `CQ7`-`CQ9`, `R21`, `R24`, `R26`, `R30`, `R33`. |
+| P4 concrete | Done | `I3a`, `I3b`, `I3c`, `CQ6`, `CQ11`, `CQ14`, `CQ16`, `CQ17`, `CQ23`, `R31` verified subset, `R37`. |
+| False/stale | Settled no fix | `B11`, `S7`, `S8`, `Z1`-`Z11`, `I4`, `DOC1`, `DOC2`, `CFG3`, `CQ13`, `CQ30`, `R8`-`R10`, `R15`, `R22`, `R32`, `R43`; partial stale portions remain documented in Corrections. |
+| Runtime-unverified | Settled pending reproduction | `B6b`, `B13b`, `A6`, `R19`; no source fix should be made until a failing test or runtime proof exists. |
+| Product/API/dependency decisions | Deferred | `B7` split-interface idea, `I2`, exception hierarchy rows, `DEP2`, `CQ1`-`CQ5`, `CQ10`, `CQ12`, `CQ15`, `CQ18`-`CQ22`, `CQ24`-`CQ29`, `A1`-`A5`, `A7`, `A8` duplicate of fixed `OS3`, `CS1`-`CS7`, `R23`, `R25`, `R27`-`R29`, `R34`-`R36`, `R38`-`R41`. |
 
-### P1: Critical Security, Tenant Isolation, And Payment/Webhook Behavior
+### Completed Fix Notes
 
-1. Replace payment-package `$guarded = []` with explicit `$fillable`; protect owner, status, amount, and gateway identifier fields.
-2. Harden `chip` webhook/test classification defaults and `Webhook` mass assignment.
-3. Add explicit owner-safe queries to `filament-affiliates`, `filament-docs`, `filament-signals`, and `promotions` listeners using `forOwner`, `OwnerQuery`, `OwnerWriteGuard`, or explicit global context.
-4. Fix `promotions` usage count and `affiliate-network` archive statuses.
-5. Fix `authz` impersonation guard and `clearCache()`.
-6. Fix `docs` plaintext share token handling.
-7. Separate cashier gateway not-found responses from auth/network/rate-limit failures.
+- Payment model mass assignment was changed from `$guarded = []` to explicit `$fillable` in CHIP, Cashier CHIP, and Cashier records, with mass-assignment regression tests.
+- Owner-scope fixes use existing commerce-support primitives and package patterns rather than database constraints or UI-only filtering.
+- Filament navigation violations were corrected by replacing static navigation properties with config-backed `getNavigationGroup()` / `getNavigationSort()` methods and nested config keys.
+- Public behavior/config changes were synced to owning package docs in the same pass.
+- Documentation-only creations such as package-wide `CHANGELOG.md` files were not created because they were explicitly out of scope and require product approval.
 
-### P2: Behavioral Bugs, State Integrity, And Performance
+### Deferred Fix Notes
 
-1. Add `DocPaymentStatus` or central payment-status validation.
-2. Fix `authz` super-admin email column behavior or document the `email` requirement.
-3. Cache `cashier` owner-scope schema column checks after adding tests.
-4. Add configurable cashier payment-operation rate limiting/idempotency.
-5. Simplify `AffiliateCommissionRule` enum usage after commission calculation tests.
-6. Verify and fix `filament-growth`, `filament-authz`, and `filament-pricing` owner-scoping concerns where tests prove gaps.
+- `DEP2` is real, but changing `aiarmada/cashier` from optional Stripe support to a hard `laravel/cashier` dependency would change package install semantics. It is deferred pending an approved dependency-boundary decision: either require Laravel Cashier or isolate Stripe adapter classes from standalone autoload.
+- Exception base classes, `final` model changes, enum conversions, duplicate public API cleanup, legacy JNT command removal, and checkout dependency reshaping are breaking or architecture-wide changes. They need a separate pass with explicit compatibility decisions and focused tests.
+- `CQ10` is a public class removal/integration decision for `filament-addressing`; no removal was made without confirming downstream usage.
+- Products/customers `$guarded = ['id']` standardization is valid consistency work, but it is outside the critical payment/owner-scope fix set and needs model-by-model mass-assignment tests.
 
-### P3: Config, Composer, Docs, Navigation, And Integration Gaps
+## Verification Run
 
-1. Add or remove the `cashier-chip` facade alias.
-2. Resolve tax composer dependency mismatch, including whether every listed package is truly required.
-3. Add missing `filament-customers` and `filament-cashier` config keys or remove their reads.
-4. Fix Filament static navigation violations with config-backed getters.
-5. Sync stale Filament navigation docs and phantom config docs.
-6. Update `filament-events` docs/registration for `EventChangeLogResource` and `EventRegistrationParticipantResource`.
-7. Update chip datetime casts where lifecycle timestamps should be immutable.
+### Static Checks
 
-### P4: Architecture And Consistency Improvements
-
-1. Standardize model fillability outside payment packages only with targeted mass-assignment tests.
-2. Resolve duplicate `cashier` Billable/CurrencyFormatter APIs with a BC decision.
-3. Extract affiliate balance lifecycle logic to an Action after tests lock current behavior.
-4. Add exception bases only where packages actually throw package-specific exceptions.
-5. Remove or integrate orphaned Filament/Event/JNT code paths only when no public API depends on them.
-6. Consider enum standardization, `final` models, `down()` cleanup, package-local test configs, and changelogs as separate approved cleanup/product work.
-
-## Later Fix Verification Commands
-
-- `./vendor/bin/pest --parallel tests/src/<PackageOrFeature>`
-- `./vendor/bin/phpstan analyse packages/<pkg>/src --level=6`
-- `./vendor/bin/pint <changed-files>`
+- `composer dump-autoload`
+- `git diff --check`
 - `rg -n -- "constrained\\(|cascadeOnDelete\\(" packages/*/database`
-- `rg "static.*\\$navigationGroup" packages/filament-*/src`
-- `rg "'navigation_group'" packages/filament-*/config packages/filament-*/docs`
+- `rg -n "protected static \\?int \\$navigationSort|protected static .*\\$navigationGroup|static .*\\$navigationGroup" packages/filament-*/src`
+- `rg -n "group' => ,|navigation_group|FILAMENT_EVENTS_NAVIGATION_GROUP|table_poll_interval|manifest_page|->settings\\(" packages/filament-*`
+- `rg -n "\\$guarded\\s*=\\s*\\[\\]" packages/chip/src packages/cashier-chip/src packages/cashier/src packages/vouchers/src packages/growth/src`
+- `composer validate packages/feedback/composer.json --strict`
+- `composer validate packages/shipping/composer.json --strict`
+- `composer validate packages/tax/composer.json --strict`
 
-No source tests were run for this pass because the only mutation is this verification/planning document.
+### PHPStan Level 6
+
+- Passed for changed source packages: `affiliate-network`, `affiliates`, `authz`, `cashier`, `cashier-chip`, `chip`, `docs`, `growth`, `promotions`, `references`, `shipping`, `vouchers`, and changed `filament-*` packages touched by navigation/config/owner fixes.
+
+### Focused Pest Runs
+
+- Passed focused tests for promotions listeners, affiliate-network archive/DNS behavior, CHIP events/models/webhooks, Cashier gateway/mass-assignment/rate-limiter/schema cache behavior, Cashier CHIP facade/mass-assignment behavior, Authz runtime behavior, Docs payment/share-token/rendering behavior, Filament owner-scope/navigation/config changes, Filament Orders invoice config, Tax settings/data tests, Vouchers auditing/cart metadata behavior, Growth owner mass-assignment protection, References helper typing, Shipping manager behavior, and Filament Commerce Support navigation management.

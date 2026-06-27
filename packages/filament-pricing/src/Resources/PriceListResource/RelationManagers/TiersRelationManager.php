@@ -104,17 +104,17 @@ final class TiersRelationManager extends RelationManager
 
                                 $owner = $this->resolveOwner();
 
-                                if (! is_string($type) || ! class_exists($type) || ! is_a($type, Model::class, true)) {
+                                if (! in_array($type, [Product::class, Variant::class], true)) {
                                     return null;
                                 }
 
                                 /** @var Builder<Model> $query */
                                 $query = $type::query();
-
-                                $model = new $type;
-                                if (method_exists($model, 'scopeForOwner')) {
-                                    $query = $model->scopeForOwner($query, $owner);
-                                }
+                                $query = OwnerQuery::applyToEloquentBuilder(
+                                    $query,
+                                    $owner,
+                                    (bool) config('products.features.owner.include_global', false)
+                                );
 
                                 $record = $query->whereKey($value)->first();
 

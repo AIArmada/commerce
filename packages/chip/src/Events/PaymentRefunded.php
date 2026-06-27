@@ -84,6 +84,6 @@ final class PaymentRefunded
      */
     public function isTest(): bool
     {
-        return $this->payment?->isTest() ?? true;
+        return $this->payment?->isTest() ?? false;
     }
 }

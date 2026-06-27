@@ -24,11 +24,14 @@ final class ReactionResource extends Resource
 {
     protected static ?string $model = Reaction::class;
 
-    protected static ?int $navigationSort = 5;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-engagement.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-engagement.resources.navigation_sort.reaction');
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-star';

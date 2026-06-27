@@ -22,8 +22,6 @@ class PortalConversions extends PortalPage implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static ?int $navigationSort = 2;
-
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.conversions';
 

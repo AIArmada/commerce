@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Widgets;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\Cancelled;
 use AIArmada\Docs\States\DocStatus;
@@ -24,7 +25,7 @@ final class StatusBreakdownWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $docs = Doc::query();
+        $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false);
 
         /** @var array<int, class-string<DocStatus>> $statuses */
         $statuses = [

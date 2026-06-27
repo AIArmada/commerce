@@ -21,8 +21,6 @@ final class SignalAlertLogResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell';
 
-    protected static ?int $navigationSort = 34;
-
     /**
      * @return Builder<SignalAlertLog>
      */

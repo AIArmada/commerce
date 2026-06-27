@@ -20,6 +20,13 @@ return [
         ],
     ],
 
+    'pages' => [
+        'navigation_sort' => [
+            'stacking_configuration' => 100,
+            'targeting_configuration' => 101,
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Tables

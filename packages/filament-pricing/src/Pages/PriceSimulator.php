@@ -41,11 +41,16 @@ final class PriceSimulator extends Page
     /** @var view-string */
     protected string $view = 'filament-pricing::pages.price-simulator';
 
-    protected static ?int $navigationSort = 99;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-pricing.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-pricing.pages.navigation_sort.price_simulator');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     protected static ?string $title = 'Price Simulator';

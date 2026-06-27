@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Schema;
 
 final class OwnerScopedQuery
 {
+    /**
+     * @var array<string, bool>
+     */
+    private static array $columnExistsCache = [];
+
     public static function apply(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
     {
         $owner ??= self::resolveOwner();
@@ -69,8 +74,9 @@ final class OwnerScopedQuery
     {
         $table = $model->getTable();
         $connection = $model->getConnectionName() ?? config('database.default');
+        $cacheKey = "{$connection}:{$table}:{$column}";
 
-        return Schema::connection($connection)->hasColumn($table, $column);
+        return self::$columnExistsCache[$cacheKey] ??= Schema::connection($connection)->hasColumn($table, $column);
     }
 
     private static function applyViaBillableIdSubquery(Builder $query, string $foreignKey, Model $owner, bool $includeGlobal): Builder

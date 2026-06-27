@@ -19,7 +19,7 @@ describe('CleanWebhooksCommand', function (): void {
 
     it('shows count and does not delete in dry-run mode', function (): void {
         // Create old webhook
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Test Webhook',
             'event' => 'purchase.paid',
             'events' => ['purchase.paid'],
@@ -41,7 +41,7 @@ describe('CleanWebhooksCommand', function (): void {
 
     it('deletes webhooks when confirmed', function (): void {
         // Create old webhook
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Test Webhook',
             'event' => 'purchase.paid',
             'events' => ['purchase.paid'],
@@ -63,7 +63,7 @@ describe('CleanWebhooksCommand', function (): void {
     });
 
     it('cancels when user declines confirmation', function (): void {
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Test Webhook',
             'event' => 'purchase.paid',
             'events' => ['purchase.paid'],
@@ -84,7 +84,7 @@ describe('CleanWebhooksCommand', function (): void {
     });
 
     it('respects custom days option', function (): void {
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Test Webhook',
             'event' => 'purchase.paid',
             'events' => ['purchase.paid'],
@@ -108,7 +108,7 @@ describe('CleanWebhooksCommand', function (): void {
     });
 
     it('respects status all option', function (): void {
-        Webhook::create([
+        Webhook::forceCreate([
             'title' => 'Test Webhook',
             'event' => 'purchase.paid',
             'events' => ['purchase.paid'],
@@ -217,7 +217,7 @@ describe('RetryWebhooksCommand', function (): void {
         ]);
 
         OwnerContext::withOwner($ownerA, function (): void {
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Owner A webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],
@@ -230,7 +230,7 @@ describe('RetryWebhooksCommand', function (): void {
         });
 
         OwnerContext::withOwner($ownerB, function (): void {
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Owner B webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],

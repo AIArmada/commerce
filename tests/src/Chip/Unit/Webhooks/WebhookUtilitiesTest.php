@@ -328,7 +328,7 @@ describe('WebhookLogger', function (): void {
         $idempotencyKey = 'scoped-duplicate-key';
 
         OwnerContext::withOwner($ownerA, function () use ($idempotencyKey): void {
-            Webhook::create([
+            Webhook::forceCreate([
                 'title' => 'Owner A webhook',
                 'event' => 'purchase.paid',
                 'events' => ['purchase.paid'],

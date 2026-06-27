@@ -13,6 +13,7 @@ final class FilamentCustomersServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-customers')
+            ->hasConfigFile('filament-customers')
             ->hasViews('filament-customers');
     }
 }

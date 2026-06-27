@@ -28,11 +28,16 @@ final class ManageTaxSettings extends Page
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-receipt-percent';
 
-    protected static ?int $navigationSort = 11;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-tax.navigation.settings_group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-tax.pages.navigation_sort.settings');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     /** @var view-string */

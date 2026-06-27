@@ -33,11 +33,16 @@ final class EventResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-calendar';
 
-    protected static ?int $navigationSort = 1;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-events.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-events.resources.navigation_sort.event');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     /**

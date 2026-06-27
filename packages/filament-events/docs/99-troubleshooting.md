@@ -32,8 +32,11 @@ Ensure the plugin is registered in your panel configuration:
 
 ### Custom navigation group not working
 
-Set the navigation group via config or the plugin's fluent method:
+Set the navigation group via config:
 
 ```php
-FilamentEventsPlugin::make()->navigationGroup('My Events');
+// config/filament-events.php
+'navigation' => [
+    'group' => 'My Events',
+],
 ```

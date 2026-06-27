@@ -24,11 +24,14 @@ final class ResponseResource extends Resource
 {
     protected static ?string $model = Response::class;
 
-    protected static ?int $navigationSort = 4;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-engagement.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-engagement.resources.navigation_sort.response');
     }
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-hand-thumb-up';

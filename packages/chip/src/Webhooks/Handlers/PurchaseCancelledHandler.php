@@ -24,9 +24,9 @@ class PurchaseCancelledHandler implements WebhookHandler
         }
 
         // Update local status
-        $localPurchase->update([
+        $localPurchase->forceFill([
             'status' => PurchaseStatus::CANCELLED,
-        ]);
+        ])->save();
 
         // Dispatch Laravel event
         PurchaseCancelled::dispatch(

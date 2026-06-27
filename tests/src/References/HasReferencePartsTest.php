@@ -27,10 +27,12 @@ beforeEach(function (): void {
 test('can set and get reference parts', function (): void {
     $this->model->setPart(ReferencePartType::Jilid, '1');
 
-    $part = $this->model->getPart(ReferencePartType::Jilid->value);
+    $part = $this->model->getPart(ReferencePartType::Jilid);
     expect($part)->toBeArray();
     expect($part['type'])->toBe('jilid');
     expect($part['value'])->toBe('1');
+
+    expect($this->model->getPart(ReferencePartType::Jilid->value))->toBe($part);
 });
 
 test('can remove reference parts', function (): void {

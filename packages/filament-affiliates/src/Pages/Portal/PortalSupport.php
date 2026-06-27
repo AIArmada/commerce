@@ -17,8 +17,6 @@ class PortalSupport extends PortalPage
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedQuestionMarkCircle;
 
-    protected static ?int $navigationSort = 5;
-
     /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.support';
 

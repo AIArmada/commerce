@@ -103,6 +103,6 @@ final class CartResource extends Resource
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-cart.resources.navigation_sort.carts', 30);
+        return (int) config('filament-cart.resources.navigation_sort.carts', 30);
     }
 }

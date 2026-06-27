@@ -363,7 +363,7 @@ class ImpersonateManager
         }
 
         /** @var SessionGuard $guard */
-        $guard = $this->app['auth']->guard();
+        $guard = $this->app['auth']->guard($guardName);
 
         $hashedPassword = $guard->hashPasswordForCookie($passwordHash);
 

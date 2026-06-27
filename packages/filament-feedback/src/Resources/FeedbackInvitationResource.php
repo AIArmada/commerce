@@ -16,11 +16,16 @@ final class FeedbackInvitationResource extends Resource
 {
     protected static ?string $model = FeedbackInvitation::class;
 
-    protected static ?int $navigationSort = 3;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-feedback.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-feedback.resources.navigation_sort.feedback_invitation');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function getNavigationIcon(): string

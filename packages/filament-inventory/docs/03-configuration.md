@@ -17,7 +17,9 @@ return [
     | Navigation
     |--------------------------------------------------------------------------
     */
-    'navigation_group' => 'Inventory',
+    'navigation' => [
+        'group' => 'Inventory',
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -94,7 +96,9 @@ return [
 ### Navigation Group
 
 ```php
-'navigation_group' => 'Inventory',
+'navigation' => [
+    'group' => 'Inventory',
+],
 ```
 
 Groups all inventory resources under this navigation label. Set to `null` to place resources at the top level.

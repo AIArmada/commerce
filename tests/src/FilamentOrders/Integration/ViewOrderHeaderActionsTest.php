@@ -120,6 +120,41 @@ it('evaluates ViewOrder header action authorization + visibility closures', func
     expect($confirmPayment->record($order)->isVisible())->toBeTrue();
 });
 
+it('hides invoice downloads when the feature is disabled', function (): void {
+    $owner = TestOwner::query()->create(['name' => 'Owner A']);
+
+    makeAuthedUser($owner);
+
+    $order = Order::query()->create([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+        'status' => Processing::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+        'paid_at' => now(),
+    ]);
+
+    $page = new class extends ViewOrder
+    {
+        public function headerActions(): array
+        {
+            return $this->getHeaderActions();
+        }
+    };
+
+    /** @var Action $downloadInvoice */
+    $downloadInvoice = collect($page->headerActions())->firstWhere(fn ($action) => $action->getName() === 'download_invoice');
+
+    expect($downloadInvoice)->not->toBeNull();
+
+    config()->set('filament-orders.features.enable_invoice_download', true);
+    expect($downloadInvoice->record($order)->isVisible())->toBeTrue();
+
+    config()->set('filament-orders.features.enable_invoice_download', false);
+    expect($downloadInvoice->record($order)->isVisible())->toBeFalse();
+});
+
 it('evaluates status-dependent header actions for processing orders', function (): void {
     $owner = TestOwner::query()->create(['name' => 'Owner A']);
 

@@ -18,7 +18,9 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'navigation_group' => 'E-commerce',
+    'navigation' => [
+        'group' => 'E-commerce',
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -75,6 +77,20 @@ return [
             'conversions' => true,
             'payouts' => true,
             'support_compliance' => true,
+            'creatives' => true,
+            'vouchers' => true,
+        ],
+        'navigation_sort' => [
+            'dashboard' => -2,
+            'profile' => -1,
+            'links' => 1,
+            'programs' => 2,
+            'conversions' => 2,
+            'creatives' => 2,
+            'downlines' => 3,
+            'payouts' => 3,
+            'vouchers' => 3,
+            'support' => 5,
         ],
     ],
 
@@ -130,7 +146,9 @@ return [
 Set the navigation group for all affiliate resources:
 
 ```php
-'navigation_group' => 'Sales & Marketing',
+'navigation' => [
+    'group' => 'E-commerce',
+],
 ```
 
 ### Widget Settings
@@ -239,8 +257,30 @@ Control navigation order for non-resource pages:
 'pages' => [
     'navigation_sort' => [
         'reports' => 10,
+        'commission_settings' => 5,
         'payout_batch' => 12,
         'fraud_review' => 15,
+    ],
+],
+```
+
+### Portal Navigation Sort
+
+Control affiliate portal page ordering:
+
+```php
+'portal' => [
+    'navigation_sort' => [
+        'dashboard' => -2,
+        'profile' => -1,
+        'links' => 1,
+        'programs' => 2,
+        'conversions' => 2,
+        'creatives' => 2,
+        'downlines' => 3,
+        'payouts' => 3,
+        'vouchers' => 3,
+        'support' => 5,
     ],
 ],
 ```

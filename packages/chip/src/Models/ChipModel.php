@@ -39,7 +39,10 @@ abstract class ChipModel extends Model implements Auditable
 
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $guarded = [
+        'owner_type',
+        'owner_id',
+    ];
 
     abstract protected static function tableSuffix(): string;
 

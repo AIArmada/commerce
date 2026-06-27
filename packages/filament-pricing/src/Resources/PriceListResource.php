@@ -25,11 +25,16 @@ final class PriceListResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-currency-dollar';
 
-    protected static ?int $navigationSort = 1;
-
     public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-pricing.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-pricing.resources.navigation_sort.price_lists');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     protected static ?string $recordTitleAttribute = 'name';

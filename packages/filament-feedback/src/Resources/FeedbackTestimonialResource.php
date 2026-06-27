@@ -21,11 +21,16 @@ final class FeedbackTestimonialResource extends Resource
 {
     protected static ?string $model = FeedbackTestimonial::class;
 
-    protected static ?int $navigationSort = 5;
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-feedback.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        $sort = config('filament-feedback.resources.navigation_sort.feedback_testimonial');
+
+        return is_numeric($sort) ? (int) $sort : null;
     }
 
     public static function getNavigationIcon(): string

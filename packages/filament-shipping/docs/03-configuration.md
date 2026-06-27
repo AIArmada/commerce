@@ -10,19 +10,26 @@ All configuration is in `config/filament-shipping.php`.
 
 ```php
 'navigation' => [
-    // Navigation group name
     'group' => 'Shipping',
-    
-    // Sort order within navigation
     'sort' => 50,
 ],
-```
 
-## Table Settings
+'pages' => [
+    'navigation_sort' => [
+        'dashboard' => 0,
+        'fulfillment_queue' => 1,
+        'manifest' => 5,
+    ],
+],
 
-```php
-// Polling interval for auto-refresh (e.g., '30s', '1m', null to disable)
-'table_poll_interval' => '30s',
+'resources' => [
+    'navigation_sort' => [
+        'shipments' => 1,
+        'zones' => 2,
+        'rates' => 3,
+        'returns' => 3,
+    ],
+],
 ```
 
 ## Shipping Methods
@@ -60,14 +67,7 @@ Toggle features on/off:
 
 ```php
 'features' => [
-    // Show fulfillment queue page
-    'fulfillment_queue' => true,
-    
-    // Show manifest page
-    'manifest_page' => true,
-    
-    // Show shipping dashboard
-    'dashboard' => true,
+    'enable_fulfillment_queue' => true,
 ],
 ```
 
@@ -96,8 +96,6 @@ return [
         'sort' => 50,
     ],
 
-    'table_poll_interval' => '30s',
-
     'shipping_methods' => [
         'standard' => 'Standard Shipping',
         'express' => 'Express Shipping',
@@ -112,14 +110,29 @@ return [
     ],
 
     'features' => [
-        'fulfillment_queue' => true,
-        'manifest_page' => true,
-        'dashboard' => true,
+        'enable_fulfillment_queue' => true,
     ],
 
     'fulfillment' => [
         'urgent_threshold_hours' => 48,
         'old_threshold_hours' => 24,
+    ],
+
+    'pages' => [
+        'navigation_sort' => [
+            'dashboard' => 0,
+            'fulfillment_queue' => 1,
+            'manifest' => 5,
+        ],
+    ],
+
+    'resources' => [
+        'navigation_sort' => [
+            'shipments' => 1,
+            'zones' => 2,
+            'rates' => 3,
+            'returns' => 3,
+        ],
     ],
 ];
 ```
@@ -132,12 +145,14 @@ You can also configure features via the plugin in your panel provider:
 use AIArmada\FilamentShipping\FilamentShippingPlugin;
 
 FilamentShippingPlugin::make()
-    ->navigationGroup('Operations')
-    ->navigationSort(20)
-    ->tablePollInterval('1m')
-    ->enableFulfillmentQueue(false)
-    ->enableManifestPage(true)
-    ->enableDashboard(true);
+    ->shipmentResource()
+    ->shippingZoneResource()
+    ->shippingRateResource()
+    ->returnAuthorizationResource()
+    ->shippingDashboard()
+    ->fulfillmentQueue()
+    ->manifestPage()
+    ->dashboardWidgets();
 ```
 
-Plugin configuration takes precedence over config file settings.
+Navigation group and sort settings are read from `config/filament-shipping.php`.

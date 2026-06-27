@@ -113,17 +113,6 @@ class ManageCommerceNavigation extends Page
                 unset($unassigned[$class]);
             }
 
-            // If there's no items group override matching this group key, check
-            // if any items have the SAME group key as their default group.
-            if ($groupItems === []) {
-                foreach ($mergedOverrides as $override) {
-                    $itemGroup = $override['group'] ?? '';
-                    if ($itemGroup === '' || ! isset($mergedGroups[$itemGroup]) || $itemGroup === $key) {
-                        continue;
-                    }
-                }
-            }
-
             $sections[] = [
                 'group_key' => $key,
                 'label' => $config['label'] ?? $key,

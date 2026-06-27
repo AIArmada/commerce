@@ -48,9 +48,7 @@ Verify features are enabled in config:
 ```php
 // config/filament-shipping.php
 'features' => [
-    'fulfillment_queue' => true,
-    'manifest_page' => true,
-    'dashboard' => true,
+    'enable_fulfillment_queue' => true,
 ],
 ```
 
@@ -136,11 +134,7 @@ Shipment::forOwner($owner)->where('status', ShipmentStatus::Pending)->count();
 
 ### Widget Not Refreshing
 
-Check polling is enabled:
-```php
-// config/filament-shipping.php
-'table_poll_interval' => '30s', // Not null
-```
+Shipping widgets use fixed polling intervals in their widget classes. If polling stops, check that Livewire polling is enabled for the panel and that the widgets are registered.
 
 ## Multi-Tenancy Issues
 
@@ -185,9 +179,9 @@ Cache::forget('filament-shipping.fulfillment-queue.badge.*');
 
 ### Slow Table Loading
 
-1. Reduce polling interval or disable:
+1. Disable dashboard widgets through the plugin if the dashboard is too expensive for a panel:
    ```php
-   'table_poll_interval' => null, // Disable auto-refresh
+   FilamentShippingPlugin::make()->dashboardWidgets(false);
    ```
 
 2. Add database indexes:

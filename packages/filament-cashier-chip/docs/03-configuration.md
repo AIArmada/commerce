@@ -108,6 +108,13 @@ return [
         'redirects' => [
             'after_payment_method_added' => null,
         ],
+
+        'navigation_sort' => [
+            'dashboard' => 0,
+            'subscriptions' => 10,
+            'payment_methods' => 20,
+            'invoices' => 30,
+        ],
     ],
 
     /*

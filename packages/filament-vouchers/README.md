@@ -47,7 +47,9 @@ php artisan vendor:publish --tag=filament-vouchers-config
 // config/filament-vouchers.php
 return [
     // Navigation group for resources
-    'navigation_group' => 'E-commerce',
+    'navigation' => [
+        'group' => 'Vouchers & Discounts'
+    ],
 
     // Default currency for monetary displays
     'default_currency' => 'MYR',

@@ -10,7 +10,7 @@ The plugin includes a settings page for configuring global tax behavior without 
 
 ```php
 FilamentTaxPlugin::make()
-    ->settings(true);
+    ->settingsPage(true);
 ```
 
 Or via configuration:
@@ -18,7 +18,7 @@ Or via configuration:
 ```php
 // config/filament-tax.php
 'features' => [
-    'settings' => true,
+    'settings_page' => true,
 ],
 ```
 
@@ -300,7 +300,7 @@ public function panel(Panel $panel): Panel
         ])
         ->plugins([
             FilamentTaxPlugin::make()
-                ->settings(false), // Disable built-in page
+                ->settingsPage(false), // Disable built-in page
         ]);
 }
 ```

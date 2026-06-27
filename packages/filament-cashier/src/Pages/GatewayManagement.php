@@ -25,8 +25,6 @@ final class GatewayManagement extends Page
 {
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
-    protected static ?int $navigationSort = 50;
-
     /** @var view-string */
     protected string $view = 'filament-cashier::pages.gateway-management';
 
@@ -38,6 +36,11 @@ final class GatewayManagement extends Page
     public static function getNavigationGroup(): ?string
     {
         return config('filament-cashier.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-cashier.pages.navigation_sort.gateway_management');
     }
 
     public function getTitle(): string

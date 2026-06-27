@@ -68,3 +68,21 @@ it('growth experiment factory definitions use immutable started_at values', func
 
     expect($startedAt)->toBeInstanceOf(CarbonImmutable::class);
 });
+
+it('growth models do not mass assign owner tuples', function (): void {
+    $models = [
+        new Experiment,
+        new Variant,
+        new Assignment,
+    ];
+
+    foreach ($models as $model) {
+        $model->fill([
+            'owner_type' => User::class,
+            'owner_id' => 'owner-123',
+        ]);
+
+        expect($model->owner_type)->toBeNull()
+            ->and($model->owner_id)->toBeNull();
+    }
+});
