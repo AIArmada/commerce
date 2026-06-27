@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Creates the engagement_interaction_counters table.
+ * Creates the engagement_bookmark_collection_items table.
  * Part of the aiarmada/engagement package.
  *
  * @see https://github.com/aiarmada/engagement/docs
@@ -16,14 +16,14 @@ return new class extends Migration
     public function up(): void
     {
         $jsonType = config('engagement.database.json_column_type', 'jsonb');
-        Schema::create(config('engagement.database.tables.engagement_counters', 'engagement_counters'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('engagement.database.tables.bookmark_collection_items', 'bookmark_collection_items'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->string('subject_type')->index();
-            $table->uuid('subject_id')->index();
-            $table->string('counter_type')->index();
-            $table->string('counter_key')->nullable()->index();
-            $table->bigInteger('count_value')->default(0);
-            $table->timestampTz('recalculated_at')->nullable();
+            $table->uuid('bookmark_collection_id')->index();
+            $table->uuid('bookmark_id')->index();
+            $table->integer('sort_order')->default(0);
+            $table->text('notes')->nullable();
+            $table->timestampTz('added_at')->nullable()->index();
+            $table->timestampTz('removed_at')->nullable()->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->nullableMorphs('owner');
             $table->timestampsTz();

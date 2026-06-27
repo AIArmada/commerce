@@ -12,67 +12,7 @@ use AIArmada\Filament\Communications\Resources\CommunicationTemplateResource;
 use AIArmada\Filament\Communications\Resources\CommunicationThreadResource;
 use AIArmada\Filament\Communications\Widgets\DeliveryStatusOverviewWidget;
 
-test('CommunicationResource navigation group reads from config', function (): void {
-    expect(CommunicationResource::getNavigationGroup())->toBe(config('filament-communications.navigation.group'));
-});
-
-test('CommunicationResource navigation sort reads from config', function (): void {
-    expect(CommunicationResource::getNavigationSort())->toBe(config('filament-communications.navigation.sort'));
-});
-
-test('CommunicationDeliveryResource navigation group reads from config', function (): void {
-    expect(CommunicationDeliveryResource::getNavigationGroup())->toBe(config('filament-communications.navigation.group'));
-});
-
-test('CommunicationDeliveryResource navigation sort reads from config', function (): void {
-    expect(CommunicationDeliveryResource::getNavigationSort())->toBe(config('filament-communications.navigation.sort'));
-});
-
-test('CommunicationThreadResource navigation group reads from config', function (): void {
-    expect(CommunicationThreadResource::getNavigationGroup())->toBe(config('filament-communications.navigation.group'));
-});
-
-test('CommunicationThreadResource navigation sort reads from config', function (): void {
-    expect(CommunicationThreadResource::getNavigationSort())->toBe(config('filament-communications.navigation.sort'));
-});
-
-test('CommunicationTemplateResource navigation group reads from config', function (): void {
-    expect(CommunicationTemplateResource::getNavigationGroup())->toBe(config('filament-communications.navigation.group'));
-});
-
-test('CommunicationTemplateResource navigation sort reads from config', function (): void {
-    expect(CommunicationTemplateResource::getNavigationSort())->toBe(config('filament-communications.navigation.sort'));
-});
-
-test('CommunicationPreferenceResource navigation group reads from config', function (): void {
-    expect(CommunicationPreferenceResource::getNavigationGroup())->toBe(config('filament-communications.navigation.group'));
-});
-
-test('CommunicationPreferenceResource navigation sort reads from config', function (): void {
-    expect(CommunicationPreferenceResource::getNavigationSort())->toBe(config('filament-communications.navigation.sort'));
-});
-
-test('CommunicationSuppressionResource navigation group reads from config', function (): void {
-    expect(CommunicationSuppressionResource::getNavigationGroup())->toBe(config('filament-communications.navigation.group'));
-});
-
-test('CommunicationSuppressionResource navigation sort reads from config', function (): void {
-    expect(CommunicationSuppressionResource::getNavigationSort())->toBe(config('filament-communications.navigation.sort'));
-});
-
-test('CommunicationBatchResource navigation group reads from config', function (): void {
-    expect(CommunicationBatchResource::getNavigationGroup())->toBe(config('filament-communications.navigation.group'));
-});
-
-test('CommunicationBatchResource navigation sort reads from config', function (): void {
-    expect(CommunicationBatchResource::getNavigationSort())->toBe(config('filament-communications.navigation.sort'));
-});
-
-test('every resource has required static methods', function (string $resource): void {
-    expect(method_exists($resource, 'getEloquentQuery'))->toBeTrue();
-    expect(method_exists($resource, 'getPages'))->toBeTrue();
-    expect(method_exists($resource, 'getNavigationGroup'))->toBeTrue();
-})->with([
+$resources = [
     CommunicationResource::class,
     CommunicationDeliveryResource::class,
     CommunicationThreadResource::class,
@@ -80,14 +20,73 @@ test('every resource has required static methods', function (string $resource): 
     CommunicationPreferenceResource::class,
     CommunicationSuppressionResource::class,
     CommunicationBatchResource::class,
-]);
+];
+
+describe('navigation configuration', function () use ($resources): void {
+    beforeEach(function (): void {
+        config()->set('filament-communications.navigation.group', 'Test Communications');
+        config()->set('filament-communications.navigation.sort', 80);
+    });
+
+    test('getNavigationGroup returns config value for all resources', function (string $resourceClass): void {
+        $group = $resourceClass::getNavigationGroup();
+        /** @phpstan-ignore argument.templateType */
+        expect($group)->toBe('Test Communications');
+    })->with($resources);
+
+    test('getNavigationSort returns config value for all resources', function (string $resourceClass): void {
+        $sort = $resourceClass::getNavigationSort();
+        /** @phpstan-ignore argument.templateType */
+        expect($sort)->toBe(80);
+    })->with($resources);
+
+    test('getNavigationGroup is not null for all resources', function (string $resourceClass): void {
+        $group = $resourceClass::getNavigationGroup();
+        /** @phpstan-ignore argument.templateType */
+        expect($group)->not->toBeNull();
+    })->with($resources);
+});
+
+describe('resource methods', function () use ($resources): void {
+    test('getEloquentQuery method exists on all resources', function (string $resourceClass): void {
+        expect(method_exists($resourceClass, 'getEloquentQuery'))->toBeTrue();
+    })->with($resources);
+
+    test('getPages returns array with index and view for all resources', function (string $resourceClass): void {
+        $pages = $resourceClass::getPages();
+
+        /** @phpstan-ignore argument.templateType */
+        expect($pages)->toBeArray();
+        /** @phpstan-ignore argument.templateType */
+        expect($pages)->toHaveKey('index');
+        /** @phpstan-ignore argument.templateType */
+        expect($pages)->toHaveKey('view');
+    })->with($resources);
+});
+
+test('no resource declares static $navigationGroup', function () use ($resources): void {
+    foreach ($resources as $resourceClass) {
+        $reflection = new ReflectionClass($resourceClass);
+        $properties = $reflection->getProperties();
+
+        foreach ($properties as $property) {
+            if ($property->getName() === 'navigationGroup') {
+                expect($property->getDeclaringClass()->getName())->not->toBe($resourceClass);
+            }
+        }
+    }
+});
 
 test('FilamentCommunicationsPlugin can be instantiated', function (): void {
     $plugin = FilamentCommunicationsPlugin::make();
+
     expect($plugin)->toBeInstanceOf(FilamentCommunicationsPlugin::class);
     expect($plugin->getId())->toBe('filament-communications');
 });
 
-test('DeliveryStatusOverviewWidget exists', function (): void {
-    expect(class_exists(DeliveryStatusOverviewWidget::class))->toBeTrue();
+test('DeliveryStatusOverviewWidget can be instantiated', function (): void {
+    $widget = app(DeliveryStatusOverviewWidget::class);
+
+    expect($widget)->toBeInstanceOf(DeliveryStatusOverviewWidget::class);
+    expect(method_exists($widget, 'getStats'))->toBeTrue();
 });

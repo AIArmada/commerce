@@ -1,5 +1,0 @@
-/vendor/
-/.idea/
-/.vscode/
-*.cache
-.phpunit.result.cache
