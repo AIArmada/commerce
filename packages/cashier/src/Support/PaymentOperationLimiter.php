@@ -12,12 +12,6 @@ use Illuminate\Support\Facades\RateLimiter;
 
 final class PaymentOperationLimiter
 {
-    /**
-     * @template TReturn
-     *
-     * @param  Closure(): TReturn  $callback
-     * @return TReturn
-     */
     public static function run(string $gateway, string $operation, BillableContract | string | null $subject, Closure $callback): mixed
     {
         $config = (array) config('cashier.payment_operations.rate_limiting', []);

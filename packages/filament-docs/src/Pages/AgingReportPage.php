@@ -197,6 +197,7 @@ final class AgingReportPage extends Page implements HasTable
      */
     public function getAgingSummary(): array
     {
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Docs\Models\Doc> $docs */
         $docs = OwnerUiScope::apply(Doc::query(), includeGlobal: false)
             ->select(['id', 'due_date', 'total'])
             ->whereIn('status', [

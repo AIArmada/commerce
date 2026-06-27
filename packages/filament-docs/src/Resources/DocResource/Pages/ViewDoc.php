@@ -78,7 +78,7 @@ final class ViewDoc extends ViewRecord
                         expiresAt: filled($data['expires_at'] ?? null) ? CarbonImmutable::parse($data['expires_at']) : null,
                     ));
 
-                    $url = route(self::shareLinkRouteName($shareLink->allowed_actions), ['token' => $shareLink->plainToken]);
+                    $url = route(self::shareLinkRouteName($shareLink->allowed_actions), ['token' => $shareLink->plainToken()]);
 
                     Notification::make()
                         ->title('Share link created')
