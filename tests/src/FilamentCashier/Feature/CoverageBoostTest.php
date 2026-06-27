@@ -247,7 +247,7 @@ it('covers the filament-cashier public surface', function (): void {
 
     // Seed one CHIP subscription + item to exercise CHIP branches (no external API calls).
     $chipSubscriptionId = (string) Str::uuid();
-    $subscription = Subscription::query()->create([
+    tap(new Subscription, fn (Subscription $s) => $s->forceFill([
         'id' => $chipSubscriptionId,
         'billable_type' => $dbUser->getMorphClass(),
         'billable_id' => $dbUser->getKey(),
@@ -256,20 +256,16 @@ it('covers the filament-cashier public surface', function (): void {
         'chip_status' => Subscription::STATUS_ACTIVE,
         'chip_price' => 'price_basic',
         'quantity' => 1,
+        'owner_type' => $dbUser->getMorphClass(),
+        'owner_id' => (string) $dbUser->getKey(),
         'billing_interval' => 'month',
         'billing_interval_count' => 1,
         'next_billing_at' => now()->addDay(),
         'created_at' => now(),
         'updated_at' => now(),
-    ]);
+    ])->save());
 
-    // Subscription has no creating handler for auto-assign, so set owner explicitly
-    // so SubscriptionItem::creating can verify ownership.
-    $subscription->setAttribute('owner_type', $dbUser->getMorphClass());
-    $subscription->setAttribute('owner_id', (string) $dbUser->getKey());
-    $subscription->save();
-
-    SubscriptionItem::query()->create([
+    tap(new SubscriptionItem, fn (SubscriptionItem $si) => $si->forceFill([
         'id' => (string) Str::uuid(),
         'subscription_id' => $chipSubscriptionId,
         'chip_id' => 'item_' . Str::uuid(),
@@ -279,7 +275,7 @@ it('covers the filament-cashier public surface', function (): void {
         'unit_amount' => 10_00,
         'created_at' => now(),
         'updated_at' => now(),
-    ]);
+    ])->save());
 
     /** @var Package&MockInterface $package */
     $package = Mockery::mock(Package::class);
