@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
-use AIArmada\CashierChip\Checkout;
-use AIArmada\CashierChip\Payment;
+use AIArmada\CashierChip\Billing\Checkout;
+use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 class PerformsChargesTest extends CashierChipTestCase

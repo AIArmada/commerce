@@ -6,7 +6,7 @@ namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
 use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
-use AIArmada\CashierChip\SubscriptionBuilder;
+use AIArmada\CashierChip\Subscription\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherType;

@@ -15,7 +15,7 @@ use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

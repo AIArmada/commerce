@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
-use AIArmada\CashierChip\Invoice;
-use AIArmada\CashierChip\InvoiceLineItem;
+use AIArmada\CashierChip\Invoice\Invoice;
+use AIArmada\CashierChip\Invoice\InvoiceLineItem;
 use AIArmada\Chip\Data\ProductData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Akaunting\Money\Money;

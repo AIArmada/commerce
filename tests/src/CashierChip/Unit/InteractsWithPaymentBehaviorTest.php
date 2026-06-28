@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 class InteractsWithPaymentBehaviorTest extends CashierChipTestCase

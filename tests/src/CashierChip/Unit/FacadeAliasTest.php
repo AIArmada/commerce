@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
-use AIArmada\CashierChip\Billable;
+use AIArmada\CashierChip\Billing\Billable;
 use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Facades\CashierChip;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;

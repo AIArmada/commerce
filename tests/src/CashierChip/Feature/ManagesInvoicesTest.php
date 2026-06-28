@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Feature;
 
-use AIArmada\CashierChip\Invoice;
+use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Support\Collection;
 
