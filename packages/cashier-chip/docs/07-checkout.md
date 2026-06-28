@@ -23,7 +23,7 @@ return $checkout->redirect();
 ### Guest Checkout
 
 ```php
-use AIArmada\CashierChip\Checkout;
+use AIArmada\CashierChip\Billing\Checkout;
 
 $checkout = Checkout::guest()
     ->addProduct('Widget', 5000, 2)  // name, price (cents), quantity
@@ -39,7 +39,7 @@ return $checkout->redirect();
 The fluent builder provides a clean API:
 
 ```php
-use AIArmada\CashierChip\Checkout;
+use AIArmada\CashierChip\Billing\Checkout;
 
 $checkout = Checkout::customer($user)
     ->addProduct('Monthly Plan', 9900)

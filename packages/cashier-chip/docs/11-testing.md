@@ -11,7 +11,7 @@ Cashier CHIP provides utilities for testing billing functionality.
 Use `Cashier::fake()` to mock all CHIP API calls:
 
 ```php
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use Tests\TestCase;
 
 class BillingTest extends TestCase
@@ -43,7 +43,7 @@ The package includes factories for testing subscriptions:
 ### Subscription Factory
 
 ```php
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 
 // Basic subscription
 $subscription = Subscription::factory()->create();
@@ -96,7 +96,7 @@ $subscription = Subscription::factory()
 ### Subscription Item Factory
 
 ```php
-use AIArmada\CashierChip\SubscriptionItem;
+use AIArmada\CashierChip\Subscription\SubscriptionItem;
 
 // Basic item
 $item = SubscriptionItem::factory()->create();

@@ -14,7 +14,7 @@ title: Troubleshooting
 
 ## Payment methods are missing for billable models
 
-**Likely cause:** the model is missing the `AIArmada\CashierChip\Billable` trait or the required billable columns were not migrated.
+**Likely cause:** the model is missing the `AIArmada\CashierChip\Billing\Billable` trait or the required billable columns were not migrated.
 
 **Fix:** add the trait to the billable model and run the package migrations.
 

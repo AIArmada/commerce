@@ -234,7 +234,7 @@ Configure the ngrok URL in your CHIP dashboard.
 ### Faking Webhooks
 
 ```php
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 
 Cashier::fake();
 

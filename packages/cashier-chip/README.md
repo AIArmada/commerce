@@ -53,7 +53,7 @@ columns.
 Add the `Billable` trait to your User model:
 
 ```php
-use AIArmada\CashierChip\Billable;
+use AIArmada\CashierChip\Billing\Billable;
 
 class User extends Authenticatable
 {
@@ -113,7 +113,7 @@ return $checkout->redirect();
 ### Guest Checkout
 
 ```php
-use AIArmada\CashierChip\Checkout;
+use AIArmada\CashierChip\Billing\Checkout;
 
 $checkout = Checkout::guest()
     ->addProduct('Product Name', 5000, 2) // name, price in cents, quantity
