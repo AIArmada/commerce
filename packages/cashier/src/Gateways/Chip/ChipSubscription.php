@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Contracts\SubscriptionItemContract;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;

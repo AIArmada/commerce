@@ -6,7 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
-use AIArmada\CashierChip\Payment;
+use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use Illuminate\Http\RedirectResponse;

@@ -21,7 +21,7 @@ use AIArmada\Cashier\Gateways\Chip\ChipPaymentMethod;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscription;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscriptionBuilder;
 use AIArmada\CashierChip\Billing\Cashier as CashierChip;
-use AIArmada\CashierChip\Payment;
+use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Services\ChipCollectService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;

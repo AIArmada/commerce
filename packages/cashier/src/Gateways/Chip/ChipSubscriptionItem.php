@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\SubscriptionItemContract;
-use AIArmada\CashierChip\SubscriptionItem;
+use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use Carbon\CarbonInterface;
 
 /**
