@@ -121,7 +121,7 @@ Add the `Billable` trait to your User model:
 
 namespace App\Models;
 
-use AIArmada\CashierChip\Billable;
+use AIArmada\CashierChip\Billing\Billable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
@@ -147,7 +147,7 @@ If you're using a different model for billing:
 
 ```php
 // In AppServiceProvider::boot()
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 
 Cashier::useCustomerModel(Team::class);
 ```

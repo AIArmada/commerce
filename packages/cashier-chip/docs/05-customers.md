@@ -131,7 +131,7 @@ You can use different models for billing:
 
 ```php
 // In a service provider
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 
 public function boot(): void
 {

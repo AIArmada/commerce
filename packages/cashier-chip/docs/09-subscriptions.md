@@ -400,7 +400,7 @@ protected $listen = [
 Query subscriptions efficiently:
 
 ```php
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 
 // Active subscriptions
 $active = Subscription::active()->get();

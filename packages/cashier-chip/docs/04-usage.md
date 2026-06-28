@@ -14,7 +14,7 @@ task-specific guides for the exact billing flow you need.
 
 namespace App\Models;
 
-use AIArmada\CashierChip\Billable;
+use AIArmada\CashierChip\Billing\Billable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable

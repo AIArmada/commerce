@@ -89,12 +89,12 @@ All use `Dispatchable` + `SerializesModels`. `PaymentSucceeded`, `PaymentFailed`
 - **Octane-safe:** Snapshot/restore of static defaults on `RequestReceived` event
 - **Owner scoping:** All 3 models use `HasOwner`/`HasOwnerScopeConfig` with config-gated enforcement, cross-tenant write validation in `creating` event
 - **Fake/mock support:** `FakeChipClient` and `FakeChipCollectService` for testing
-- **BC aliases:** `spl_autoload_register` provides backward compatibility for renamed classes
+- **Removed legacy autoloader:** `registerClassAliases()` was removed; all references use proper sub-namespace paths
 - **Internal design docs:** `friendly.md` and `lifecycle.md` document refactoring history
 
 ### Issues
 
-- **Missing facade file:** `composer.json` registers `Cashier` facade alias to `AIArmada\CashierChip\Facades\CashierChip`, but the facade class doesn't exist. `FakeChipClient` and `FakeChipCollectService` reference a non-existent `Facades\CashierChip` class. BC aliases via `spl_autoload_register` compensate.
+- **Missing facade file:** `composer.json` registers `Cashier` facade alias to `AIArmada\CashierChip\Facades\CashierChip`, but the facade class doesn't exist. `FakeChipClient` and `FakeChipCollectService` reference a non-existent `Facades\CashierChip` class.
 - **No custom exception hierarchy:** All 7 exceptions extend `Exception` directly. No base `CashierChipException` for consumers to catch package-wide.
 - **`$guarded = []` on Subscription:** Unlike `cashier`'s read-only models, this is a write model. Mass assignment protection is disabled.
 - **Enums as class constants:** Subscription status values are class constants, not proper PHP enums. No color/icon/label helpers.
@@ -257,7 +257,6 @@ All use `Dispatchable` + `SerializesModels`. `PaymentSucceeded`, `PaymentFailed`
 ### Gaps
 
 - **No CHANGELOG.md**
-- **Missing facade file** — `composer.json` declares an alias that doesn't resolve
 - **No inline examples** in doc files showing how to use `CashierChip::fake()` for testing
 
 ## 15. Observability and operations
@@ -272,7 +271,7 @@ All use `Dispatchable` + `SerializesModels`. `PaymentSucceeded`, `PaymentFailed`
 
 - **No CI configuration** in package (relies on repo-level CI)
 - **No build step** — pure PHP package
-- **`composer.json` extra** declares provider and alias for auto-discovery (though facade file is missing)
+- **`composer.json` extra** declares provider and alias for auto-discovery
 - **No release mechanism** documented
 - **3 migrations** that will auto-run in production via `runsMigrations()`/`discoversMigrations()` — needs careful deployment coordination
 
@@ -350,30 +349,22 @@ All use `Dispatchable` + `SerializesModels`. `PaymentSucceeded`, `PaymentFailed`
 
 **Remediation risk:** Medium
 
-### CSP-002 Missing facade file
+### CSP-002 Missing facade file (RESOLVED)
 
 - **Package:** cashier-chip
 - **Area:** Configuration
 - **Severity:** Medium
 - **Priority:** P2
 - **Confidence:** Confirmed
-- **Verification status:** Verified
-- **Status:** Open
-- **Affected components:** `composer.json` extra `aliases` entry, missing `src/Facades/CashierChip.php`
+- **Verification status:** Resolved
+- **Status:** Closed
+- **Affected components:** `src/Facades/CashierChip.php`
 - **Introduced by:** Unknown (possibly Phase 3 reorganization)
 - **Related findings:** None
 
-**Observation:** `composer.json` registers `CashierChip` alias → `AIArmada\CashierChip\Facades\CashierChip`, but the file does not exist. The BC autoloader in `CashierChipServiceProvider::registerClassAliases()` handles old short class names but doesn't cover the facade.
+**Observation:** `composer.json` registers `CashierChip` alias → `AIArmada\CashierChip\Facades\CashierChip`. The facade file exists and correctly points to `Billing\Cashier`.
 
-**Impact:** `CashierChip::method()` syntax fails. Consumers must use `app('cashier')` or `AIArmada\CashierChip\Billing\Cashier::method()` directly.
-
-**Recommendation:** Create the facade file or remove the alias from `composer.json`.
-
-**Acceptance criteria:** Facade either exists and works, or `composer.json` alias is removed.
-
-**Remediation effort:** Trivial
-
-**Remediation risk:** Low
+**Resolution:** Facade file already existed at `src/Facades/CashierChip.php` — class alias resolves correctly.
 
 ### CSP-003 No base exception class
 
@@ -485,17 +476,16 @@ All use `Dispatchable` + `SerializesModels`. `PaymentSucceeded`, `PaymentFailed`
 | Owner scoping edge cases (null owners, mixed global/owned) | Not tested | Low |
 | `RenewSubscriptionsCommand` with OwnerBatchRunner | Not executed | Low |
 | Migration execution on real database | Not executed | Low |
-| Facade resolution failure confirmed | Not executed | Low — path confirmed missing via `find` |
+| Facade resolution | Not executed | Low — facade file exists and resolves to `Billing\Cashier` |
 
 ## 22. Recommended remediation order
 
 1. **CSP-001** (No tests) — P0 — Critical safety gap
-2. **CSP-002** (Missing facade) — P2 — Broken public API
-3. **CSP-003** (No base exception) — P2 — Inconsistent error handling
-4. **CSP-004** (Mass assignment) — P2 — Defense in depth
-5. **CSP-005** (No CHANGELOG) — P3 — Documentation
-6. **CSP-006** (Status constants) — P4 — Code quality
-7. **CSP-007** (Action mismatch) — P4 — Consistency
+2. **CSP-003** (No base exception) — P2 — Inconsistent error handling
+3. **CSP-004** (Mass assignment) — P2 — Defense in depth
+4. **CSP-005** (No CHANGELOG) — P3 — Documentation
+5. **CSP-006** (Status constants) — P4 — Code quality
+6. **CSP-007** (Action mismatch) — P4 — Consistency
 
 ## 23. Package-level acceptance checklist
 
@@ -509,7 +499,7 @@ All use `Dispatchable` + `SerializesModels`. `PaymentSucceeded`, `PaymentFailed`
 - [x] Migrations idempotent and config-driven — **PASS**
 - [x] Owner scoping properly implemented — **PASS** (best in repo)
 - [x] Testing utilities exist — **PASS**
-- [ ] Facade resolves correctly — **FAIL** (missing file)
+- [x] Facade resolves correctly — **PASS**
 - [ ] Factories exist for models — **PASS** (SubscriptionFactory, SubscriptionItemFactory)
 
 ## 24. Final package rating
@@ -524,12 +514,12 @@ All use `Dispatchable` + `SerializesModels`. `PaymentSucceeded`, `PaymentFailed`
 | Documentation | Excellent | 13 doc files + README + Testing README |
 | Operational readiness | Fair | Console commands, events; no health checks |
 | Integration quality | Good | Well-integrated with chip, commerce-support, cashier |
-| Release readiness | **Not ready** | Missing tests + missing facade block release confidence |
+| Release readiness | **Not ready** | Missing tests block release confidence |
 
 ## 25. Final conclusion
 
 **Conditionally ready.** The package is the best-designed CHIP billing integration reviewed so far — models with proper ownership, config-driven infrastructure, internal design docs, testing fakes, and comprehensive documentation. The Subscription model lifecycle management is thorough and well-thought-out.
 
-However, the complete absence of tests (despite testing infrastructure and fakes being present), the missing facade file, the lack of a base exception, and mass-assignment gaps prevent a `Ready` rating. These are all addressable with focused effort.
+However, the complete absence of tests (despite testing infrastructure and fakes being present), the lack of a base exception, and mass-assignment gaps prevent a `Ready` rating. These are all addressable with focused effort.
 
-**Summary of findings: 7 (1 Critical, 3 Medium, 3 Low)**
+**Summary of findings: 6 (1 Critical, 2 Medium, 3 Low)**

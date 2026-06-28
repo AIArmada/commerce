@@ -188,7 +188,7 @@ All amounts are in the smallest currency unit (cents for MYR):
 Format amounts for display:
 
 ```php
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 
 $formatted = Cashier::formatAmount(10000, 'MYR');
 // "RM 100.00"

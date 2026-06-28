@@ -125,7 +125,7 @@ Add the `Billable` trait to your User model:
 
 namespace App\Models;
 
-use AIArmada\CashierChip\Billable;
+use AIArmada\CashierChip\Billing\Billable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
