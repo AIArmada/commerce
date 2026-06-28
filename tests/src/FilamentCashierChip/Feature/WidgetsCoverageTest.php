@@ -27,7 +27,8 @@ function filamentCashierChip_createSubscriptionWithItem(Model $owner, array $sub
     $subscription = OwnerContext::withOwner($owner, function () use ($owner, $subscriptionAttributes, $itemAttributes): Subscription {
         unset($subscriptionAttributes['user_id']);
 
-        $subscription = Subscription::create(array_merge([
+        $subscription = new Subscription;
+        $subscription->forceFill(array_merge([
             'owner_type' => $owner->getMorphClass(),
             'owner_id' => (string) $owner->getKey(),
             'billable_type' => $owner->getMorphClass(),
@@ -41,8 +42,10 @@ function filamentCashierChip_createSubscriptionWithItem(Model $owner, array $sub
             'created_at' => now(),
             'updated_at' => now(),
         ], $subscriptionAttributes));
+        $subscription->save();
 
-        SubscriptionItem::create(array_merge([
+        $subscriptionItem = new SubscriptionItem;
+        $subscriptionItem->forceFill(array_merge([
             'owner_type' => $owner->getMorphClass(),
             'owner_id' => (string) $owner->getKey(),
             'subscription_id' => $subscription->id,
@@ -51,6 +54,7 @@ function filamentCashierChip_createSubscriptionWithItem(Model $owner, array $sub
             'quantity' => 1,
             'unit_amount' => 10_00,
         ], $itemAttributes));
+        $subscriptionItem->save();
 
         return $subscription;
     });

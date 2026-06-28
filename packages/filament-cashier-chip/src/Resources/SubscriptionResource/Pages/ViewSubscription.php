@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages;
 
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;

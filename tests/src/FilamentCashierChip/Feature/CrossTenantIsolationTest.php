@@ -48,6 +48,30 @@ function bindFilamentCashierChipOwner(?Model $owner): void
     });
 }
 
+function filamentCashierChip_createOwnedSubscription(Model $owner): Subscription
+{
+    return OwnerContext::withOwner($owner, function () use ($owner): Subscription {
+        $subscription = new Subscription;
+        $subscription->forceFill([
+            // Safe fast-path: billable == owner for strict owner validation.
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+            'billable_type' => $owner->getMorphClass(),
+            'billable_id' => (string) $owner->getKey(),
+            'type' => 'default',
+            'chip_id' => 'sub_' . Str::random(40),
+            'chip_status' => SubscriptionStatus::Active,
+            'billing_interval' => 'month',
+            'billing_interval_count' => 1,
+            'recurring_token' => 'tok_' . Str::random(32),
+            'next_billing_at' => now()->addMonth(),
+        ]);
+        $subscription->save();
+
+        return $subscription;
+    });
+}
+
 it('scopes SubscriptionResource queries to the current owner', function (): void {
     config()->set('cashier-chip.features.owner.enabled', true);
     config()->set('cashier-chip.features.owner.include_global', false);
@@ -65,18 +89,7 @@ it('scopes SubscriptionResource queries to the current owner', function (): void
 
     bindFilamentCashierChipOwner($ownerB);
 
-    $subscriptionB = OwnerContext::withOwner($ownerB, fn (): Subscription => Subscription::query()->create([
-        // Safe fast-path: billable == owner for strict owner validation.
-        'billable_type' => $ownerB->getMorphClass(),
-        'billable_id' => (string) $ownerB->getKey(),
-        'type' => 'default',
-        'chip_id' => 'sub_' . Str::random(40),
-        'chip_status' => SubscriptionStatus::Active,
-        'billing_interval' => 'month',
-        'billing_interval_count' => 1,
-        'recurring_token' => 'tok_' . Str::random(32),
-        'next_billing_at' => now()->addMonth(),
-    ]));
+    $subscriptionB = filamentCashierChip_createOwnedSubscription($ownerB);
 
     bindFilamentCashierChipOwner($ownerA);
 
@@ -146,18 +159,7 @@ it('fails closed when owner scoping is enabled but no owner can be resolved', fu
 
     bindFilamentCashierChipOwner($owner);
 
-    $subscription = OwnerContext::withOwner($owner, fn (): Subscription => Subscription::query()->create([
-        // Safe fast-path: billable == owner for strict owner validation.
-        'billable_type' => $owner->getMorphClass(),
-        'billable_id' => (string) $owner->getKey(),
-        'type' => 'default',
-        'chip_id' => 'sub_' . Str::random(40),
-        'chip_status' => SubscriptionStatus::Active,
-        'billing_interval' => 'month',
-        'billing_interval_count' => 1,
-        'recurring_token' => 'tok_' . Str::random(32),
-        'next_billing_at' => now()->addMonth(),
-    ]));
+    $subscription = filamentCashierChip_createOwnedSubscription($owner);
 
     $purchase = Purchase::query()->create([
         'id' => (string) Str::uuid(),

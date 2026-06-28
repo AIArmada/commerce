@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages\ListSubscriptions;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages\ViewSubscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\RelationManagers\SubscriptionItemsRelationManager;

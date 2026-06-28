@@ -28,6 +28,7 @@ it('formats subscription statuses, intervals, and amounts', function (): void {
     expect(filamentCashierChip_invokeTrait('getStatusColor', SubscriptionStatus::Paused->value))->toBe('gray');
     expect(filamentCashierChip_invokeTrait('getStatusColor', SubscriptionStatus::Incomplete->value))->toBe('warning');
     expect(filamentCashierChip_invokeTrait('getStatusColor', SubscriptionStatus::Unpaid->value))->toBe('danger');
+    expect(filamentCashierChip_invokeTrait('getStatusColor', SubscriptionStatus::Active))->toBe('success');
     expect(filamentCashierChip_invokeTrait('getStatusColor', 'other'))->toBe('gray');
 
     expect(filamentCashierChip_invokeTrait('formatStatus', SubscriptionStatus::Active->value))->toBeString();
@@ -38,7 +39,9 @@ it('formats subscription statuses, intervals, and amounts', function (): void {
     expect(filamentCashierChip_invokeTrait('formatStatus', SubscriptionStatus::Incomplete->value))->toBeString();
     expect(filamentCashierChip_invokeTrait('formatStatus', SubscriptionStatus::IncompleteExpired->value))->toBeString();
     expect(filamentCashierChip_invokeTrait('formatStatus', SubscriptionStatus::Unpaid->value))->toBeString();
+    expect(filamentCashierChip_invokeTrait('formatStatus', SubscriptionStatus::PastDue))->toBeString();
     expect(filamentCashierChip_invokeTrait('formatStatus', 'custom'))->toBe('Custom');
+    expect(filamentCashierChip_invokeTrait('formatStatus', null))->toBe('—');
 
     expect(filamentCashierChip_invokeTrait('formatInterval', null, null))->toBe('—');
     expect(filamentCashierChip_invokeTrait('formatInterval', 'day', 1))->toBeString();

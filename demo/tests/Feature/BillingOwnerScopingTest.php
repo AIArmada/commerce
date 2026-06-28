@@ -56,7 +56,7 @@ it('seeds chip billing and analytics showcase data for the active demo owner', f
         ->and($admin->default_pm_id)->not->toBeNull()
         ->and(Subscription::query()->count())->toBe(2)
         ->and(Subscription::query()->pluck('chip_status')->all())
-        ->toContain(SubscriptionStatus::Active, SubscriptionStatus::Trialing)
+        ->toContain(SubscriptionStatus::Active->value, SubscriptionStatus::Trialing->value)
         ->and(TrackedProperty::query()->count())->toBe(1)
         ->and(TrackedProperty::query()->first()?->domain)->toBe('cdemo.test')
         ->and(Experiment::query()->count())->toBe(1)
@@ -104,7 +104,7 @@ it('returns 404 when viewing a single-product checkout for another owner', funct
     });
 
     $this->withSession(['demo_owner_id' => $ownerB->id])
-        ->get('/checkout/single/'.$productA->slug)
+        ->get('/checkout/single/' . $productA->slug)
         ->assertNotFound();
 });
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Concerns;
 
-use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use Illuminate\Database\Eloquent\Builder;
 

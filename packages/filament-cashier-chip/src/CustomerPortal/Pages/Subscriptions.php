@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\CustomerPortal\Pages;
 
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\FilamentCashierChip\Concerns\InteractsWithBillable;
 use BackedEnum;
 use Exception;
@@ -145,7 +145,7 @@ class Subscriptions extends Page
 
     public function formatAmount(int $amount): string
     {
-        if (class_exists('\AIArmada\CashierChip\Cashier')) {
+        if (class_exists('\AIArmada\CashierChip\Billing\Cashier')) {
             return Cashier::formatAmount($amount);
         }
 
@@ -195,7 +195,7 @@ class Subscriptions extends Page
      */
     protected function getActiveStatuses(): array
     {
-        if (class_exists('\AIArmada\CashierChip\Subscription')) {
+        if (class_exists('\AIArmada\CashierChip\Subscription\Subscription')) {
             return [
                 SubscriptionStatus::Active->value,
                 SubscriptionStatus::Trialing->value,

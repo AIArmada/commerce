@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use AIArmada\Cashier\Billable as UnifiedBillable;
-use AIArmada\CashierChip\Billable as ChipBillable;
+use AIArmada\Cashier\Concerns\Billable as UnifiedBillable;
+use AIArmada\CashierChip\Billing\Billable as ChipBillable;
 use AIArmada\Orders\Models\Order;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;

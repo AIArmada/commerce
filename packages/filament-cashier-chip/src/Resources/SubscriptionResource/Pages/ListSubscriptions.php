@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;

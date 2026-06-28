@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages\ListCustomers;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages\ViewCustomer;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers\PaymentMethodsRelationManager;

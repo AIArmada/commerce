@@ -9,7 +9,6 @@ use AIArmada\CashierChip\Events\SubscriptionCreated;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Payment;
-use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
@@ -37,7 +36,7 @@ it('can create payment failed event', function (): void {
 });
 
 it('can create subscription created event', function (): void {
-    $subscription = new Subscription([
+    $subscription = $this->makeTrustedSubscription([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
     ]);
@@ -48,7 +47,7 @@ it('can create subscription created event', function (): void {
 });
 
 it('can create subscription canceled event', function (): void {
-    $subscription = new Subscription([
+    $subscription = $this->makeTrustedSubscription([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
     ]);
@@ -59,7 +58,7 @@ it('can create subscription canceled event', function (): void {
 });
 
 it('can create subscription renewal failed event', function (): void {
-    $subscription = new Subscription([
+    $subscription = $this->makeTrustedSubscription([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
     ]);
@@ -70,7 +69,7 @@ it('can create subscription renewal failed event', function (): void {
 });
 
 it('can create subscription renewed event', function (): void {
-    $subscription = new Subscription([
+    $subscription = $this->makeTrustedSubscription([
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
     ]);
