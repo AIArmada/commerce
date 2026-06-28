@@ -11,7 +11,7 @@ use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\CashierChip\Exceptions\InvalidInvoice;
 use AIArmada\CashierChip\Exceptions\InvalidPaymentMethod;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
-use AIArmada\CashierChip\Invoice;
+use AIArmada\CashierChip\Invoice\Invoice;
 use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;

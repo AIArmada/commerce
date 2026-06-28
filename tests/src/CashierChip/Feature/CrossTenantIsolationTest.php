@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\Payment\StoredPaymentMethod;
-use AIArmada\CashierChip\Subscription;
-use AIArmada\CashierChip\SubscriptionItem;
+use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
-use AIArmada\CashierChip\Checkout;
-use AIArmada\CashierChip\CheckoutBuilder;
-use AIArmada\CashierChip\Payment;
+use AIArmada\CashierChip\Billing\Checkout;
+use AIArmada\CashierChip\Billing\CheckoutBuilder;
+use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 
-use AIArmada\CashierChip\PaymentMethod;
+use AIArmada\CashierChip\Payment\PaymentMethod;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Mockery;

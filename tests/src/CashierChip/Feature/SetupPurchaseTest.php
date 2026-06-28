@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 uses(CashierChipTestCase::class);

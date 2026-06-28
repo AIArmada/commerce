@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip;
 
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\CashierChip\CashierChipServiceProvider;
-use AIArmada\CashierChip\Subscription;
-use AIArmada\CashierChip\SubscriptionItem;
+use AIArmada\CashierChip\Subscription\Subscription;
+use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;

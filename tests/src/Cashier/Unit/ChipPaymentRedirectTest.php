@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Gateways\Chip\ChipPayment;
-use AIArmada\CashierChip\Payment;
+use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use Illuminate\Http\RedirectResponse;
 
