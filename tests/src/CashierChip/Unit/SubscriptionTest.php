@@ -19,7 +19,7 @@ class SubscriptionTest extends CashierChipTestCase
 {
     public function test_can_check_active_status()
     {
-        $subscription = new Subscription(['chip_status' => SubscriptionStatus::Active]);
+        $subscription = $this->makeTrustedSubscription(['chip_status' => SubscriptionStatus::Active]);
         $this->assertTrue($subscription->active());
         $this->assertFalse($subscription->onTrial());
 
@@ -44,7 +44,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_can_check_valid_status()
     {
-        $subscription = new Subscription(['chip_status' => SubscriptionStatus::Active]);
+        $subscription = $this->makeTrustedSubscription(['chip_status' => SubscriptionStatus::Active]);
         $this->assertTrue($subscription->valid());
 
         $subscription->chip_status = SubscriptionStatus::PastDue;
@@ -57,7 +57,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_can_check_incomplete()
     {
-        $subscription = new Subscription(['chip_status' => SubscriptionStatus::Incomplete]);
+        $subscription = $this->makeTrustedSubscription(['chip_status' => SubscriptionStatus::Incomplete]);
         $this->assertTrue($subscription->incomplete());
 
         $subscription->chip_status = SubscriptionStatus::IncompleteExpired;
@@ -69,7 +69,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_can_check_canceled()
     {
-        $subscription = new Subscription(['chip_status' => SubscriptionStatus::Canceled, 'ends_at' => Carbon::now()]);
+        $subscription = $this->makeTrustedSubscription(['chip_status' => SubscriptionStatus::Canceled, 'ends_at' => Carbon::now()]);
         $this->assertTrue($subscription->canceled());
 
         $subscription->chip_status = SubscriptionStatus::Active;
@@ -88,7 +88,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_can_check_ended()
     {
-        $subscription = new Subscription([
+        $subscription = $this->makeTrustedSubscription([
             'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::now()->subDay(),
         ]);
@@ -105,7 +105,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_has_incomplete_payment()
     {
-        $subscription = new Subscription([
+        $subscription = $this->makeTrustedSubscription([
             'chip_status' => SubscriptionStatus::PastDue,
         ]);
         // Mock latestPayment?
@@ -166,7 +166,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_resume_throws_exception_if_not_on_grace_period()
     {
-        $subscription = new Subscription([
+        $subscription = $this->makeTrustedSubscription([
             'chip_status' => SubscriptionStatus::Canceled,
             'ends_at' => Carbon::yesterday(),
         ]);
@@ -177,7 +177,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_skip_trial()
     {
-        $subscription = new Subscription([
+        $subscription = $this->makeTrustedSubscription([
             'trial_ends_at' => Carbon::tomorrow(),
         ]);
 
@@ -199,7 +199,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_recurring_token()
     {
-        $subscription = new Subscription(['recurring_token' => 'tok_123']);
+        $subscription = $this->makeTrustedSubscription(['recurring_token' => 'tok_123']);
         $this->assertEquals('tok_123', $subscription->recurringToken());
 
         $subscription = new Subscription;
@@ -223,7 +223,7 @@ class SubscriptionTest extends CashierChipTestCase
                 ->for($user, 'billable')
                 ->create(['quantity' => 1, 'chip_price' => 'price_1']);
 
-            $subscription->items()->create(['quantity' => 1, 'chip_id' => 'si_1', 'chip_price' => 'price_1']);
+            $this->createTrustedSubscriptionItem($subscription, ['quantity' => 1, 'chip_id' => 'si_1', 'chip_price' => 'price_1']);
         });
 
         $this->assertInstanceOf(Subscription::class, $subscription);
@@ -247,7 +247,7 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_current_period_start_respects_interval_count(): void
     {
-        $subscription = new Subscription([
+        $subscription = $this->makeTrustedSubscription([
             'billing_interval' => 'month',
             'billing_interval_count' => 3,
             'next_billing_at' => Carbon::parse('2026-06-01 00:00:00'),

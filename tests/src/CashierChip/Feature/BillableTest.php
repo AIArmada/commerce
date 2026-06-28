@@ -98,7 +98,7 @@ it('can start a new subscription', function (): void {
 it('can check if subscribed', function (): void {
     expect($this->user->subscribed('standard'))->toBeFalse();
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
         'chip_status' => SubscriptionStatus::Active,
@@ -112,7 +112,7 @@ it('can check if subscribed', function (): void {
 });
 
 it('can check if subscribed to specific price', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
         'chip_status' => SubscriptionStatus::Active,
@@ -124,7 +124,7 @@ it('can check if subscribed to specific price', function (): void {
 });
 
 it('can get specific subscription', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
         'chip_status' => SubscriptionStatus::Active,
@@ -142,14 +142,14 @@ it('returns null for non-existent subscription', function (): void {
 });
 
 it('can have multiple subscriptions', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-1',
         'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'swimming',
         'chip_id' => 'test-sub-2',
         'chip_status' => SubscriptionStatus::Active,
@@ -164,7 +164,7 @@ it('can have multiple subscriptions', function (): void {
 it('can check if on trial', function (): void {
     expect($this->user->onTrial('standard'))->toBeFalse();
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
         'chip_status' => SubscriptionStatus::Trialing,
@@ -193,14 +193,14 @@ it('has subscriptions relationship', function (): void {
 });
 
 it('can get only active subscriptions', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'active',
         'chip_id' => 'test-sub-1',
         'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'canceled',
         'chip_id' => 'test-sub-2',
         'chip_status' => SubscriptionStatus::Canceled,
@@ -215,14 +215,14 @@ it('can get only active subscriptions', function (): void {
 });
 
 it('can get only canceled subscriptions', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'active',
         'chip_id' => 'test-sub-1',
         'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'canceled',
         'chip_id' => 'test-sub-2',
         'chip_status' => SubscriptionStatus::Active,
@@ -237,14 +237,14 @@ it('can get only canceled subscriptions', function (): void {
 });
 
 it('can get only recurring subscriptions', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'recurring',
         'chip_id' => 'test-sub-1',
         'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'trial',
         'chip_id' => 'test-sub-2',
         'chip_status' => SubscriptionStatus::Trialing,
@@ -259,14 +259,14 @@ it('can get only recurring subscriptions', function (): void {
 });
 
 it('can get subscriptions on trial', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'active',
         'chip_id' => 'test-sub-1',
         'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'trial',
         'chip_id' => 'test-sub-2',
         'chip_status' => SubscriptionStatus::Trialing,
@@ -281,14 +281,14 @@ it('can get subscriptions on trial', function (): void {
 });
 
 it('can get subscriptions on grace period', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'active',
         'chip_id' => 'test-sub-1',
         'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'grace',
         'chip_id' => 'test-sub-2',
         'chip_status' => SubscriptionStatus::Active,
@@ -303,14 +303,14 @@ it('can get subscriptions on grace period', function (): void {
 });
 
 it('can get ended subscriptions', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'active',
         'chip_id' => 'test-sub-1',
         'chip_status' => SubscriptionStatus::Active,
         'chip_price' => 'price_monthly',
     ]);
 
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'ended',
         'chip_id' => 'test-sub-2',
         'chip_status' => SubscriptionStatus::Canceled,

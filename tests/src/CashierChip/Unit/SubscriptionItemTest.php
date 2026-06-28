@@ -12,7 +12,7 @@ uses(CashierChipTestCase::class);
 beforeEach(function (): void {
     $this->user = $this->createUser();
 
-    $this->subscription = $this->user->subscriptions()->create([
+    $this->subscription = $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
         'chip_status' => SubscriptionStatus::Active,
@@ -20,7 +20,7 @@ beforeEach(function (): void {
         'quantity' => 1,
     ]);
 
-    $this->item = $this->subscription->items()->create([
+    $this->item = $this->createTrustedSubscriptionItem($this->subscription, [
         'chip_id' => 'item-1',
         'chip_product' => 'prod_123',
         'chip_price' => 'price_monthly',
@@ -126,10 +126,10 @@ it('updates subscription price for single price swap', function (): void {
 it('can check if on trial', function (): void {
     expect($this->item->onTrial())->toBeFalse();
 
-    $this->subscription->update([
+    $this->subscription->forceFill([
         'chip_status' => SubscriptionStatus::Trialing,
         'trial_ends_at' => now()->addDays(14),
-    ]);
+    ])->save();
 
     // Refresh the item's subscription relationship
     $this->item->refresh();
@@ -151,10 +151,10 @@ it('can check if on grace period', function (): void {
 });
 
 it('can calculate total amount', function (): void {
-    $this->item->update([
+    $this->item->forceFill([
         'unit_amount' => 5000,
         'quantity' => 3,
-    ]);
+    ])->save();
 
     expect($this->item->totalAmount())->toBe(15000);
 });
@@ -165,9 +165,9 @@ it('has correct casts', function (): void {
 });
 
 it('guards against incomplete subscription updates', function (): void {
-    $this->subscription->update([
+    $this->subscription->forceFill([
         'chip_status' => SubscriptionStatus::Incomplete,
-    ]);
+    ])->save();
 
     $this->item->updateQuantity(5);
 })->throws(SubscriptionUpdateFailure::class);

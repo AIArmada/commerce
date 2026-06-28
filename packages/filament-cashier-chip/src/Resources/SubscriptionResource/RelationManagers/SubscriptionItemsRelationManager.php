@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\RelationManagers;
 
-use AIArmada\CashierChip\SubscriptionItem;
+use AIArmada\CashierChip\Subscription\SubscriptionItem;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;

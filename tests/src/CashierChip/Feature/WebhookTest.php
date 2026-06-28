@@ -78,7 +78,7 @@ it('stores recurring token from webhook when no default payment method', functio
 });
 
 it('updates subscription to active on payment success', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
         'chip_status' => SubscriptionStatus::PastDue,
@@ -104,7 +104,7 @@ it('updates subscription to active on payment success', function (): void {
 });
 
 it('updates subscription to past due on payment failure', function (): void {
-    $this->user->subscriptions()->create([
+    $this->createTrustedSubscription($this->user, [
         'type' => 'standard',
         'chip_id' => 'test-sub-id',
         'chip_status' => SubscriptionStatus::Active,

@@ -106,8 +106,6 @@ class Subscription extends Model
         'billable_type',
         'billable_id',
         'type',
-        'chip_id',
-        'chip_status',
         'chip_price',
         'quantity',
         'recurring_token',

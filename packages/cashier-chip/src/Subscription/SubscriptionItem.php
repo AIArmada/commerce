@@ -59,11 +59,9 @@ class SubscriptionItem extends Model
      */
     protected $fillable = [
         'subscription_id',
-        'chip_id',
         'chip_product',
         'chip_price',
         'quantity',
-        'unit_amount',
     ];
 
     #[Override]

@@ -46,7 +46,6 @@ final class CashierChipServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->registerClassAliases();
         $this->bindInvoiceRenderer();
         $this->bindPaymentMethodStore();
     }
@@ -59,61 +58,6 @@ final class CashierChipServiceProvider extends PackageServiceProvider
         $this->app->booted(static function (): void {
             Cashier::rememberOctaneDefaults();
         });
-    }
-
-    /**
-     * Register class aliases for moved entity classes (backward compatibility).
-     *
-     * Wires an autoloader that redirects old root-namespace names to the new
-     * domain-namespace homes so existing imports in downstream packages keep
-     * working without manual updates.
-     */
-    protected function registerClassAliases(): void
-    {
-        $legacyMap = [
-            'Cashier' => 'Billing\\Cashier',
-            'Checkout' => 'Billing\\Checkout',
-            'CheckoutBuilder' => 'Billing\\CheckoutBuilder',
-            'Coupon' => 'Billing\\Coupon',
-            'Discount' => 'Billing\\Discount',
-            'PromotionCode' => 'Billing\\PromotionCode',
-            'Payment' => 'Payment\\Payment',
-            'PaymentMethod' => 'Payment\\PaymentMethod',
-            'PaymentMethodStore' => 'Payment\\PaymentMethodStore',
-            'StoredPaymentMethod' => 'Payment\\StoredPaymentMethod',
-            'InvoicePayment' => 'Payment\\InvoicePayment',
-            'Subscription' => 'Subscription\\Subscription',
-            'SubscriptionBuilder' => 'Subscription\\SubscriptionBuilder',
-            'SubscriptionItem' => 'Subscription\\SubscriptionItem',
-            'Invoice' => 'Invoice\\Invoice',
-            'InvoiceLineItem' => 'Invoice\\InvoiceLineItem',
-        ];
-
-        $prefix = 'AIArmada\\CashierChip\\';
-
-        spl_autoload_register(function (string $class) use ($prefix, $legacyMap): void {
-            if (! str_starts_with($class, $prefix)) {
-                return;
-            }
-
-            $shortName = mb_substr($class, mb_strlen($prefix));
-
-            if (! isset($legacyMap[$shortName])) {
-                return;
-            }
-
-            if (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false)) {
-                return;
-            }
-
-            $target = $prefix . $legacyMap[$shortName];
-
-            if (! class_exists($target)) {
-                return;
-            }
-
-            class_alias($target, $class, false);
-        }, true, true);
     }
 
     protected function bindInvoiceRenderer(): void

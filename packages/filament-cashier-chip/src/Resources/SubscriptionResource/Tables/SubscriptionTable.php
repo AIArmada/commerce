@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Tables;
 
 use AIArmada\CashierChip\Enums\SubscriptionStatus;
-use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\Subscription\Subscription;
 use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
@@ -55,7 +55,7 @@ final class SubscriptionTable
                     ->label('Status')
                     ->badge()
                     ->color(fn (Subscription $record): string => self::getStatusColor($record->chip_status))
-                    ->formatStateUsing(fn (string $state): string => self::formatStatus($state)),
+                    ->formatStateUsing(fn (SubscriptionStatus | string | null $state): string => self::formatStatus($state)),
 
                 IconColumn::make('on_trial')
                     ->label('Trial')

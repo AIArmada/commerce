@@ -173,4 +173,41 @@ abstract class CashierChipTestCase extends Orchestra
 
         return $user;
     }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function makeTrustedSubscription(array $attributes = []): Subscription
+    {
+        $subscription = new Subscription;
+        $subscription->forceFill($attributes);
+
+        return $subscription;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function createTrustedSubscription(User $user, array $attributes = []): Subscription
+    {
+        /** @var Subscription $subscription */
+        $subscription = $user->subscriptions()->make();
+        $subscription->forceFill($attributes);
+        $subscription->save();
+
+        return $subscription;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function createTrustedSubscriptionItem(Subscription $subscription, array $attributes = []): SubscriptionItem
+    {
+        /** @var SubscriptionItem $item */
+        $item = $subscription->items()->make();
+        $item->forceFill($attributes);
+        $item->save();
+
+        return $item;
+    }
 }

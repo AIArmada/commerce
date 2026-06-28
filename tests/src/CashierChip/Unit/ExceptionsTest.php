@@ -13,7 +13,6 @@ use AIArmada\CashierChip\Exceptions\InvalidPaymentMethod;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Invoice;
 use AIArmada\CashierChip\Payment\Payment;
-use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Database\Eloquent\Model;
@@ -94,7 +93,7 @@ it('can create incomplete payment exception for expired', function (): void {
 });
 
 it('can create subscription update failure for incomplete subscription', function (): void {
-    $subscription = new Subscription([
+    $subscription = $this->makeTrustedSubscription([
         'type' => 'standard',
         'chip_status' => SubscriptionStatus::Incomplete,
     ]);
@@ -107,7 +106,7 @@ it('can create subscription update failure for incomplete subscription', functio
 });
 
 it('can create subscription update failure for duplicate price', function (): void {
-    $subscription = new Subscription([
+    $subscription = $this->makeTrustedSubscription([
         'type' => 'standard',
     ]);
 
@@ -119,7 +118,7 @@ it('can create subscription update failure for duplicate price', function (): vo
 });
 
 it('can create subscription update failure for deleting last price', function (): void {
-    $subscription = new Subscription([
+    $subscription = $this->makeTrustedSubscription([
         'type' => 'standard',
     ]);
 
