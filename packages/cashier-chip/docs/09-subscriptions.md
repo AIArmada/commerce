@@ -21,7 +21,7 @@ All `$builder->create()` calls delegate to it internally.
 ```php
 use AIArmada\CashierChip\Actions\CreateChipSubscription;
 
-$subscription = app(CreateChipSubscription::class)->create(
+$subscription = CreateChipSubscription::run(
     builder: $builder,
     recurringToken: $recurringToken,
     options: [],
@@ -198,10 +198,10 @@ All `$subscription->cancel()` and `$subscription->cancelNow()` calls delegate to
 use AIArmada\CashierChip\Actions\CancelChipSubscription;
 
 // Cancel immediately
-app(CancelChipSubscription::class)->cancel($subscription);
+CancelChipSubscription::run($subscription);
 
 // Mark a subscription as past due
-app(CancelChipSubscription::class)->markPastDue($subscription, 'Payment declined');
+CancelChipSubscription::make()->markPastDue($subscription, 'Payment declined');
 ```
 
 ### Cancel at Period End

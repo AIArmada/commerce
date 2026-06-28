@@ -9,10 +9,13 @@ use AIArmada\CashierChip\Events\SubscriptionCanceled;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Subscription\Subscription;
 use Carbon\Carbon;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 final class CancelChipSubscription
 {
-    public function cancel(Subscription $subscription): void
+    use AsAction;
+
+    public function handle(Subscription $subscription): void
     {
         $subscription->forceFill([
             'chip_status' => SubscriptionStatus::Canceled,

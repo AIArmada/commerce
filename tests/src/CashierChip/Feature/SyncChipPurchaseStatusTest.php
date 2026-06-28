@@ -132,7 +132,7 @@ describe('SyncChipPurchaseStatus', function (): void {
             }
         };
 
-        app(SyncChipPurchaseStatus::class)->syncPaid($billable, $purchaseData, []);
+        SyncChipPurchaseStatus::run($billable, $purchaseData, []);
 
         Event::assertDispatched(PaymentSucceeded::class);
     });
@@ -247,7 +247,7 @@ describe('SyncChipPurchaseStatus', function (): void {
             }
         };
 
-        app(SyncChipPurchaseStatus::class)->syncFailed($billable, $purchaseData, []);
+        SyncChipPurchaseStatus::make()->syncFailed($billable, $purchaseData, []);
 
         Event::assertDispatched(PaymentFailed::class);
     });

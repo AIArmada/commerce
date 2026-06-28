@@ -54,31 +54,25 @@ The package provides dedicated Action classes for common billing operations. The
 canonical entry points for non-trivial workflows and are fully tested.
 
 ```php
-use AIArmada\CashierChip\Actions\ChargeChipCustomer;
-use AIArmada\CashierChip\Actions\RefundChipPayment;
-use AIArmada\CashierChip\Actions\CreateChipSubscription;
 use AIArmada\CashierChip\Actions\CancelChipSubscription;
+use AIArmada\CashierChip\Actions\ChargeChipCustomer;
+use AIArmada\CashierChip\Actions\CreateChipSubscription;
+use AIArmada\CashierChip\Actions\RefundChipPayment;
 use AIArmada\CashierChip\Actions\SyncChipPurchaseStatus;
 
 // One-off charge with rate limiting and error handling
-$payment = app(ChargeChipCustomer::class)->charge(
-    $user, 2500, $recurringToken, ['reference' => 'Order #123']
-);
+ChargeChipCustomer::run($user, 2500, $recurringToken, ['reference' => 'Order #123']);
 
 // Refund a purchase (full or partial)
-$purchase = app(RefundChipPayment::class)->refund(
-    $purchaseId, 1000 // partial refund in cents
-);
+$purchase = RefundChipPayment::run($purchaseId, 1000); // partial refund in cents
 
 // Create a subscription from a builder
-$subscription = app(CreateChipSubscription::class)->create(
-    $builder, $recurringToken
-);
+$subscription = CreateChipSubscription::run($builder, $recurringToken);
 
 // Cancel a subscription immediately
-app(CancelChipSubscription::class)->cancel($subscription);
+CancelChipSubscription::run($subscription);
 
 // Sync a purchase status from a webhook payload
-app(SyncChipPurchaseStatus::class)->syncPaid($user, $purchaseData, $payload);
-app(SyncChipPurchaseStatus::class)->syncFailed($user, $purchaseData, $payload);
+SyncChipPurchaseStatus::run($user, $purchaseData, $payload);
+SyncChipPurchaseStatus::make()->syncFailed($user, $purchaseData, $payload);
 ```

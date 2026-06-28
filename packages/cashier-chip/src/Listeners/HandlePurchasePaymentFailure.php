@@ -33,6 +33,6 @@ class HandlePurchasePaymentFailure
             return;
         }
 
-        app(SyncChipPurchaseStatus::class)->syncFailed($billable, $purchase, $event->payload);
+        SyncChipPurchaseStatus::make()->syncFailed($billable, $purchase, $event->payload);
     }
 }

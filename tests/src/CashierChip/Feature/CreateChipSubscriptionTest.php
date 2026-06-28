@@ -116,6 +116,6 @@ describe('CreateChipSubscription', function (): void {
 
         $builder = new SubscriptionBuilder($customer, 'default');
 
-        app(CreateChipSubscription::class)->create($builder);
+        CreateChipSubscription::run($builder);
     })->throws(Exception::class, 'At least one price');
 });

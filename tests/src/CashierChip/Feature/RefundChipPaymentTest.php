@@ -19,7 +19,7 @@ describe('RefundChipPayment', function (): void {
 
         Cashier::fake($fakeClient);
 
-        $result = app(RefundChipPayment::class)->refund($purchaseId);
+        $result = RefundChipPayment::run($purchaseId);
 
         expect($result)->toBeInstanceOf(PurchaseData::class);
         expect($result->status)->toBe('refunded');
@@ -32,7 +32,7 @@ describe('RefundChipPayment', function (): void {
 
         Cashier::fake($fakeClient);
 
-        $result = app(RefundChipPayment::class)->refund($purchaseId, 2500);
+        $result = RefundChipPayment::run($purchaseId, 2500);
 
         expect($result)->toBeInstanceOf(PurchaseData::class);
         expect($result->status)->toBe('refunded');
