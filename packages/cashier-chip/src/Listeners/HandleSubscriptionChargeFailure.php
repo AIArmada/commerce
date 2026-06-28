@@ -44,7 +44,7 @@ class HandleSubscriptionChargeFailure
         if ($subscription) {
             $reason = $event->payload['failure_reason'] ?? $event->payload['error_message'] ?? 'Subscription charge failed';
 
-            app(CancelChipSubscription::class)->markPastDue($subscription, $reason);
+            CancelChipSubscription::make()->markPastDue($subscription, $reason);
         }
     }
 

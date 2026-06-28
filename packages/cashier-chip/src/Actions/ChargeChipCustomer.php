@@ -11,17 +11,20 @@ use AIArmada\CashierChip\Payment\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\RateLimiter;
+use Lorisleiva\Actions\Concerns\AsAction;
 use SensitiveParameter;
 
 final class ChargeChipCustomer
 {
+    use AsAction;
+
     /**
      * @param  Model&BillableContract  $billable
      * @param  array<string, mixed>  $options
      *
      * @throws IncompletePayment
      */
-    public function charge(Model $billable, int $amount, #[SensitiveParameter] ?string $recurringToken = null, array $options = []): Payment
+    public function handle(Model $billable, int $amount, #[SensitiveParameter] ?string $recurringToken = null, array $options = []): Payment
     {
         $rateLimitKey = 'cashier-chip:charge:' . ($billable->chipId() ?? $billable->getKey());
         $executed = RateLimiter::attempt(

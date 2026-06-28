@@ -15,13 +15,16 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 final class CreateChipSubscription
 {
+    use AsAction;
+
     /**
      * @throws Exception
      */
-    public function create(SubscriptionBuilder $builder, ?string $recurringToken = null, array $options = []): Subscription
+    public function handle(SubscriptionBuilder $builder, ?string $recurringToken = null, array $options = []): Subscription
     {
         $items = $builder->getItems();
 

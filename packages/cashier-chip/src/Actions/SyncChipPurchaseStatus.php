@@ -11,14 +11,17 @@ use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 final class SyncChipPurchaseStatus
 {
+    use AsAction;
+
     /**
      * @param  Model&BillableContract  $billable
      * @param  array<string, mixed>  $purchase
      */
-    public function syncPaid(Model $billable, PurchaseData $purchaseData, array $purchase): void
+    public function handle(Model $billable, PurchaseData $purchaseData, array $purchase): void
     {
         PaymentSucceeded::dispatch($billable, $purchaseData->toArray());
 

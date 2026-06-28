@@ -23,7 +23,7 @@ describe('CancelChipSubscription', function (): void {
             'chip_status' => SubscriptionStatus::Active,
         ]);
 
-        app(CancelChipSubscription::class)->cancel($subscription);
+        CancelChipSubscription::run($subscription);
 
         $subscription->refresh();
 
@@ -42,7 +42,7 @@ describe('CancelChipSubscription', function (): void {
             'chip_status' => SubscriptionStatus::Active,
         ]);
 
-        app(CancelChipSubscription::class)->markPastDue($subscription, 'Card declined');
+        CancelChipSubscription::make()->markPastDue($subscription, 'Card declined');
 
         $subscription->refresh();
 

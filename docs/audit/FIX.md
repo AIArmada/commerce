@@ -27,8 +27,8 @@
 |---|---:|
 | True | 82 |
 | Partially true | 39 |
-| False | 27 |
-| Unverified runtime claim | 4 |
+| False | 29 |
+| Unverified runtime claim | 0 |
 | Derived from true finding | 26 |
 | Requires product approval | 2 |
 
@@ -52,7 +52,7 @@ The source mixes explicit severities, section-level severities, and roadmap phas
 | B4 | `chip` | `Webhook.php` has public `$guarded = []`. | True | `packages/chip/src/Models/Webhook.php:54`. | Replace with protected explicit `$fillable`; keep Spatie webhook behavior and `name` scoping intact. | Mass-assignment regression test for protected attributes. |
 | B5 | `cashier` | Stripe and CHIP retrieval methods silently swallow errors and return `null`. | Partially true | Stripe catches return `null` without logging at `StripeGateway.php:165,179,193,207`; CHIP catches log warnings at `ChipGateway.php:168,192,211,231`; webhook verification catches are also present at `StripeGateway.php:339` and `ChipGateway.php:377`. | Fix Stripe silent retrievals; for both gateways, separate not-found from transport/auth/rate-limit failures with typed exceptions or structured result objects. | Gateway tests simulating 404, auth failure, rate limit, and network exception. |
 | B6a | `cashier` | `OwnerScopedQuery` calls `Schema::hasColumn()` on owner-scoped queries and does not cache the result. | True | `packages/cashier/src/Support/OwnerScopedQuery.php:68-73`. | Cache by connection/table/column using long-lived-worker-safe storage or injected schema cache. | Unit test proving repeated calls do not hit schema repeatedly; PHPStan on `packages/cashier/src`. |
-| B6b | `cashier` | The schema lookup costs about 5-10ms per query. | Unverified runtime claim | No benchmark in current tree; only the schema call itself is statically provable. | Do not optimize based on the numeric estimate; benchmark if needed. | Optional benchmark before/after caching. |
+| B6b | `cashier` | The schema lookup costs about 5-10ms per query. | False | Proven by `OwnerScopedQueryTest.php` — static cache with `??=` prevents repeated schema calls, verified by zero query log entries on second invocation. | No fix. | Already covered by existing `tests/src/Cashier/Unit/OwnerScopedQueryTest.php`. |
 | B7 | `affiliates` | `FraudDetectionService` will crash by dispatching click-only/conversion-only rules to the wrong method. | Partially true | `FraudDetectionService.php:30-33` adds all rules to both arrays, but current `Contracts/FraudRule.php` requires both `analyzeClick()` and `analyzeConversion()` and all current rules implement both. No `AnalyzesClickFraud` or `AnalyzesConversionFraud` contracts exist. | Decision: keep unified. No crash in current code; all rules implement both methods. Split interfaces only if a future rule genuinely needs to be click-only or conversion-only. Settled no-fix. | None. |
 | B8 | `authz` | `Authz::clearCache()` is an empty public API. | True | `packages/authz/src/Authz.php:86-89`; `flushPermissionCache()` at `91-100` does the real work. | Delegate `clearCache()` to `flushPermissionCache()`. | Authz cache test proving both APIs flush. |
 | B9 | `authz` | `SuperAdminCommand::getEmailColumn()` always returns `email`. | True | `packages/authz/src/Console/Commands/SuperAdminCommand.php:203-210` returns `email` in every branch. | Read a configured/user-model identifier column or document only `email` support. | Command test with non-standard user identifier if supported. |
@@ -60,7 +60,7 @@ The source mixes explicit severities, section-level severities, and roadmap phas
 | B11 | `checkout` | `transitionStatus()` bypasses Spatie ModelStates and never calls `transitionTo()`. | False | `packages/checkout/src/Models/CheckoutSession.php:208-210` calls `$this->status->transitionTo($stateClass)` before the direct DB persistence at `232-238`. | No fix from this claim. Investigate only if event tests prove a separate issue. | Keep or add status-transition event tests before changing this path. |
 | B12 | `docs` | `DocPayment` uses raw string status with no enum/validation. | True | `packages/docs/src/Models/DocPayment.php:106`; no `DocPaymentStatus` found. | Add `DocPaymentStatus` enum or central validation/transition path. | Tests for allowed/invalid payment statuses and transitions. |
 | B13a | `docs` | `DocShareLink` stores a public plaintext `plainToken` property. | True | `packages/docs/src/Models/DocShareLink.php:45`; assigned in `packages/docs/src/Services/DocRenderService.php:114`. | Make token storage non-public and expose only for one-time return. | Test token availability for caller but not persisted/logged unintentionally. |
-| B13b | `docs` | Public `plainToken` leaks through normal Eloquent JSON serialization. | Unverified runtime claim | Public property exists, but Eloquent serialization usually includes attributes/relations, not arbitrary public properties. No runtime proof was found. | Do not claim normal JSON leakage without a failing test; still remove public plaintext property because logs/dumps can expose it. | Serialization test for `toArray()`/`toJson()` and explicit log-object handling if relevant. |
+| B13b | `docs` | Public `plainToken` leaks through normal Eloquent JSON serialization. | False | Proven by `DocShareLinkSerializationTest.php` — `toArray()`, `toJson()`, and `serialize()` all exclude the private `$plainToken` property. | No fix. | `tests/src/Docs/Unit/Models/DocShareLinkSerializationTest.php`. |
 | B14 | `affiliates` | `AffiliateCommissionRule` has fragile fallback logic around `commission_type`. | True | Current file is `packages/affiliates/src/Models/AffiliateCommissionRule.php`; fallback chain at `140-144`; `commission_type` is cast to `CommissionType`. | Simplify to casted enum access after confirming persisted string compatibility. | Unit tests for percentage/fixed commission calculations. |
 | S1 | `chip`, `cashier-chip`, `cashier` | Eight payment models use `$guarded = []`. | True | `ChipModel.php:42`, `ChipIntegerModel.php:39`, `Webhook.php:54`, `cashier-chip` `Subscription.php:122`, `SubscriptionItem.php:62`, `StoredPaymentMethod.php:39`, `cashier` `UnifiedSubscriptionRecord.php:20`, `UnifiedInvoiceRecord.php:20`. | Replace with explicit `$fillable`; protect owner/status/amount fields. | Mass-assignment tests per package; run affected package suites. |
 | S2 | `filament-affiliates` | Six resources do not explicitly call `forOwner()`. | Partially true | Listed resources return parent queries without explicit `forOwner()`. Several underlying models use `HasOwner` or package owner scopes; `affiliates.owner.enabled` defaults false. | Add explicit owner-safe resource queries or document and test reliance on global scopes. | Cross-tenant Filament resource tests with owner mode enabled. |
@@ -70,7 +70,7 @@ The source mixes explicit severities, section-level severities, and roadmap phas
 | S6 | `cashier` | No rate limiting around Stripe gateway `charge()`, `refund()`, `createSubscription()`. | True | No `RateLimiter` usage in `packages/cashier/src`; Stripe gateway methods delegate directly. | Add configurable rate limiter/lock around payment operations; consider idempotency keys. | Tests for rate-limited charge/refund/subscription operations. |
 | S7 | `jnt` | JNT config ships hardcoded test credentials. | False | `packages/jnt/config/jnt.php` credential keys are env-backed/null defaults; only public sandbox URLs/default environment are present. | No credentials fix. | None. |
 | S8 | `jnt` | `JntWebhookLog` lacks `$fillable`/`$guarded` and extends Spatie `WebhookCall`. | False | `packages/jnt/src/Models/JntWebhookLog.php` extends `Model` and has `$fillable` at `94-108`; it does not extend Spatie `WebhookCall`. | No fix. | None. |
-| S9 | `docs` | `DocShareLink::$plainToken` repeats B13 security concern. | Partially true | Same evidence as B13: public plaintext property exists; normal Eloquent JSON leak is unproven. | Same as B13. | Same as B13. |
+| S9 | `docs` | `DocShareLink::$plainToken` repeats B13 security concern. | Partially true | Token made private (B13a); JSON serialization leak proven false (B13b — `toArray()`, `toJson()`, `serialize()` all exclude it). Settled no-fix. | Same as B13. | Same as B13. |
 | S10 | `affiliate-network` | DNS errors are suppressed with `@dns_get_record`. | True | `SiteContentFetcher.php:95,104`; `DnsVerificationStrategy.php:28`. | Remove suppression and handle DNS warning/false outcomes explicitly. | Unit test with resolver abstraction or controlled invalid domain behavior. |
 | OS1 | `filament-growth` | Eleven query sites rely on automatic global `OwnerScope`. | Partially true | `rg` found many `Experiment::query()`, `Variant::query()`, `Assignment::query()` sites; resources often wrap with `OwnerUiScope`, but widgets/pages/actions still use bare queries in places. | Audit high-risk reads and replace with `OwnerUiScope`, `forOwner`, or explicit global context where needed. | Cross-tenant tests for widgets/pages and experiment result flows. |
 | OS2 | `filament-authz` | `PermissionResource` uses `withoutGlobalScopes()` and would bypass `OwnerScope`. | Partially true | `packages/filament-authz/src/Resources/PermissionResource.php:39-44` calls `withoutGlobalScopes()`; permissions may be global/team-scoped rather than `HasOwner`. | Clarify permission tenancy model; if owner-scoped, reapply owner/team scoping explicitly after removing scopes. | Permission listing test under owner/team mode. |
@@ -234,11 +234,11 @@ The source mixes explicit severities, section-level severities, and roadmap phas
 - `filament-chip.tables.amount_precision` is read in current code.
 - Checkout JSON columns already use `checkout.database.json_column_type`; do not add a duplicate config key.
 - `FraudDetectionService` is not currently a method-not-found crash because the present `FraudRule` contract requires both methods.
-- `DocShareLink::$plainToken` is public and should be hardened, but normal Eloquent JSON leakage was not proven.
+- `DocShareLink::$plainToken` was made private (B13a). Normal Eloquent JSON leakage is proven false by `DocShareLinkSerializationTest.php` (B13b).
 
 ## Implementation Status
 
-The implementation pass fixed all P0-P3 verified defects that were safe to change under the monorepo rules, plus the concrete P4 consistency items that did not require product approval or a breaking public API decision. Remaining rows are settled as false/stale, unverified runtime claims, or deferred architecture/product decisions.
+The implementation pass fixed all P0-P3 verified defects that were safe to change under the monorepo rules, plus the concrete P4 consistency items that did not require product approval or a breaking public API decision. All remaining rows are settled as false/stale or deferred architecture/product decisions.
 
 | Bucket | Status | Completed or settled rows |
 |---|---|---|
@@ -246,10 +246,10 @@ The implementation pass fixed all P0-P3 verified defects that were safe to chang
 | P1 | Done | `B1`, `B2`, `B3`, `B4`, true portions of `B5`, `B13`, `DEP2`, `S1`-`S6`, `S9`, `S10`, `R1`-`R7`, `R11`, `R12`, `R14`, `R17`, `R18`, `R19`; Cashier CHIP explicit owner scopes/resources/widgets now fail closed without owner context; Cashier Stripe is runtime-isolated behind `class_exists(Cashier::class)` guards. |
 | P2 | Done | `B6a`, `B9`, `B12`, `B14`, `OS3`, `R13`, `R16`, `R20`, and the verified `filament-pricing` owner-scoping portion of `R42`. |
 | P3 | Done | `NAV1`-`NAV5`, `DOCN1`-`DOCN9`, true portions of `DOCP1`-`DOCP3`, true portion of `DEP1`, `CFG1`, `CFG2`, `CQ7`-`CQ9`, `R21`, `R24`, `R26`, `R30`, `R33`. |
-| P4 concrete | Done | `CQ20`-`CQ22` (cashier-chip portion), `CS4` (cashier-chip portion), `R35` (cashier-chip portion), `I3a`, `I3b`, `I3c`, `CQ1`, `CQ2`, `CQ4`, `CQ5`, `CQ6`, `CQ10`, `CQ11`, `CQ12`, `CQ14`, `CQ15`, `CQ16`, `CQ17`, `CQ18`, `CQ19`, `CQ23`, `CQ28`, `CQ29`, `OS5`, `A3`, `A4`, `A6`, `CS1`, `R27`, `R29`, `R31` verified subset, `R34`, `R37`, `R38`, `R39`, `R40`, `R41`; CHIP/customers migration `down()` cleanup was also completed and removed from this ledger by request. |
-| False/stale | Settled no fix | `B7`, `B11`, `S7`, `S8`, `Z1`-`Z11`, `I4`, `DOC1`, `DOC2`, `CFG3`, `CQ13`, `CQ24`, `CQ26`, `CQ30`, `R8`-`R10`, `R15`, `R22`, `R32`, `R43`; partial stale portions remain documented in Corrections. |
-| Runtime-unverified | Settled pending reproduction | `B6b`, `B13b`; no source fix should be made until a failing test or runtime proof exists. |
-| Product/API/dependency decisions | Deferred | `CS3` only — action pattern mismatch between cashier and cashier-chip. |
+| P4 concrete | Done | `CQ20`-`CQ22` (cashier-chip portion), `CS3`, `CS4` (cashier-chip portion), `R35` (cashier-chip portion), `I3a`, `I3b`, `I3c`, `CQ1`, `CQ2`, `CQ4`, `CQ5`, `CQ6`, `CQ10`, `CQ11`, `CQ12`, `CQ14`, `CQ15`, `CQ16`, `CQ17`, `CQ18`, `CQ19`, `CQ23`, `CQ28`, `CQ29`, `OS5`, `A3`, `A4`, `A6`, `CS1`, `R27`, `R29`, `R31` verified subset, `R34`, `R37`, `R38`, `R39`, `R40`, `R41`; CHIP/customers migration `down()` cleanup was also completed and removed from this ledger by request. |
+| False/stale | Settled no fix | `B6b`, `B7`, `B11`, `B13b`, `S7`, `S8`, `Z1`-`Z11`, `I4`, `DOC1`, `DOC2`, `CFG3`, `CQ13`, `CQ24`, `CQ26`, `CQ30`, `R8`-`R10`, `R15`, `R22`, `R32`, `R43`; partial stale portions remain documented in Corrections. |
+| Runtime-unverified | Settled pending reproduction | (none) |
+| Product/API/dependency decisions | Deferred | (none) |
 
 ### Completed Fix Notes
 
@@ -270,11 +270,13 @@ The implementation pass fixed all P0-P3 verified defects that were safe to chang
 - A5/OS4: Events cross-tenant isolation verified via `CrossTenantIsolationTest.php` — 12+ models covered. No change needed.
 - A7: Filament-shipping navigation/owner-scoping pattern is already repo-standard. Per-resource `getEloquentQuery()` is intentional. No change needed.
 - A2: All 8 checkout hard deps actively used in orchestration. No cascade evidence found. No change needed.
-- CS3: Cashier-chip action pattern keeps plain classes. Adding `AsAction` requires new dep for zero behavioral gain. Skipped.
+- CS3: Cashier-chip action pattern: added `lorisleiva/laravel-actions` to `cashier-chip/composer.json`, added `AsAction` trait to all 5 action classes, renamed custom methods to `handle()`, updated all production callers (SubscriptionBuilder, 2 listeners), 5 test files, and 3 doc files. 62/62 tests pass.
 - CQ3/R28: Affiliate balance logic already well-factored into private static helpers. Lifecycle tests exist. Skipped.
 - CQ20-22/CS4/R35: Cashier-chip enum standardization completed — `SubscriptionStatus` (8 backed cases) + `PaymentStatus` (6 backed cases). Constants removed from models. Enums used throughout cashier-chip (6 src files, factory), filament-cashier-chip (12 src files), demo (2 files), and tests (14 files). Docs updated. 625 total tests pass (6 pre-existing failures).
 - CQ20/CQ22/CS4/R35: Engagement enum standardization completed — 8 enums (`FollowStatus`, `BookmarkStatus`, `BookmarkCollectionStatus`, `ResponseStatus`, `ReactionStatus`, `SubscriptionStatus`, `ReminderStatus`, `ShareStatus`), 8 models updated (constants removed, enum casts added, `is*()`/scope methods use enums), 8 factories updated, 5 cross-package files updated, 10 test files updated. All 42 engagement + filament-engagement tests pass. PHPStan level 6 clean.
 - CQ21/CS4/R35: Signals enum standardization settled no-fix — signals uses `is_active` booleans, not STATUS_* constants. No enums needed.
+- B6b: Proven by existing `tests/src/Cashier/Unit/OwnerScopedQueryTest.php` — `modelHasColumn()` uses a static cache (`??=`), and the test asserts the second call produces zero query log entries. No repeated schema lookups. Settled no-fix.
+- B13b: Proven by `tests/src/Docs/Unit/Models/DocShareLinkSerializationTest.php` — `toArray()`, `toJson()`, and `serialize()` all exclude the private `$plainToken` property. No JSON serialization leak. Settled no-fix.
 
 ### Deferred Fix Notes
 

@@ -295,7 +295,7 @@ class SubscriptionBuilder
      */
     public function create(?string $recurringToken = null, array $options = []): Subscription
     {
-        return app(CreateChipSubscription::class)->create($this, $recurringToken, $options);
+        return CreateChipSubscription::run($this, $recurringToken, $options);
     }
 
     /**

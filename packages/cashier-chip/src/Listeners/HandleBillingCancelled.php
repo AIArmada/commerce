@@ -45,7 +45,7 @@ class HandleBillingCancelled
         $subscription = $query->first();
 
         if ($subscription) {
-            app(CancelChipSubscription::class)->cancel($subscription);
+            CancelChipSubscription::run($subscription);
         }
     }
 }

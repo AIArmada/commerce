@@ -11,7 +11,7 @@ The canonical way to charge a customer is via the `ChargeChipCustomer` Action. A
 ```php
 use AIArmada\CashierChip\Actions\ChargeChipCustomer;
 
-$payment = app(ChargeChipCustomer::class)->charge(
+$payment = ChargeChipCustomer::run(
     billable: $user,
     amount: 10000,
     recurringToken: null,
@@ -139,10 +139,10 @@ The canonical way to refund a payment is via the `RefundChipPayment` Action:
 use AIArmada\CashierChip\Actions\RefundChipPayment;
 
 // Full refund
-app(RefundChipPayment::class)->refund($purchaseId);
+RefundChipPayment::run($purchaseId);
 
 // Partial refund (50.00 MYR in cents)
-app(RefundChipPayment::class)->refund($purchaseId, 5000);
+RefundChipPayment::run($purchaseId, 5000);
 ```
 
 CHIP refunds can also be processed through the CHIP dashboard or lower-level API:

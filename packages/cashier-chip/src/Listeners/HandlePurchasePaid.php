@@ -33,6 +33,6 @@ class HandlePurchasePaid
             return;
         }
 
-        app(SyncChipPurchaseStatus::class)->syncPaid($billable, $purchase, $event->payload);
+        SyncChipPurchaseStatus::run($billable, $purchase, $event->payload);
     }
 }

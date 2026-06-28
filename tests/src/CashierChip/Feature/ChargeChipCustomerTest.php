@@ -119,7 +119,7 @@ describe('ChargeChipCustomer', function (): void {
             }
         });
 
-        $payment = app(ChargeChipCustomer::class)->charge($customer, 5000);
+        $payment = ChargeChipCustomer::run($customer, 5000);
 
         expect($payment)->toBeInstanceOf(Payment::class);
         expect($payment->rawAmount())->toBe(5000);
