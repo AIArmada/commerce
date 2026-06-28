@@ -6,7 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
-use AIArmada\CashierChip\PaymentMethod as ChipNativePaymentMethod;
+use AIArmada\CashierChip\Payment\PaymentMethod as ChipNativePaymentMethod;
 use Exception;
 use InvalidArgumentException;
 

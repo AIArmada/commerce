@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Checkout;
 
 use AIArmada\Cashier\GatewayManager;
-use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
