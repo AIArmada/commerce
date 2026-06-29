@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('communications.database.tables.threads', 'communication_threads'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->string('subject_type')->nullable();
             $table->string('subject_id')->nullable();
             $table->string('external_thread_id')->nullable()->index();

@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('communications.database.tables.attachments', 'communication_attachments'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->foreignUuid('communication_id')->index();
             $table->foreignUuid('content_id')->nullable();
             $table->string('attachable_type')->nullable();

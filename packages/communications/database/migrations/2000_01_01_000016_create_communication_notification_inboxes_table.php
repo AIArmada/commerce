@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('communications.database.tables.notification_inboxes', 'notification_inboxes'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->nullableUuidMorphs('recipient');
             $table->foreignUuid('communication_id')->nullable();
             $table->string('family');

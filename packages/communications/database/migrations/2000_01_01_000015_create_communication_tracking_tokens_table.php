@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('communications.database.tables.tracking_tokens', 'communication_tracking_tokens'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->foreignUuid('delivery_id');
             $table->string('kind');
             $table->string('token_hash');

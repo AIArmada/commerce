@@ -18,7 +18,7 @@ return new class extends Migration
         $jsonType = config('engagement.database.json_column_type', 'jsonb');
         Schema::create(config('engagement.database.tables.bookmark_collections', 'bookmark_collections'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('slug')->nullable()->index();
             $table->text('description')->nullable();

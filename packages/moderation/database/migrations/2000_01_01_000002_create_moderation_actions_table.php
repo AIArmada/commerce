@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('moderation.database.tables.moderation_actions', 'moderation_actions'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->nullableUuidMorphs('actionable');
             $table->nullableUuidMorphs('actioned_by');
             $table->string('type');

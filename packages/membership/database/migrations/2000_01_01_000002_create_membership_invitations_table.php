@@ -15,7 +15,7 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table) use ($tokenLength): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->string('subject_type');
             $table->uuid('subject_id');
             $table->string('email');

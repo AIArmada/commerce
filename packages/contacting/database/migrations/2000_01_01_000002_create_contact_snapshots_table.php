@@ -20,8 +20,8 @@ return new class extends Migration
         Schema::create($tableName, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
 
-            $table->nullableMorphs('owner');
-            $table->nullableMorphs('snapshotable');
+            $table->nullableUuidMorphs('owner');
+            $table->nullableUuidMorphs('snapshotable');
 
             $table->string('snapshot_type');
             $table->uuid('source_id')->nullable();
