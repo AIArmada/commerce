@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('communications.database.tables.preferences', 'communication_preferences'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->string('recipient_type');
             $table->string('recipient_id');
             $table->string('channel')->nullable();

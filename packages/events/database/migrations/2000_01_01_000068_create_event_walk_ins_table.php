@@ -15,11 +15,11 @@ return new class extends Migration
             $table->uuid('event_id')->index();
             $table->uuid('event_occurrence_id')->nullable()->index();
             $table->uuid('event_session_id')->nullable()->index();
-            $table->nullableMorphs('recorded_by');
+            $table->nullableUuidMorphs('recorded_by');
             $table->unsignedInteger('count')->default(1);
             $table->timestampTz('recorded_at');
             $table->text('notes')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
         });
     }

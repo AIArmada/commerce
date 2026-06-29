@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create(config('communications.database.tables.templates', 'communication_templates'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->string('key');
             $table->string('name');
             $table->text('description')->nullable();

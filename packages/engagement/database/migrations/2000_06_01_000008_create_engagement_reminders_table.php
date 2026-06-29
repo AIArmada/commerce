@@ -38,7 +38,7 @@ return new class extends Migration
             $table->timestampTz('expires_at')->nullable();
             $table->text('failure_reason')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
         });
     }

@@ -25,7 +25,7 @@ return new class extends Migration
             $table->bigInteger('count_value')->default(0);
             $table->timestampTz('recalculated_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
         });
     }

@@ -25,7 +25,7 @@ return new class extends Migration
             $table->timestampTz('added_at')->nullable()->index();
             $table->timestampTz('removed_at')->nullable()->index();
             $table->{$jsonType}('metadata')->nullable();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestampsTz();
         });
     }
