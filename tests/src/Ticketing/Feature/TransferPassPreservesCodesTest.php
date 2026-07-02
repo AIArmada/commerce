@@ -6,7 +6,7 @@ use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 
-it('preserves pass_no, qr_code, and barcode after transfer', function () {
+it('preserves pass_no, qr_code, and barcode after transfer', function (): void {
     $pass = Pass::factory()->create();
     $originalPassNo = $pass->pass_no;
     $originalQr = $pass->qr_code;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Seating\Data\SeatMapLayout;
 
-it('can be created with defaults', function () {
+it('can be created with defaults', function (): void {
     $layout = new SeatMapLayout(
         id: 'uuid-1',
         name: 'Main Hall',
@@ -17,7 +17,7 @@ it('can be created with defaults', function () {
     expect($layout->bounds)->toBe(['rows' => 0, 'cols' => 0]);
 });
 
-it('can be created with sections and bounds', function () {
+it('can be created with sections and bounds', function (): void {
     $layout = new SeatMapLayout(
         id: 'uuid-2',
         name: 'VIP Room',
@@ -31,7 +31,7 @@ it('can be created with sections and bounds', function () {
     expect($layout->bounds['rows'])->toBe(5);
 });
 
-it('has expected properties', function () {
+it('has expected properties', function (): void {
     $layout = new SeatMapLayout(
         id: 'uuid-3',
         name: 'Test',

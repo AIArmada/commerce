@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
+use Override;
 
 /**
  * @property string $id
@@ -75,7 +76,7 @@ final class ContactMethod extends Model
 
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
 
-    #[\Override]
+    #[Override]
     public function setAttribute($key, $value): mixed
     {
         if ($key === 'order_column') {
@@ -85,7 +86,7 @@ final class ContactMethod extends Model
         return parent::setAttribute($key, $value);
     }
 
-    #[\Override]
+    #[Override]
     public function getAttribute($key): mixed
     {
         if ($key === 'order_column') {

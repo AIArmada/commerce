@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentSeating\Resources\SeatMapResource;
 use AIArmada\FilamentSeating\FilamentSeatingPlugin;
+use AIArmada\FilamentSeating\FilamentSeatingServiceProvider;
+use AIArmada\FilamentSeating\Resources\SeatMapResource;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 $resources = [
     SeatMapResource::class,
@@ -36,8 +38,8 @@ test('plugin is registered', function (): void {
 });
 
 test('filament-seating service provider is concrete', function (): void {
-    $provider = new \AIArmada\FilamentSeating\FilamentSeatingServiceProvider(app());
-    expect($provider)->toBeInstanceOf(\Spatie\LaravelPackageTools\PackageServiceProvider::class);
+    $provider = new FilamentSeatingServiceProvider(app());
+    expect($provider)->toBeInstanceOf(PackageServiceProvider::class);
 });
 
 test('filament-seating config uses nested navigation.group', function (): void {

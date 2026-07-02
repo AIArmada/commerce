@@ -10,7 +10,7 @@ use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-it('transfers multiple passes', function () {
+it('transfers multiple passes', function (): void {
     $passes = Pass::factory()->count(3)->create();
     $newHolder = PassHolder::factory()->make(['name' => 'Bulk Recipient']);
 
@@ -22,7 +22,7 @@ it('transfers multiple passes', function () {
     expect($results)->toHaveCount(3);
 });
 
-it('throws exception when exceeding max size', function () {
+it('throws exception when exceeding max size', function (): void {
     config()->set('ticketing.transfers.bulk_max_size', 2);
 
     $passes = Pass::factory()->count(3)->create();
@@ -33,14 +33,14 @@ it('throws exception when exceeding max size', function () {
     ))->toThrow(BulkTransferSizeExceededException::class);
 });
 
-it('requires at least one pass id', function () {
+it('requires at least one pass id', function (): void {
     expect(fn () => app(BulkTransferPassesAction::class)->handle(
         [],
         PassHolder::factory()->make(),
     ))->toThrow(InvalidArgumentException::class);
 });
 
-it('fails when any pass id is outside the current owner scope', function () {
+it('fails when any pass id is outside the current owner scope', function (): void {
     $ownerA = User::query()->create([
         'name' => 'Bulk Owner A',
         'email' => 'bulk-owner-a@example.com',

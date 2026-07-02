@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Schema;
 
-beforeEach(function () {
-    Schema::create('test_ticketables', function ($table) {
+beforeEach(function (): void {
+    Schema::create('test_ticketables', function ($table): void {
         $table->uuid('id')->primary();
         $table->timestamps();
     });
@@ -49,7 +49,7 @@ beforeEach(function () {
     $this->ticketable->save();
 });
 
-it('creates a ticket type', function () {
+it('creates a ticket type', function (): void {
     $ticketType = app(EnsureTicketTypeAction::class)->handle($this->ticketable, [
         'name' => 'General Admission',
         'code' => 'GA',
@@ -63,7 +63,7 @@ it('creates a ticket type', function () {
         ->and($ticketType->price)->toBe(50000);
 });
 
-it('validates ticket type status on creation', function () {
+it('validates ticket type status on creation', function (): void {
     $ticketType = app(EnsureTicketTypeAction::class)->handle($this->ticketable, [
         'name' => 'Default Status',
         'code' => 'DS',
