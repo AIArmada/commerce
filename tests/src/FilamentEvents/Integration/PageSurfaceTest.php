@@ -9,13 +9,11 @@ use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventSeatMap;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\FilamentEvents\Pages\CheckInConsole;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
 use AIArmada\FilamentEvents\Pages\NotificationCenter;
-use AIArmada\FilamentEvents\Pages\SeatMapManager;
 use AIArmada\FilamentEvents\Resources\EventResource\Pages\ViewEvent;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -73,12 +71,6 @@ it('scopes the special page queries to the current owner', function (): void {
                 'event_session_id' => $session->id,
             ]);
 
-            $seatMap = EventSeatMap::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'event_session_id' => $session->id,
-            ]);
-
             return compact(
                 'event',
                 'occurrence',
@@ -87,7 +79,6 @@ it('scopes the special page queries to the current owner', function (): void {
                 'registration',
                 'pass',
                 'notificationBatch',
-                'seatMap',
             );
         });
     };
@@ -112,8 +103,6 @@ it('scopes the special page queries to the current owner', function (): void {
     $ownerBPasses = OwnerContext::withOwner($ownerB, fn (): array => (new CheckInConsole)->table($makeTable())->getQuery()->pluck('id')->all());
     $ownerANotifications = OwnerContext::withOwner($ownerA, fn (): array => (new NotificationCenter)->table($makeTable())->getQuery()->pluck('id')->all());
     $ownerBNotifications = OwnerContext::withOwner($ownerB, fn (): array => (new NotificationCenter)->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerASeatMaps = OwnerContext::withOwner($ownerA, fn (): array => (new SeatMapManager)->table($makeTable())->getQuery()->pluck('id')->all());
-    $ownerBSeatMaps = OwnerContext::withOwner($ownerB, fn (): array => (new SeatMapManager)->table($makeTable())->getQuery()->pluck('id')->all());
 
     $previewPage = new EventPublicPreview;
     OwnerContext::withOwner($ownerA, function () use ($previewPage, $ownerBGraph): void {
@@ -124,8 +113,6 @@ it('scopes the special page queries to the current owner', function (): void {
         ->and($ownerBPasses)->toBe([$ownerBGraph['pass']->id])
         ->and($ownerANotifications)->toBe([$ownerAGraph['notificationBatch']->id])
         ->and($ownerBNotifications)->toBe([$ownerBGraph['notificationBatch']->id])
-        ->and($ownerASeatMaps)->toBe([$ownerAGraph['seatMap']->id])
-        ->and($ownerBSeatMaps)->toBe([$ownerBGraph['seatMap']->id])
         ->and($previewPage->event)->toBeNull();
 });
 
@@ -134,7 +121,6 @@ it('builds the special page header actions', function (): void {
         new ViewEvent,
         new CheckInConsole,
         new NotificationCenter,
-        new SeatMapManager,
     ];
 
     foreach ($pages as $page) {

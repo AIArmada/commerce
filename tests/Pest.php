@@ -26,6 +26,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 */
 
 pest()->extend(TestCase::class)->in(
+    'src/Ticketing',
+    'src/FilamentTicketing',
+    'src/FilamentSeating',
+    'src/Seating',
     'src/Addressing',
     'src/Authz',
     'src/FilamentAddressing',

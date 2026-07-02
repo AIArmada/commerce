@@ -21,16 +21,22 @@ return [
     'pivot' => [
         'table_suffix' => '_members',
     ],
+    'role_mapping' => [
+        'admin' => env('MEMBERSHIP_ROLE_ADMIN_NAME', 'admin'),
+        'editor' => env('MEMBERSHIP_ROLE_EDITOR_NAME', 'editor'),
+        'viewer' => env('MEMBERSHIP_ROLE_VIEWER_NAME', 'viewer'),
+    ],
     'features' => [
         'team_scoped_roles' => true,
         'owner' => [
             'enabled' => true,
             'include_global' => false,
             'auto_assign_on_create' => true,
+            'owner_type_column' => 'owner_type',
+            'owner_id_column' => 'owner_id',
         ],
     ],
 ];
 ```
 
-Keep `hash_tokens` enabled in production. The plaintext token is available only on `MembershipInvitationSent`.
-When owner scoping is enabled, resolve the current owner before reading or mutating applications and invitations.
+Keep `hash_tokens` enabled in production.

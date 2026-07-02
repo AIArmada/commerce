@@ -1,0 +1,28 @@
+{
+    "name": "aiarmada/filament-seating",
+    "description": "Filament admin for aiarmada/seating: manage seat maps, sections, and occupancy.",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "aiarmada/seating": "self.version",
+        "aiarmada/filament-commerce-support": "self.version",
+        "filament/filament": "^5.6.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\FilamentSeating\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\FilamentSeating\\FilamentSeatingServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

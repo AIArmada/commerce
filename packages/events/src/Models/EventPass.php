@@ -6,12 +6,13 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventPassFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Seating\Models\SeatAllocation;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -118,11 +119,11 @@ final class EventPass extends Model
     }
 
     /**
-     * @return HasOne<EventSeatAllocation, $this>
+     * @return MorphMany<SeatAllocation, $this>
      */
-    public function seatAllocation(): HasOne
+    public function seatAllocations(): MorphMany
     {
-        return $this->hasOne(EventSeatAllocation::class, 'event_pass_id');
+        return $this->morphMany(SeatAllocation::class, 'allocated_to');
     }
 
     /**

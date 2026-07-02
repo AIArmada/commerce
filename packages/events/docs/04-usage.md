@@ -365,6 +365,10 @@ app(EventCheckInService::class)->checkIn([
 
 ## Managing Involvements
 
+Involvements link people (any model) to an event, occurrence, or session with a role. The `involveable` is polymorphic — it can be a `User`, `Organization`, `Speaker`, or any model implementing `CanBeInvolvedInEvents`.
+
+### Creating involvements
+
 ```php
 $event->involvements()->create([
     'involveable_type' => (new Speaker)->getMorphClass(),
@@ -374,6 +378,73 @@ $event->involvements()->create([
     'is_featured' => true,
     'status' => 'confirmed',
 ]);
+```
+
+### Organizers
+
+An organizer is just an involvement with `role_code = 'organizer'`:
+
+```php
+$event->involvements()->create([
+    'involveable_type' => (new User)->getMorphClass(),
+    'involveable_id' => $user->id,
+    'role_code' => 'organizer',
+    'is_primary' => true,
+    'visibility' => 'public',
+    'status' => 'confirmed',
+]);
+```
+
+### Querying involvements
+
+```php
+// By role
+$event->involvements()->role('organizer')->get();
+$event->involvements()->role('speaker')->get();
+$event->involvements()->role('sponsor')->get();
+
+// Public-facing only
+$event->involvements()->public()->get();
+
+// Featured / headliner
+$event->involvements()->featured()->get();
+$event->involvements()->headliner()->get();
+
+// Convenience methods on the Event model
+$event->featuredInvolvements();
+$event->headliners();
+```
+
+### Organizer vs createdBy
+
+Don't confuse organizers (involvements) with `createdBy`:
+
+- **`createdBy`** (`created_by_type` / `created_by_id` on the `events` table) — who created the event record. A single morphTo, set on creation, not publicly displayed.
+- **Organizers** (`event_involvements` with `role_code = 'organizer'`) — people publicly credited as organizers. Multiple per event, with visibility, prominence, and display name control.
+
+A created-by user might also be listed as an organizer, but they're stored independently. Organizers are the public-facing list; `createdBy` is an audit trail.
+
+### The `CanOrganizeEvents` contract
+
+Any model attached as an organizer involvement can implement `CanOrganizeEvents` to control its display name, profile URL, and default public visibility:
+
+```php
+use AIArmada\Events\Contracts\CanOrganizeEvents;
+
+class User extends Model implements CanOrganizeEvents
+{
+    use CanOrganizeEvents; // provides sensible defaults
+
+    public function eventOrganizerName(): string
+    {
+        return $this->name;
+    }
+
+    public function eventOrganizerProfileUrl(): ?string
+    {
+        return route('profile.show', $this);
+    }
+}
 ```
 
 ## Owner-Scoped Queries

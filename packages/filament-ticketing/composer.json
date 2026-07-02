@@ -1,0 +1,28 @@
+{
+    "name": "aiarmada/filament-ticketing",
+    "description": "Filament admin for aiarmada/ticketing: manage ticket types, passes, pass holders, transfers, and pass issuance.",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "aiarmada/ticketing": "self.version",
+        "aiarmada/filament-commerce-support": "self.version",
+        "filament/filament": "^5.6.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\FilamentTicketing\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\FilamentTicketing\\FilamentTicketingServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

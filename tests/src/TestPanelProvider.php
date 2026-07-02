@@ -7,6 +7,7 @@ namespace AIArmada\Commerce\Tests;
 use AIArmada\FilamentAffiliates\FilamentAffiliates;
 use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentGrowth\FilamentGrowthPlugin;
+use AIArmada\FilamentSeating\FilamentSeatingPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -38,6 +39,7 @@ class TestPanelProvider extends PanelProvider
             ->discoverWidgets(in: __DIR__ . '/../../packages/filament-chip/src/Widgets', for: 'AIArmada\\FilamentChip\\Widgets')
             ->plugins([
                 FilamentCartPlugin::make(),
+                FilamentSeatingPlugin::make(),
                 FilamentVouchersPlugin::make(),
                 FilamentAffiliates::make(),
                 FilamentGrowthPlugin::make(),

@@ -42,7 +42,6 @@ final class FilamentEventsPlugin implements Plugin
             Pages\NotificationCenter::class,
             Pages\ApprovalQueue::class,
             Pages\EventPublicPreview::class,
-            Pages\SeatMapManager::class,
         ];
     }
 

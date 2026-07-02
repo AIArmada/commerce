@@ -72,7 +72,22 @@ return [
 | `features.owner.enabled` | `false` | Enable multitenancy/owner scoping |
 | `features.owner.include_global` | `false` | Include global (ownerless) records in queries |
 | `features.owner.auto_assign_on_create` | `true` | Auto-assign the resolved owner to newly created pricing records |
-| `features.promotional.enabled` | `true` | Enable promotional price resolution |
+
+### Pricing Settings
+
+Runtime settings are stored via Spatie Settings. Defaults from the settings migration:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `pricing.defaultCurrency` | `'MYR'` | Default currency code (ISO 4217) |
+| `pricing.decimalPlaces` | `2` | Price display decimals |
+| `pricing.pricesIncludeTax` | `false` | Show prices inclusive of tax |
+| `pricing.roundingMode` | `'half_up'` | Rounding mode |
+| `pricing.minimumOrderValue` | `0` | Minimum order in minor units |
+| `pricing.maximumOrderValue` | `10000000` | Maximum order in minor units |
+| `pricing.promotionalPricingEnabled` | `true` | Enable promotional price resolution |
+| `pricing.tieredPricingEnabled` | `true` | Enable tiered pricing |
+| `pricing.customerGroupPricingEnabled` | `false` | Enable customer group pricing |
 
 ## PricingIntegrationRegistrar
 

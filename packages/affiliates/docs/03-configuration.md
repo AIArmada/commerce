@@ -208,7 +208,7 @@ The package is configured via `config/affiliates.php`. This document reflects th
     'minimum_amount' => env('AFFILIATES_PAYOUT_MINIMUM_AMOUNT', 5000),
     'maturity_days' => env('AFFILIATES_PAYOUT_MATURITY_DAYS', 30),
     'multi_level' => [
-        'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', false),
+        'enabled' => env('AFFILIATES_MULTI_LEVEL_ENABLED', true),
         'levels' => [0.1, 0.05], // 10%, 5% of commission to uplines
     ],
     'paypal' => [

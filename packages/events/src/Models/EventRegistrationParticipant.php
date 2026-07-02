@@ -136,14 +136,6 @@ final class EventRegistrationParticipant extends Model
         return $this->hasMany(EventAttendance::class, 'event_registration_participant_id');
     }
 
-    /**
-     * @return HasMany<EventSeatAllocation, $this>
-     */
-    public function seatAllocations(): HasMany
-    {
-        return $this->hasMany(EventSeatAllocation::class, 'event_registration_participant_id');
-    }
-
     protected static function newFactory(): EventRegistrationParticipantFactory
     {
         return EventRegistrationParticipantFactory::new();

@@ -10,12 +10,19 @@ use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Seating\Contracts\SeatAllocatorInterface;
+use AIArmada\Seating\Models\SeatAllocation;
+use AIArmada\Seating\Models\SeatHold;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class DefaultEventPassIssuer implements EventPassIssuer
 {
+    public function __construct(
+        private readonly SeatAllocatorInterface $seatAllocator,
+    ) {}
+
     public function issuePassesFor(EventRegistration $registration): iterable
     {
         EventWriteGuard::findOrFail($registration->event_id);
@@ -34,6 +41,8 @@ final class DefaultEventPassIssuer implements EventPassIssuer
                 'status' => 'issued',
                 'issued_at' => CarbonImmutable::now(),
             ]);
+
+            $this->allocateForPass($pass);
 
             event(new EventPassIssued($pass));
 
@@ -63,11 +72,53 @@ final class DefaultEventPassIssuer implements EventPassIssuer
                     'issued_at' => CarbonImmutable::now(),
                 ]);
 
+                $this->allocateForPass($pass);
+
                 event(new EventPassIssued($pass));
                 $passes[] = $pass;
             }
         }
 
         return $passes;
+    }
+
+    private function allocateForPass(EventPass $pass): void
+    {
+        $map = $pass->session?->seatMaps()->where('status', 'active')->first()
+            ?? $pass->occurrence?->seatMaps()->where('status', 'active')->first()
+            ?? $pass->event?->seatMaps()->where('status', 'active')->first();
+
+        if ($map === null) {
+            return;
+        }
+
+        $results = $this->seatAllocator->allocate(
+            map: $map,
+            quantity: 1,
+            reference: $pass->id,
+        );
+
+        foreach ($results as $result) {
+            if ($result->holdId === null) {
+                continue;
+            }
+
+            $hold = SeatHold::query()->find($result->holdId);
+
+            if ($hold === null) {
+                continue;
+            }
+
+            SeatAllocation::query()->create([
+                'seat_id' => $result->seatId,
+                'allocated_to_type' => $pass->getMorphClass(),
+                'allocated_to_id' => $pass->id,
+                'reference' => $pass->pass_no,
+                'allocated_at' => now(),
+                'state' => 'active',
+            ]);
+
+            $hold->markConverted();
+        }
     }
 }

@@ -27,6 +27,9 @@ use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 use AIArmada\Engagement\EngagementServiceProvider;
 use AIArmada\Events\EventsServiceProvider;
 use AIArmada\Filament\Communications\FilamentCommunicationsServiceProvider;
+use AIArmada\Ticketing\TicketingServiceProvider;
+use AIArmada\FilamentSeating\FilamentSeatingServiceProvider;
+use AIArmada\FilamentTicketing\FilamentTicketingServiceProvider;
 use AIArmada\FilamentAddressing\FilamentAddressingServiceProvider;
 use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkServiceProvider;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
@@ -47,6 +50,7 @@ use AIArmada\Moderation\ModerationServiceProvider;
 use AIArmada\Products\ProductsServiceProvider;
 use AIArmada\References\ReferencesServiceProvider;
 use AIArmada\Shipping\Facades\Shipping;
+use AIArmada\Seating\SeatingServiceProvider;
 use AIArmada\Shipping\ShippingServiceProvider;
 use AIArmada\Signals\SignalsServiceProvider;
 use AIArmada\Vouchers\Facades\Voucher;
@@ -186,12 +190,16 @@ abstract class TestCase extends Orchestra
             FilamentAddressingServiceProvider::class,
             ShippingServiceProvider::class,
             ProductsServiceProvider::class,
+            SeatingServiceProvider::class,
             CommunicationsServiceProvider::class,
             FilamentCommunicationsServiceProvider::class,
             ModerationServiceProvider::class,
             ReferencesServiceProvider::class,
             FilamentShippingServiceProvider::class,
             FilamentCashierServiceProvider::class,
+            TicketingServiceProvider::class,
+            FilamentSeatingServiceProvider::class,
+            FilamentTicketingServiceProvider::class,
             TestPanelProvider::class,
         ];
     }
@@ -395,6 +403,11 @@ abstract class TestCase extends Orchestra
         // Configure references settings for testing
         $app['config']->set('references.database.json_column_type', 'json');
 
+        // Configure seating owner scoping for testing
+        $app['config']->set('seating.owner.enabled', true);
+        $app['config']->set('seating.owner.include_global', false);
+        $app['config']->set('seating.owner.auto_assign_on_create', true);
+
         // Configure Spatie Permission settings for testing
         $app['config']->set('permission.models.permission', Permission::class);
         $app['config']->set('permission.models.role', Role::class);
@@ -467,6 +480,8 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/communications/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/moderation/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/references/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/seating/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/ticketing/database/migrations');
     }
 
     protected function setUpDatabase(): void

@@ -1,0 +1,53 @@
+{
+    "name": "aiarmada/ticketing",
+    "description": "Standalone ticketing package with ticket types, passes, pass issuance, transfers, and bundle products for any ticketable model",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "ticketing",
+        "tickets",
+        "passes",
+        "events"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "aiarmada/commerce-support": "self.version",
+        "aiarmada/seating": "self.version",
+        "spatie/laravel-data": "^4.23",
+        "spatie/laravel-model-states": "^2.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "suggest": {
+        "aiarmada/inventory": "Enables stock tracking and inventory allocation for ticket types.",
+        "aiarmada/cart": "Enables adding ticket types to shopping cart.",
+        "aiarmada/products": "Enables ticket-bundled products and variants.",
+        "aiarmada/orders": "Enables automatic pass issuance on order paid.",
+        "aiarmada/checkout": "Enables checkout step registration.",
+        "aiarmada/customers": "Enables polymorphic holder resolution to Customer model."
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Ticketing\\": "src/",
+            "AIArmada\\Ticketing\\Database\\Factories\\": "database/factories"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Ticketing\\TicketingServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

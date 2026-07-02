@@ -424,7 +424,6 @@ morphTo participant nullable
 hasMany EventRegistrationAnswer
 hasMany EventPass
 hasMany EventAttendance
-hasMany EventSeatAllocation
 ```
 
 ## `EventRegistrationAnswer`
@@ -502,7 +501,6 @@ belongsTo EventRegistration nullable
 belongsTo EventRegistrationParticipant nullable
 belongsTo EventRegistrationItem nullable
 belongsTo EventTicketType nullable
-hasOne EventSeatAllocation
 hasMany EventAttendance
 ```
 
@@ -521,66 +519,9 @@ $pass->isValidFor($target);
 
 # Seating models
 
-## `EventSeatMap`
+Seating models moved to `aiarmada/seating`.
 
-Relationships:
-
-```text
-belongsTo Event
-belongsTo EventOccurrence nullable
-belongsTo EventSession nullable
-hasMany EventSeatSection
-```
-
-## `EventSeatSection`
-
-Relationships:
-
-```text
-belongsTo EventSeatMap
-hasMany EventSeat
-hasMany EventSeatHold
-hasMany EventSeatAllocation
-hasMany EventTicketTypeSeatingOption
-```
-
-## `EventSeat`
-
-Relationships:
-
-```text
-belongsTo EventSeatSection
-hasMany EventSeatHold
-hasMany EventSeatAllocation
-```
-
-## `EventSeatHold`
-
-Relationships:
-
-```text
-belongsTo Event
-belongsTo EventOccurrence nullable
-belongsTo EventSession nullable
-belongsTo EventSeat nullable
-belongsTo EventSeatSection nullable
-morphTo holder nullable
-belongsTo EventRegistration nullable
-```
-
-## `EventSeatAllocation`
-
-Relationships:
-
-```text
-belongsTo Event
-belongsTo EventOccurrence nullable
-belongsTo EventSession nullable
-belongsTo EventPass nullable
-belongsTo EventRegistrationParticipant nullable
-belongsTo EventSeatSection nullable
-belongsTo EventSeat nullable
-```
+Events links to seating through polymorphic `SeatMap::seatable`; `Event`, `EventOccurrence`, and `EventSession` expose `morphMany(SeatMap::class, 'seatable')`. Final seat assignments are `AIArmada\Seating\Models\SeatAllocation` records whose `allocated_to` morph can point at an event pass.
 
 ---
 

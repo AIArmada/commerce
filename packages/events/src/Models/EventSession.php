@@ -12,6 +12,7 @@ use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
+use AIArmada\Seating\Models\SeatMap;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 use Spatie\ModelStates\HasStates;
 
@@ -78,6 +80,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventChangeLog> $changeLogs
  * @property-read Collection<int, EventUpdate> $updates
  * @property-read Collection<int, EventNotificationBatch> $notificationBatches
+ * @property-read Collection<int, SeatMap> $seatMaps
  */
 final class EventSession extends Model
 {
@@ -334,6 +337,14 @@ final class EventSession extends Model
     public function notificationBatches(): HasMany
     {
         return $this->hasMany(EventNotificationBatch::class, 'event_session_id');
+    }
+
+    /**
+     * @return MorphMany<SeatMap, $this>
+     */
+    public function seatMaps(): MorphMany
+    {
+        return $this->morphMany(SeatMap::class, 'seatable');
     }
 
     public function delay(?string $reason = null, ?DateTimeInterface $expectedStartsAt = null): void

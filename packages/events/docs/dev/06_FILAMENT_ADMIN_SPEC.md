@@ -475,35 +475,9 @@ Check In
 
 # Seating resources
 
-## 17. `EventSeatMapResource`
+Seat map administration moved to `aiarmada/filament-seating`.
 
-Manage seat maps.
-
-### Pages
-
-```text
-ListSeatMaps
-CreateSeatMap
-ViewSeatMap
-EditSeatMap
-SeatMapDesigner
-```
-
-## 18. `EventSeatSectionResource`
-
-Manage sections/areas.
-
-## 19. `EventSeatResource`
-
-Manage individual seats.
-
-## 20. `EventSeatHoldResource`
-
-Operational view for active/expired holds.
-
-## 21. `EventSeatAllocationResource`
-
-Final allocations.
+Events no longer owns event-specific seating resources. The seating adapter owns seat maps, sections, seats, holds, occupancy, and layout editing.
 
 ### Widgets
 

@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventTicketTypeSeatingOptionFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Seating\Models\SeatSection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property string $event_ticket_type_id
- * @property string|null $event_seat_section_id
+ * @property string|null $seat_section_id
  * @property string|null $seat_category
  * @property int|null $included_quantity
  * @property int|null $allowed_quantity
@@ -28,7 +29,7 @@ final class EventTicketTypeSeatingOption extends Model
     use UsesEventUuid;
 
     protected $fillable = [
-        'event_ticket_type_id', 'event_seat_section_id',
+        'event_ticket_type_id', 'seat_section_id',
         'seat_category', 'included_quantity', 'allowed_quantity',
         'metadata',
     ];
@@ -56,11 +57,11 @@ final class EventTicketTypeSeatingOption extends Model
     }
 
     /**
-     * @return BelongsTo<EventSeatSection, $this>
+     * @return BelongsTo<SeatSection, $this>
      */
     public function section(): BelongsTo
     {
-        return $this->belongsTo(EventSeatSection::class, 'event_seat_section_id');
+        return $this->belongsTo(SeatSection::class, 'seat_section_id');
     }
 
     protected static function newFactory(): EventTicketTypeSeatingOptionFactory

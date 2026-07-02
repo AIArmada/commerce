@@ -38,7 +38,7 @@ title: Events Overview
 | **Ticket Type** | Admission/access definition (General, VIP, Early Bird, etc.) |
 | **Pass** | Actual issued credential (QR code, barcode) for access |
 | **Attendance** | Check-in record tracking who actually attended |
-| **Involvement** | People linked to event/occurrence/session with a role (speaker, organizer, sponsor) |
+| **Involvement** | People linked to event/occurrence/session with a role (speaker, organizer, sponsor). Organizers are involvements with `role_code = 'organizer'`. |
 | **Pricing Mode** | Defines whether an event is paid, free, or mixed (paid + free ticket types) |
 | **Registration Mode** | Defines whether registration is required, optional (no pass issued), or none (open door) |
 | **Open Door Mode** | Controls behavior when registration is none: block, walk-in, or headcount |

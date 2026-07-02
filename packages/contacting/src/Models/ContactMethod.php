@@ -68,11 +68,32 @@ final class ContactMethod extends Model
         'verified_at',
         'valid_from',
         'valid_until',
+        'order_column',
         'sort_order',
         'metadata',
     ];
 
     protected static string $ownerScopeConfigKey = 'contacting.features.owner';
+
+    #[\Override]
+    public function setAttribute($key, $value): mixed
+    {
+        if ($key === 'order_column') {
+            return parent::setAttribute('sort_order', $value);
+        }
+
+        return parent::setAttribute($key, $value);
+    }
+
+    #[\Override]
+    public function getAttribute($key): mixed
+    {
+        if ($key === 'order_column') {
+            return parent::getAttribute('sort_order');
+        }
+
+        return parent::getAttribute($key);
+    }
 
     public function getTable(): string
     {

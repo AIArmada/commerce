@@ -359,22 +359,22 @@ quantity * admits_quantity
 # 15. Seat allocation workflow
 
 1. Validate seat map and ticket seating option.
-2. Hold selected seat/section using `event_seat_holds`.
+2. Hold selected seat/section using `seat_holds` from `aiarmada/seating`.
 3. On registration/payment success, convert hold to allocation.
-4. Create `event_seat_allocations`.
+4. Create `seat_allocations` from `aiarmada/seating`.
 5. Release expired holds automatically.
 
 Reserved seat:
 
 ```text
-event_seat_id filled
+seat_id filled
 ```
 
 General/premium/VIP/standing area:
 
 ```text
-event_seat_section_id filled
-event_seat_id null
+seat_section_id filled
+seat_id null
 ```
 
 ---

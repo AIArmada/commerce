@@ -930,7 +930,7 @@ Allowed seating/section options for ticket types.
 event_ticket_type_seating_options
 - id uuid primary
 - event_ticket_type_id uuid index
-- event_seat_section_id uuid nullable index
+- seat_section_id uuid nullable index
 - seat_category string nullable index
 - included_quantity integer nullable
 - allowed_quantity integer nullable
@@ -992,142 +992,11 @@ expired
 
 ---
 
-## 22. `event_seat_maps`
+## 22. Seating tables
 
-Seat map for event/occurrence/session.
+Seat maps, sections, seats, holds, and allocations moved to `aiarmada/seating`.
 
-```text
-event_seat_maps
-- id uuid primary
-- event_id uuid index
-- event_occurrence_id uuid nullable index
-- event_session_id uuid nullable index
-- name string
-- status string index
-- metadata jsonb nullable
-- created_at timestampTz
-- updated_at timestampTz
-```
-
----
-
-## 23. `event_seat_sections`
-
-Sections/areas inside a seat map.
-
-```text
-event_seat_sections
-- id uuid primary
-- event_seat_map_id uuid index
-- name string
-- code string nullable index
-- section_type string index
-- seat_category string nullable index
-- capacity integer nullable
-- sort_order integer default 0 index
-- metadata jsonb nullable
-- created_at timestampTz
-- updated_at timestampTz
-```
-
-Section types:
-
-```text
-seated
-standing
-general_area
-vip_area
-premium_area
-```
-
-Seat categories:
-
-```text
-general
-premium
-vip
-standing
-reserved
-```
-
----
-
-## 24. `event_seats`
-
-Individual reserved seats.
-
-```text
-event_seats
-- id uuid primary
-- event_seat_section_id uuid index
-- row_label string nullable
-- seat_number string nullable
-- label string
-- status string index
-- metadata jsonb nullable
-- created_at timestampTz
-- updated_at timestampTz
-```
-
----
-
-## 25. `event_seat_holds`
-
-Temporary holds during registration/checkout.
-
-```text
-event_seat_holds
-- id uuid primary
-- event_id uuid index
-- event_occurrence_id uuid nullable index
-- event_session_id uuid nullable index
-
-- event_seat_id uuid nullable index
-- event_seat_section_id uuid nullable index
-
-- holder_type string nullable index
-- holder_id uuid nullable index
-- event_registration_id uuid nullable index
-
-- quantity integer default 1
-
-- expires_at timestampTz index
-- released_at timestampTz nullable index
-- converted_at timestampTz nullable index
-
-- metadata jsonb nullable
-- created_at timestampTz
-- updated_at timestampTz
-```
-
----
-
-## 26. `event_seat_allocations`
-
-Final seat/area assignment.
-
-```text
-event_seat_allocations
-- id uuid primary
-- event_id uuid index
-- event_occurrence_id uuid nullable index
-- event_session_id uuid nullable index
-
-- event_pass_id uuid nullable index
-- event_registration_participant_id uuid nullable index
-
-- event_seat_section_id uuid nullable index
-- event_seat_id uuid nullable index
-
-- allocation_type string index
-- status string index
-
-- allocated_at timestampTz index
-- released_at timestampTz nullable index
-- revoked_at timestampTz nullable index
-
-- metadata jsonb nullable
-- created_at timestampTz
+Events links to seating through `seat_maps.seatable_type` / `seat_maps.seatable_id`; event passes are linked to final assignments through `seat_allocations.allocated_to_type` / `seat_allocations.allocated_to_id`.
 - updated_at timestampTz
 ```
 
@@ -2378,11 +2247,6 @@ event_ticket_types
 event_ticket_type_components
 event_ticket_type_seating_options
 event_passes
-event_seat_maps
-event_seat_sections
-event_seats
-event_seat_holds
-event_seat_allocations
 
 event_attendances
 event_attendance_logs

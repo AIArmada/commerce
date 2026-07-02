@@ -37,7 +37,6 @@ use AIArmada\Events\Contracts\EventScheduleResolver;
 use AIArmada\Events\Contracts\EventSearchEngine;
 use AIArmada\Events\Contracts\EventSearchIndexer;
 use AIArmada\Events\Contracts\EventSearchPayloadResolver;
-use AIArmada\Events\Contracts\EventSeatAllocator;
 use AIArmada\Events\Contracts\EventTranslationProvider;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Events\EventChangeNoticePublished;
@@ -99,7 +98,6 @@ use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
 use AIArmada\Events\Services\DefaultEventPassDeliveryService;
 use AIArmada\Events\Services\DefaultEventPassIssuer;
-use AIArmada\Events\Services\DefaultEventSeatAllocator;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventMetadataSyncService;
 use AIArmada\Events\Services\EventQueryService;
@@ -147,7 +145,6 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->bind(EventCheckInService::class, DefaultEventCheckInService::class);
         $this->app->bind(EventPassIssuer::class, DefaultEventPassIssuer::class);
         $this->app->bind(EventPassDeliveryService::class, DefaultEventPassDeliveryService::class);
-        $this->app->bind(EventSeatAllocator::class, DefaultEventSeatAllocator::class);
         $this->app->bind(RegistrationServiceInterface::class, RegistrationService::class);
 
         $this->app->bind(EventEngagementManager::class, NullEventEngagementManager::class);

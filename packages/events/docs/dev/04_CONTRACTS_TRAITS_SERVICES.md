@@ -146,7 +146,7 @@ interface ProvidesEventFacilities
 
 ## 7. `CanOrganizeEvents`
 
-For public organizer entities.
+For public organizer entities. Implemented by any model attached as an organizer involvement (`event_involvements.role_code = 'organizer'`). The involvement system reads these methods to display organizer info on public event pages — they are not used for storage or querying.
 
 ```php
 interface CanOrganizeEvents
@@ -164,6 +164,13 @@ Maps to:
 ```text
 event_involvements.role_code = organizer
 ```
+
+The `CanOrganizeEvents` trait provides sensible defaults:
+- `eventOrganizerName()` returns `$this->name ?? $this->title`
+- `eventOrganizerProfileUrl()` returns `$this->profile_url`
+- `shouldBePublicOrganizerByDefault()` returns `true`
+
+These are read when rendering an involvement card or listing (e.g. on the event detail page). They are not called during create/update — the involvement stores its own display state via `visibility` and `is_featured` columns.
 
 ---
 
@@ -697,14 +704,9 @@ interface EventPassIssuer
 }
 ```
 
-### `EventSeatAllocator`
+### Seating allocation
 
-```php
-interface EventSeatAllocator
-{
-    public function allocate(EventPass $pass, array $preferences = []): ?EventSeatAllocation;
-}
-```
+Seat allocation is owned by `aiarmada/seating`. Use `AIArmada\Seating\Contracts\SeatAllocatorInterface` and `AIArmada\Seating\Models\SeatAllocation` for seat holds and allocations.
 
 ### `EventCheckInService`
 

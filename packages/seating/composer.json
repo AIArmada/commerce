@@ -1,0 +1,48 @@
+{
+    "name": "aiarmada/seating",
+    "description": "Venue seat layout, seat allocation, and seat-map rendering primitive.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "seating",
+        "venues",
+        "seats",
+        "allocations"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "aiarmada/commerce-support": "self.version",
+        "spatie/laravel-data": "^4.23",
+        "spatie/laravel-package-tools": "^1.16",
+        "livewire/livewire": "^4.0"
+    },
+    "suggest": {
+        "aiarmada/events": "Enables event-scoped seat maps.",
+        "aiarmada/ticketing": "Enables seat allocation for passes."
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Seating\\": "src/",
+            "AIArmada\\Seating\\Database\\Factories\\": "database/factories"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Seating\\SeatingServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

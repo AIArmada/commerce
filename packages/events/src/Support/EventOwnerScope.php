@@ -35,11 +35,6 @@ use AIArmada\Events\Models\EventRegistrationAnswer;
 use AIArmada\Events\Models\EventRegistrationItem;
 use AIArmada\Events\Models\EventRegistrationParticipant;
 use AIArmada\Events\Models\EventSearchDocument;
-use AIArmada\Events\Models\EventSeat;
-use AIArmada\Events\Models\EventSeatAllocation;
-use AIArmada\Events\Models\EventSeatHold;
-use AIArmada\Events\Models\EventSeatMap;
-use AIArmada\Events\Models\EventSeatSection;
 use AIArmada\Events\Models\EventSeriesItem;
 use AIArmada\Events\Models\EventSeriesRule;
 use AIArmada\Events\Models\EventSession;
@@ -204,11 +199,6 @@ final class EventOwnerScope implements Scope
             EventSearchDocument::class => 'event',
             EventSeriesItem::class => 'series',
             EventSeriesRule::class => 'series',
-            EventSeat::class => 'section.map.event',
-            EventSeatAllocation::class => 'event',
-            EventSeatHold::class => 'event',
-            EventSeatMap::class => 'event',
-            EventSeatSection::class => 'map.event',
             EventSession::class => 'event',
             EventTicketType::class => 'event',
             EventTicketTypeComponent::class => 'parentTicketType.event',

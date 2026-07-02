@@ -80,6 +80,14 @@
         {
             "type": "path",
             "url": "packages/membership"
+        },
+        {
+            "type": "path",
+            "url": "packages/seating"
+        },
+        {
+            "type": "path",
+            "url": "packages/filament-seating"
         }
     ],
     "autoload": {
@@ -223,6 +231,16 @@
             "AIArmada\\Filament\\Communications\\": "packages/filament-communications/src",
             "AIArmada\\Filament\\Communications\\Tests\\": "tests/src/FilamentCommunications/",
             "AIArmada\\FilamentCommerceSupport\\": "packages/filament-commerce-support/src",
+            "AIArmada\\Seating\\": "packages/seating/src",
+            "AIArmada\\Seating\\Database\\Factories\\": "packages/seating/database/factories",
+            "AIArmada\\Seating\\Tests\\": "tests/src/Seating/",
+            "AIArmada\\FilamentSeating\\": "packages/filament-seating/src",
+            "AIArmada\\FilamentSeating\\Tests\\": "tests/src/FilamentSeating/",
+            "AIArmada\\Ticketing\\": "packages/ticketing/src",
+            "AIArmada\\Ticketing\\Database\\Factories\\": "packages/ticketing/database/factories",
+            "AIArmada\\Ticketing\\Tests\\": "tests/src/Ticketing/",
+            "AIArmada\\FilamentTicketing\\": "packages/filament-ticketing/src",
+            "AIArmada\\FilamentTicketing\\Tests\\": "tests/src/FilamentTicketing/",
             "Tests\\": "tests/"
         }
     },

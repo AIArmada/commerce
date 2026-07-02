@@ -17,7 +17,7 @@
 - [x] Added `event_occurrence_id` / `event_session_id` columns + relationships on `EventRegistrationParticipant` for direct occurrence/session scoping.
 
 ## Phase 5 — Seating
-- [x] Seat maps, sections, seats, holds, allocations — migrations/models done. EventSeatAllocator contract needs implementing (see note).
+- [x] Seat maps, sections, seats, holds, allocations moved to `aiarmada/seating`. Events now links seat maps through polymorphic `SeatMap::seatable`.
 
 ## Phase 6 — Attendance and check-in
 - [x] Attendances and logs — migrations/models done. EventCheckInService contract needs implementing (see note).

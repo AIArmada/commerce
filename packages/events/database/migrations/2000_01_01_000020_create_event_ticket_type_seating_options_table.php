@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create(config('events.database.tables.event_ticket_type_seating_options', 'event_ticket_type_seating_options'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('event_ticket_type_id')->index();
-            $table->uuid('event_seat_section_id')->nullable()->index();
+            $table->uuid('seat_section_id')->nullable()->index();
             $table->string('seat_category')->nullable()->index();
             $table->integer('included_quantity')->nullable();
             $table->integer('allowed_quantity')->nullable();

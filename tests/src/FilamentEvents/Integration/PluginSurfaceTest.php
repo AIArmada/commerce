@@ -13,7 +13,6 @@ use AIArmada\FilamentEvents\Pages\ApprovalQueue;
 use AIArmada\FilamentEvents\Pages\CheckInConsole;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
 use AIArmada\FilamentEvents\Pages\NotificationCenter;
-use AIArmada\FilamentEvents\Pages\SeatMapManager;
 use AIArmada\FilamentEvents\Resources\EventChangeLogResource;
 use AIArmada\FilamentEvents\Resources\EventRegistrationParticipantResource;
 use AIArmada\FilamentEvents\Resources\EventResource;
@@ -37,7 +36,6 @@ it('exposes the plugin resources, pages, and widgets', function (): void {
             NotificationCenter::class,
             ApprovalQueue::class,
             EventPublicPreview::class,
-            SeatMapManager::class,
         )
         ->and($widgets)->toContain(EventStatsWidget::class);
 });
@@ -59,7 +57,6 @@ it('reads the configured navigation group from pages', function (): void {
         NotificationCenter::class,
         ApprovalQueue::class,
         EventPublicPreview::class,
-        SeatMapManager::class,
     ] as $page) {
         expect($page::getNavigationGroup())->toBe('Event Operations');
     }

@@ -14,6 +14,7 @@ use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
 use AIArmada\Events\States\EventStatus\Published;
+use AIArmada\Seating\Models\SeatMap;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -80,6 +82,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventChangeLog> $changeLogs
  * @property-read Collection<int, EventUpdate> $updates
  * @property-read Collection<int, EventNotificationBatch> $notificationBatches
+ * @property-read Collection<int, SeatMap> $seatMaps
  * @property-read Model|Eloquent $owner
  * @property-read Model|Eloquent $createdBy
  */
@@ -362,6 +365,14 @@ final class Event extends Model
     public function notificationBatches(): HasMany
     {
         return $this->hasMany(EventNotificationBatch::class);
+    }
+
+    /**
+     * @return MorphMany<SeatMap, $this>
+     */
+    public function seatMaps(): MorphMany
+    {
+        return $this->morphMany(SeatMap::class, 'seatable');
     }
 
     /**

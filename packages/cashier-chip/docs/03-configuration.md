@@ -75,7 +75,7 @@ The package currently does not expose additional notification-specific settings.
 
 ```env
 CASHIER_CHIP_TABLE_PREFIX=cashier_chip_
-CASHIER_CHIP_JSON_COLUMN_TYPE=json
+CASHIER_CHIP_JSON_COLUMN_TYPE=jsonb
 
 CASHIER_CHIP_CURRENCY=MYR
 CASHIER_CHIP_CURRENCY_LOCALE=ms_MY
