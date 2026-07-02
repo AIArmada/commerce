@@ -1,11 +1,11 @@
 {
     "schema_version": 1,
-    "commit": "20b1db0e053b4607bd55835b942a963844aaecf4",
-    "indexed_at": "2026-06-29T14:05:04Z",
+    "commit": "248d09381127f15670293745faaa3ef6fb84d1d9",
+    "indexed_at": "2026-07-02T22:20:11Z",
     "project": "Users-Saiffil-Herd-commerce",
-    "nodes": 67842,
-    "edges": 216009,
-    "original_size": 115277824,
-    "compressed_size": 18844493,
-    "compression_level": 9
+    "nodes": 68909,
+    "edges": 220309,
+    "original_size": 180682752,
+    "compressed_size": 29037393,
+    "compression_level": 3
 }
