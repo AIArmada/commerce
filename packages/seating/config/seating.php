@@ -11,7 +11,7 @@ return [
             'seat_holds' => env('SEATING_TABLE_SEAT_HOLDS', 'seat_holds'),
             'seat_allocations' => env('SEATING_TABLE_SEAT_ALLOCATIONS', 'seat_allocations'),
         ],
-        'json_column_type' => env('SEATING_JSON_COLUMN_TYPE', 'json'),
+        'json_column_type' => env('SEATING_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
     ],
 
     'holds' => [

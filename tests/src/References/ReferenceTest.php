@@ -95,7 +95,7 @@ test('scopeByType filters by reference type', function (): void {
 });
 
 test('has config-driven table name', function (): void {
-    expect((new Reference)->getTable())->toBe('ref_references');
+    expect((new Reference)->getTable())->toBe('references');
 
     config()->set('references.database.tables.references', 'custom_references');
     expect((new Reference)->getTable())->toBe('custom_references');
