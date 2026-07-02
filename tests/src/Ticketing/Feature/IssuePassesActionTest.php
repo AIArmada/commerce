@@ -21,7 +21,7 @@ function createTicketTypeForTest(): TicketType
     ]);
 }
 
-it('rolls back all passes when issuance fails partway through the issuer loop', function () {
+it('rolls back all passes when issuance fails partway through the issuer loop', function (): void {
     $ticketType = createTicketTypeForTest();
     $countBefore = Pass::count();
 
@@ -68,7 +68,7 @@ it('rolls back all passes when issuance fails partway through the issuer loop', 
     expect(Pass::count())->toBe($countBefore);
 });
 
-it('commits all passes on successful issuance', function () {
+it('commits all passes on successful issuance', function (): void {
     $ticketType = createTicketTypeForTest();
     $countBefore = Pass::count();
 
@@ -106,7 +106,7 @@ it('commits all passes on successful issuance', function () {
     expect(Pass::count())->toBe($countBefore + 3);
 });
 
-it('generates pass numbers that are unique across owners', function () {
+it('generates pass numbers that are unique across owners', function (): void {
     $ownerA = User::query()->create([
         'name' => 'Pass Number Owner A',
         'email' => 'pass-number-owner-a@example.com',

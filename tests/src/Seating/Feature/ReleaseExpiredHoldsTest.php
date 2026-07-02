@@ -10,13 +10,13 @@ use AIArmada\Seating\Models\SeatHold;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Seating\Models\SeatSection;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $map = SeatMap::factory()->create();
     $section = SeatSection::factory()->create(['seat_map_id' => $map->id]);
     $this->seat = Seat::factory()->available()->create(['seat_section_id' => $section->id]);
 });
 
-it('releases expired holds', function () {
+it('releases expired holds', function (): void {
     SeatHold::factory()->expired()->create(['seat_id' => $this->seat->id]);
     SeatHold::factory()->create(['seat_id' => $this->seat->id]);
 
@@ -26,7 +26,7 @@ it('releases expired holds', function () {
     expect(SeatHold::count())->toBe(1);
 });
 
-it('reports zero when no holds are expired', function () {
+it('reports zero when no holds are expired', function (): void {
     SeatHold::factory()->create(['seat_id' => $this->seat->id]);
 
     $this->artisan(ReleaseExpiredHoldsCommand::class)

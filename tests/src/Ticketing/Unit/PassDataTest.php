@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Ticketing\Data\PassData;
 use Carbon\CarbonImmutable;
 
-it('creates a PassData DTO with default values', function () {
+it('creates a PassData DTO with default values', function (): void {
     $data = new PassData(pass_no: 'PASS-ABC123');
 
     expect($data->pass_no)->toBe('PASS-ABC123')
@@ -16,7 +16,7 @@ it('creates a PassData DTO with default values', function () {
         ->and($data->holder)->toBeNull();
 });
 
-it('creates a PassData DTO with named arguments', function () {
+it('creates a PassData DTO with named arguments', function (): void {
     $data = new PassData(
         pass_no: 'PASS-XYZ789',
         qr_code: 'qr-abc-123',
@@ -30,7 +30,7 @@ it('creates a PassData DTO with named arguments', function () {
         ->and($data->status)->toBe('issued');
 });
 
-it('creates a PassData DTO from array', function () {
+it('creates a PassData DTO from array', function (): void {
     $data = PassData::from([
         'pass_no' => 'PASS-FROM-ARRAY',
         'qr_code' => 'qr-from-array',

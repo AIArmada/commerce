@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Seating\Services\NullSeatAllocator;
 
-it('returns empty collection', function () {
+it('returns empty collection', function (): void {
     $map = SeatMap::factory()->create();
     $allocator = new NullSeatAllocator;
 

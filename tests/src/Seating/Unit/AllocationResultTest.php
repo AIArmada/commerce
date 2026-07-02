@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Seating\Data\AllocationResult;
 
-it('can be created with required data', function () {
+it('can be created with required data', function (): void {
     $result = new AllocationResult(
         seatId: 'uuid-1',
         sectionCode: 'A',
@@ -18,7 +18,7 @@ it('can be created with required data', function () {
     expect($result->seatLabel)->toBe('5');
 });
 
-it('can be created with category', function () {
+it('can be created with category', function (): void {
     $result = new AllocationResult(
         seatId: 'uuid-1',
         sectionCode: 'B',
@@ -30,7 +30,7 @@ it('can be created with category', function () {
     expect($result->category)->toBe('vip');
 });
 
-it('has expected properties', function () {
+it('has expected properties', function (): void {
     $result = new AllocationResult(
         seatId: 'uuid-1',
         sectionCode: 'C',

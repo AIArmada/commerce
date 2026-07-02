@@ -1,14 +1,16 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\Ticketing\TicketingServiceProvider;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 arch('ticketing')
     ->expect('AIArmada\Ticketing')
     ->not->toUse('AIArmada\Events');
 
 test('ticketing service provider is concrete', function (): void {
-    $provider = new \AIArmada\Ticketing\TicketingServiceProvider(app());
-    expect($provider)->toBeInstanceOf(\Spatie\LaravelPackageTools\PackageServiceProvider::class);
+    $provider = new TicketingServiceProvider(app());
+    expect($provider)->toBeInstanceOf(PackageServiceProvider::class);
 });
 
 test('ticketing config is accessible', function (): void {

@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\Seating\SeatingServiceProvider;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 arch('seating')
     ->expect('AIArmada\Seating')
@@ -28,8 +30,8 @@ arch('seating no filament')
     ->not->toUse('Filament');
 
 test('seating service provider is concrete', function (): void {
-    $provider = new \AIArmada\Seating\SeatingServiceProvider(app());
-    expect($provider)->toBeInstanceOf(\Spatie\LaravelPackageTools\PackageServiceProvider::class);
+    $provider = new SeatingServiceProvider(app());
+    expect($provider)->toBeInstanceOf(PackageServiceProvider::class);
 });
 
 test('seating config is accessible', function (): void {

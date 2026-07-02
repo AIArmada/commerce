@@ -72,7 +72,7 @@ final class TicketingServiceProvider extends PackageServiceProvider
 
     private function registerSchedule(): void
     {
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             $schedule = $this->app->make(Schedule::class);
             $schedule->command(ExpireTransfersCommand::class)->hourly();
         });

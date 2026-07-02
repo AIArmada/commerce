@@ -7,7 +7,7 @@ use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatMap as SeatMapModel;
 use AIArmada\Seating\Models\SeatSection;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->map = SeatMapModel::factory()->create();
     $section = SeatSection::factory()->create([
         'seat_map_id' => $this->map->id,
@@ -22,14 +22,14 @@ beforeEach(function () {
     ]);
 });
 
-it('renders the seat map', function () {
+it('renders the seat map', function (): void {
     $component = new SeatMap;
     $component->mount(seatMapId: $this->map->id);
 
     expect($component->render())->not->toBeNull();
 });
 
-it('allows picking available seats', function () {
+it('allows picking available seats', function (): void {
     $component = new SeatMap;
     $component->mount(seatMapId: $this->map->id, selectable: true);
 
@@ -38,7 +38,7 @@ it('allows picking available seats', function () {
     expect($component->picked)->toBe([Seat::first()->id]);
 });
 
-it('deselects on second click', function () {
+it('deselects on second click', function (): void {
     $seatId = Seat::first()->id;
 
     $component = new SeatMap;
@@ -49,7 +49,7 @@ it('deselects on second click', function () {
     expect($component->picked)->toBe([]);
 });
 
-it('clears selection', function () {
+it('clears selection', function (): void {
     $seatId = Seat::first()->id;
 
     $component = new SeatMap;
@@ -60,7 +60,7 @@ it('clears selection', function () {
     expect($component->picked)->toBe([]);
 });
 
-it('disables selection when not selectable', function () {
+it('disables selection when not selectable', function (): void {
     $seatId = Seat::first()->id;
 
     $component = new SeatMap;
@@ -70,7 +70,7 @@ it('disables selection when not selectable', function () {
     expect($component->picked)->toBe([]);
 });
 
-it('does not allow picking held seats', function () {
+it('does not allow picking held seats', function (): void {
     $seat = Seat::first();
     $seat->holds()->create(['expires_at' => now()->addMinutes(5)]);
     $seatId = $seat->id;
@@ -82,7 +82,7 @@ it('does not allow picking held seats', function () {
     expect($component->picked)->toBe([]);
 });
 
-it('does not allow picking blocked seats', function () {
+it('does not allow picking blocked seats', function (): void {
     $seat = Seat::first();
     $seat->update(['status' => 'blocked']);
     $seatId = $seat->id;
@@ -115,14 +115,14 @@ it('does not allow picking seats from another map', function (): void {
     expect($component->picked)->toBe([]);
 });
 
-it('shows legend when showLegend is true', function () {
+it('shows legend when showLegend is true', function (): void {
     $component = new SeatMap;
     $component->mount(seatMapId: $this->map->id, showLegend: true);
 
     expect($component->showLegend)->toBeTrue();
 });
 
-it('hides legend when showLegend is false', function () {
+it('hides legend when showLegend is false', function (): void {
     $component = new SeatMap;
     $component->mount(seatMapId: $this->map->id, showLegend: false);
 

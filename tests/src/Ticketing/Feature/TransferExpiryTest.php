@@ -8,7 +8,7 @@ use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 
-it('blocks transfer past transfer_expires_at', function () {
+it('blocks transfer past transfer_expires_at', function (): void {
     $pass = Pass::factory()->create([
         'transfer_expires_at' => now()->subDay(),
     ]);
@@ -19,7 +19,7 @@ it('blocks transfer past transfer_expires_at', function () {
     ))->toThrow(RuntimeException::class);
 });
 
-it('expires transfer windows via command', function () {
+it('expires transfer windows via command', function (): void {
     $past = now()->subDays(2);
     $future = now()->addDays(2);
 

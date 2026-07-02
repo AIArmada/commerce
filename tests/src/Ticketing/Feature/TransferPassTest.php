@@ -6,7 +6,7 @@ use AIArmada\Ticketing\Actions\TransferPassToHolderAction;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Models\PassHolder;
 
-it('transfers a pass to a new holder', function () {
+it('transfers a pass to a new holder', function (): void {
     $pass = Pass::factory()->create();
     $newHolder = PassHolder::factory()->make(['name' => 'Bob']);
 
@@ -15,7 +15,7 @@ it('transfers a pass to a new holder', function () {
     expect($result->name)->toBe('Bob');
 });
 
-it('blocks transfer on used pass', function () {
+it('blocks transfer on used pass', function (): void {
     $pass = Pass::factory()->create(['status' => 'used']);
     $newHolder = PassHolder::factory()->make();
 

@@ -11,7 +11,7 @@ use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Seating\Models\SeatSection;
 use AIArmada\Seating\Services\DefaultSeatAllocator;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->map = SeatMap::factory()->create();
     $this->section = SeatSection::factory()->create([
         'seat_map_id' => $this->map->id,
@@ -32,7 +32,7 @@ beforeEach(function () {
     app()->bind(SeatAllocatorInterface::class, DefaultSeatAllocator::class);
 });
 
-it('allocates requested quantity of seats', function () {
+it('allocates requested quantity of seats', function (): void {
     $results = app(SeatAllocatorInterface::class)->allocate(
         map: $this->map,
         quantity: 3,
@@ -42,14 +42,14 @@ it('allocates requested quantity of seats', function () {
     expect($results->pluck('sectionCode')->all())->each->toBe('A');
 });
 
-it('throws when insufficient seats', function () {
+it('throws when insufficient seats', function (): void {
     app(SeatAllocatorInterface::class)->allocate(
         map: $this->map,
         quantity: 20,
     );
 })->throws(InsufficientSeatsException::class);
 
-it('creates holds for allocated seats', function () {
+it('creates holds for allocated seats', function (): void {
     app(SeatAllocatorInterface::class)->allocate(
         map: $this->map,
         quantity: 2,
@@ -77,7 +77,7 @@ it('stores the held by morph relation', function (): void {
     expect($hold->heldBy?->is($holder))->toBeTrue();
 });
 
-it('skips held seats', function () {
+it('skips held seats', function (): void {
     $seat = Seat::firstOrFail();
     SeatHold::factory()->create(['seat_id' => $seat->id]);
 
@@ -92,7 +92,7 @@ it('skips held seats', function () {
     }
 });
 
-it('skips blocked seats', function () {
+it('skips blocked seats', function (): void {
     Seat::query()->update(['status' => 'available']);
     $seat = Seat::firstOrFail();
     $seat->update(['status' => 'blocked']);
@@ -106,7 +106,7 @@ it('skips blocked seats', function () {
     expect($results->pluck('seatId'))->not->toContain($seat->id);
 });
 
-it('respects category preferences', function () {
+it('respects category preferences', function (): void {
     Seat::query()->update(['category' => 'standard']);
 
     Seat::factory()->available()->create([
@@ -128,7 +128,7 @@ it('respects category preferences', function () {
     expect($results->first()->category)->toBe('vip');
 });
 
-it('returns empty collection for zero quantity', function () {
+it('returns empty collection for zero quantity', function (): void {
     $results = app(SeatAllocatorInterface::class)->allocate(
         map: $this->map,
         quantity: 0,
