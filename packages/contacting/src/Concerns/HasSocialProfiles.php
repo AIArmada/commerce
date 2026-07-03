@@ -15,7 +15,7 @@ trait HasSocialProfiles
     protected static function bootHasSocialProfiles(): void
     {
         static::deleting(function (Model $model): void {
-            /** @phpstan-ignore-next-line */
+            /** @phpstan-ignore-next-line dynamic relationship from trait */
             $model->socialProfiles()->delete();
         });
     }

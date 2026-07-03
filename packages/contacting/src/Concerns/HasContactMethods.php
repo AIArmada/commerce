@@ -19,7 +19,7 @@ trait HasContactMethods
     protected static function bootHasContactMethods(): void
     {
         static::deleting(function (Model $model): void {
-            /** @phpstan-ignore-next-line */
+            /** @phpstan-ignore-next-line dynamic relationship from trait */
             $model->contactMethods()->delete();
         });
     }

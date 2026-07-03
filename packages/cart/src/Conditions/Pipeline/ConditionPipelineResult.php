@@ -34,14 +34,14 @@ final class ConditionPipelineResult
 
     public function subtotal(): int
     {
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line nullable phase result */
         return $this->getPhaseResult(ConditionPhase::CART_SUBTOTAL)?->finalAmount
             ?? $this->initialAmount;
     }
 
     public function total(): int
     {
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line nullable phase result */
         return $this->getPhaseResult(ConditionPhase::GRAND_TOTAL)?->finalAmount
             ?? $this->finalAmount;
     }

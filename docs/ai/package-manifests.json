@@ -7,8 +7,15 @@
   "documentation_index": "docs/index.md",
   "families": {
     "foundation": [
+      "addressing",
+      "authz",
       "commerce-support",
-      "filament-authz"
+      "contacting",
+      "filament-addressing",
+      "filament-authz",
+      "filament-commerce-support",
+      "filament-contacting",
+      "membership"
     ],
     "communications": [
       "communications",
@@ -23,6 +30,7 @@
     "catalog-and-identity": [
       "customers",
       "filament-customers",
+      "filament-ticketing",
       "products",
       "filament-products",
       "inventory",
@@ -30,9 +38,12 @@
       "pricing",
       "filament-pricing",
       "tax",
-      "filament-tax"
+      "filament-tax",
+      "ticketing"
     ],
     "growth-and-incentives": [
+      "engagement",
+      "filament-engagement",
       "promotions",
       "filament-promotions",
       "vouchers",
@@ -70,6 +81,14 @@
       "filament-events",
       "signals",
       "filament-signals"
+    ],
+    "feedback": [
+      "feedback",
+      "filament-feedback"
+    ],
+    "venue": [
+      "filament-seating",
+      "seating"
     ],
     "bundle": [
       "csuite"
@@ -110,6 +129,117 @@
         "commerce-support"
       ]
     },
+    "addressing": {
+      "composer": "aiarmada/addressing",
+      "surface": "domain",
+      "family": "foundation",
+      "paired_package": "filament-addressing",
+      "summary": "Reusable address domain with country reference data, area import contracts, polymorphic address storage, snapshots, formatting, and normalization.",
+      "canonical_docs": {
+        "overview": "packages/addressing/docs/01-overview.md",
+        "installation": "packages/addressing/docs/02-installation.md",
+        "configuration": "packages/addressing/docs/03-configuration.md",
+        "usage": "packages/addressing/docs/04-usage.md",
+        "troubleshooting": "packages/addressing/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support",
+        "filament-addressing",
+        "customers",
+        "orders",
+        "events"
+      ]
+    },
+    "filament-addressing": {
+      "composer": "aiarmada/filament-addressing",
+      "surface": "filament",
+      "family": "foundation",
+      "paired_package": "addressing",
+      "summary": "Filament v5 adapter for addressing — admin resources, relation managers, form schemas, table columns, and import/export surfaces.",
+      "canonical_docs": {
+        "overview": "packages/filament-addressing/docs/01-overview.md",
+        "installation": "packages/filament-addressing/docs/02-installation.md",
+        "configuration": "packages/filament-addressing/docs/03-configuration.md",
+        "usage": "packages/filament-addressing/docs/04-usage.md",
+        "troubleshooting": "packages/filament-addressing/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "addressing",
+        "commerce-support"
+      ]
+    },
+    "filament-commerce-support": {
+      "composer": "aiarmada/filament-commerce-support",
+      "surface": "filament",
+      "family": "foundation",
+      "paired_package": null,
+      "summary": "Filament admin UI for commerce navigation management — runtime override engine and admin settings page.",
+      "canonical_docs": {
+        "overview": "packages/filament-commerce-support/docs/01-overview.md",
+        "installation": "packages/filament-commerce-support/docs/02-installation.md",
+        "configuration": "packages/filament-commerce-support/docs/03-configuration.md",
+        "usage": "packages/filament-commerce-support/docs/04-usage.md",
+        "troubleshooting": "packages/filament-commerce-support/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support"
+      ]
+    },
+    "filament-contacting": {
+      "composer": "aiarmada/filament-contacting",
+      "surface": "filament",
+      "family": "foundation",
+      "paired_package": "contacting",
+      "summary": "Filament v5 adapter for contacting — resources, relation managers, form schemas, table schemas, infolists, and import/export UI for contact methods and social profiles.",
+      "canonical_docs": {
+        "overview": "packages/filament-contacting/docs/01-overview.md",
+        "installation": "packages/filament-contacting/docs/02-installation.md",
+        "configuration": "packages/filament-contacting/docs/03-configuration.md",
+        "usage": "packages/filament-contacting/docs/04-usage.md",
+        "troubleshooting": "packages/filament-contacting/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "contacting",
+        "commerce-support"
+      ]
+    },
+    "authz": {
+      "composer": "aiarmada/authz",
+      "surface": "core",
+      "family": "foundation",
+      "paired_package": null,
+      "summary": "Framework-agnostic Spatie Permission integration with UUID permission schema, scopes, wildcard permissions, and impersonation services.",
+      "canonical_docs": {
+        "overview": "packages/authz/docs/01-overview.md",
+        "installation": "packages/authz/docs/02-installation.md",
+        "configuration": "packages/authz/docs/03-configuration.md",
+        "usage": "packages/authz/docs/04-usage.md",
+        "troubleshooting": "packages/authz/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support",
+        "filament-authz",
+        "membership"
+      ]
+    },
+    "membership": {
+      "composer": "aiarmada/membership",
+      "surface": "core",
+      "family": "foundation",
+      "paired_package": null,
+      "summary": "Polymorphic membership lifecycle — applications, invitations, member pivots, and Spatie role synchronization for any subject model.",
+      "canonical_docs": {
+        "overview": "packages/membership/docs/01-overview.md",
+        "installation": "packages/membership/docs/02-installation.md",
+        "configuration": "packages/membership/docs/03-configuration.md",
+        "usage": "packages/membership/docs/04-usage.md",
+        "troubleshooting": "packages/membership/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "authz",
+        "commerce-support"
+      ]
+    },
     "communications": {
       "composer": "aiarmada/communications",
       "surface": "domain",
@@ -145,6 +275,26 @@
       "related_packages": [
         "communications",
         "commerce-support"
+      ]
+    },
+    "contacting": {
+      "composer": "aiarmada/contacting",
+      "surface": "domain",
+      "family": "foundation",
+      "paired_package": "filament-contacting",
+      "summary": "Contact methods (email, phone, WhatsApp, etc.) and social profiles (Facebook, Instagram, TikTok, etc.) for any entity with normalization and formatting.",
+      "canonical_docs": {
+        "overview": "packages/contacting/docs/01-overview.md",
+        "installation": "packages/contacting/docs/02-installation.md",
+        "configuration": "packages/contacting/docs/03-configuration.md",
+        "usage": "packages/contacting/docs/04-usage.md",
+        "troubleshooting": "packages/contacting/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support",
+        "addressing",
+        "filament-contacting",
+        "communications"
       ]
     },
     "moderation": {
@@ -369,6 +519,82 @@
       "related_packages": [
         "tax",
         "filament-authz"
+      ]
+    },
+    "ticketing": {
+      "composer": "aiarmada/ticketing",
+      "surface": "domain",
+      "family": "catalog-and-identity",
+      "paired_package": "filament-ticketing",
+      "summary": "Ticket types, passes, pass issuance, transfers, bundle products, and pricing for any ticketable model.",
+      "canonical_docs": {
+        "overview": "packages/ticketing/docs/01-overview.md",
+        "installation": "packages/ticketing/docs/02-installation.md",
+        "configuration": "packages/ticketing/docs/03-configuration.md",
+        "usage": "packages/ticketing/docs/04-usage.md",
+        "troubleshooting": "packages/ticketing/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-ticketing",
+        "inventory",
+        "cart",
+        "orders",
+        "checkout"
+      ]
+    },
+    "filament-ticketing": {
+      "composer": "aiarmada/filament-ticketing",
+      "surface": "filament",
+      "family": "catalog-and-identity",
+      "paired_package": "ticketing",
+      "summary": "Filament admin UI for ticket types, passes, pass holders, transfers, and pass issuance workflows.",
+      "canonical_docs": {
+        "overview": "packages/filament-ticketing/docs/01-overview.md",
+        "installation": "packages/filament-ticketing/docs/02-installation.md",
+        "configuration": "packages/filament-ticketing/docs/03-configuration.md",
+        "usage": "packages/filament-ticketing/docs/04-usage.md",
+        "troubleshooting": "packages/filament-ticketing/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "ticketing",
+        "commerce-support"
+      ]
+    },
+    "engagement": {
+      "composer": "aiarmada/engagement",
+      "surface": "domain",
+      "family": "growth-and-incentives",
+      "paired_package": "filament-engagement",
+      "summary": "Polymorphic engagement interactions — follows, bookmarks, likes, reactions, subscriptions, reminders, shares, and counters for any entity.",
+      "canonical_docs": {
+        "overview": "packages/engagement/docs/01-overview.md",
+        "installation": "packages/engagement/docs/02-installation.md",
+        "configuration": "packages/engagement/docs/03-configuration.md",
+        "usage": "packages/engagement/docs/04-usage.md",
+        "troubleshooting": "packages/engagement/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support",
+        "filament-engagement",
+        "events"
+      ]
+    },
+    "filament-engagement": {
+      "composer": "aiarmada/filament-engagement",
+      "surface": "filament",
+      "family": "growth-and-incentives",
+      "paired_package": "engagement",
+      "summary": "Filament admin UI for engagement records, widgets, relation managers, and reusable admin actions.",
+      "canonical_docs": {
+        "overview": "packages/filament-engagement/docs/01-overview.md",
+        "installation": "packages/filament-engagement/docs/02-installation.md",
+        "configuration": "packages/filament-engagement/docs/03-configuration.md",
+        "usage": "packages/filament-engagement/docs/04-usage.md",
+        "troubleshooting": "packages/filament-engagement/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "engagement",
+        "commerce-support"
       ]
     },
     "promotions": {
@@ -927,6 +1153,43 @@
         "filament-authz"
       ]
     },
+    "seating": {
+      "composer": "aiarmada/seating",
+      "surface": "domain",
+      "family": "venue",
+      "paired_package": "filament-seating",
+      "summary": "Venue seat layout — maps, sections, seats, holds, allocations — with a shared seat-allocation contract and Livewire seat-map component.",
+      "canonical_docs": {
+        "overview": "packages/seating/docs/01-overview.md",
+        "installation": "packages/seating/docs/02-installation.md",
+        "configuration": "packages/seating/docs/03-configuration.md",
+        "usage": "packages/seating/docs/04-usage.md",
+        "troubleshooting": "packages/seating/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "filament-seating",
+        "ticketing",
+        "events"
+      ]
+    },
+    "filament-seating": {
+      "composer": "aiarmada/filament-seating",
+      "surface": "filament",
+      "family": "venue",
+      "paired_package": "seating",
+      "summary": "Filament admin UI for seat maps, sections, occupancy, and visual layout management.",
+      "canonical_docs": {
+        "overview": "packages/filament-seating/docs/01-overview.md",
+        "installation": "packages/filament-seating/docs/02-installation.md",
+        "configuration": "packages/filament-seating/docs/03-configuration.md",
+        "usage": "packages/filament-seating/docs/04-usage.md",
+        "troubleshooting": "packages/filament-seating/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "seating",
+        "commerce-support"
+      ]
+    },
     "signals": {
       "composer": "aiarmada/signals",
       "surface": "analytics",
@@ -966,6 +1229,45 @@
         "signals",
         "growth",
         "filament-growth"
+      ]
+    },
+    "feedback": {
+      "composer": "aiarmada/feedback",
+      "surface": "core",
+      "family": "feedback",
+      "paired_package": "filament-feedback",
+      "summary": "Core feedback, survey, response, invitation, scoring, analytics, and testimonial domain with survey lifecycle management.",
+      "canonical_docs": {
+        "overview": "packages/feedback/docs/01-overview.md",
+        "installation": "packages/feedback/docs/02-installation.md",
+        "configuration": "packages/feedback/docs/03-configuration.md",
+        "usage": "packages/feedback/docs/04-usage.md",
+        "troubleshooting": "packages/feedback/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "commerce-support",
+        "filament-feedback",
+        "events",
+        "engagement",
+        "contacting"
+      ]
+    },
+    "filament-feedback": {
+      "composer": "aiarmada/filament-feedback",
+      "surface": "filament",
+      "family": "feedback",
+      "paired_package": "feedback",
+      "summary": "Filament v5 admin adapter for feedback — survey resources, response management, analytics, and testimonial workflows.",
+      "canonical_docs": {
+        "overview": "packages/filament-feedback/docs/01-overview.md",
+        "installation": "packages/filament-feedback/docs/02-installation.md",
+        "configuration": "packages/filament-feedback/docs/03-configuration.md",
+        "usage": "packages/filament-feedback/docs/04-usage.md",
+        "troubleshooting": "packages/filament-feedback/docs/99-troubleshooting.md"
+      },
+      "related_packages": [
+        "feedback",
+        "commerce-support"
       ]
     },
     "csuite": {

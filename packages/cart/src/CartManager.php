@@ -161,7 +161,7 @@ class CartManager implements CartManagerInterface
             eventsEnabled: $this->eventsEnabled,
         );
 
-        // @phpstan-ignore-next-line
+        // @phpstan-ignore-next-line late static binding constructor
         return new static(
             storage: $scopedStorage,
             events: $this->events,

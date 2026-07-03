@@ -23,35 +23,35 @@ final class ViewCart extends ViewRecord
 
     public function getTitle(): string
     {
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         return 'Cart: ' . $this->record->identifier;
     }
 
     public function getSubheading(): string
     {
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         if ($this->record->isEmpty()) {
             return 'This cart is empty';
         }
 
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         $itemCount = $this->record->items_count;
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         $totalQty = $this->record->quantity;
 
         $summary = "{$itemCount} " . str('item')->plural($itemCount) .
             " ({$totalQty} " . str('unit')->plural($totalQty) . ')';
 
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         $summary .= ' • Subtotal ' . $this->record->formatMoney($this->record->subtotal);
 
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         if ($this->record->savings > 0) {
-            /** @phpstan-ignore-next-line */
+            /** @phpstan-ignore-next-line dynamic Cart model accessors */
             $summary .= ' • Savings ' . $this->record->formatMoney($this->record->savings);
         }
 
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line dynamic Cart model accessors */
         $summary .= ' • Total ' . $this->record->formatMoney($this->record->total);
 
         return $summary;

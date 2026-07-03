@@ -255,13 +255,13 @@ final class PayoutExportService
             function () use ($html): void {
                 /** @phpstan-ignore class.notFound */
                 $dompdf = new Dompdf;
-                /** @phpstan-ignore-next-line */
+                /** @phpstan-ignore-next-line third-party Dompdf API */
                 $dompdf->loadHtml($html);
-                /** @phpstan-ignore-next-line */
+                /** @phpstan-ignore-next-line third-party Dompdf API */
                 $dompdf->setPaper('A4', 'portrait');
-                /** @phpstan-ignore-next-line */
+                /** @phpstan-ignore-next-line third-party Dompdf API */
                 $dompdf->render();
-                /** @phpstan-ignore-next-line */
+                /** @phpstan-ignore-next-line third-party Dompdf API */
                 echo $dompdf->output();
             },
             $filename,

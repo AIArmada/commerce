@@ -70,5 +70,6 @@ final class DocsRichContentFileAttachmentProvider implements FileAttachmentProvi
     /**
      * @param  array<mixed>  $exceptIds
      */
+    /** @phpstan-ignore-next-line interface contract, cleanup handled by Filament field lifecycle */
     public function cleanUpFileAttachments(array $exceptIds): void {}
 }

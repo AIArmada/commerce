@@ -43,7 +43,7 @@ final class EditCart extends EditRecord
                         ->clear();
                     $this->redirect($this->getResource()::getUrl('index'));
                 })
-                /** @phpstan-ignore-next-line */
+                /** @phpstan-ignore-next-line dynamic Cart model accessor */
                 ->visible(fn (): bool => $this->record->items_count > 0),
         ];
     }

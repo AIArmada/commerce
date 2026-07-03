@@ -219,7 +219,7 @@ trait InteractsWithAffiliate
             return new Collection;
         }
 
-        /** @phpstan-ignore-next-line */
+        /** @phpstan-ignore-next-line dynamic vouchers relationship on Affiliate */
         return $affiliate->vouchers()
             ->orderByDesc('created_at')
             ->limit($limit)
