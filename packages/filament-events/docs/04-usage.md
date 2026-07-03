@@ -23,7 +23,7 @@ title: Usage
 
 **Infolist sections:** Identity, Lifecycle, Ownership, Metadata.
 
-**Relation managers (on View page):** Occurrences, Sessions, Locations, Involvements, Registrations, Ticket Types, Attendances. All read-only.
+**Relation managers (on View page):** Occurrences, Sessions, Locations, Involvements, Registrations, Attendances. All read-only.
 
 ### Occurrences
 
@@ -52,7 +52,7 @@ title: Usage
 - Create forms also require the parent `event_occurrence_id` and expose lifecycle defaults; edit forms keep the existing parent assignment unchanged.
 - The lifecycle selector includes the same states as occurrences, including `rescheduled`.
 
-**Relation managers:** Involvements, Locations, Registrations, Ticket Types, Attendances, Materials.
+**Relation managers:** Involvements, Locations, Registrations, Attendances, Materials.
 
 ### Venues
 
@@ -70,13 +70,9 @@ title: Usage
 
 **Filters:** status, registration_type, source.
 
-### Ticket Types
+### Ticket administration
 
-`EventTicketTypeResource` manages admission definitions.
-
-**Table columns:** event.title, name, code (badge), access_type (badge), price (money), currency, quota, status (badge), sales_starts_at, sales_ends_at.
-
-**Filters:** access_type, status.
+Ticket type, pass, holder, and transfer administration lives in `aiarmada/filament-ticketing`. Use that package's `TicketTypeResource`, `PassResource`, `PassHolderResource`, and `PassTransferResource` for generic ticketing CRUD across event and non-event ticketables.
 
 ### Attendance
 
@@ -101,7 +97,7 @@ use AIArmada\Events\Contracts\EventCheckInService;
 app(EventCheckInService::class)->checkIn([
     'event_id' => $eventId,
     'event_occurrence_id' => $occurrenceId,
-    'event_pass_id' => $pass->id,
+    'pass_id' => $pass->id,
     'attendance_type' => 'registered',
     'check_in_source' => 'qr',
 ]);

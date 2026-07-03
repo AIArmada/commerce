@@ -24,6 +24,10 @@ final class DefaultPassIssuer implements PassIssuerInterface
             $pass->ticketable_type = $ticketable?->getMorphClass() ?? $context->ticketType->ticketable_type;
             $pass->ticketable_id = $ticketable?->getKey() ?? $context->ticketType->ticketable_id;
             $pass->ticket_type_id = $context->ticketType->getKey();
+            $pass->registration_type = $context->registrationType;
+            $pass->registration_id = $context->registrationId;
+            $pass->occurrence_id = $context->occurrenceId;
+            $pass->session_id = $context->sessionId;
             $pass->pass_no = $this->generatePassNo();
             $pass->qr_code = (string) Str::uuid();
             $pass->barcode = Str::random(16);

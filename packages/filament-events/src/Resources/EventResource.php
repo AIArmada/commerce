@@ -282,7 +282,6 @@ final class EventResource extends Resource
             EventResource\RelationManagers\LocationsRelationManager::class,
             EventResource\RelationManagers\InvolvementsRelationManager::class,
             EventResource\RelationManagers\RegistrationsRelationManager::class,
-            EventResource\RelationManagers\TicketTypesRelationManager::class,
             EventResource\RelationManagers\AttendancesRelationManager::class,
         ];
     }

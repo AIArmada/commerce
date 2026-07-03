@@ -15,6 +15,8 @@ use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\EventStatus\EventStatus as EventStatusState;
 use AIArmada\Events\States\EventStatus\Published;
 use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -65,8 +67,8 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventInvolvement> $involvements
  * @property-read Collection<int, EventAccessPolicy> $accessPolicies
  * @property-read Collection<int, EventRegistration> $registrations
- * @property-read Collection<int, EventTicketType> $ticketTypes
- * @property-read Collection<int, EventPass> $passes
+ * @property-read Collection<int, TicketType> $ticketTypes
+ * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, EventAttendance> $attendances
  * @property-read Collection<int, EventMaterial> $materials
  * @property-read Collection<int, EventReference> $references
@@ -232,19 +234,19 @@ final class Event extends Model
     }
 
     /**
-     * @return HasMany<EventTicketType, $this>
+     * @return MorphMany<TicketType, $this>
      */
-    public function ticketTypes(): HasMany
+    public function ticketTypes(): MorphMany
     {
-        return $this->hasMany(EventTicketType::class);
+        return $this->morphMany(TicketType::class, 'ticketable');
     }
 
     /**
-     * @return HasMany<EventPass, $this>
+     * @return MorphMany<Pass, $this>
      */
-    public function passes(): HasMany
+    public function passes(): MorphMany
     {
-        return $this->hasMany(EventPass::class);
+        return $this->morphMany(Pass::class, 'ticketable');
     }
 
     /**
@@ -434,7 +436,7 @@ final class Event extends Model
      */
     public function scopeWithResolvedModes(Builder $query): Builder
     {
-        return $query->with(['ticketTypes:id,event_id,price']);
+        return $query->with(['ticketTypes:id,ticketable_id,ticketable_type,price']);
     }
 
     protected static function newFactory(): EventFactory
@@ -459,10 +461,10 @@ final class Event extends Model
             return PricingMode::Paid;
         }
 
-        /** @var Collection<int, EventTicketType> $ticketTypes */
+        /** @var Collection<int, TicketType> $ticketTypes */
         $ticketTypes = $this->relationLoaded('ticketTypes')
             ? $this->getRelation('ticketTypes')
-            : $this->ticketTypes()->get(['id', 'event_id', 'price']);
+            : $this->ticketTypes()->get(['id', 'ticketable_id', 'ticketable_type', 'price']);
 
         if ($ticketTypes->isEmpty()) {
             return PricingMode::Free;

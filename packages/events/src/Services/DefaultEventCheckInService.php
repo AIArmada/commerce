@@ -11,13 +11,14 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventAttendance;
 use AIArmada\Events\Models\EventAttendanceLog;
 use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationParticipant;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Support\EventWriteGuard;
+use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -33,17 +34,19 @@ final class DefaultEventCheckInService implements EventCheckInService
             $registration = $participant->registration;
         }
 
-        $pass = $this->resolvePass($event, $data['event_pass_id'] ?? null, $registration?->id);
+        $pass = $this->resolvePass($event, $data['pass_id'] ?? null, $registration?->id);
 
         if ($pass !== null && $registration === null) {
-            $registration = $pass->registration;
+            $registration = $pass->registration instanceof EventRegistration
+                ? $pass->registration
+                : null;
         }
 
         $session = $this->resolveSession($event, $data['event_session_id'] ?? null);
 
         $occurrenceId = $data['event_occurrence_id'] ?? $session?->event_occurrence_id
             ?? $registration?->event_occurrence_id
-            ?? $pass?->event_occurrence_id
+            ?? $pass?->occurrence_id
             ?? $participant?->registration?->event_occurrence_id
             ?? null;
 
@@ -57,11 +60,14 @@ final class DefaultEventCheckInService implements EventCheckInService
             throw new InvalidArgumentException('The selected registration does not belong to the selected event occurrence.');
         }
 
-        if ($pass !== null && $pass->event_occurrence_id !== null && $pass->event_occurrence_id !== $occurrence->id) {
+        if ($pass !== null && $pass->occurrence_id !== null && $pass->occurrence_id !== $occurrence->id) {
             throw new InvalidArgumentException('The selected pass does not belong to the selected event occurrence.');
         }
 
-        if ($pass !== null && $registration !== null && $pass->event_registration_id !== $registration->id) {
+        if ($pass !== null
+            && $registration !== null
+            && ($pass->registration_type !== $registration->getMorphClass()
+                || $pass->registration_id !== $registration->id)) {
             throw new InvalidArgumentException('The selected pass does not belong to the selected registration.');
         }
 
@@ -97,7 +103,7 @@ final class DefaultEventCheckInService implements EventCheckInService
                 'event_session_id' => $session?->id,
                 'event_registration_id' => $registration?->id,
                 'event_registration_participant_id' => $participant?->id,
-                'event_pass_id' => $pass?->id,
+                'pass_id' => $pass?->id,
                 'attendee_type' => $data['attendee_type'] ?? null,
                 'attendee_id' => $data['attendee_id'] ?? null,
                 'attendance_type' => $data['attendance_type'] ?? 'registered',
@@ -125,12 +131,12 @@ final class DefaultEventCheckInService implements EventCheckInService
     }
 
     private function lockCheckInIdentity(
-        ?EventPass $pass,
+        ?Pass $pass,
         ?EventRegistrationParticipant $participant,
         ?EventRegistration $registration,
     ): void {
         if ($pass !== null) {
-            EventPass::query()->whereKey($pass->getKey())->lockForUpdate()->firstOrFail();
+            Pass::query()->whereKey($pass->getKey())->lockForUpdate()->firstOrFail();
 
             return;
         }
@@ -158,7 +164,7 @@ final class DefaultEventCheckInService implements EventCheckInService
         ?EventSession $session,
         ?EventRegistration $registration,
         ?EventRegistrationParticipant $participant,
-        ?EventPass $pass,
+        ?Pass $pass,
         mixed $attendeeType,
         mixed $attendeeId,
     ): ?EventAttendance {
@@ -170,7 +176,7 @@ final class DefaultEventCheckInService implements EventCheckInService
             ->whereNull('cancelled_at');
 
         if ($pass !== null) {
-            return $query->where('event_pass_id', $pass->id)->first();
+            return $query->where('pass_id', $pass->id)->first();
         }
 
         if ($participant !== null) {
@@ -217,14 +223,16 @@ final class DefaultEventCheckInService implements EventCheckInService
         $data['event_occurrence_id'] = $session->event_occurrence_id;
         $data['event_id'] = $event->id;
 
-        if ($passOrRegistration instanceof EventPass) {
-            if ($passOrRegistration->event_id !== $event->id) {
+        if ($passOrRegistration instanceof Pass) {
+            if (! $this->passBelongsToEvent($passOrRegistration, $event)) {
                 throw new InvalidArgumentException('The selected pass does not belong to the selected event session.');
             }
 
-            $data['event_pass_id'] = $passOrRegistration->id;
-            $data['event_registration_id'] = $passOrRegistration->event_registration_id;
-            $data['event_registration_participant_id'] = $passOrRegistration->event_registration_participant_id;
+            $data['pass_id'] = $passOrRegistration->id;
+            $data['event_registration_id'] = $passOrRegistration->registration instanceof EventRegistration
+                ? $passOrRegistration->registration->id
+                : null;
+            $data['event_registration_participant_id'] = $this->resolveParticipantFromPass($passOrRegistration)?->id;
         } elseif ($passOrRegistration instanceof EventRegistration) {
             if ($passOrRegistration->event_id !== $event->id) {
                 throw new InvalidArgumentException('The selected registration does not belong to the selected event session.');
@@ -239,7 +247,7 @@ final class DefaultEventCheckInService implements EventCheckInService
             $data['event_registration_participant_id'] = $passOrRegistration->id;
             $data['event_registration_id'] = $passOrRegistration->event_registration_id;
         } elseif ($passOrRegistration !== null) {
-            throw new InvalidArgumentException('checkInToSession requires an event pass, registration, participant, or null.');
+            throw new InvalidArgumentException('checkInToSession requires a pass, registration, participant, or null.');
         }
 
         return $this->checkIn($data);
@@ -352,26 +360,77 @@ final class DefaultEventCheckInService implements EventCheckInService
         return $participant;
     }
 
-    private function resolvePass(Event $event, mixed $passId, ?string $registrationId): ?EventPass
+    private function resolvePass(Event $event, mixed $passId, ?string $registrationId): ?Pass
     {
         if ($passId === null) {
             return null;
         }
 
-        $query = EventPass::query()
+        $query = Pass::query()
             ->whereKey($passId)
-            ->where('event_id', $event->id);
+            ->with(['ticketable', 'registration', 'holder']);
 
         if ($registrationId !== null) {
-            $query->where('event_registration_id', $registrationId);
+            $query
+                ->where('registration_type', (new EventRegistration)->getMorphClass())
+                ->where('registration_id', $registrationId);
         }
 
         $pass = $query->first();
 
-        if ($pass === null) {
+        if (! $pass instanceof Pass || ! $this->passBelongsToEvent($pass, $event)) {
             throw new InvalidArgumentException('The selected pass does not belong to the selected registration.');
         }
 
         return $pass;
+    }
+
+    private function passBelongsToEvent(Pass $pass, Event $event): bool
+    {
+        $pass->loadMissing('ticketable', 'registration', 'holder');
+
+        if ($pass->session_id !== null) {
+            return EventSession::query()
+                ->whereKey($pass->session_id)
+                ->where('event_id', $event->id)
+                ->exists();
+        }
+
+        if ($pass->occurrence_id !== null) {
+            return EventOccurrence::query()
+                ->whereKey($pass->occurrence_id)
+                ->where('event_id', $event->id)
+                ->exists();
+        }
+
+        $ticketable = $pass->ticketable;
+
+        if ($ticketable instanceof Event) {
+            return $ticketable->is($event);
+        }
+
+        if ($ticketable instanceof EventOccurrence || $ticketable instanceof EventSession) {
+            return $ticketable->event_id === $event->id;
+        }
+
+        return $pass->registration instanceof EventRegistration
+            && $pass->registration->event_id === $event->id;
+    }
+
+    private function resolveParticipantFromPass(Pass $pass): ?EventRegistrationParticipant
+    {
+        $holder = $pass->holder;
+
+        if ($holder === null || $holder->holder_type === null || $holder->holder_id === null) {
+            return null;
+        }
+
+        $holderClass = Relation::getMorphedModel($holder->holder_type) ?? $holder->holder_type;
+
+        if ($holderClass !== EventRegistrationParticipant::class) {
+            return null;
+        }
+
+        return EventRegistrationParticipant::query()->find($holder->holder_id);
     }
 }

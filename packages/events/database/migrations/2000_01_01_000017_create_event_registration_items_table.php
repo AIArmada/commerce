@@ -18,7 +18,7 @@ return new class extends Migration
             $table->uuid('event_occurrence_id')->nullable()->index();
             $table->uuid('event_session_id')->nullable()->index();
             $table->uuid('event_registration_id')->index();
-            $table->uuid('event_ticket_type_id')->index();
+            $table->uuid('ticket_type_id')->index();
             $table->integer('quantity')->default(1);
             $table->bigInteger('unit_price')->nullable();
             $table->bigInteger('total_price')->nullable();

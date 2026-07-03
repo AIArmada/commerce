@@ -6,9 +6,10 @@ namespace AIArmada\Events\Actions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
 use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Ticketing\Models\TicketType;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,7 +23,7 @@ final class AddEventTicketTypeToCartAction
      */
     public function handle(
         Cart $cart,
-        EventTicketType $ticketType,
+        TicketType $ticketType,
         int $quantity = 1,
         array $participants = [],
         array $extraAttributes = [],
@@ -102,7 +103,7 @@ final class AddEventTicketTypeToCartAction
      * @return array<string, mixed>
      */
     private function buildAttributes(
-        EventTicketType $ticketType,
+        TicketType $ticketType,
         array $participants,
         array $extraAttributes,
         ?CartItem $existingItem,
@@ -117,12 +118,15 @@ final class AddEventTicketTypeToCartAction
             }
         }
 
+        $scopeIds = EventTicketScope::ids($ticketType);
+
         return array_merge([
-            'purchasable_type' => EventTicketType::class,
+            'purchasable_type' => TicketType::class,
             'purchasable_id' => $ticketType->getKey(),
-            'event_id' => $ticketType->event_id,
-            'event_occurrence_id' => $ticketType->event_occurrence_id,
-            'event_session_id' => $ticketType->event_session_id,
+            'ticket_type_id' => $ticketType->getKey(),
+            'event_id' => $scopeIds['event_id'],
+            'event_occurrence_id' => $scopeIds['event_occurrence_id'],
+            'event_session_id' => $scopeIds['event_session_id'],
             'code' => $ticketType->code,
             'participants' => $mergedParticipants,
         ], $extraAttributes);
@@ -133,7 +137,7 @@ final class AddEventTicketTypeToCartAction
      */
     private function addOrUpdateCartItem(
         Cart $cart,
-        EventTicketType $ticketType,
+        TicketType $ticketType,
         int $totalQuantity,
         array $attributes,
     ): CartItem {

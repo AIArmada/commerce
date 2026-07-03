@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Actions;
 
-use AIArmada\Events\Contracts\EventPassIssuer;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Exceptions\NotInterestedRegistrationException;
 use AIArmada\Events\Models\EventRegistration;
@@ -15,7 +14,7 @@ use AIArmada\Events\Support\EventWriteGuard;
 final class PromoteInterestedToConfirmedAction
 {
     public function __construct(
-        private readonly EventPassIssuer $passIssuer,
+        private readonly IssueEventRegistrationPassesAction $issuePasses,
     ) {}
 
     public function execute(EventRegistration $registration): EventRegistration
@@ -54,7 +53,7 @@ final class PromoteInterestedToConfirmedAction
             ?? $registration->occurrence?->shouldIssuePassesForFree()
             ?? $registration->event->shouldIssuePassesForFree()
         ) {
-            $this->passIssuer->issuePassesFor($registration);
+            $this->issuePasses->handle($registration);
         }
 
         return $registration;

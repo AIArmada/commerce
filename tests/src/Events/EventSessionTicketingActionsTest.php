@@ -16,7 +16,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 
@@ -51,11 +51,14 @@ it('ensures ticket types for sessions', function (): void {
         'price' => 2500,
     ]);
 
-    expect($ticketType->event_id)->toBe($event->id)
-        ->and($ticketType->event_occurrence_id)->toBeNull()
-        ->and($ticketType->event_session_id)->toBe($session->id)
+    expect($ticketType->ticketable?->is($session))->toBeTrue()
+        ->and(EventTicketScope::ids($ticketType))->toBe([
+            'event_id' => $event->id,
+            'event_occurrence_id' => $occurrence->id,
+            'event_session_id' => $session->id,
+        ])
         ->and($ticketType->code)->toBe($session->id)
-        ->and($ticketType->quota)->toBe($session->capacity);
+        ->and(TicketTypeData::fromTicketType($ticketType)->quota)->toBe($session->capacity);
 });
 
 it('syncs session ticket quotas to the default inventory location', function (): void {
@@ -116,11 +119,7 @@ it('adds session ticket types to the cart', function (): void {
         'event_occurrence_id' => $occurrence->id,
         'status' => 'published',
     ]);
-    $ticketType = EventTicketType::factory()->create([
-        'event_id' => $event->id,
-        'event_session_id' => $session->id,
-        'status' => 'active',
-    ]);
+    $ticketType = createEventTicketType($session, ['status' => 'active']);
 
     $cart = app(CartManagerInterface::class)->getCurrentCart();
     $cartManager = Mockery::mock(CartManagerInterface::class);
@@ -153,7 +152,7 @@ it('adds session ticket types to the cart', function (): void {
     app()->instance(AddEventTicketTypeToCartAction::class, $addToCart);
 
     $result = app(CreateOccurrenceCartLineAction::class)->handle($session, [
-        'event_ticket_type_id' => $ticketType->id,
+        'ticket_type_id' => $ticketType->id,
         'quantity' => 2,
         'participants' => [
             ['name' => 'Alice'],

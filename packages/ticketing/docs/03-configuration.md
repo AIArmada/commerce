@@ -17,6 +17,7 @@ The ticketing package configuration is located in `config/ticketing.php`.
         'ticket_types' => 'ticket_ticket_types',
         'ticket_type_components' => 'ticket_ticket_type_components',
         'ticket_type_products' => 'ticket_ticket_type_products',
+        'ticket_type_seating_options' => 'ticket_ticket_type_seating_options',
         'passes' => 'ticket_passes',
         'pass_holders' => 'ticket_pass_holders',
         'pass_transfers' => 'ticket_pass_transfers',
@@ -29,7 +30,7 @@ Override any table name via environment variables:
 ```
 TICKETING_TICKET_TYPES_TABLE=my_ticket_types
 TICKETING_PASSES_TABLE=my_passes
-TICKETING_TABLE_PREFIX=event_
+TICKETING_TABLE_PREFIX=festival_
 ```
 
 ### JSON Column Type

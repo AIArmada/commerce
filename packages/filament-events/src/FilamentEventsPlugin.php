@@ -68,9 +68,6 @@ final class FilamentEventsPlugin implements Plugin
         if ($e['registration_participant'] ?? true) {
             $r[] = Resources\EventRegistrationParticipantResource::class;
         }
-        if ($e['ticket_type'] ?? true) {
-            $r[] = Resources\EventTicketTypeResource::class;
-        }
         if ($e['attendance'] ?? true) {
             $r[] = Resources\EventAttendanceResource::class;
         }

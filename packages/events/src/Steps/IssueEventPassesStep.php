@@ -7,18 +7,19 @@ namespace AIArmada\Events\Steps;
 use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\AbstractCheckoutStep;
-use AIArmada\Events\Contracts\EventPassDeliveryService;
-use AIArmada\Events\Contracts\EventPassIssuer;
+use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
 use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 
 final class IssueEventPassesStep extends AbstractCheckoutStep
 {
     public function __construct(
-        private readonly EventPassIssuer $passIssuer,
-        private readonly EventPassDeliveryService $passDelivery,
+        private readonly IssueEventRegistrationPassesAction $issuePasses,
+        private readonly PassDeliveryServiceInterface $passDelivery,
     ) {}
 
     public function getIdentifier(): string
@@ -62,7 +63,7 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
             ->map(function (mixed $orderItem): ?string {
                 $purchasable = $orderItem->getRelation('purchasable');
 
-                if (! $purchasable instanceof EventTicketType) {
+                if (! $purchasable instanceof TicketType || EventTicketScope::target($purchasable) === null) {
                     return null;
                 }
 
@@ -77,11 +78,11 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
                 ->first(function (mixed $orderItem) use ($ticketTypeId): bool {
                     $purchasable = $orderItem->getRelation('purchasable');
 
-                    return $purchasable instanceof EventTicketType
+                    return $purchasable instanceof TicketType
                         && $purchasable->getKey() === $ticketTypeId;
                 })?->getRelation('purchasable');
 
-            if (! $purchasable instanceof EventTicketType) {
+            if (! $purchasable instanceof TicketType) {
                 continue;
             }
 
@@ -89,12 +90,12 @@ final class IssueEventPassesStep extends AbstractCheckoutStep
                 ->whereHas(
                     'items',
                     fn ($query) => $query
-                        ->where('event_ticket_type_id', $purchasable->getKey()),
+                        ->where('ticket_type_id', $purchasable->getKey()),
                 )
                 ->get();
 
             foreach ($registrations as $registration) {
-                foreach ($this->passIssuer->issuePassesFor($registration) as $pass) {
+                foreach ($this->issuePasses->handle($registration) as $pass) {
                     $this->passDelivery->deliver($pass);
                     $issued++;
                 }

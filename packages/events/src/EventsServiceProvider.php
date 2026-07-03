@@ -12,6 +12,7 @@ use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
 use AIArmada\Events\Actions\AutoAddRequiredTicketBundlesAction;
 use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
 use AIArmada\Events\Actions\ExpandTicketTypeComponentsAction;
+use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
 use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
 use AIArmada\Events\Actions\RecordAgentTicketSaleAction;
 use AIArmada\Events\Actions\RecordHeadcountLogAction;
@@ -29,8 +30,6 @@ use AIArmada\Events\Contracts\EventEngagementManager;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Contracts\EventModerationWorkflow;
 use AIArmada\Events\Contracts\EventOrderItemFulfillmentResolver;
-use AIArmada\Events\Contracts\EventPassDeliveryService;
-use AIArmada\Events\Contracts\EventPassIssuer;
 use AIArmada\Events\Contracts\EventReferenceResolver;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\EventScheduleResolver;
@@ -43,12 +42,17 @@ use AIArmada\Events\Events\EventChangeNoticePublished;
 use AIArmada\Events\Events\EventFreeRegistrationConfirmed;
 use AIArmada\Events\Events\EventRegistrationApproved;
 use AIArmada\Events\Events\EventRegistrationCancelled;
+use AIArmada\Events\Events\EventRegistrationRefunded;
 use AIArmada\Events\Events\RegistrationCheckedIn;
 use AIArmada\Events\Integrations\NullEventEngagementManager;
+use AIArmada\Events\Listeners\AllocateEventSeatsOnPassIssued;
 use AIArmada\Events\Listeners\CancelBundleChildrenOnParentCanceled;
 use AIArmada\Events\Listeners\DispatchEventChangeNoticeNotifications;
 use AIArmada\Events\Listeners\IssueEventPassesOnFreeRegistrationConfirmed;
 use AIArmada\Events\Listeners\ObserveEventTicketTypePricingConsistency;
+use AIArmada\Events\Listeners\ReleaseSeatsOnRegistrationRefunded;
+use AIArmada\Events\Listeners\RevokePassesOnRegistrationCancelled;
+use AIArmada\Events\Listeners\RevokePassesOnRegistrationRefunded;
 use AIArmada\Events\Listeners\SyncEventOrderCompletionOnRegistrationCheckedIn;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderCanceled;
 use AIArmada\Events\Listeners\SyncEventOrderRegistrationsOnOrderPaid;
@@ -67,7 +71,6 @@ use AIArmada\Events\Models\EventRecurrenceRule;
 use AIArmada\Events\Models\EventReport;
 use AIArmada\Events\Models\EventRevision;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Models\EventTimeExpression;
 use AIArmada\Events\Models\EventVerification;
 use AIArmada\Events\Notifications\EventWelcomeNotification;
@@ -96,8 +99,6 @@ use AIArmada\Events\Services\DefaultEventChangeNoticeWorkflow;
 use AIArmada\Events\Services\DefaultEventCheckInService;
 use AIArmada\Events\Services\DefaultEventLifecycleWorkflow;
 use AIArmada\Events\Services\DefaultEventModerationWorkflow;
-use AIArmada\Events\Services\DefaultEventPassDeliveryService;
-use AIArmada\Events\Services\DefaultEventPassIssuer;
 use AIArmada\Events\Services\EloquentEventSearchEngine;
 use AIArmada\Events\Services\EventMetadataSyncService;
 use AIArmada\Events\Services\EventQueryService;
@@ -113,6 +114,9 @@ use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
 use AIArmada\Orders\Events\OrderCanceled;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;
+use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
+use AIArmada\Ticketing\Events\PassIssued;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
@@ -143,8 +147,6 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->singleton(EventLifecycleWorkflow::class, DefaultEventLifecycleWorkflow::class);
 
         $this->app->bind(EventCheckInService::class, DefaultEventCheckInService::class);
-        $this->app->bind(EventPassIssuer::class, DefaultEventPassIssuer::class);
-        $this->app->bind(EventPassDeliveryService::class, DefaultEventPassDeliveryService::class);
         $this->app->bind(RegistrationServiceInterface::class, RegistrationService::class);
 
         $this->app->bind(EventEngagementManager::class, NullEventEngagementManager::class);
@@ -177,6 +179,7 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->singleton(RecordHeadcountLogAction::class);
         $this->app->singleton(AutoAddRequiredTicketBundlesAction::class);
         $this->app->singleton(ExpandTicketTypeComponentsAction::class);
+        $this->app->singleton(IssueEventRegistrationPassesAction::class);
         $this->app->singleton(RecordAgentTicketSaleAction::class);
 
         $this->app->make(Dispatcher::class)
@@ -185,8 +188,22 @@ final class EventsServiceProvider extends PackageServiceProvider
         $this->app->make(Dispatcher::class)
             ->listen(EventFreeRegistrationConfirmed::class, IssueEventPassesOnFreeRegistrationConfirmed::class);
 
+        if (class_exists(PassIssued::class) && config('events.features.auto_allocate_seats', true)) {
+            $this->app->make(Dispatcher::class)
+                ->listen(PassIssued::class, AllocateEventSeatsOnPassIssued::class);
+        }
+
         $this->app->make(Dispatcher::class)
             ->listen(EventRegistrationCancelled::class, CancelBundleChildrenOnParentCanceled::class);
+
+        $dispatcher = $this->app->make(Dispatcher::class);
+
+        if (config('events.features.auto_revoke_passes_on_cancel', true)) {
+            $dispatcher->listen(EventRegistrationCancelled::class, RevokePassesOnRegistrationCancelled::class);
+        }
+
+        $dispatcher->listen(EventRegistrationRefunded::class, RevokePassesOnRegistrationRefunded::class);
+        $dispatcher->listen(EventRegistrationRefunded::class, ReleaseSeatsOnRegistrationRefunded::class);
 
         if (CommerceIntegration::aiArmadaOrderFulfillmentAvailable()) {
             $this->app->bind(EventOrderItemFulfillmentResolver::class, $this->fulfillmentResolverClass());
@@ -259,7 +276,7 @@ final class EventsServiceProvider extends PackageServiceProvider
             EventClassification::observe(EventClassificationObserver::class);
         }
 
-        EventTicketType::observe(ObserveEventTicketTypePricingConsistency::class);
+        TicketType::observe(ObserveEventTicketTypePricingConsistency::class);
 
         if (! interface_exists(CheckoutStepRegistryInterface::class)) {
             return;
@@ -292,8 +309,8 @@ final class EventsServiceProvider extends PackageServiceProvider
         }
 
         $passStep = new IssueEventPassesStep(
-            passIssuer: $this->app->make(EventPassIssuer::class),
-            passDelivery: $this->app->make(EventPassDeliveryService::class),
+            issuePasses: $this->app->make(IssueEventRegistrationPassesAction::class),
+            passDelivery: $this->app->make(PassDeliveryServiceInterface::class),
         );
 
         if ($registry->has('issue_event_passes')) {

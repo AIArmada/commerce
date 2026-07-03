@@ -8,8 +8,9 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\Steps\AbstractCheckoutStep;
 use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -67,7 +68,7 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
         foreach ($orderItems as $orderItem) {
             $purchasable = $orderItem->getRelation('purchasable');
 
-            if (! $purchasable instanceof EventTicketType) {
+            if (! $purchasable instanceof TicketType || EventTicketScope::target($purchasable) === null) {
                 continue;
             }
 
@@ -169,19 +170,11 @@ final class CreateEventRegistrationsStep extends AbstractCheckoutStep
         return $participants;
     }
 
-    private function resolveRegistrationTarget(EventTicketType $ticketType): ?Model
+    private function resolveRegistrationTarget(TicketType $ticketType): ?Model
     {
-        $ticketType->loadMissing('event', 'occurrence', 'session');
+        $ticketType->loadMissing('ticketable');
 
-        if ($ticketType->event_session_id !== null) {
-            return $ticketType->session;
-        }
-
-        if ($ticketType->event_occurrence_id !== null) {
-            return $ticketType->occurrence;
-        }
-
-        return $ticketType->event;
+        return EventTicketScope::target($ticketType);
     }
 
     private function resolveCustomerEmail(mixed $customer): ?string

@@ -8,10 +8,10 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationItem;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Resolvers\DefaultEventOrderItemFulfillmentResolver;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -28,15 +28,12 @@ it('resolves order item fulfillment payloads from the registration participants'
             'timezone' => 'UTC',
             'delivery_mode' => 'in_person',
         ]);
-        $ticketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-        ]);
+        $ticketType = createEventTicketType($occurrence);
         $order = Order::factory()->create();
         $orderItem = OrderItem::query()->create([
             'id' => (string) Str::uuid(),
             'order_id' => $order->id,
-            'purchasable_type' => EventTicketType::class,
+            'purchasable_type' => TicketType::class,
             'purchasable_id' => $ticketType->id,
             'name' => $ticketType->name,
             'sku' => 'EVENT-TICKET',
@@ -72,7 +69,7 @@ it('resolves order item fulfillment payloads from the registration participants'
             'event_registration_id' => $registration->id,
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
-            'event_ticket_type_id' => $ticketType->id,
+            'ticket_type_id' => $ticketType->id,
             'quantity' => 1,
             'unit_price' => 1500,
             'total_price' => 1500,

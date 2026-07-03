@@ -13,6 +13,8 @@ use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use AIArmada\Events\States\OccurrenceStatus\OccurrenceStatus as OccurrenceStatusState;
 use AIArmada\Seating\Models\SeatMap;
+use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Models\TicketType;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -58,7 +60,7 @@ use Spatie\ModelStates\HasStates;
  * @property Carbon|null $updated_at
  * @property-read Event $event
  * @property-read EventOccurrence|null $occurrence
- * @property-read Collection<int, EventTicketType> $ticketTypes
+ * @property-read Collection<int, TicketType> $ticketTypes
  * @property-read Collection<int, EventLocation> $locations
  * @property-read Collection<int, EventFacility> $facilities
  * @property-read Collection<int, EventInvolvement> $involvements
@@ -76,7 +78,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventRegistration> $registrations
  * @property-read Collection<int, EventRegistrationParticipant> $participants
  * @property-read Collection<int, EventAttendance> $attendances
- * @property-read Collection<int, EventPass> $passes
+ * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, EventChangeLog> $changeLogs
  * @property-read Collection<int, EventUpdate> $updates
  * @property-read Collection<int, EventNotificationBatch> $notificationBatches
@@ -164,11 +166,11 @@ final class EventSession extends Model
     }
 
     /**
-     * @return HasMany<EventTicketType, $this>
+     * @return MorphMany<TicketType, $this>
      */
-    public function ticketTypes(): HasMany
+    public function ticketTypes(): MorphMany
     {
-        return $this->hasMany(EventTicketType::class, 'event_session_id');
+        return $this->morphMany(TicketType::class, 'ticketable');
     }
 
     /**
@@ -308,11 +310,11 @@ final class EventSession extends Model
     }
 
     /**
-     * @return HasMany<EventPass, $this>
+     * @return MorphMany<Pass, $this>
      */
-    public function passes(): HasMany
+    public function passes(): MorphMany
     {
-        return $this->hasMany(EventPass::class, 'event_session_id');
+        return $this->morphMany(Pass::class, 'ticketable');
     }
 
     /**
@@ -389,10 +391,10 @@ final class EventSession extends Model
             return PricingMode::Paid;
         }
 
-        /** @var Collection<int, EventTicketType> $ticketTypes */
+        /** @var Collection<int, TicketType> $ticketTypes */
         $ticketTypes = $this->relationLoaded('ticketTypes')
             ? $this->getRelation('ticketTypes')
-            : $this->ticketTypes()->get(['id', 'event_session_id', 'price']);
+            : $this->ticketTypes()->get(['id', 'ticketable_id', 'ticketable_type', 'price']);
 
         if ($ticketTypes->isEmpty()) {
             return $this->occurrence?->effectivePricingMode() ?? $this->event?->effectivePricingMode() ?? PricingMode::Paid;

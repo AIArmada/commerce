@@ -10,9 +10,9 @@ family: analytics-and-events
 
 ## Snapshot
 - Composer: `aiarmada/events`
-- Role: Event definitions, scheduling, venues, registrations, ticketing, check-in, attendance, and change workflows.
+- Role: Event definitions, scheduling, venues, registrations, check-in, attendance, and change workflows, with ticketing and seating integrated through sibling packages.
 - Search first: `src/Models`, `src/Actions`, `src/Services`, `src/Support`, `src/Resolvers`, `src/Listeners`, `src/Events`, `src/Console/Commands`, `src/Steps`, `src/Data`, `config`, `docs`
-- Related: `filament-events`, `commerce-support`, `engagement`, `products`, `customers`, `orders`
+- Related: `ticketing`, `seating`, `filament-events`, `commerce-support`, `engagement`, `products`, `customers`, `orders`
 
 ## Read next
 1. `docs/01-overview.md`
@@ -24,6 +24,7 @@ family: analytics-and-events
 
 ## Guardrails
 - Owns event-domain models, actions, services, resolvers, listeners, events, console commands, and persistence rules.
+- Keep ticket types, passes, pass transfers, seat layouts, seat holds, and seat allocations in `ticketing` / `seating`; only keep event-scoped orchestration here.
 - Keep Filament resources, pages, widgets, relation managers, and admin-only workflow actions in `filament-events`.
 - Preserve owner-aware queries, explicit owner context, and polymorphic integrations.
 - Prefer actions and workflow services for orchestration; keep models and listeners thin.

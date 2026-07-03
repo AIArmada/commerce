@@ -7,6 +7,7 @@ namespace AIArmada\Events\Actions;
 use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Support\EventTicketScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 
@@ -34,9 +35,15 @@ final class ExpandTicketTypeComponentsAction
             return new Collection;
         }
 
-        $scope = $this->scopeResolver->resolve(
-            $ticketType->event_session ?? $ticketType->occurrence ?? $ticketType->event,
-        );
+        $ticketType->loadMissing('ticketable', 'components.componentTicketType');
+
+        $target = EventTicketScope::target($ticketType);
+
+        if ($target === null) {
+            return new Collection;
+        }
+
+        $scope = $this->scopeResolver->resolve($target);
 
         $children = new Collection;
         $entitlements = $parentRegistration->getPassEntitlements();
@@ -64,7 +71,7 @@ final class ExpandTicketTypeComponentsAction
                     'parent_registration_id' => $parentRegistration->getKey(),
                     'is_bundle_root' => false,
                     'items' => [[
-                        'event_ticket_type_id' => $componentTicketType->getKey(),
+                        'ticket_type_id' => $componentTicketType->getKey(),
                         'quantity' => 1,
                         'unit_price' => 0,
                         'total_price' => 0,
@@ -80,7 +87,7 @@ final class ExpandTicketTypeComponentsAction
 
                 $entitlements[] = [
                     'event_registration_id' => $child->getKey(),
-                    'event_ticket_type_id' => $componentTicketType->getKey(),
+                    'ticket_type_id' => $componentTicketType->getKey(),
                     'event_occurrence_id' => $scope->occurrence?->getKey(),
                     'event_session_id' => $scope->session?->getKey(),
                     'event_id' => $event->getKey(),

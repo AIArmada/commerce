@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Ticketing\Actions;
 
-use AIArmada\Ticketing\Contracts\TicketableInterface;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Model;
 
 final class EnsureTicketTypeAction
 {
     /** @param array<string, mixed> $attributes */
-    public function handle(Model & TicketableInterface $ticketable, array $attributes = []): TicketType
+    public function handle(Model $ticketable, array $attributes = []): TicketType
     {
         $code = blank($attributes['code'] ?? null)
             ? $ticketable->getKey()
@@ -27,6 +26,7 @@ final class EnsureTicketTypeAction
             'name' => $attributes['name'] ?? $code,
             'description' => $attributes['description'] ?? null,
             'access_type' => $attributes['access_type'] ?? 'general',
+            'seating_mode' => $attributes['seating_mode'] ?? null,
             'price' => $attributes['price'] ?? null,
             'currency' => $attributes['currency'] ?? config('ticketing.defaults.currency', 'MYR'),
             'admits_quantity' => $attributes['admits_quantity'] ?? 1,
@@ -37,6 +37,7 @@ final class EnsureTicketTypeAction
             'status' => $attributes['status'] ?? 'active',
             'visibility' => $attributes['visibility'] ?? 'public',
             'sort_order' => $attributes['sort_order'] ?? 0,
+            'metadata' => $attributes['metadata'] ?? null,
         ]);
 
         if ($ticketType->isDirty() || ! $ticketType->exists) {

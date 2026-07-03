@@ -6,6 +6,7 @@ namespace AIArmada\Seating\Services;
 
 use AIArmada\Seating\Contracts\SeatAllocatorInterface;
 use AIArmada\Seating\Data\AllocationResult;
+use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Seating\Exceptions\InsufficientSeatsException;
 use AIArmada\Seating\Models\Seat;
 use AIArmada\Seating\Models\SeatHold;
@@ -19,12 +20,17 @@ final class DefaultSeatAllocator implements SeatAllocatorInterface
     public function allocate(
         SeatMap $map,
         int $quantity,
+        SeatingMode $mode = SeatingMode::Assigned,
         ?string $heldByType = null,
         ?string $heldById = null,
         ?string $reference = null,
         array $categoryPreferences = [],
     ): Collection {
         if ($quantity <= 0) {
+            return new Collection;
+        }
+
+        if ($mode === SeatingMode::GeneralAdmission) {
             return new Collection;
         }
 

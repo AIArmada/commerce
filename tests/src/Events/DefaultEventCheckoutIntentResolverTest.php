@@ -10,8 +10,8 @@ use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Resolvers\DefaultEventCheckoutIntentResolver;
+use AIArmada\Ticketing\Models\TicketType;
 
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', false);
@@ -35,10 +35,7 @@ it('preserves the full participant payload when resolving an event checkout inte
         $occurrence = EventOccurrence::factory()->create([
             'event_id' => $event->id,
         ]);
-        $ticketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-        ]);
+        $ticketType = createEventTicketType($occurrence);
 
         $registration = app(RegistrationServiceInterface::class)->register([
             'event_id' => $event->id,
@@ -62,7 +59,7 @@ it('preserves the full participant payload when resolving an event checkout inte
             ],
             'items' => [
                 [
-                    'event_ticket_type_id' => $ticketType->id,
+                    'ticket_type_id' => $ticketType->id,
                     'quantity' => 1,
                     'unit_price' => $ticketType->price,
                     'total_price' => $ticketType->price,
@@ -125,10 +122,7 @@ it('preserves the full participant payload when resolving a session checkout int
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
         ]);
-        $ticketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_session_id' => $session->id,
-        ]);
+        $ticketType = createEventTicketType($session);
 
         $registration = app(RegistrationServiceInterface::class)->register([
             'event_id' => $event->id,
@@ -153,7 +147,7 @@ it('preserves the full participant payload when resolving a session checkout int
             ],
             'items' => [
                 [
-                    'event_ticket_type_id' => $ticketType->id,
+                    'ticket_type_id' => $ticketType->id,
                     'quantity' => 1,
                     'unit_price' => $ticketType->price,
                     'total_price' => $ticketType->price,
@@ -175,6 +169,8 @@ it('preserves the full participant payload when resolving a session checkout int
         expect($cartItems)->toHaveCount(1)
             ->and($cartItems[0]['id'] ?? null)->toBe($ticketType->id)
             ->and($cartItems[0]['quantity'] ?? null)->toBe(1)
+            ->and($cartItems[0]['attributes']['purchasable_type'] ?? null)->toBe(TicketType::class)
+            ->and($cartItems[0]['attributes']['ticket_type_id'] ?? null)->toBe($ticketType->id)
             ->and($cartItems[0]['attributes']['event_session_id'] ?? null)->toBe($session->id)
             ->and($cartItems[0]['attributes']['participants'] ?? null)->toBe([
                 [

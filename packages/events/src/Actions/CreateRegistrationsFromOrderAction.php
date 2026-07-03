@@ -11,9 +11,10 @@ use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Exceptions\EventIsFreeException;
 use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Support\EventRegistrationScope;
+use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -80,8 +81,8 @@ final class CreateRegistrationsFromOrderAction
 
         $ticketType = $orderItem->purchasable;
 
-        if (! $ticketType instanceof EventTicketType) {
-            throw new InvalidArgumentException('The selected order item must reference an EventTicketType.');
+        if (! $ticketType instanceof TicketType) {
+            throw new InvalidArgumentException('The selected order item must reference a TicketType.');
         }
 
         if (! $this->ticketTypeBelongsToScope($ticketType, $scope)) {
@@ -117,7 +118,7 @@ final class CreateRegistrationsFromOrderAction
                 'external_order_id' => $orderItem->order_id,
                 'external_order_type' => $orderClass,
                 'items' => [[
-                    'event_ticket_type_id' => $ticketType->getKey(),
+                    'ticket_type_id' => $ticketType->getKey(),
                     'quantity' => 1,
                     'unit_price' => $orderItem->unit_price,
                     'total_price' => $orderItem->unit_price,
@@ -141,25 +142,11 @@ final class CreateRegistrationsFromOrderAction
         return $registrations;
     }
 
-    private function ticketTypeBelongsToScope(EventTicketType $ticketType, EventRegistrationScope $scope): bool
+    private function ticketTypeBelongsToScope(TicketType $ticketType, EventRegistrationScope $scope): bool
     {
-        if ($ticketType->event_id !== $scope->event->id) {
-            return false;
-        }
+        $ticketType->loadMissing('ticketable');
 
-        if ($ticketType->event_session_id !== null) {
-            if ($scope->session === null || $ticketType->event_session_id !== $scope->session->id) {
-                return false;
-            }
-        }
-
-        if ($ticketType->event_occurrence_id !== null) {
-            if ($scope->occurrence === null || $ticketType->event_occurrence_id !== $scope->occurrence->id) {
-                return false;
-            }
-        }
-
-        return true;
+        return EventTicketScope::belongsToRegistrationScope($ticketType, $scope);
     }
 
     /**

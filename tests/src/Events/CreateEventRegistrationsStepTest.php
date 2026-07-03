@@ -11,10 +11,10 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Steps\CreateEventRegistrationsStep;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\mock;
@@ -43,17 +43,8 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
             'event_id' => $event->id,
         ]);
 
-        $snapshotTicketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'price' => 1500,
-        ]);
-
-        $fallbackTicketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'price' => 1500,
-        ]);
+        $snapshotTicketType = createEventTicketType($occurrence, ['price' => 1500]);
+        $fallbackTicketType = createEventTicketType($occurrence, ['price' => 1500]);
 
         $order = Order::factory()->create([
             'customer_type' => $customer->getMorphClass(),
@@ -113,7 +104,7 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
                             ],
                         ],
                         'associated_model' => [
-                            'class' => EventTicketType::class,
+                            'class' => TicketType::class,
                             'id' => $snapshotTicketType->id,
                         ],
                     ],
@@ -126,7 +117,7 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
                             'purchasable_id' => $fallbackTicketType->id,
                         ],
                         'associated_model' => [
-                            'class' => EventTicketType::class,
+                            'class' => TicketType::class,
                             'id' => $fallbackTicketType->id,
                         ],
                     ],
@@ -141,7 +132,7 @@ it('reuses snapshot participants and falls back to the registrant when needed', 
             ->times(3)
             ->andReturnUsing(function (array $data) use (&$captured): EventRegistration {
                 $captured[] = [
-                    'ticket_type_id' => $data['items'][0]['event_ticket_type_id'] ?? null,
+                    'ticket_type_id' => $data['items'][0]['ticket_type_id'] ?? null,
                     'participant' => $data['participants'][0] ?? null,
                 ];
 
@@ -198,11 +189,7 @@ it('prefers the customer email and phone columns when fallback participants are 
             'event_id' => $event->id,
         ]);
 
-        $ticketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'price' => 1500,
-        ]);
+        $ticketType = createEventTicketType($occurrence, ['price' => 1500]);
 
         $order = Order::factory()->create([
             'customer_type' => $customer->getMorphClass(),
@@ -237,7 +224,7 @@ it('prefers the customer email and phone columns when fallback participants are 
                             'purchasable_id' => $ticketType->id,
                         ],
                         'associated_model' => [
-                            'class' => EventTicketType::class,
+                            'class' => TicketType::class,
                             'id' => $ticketType->id,
                         ],
                     ],
@@ -281,21 +268,9 @@ it('routes registrations to the matching event scope for event, occurrence, and 
             'event_occurrence_id' => $occurrence->id,
         ]);
 
-        $eventTicketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'price' => 1500,
-        ]);
-        $occurrenceTicketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'price' => 1500,
-        ]);
-        $sessionTicketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'event_session_id' => $session->id,
-            'price' => 1500,
-        ]);
+        $eventTicketType = createEventTicketType($event, ['price' => 1500]);
+        $occurrenceTicketType = createEventTicketType($occurrence, ['price' => 1500]);
+        $sessionTicketType = createEventTicketType($session, ['price' => 1500]);
 
         $order = Order::factory()->create();
 
@@ -361,7 +336,7 @@ it('routes registrations to the matching event scope for event, occurrence, and 
                             ],
                         ],
                         'associated_model' => [
-                            'class' => EventTicketType::class,
+                            'class' => TicketType::class,
                             'id' => $eventTicketType->id,
                         ],
                     ],
@@ -380,7 +355,7 @@ it('routes registrations to the matching event scope for event, occurrence, and 
                             ],
                         ],
                         'associated_model' => [
-                            'class' => EventTicketType::class,
+                            'class' => TicketType::class,
                             'id' => $occurrenceTicketType->id,
                         ],
                     ],
@@ -399,7 +374,7 @@ it('routes registrations to the matching event scope for event, occurrence, and 
                             ],
                         ],
                         'associated_model' => [
-                            'class' => EventTicketType::class,
+                            'class' => TicketType::class,
                             'id' => $sessionTicketType->id,
                         ],
                     ],
@@ -414,7 +389,7 @@ it('routes registrations to the matching event scope for event, occurrence, and 
             ->times(3)
             ->andReturnUsing(function (array $data) use (&$captured): EventRegistration {
                 $captured[] = [
-                    'ticket_type_id' => $data['items'][0]['event_ticket_type_id'] ?? null,
+                    'ticket_type_id' => $data['items'][0]['ticket_type_id'] ?? null,
                     'event_id' => $data['event_id'] ?? null,
                     'event_occurrence_id' => $data['event_occurrence_id'] ?? null,
                     'event_session_id' => $data['event_session_id'] ?? null,

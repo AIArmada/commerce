@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Ticketing\Database\Factories\PassFactory;
+use AIArmada\Ticketing\Events\PassCancelled;
+use AIArmada\Ticketing\Events\PassExpired;
+use AIArmada\Ticketing\Events\PassRevoked;
+use AIArmada\Ticketing\Events\PassVoided;
 use AIArmada\Ticketing\States\Activated;
 use AIArmada\Ticketing\States\Cancelled;
 use AIArmada\Ticketing\States\Expired;
@@ -22,9 +27,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 /**
@@ -32,6 +39,10 @@ use Illuminate\Support\Str;
  * @property string $ticketable_type
  * @property string $ticketable_id
  * @property string|null $ticket_type_id
+ * @property string|null $registration_type
+ * @property string|null $registration_id
+ * @property string|null $occurrence_id
+ * @property string|null $session_id
  * @property string $pass_no
  * @property string|null $qr_code
  * @property string|null $barcode
@@ -50,8 +61,6 @@ use Illuminate\Support\Str;
  * @property Carbon|null $updated_at
  * @property-read Model|Eloquent $ticketable
  * @property-read Model|Eloquent|null $registration
- * @property-read string|null $occurrence_id
- * @property-read string|null $session_id
  * @property-read TicketType|null $ticketType
  * @property-read PassHolder|null $holder
  * @property-read Collection<int, PassHolder> $holderHistory
@@ -172,6 +181,14 @@ class Pass extends Model
         return $this->hasMany(PassTransfer::class);
     }
 
+    /**
+     * @return MorphMany<SeatAllocation, $this>
+     */
+    public function seatAllocations(): MorphMany
+    {
+        return $this->morphMany(SeatAllocation::class, 'allocated_to');
+    }
+
     public function isValid(): bool
     {
         $status = $this->status;
@@ -205,6 +222,8 @@ class Pass extends Model
         $this->cancelled_at ??= now();
         $this->status_reason = $reason;
         $this->status->transitionTo(Cancelled::class);
+
+        Event::dispatch(new PassCancelled($this));
     }
 
     public function markRevoked(?string $reason = null): void
@@ -212,6 +231,8 @@ class Pass extends Model
         $this->revoked_at ??= now();
         $this->status_reason = $reason;
         $this->status->transitionTo(Revoked::class);
+
+        Event::dispatch(new PassRevoked($this));
     }
 
     public function markVoided(?string $reason = null): void
@@ -219,12 +240,16 @@ class Pass extends Model
         $this->voided_at ??= now();
         $this->status_reason = $reason;
         $this->status->transitionTo(Voided::class);
+
+        Event::dispatch(new PassVoided($this));
     }
 
     public function markExpired(): void
     {
         $this->expired_at ??= now();
         $this->status->transitionTo(Expired::class);
+
+        Event::dispatch(new PassExpired($this));
     }
 
     public function generateQrCode(): string

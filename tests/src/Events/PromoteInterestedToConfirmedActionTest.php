@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
-use AIArmada\Events\Contracts\EventPassIssuer;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Exceptions\NotInterestedRegistrationException;
 use AIArmada\Events\Models\Event;
@@ -145,9 +144,6 @@ it('does not issue passes when the session overrides free pass issuance off', fu
             'event_session_id' => $session->id,
             'status' => 'interested',
         ]);
-
-        mock(EventPassIssuer::class)
-            ->shouldNotReceive('issuePassesFor');
 
         $result = app(PromoteInterestedToConfirmedAction::class)->execute($registration);
 

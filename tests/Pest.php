@@ -18,6 +18,13 @@ use AIArmada\Commerce\Tests\Products\ProductsTestCase;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Support\EventTicketScope;
+use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Models\TicketType;
 
 /*
 |--------------------------------------------------------------------------
@@ -196,6 +203,33 @@ function createTestAffiliate(array $attributes = []): Affiliate
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
+    ], $attributes));
+}
+
+function createEventTicketType(Event | EventOccurrence | EventSession $target, array $attributes = []): TicketType
+{
+    return TicketType::factory()->create(array_merge([
+        'ticketable_type' => $target->getMorphClass(),
+        'ticketable_id' => $target->getKey(),
+    ], $attributes));
+}
+
+function createEventPass(TicketType $ticketType, ?EventRegistration $registration = null, array $attributes = []): Pass
+{
+    $ticketType->loadMissing('ticketable');
+
+    $scopeIds = EventTicketScope::ids($ticketType);
+
+    return Pass::factory()->create(array_merge([
+        'ticketable_type' => $ticketType->ticketable_type,
+        'ticketable_id' => $ticketType->ticketable_id,
+        'ticket_type_id' => $ticketType->getKey(),
+        'registration_type' => $registration?->getMorphClass(),
+        'registration_id' => $registration?->getKey(),
+        'occurrence_id' => $registration?->event_occurrence_id ?? $scopeIds['event_occurrence_id'],
+        'session_id' => $registration?->event_session_id ?? $scopeIds['event_session_id'],
+        'status' => 'issued',
+        'issued_at' => now(),
     ], $attributes));
 }
 

@@ -24,6 +24,13 @@ return [
         'auto_assign_on_create' => env('SEATING_OWNER_AUTO_ASSIGN_ON_CREATE', true),
     ],
 
+    'modes' => [
+        // none — standing, open entry, no row created
+        // general_admission — section, no specific seat
+        // assigned — specific seat
+        // hybrid — section + optional seat
+    ],
+
     'scheduling' => [
         'release_expired_holds' => env('SEATING_RELEASE_EXPIRED_HOLDS', true),
     ],

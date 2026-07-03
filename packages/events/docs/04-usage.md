@@ -261,7 +261,7 @@ $registration = app(RegistrationServiceInterface::class)->register([
     ],
     'items' => [
         [
-            'event_ticket_type_id' => $ticketType->id,
+            'ticket_type_id' => $ticketType->id,
             'quantity' => 2,
             'unit_price' => 50000,
             'total_price' => 100000,
@@ -329,11 +329,9 @@ $service->createFromOrderItem([
 ## Managing Ticket Types
 
 ```php
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Ticketing\Actions\EnsureTicketTypeAction;
 
-$ticketType = EventTicketType::create([
-    'event_id' => $event->id,
-    'event_occurrence_id' => $occurrence->id,
+$ticketType = app(EnsureTicketTypeAction::class)->handle($occurrence, [
     'name' => 'Early Bird',
     'code' => 'EARLY',
     'access_type' => 'entry',
@@ -357,7 +355,7 @@ app(EventCheckInService::class)->checkIn([
     'event_occurrence_id' => $occurrence->id,
     'event_registration_id' => $registration->id,
     'event_registration_participant_id' => $participant->id,
-    'event_pass_id' => $pass->id,
+    'pass_id' => $pass->id,
     'attendance_type' => 'registered',
     'check_in_source' => 'qr',
 ]);
@@ -474,19 +472,28 @@ Event::withoutOwnerScope()->get();
 ## Working with Passes
 
 ```php
-use AIArmada\Events\Models\EventPass;
+use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
 
-$pass = EventPass::create([
-    'event_id' => $event->id,
-    'event_occurrence_id' => $occurrence->id,
-    'event_registration_id' => $registration->id,
-    'event_registration_participant_id' => $participant->id,
-    'event_ticket_type_id' => $ticketType->id,
-    'pass_no' => 'PASS-00001',
-    'qr_code' => Str::random(32),
-    'status' => 'issued',
-]);
+$passes = app(IssueEventRegistrationPassesAction::class)->handle($registration);
+$pass = $passes->first();
 ```
+
+## Seating Integration
+
+When `aiarmada/seating` is installed and a `TicketType` has a `seating_mode`, passes trigger automatic seat allocation on issue:
+
+- **Assigned**: a specific seat is held, then converted to an allocation on pass issuance.
+- **General Admission**: a section-level allocation (no specific seat) is created, capped by section capacity.
+- **None**: no allocation is created.
+
+Pass revocation (cancel/refund/void/expire) automatically releases the associated seat allocation. This is handled by listeners in the events package — no manual release needed.
+
+### Feature flags
+
+| Config key | Default | Description |
+|---|---|---|
+| `events.features.auto_allocate_seats` | `true` | Allocate seats on pass issuance |
+| `events.features.auto_revoke_passes_on_cancel` | `true` | Revoke passes when registration is cancelled |
 
 ## Stale slug redirects
 
@@ -500,9 +507,9 @@ When `aiarmada/cart`, `aiarmada/checkout`, and `aiarmada/orders` are installed, 
 
 ```php
 use AIArmada\Events\Actions\AddEventTicketTypeToCartAction;
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Ticketing\Models\TicketType;
 
-$ticketType = EventTicketType::find('...');
+$ticketType = TicketType::find('...');
 
 AddEventTicketTypeToCartAction::make()->handle(
     cart: cart(),
@@ -519,7 +526,7 @@ The action validates status, sales windows, min/max quantity, and remaining quot
 
 ### Mixed carts (tickets + products)
 
-Ticket types and products can coexist in the same cart. The checkout pipeline runs pricing, discounts, shipping, tax, and payment uniformly. After order creation, `CreateEventRegistrationsStep` (auto-registered) processes event ticket items by resolving the matching event, occurrence, or session scope from each `EventTicketType`, then creates registrations and passes. Product items flow through normal order fulfillment.
+Ticket types and products can coexist in the same cart. The checkout pipeline runs pricing, discounts, shipping, tax, and payment uniformly. After order creation, `CreateEventRegistrationsStep` (auto-registered) processes event ticket items by resolving the matching event, occurrence, or session scope from each `TicketType`, then creates registrations and passes. Product items flow through normal order fulfillment.
 
 ### Participant data
 
@@ -555,7 +562,7 @@ Override via config `events.integrations.checkout_intent_resolver` or by binding
 
 ### Per-scope ticket types
 
-When a ticket type's `event_occurrence_id` or `event_session_id` is set, it is scoped to that specific occurrence or session. Both `AddEventTicketTypeToCartAction` (via attributes) and `CreateRegistrationsFromOrderAction` (via validation) enforce scope matching. Ticket types without an occurrence or session are event-wide and can be registered for any matching scope.
+When a ticket type is created against an `EventOccurrence` or `EventSession`, it is scoped to that specific occurrence or session. Both `AddEventTicketTypeToCartAction` (via attributes) and `CreateRegistrationsFromOrderAction` (via validation) enforce scope matching. Ticket types created against the parent `Event` remain event-wide and can be registered for any matching scope.
 
 ## Extensibility via Contracts
 

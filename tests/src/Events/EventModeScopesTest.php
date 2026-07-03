@@ -7,7 +7,6 @@ use AIArmada\Events\Enums\RegistrationMode;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 
 beforeEach(function (): void {
     config()->set('events.features.free_only.auto_derive_pricing_from_ticket_types', true);
@@ -25,7 +24,7 @@ describe('Event pricing mode', function (): void {
 
     it('derives free from zero-price ticket types', function (): void {
         $event = Event::factory()->create();
-        EventTicketType::factory()->freeTicket()->create(['event_id' => $event->id]);
+        createEventTicketType($event, ['price' => 0]);
 
         expect($event->effectivePricingMode())->toBe(PricingMode::Free);
         expect($event->isFree())->toBeTrue();
@@ -33,7 +32,7 @@ describe('Event pricing mode', function (): void {
 
     it('derives paid from priced ticket types', function (): void {
         $event = Event::factory()->create();
-        EventTicketType::factory()->create(['event_id' => $event->id, 'price' => 1500]);
+        createEventTicketType($event, ['price' => 1500]);
 
         expect($event->effectivePricingMode())->toBe(PricingMode::Paid);
         expect($event->isFree())->toBeFalse();
@@ -41,8 +40,8 @@ describe('Event pricing mode', function (): void {
 
     it('derives mixed when both free and paid ticket types exist', function (): void {
         $event = Event::factory()->create();
-        EventTicketType::factory()->freeTicket()->create(['event_id' => $event->id]);
-        EventTicketType::factory()->create(['event_id' => $event->id, 'price' => 1500]);
+        createEventTicketType($event, ['price' => 0]);
+        createEventTicketType($event, ['price' => 1500]);
 
         expect($event->effectivePricingMode())->toBe(PricingMode::Mixed);
     });
@@ -120,11 +119,7 @@ describe('EventOccurrence inherits event modes', function (): void {
         $event = Event::factory()->create();
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
-        EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'price' => 1500,
-        ]);
+        createEventTicketType($occurrence, ['price' => 1500]);
 
         expect($occurrence->effectivePricingMode())->toBe(PricingMode::Paid);
         expect($occurrence->isFree())->toBeFalse();
@@ -166,12 +161,7 @@ describe('EventSession inherits modes', function (): void {
             'event_occurrence_id' => $occurrence->id,
         ]);
 
-        EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'event_session_id' => $session->id,
-            'price' => 1500,
-        ]);
+        createEventTicketType($session, ['price' => 1500]);
 
         expect($session->effectivePricingMode())->toBe(PricingMode::Paid);
         expect($session->isFree())->toBeFalse();

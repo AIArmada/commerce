@@ -2,8 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Ticketing\Models\Pass;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Spatie\ModelStates\Exceptions\TransitionNotFound;
+
+beforeEach(function (): void {
+    Relation::morphMap(['workshop' => User::class]);
+});
 
 it('issues a pass', function (): void {
     $pass = Pass::factory()->create(['status' => 'issued']);

@@ -8,7 +8,8 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Events\Contracts\EventCheckInService;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventPass;
+use AIArmada\Events\Models\EventRegistration;
+use AIArmada\Ticketing\Models\Pass;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -56,17 +57,23 @@ final class CheckInConsole extends Page implements HasTable
                     ->label('Check In')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->action(function (EventPass $record): void {
+                    ->action(function (Pass $record): void {
+                        $registration = $record->registration;
+
+                        if (! $registration instanceof EventRegistration) {
+                            return;
+                        }
+
                         app(EventCheckInService::class)->checkIn([
-                            'event_id' => $record->event_id,
-                            'event_occurrence_id' => $record->event_occurrence_id,
-                            'event_pass_id' => $record->id,
-                            'event_registration_id' => $record->event_registration_id,
+                            'event_id' => $registration->event_id,
+                            'event_occurrence_id' => $record->occurrence_id ?? $registration->event_occurrence_id,
+                            'pass_id' => $record->id,
+                            'event_registration_id' => $registration->id,
                             'attendance_type' => 'registered',
                             'check_in_source' => 'admin',
                         ]);
                     })
-                    ->visible(fn (EventPass $record) => $record->status === 'issued' || $record->status === 'active'),
+                    ->visible(fn (Pass $record) => $record->isValid()),
             ]);
     }
 
@@ -77,9 +84,15 @@ final class CheckInConsole extends Page implements HasTable
 
     private function getFilteredQuery(): Builder
     {
-        $query = EventPass::query()
+        $query = Pass::query()
             ->with('registration')
-            ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false));
+            ->where('registration_type', (new EventRegistration)->getMorphClass())
+            ->whereHasMorph(
+                'registration',
+                [EventRegistration::class],
+                fn (Builder $registrationQuery): Builder => $registrationQuery
+                    ->whereHas('event', fn (Builder $eventQuery): Builder => OwnerUiScope::apply($eventQuery, includeGlobal: false))
+            );
 
         if ($this->passOrRegistration) {
             $query->where(function (Builder $q): void {

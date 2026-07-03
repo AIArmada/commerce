@@ -7,6 +7,7 @@ namespace AIArmada\Ticketing\Models;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryMovement;
+use AIArmada\Seating\Enums\SeatingMode;
 use AIArmada\Ticketing\Database\Factories\TicketTypeFactory;
 use AIArmada\Ticketing\Enums\PricingMode;
 use Carbon\CarbonImmutable;
@@ -28,7 +29,7 @@ use Illuminate\Support\Collection;
  * @property string $code
  * @property string|null $description
  * @property string $access_type
- * @property string|null $seating_mode
+ * @property SeatingMode|null $seating_mode
  * @property int|null $price
  * @property string|null $currency
  * @property int $admits_quantity
@@ -48,6 +49,7 @@ use Illuminate\Support\Collection;
  * @property-read Collection<int, TicketTypeProduct> $bundleProducts
  * @property-read Collection<int, TicketTypeProduct> $requiredBundleProducts
  * @property-read Collection<int, TicketTypeProduct> $optionalBundleProducts
+ * @property-read Collection<int, TicketTypeSeatingOption> $seatingOptions
  * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, InventoryLevel> $inventoryLevels
  * @property-read Collection<int, InventoryMovement> $inventoryMovements
@@ -101,6 +103,7 @@ class TicketType extends Model
     protected function casts(): array
     {
         return [
+            'seating_mode' => SeatingMode::class,
             'price' => 'integer',
             'admits_quantity' => 'integer',
             'min_quantity' => 'integer',
@@ -169,6 +172,14 @@ class TicketType extends Model
     }
 
     /**
+     * @return HasMany<TicketTypeSeatingOption, $this>
+     */
+    public function seatingOptions(): HasMany
+    {
+        return $this->hasMany(TicketTypeSeatingOption::class);
+    }
+
+    /**
      * @return MorphMany<InventoryLevel, $this>
      */
     public function inventoryLevels(): MorphMany
@@ -180,13 +191,13 @@ class TicketType extends Model
             return $this->newMorphMany(
                 $this->newRelatedInstance(Model::class)->newQuery(),
                 $this,
-                'inventoriable_type',
-                'inventoriable_id',
+                'inventoryable_type',
+                'inventoryable_id',
                 'id'
             );
         }
 
-        return $this->morphMany($class, 'inventoriable');
+        return $this->morphMany($class, 'inventoryable');
     }
 
     /**
@@ -201,13 +212,13 @@ class TicketType extends Model
             return $this->newMorphMany(
                 $this->newRelatedInstance(Model::class)->newQuery(),
                 $this,
-                'movementable_type',
-                'movementable_id',
+                'inventoryable_type',
+                'inventoryable_id',
                 'id'
             );
         }
 
-        return $this->morphMany($class, 'movementable');
+        return $this->morphMany($class, 'inventoryable');
     }
 
     /**
@@ -222,13 +233,13 @@ class TicketType extends Model
             return $this->newMorphMany(
                 $this->newRelatedInstance(Model::class)->newQuery(),
                 $this,
-                'allocatable_type',
-                'allocatable_id',
+                'inventoryable_type',
+                'inventoryable_id',
                 'id'
             );
         }
 
-        return $this->morphMany($class, 'allocatable');
+        return $this->morphMany($class, 'inventoryable');
     }
 
     public function getTotalOnHand(): int
@@ -237,7 +248,7 @@ class TicketType extends Model
             return 0;
         }
 
-        return (int) $this->inventoryLevels()->sum('on_hand');
+        return (int) $this->inventoryLevels()->sum('quantity_on_hand');
     }
 
     public function getTotalAvailable(): int
@@ -246,7 +257,9 @@ class TicketType extends Model
             return 0;
         }
 
-        return (int) $this->inventoryLevels()->sum('available');
+        return (int) $this->inventoryLevels()
+            ->get()
+            ->sum(static fn (InventoryLevel $level): int => $level->available);
     }
 
     public function hasInventory(int $quantity): bool

@@ -39,7 +39,6 @@ it('stores event money as integer minor units', function (): void {
         '2000_01_01_000010_create_event_facilities_table.php',
         '2000_01_01_000014_create_event_registrations_table.php',
         '2000_01_01_000017_create_event_registration_items_table.php',
-        '2000_01_01_000018_create_event_ticket_types_table.php',
     ] as $filename) {
         $content = file_get_contents($dir . $filename);
 

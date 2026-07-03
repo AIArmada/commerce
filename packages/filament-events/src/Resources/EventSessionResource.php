@@ -320,7 +320,6 @@ final class EventSessionResource extends Resource
             EventSessionResource\RelationManagers\SessionInvolvementsRelationManager::class,
             EventSessionResource\RelationManagers\SessionLocationsRelationManager::class,
             EventSessionResource\RelationManagers\SessionRegistrationsRelationManager::class,
-            EventSessionResource\RelationManagers\SessionTicketTypesRelationManager::class,
             EventSessionResource\RelationManagers\SessionAttendancesRelationManager::class,
             EventSessionResource\RelationManagers\SessionMaterialsRelationManager::class,
         ];

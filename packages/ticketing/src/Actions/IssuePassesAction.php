@@ -19,14 +19,35 @@ final class IssuePassesAction
         return DB::transaction(function () use ($context) {
             $passes = app(PassIssuerInterface::class)->issuePassesFor($context);
 
-            foreach ($passes as $pass) {
-                if ($context->holderAttributes !== []) {
-                    $this->createHolder($pass, $context->holderAttributes);
+            foreach ($passes->values() as $index => $pass) {
+                $holderAttributes = $this->resolveHolderAttributesForPass($context->holderAttributes, $index);
+
+                if ($holderAttributes !== []) {
+                    $this->createHolder($pass, $holderAttributes);
                 }
             }
 
             return $passes;
         });
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>|array<string, mixed>  $holderAttributes
+     * @return array<string, mixed>
+     */
+    private function resolveHolderAttributesForPass(array $holderAttributes, int $index): array
+    {
+        if ($holderAttributes === []) {
+            return [];
+        }
+
+        if (array_is_list($holderAttributes)) {
+            $attributes = $holderAttributes[$index] ?? null;
+
+            return is_array($attributes) ? $attributes : [];
+        }
+
+        return $holderAttributes;
     }
 
     /** @param array<string, mixed> $holderAttributes */

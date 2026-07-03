@@ -10,6 +10,7 @@ use AIArmada\Events\States\RegistrationStatus\Completed;
 use AIArmada\Events\States\RegistrationStatus\Pending;
 use AIArmada\Events\States\RegistrationStatus\RegistrationStatus as RegistrationStatusState;
 use AIArmada\Events\States\RegistrationStatus\Waitlisted;
+use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Notifications\Notification;
@@ -67,7 +69,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventRegistrationParticipant> $participants
  * @property-read Collection<int, EventRegistrationAnswer> $answers
  * @property-read Collection<int, EventRegistrationItem> $items
- * @property-read Collection<int, EventPass> $passes
+ * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, EventAttendance> $attendances
  */
 final class EventRegistration extends Model
@@ -195,11 +197,11 @@ final class EventRegistration extends Model
     }
 
     /**
-     * @return HasMany<EventPass, $this>
+     * @return MorphMany<Pass, $this>
      */
-    public function passes(): HasMany
+    public function passes(): MorphMany
     {
-        return $this->hasMany(EventPass::class);
+        return $this->morphMany(Pass::class, 'registration');
     }
 
     /**

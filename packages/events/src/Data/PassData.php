@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Data;
 
-use AIArmada\Events\Models\EventPass;
+use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
@@ -23,7 +23,7 @@ final class PassData extends Data
         public readonly CarbonImmutable | null | Optional $used_at,
     ) {}
 
-    public static function fromPass(EventPass $pass): self
+    public static function fromPass(Pass $pass): self
     {
         $ticketTypeName = null;
         if ($pass->relationLoaded('ticketType') && $pass->ticketType) {

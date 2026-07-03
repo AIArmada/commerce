@@ -19,7 +19,7 @@ return new class extends Migration
             $table->uuid('event_session_id')->nullable()->index();
             $table->uuid('event_registration_id')->nullable()->index();
             $table->uuid('event_registration_participant_id')->nullable()->index();
-            $table->uuid('event_pass_id')->nullable()->index();
+            $table->uuid('pass_id')->nullable()->index();
             $table->string('attendee_type')->nullable()->index();
             $table->uuid('attendee_id')->nullable()->index();
             $table->string('attendance_type')->index();

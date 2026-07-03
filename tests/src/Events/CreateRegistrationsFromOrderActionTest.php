@@ -8,7 +8,6 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -26,7 +25,7 @@ it('creates registrations for an order item using the order model as the externa
         try {
             $event = Event::factory()->paid()->create();
             $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
-            $ticketType = EventTicketType::factory()->create(['event_id' => $event->id, 'price' => 1500]);
+            $ticketType = createEventTicketType($event, ['price' => 1500]);
             $order = Order::factory()->create();
             $orderItem = OrderItem::query()->create([
                 'id' => (string) Str::uuid(),
@@ -86,10 +85,7 @@ it('returns existing registrations when replaying a paid order item after capaci
                 'event_id' => $event->id,
                 'capacity' => 1,
             ]);
-            $ticketType = EventTicketType::factory()->create([
-                'event_id' => $event->id,
-                'price' => 1500,
-            ]);
+            $ticketType = createEventTicketType($event, ['price' => 1500]);
             $order = Order::factory()->create();
             $orderItem = OrderItem::query()->create([
                 'id' => (string) Str::uuid(),
@@ -138,11 +134,7 @@ it('creates registrations for occurrence-scoped ticket types on an occurrence', 
         try {
             $event = Event::factory()->paid()->create();
             $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
-            $ticketType = EventTicketType::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'price' => 1500,
-            ]);
+            $ticketType = createEventTicketType($occurrence, ['price' => 1500]);
             $order = Order::factory()->create();
             $orderItem = OrderItem::query()->create([
                 'id' => (string) Str::uuid(),
@@ -168,7 +160,7 @@ it('creates registrations for occurrence-scoped ticket types on an occurrence', 
 
             expect($registrations)->toHaveCount(1);
             expect($registrations->first()?->items)->toHaveCount(1)
-                ->and($registrations->first()?->items->first()?->event_ticket_type_id)->toBe($ticketType->id);
+                ->and($registrations->first()?->items->first()?->ticket_type_id)->toBe($ticketType->id);
         } finally {
             Relation::morphMap($originalMorphMap, false);
         }
@@ -181,18 +173,13 @@ it('creates registrations for session-scoped ticket types on a session', functio
         Relation::morphMap(['test-order' => Order::class], false);
 
         try {
-            $event = Event::factory()->create();
+            $event = Event::factory()->paid()->create();
             $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
             $session = EventSession::factory()->create([
                 'event_id' => $event->id,
                 'event_occurrence_id' => $occurrence->id,
             ]);
-            $ticketType = EventTicketType::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'event_session_id' => $session->id,
-                'price' => 1500,
-            ]);
+            $ticketType = createEventTicketType($session, ['price' => 1500]);
             $order = Order::factory()->create();
             $orderItem = OrderItem::query()->create([
                 'id' => (string) Str::uuid(),
@@ -218,7 +205,7 @@ it('creates registrations for session-scoped ticket types on a session', functio
 
             expect($registrations)->toHaveCount(1);
             expect($registrations->first()?->items)->toHaveCount(1)
-                ->and($registrations->first()?->items->first()?->event_ticket_type_id)->toBe($ticketType->id);
+                ->and($registrations->first()?->items->first()?->ticket_type_id)->toBe($ticketType->id);
         } finally {
             Relation::morphMap($originalMorphMap, false);
         }
@@ -233,11 +220,7 @@ it('rejects occurrence-scoped ticket types when targeting the event', function (
         try {
             $event = Event::factory()->paid()->create();
             $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
-            $ticketType = EventTicketType::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'price' => 1500,
-            ]);
+            $ticketType = createEventTicketType($occurrence, ['price' => 1500]);
             $order = Order::factory()->create();
             $orderItem = OrderItem::query()->create([
                 'id' => (string) Str::uuid(),
@@ -272,18 +255,13 @@ it('rejects session-scoped ticket types when targeting an occurrence', function 
         Relation::morphMap(['test-order' => Order::class], false);
 
         try {
-            $event = Event::factory()->create();
+            $event = Event::factory()->paid()->create();
             $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
             $session = EventSession::factory()->create([
                 'event_id' => $event->id,
                 'event_occurrence_id' => $occurrence->id,
             ]);
-            $ticketType = EventTicketType::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'event_session_id' => $session->id,
-                'price' => 1500,
-            ]);
+            $ticketType = createEventTicketType($session, ['price' => 1500]);
             $order = Order::factory()->create();
             $orderItem = OrderItem::query()->create([
                 'id' => (string) Str::uuid(),

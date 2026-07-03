@@ -12,6 +12,7 @@ return [
             'ticket_types' => env('TICKETING_TICKET_TYPES_TABLE', $tablePrefix . 'ticket_types'),
             'ticket_type_components' => env('TICKETING_TICKET_TYPE_COMPONENTS_TABLE', $tablePrefix . 'ticket_type_components'),
             'ticket_type_products' => env('TICKETING_TICKET_TYPE_PRODUCTS_TABLE', $tablePrefix . 'ticket_type_products'),
+            'ticket_type_seating_options' => env('TICKETING_TICKET_TYPE_SEATING_OPTIONS_TABLE', $tablePrefix . 'ticket_type_seating_options'),
             'passes' => env('TICKETING_PASSES_TABLE', $tablePrefix . 'passes'),
             'pass_holders' => env('TICKETING_PASS_HOLDERS_TABLE', $tablePrefix . 'pass_holders'),
             'pass_transfers' => env('TICKETING_PASS_TRANSFERS_TABLE', $tablePrefix . 'pass_transfers'),

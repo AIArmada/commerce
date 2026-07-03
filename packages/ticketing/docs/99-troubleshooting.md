@@ -21,14 +21,14 @@ TICKETING_PASSES_TABLE=my_passes
 Or set the table prefix:
 
 ```bash
-TICKETING_TABLE_PREFIX=event_
+TICKETING_TABLE_PREFIX=festival_
 ```
 
 ### Missing Holder Email on New Passes
 
 **Problem**: Pass notifications are not sent.
 
-**Solution**: The issue actions set holder email from `PassIssuanceContext->holderAttributes`. If null, the delivery service skips sending. Always populate `name` and `email` per holder:
+**Solution**: The issue actions set holder email from `PassIssuanceContext->holderAttributes`. If null, the delivery service skips sending. Always populate `name` and `email` per holder. When issuing multiple passes, pass one holder array per pass in order:
 
 ```php
 $context = new PassIssuanceContext(

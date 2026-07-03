@@ -8,13 +8,12 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event as EventFacade;
 
 it('creates individual registration', function (): void {
     $event = Event::factory()->create();
-    $ticketType = EventTicketType::factory()->create(['event_id' => $event->id]);
+    $ticketType = createEventTicketType($event);
 
     $registration = app(RegistrationServiceInterface::class)->register([
         'event_id' => $event->id,
@@ -26,7 +25,7 @@ it('creates individual registration', function (): void {
             ['name' => 'John Doe', 'is_primary' => true],
         ],
         'items' => [
-            ['event_ticket_type_id' => $ticketType->id, 'quantity' => 1],
+            ['ticket_type_id' => $ticketType->id, 'quantity' => 1],
         ],
     ]);
 

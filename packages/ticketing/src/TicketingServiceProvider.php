@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace AIArmada\Ticketing;
 
 use AIArmada\Orders\Events\OrderPaid;
+use AIArmada\Seating\Actions\ReleaseAllocationsAction;
 use AIArmada\Ticketing\Console\Commands\ExpireTransfersCommand;
 use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Contracts\PassIssuerInterface;
 use AIArmada\Ticketing\Contracts\PassTransferServiceInterface;
+use AIArmada\Ticketing\Events\PassCancelled;
+use AIArmada\Ticketing\Events\PassExpired;
+use AIArmada\Ticketing\Events\PassRevoked;
+use AIArmada\Ticketing\Events\PassVoided;
 use AIArmada\Ticketing\Listeners\IssuePassesOnOrderPaid;
+use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassCancelled;
+use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassExpired;
+use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassRevoked;
+use AIArmada\Ticketing\Listeners\ReleaseSeatsOnPassVoided;
 use AIArmada\Ticketing\Models\Pass;
 use AIArmada\Ticketing\Policies\PassTransferPolicy;
 use AIArmada\Ticketing\Services\DefaultPassDeliveryService;
@@ -51,6 +60,7 @@ final class TicketingServiceProvider extends PackageServiceProvider
     {
         $this->registerTransferPolicy();
         $this->registerOrderFulfillment();
+        $this->registerSeatReleaseListeners();
         $this->registerSchedule();
     }
 
@@ -68,6 +78,18 @@ final class TicketingServiceProvider extends PackageServiceProvider
         if (TicketingIntegration::ordersAvailable() && class_exists(OrderPaid::class)) {
             Event::listen(OrderPaid::class, IssuePassesOnOrderPaid::class);
         }
+    }
+
+    private function registerSeatReleaseListeners(): void
+    {
+        if (! class_exists(ReleaseAllocationsAction::class)) {
+            return;
+        }
+
+        Event::listen(PassRevoked::class, ReleaseSeatsOnPassRevoked::class);
+        Event::listen(PassCancelled::class, ReleaseSeatsOnPassCancelled::class);
+        Event::listen(PassVoided::class, ReleaseSeatsOnPassVoided::class);
+        Event::listen(PassExpired::class, ReleaseSeatsOnPassExpired::class);
     }
 
     private function registerSchedule(): void

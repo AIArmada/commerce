@@ -6,6 +6,8 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventRegistrationItemFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,7 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $event_id
  * @property string|null $event_occurrence_id
  * @property string|null $event_session_id
- * @property string|null $event_ticket_type_id
+ * @property string|null $ticket_type_id
  * @property int $quantity
  * @property int $unit_price
  * @property int $total_price
@@ -42,7 +44,7 @@ final class EventRegistrationItem extends Model
     protected $fillable = [
         'event_registration_id',
         'event_id', 'event_occurrence_id', 'event_session_id',
-        'event_ticket_type_id',
+        'ticket_type_id',
         'quantity', 'unit_price', 'total_price', 'currency',
         'external_order_item_id', 'external_order_item_type',
         'status',
@@ -92,10 +94,10 @@ final class EventRegistrationItem extends Model
         return $this->belongsTo(EventRegistration::class, 'event_registration_id');
     }
 
-    /** @return BelongsTo<EventTicketType, $this> */
+    /** @return BelongsTo<TicketType, $this> */
     public function ticketType(): BelongsTo
     {
-        return $this->belongsTo(EventTicketType::class, 'event_ticket_type_id');
+        return $this->belongsTo(TicketType::class, 'ticket_type_id');
     }
 
     /**
@@ -106,10 +108,12 @@ final class EventRegistrationItem extends Model
         return $this->morphTo();
     }
 
-    /** @return HasMany<EventPass, $this> */
+    /** @return HasMany<Pass, $this> */
     public function passes(): HasMany
     {
-        return $this->hasMany(EventPass::class, 'event_registration_item_id');
+        return $this->hasMany(Pass::class, 'registration_id', 'event_registration_id')
+            ->where('registration_type', (new EventRegistration)->getMorphClass())
+            ->where('ticket_type_id', $this->ticket_type_id);
     }
 
     protected static function newFactory(): EventRegistrationItemFactory

@@ -10,7 +10,6 @@ use AIArmada\Events\Models\EventChangeLog;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\FilamentEvents\Resources\EventAttendanceResource;
 use AIArmada\FilamentEvents\Resources\EventChangeLogResource;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource;
@@ -19,7 +18,6 @@ use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\O
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\OccurrenceLocationsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\OccurrenceRegistrationsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\OccurrenceSessionsRelationManager;
-use AIArmada\FilamentEvents\Resources\EventOccurrenceResource\RelationManagers\OccurrenceTicketTypesRelationManager;
 use AIArmada\FilamentEvents\Resources\EventRegistrationParticipantResource;
 use AIArmada\FilamentEvents\Resources\EventRegistrationResource;
 use AIArmada\FilamentEvents\Resources\EventResource;
@@ -29,15 +27,12 @@ use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\LocationsRe
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\OccurrencesRelationManager;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\RegistrationsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\SessionsRelationManager;
-use AIArmada\FilamentEvents\Resources\EventResource\RelationManagers\TicketTypesRelationManager;
 use AIArmada\FilamentEvents\Resources\EventSessionResource;
 use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionAttendancesRelationManager;
 use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionInvolvementsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionLocationsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionMaterialsRelationManager;
 use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionRegistrationsRelationManager;
-use AIArmada\FilamentEvents\Resources\EventSessionResource\RelationManagers\SessionTicketTypesRelationManager;
-use AIArmada\FilamentEvents\Resources\EventTicketTypeResource;
 use AIArmada\FilamentEvents\Resources\VenueResource;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -116,7 +111,6 @@ it('reads the configured navigation group from resources', function (): void {
         EventSessionResource::class,
         EventRegistrationResource::class,
         EventRegistrationParticipantResource::class,
-        EventTicketTypeResource::class,
         EventAttendanceResource::class,
         EventChangeLogResource::class,
         VenueResource::class,
@@ -129,7 +123,7 @@ it('builds the current event resources and relation managers', function (): void
     $table = Table::make(Mockery::mock(HasTable::class));
     $schemaLivewire = filamentEvents_makeSchemaLivewire();
 
-    foreach ([EventResource::class, EventOccurrenceResource::class, EventSessionResource::class, EventRegistrationResource::class, EventRegistrationParticipantResource::class, EventTicketTypeResource::class, EventAttendanceResource::class, EventChangeLogResource::class, VenueResource::class] as $resource) {
+    foreach ([EventResource::class, EventOccurrenceResource::class, EventSessionResource::class, EventRegistrationResource::class, EventRegistrationParticipantResource::class, EventAttendanceResource::class, EventChangeLogResource::class, VenueResource::class] as $resource) {
         expect($resource::table($table))->toBeInstanceOf(Table::class);
         expect($resource::infolist(Schema::make($schemaLivewire)))->toBeInstanceOf(Schema::class);
         expect($resource::getPages())->not->toBeEmpty();
@@ -141,7 +135,6 @@ it('builds the current event resources and relation managers', function (): void
         ->toContain(LocationsRelationManager::class)
         ->toContain(InvolvementsRelationManager::class)
         ->toContain(RegistrationsRelationManager::class)
-        ->toContain(TicketTypesRelationManager::class)
         ->toContain(AttendancesRelationManager::class);
 
     expect(EventOccurrenceResource::getRelations())
@@ -149,14 +142,12 @@ it('builds the current event resources and relation managers', function (): void
         ->toContain(OccurrenceLocationsRelationManager::class)
         ->toContain(OccurrenceInvolvementsRelationManager::class)
         ->toContain(OccurrenceRegistrationsRelationManager::class)
-        ->toContain(OccurrenceTicketTypesRelationManager::class)
         ->toContain(OccurrenceAttendancesRelationManager::class);
 
     expect(EventSessionResource::getRelations())
         ->toContain(SessionInvolvementsRelationManager::class)
         ->toContain(SessionLocationsRelationManager::class)
         ->toContain(SessionRegistrationsRelationManager::class)
-        ->toContain(SessionTicketTypesRelationManager::class)
         ->toContain(SessionAttendancesRelationManager::class)
         ->toContain(SessionMaterialsRelationManager::class);
 
@@ -262,12 +253,6 @@ it('keeps the current event resources owner scoped', function (): void {
                 'slug' => 'session-' . $suffix,
             ]);
 
-            $ticketType = EventTicketType::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'event_session_id' => $session->id,
-            ]);
-
             $registration = EventRegistration::factory()->create([
                 'event_id' => $event->id,
                 'event_occurrence_id' => $occurrence->id,
@@ -291,7 +276,6 @@ it('keeps the current event resources owner scoped', function (): void {
                 'event',
                 'occurrence',
                 'session',
-                'ticketType',
                 'registration',
                 'attendance',
                 'changeLog',
@@ -320,7 +304,6 @@ it('keeps the current event resources owner scoped', function (): void {
             'occurrences' => EventOccurrenceResource::getEloquentQuery()->pluck('id')->all(),
             'sessions' => EventSessionResource::getEloquentQuery()->pluck('id')->all(),
             'registrations' => EventRegistrationResource::getEloquentQuery()->pluck('id')->all(),
-            'ticketTypes' => EventTicketTypeResource::getEloquentQuery()->pluck('id')->all(),
             'attendances' => EventAttendanceResource::getEloquentQuery()->pluck('id')->all(),
             'changeLogs' => EventChangeLogResource::getEloquentQuery()->pluck('id')->all(),
         ];
@@ -332,7 +315,6 @@ it('keeps the current event resources owner scoped', function (): void {
             'occurrences' => EventOccurrenceResource::getEloquentQuery()->pluck('id')->all(),
             'sessions' => EventSessionResource::getEloquentQuery()->pluck('id')->all(),
             'registrations' => EventRegistrationResource::getEloquentQuery()->pluck('id')->all(),
-            'ticketTypes' => EventTicketTypeResource::getEloquentQuery()->pluck('id')->all(),
             'attendances' => EventAttendanceResource::getEloquentQuery()->pluck('id')->all(),
             'changeLogs' => EventChangeLogResource::getEloquentQuery()->pluck('id')->all(),
         ];
@@ -342,7 +324,6 @@ it('keeps the current event resources owner scoped', function (): void {
         ->and($ownerAIds['occurrences'])->toBe([$ownerAGraph['occurrence']->id])
         ->and($ownerAIds['sessions'])->toBe([$ownerAGraph['session']->id])
         ->and($ownerAIds['registrations'])->toBe([$ownerAGraph['registration']->id])
-        ->and($ownerAIds['ticketTypes'])->toBe([$ownerAGraph['ticketType']->id])
         ->and($ownerAIds['attendances'])->toBe([$ownerAGraph['attendance']->id])
         ->and($ownerAIds['changeLogs'])->toBe([$ownerAGraph['changeLog']->id]);
 
@@ -350,7 +331,6 @@ it('keeps the current event resources owner scoped', function (): void {
         ->and($ownerBIds['occurrences'])->toBe([$ownerBGraph['occurrence']->id])
         ->and($ownerBIds['sessions'])->toBe([$ownerBGraph['session']->id])
         ->and($ownerBIds['registrations'])->toBe([$ownerBGraph['registration']->id])
-        ->and($ownerBIds['ticketTypes'])->toBe([$ownerBGraph['ticketType']->id])
         ->and($ownerBIds['attendances'])->toBe([$ownerBGraph['attendance']->id])
         ->and($ownerBIds['changeLogs'])->toBe([$ownerBGraph['changeLog']->id]);
 });

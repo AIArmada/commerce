@@ -5,14 +5,13 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Contacting\Data\ContactMethodData;
-use AIArmada\Events\Contracts\EventPassDeliveryService;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Notifications\EventTicketNotification;
 use AIArmada\Events\Notifications\EventWelcomeNotification;
+use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
+use AIArmada\Ticketing\Notifications\TicketNotification;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
@@ -110,23 +109,23 @@ it('delivers ticket notifications through the default delivery service', functio
         ]);
         $participant->addContactMethod(ContactMethodData::email('alice@example.com'));
 
-        $pass = EventPass::query()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'event_registration_id' => $registration->id,
+        $ticketType = createEventTicketType($occurrence);
+        $pass = createEventPass($ticketType, $registration, [
             'pass_no' => 'PASS-123456',
-            'status' => 'issued',
-            'issued_at' => now(),
+        ]);
+        $pass->holderHistory()->create([
+            'name' => 'Alice Example',
+            'email' => 'alice@example.com',
+            'is_current' => true,
         ]);
 
-        app(EventPassDeliveryService::class)->deliver($pass);
+        app(PassDeliveryServiceInterface::class)->deliver($pass);
 
         NotificationFacade::assertSentOnDemand(
-            EventTicketNotification::class,
-            function (EventTicketNotification $notification, array $channels, AnonymousNotifiable $notifiable): bool {
-                return $channels === ['mail'] && ($notifiable->routes['mail'] ?? null) === [
-                    'alice@example.com' => 'Alice Example',
-                ];
+            TicketNotification::class,
+            function (TicketNotification $notification, array $channels, AnonymousNotifiable $notifiable): bool {
+                return $channels === ['mail']
+                    && ($notifiable->routes['mail'] ?? null) === 'alice@example.com';
             },
         );
     });
@@ -143,18 +142,14 @@ it('restores owner context while rendering serialized queued notifications', fun
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
         ]);
-        $pass = EventPass::query()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-            'event_registration_id' => $registration->id,
+        $ticketType = createEventTicketType($occurrence);
+        $pass = createEventPass($ticketType, $registration, [
             'pass_no' => 'PASS-QUEUED',
-            'status' => 'issued',
-            'issued_at' => now(),
         ]);
 
         return [
             new EventWelcomeNotification($registration),
-            new EventTicketNotification($pass),
+            new TicketNotification($pass),
         ];
     });
 

@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Events\Contracts\EventPassDeliveryService;
-use AIArmada\Events\Contracts\EventPassIssuer;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationItem;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Steps\IssueEventPassesStep;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\mock;
@@ -34,15 +32,12 @@ it('issues and delivers all passes created for matching registrations', function
             'timezone' => 'UTC',
             'delivery_mode' => 'in_person',
         ]);
-        $ticketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-        ]);
+        $ticketType = createEventTicketType($occurrence, ['admits_quantity' => 2]);
         $order = Order::factory()->create();
         $orderItem = OrderItem::query()->create([
             'id' => (string) Str::uuid(),
             'order_id' => $order->id,
-            'purchasable_type' => EventTicketType::class,
+            'purchasable_type' => TicketType::class,
             'purchasable_id' => $ticketType->id,
             'name' => $ticketType->name,
             'sku' => 'EVENT-TICKET',
@@ -69,7 +64,7 @@ it('issues and delivers all passes created for matching registrations', function
             'event_registration_id' => $registration->id,
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
-            'event_ticket_type_id' => $ticketType->id,
+            'ticket_type_id' => $ticketType->id,
             'quantity' => 1,
             'unit_price' => 1500,
             'total_price' => 1500,
@@ -79,24 +74,8 @@ it('issues and delivers all passes created for matching registrations', function
             'external_order_item_type' => OrderItem::class,
         ]);
 
-        $firstPass = EventPass::factory()->make([
-            'id' => (string) Str::uuid(),
-            'pass_no' => 'PASS-001',
-        ]);
-        $secondPass = EventPass::factory()->make([
-            'id' => (string) Str::uuid(),
-            'pass_no' => 'PASS-002',
-        ]);
-
-        $issuer = mock(EventPassIssuer::class);
-        $issuer->shouldReceive('issuePassesFor')
-            ->once()
-            ->withArgs(fn (EventRegistration $model): bool => $model->is($registration))
-            ->andReturn([$firstPass, $secondPass]);
-
-        $delivery = mock(EventPassDeliveryService::class);
-        $delivery->shouldReceive('deliver')->once()->with($firstPass);
-        $delivery->shouldReceive('deliver')->once()->with($secondPass);
+        $delivery = mock(PassDeliveryServiceInterface::class);
+        $delivery->shouldReceive('deliver')->twice()->with(Mockery::type(\AIArmada\Ticketing\Models\Pass::class));
 
         $session = CheckoutSession::query()->create([
             'cart_id' => (string) Str::uuid(),
@@ -120,15 +99,12 @@ it('only issues passes once for duplicate ticket type order items', function ():
             'timezone' => 'UTC',
             'delivery_mode' => 'in_person',
         ]);
-        $ticketType = EventTicketType::factory()->create([
-            'event_id' => $event->id,
-            'event_occurrence_id' => $occurrence->id,
-        ]);
+        $ticketType = createEventTicketType($occurrence);
         $order = Order::factory()->create();
         $firstOrderItem = OrderItem::query()->create([
             'id' => (string) Str::uuid(),
             'order_id' => $order->id,
-            'purchasable_type' => EventTicketType::class,
+            'purchasable_type' => TicketType::class,
             'purchasable_id' => $ticketType->id,
             'name' => $ticketType->name,
             'sku' => 'EVENT-TICKET-1',
@@ -141,7 +117,7 @@ it('only issues passes once for duplicate ticket type order items', function ():
         $secondOrderItem = OrderItem::query()->create([
             'id' => (string) Str::uuid(),
             'order_id' => $order->id,
-            'purchasable_type' => EventTicketType::class,
+            'purchasable_type' => TicketType::class,
             'purchasable_id' => $ticketType->id,
             'name' => $ticketType->name,
             'sku' => 'EVENT-TICKET-2',
@@ -168,7 +144,7 @@ it('only issues passes once for duplicate ticket type order items', function ():
             'event_registration_id' => $firstRegistration->id,
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
-            'event_ticket_type_id' => $ticketType->id,
+            'ticket_type_id' => $ticketType->id,
             'quantity' => 1,
             'unit_price' => 1500,
             'total_price' => 1500,
@@ -194,7 +170,7 @@ it('only issues passes once for duplicate ticket type order items', function ():
             'event_registration_id' => $secondRegistration->id,
             'event_id' => $event->id,
             'event_occurrence_id' => $occurrence->id,
-            'event_ticket_type_id' => $ticketType->id,
+            'ticket_type_id' => $ticketType->id,
             'quantity' => 1,
             'unit_price' => 1500,
             'total_price' => 1500,
@@ -204,28 +180,8 @@ it('only issues passes once for duplicate ticket type order items', function ():
             'external_order_item_type' => OrderItem::class,
         ]);
 
-        $firstPass = EventPass::factory()->make([
-            'id' => (string) Str::uuid(),
-            'pass_no' => 'PASS-101',
-        ]);
-        $secondPass = EventPass::factory()->make([
-            'id' => (string) Str::uuid(),
-            'pass_no' => 'PASS-102',
-        ]);
-
-        $issuer = mock(EventPassIssuer::class);
-        $issuer->shouldReceive('issuePassesFor')
-            ->once()
-            ->withArgs(fn (EventRegistration $model): bool => $model->is($firstRegistration))
-            ->andReturn([$firstPass]);
-        $issuer->shouldReceive('issuePassesFor')
-            ->once()
-            ->withArgs(fn (EventRegistration $model): bool => $model->is($secondRegistration))
-            ->andReturn([$secondPass]);
-
-        $delivery = mock(EventPassDeliveryService::class);
-        $delivery->shouldReceive('deliver')->once()->with($firstPass);
-        $delivery->shouldReceive('deliver')->once()->with($secondPass);
+        $delivery = mock(PassDeliveryServiceInterface::class);
+        $delivery->shouldReceive('deliver')->twice()->with(Mockery::type(\AIArmada\Ticketing\Models\Pass::class));
 
         $session = CheckoutSession::query()->create([
             'cart_id' => (string) Str::uuid(),

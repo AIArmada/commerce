@@ -36,7 +36,7 @@ Ensure your owner model implements the required `OwnerResolverInterface` contrac
 
 ### Registrations not creating passes
 
-Verify the registration has associated `registration_items` with valid `event_ticket_type_id` references. Passes are created through explicit action, not automatically on registration creation.
+Verify the registration has associated `registration_items` with valid `ticket_type_id` references. Passes are created through explicit action, not automatically on registration creation.
 
 ### Registration refuses creation
 
@@ -61,7 +61,7 @@ The Filament resources apply `OwnerUiScope::apply(..., includeGlobal: false)` by
 
 ### Free registration returns zero passes
 
-Free registrations created via `RegisterForFreeAction` do not have registration items. The `DefaultEventPassIssuer` handles this by issuing a single pass per registration when items are empty. Verify `issue_passes_for_free` is enabled at the event/occurrence/session level, or left `null` so it can inherit the parent or configured default.
+Free registrations created via `RegisterForFreeAction` do not have registration items. `IssueEventRegistrationPassesAction` handles this by ensuring a hidden zero-priced `TicketType` for the resolved event scope, then issuing a single generic pass. Verify `issue_passes_for_free` is enabled at the event/occurrence/session level, or left `null` so it can inherit the parent or configured default.
 
 ### `RegisterForFreeAction` throws `UseRecordWalkInActionException` or `UseRecordHeadcountLogActionException`
 
@@ -69,7 +69,7 @@ The event's `registration_mode` is `None`, and `open_door_mode` is set to `walk_
 
 ### `RegisterForFreeAction` throws `NotFreeEventException`
 
-The event is not in `Free` or `Mixed` pricing mode. Change the pricing mode or use the paid registration path (requires ticket types and commerce checkout).
+The event is not in `Free` or `Mixed` pricing mode. Change the pricing mode or use the paid registration path (requires `aiarmada/ticketing` ticket types and commerce checkout).
 
 ### `PromoteInterestedToConfirmedAction` throws `NotInterestedRegistrationException`
 

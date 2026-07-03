@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Listeners;
 
-use AIArmada\Events\Contracts\EventPassIssuer;
+use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
 use AIArmada\Events\Events\EventFreeRegistrationConfirmed;
 
 final class IssueEventPassesOnFreeRegistrationConfirmed
 {
     public function __construct(
-        private readonly EventPassIssuer $passIssuer,
+        private readonly IssueEventRegistrationPassesAction $issuePasses,
     ) {}
 
     public function handle(EventFreeRegistrationConfirmed $event): void
@@ -37,6 +37,6 @@ final class IssueEventPassesOnFreeRegistrationConfirmed
             return;
         }
 
-        $this->passIssuer->issuePassesFor($registration);
+        $this->issuePasses->handle($registration);
     }
 }

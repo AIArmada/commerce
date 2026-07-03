@@ -6,6 +6,7 @@ namespace AIArmada\Events\Models;
 
 use AIArmada\Events\Database\Factories\EventAttendanceFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Ticketing\Models\Pass;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,7 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $event_session_id
  * @property string|null $event_registration_id
  * @property string|null $event_registration_participant_id
- * @property string|null $event_pass_id
+ * @property string|null $pass_id
  * @property string|null $attendee_type
  * @property string|null $attendee_id
  * @property string $attendance_type
@@ -45,7 +46,7 @@ final class EventAttendance extends Model
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',
         'event_registration_id', 'event_registration_participant_id',
-        'event_pass_id',
+        'pass_id',
         'attendee_type', 'attendee_id',
         'attendance_type',
         'checked_in_at', 'checked_out_at', 'check_in_source',
@@ -103,11 +104,11 @@ final class EventAttendance extends Model
     }
 
     /**
-     * @return BelongsTo<EventPass, $this>
+     * @return BelongsTo<Pass, $this>
      */
     public function pass(): BelongsTo
     {
-        return $this->belongsTo(EventPass::class, 'event_pass_id');
+        return $this->belongsTo(Pass::class, 'pass_id');
     }
 
     /**

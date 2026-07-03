@@ -15,3 +15,4 @@ The `aiarmada/seating` package provides venue seat layout modeling, seat hold an
 - **Allocations** — persistent seat-to-entity assignments (passes, registrations)
 - **Livewire Component** — interactive seat picking with status visualization
 - **Console Command** — `seating:release-expired-holds` to clean up stale holds
+- **Seating Modes** — `none`, `general_admission`, `assigned`, `hybrid` via `SeatingMode` enum

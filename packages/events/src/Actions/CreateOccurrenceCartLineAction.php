@@ -7,7 +7,7 @@ namespace AIArmada\Events\Actions;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Ticketing\Models\TicketType;
 use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -16,21 +16,19 @@ final class CreateOccurrenceCartLineAction
     use AsAction;
 
     /**
-     * @param  array{event_ticket_type_id?: string, quantity?: int, participants?: array<int, array<string, mixed>>}  $data
+     * @param  array{ticket_type_id?: string, quantity?: int, participants?: array<int, array<string, mixed>>}  $data
      */
     public function handle(EventOccurrence | EventSession $target, array $data = []): mixed
     {
-        $ticketTypeId = $data['event_ticket_type_id'] ?? null;
+        $ticketTypeId = $data['ticket_type_id'] ?? null;
 
         if ($ticketTypeId === null) {
-            throw new InvalidArgumentException('Missing event_ticket_type_id in data.');
+            throw new InvalidArgumentException('Missing ticket_type_id in data.');
         }
 
-        $scopeColumn = $target instanceof EventOccurrence ? 'event_occurrence_id' : 'event_session_id';
-
-        /** @var EventTicketType|null $ticketType */
-        $ticketType = EventTicketType::query()
-            ->where($scopeColumn, $target->id)
+        /** @var TicketType|null $ticketType */
+        $ticketType = TicketType::query()
+            ->whereMorphedTo('ticketable', $target)
             ->whereKey($ticketTypeId)
             ->first();
 

@@ -6,8 +6,12 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Relatio
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventSession;
+use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Products\Models\Product;
+use AIArmada\Ticketing\Models\TicketType;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -83,14 +87,19 @@ final class CommissionRulesRelationManager extends RelationManager
                         }
                     }
 
-                    if (class_exists(EventTicketType::class)) {
-                        $ticketTypes = EventTicketType::query()
+                    if (class_exists(TicketType::class)) {
+                        $ticketTypes = TicketType::query()
                             ->where('status', 'active')
-                            ->with('event')
-                            ->get(['id', 'name', 'code', 'event_id']);
+                            ->whereHasMorph('ticketable', [
+                                Event::class,
+                                EventOccurrence::class,
+                                EventSession::class,
+                            ])
+                            ->with('ticketable')
+                            ->get(['id', 'name', 'code', 'ticketable_id', 'ticketable_type']);
 
                         foreach ($ticketTypes as $ticket) {
-                            $eventName = $ticket->event?->title ?? 'Unknown Event';
+                            $eventName = EventTicketScope::event($ticket)?->title ?? 'Unknown Event';
                             $code = filled($ticket->code) ? " ({$ticket->code})" : '';
                             $options["ticket:{$ticket->id}"] = "[{$eventName}] {$ticket->name}{$code}";
                         }
@@ -148,7 +157,7 @@ final class CommissionRulesRelationManager extends RelationManager
                 ->keyLabel('Condition')
                 ->valueLabel('Value')
                 ->columnSpanFull()
-                ->helperText('Optional extra matching conditions. Example: {"purchasable_type": "AIArmada\\Events\\Models\\EventTicketType", "purchasable_id": "uuid-here"} — auto-filled when you select a purchasable item above.')
+                ->helperText('Optional extra matching conditions. Example: {"purchasable_type": "AIArmada\\Ticketing\\Models\\TicketType", "purchasable_id": "uuid-here"} — auto-filled when you select a purchasable item above.')
                 ->addActionLabel('Add Condition'),
 
             KeyValue::make('metadata')
@@ -164,7 +173,7 @@ final class CommissionRulesRelationManager extends RelationManager
     {
         return match ($fqcn) {
             Product::class => 'product',
-            EventTicketType::class => 'ticket',
+            TicketType::class => 'ticket',
             default => null,
         };
     }
@@ -173,7 +182,7 @@ final class CommissionRulesRelationManager extends RelationManager
     {
         return match ($prefix) {
             'product' => Product::class,
-            'ticket' => EventTicketType::class,
+            'ticket' => TicketType::class,
             default => null,
         };
     }

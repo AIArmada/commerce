@@ -8,9 +8,10 @@ use AIArmada\Events\Contracts\EventRegistrationScopeResolver;
 use AIArmada\Events\Contracts\RegistrationServiceInterface;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Models\EventRegistration;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Events\Support\EventRegistrationScope;
+use AIArmada\Events\Support\EventTicketScope;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -22,6 +23,7 @@ final class RecordAgentTicketSaleAction
         private readonly EventRegistrationScopeResolver $scopeResolver,
         private readonly ExpandTicketTypeComponentsAction $expandComponents,
         private readonly InventoryService $inventory,
+        private readonly IssueEventRegistrationPassesAction $issuePasses,
     ) {}
 
     /**
@@ -29,7 +31,7 @@ final class RecordAgentTicketSaleAction
      * @return Collection<int, EventRegistration>
      */
     public function handle(
-        EventTicketType $ticketType,
+        TicketType $ticketType,
         int $quantity = 1,
         ?Model $agent = null,
         ?array $customerData = null,
@@ -45,9 +47,14 @@ final class RecordAgentTicketSaleAction
             ));
         }
 
-        $ticketType->loadMissing('event', 'occurrence', 'session');
+        $ticketType->loadMissing('ticketable');
 
-        $target = $ticketType->session ?? $ticketType->occurrence ?? $ticketType->event;
+        $target = EventTicketScope::target($ticketType);
+
+        if ($target === null) {
+            throw new InvalidArgumentException('The selected ticket type does not belong to an event scope.');
+        }
+
         $scope = $this->scopeResolver->resolve($target);
         $scopeData = $scope->toRegistrationData();
 
@@ -71,7 +78,7 @@ final class RecordAgentTicketSaleAction
                 'currency' => $ticketType->currency,
                 'is_bundle_root' => true,
                 'items' => [[
-                    'event_ticket_type_id' => $ticketType->getKey(),
+                    'ticket_type_id' => $ticketType->getKey(),
                     'quantity' => 1,
                     'unit_price' => $ticketType->price,
                     'total_price' => $ticketType->price,
@@ -82,6 +89,8 @@ final class RecordAgentTicketSaleAction
             ]));
 
             $this->expandComponents->handle($registration);
+
+            $this->issuePasses->handle($registration);
 
             $registrations->push($registration);
         }

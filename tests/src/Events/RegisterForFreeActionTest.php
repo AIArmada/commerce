@@ -10,7 +10,6 @@ use AIArmada\Events\Exceptions\OpenDoorRegistrationBlockedException;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 
 beforeEach(function (): void {
     config()->set('events.features.free_only.auto_derive_pricing_from_ticket_types', true);
@@ -128,7 +127,7 @@ it('accepts event-level target', function (): void {
 it('uses ticket-type derived free pricing', function (): void {
     OwnerContext::withOwner(null, function (): void {
         $event = Event::factory()->published()->create();
-        EventTicketType::factory()->freeTicket()->create(['event_id' => $event->id]);
+        createEventTicketType($event, ['price' => 0]);
         $occurrence = EventOccurrence::factory()->create(['event_id' => $event->id]);
 
         $registrations = app(RegisterForFreeAction::class)->execute(

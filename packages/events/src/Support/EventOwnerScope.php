@@ -28,7 +28,6 @@ use AIArmada\Events\Models\EventMedia;
 use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventNotificationDelivery;
 use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventReference;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventRegistrationAnswer;
@@ -41,10 +40,6 @@ use AIArmada\Events\Models\EventSession;
 use AIArmada\Events\Models\EventSubmissionAttachment;
 use AIArmada\Events\Models\EventSubmissionLog;
 use AIArmada\Events\Models\EventTemplateItem;
-use AIArmada\Events\Models\EventTicketType;
-use AIArmada\Events\Models\EventTicketTypeComponent;
-use AIArmada\Events\Models\EventTicketTypeProduct;
-use AIArmada\Events\Models\EventTicketTypeSeatingOption;
 use AIArmada\Events\Models\EventTimeExpression;
 use AIArmada\Events\Models\EventUpdate;
 use AIArmada\Events\Models\EventUpdateItem;
@@ -190,7 +185,6 @@ final class EventOwnerScope implements Scope
             EventNotificationBatch::class => 'event',
             EventNotificationDelivery::class => 'batch.event',
             EventOccurrence::class => 'event',
-            EventPass::class => 'event',
             EventReference::class => 'event',
             EventRegistration::class => 'event',
             EventRegistrationAnswer::class => 'registration.event',
@@ -200,10 +194,6 @@ final class EventOwnerScope implements Scope
             EventSeriesItem::class => 'series',
             EventSeriesRule::class => 'series',
             EventSession::class => 'event',
-            EventTicketType::class => 'event',
-            EventTicketTypeComponent::class => 'parentTicketType.event',
-            EventTicketTypeProduct::class => 'ticketType.event',
-            EventTicketTypeSeatingOption::class => 'ticketType.event',
             EventSubmissionAttachment::class => 'submission',
             EventSubmissionLog::class => 'submission',
             EventTemplateItem::class => 'template',

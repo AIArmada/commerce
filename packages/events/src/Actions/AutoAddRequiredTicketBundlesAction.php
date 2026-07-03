@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Events\Actions;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Events\Models\EventTicketType;
-use AIArmada\Events\Models\EventTicketTypeProduct;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
+use AIArmada\Ticketing\Models\TicketType;
+use AIArmada\Ticketing\Models\TicketTypeProduct;
 use Illuminate\Database\Eloquent\Model;
 
 final class AutoAddRequiredTicketBundlesAction
 {
-    public function handle(Cart $cart, EventTicketType $ticketType, int $ticketQuantity): void
+    public function handle(Cart $cart, TicketType $ticketType, int $ticketQuantity): void
     {
         if (! CommerceIntegration::aiArmadaCheckoutAvailable()) {
             return;
@@ -38,8 +38,8 @@ final class AutoAddRequiredTicketBundlesAction
 
     private function addBundleLine(
         Cart $cart,
-        EventTicketType $ticketType,
-        EventTicketTypeProduct $bundle,
+        TicketType $ticketType,
+        TicketTypeProduct $bundle,
         int $ticketQuantity,
         ?string $productModel,
         ?string $variantModel,
@@ -81,8 +81,8 @@ final class AutoAddRequiredTicketBundlesAction
         Model $purchasable,
         int $lineQuantity,
         int $price,
-        EventTicketType $ticketType,
-        EventTicketTypeProduct $bundle,
+        TicketType $ticketType,
+        TicketTypeProduct $bundle,
     ): void {
         if ($cart->has($lineKey)) {
             $existing = $cart->get($lineKey);
@@ -104,7 +104,7 @@ final class AutoAddRequiredTicketBundlesAction
                 'auto_added_for_ticket_type_id' => $ticketType->getKey(),
                 'bundle_product_id' => $bundle->product_id,
                 'bundle_variant_id' => $bundle->variant_id,
-                'bundle_inclusion_mode' => $bundle->inclusion_mode->value,
+                'bundle_inclusion_mode' => $bundle->inclusion_mode,
             ],
             associatedModel: $purchasable,
         );

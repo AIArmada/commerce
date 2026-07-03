@@ -6,7 +6,6 @@ use AIArmada\Events\Actions\RecordAgentTicketSaleAction;
 use AIArmada\Events\Exceptions\EventCapacityExceededException;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 
@@ -24,11 +23,7 @@ it('blocks agent ticket sales when the scope does not have enough capacity', fun
         'event_id' => $event->id,
         'capacity' => 1,
     ]);
-    $ticketType = EventTicketType::factory()->create([
-        'event_id' => $event->id,
-        'event_occurrence_id' => $occurrence->id,
-        'status' => 'active',
-    ]);
+    $ticketType = createEventTicketType($occurrence, ['status' => 'active']);
 
     InventoryLevel::factory()->create([
         'inventoryable_type' => $ticketType->getMorphClass(),

@@ -291,7 +291,6 @@ final class EventOccurrenceResource extends Resource
             EventOccurrenceResource\RelationManagers\OccurrenceLocationsRelationManager::class,
             EventOccurrenceResource\RelationManagers\OccurrenceInvolvementsRelationManager::class,
             EventOccurrenceResource\RelationManagers\OccurrenceRegistrationsRelationManager::class,
-            EventOccurrenceResource\RelationManagers\OccurrenceTicketTypesRelationManager::class,
             EventOccurrenceResource\RelationManagers\OccurrenceAttendancesRelationManager::class,
         ];
     }

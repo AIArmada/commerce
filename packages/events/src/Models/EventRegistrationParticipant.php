@@ -7,9 +7,12 @@ namespace AIArmada\Events\Models;
 use AIArmada\Contacting\Concerns\HasContactMethods;
 use AIArmada\Events\Database\Factories\EventRegistrationParticipantFactory;
 use AIArmada\Events\Models\Concerns\UsesEventUuid;
+use AIArmada\Ticketing\Models\Pass;
+use AIArmada\Ticketing\Models\PassHolder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
@@ -121,11 +124,19 @@ final class EventRegistrationParticipant extends Model
     }
 
     /**
-     * @return HasMany<EventPass, $this>
+     * @return BelongsToMany<Pass, $this>
      */
-    public function passes(): HasMany
+    public function passes(): BelongsToMany
     {
-        return $this->hasMany(EventPass::class, 'event_registration_participant_id');
+        $passHolderTable = (new PassHolder)->getTable();
+
+        return $this->belongsToMany(
+            Pass::class,
+            $passHolderTable,
+            'holder_id',
+            'pass_id',
+        )->wherePivot('holder_type', $this->getMorphClass())
+            ->wherePivot('is_current', true);
     }
 
     /**

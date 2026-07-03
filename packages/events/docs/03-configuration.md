@@ -43,6 +43,20 @@ Every table name is individually configurable via environment variables, allowin
 | `auto_derive_pricing_from_ticket_types` | When `true`, pricing mode is automatically inferred from ticket type prices (all free → Free, all paid → Paid, mixed → Mixed) |
 | `open_door_mode` | Default behavior for events with `registration_mode = none`. One of `block`, `walk_in`, `headcount`. |
 
+### Seating
+
+```php
+'features' => [
+    'auto_allocate_seats' => env('EVENTS_AUTO_ALLOCATE_SEATS', true),
+    'auto_revoke_passes_on_cancel' => env('EVENTS_AUTO_REVOKE_PASSES_ON_CANCEL', true),
+],
+```
+
+| Key | Description |
+|---|---|
+| `auto_allocate_seats` | When enabled, passes for ticket types with a seating mode trigger automatic seat allocation on issue. Requires `aiarmada/ticketing` and `aiarmada/seating`. |
+| `auto_revoke_passes_on_cancel` | When enabled, cancelling a registration automatically revokes all its passes. |
+
 ### Paid Registrations
 
 ```php

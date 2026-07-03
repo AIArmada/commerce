@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Data;
 
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Ticketing\Models\TicketType;
 use Carbon\CarbonImmutable;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Optional;
@@ -27,7 +27,7 @@ final class TicketTypeData extends Data
         public readonly CarbonImmutable | null | Optional $sales_ends_at,
     ) {}
 
-    public static function fromTicketType(EventTicketType $ticketType): self
+    public static function fromTicketType(TicketType $ticketType): self
     {
         $quota = $ticketType->inventoryLevels()->exists()
             ? $ticketType->getTotalOnHand()

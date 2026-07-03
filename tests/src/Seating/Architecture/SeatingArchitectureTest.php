@@ -29,6 +29,18 @@ arch('seating no filament')
     ->expect('AIArmada\Seating\Services')
     ->not->toUse('Filament');
 
+arch('seating enums')
+    ->expect('AIArmada\Seating\Enums')
+    ->toBeEnums();
+
+arch('seating actions')
+    ->expect('AIArmada\Seating\Actions')
+    ->toHaveMethod('handle');
+
+arch('seating exceptions')
+    ->expect('AIArmada\Seating\Exceptions')
+    ->toExtend('RuntimeException');
+
 test('seating service provider is concrete', function (): void {
     $provider = new SeatingServiceProvider(app());
     expect($provider)->toBeInstanceOf(PackageServiceProvider::class);

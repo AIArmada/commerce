@@ -4,19 +4,20 @@ title: Overview
 
 ## Introduction
 
-`aiarmada/filament-events` is the Filament admin adapter for `aiarmada/events`. It provides Filament v5 resources, pages, and widgets for managing events, occurrences, sessions, registrations, ticket types, attendance, and venues.
+`aiarmada/filament-events` is the Filament admin adapter for `aiarmada/events`. It provides Filament v5 resources, pages, and widgets for managing events, occurrences, sessions, registrations, attendance, and venues.
 
 ## What this package owns
 
-- Filament resources for events, occurrences, sessions, venues, registrations, ticket types, and attendance
+- Filament resources for events, occurrences, sessions, venues, registrations, and attendance
 - Custom pages: check-in console, notification center, approval queue, and public event preview
 - Owner-scoped resource queries using `OwnerUiScope`
 - Lifecycle workflow actions (publish, cancel, postpone, delay, archive)
-- Relation managers on the event detail page (occurrences, sessions, locations, involvements, registrations, ticket types, attendances)
+- Relation managers on the event detail page (occurrences, sessions, locations, involvements, registrations, attendances)
 
 ## What this package does not own
 
 - Event-domain persistence or registration business rules; those stay in `aiarmada/events`
+- Ticket type or pass CRUD; those stay in `aiarmada/filament-ticketing`
 - Product, variant, order, or customer domain logic beyond linked resource access
 
 ## Relationship to the core package
@@ -26,6 +27,11 @@ Use `aiarmada/events` for:
 - Registration services and business rules
 - Order-item fulfillment actions
 - Owner-scoped domain logic
+
+Use `aiarmada/filament-ticketing` for:
+- Ticket type CRUD
+- Pass, holder, and transfer administration
+- Generic ticketing resources across event and non-event ticketables
 
 Use this package for:
 - Admin CRUD and read-only views
@@ -42,7 +48,6 @@ Use this package for:
 | `EventSessionResource` | `EventSession` | Manage agenda items within occurrences |
 | `VenueResource` | `Venue` | Manage physical venue/contact details |
 | `EventRegistrationResource` | `EventRegistration` | View registrations and participant data |
-| `EventTicketTypeResource` | `EventTicketType` | Manage admission definitions and pricing |
 | `EventAttendanceResource` | `EventAttendance` | View check-in and attendance records |
 
 ## Custom Pages
@@ -63,6 +68,7 @@ Use this package for:
 ## Related Packages
 
 - `aiarmada/events` — core event-domain package
+- `aiarmada/filament-ticketing` — ticket type and pass administration
 - `aiarmada/commerce-support` — owner scoping support
 
 ## Requirements

@@ -39,11 +39,6 @@ return [
             'event_registration_participants' => env('EVENTS_TABLE_REGISTRATION_PARTICIPANTS', $tablePrefix . 'event_registration_participants'),
             'event_registration_answers' => env('EVENTS_TABLE_REGISTRATION_ANSWERS', $tablePrefix . 'event_registration_answers'),
             'event_registration_items' => env('EVENTS_TABLE_REGISTRATION_ITEMS', $tablePrefix . 'event_registration_items'),
-            'event_ticket_types' => env('EVENTS_TABLE_TICKET_TYPES', $tablePrefix . 'event_ticket_types'),
-            'event_ticket_type_components' => env('EVENTS_TABLE_TICKET_TYPE_COMPONENTS', $tablePrefix . 'event_ticket_type_components'),
-            'event_ticket_type_products' => env('EVENTS_TABLE_TICKET_TYPE_PRODUCTS', $tablePrefix . 'event_ticket_type_products'),
-            'event_ticket_type_seating_options' => env('EVENTS_TABLE_TICKET_TYPE_SEATING_OPTIONS', $tablePrefix . 'event_ticket_type_seating_options'),
-            'event_passes' => env('EVENTS_TABLE_PASSES', $tablePrefix . 'event_passes'),
             'event_attendances' => env('EVENTS_TABLE_ATTENDANCES', $tablePrefix . 'event_attendances'),
             'event_attendance_logs' => env('EVENTS_TABLE_ATTENDANCE_LOGS', $tablePrefix . 'event_attendance_logs'),
             'event_materials' => env('EVENTS_TABLE_MATERIALS', $tablePrefix . 'event_materials'),
@@ -101,6 +96,8 @@ return [
     /* Features / Behavior */
     'features' => [
         'auto_issue_passes' => env('EVENTS_AUTO_ISSUE_PASSES', true),
+        'auto_allocate_seats' => env('EVENTS_AUTO_ALLOCATE_SEATS', true),
+        'auto_revoke_passes_on_cancel' => env('EVENTS_AUTO_REVOKE_PASSES_ON_CANCEL', true),
         'owner' => $ownerConfig,
         'free_only' => [
             'default_registration_mode' => env('EVENTS_DEFAULT_REGISTRATION_MODE', 'required'),

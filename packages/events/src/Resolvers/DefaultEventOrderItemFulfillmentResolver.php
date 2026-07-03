@@ -32,7 +32,7 @@ final class DefaultEventOrderItemFulfillmentResolver implements EventOrderItemFu
         return [
             'event_id' => $registration->event_id,
             'event_occurrence_id' => $registration->event_occurrence_id,
-            'ticket_type_id' => $registrationItem->event_ticket_type_id,
+            'ticket_type_id' => $registrationItem->ticket_type_id,
             'participants' => $participants->map(function (mixed $participant): array {
                 return array_filter([
                     'name' => $participant->name,

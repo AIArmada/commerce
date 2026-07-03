@@ -6,16 +6,32 @@ namespace AIArmada\Events\Listeners;
 
 use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Exceptions\InconsistentTicketTypePricingException;
-use AIArmada\Events\Models\EventTicketType;
+use AIArmada\Events\Models\Event;
+use AIArmada\Events\Models\EventOccurrence;
+use AIArmada\Events\Models\EventSession;
+use AIArmada\Ticketing\Models\TicketType;
 
 final class ObserveEventTicketTypePricingConsistency
 {
-    public function saved(EventTicketType $ticketType): void
+    public function saved(TicketType $ticketType): void
     {
+        try {
+            $ticketType->loadMissing('ticketable');
+        } catch (\Throwable) {
+            return;
+        }
+
+        $ticketable = $ticketType->ticketable;
+
+        if ($ticketable === null) {
+            return;
+        }
+
         $pricingMode = match (true) {
-            $ticketType->session !== null => $ticketType->session->effectivePricingMode(),
-            $ticketType->occurrence !== null => $ticketType->occurrence->effectivePricingMode(),
-            default => $ticketType->event?->effectivePricingMode(),
+            $ticketable instanceof EventSession => $ticketable->effectivePricingMode(),
+            $ticketable instanceof EventOccurrence => $ticketable->effectivePricingMode(),
+            $ticketable instanceof Event => $ticketable->effectivePricingMode(),
+            default => null,
         };
 
         if ($pricingMode === null) {

@@ -7,10 +7,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventNotificationBatch;
 use AIArmada\Events\Models\EventOccurrence;
-use AIArmada\Events\Models\EventPass;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
-use AIArmada\Events\Models\EventTicketType;
 use AIArmada\FilamentEvents\Pages\CheckInConsole;
 use AIArmada\FilamentEvents\Pages\EventPublicPreview;
 use AIArmada\FilamentEvents\Pages\NotificationCenter;
@@ -45,11 +43,7 @@ it('scopes the special page queries to the current owner', function (): void {
                 'slug' => 'session-' . $suffix,
             ]);
 
-            $ticketType = EventTicketType::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'event_session_id' => $session->id,
-            ]);
+            $ticketType = createEventTicketType($session);
 
             $registration = EventRegistration::factory()->create([
                 'event_id' => $event->id,
@@ -57,13 +51,7 @@ it('scopes the special page queries to the current owner', function (): void {
                 'event_session_id' => $session->id,
             ]);
 
-            $pass = EventPass::factory()->create([
-                'event_id' => $event->id,
-                'event_occurrence_id' => $occurrence->id,
-                'event_session_id' => $session->id,
-                'event_registration_id' => $registration->id,
-                'event_ticket_type_id' => $ticketType->id,
-            ]);
+            $pass = createEventPass($ticketType, $registration);
 
             $notificationBatch = EventNotificationBatch::factory()->create([
                 'event_id' => $event->id,

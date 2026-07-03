@@ -4,13 +4,13 @@ title: Events Overview
 
 ## Introduction
 
-`aiarmada/events` is a reusable event management package for Laravel. It provides a complete event-domain layer: event definitions, scheduling, venues, speaker management, registration, ticketing, check-in, attendance tracking, and change management.
+`aiarmada/events` is a reusable event management package for Laravel. It provides the event-domain layer for event definitions, scheduling, venues, speaker management, registration, check-in, attendance tracking, and change management, while integrating ticketing and seating through sibling packages.
 
 ## What this package owns
 
 - Event series, event definitions, occurrences, sessions, and venues
 - Registration lifecycle (create, approve, cancel, reject, waitlist, check-in)
-- Ticket types, passes, and seat management
+- Event-scoped registration orchestration for generic ticket types and passes
 - Attendance tracking and check-in console
 - People roles (speakers, organizers, sponsors, moderators, etc.)
 - Venue/location management with geocoding
@@ -21,6 +21,7 @@ title: Events Overview
 
 ## What this package does not own
 
+- Ticket types, passes, pass transfers, bundle products, or seat layout/allocation primitives; those belong to `aiarmada/ticketing` and `aiarmada/seating`
 - Product, variant, pricing, inventory, customer, order, or payment domain logic
 - Filament admin surfaces; those belong to `aiarmada/filament-events`
 - Application-specific public copy, SEO policy, or editorial workflows
@@ -35,8 +36,8 @@ title: Events Overview
 | **Venue** | Physical location where events take place |
 | **Registration** | Formal signup for an event, supporting individual, family, and group |
 | **Participant** | Person included in a registration; can be scoped directly to an occurrence or session |
-| **Ticket Type** | Admission/access definition (General, VIP, Early Bird, etc.) |
-| **Pass** | Actual issued credential (QR code, barcode) for access |
+| **Ticket Type** | Admission/access definition from `aiarmada/ticketing`, scoped to an event, occurrence, or session |
+| **Pass** | Issued credential from `aiarmada/ticketing`, optionally linked to seat allocations from `aiarmada/seating` |
 | **Attendance** | Check-in record tracking who actually attended |
 | **Involvement** | People linked to event/occurrence/session with a role (speaker, organizer, sponsor). Organizers are involvements with `role_code = 'organizer'`. |
 | **Pricing Mode** | Defines whether an event is paid, free, or mixed (paid + free ticket types) |
@@ -51,8 +52,8 @@ title: Events Overview
 - Occurrence-scoped and session-scoped registration and participants
 - Venue management with geocoding, map links, and facility tracking
 - Family/group registration with per-participant answers
-- Seat maps with section and reserved seating
-- Check-in console with pass/QR lookup
+- Seat-map associations and pass-triggered seat allocation through `aiarmada/seating`
+- Check-in console with generic pass/QR lookup
 - Change management with public updates and notification batches
 - Event submissions with approval workflows and reason codes
 - Series grouping and taxonomy/classification system
@@ -90,6 +91,8 @@ Event roots use `commerce-support` owner scoping. Event-bound children inherit t
 
 - `aiarmada/filament-events` — Filament admin UI for event management
 - `aiarmada/commerce-support` — Owner scoping and shared primitives
+- `aiarmada/ticketing` — generic ticket types, passes, transfers, and pass issuance
+- `aiarmada/seating` — seat maps, holds, and allocations
 - `aiarmada/products` — Optional product/variant integration
 - `aiarmada/customers` — Optional customer/purchaser integration
 - `aiarmada/orders` — Optional order/checkout integration

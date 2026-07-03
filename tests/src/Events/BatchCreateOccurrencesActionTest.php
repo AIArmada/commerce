@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Events\Actions\BatchCreateOccurrencesAction;
 use AIArmada\Events\Models\Event;
-use AIArmada\Events\Models\EventTicketType;
 use Carbon\CarbonImmutable;
 
 it('falls back to the template code when an occurrence code is blank', function (): void {
@@ -35,8 +34,8 @@ it('falls back to the template code when an occurrence code is blank', function 
             ],
         );
 
-        $ticketType = EventTicketType::query()
-            ->where('event_occurrence_id', $created->first()->id)
+        $ticketType = $created->firstOrFail()
+            ->ticketTypes()
             ->firstOrFail();
 
         expect($ticketType->code)->toBe('vip-default');
@@ -81,12 +80,16 @@ it('preserves template ticket type codes when batching occurrences', function ()
 
         expect($created)->toHaveCount(2);
 
-        $firstTicketType = EventTicketType::query()
-            ->where('event_occurrence_id', $created->first()->id)
+        $firstTicketType = $created->firstOrFail()
+            ->ticketTypes()
             ->firstOrFail();
 
-        $secondTicketType = EventTicketType::query()
-            ->where('event_occurrence_id', $created->last()->id)
+        $secondOccurrence = $created->last();
+
+        expect($secondOccurrence)->not->toBeNull();
+
+        $secondTicketType = $secondOccurrence
+            ?->ticketTypes()
             ->firstOrFail();
 
         expect($firstTicketType->code)->toBe('vip-default')
