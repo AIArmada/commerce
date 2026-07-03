@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Seating\Actions\ReleaseAllocationsAction;
-use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\Seat;
+use AIArmada\Seating\Models\SeatAllocation;
 use AIArmada\Seating\Models\SeatMap;
 use AIArmada\Seating\Models\SeatSection;
 use Illuminate\Support\Str;

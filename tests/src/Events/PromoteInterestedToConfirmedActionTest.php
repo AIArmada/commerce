@@ -11,8 +11,6 @@ use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventRegistration;
 use AIArmada\Events\Models\EventSession;
 
-use function Pest\Laravel\mock;
-
 beforeEach(function (): void {
     config()->set('events.features.owner.enabled', true);
 });

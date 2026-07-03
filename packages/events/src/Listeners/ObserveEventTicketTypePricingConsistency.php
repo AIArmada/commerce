@@ -10,6 +10,7 @@ use AIArmada\Events\Models\Event;
 use AIArmada\Events\Models\EventOccurrence;
 use AIArmada\Events\Models\EventSession;
 use AIArmada\Ticketing\Models\TicketType;
+use Throwable;
 
 final class ObserveEventTicketTypePricingConsistency
 {
@@ -17,7 +18,7 @@ final class ObserveEventTicketTypePricingConsistency
     {
         try {
             $ticketType->loadMissing('ticketable');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return;
         }
 
