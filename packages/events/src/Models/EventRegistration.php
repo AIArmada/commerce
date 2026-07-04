@@ -77,6 +77,7 @@ class EventRegistration extends Model
 {
     /** @use HasFactory<EventRegistrationFactory> */
     use HasFactory;
+
     use HasStates;
     use Notifiable;
     use UsesEventUuid;
