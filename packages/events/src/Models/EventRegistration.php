@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Notifications\Notifiable;
@@ -56,8 +57,8 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $notes
  * @property string|null $parent_registration_id
  * @property bool $is_bundle_root
- * @property array|null $pass_entitlements
- * @property array|null $metadata
+ * @property array<string, mixed>|null $pass_entitlements
+ * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Event $event
@@ -72,8 +73,9 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, Pass> $passes
  * @property-read Collection<int, EventAttendance> $attendances
  */
-final class EventRegistration extends Model
+class EventRegistration extends Model
 {
+    /** @use HasFactory<EventRegistrationFactory> */
     use HasFactory;
     use HasStates;
     use Notifiable;
@@ -145,7 +147,12 @@ final class EventRegistration extends Model
      */
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class);
+        /** @var class-string<Event> $modelClass */
+        $modelClass = static::eventModelClass();
+        /** @var BelongsTo<Event, $this> $relation */
+        $relation = $this->belongsTo($modelClass, 'event_id');
+
+        return $relation;
     }
 
     /**
@@ -177,7 +184,25 @@ final class EventRegistration extends Model
      */
     public function participants(): HasMany
     {
-        return $this->hasMany(EventRegistrationParticipant::class);
+        /** @var class-string<EventRegistrationParticipant> $modelClass */
+        $modelClass = static::participantModelClass();
+        /** @var HasMany<EventRegistrationParticipant, $this> $relation */
+        $relation = $this->hasMany($modelClass, 'event_registration_id');
+
+        return $relation;
+    }
+
+    /**
+     * @return HasOne<EventRegistrationParticipant, $this>
+     */
+    public function primaryParticipant(): HasOne
+    {
+        /** @var class-string<EventRegistrationParticipant> $modelClass */
+        $modelClass = static::participantModelClass();
+        /** @var HasOne<EventRegistrationParticipant, $this> $relation */
+        $relation = $this->hasOne($modelClass, 'event_registration_id');
+
+        return $relation->where('is_primary', true);
     }
 
     /**
@@ -185,7 +210,12 @@ final class EventRegistration extends Model
      */
     public function answers(): HasMany
     {
-        return $this->hasMany(EventRegistrationAnswer::class);
+        /** @var class-string<EventRegistrationAnswer> $modelClass */
+        $modelClass = static::answerModelClass();
+        /** @var HasMany<EventRegistrationAnswer, $this> $relation */
+        $relation = $this->hasMany($modelClass, 'event_registration_id');
+
+        return $relation;
     }
 
     /**
@@ -193,7 +223,12 @@ final class EventRegistration extends Model
      */
     public function items(): HasMany
     {
-        return $this->hasMany(EventRegistrationItem::class);
+        /** @var class-string<EventRegistrationItem> $modelClass */
+        $modelClass = static::itemModelClass();
+        /** @var HasMany<EventRegistrationItem, $this> $relation */
+        $relation = $this->hasMany($modelClass, 'event_registration_id');
+
+        return $relation;
     }
 
     /**
@@ -209,7 +244,12 @@ final class EventRegistration extends Model
      */
     public function attendances(): HasMany
     {
-        return $this->hasMany(EventAttendance::class);
+        /** @var class-string<EventAttendance> $modelClass */
+        $modelClass = static::attendanceModelClass();
+        /** @var HasMany<EventAttendance, $this> $relation */
+        $relation = $this->hasMany($modelClass, 'event_registration_id');
+
+        return $relation;
     }
 
     /**
@@ -228,6 +268,9 @@ final class EventRegistration extends Model
         return $this->hasMany(EventRegistration::class, 'parent_registration_id');
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getPassEntitlements(): array
     {
         return $this->pass_entitlements ?? [];
@@ -261,13 +304,51 @@ final class EventRegistration extends Model
     }
 
     /**
+     * @return class-string<Event>
+     */
+    protected static function eventModelClass(): string
+    {
+        return Event::class;
+    }
+
+    /**
+     * @return class-string<EventRegistrationParticipant>
+     */
+    protected static function participantModelClass(): string
+    {
+        return EventRegistrationParticipant::class;
+    }
+
+    /**
+     * @return class-string<EventRegistrationAnswer>
+     */
+    protected static function answerModelClass(): string
+    {
+        return EventRegistrationAnswer::class;
+    }
+
+    /**
+     * @return class-string<EventRegistrationItem>
+     */
+    protected static function itemModelClass(): string
+    {
+        return EventRegistrationItem::class;
+    }
+
+    /**
+     * @return class-string<EventAttendance>
+     */
+    protected static function attendanceModelClass(): string
+    {
+        return EventAttendance::class;
+    }
+
+    /**
      * @return array<string, string>|string|null
      */
     public function routeNotificationForMail(Notification $notification): array | string | null
     {
-        $participant = $this->participants()
-            ->where('is_primary', true)
-            ->first() ?? $this->participants()->first();
+        $participant = $this->resolvePrimaryParticipant();
 
         if ($participant === null) {
             return null;
@@ -282,6 +363,38 @@ final class EventRegistration extends Model
         $name = mb_trim((string) $participant->name);
 
         return $name !== '' ? [$email => $name] : $email;
+    }
+
+    public function resolvePrimaryParticipant(): ?EventRegistrationParticipant
+    {
+        /** @var EventRegistrationParticipant|null $participant */
+        $participant = $this->primaryParticipant()->first()
+            ?? $this->participants()->orderByDesc('is_primary')->orderBy('created_at')->first();
+
+        return $participant;
+    }
+
+    public function resolvePrimaryParticipantName(): ?string
+    {
+        $participant = $this->resolvePrimaryParticipant();
+
+        if ($participant === null) {
+            return null;
+        }
+
+        $name = mb_trim((string) $participant->name);
+
+        return $name !== '' ? $name : null;
+    }
+
+    public function resolvePrimaryParticipantEmail(): ?string
+    {
+        return $this->resolvePrimaryParticipant()?->resolveEmail();
+    }
+
+    public function resolvePrimaryParticipantPhone(): ?string
+    {
+        return $this->resolvePrimaryParticipant()?->resolvePhone();
     }
 
     protected static function newFactory(): EventRegistrationFactory

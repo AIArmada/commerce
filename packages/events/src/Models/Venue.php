@@ -55,7 +55,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, VenueFacility> $facilities
  * @property-read Collection<int, EventLocation> $eventLocations
  */
-final class Venue extends Model
+class Venue extends Model
 {
     use Addressable;
     use HasContactMethods;

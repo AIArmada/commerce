@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 /**
  * @extends Factory<Event>
  */
-final class EventFactory extends Factory
+class EventFactory extends Factory
 {
     protected $model = Event::class;
 

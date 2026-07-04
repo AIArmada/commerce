@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 /**
  * @extends Factory<Venue>
  */
-final class VenueFactory extends Factory
+class VenueFactory extends Factory
 {
     protected $model = Venue::class;
 

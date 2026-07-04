@@ -73,7 +73,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, EventMaterial> $materials
  * @property-read Collection<int, EventReference> $references
  * @property-read Collection<int, EventLink> $links
- * @property-read Collection<int, EventMedia> $media
+ * @property-read Collection<int, EventMedia> $mediaRecords
  * @property-read Collection<int, EventLanguage> $languages
  * @property-read Collection<int, EventAudience> $audiences
  * @property-read Collection<int, EventAudienceProfile> $audienceProfiles
@@ -88,7 +88,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Model|Eloquent $owner
  * @property-read Model|Eloquent $createdBy
  */
-final class Event extends Model
+class Event extends Model
 {
     use HasContactMethods;
     use HasFactory;
@@ -225,12 +225,9 @@ final class Event extends Model
         return $this->hasMany(EventAccessPolicy::class);
     }
 
-    /**
-     * @return HasMany<EventRegistration, $this>
-     */
     public function registrations(): HasMany
     {
-        return $this->hasMany(EventRegistration::class);
+        return $this->hasMany(static::registrationModelClass(), 'event_id');
     }
 
     /**
@@ -268,7 +265,7 @@ final class Event extends Model
     /**
      * @return HasMany<EventReference, $this>
      */
-    public function references(): HasMany
+    public function referenceRecords(): HasMany
     {
         return $this->hasMany(EventReference::class);
     }
@@ -284,7 +281,7 @@ final class Event extends Model
     /**
      * @return HasMany<EventMedia, $this>
      */
-    public function media(): HasMany
+    public function mediaRecords(): HasMany
     {
         return $this->hasMany(EventMedia::class);
     }
@@ -442,6 +439,11 @@ final class Event extends Model
     protected static function newFactory(): EventFactory
     {
         return EventFactory::new();
+    }
+
+    protected static function registrationModelClass(): string
+    {
+        return EventRegistration::class;
     }
 
     public function isPubliclyVisible(): bool

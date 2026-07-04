@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * @extends Factory<EventRegistration>
  */
-final class EventRegistrationFactory extends Factory
+class EventRegistrationFactory extends Factory
 {
     protected $model = EventRegistration::class;
 
