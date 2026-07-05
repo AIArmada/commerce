@@ -34,7 +34,7 @@ final class EventPublicPreview extends Page
             /* @phpstan-ignore assign.propertyType */
             $this->event = OwnerUiScope::apply(Event::query()->with([
                 'occurrences', 'locations', 'involvements', 'ticketTypes',
-                'materials', 'links', 'media', 'updates' => fn ($q) => $q->where('is_pinned', true),
+                'materials', 'links', 'mediaRecords', 'updates' => fn ($q) => $q->where('is_pinned', true),
             ]), includeGlobal: false)->find($event);
         }
     }

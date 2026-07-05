@@ -85,6 +85,7 @@ final class BuildEventSearchDocumentJob implements OwnerScopedJob, ShouldBeUniqu
             Event::class => Event::query()->find($this->targetId),
             EventOccurrence::class => EventOccurrence::query()->find($this->targetId),
             EventSession::class => EventSession::query()->find($this->targetId),
+            default => null,
         };
 
         if (! $target instanceof Event && ! $target instanceof EventOccurrence && ! $target instanceof EventSession) {

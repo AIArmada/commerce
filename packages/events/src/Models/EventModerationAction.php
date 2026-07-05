@@ -36,7 +36,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Model|Eloquent $actionable
  */
-final class EventModerationAction extends Model
+class EventModerationAction extends Model
 {
     use HasFactory;
     use UsesEventUuid;

@@ -225,8 +225,12 @@ class Event extends Model
         return $this->hasMany(EventAccessPolicy::class);
     }
 
+    /**
+     * @return HasMany<EventRegistration, $this>
+     */
     public function registrations(): HasMany
     {
+        /* @phpstan-ignore argument.templateType */
         return $this->hasMany(static::registrationModelClass(), 'event_id');
     }
 
@@ -536,7 +540,7 @@ class Event extends Model
 
     public function shareImage(): ?string
     {
-        $media = $this->media->first();
+        $media = $this->mediaRecords->first();
 
         return $media?->url;
     }

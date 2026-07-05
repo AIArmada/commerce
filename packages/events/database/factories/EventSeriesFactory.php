@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 /**
  * @extends Factory<EventSeries>
  */
-final class EventSeriesFactory extends Factory
+class EventSeriesFactory extends Factory
 {
     protected $model = EventSeries::class;
 
