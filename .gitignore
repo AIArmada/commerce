@@ -15,5 +15,9 @@ vendor/
 .phpunit.result.cache
 composer.phar
 Thumbs.db
+# Agent knowledge graph cache
+.codebase-memory/
+graphify-out/
+
 # Prevent published skeleton migrations from causing duplicate migration issues
 vendor/orchestra/testbench-core/laravel/database/migrations/*.php

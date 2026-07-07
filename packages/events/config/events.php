@@ -26,7 +26,7 @@ return [
             'event_occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'event_occurrences'),
             'event_sessions' => env('EVENTS_TABLE_SESSIONS', $tablePrefix . 'event_sessions'),
             'venues' => env('EVENTS_TABLE_VENUES', $tablePrefix . 'venues'),
-            'venue_spaces' => env('EVENTS_TABLE_VENUE_SPACES', $tablePrefix . 'venue_spaces'),
+            'venue_spaces' => $tablePrefix . 'venue_spaces',
             'venue_space_types' => env('EVENTS_TABLE_VENUE_SPACE_TYPES', $tablePrefix . 'venue_space_types'),
             'event_locations' => env('EVENTS_TABLE_LOCATIONS', $tablePrefix . 'event_locations'),
             'facility_types' => env('EVENTS_TABLE_FACILITY_TYPES', $tablePrefix . 'facility_types'),
