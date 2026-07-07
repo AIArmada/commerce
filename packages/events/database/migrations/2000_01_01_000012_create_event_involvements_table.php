@@ -18,13 +18,13 @@ return new class extends Migration
             $table->uuid('event_occurrence_id')->nullable()->index();
             $table->uuid('event_session_id')->nullable()->index();
             $table->index(['event_id', 'event_occurrence_id', 'event_session_id']);
-            $table->string('involveable_type')->index();
-            $table->uuid('involveable_id')->index();
+            $table->string('involveable_type')->nullable()->index();
+            $table->uuid('involveable_id')->nullable()->index();
             $table->index(['involveable_type', 'involveable_id']);
             $table->uuid('event_role_id')->nullable()->index();
             $table->string('role_code')->nullable()->index();
-            $table->string('status')->index();
-            $table->string('visibility')->index();
+            $table->string('status')->nullable()->index();
+            $table->string('visibility')->nullable()->index();
             $table->string('prominence')->nullable()->index();
             $table->boolean('is_featured')->default(false)->index();
             $table->boolean('is_primary')->default(false)->index();

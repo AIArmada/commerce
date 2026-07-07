@@ -7,11 +7,15 @@ namespace AIArmada\Membership\Services;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\Membership\Enums\MemberRole;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
 
 final class MembershipRoleSyncService
 {
-    public function ensureExists(MemberRole $role, ?string $teamId = null): Role
+    /**
+     * @param  class-string<Model>|null  $subjectClass
+     */
+    public function ensureExists(MemberRole $role, ?string $teamId = null, ?string $subjectClass = null): Role
     {
         $name = $role->spatieRoleName();
         $guard = (string) config('auth.defaults.guard', 'web');
@@ -25,7 +29,30 @@ final class MembershipRoleSyncService
             $attributes[$registrar->teamsKey] = $teamId;
         }
 
-        return Role::query()->firstOrCreate($attributes);
+        $spatieRole = Role::query()->firstOrCreate($attributes);
+
+        $permissions = $role->permissions();
+
+        if ($permissions !== []) {
+            if ($permissions === ['*']) {
+                $spatieRole->syncPermissions(
+                    \Spatie\Permission\Models\Permission::query()
+                        ->where('guard_name', $guard)
+                        ->pluck('name')
+                        ->all()
+                );
+            } else {
+                $prefix = $this->resolvePermissionPrefix($subjectClass);
+
+                $spatieRole->syncPermissions(
+                    $prefix !== null
+                        ? array_map(fn (string $p): string => "{$prefix}.{$p}", $permissions)
+                        : $permissions
+                );
+            }
+        }
+
+        return $spatieRole;
     }
 
     public function syncAll(): int
@@ -52,7 +79,7 @@ final class MembershipRoleSyncService
         try {
             setPermissionsTeamId($teamId);
 
-            $this->ensureExists($role, $teamId);
+            $this->ensureExists($role, $teamId, $subject::class);
 
             /** @phpstan-ignore method.notFound */
             $user->assignRole($role->spatieRoleName());
@@ -76,5 +103,20 @@ final class MembershipRoleSyncService
         } finally {
             setPermissionsTeamId($previousTeamId);
         }
+    }
+
+    /**
+     * Resolve the permission prefix from the subject class name.
+     * E.g., Institution → 'institution', Speaker → 'speaker'.
+     *
+     * @param  class-string<Model>|null  $subjectClass
+     */
+    private function resolvePermissionPrefix(?string $subjectClass): ?string
+    {
+        if ($subjectClass === null) {
+            return null;
+        }
+
+        return Str::snake(class_basename($subjectClass));
     }
 }

@@ -48,7 +48,7 @@ use Illuminate\Support\Carbon;
  * @property-read EventInvolvement|null $replacedByInvolvement
  * @property-read Collection<int, EventInvolvement> $replacementFor
  */
-final class EventInvolvement extends Model
+class EventInvolvement extends Model
 {
     use HasFactory;
     use UsesEventUuid;

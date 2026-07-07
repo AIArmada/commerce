@@ -37,6 +37,16 @@ final class NotifiableDestinationResolver implements DestinationResolver
             return null;
         }
 
+        if (! is_string($destination)) {
+            $destination = method_exists($notifiable, 'getRouteKey')
+                ? (string) $notifiable->getRouteKey()
+                : null;
+        }
+
+        if ($destination === null) {
+            return null;
+        }
+
         return new ResolvedDestinationData(
             destination: $destination,
             channel: $channel,

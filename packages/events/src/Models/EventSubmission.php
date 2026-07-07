@@ -33,7 +33,7 @@ use Spatie\ModelStates\HasStates;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-final class EventSubmission extends Model
+class EventSubmission extends Model
 {
     use HasFactory;
     use HasStates;

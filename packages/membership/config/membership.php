@@ -22,9 +22,17 @@ return [
     ],
 
     'role_mapping' => [
+        'owner' => env('MEMBERSHIP_ROLE_OWNER_NAME', 'owner'),
         'admin' => env('MEMBERSHIP_ROLE_ADMIN_NAME', 'admin'),
         'editor' => env('MEMBERSHIP_ROLE_EDITOR_NAME', 'editor'),
         'viewer' => env('MEMBERSHIP_ROLE_VIEWER_NAME', 'viewer'),
+    ],
+
+    'role_permissions' => [
+        'owner' => ['*'],
+        'admin' => ['update', 'manage-members'],
+        'editor' => ['update'],
+        'viewer' => ['view'],
     ],
 
     'features' => [

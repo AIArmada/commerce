@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * @extends Factory<EventUpdate>
  */
-final class EventUpdateFactory extends Factory
+class EventUpdateFactory extends Factory
 {
     protected $model = EventUpdate::class;
 

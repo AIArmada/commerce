@@ -39,14 +39,14 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, VenueFacility> $facilities
  * @property-read Collection<int, EventLocation> $eventLocations
  */
-final class VenueSpace extends Model
+class VenueSpace extends Model
 {
     use HasFactory;
     use UsesEventUuid;
 
     protected $fillable = [
         'venue_id',
-        'name', 'code', 'space_type',
+        'name', 'slug', 'code', 'space_type',
         'level', 'unit_no', 'block', 'wing',
         'capacity',
         'latitude', 'longitude',

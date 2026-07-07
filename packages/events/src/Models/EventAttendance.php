@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property CarbonImmutable|null $checked_in_at
  * @property CarbonImmutable|null $checked_out_at
  * @property string|null $check_in_source
+ * @property string|null $verified_by_user_id
  * @property CarbonImmutable|null $cancelled_at
  * @property CarbonImmutable|null $corrected_at
  * @property string|null $notes
@@ -38,7 +39,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, EventAttendanceLog> $logs
  */
-final class EventAttendance extends Model
+class EventAttendance extends Model
 {
     use HasFactory;
     use UsesEventUuid;
@@ -50,6 +51,7 @@ final class EventAttendance extends Model
         'attendee_type', 'attendee_id',
         'attendance_type',
         'checked_in_at', 'checked_out_at', 'check_in_source',
+        'verified_by_user_id',
         'cancelled_at', 'corrected_at',
         'notes',
         'metadata',

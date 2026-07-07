@@ -13,6 +13,8 @@ use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -55,13 +57,14 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, VenueFacility> $facilities
  * @property-read Collection<int, EventLocation> $eventLocations
  */
-class Venue extends Model
+class Venue extends Model implements HasMedia
 {
     use Addressable;
     use HasContactMethods;
     use HasFactory;
     use HasSocialProfiles;
     use UsesEventUuid;
+    use InteractsWithMedia;
 
     protected $fillable = [
         'parent_venue_id',
@@ -168,5 +171,19 @@ class Venue extends Model
     protected static function newFactory(): VenueFactory
     {
         return VenueFactory::new();
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('cover')
+            ->useDisk(config('media-library.disk_name'))
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->withResponsiveImages()
+            ->singleFile();
+
+        $this->addMediaCollection('gallery')
+            ->useDisk(config('media-library.disk_name'))
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->withResponsiveImages();
     }
 }

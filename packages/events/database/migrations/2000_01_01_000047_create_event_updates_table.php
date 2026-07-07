@@ -18,9 +18,13 @@ return new class extends Migration
             $table->uuid('event_occurrence_id')->nullable()->index();
             $table->uuid('event_session_id')->nullable()->index();
             $table->uuid('event_change_log_id')->nullable()->index();
+            $table->uuid('replacement_event_id')->nullable()->index();
+            $table->uuid('replacement_event_occurrence_id')->nullable()->index();
+            $table->uuid('replacement_event_session_id')->nullable()->index();
             $table->string('update_type')->index();
-            $table->string('title');
-            $table->text('message');
+            $table->string('title')->default('');
+            $table->text('message')->nullable();
+            $table->text('notes')->nullable();
             $table->string('severity')->index();
             $table->string('visibility')->index();
             $table->boolean('is_pinned')->default(false);

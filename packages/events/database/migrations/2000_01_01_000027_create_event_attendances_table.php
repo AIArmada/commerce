@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create(config('events.database.tables.event_attendances', 'event_attendances'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('event_id')->index();
-            $table->uuid('event_occurrence_id')->index();
+            $table->uuid('event_occurrence_id')->nullable()->index();
             $table->uuid('event_session_id')->nullable()->index();
             $table->uuid('event_registration_id')->nullable()->index();
             $table->uuid('event_registration_participant_id')->nullable()->index();
@@ -26,6 +26,7 @@ return new class extends Migration
             $table->timestampTz('checked_in_at')->nullable();
             $table->timestampTz('checked_out_at')->nullable();
             $table->string('check_in_source')->nullable()->index();
+            $table->uuid('verified_by_user_id')->nullable()->index();
             $table->timestampTz('cancelled_at')->nullable();
             $table->timestampTz('corrected_at')->nullable();
             $table->text('notes')->nullable();

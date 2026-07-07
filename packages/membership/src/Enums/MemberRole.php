@@ -9,6 +9,7 @@ namespace AIArmada\Membership\Enums;
  */
 enum MemberRole: string
 {
+    case Owner = 'owner';
     case Admin = 'admin';
     case Editor = 'editor';
     case Viewer = 'viewer';
@@ -16,15 +17,46 @@ enum MemberRole: string
     public function label(): string
     {
         return match ($this) {
+            self::Owner => 'Owner',
             self::Admin => 'Admin',
             self::Editor => 'Editor',
             self::Viewer => 'Viewer',
         };
     }
 
+    /**
+     * Permissions granted to this role.
+     * '*' means all permissions. Apps should override via config if needed.
+     *
+     * @return list<string>
+     */
+    public function permissions(): array
+    {
+        return config('membership.role_permissions', [
+            'owner' => ['*'],
+            'admin' => ['update', 'manage-members'],
+            'editor' => ['update'],
+            'viewer' => ['view'],
+        ])[$this->value] ?? $this->defaultPermissions();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function defaultPermissions(): array
+    {
+        return match ($this) {
+            self::Owner => ['*'],
+            self::Admin => ['update', 'manage-members'],
+            self::Editor => ['update'],
+            self::Viewer => ['view'],
+        };
+    }
+
     public function spatieRoleName(): string
     {
         $mapping = config('membership.role_mapping', [
+            'owner' => 'owner',
             'admin' => 'admin',
             'editor' => 'editor',
             'viewer' => 'viewer',
@@ -36,6 +68,7 @@ enum MemberRole: string
     public static function fromSpatieRoleName(string $name): ?self
     {
         $mapping = config('membership.role_mapping', [
+            'owner' => 'owner',
             'admin' => 'admin',
             'editor' => 'editor',
             'viewer' => 'viewer',

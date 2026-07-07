@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Actions;
 
+use AIArmada\Membership\Contracts\MembershipHook;
 use AIArmada\Membership\Enums\MemberRole;
 use AIArmada\Membership\Services\MembershipRoleSyncService;
 use AIArmada\Membership\Support\MembershipSubjectGuard;
@@ -43,5 +44,9 @@ final class AddMemberAction
 
             app(MembershipRoleSyncService::class)->assignToUser($subject, $user, $role);
         });
+
+        if (app()->bound(MembershipHook::class)) {
+            app(MembershipHook::class)->onMemberAdded($subject, $user, $role);
+        }
     }
 }

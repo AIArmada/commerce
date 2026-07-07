@@ -21,9 +21,13 @@ use Illuminate\Support\Carbon;
  * @property string|null $event_occurrence_id
  * @property string|null $event_session_id
  * @property string|null $event_change_log_id
+ * @property string|null $replacement_event_id
+ * @property string|null $replacement_event_occurrence_id
+ * @property string|null $replacement_event_session_id
  * @property string $update_type
  * @property string $title
  * @property string|null $message
+ * @property string|null $notes
  * @property string $severity
  * @property string $visibility
  * @property bool $is_pinned
@@ -38,7 +42,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, EventUpdateItem> $items
  */
-final class EventUpdate extends Model
+class EventUpdate extends Model
 {
     use HasFactory;
     use UsesEventUuid;
@@ -46,7 +50,9 @@ final class EventUpdate extends Model
     protected $fillable = [
         'event_id', 'event_occurrence_id', 'event_session_id',
         'event_change_log_id',
+        'replacement_event_id', 'replacement_event_occurrence_id', 'replacement_event_session_id',
         'update_type', 'title', 'message',
+        'notes',
         'severity', 'visibility',
         'is_pinned',
         'starts_showing_at', 'stops_showing_at',

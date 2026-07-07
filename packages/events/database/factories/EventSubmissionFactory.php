@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * @extends Factory<EventSubmission>
  */
-final class EventSubmissionFactory extends Factory
+class EventSubmissionFactory extends Factory
 {
     protected $model = EventSubmission::class;
 

@@ -14,8 +14,9 @@ return new class extends Migration
 
         Schema::create(config('events.database.tables.venue_spaces', 'venue_spaces'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->uuid('venue_id')->index();
+            $table->uuid('venue_id')->nullable()->index();
             $table->string('name');
+            $table->string('slug')->unique()->after('name');
             $table->string('code')->nullable()->index();
             $table->string('space_type')->nullable()->index();
             $table->string('level')->nullable();

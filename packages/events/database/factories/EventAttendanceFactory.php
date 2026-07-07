@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * @extends Factory<EventAttendance>
  */
-final class EventAttendanceFactory extends Factory
+class EventAttendanceFactory extends Factory
 {
     protected $model = EventAttendance::class;
 

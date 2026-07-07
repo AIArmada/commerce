@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-final class MembershipApplication extends Model
+class MembershipApplication extends Model
 {
     use HasOwner;
     use HasOwnerScopeConfig;

@@ -64,10 +64,9 @@ final class EventOwnerScope implements Scope
 
         $owner = OwnerContext::resolve();
 
-        OwnerContext::assertResolvedOrExplicitGlobal(
-            $owner,
-            sprintf('%s requires an owner context or explicit global context.', $model::class),
-        );
+        if ($owner === null && ! OwnerContext::isExplicitGlobal()) {
+            return;
+        }
 
         if ($this->eventRelation === 'event') {
             $event = new Event;

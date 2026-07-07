@@ -29,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -88,7 +90,7 @@ use Spatie\ModelStates\HasStates;
  * @property-read Model|Eloquent $owner
  * @property-read Model|Eloquent $createdBy
  */
-class Event extends Model
+class Event extends Model implements HasMedia
 {
     use HasContactMethods;
     use HasFactory;
@@ -97,6 +99,7 @@ class Event extends Model
     use HasSocialProfiles;
     use HasStates;
     use UsesEventUuid;
+    use InteractsWithMedia;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
@@ -625,5 +628,25 @@ class Event extends Model
             array_keys($occurrences),
             static fn (mixed $date): bool => is_string($date) && $date !== '',
         ));
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('cover')
+            ->useDisk(config('media-library.disk_name'))
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->withResponsiveImages()
+            ->singleFile();
+
+        $this->addMediaCollection('poster')
+            ->useDisk(config('media-library.disk_name'))
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->withResponsiveImages()
+            ->singleFile();
+
+        $this->addMediaCollection('gallery')
+            ->useDisk(config('media-library.disk_name'))
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->withResponsiveImages();
     }
 }

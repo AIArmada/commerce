@@ -29,7 +29,7 @@ use Illuminate\Support\Carbon;
  * @property-read Model|Eloquent $actionable
  * @property-read Model|Eloquent $actionedBy
  */
-final class ModerationAction extends Model
+class ModerationAction extends Model
 {
     use HasFactory;
     use HasOwner;
