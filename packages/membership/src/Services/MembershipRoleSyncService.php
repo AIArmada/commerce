@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Membership\Services;
 
+use AIArmada\CommerceSupport\Models\Permission;
 use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\Membership\Enums\MemberRole;
 use Illuminate\Database\Eloquent\Model;
@@ -31,25 +32,27 @@ final class MembershipRoleSyncService
 
         $spatieRole = Role::query()->firstOrCreate($attributes);
 
-        $permissions = $role->permissions();
+        $permissionNames = $role->permissions();
 
-        if ($permissions !== []) {
-            if ($permissions === ['*']) {
-                $spatieRole->syncPermissions(
-                    \Spatie\Permission\Models\Permission::query()
-                        ->where('guard_name', $guard)
-                        ->pluck('name')
-                        ->all()
-                );
+        if ($permissionNames !== []) {
+            if ($permissionNames === ['*']) {
+                $permissionNames = Permission::query()
+                    ->where('guard_name', $guard)
+                    ->pluck('name')
+                    ->all();
             } else {
                 $prefix = $this->resolvePermissionPrefix($subjectClass);
 
-                $spatieRole->syncPermissions(
-                    $prefix !== null
-                        ? array_map(fn (string $p): string => "{$prefix}.{$p}", $permissions)
-                        : $permissions
-                );
+                if ($prefix !== null) {
+                    $permissionNames = array_map(fn (string $p): string => "{$prefix}.{$p}", $permissionNames);
+                }
             }
+
+            foreach ($permissionNames as $name) {
+                Permission::findOrCreate($name, $guard);
+            }
+
+            $spatieRole->syncPermissions($permissionNames);
         }
 
         return $spatieRole;

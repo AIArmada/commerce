@@ -9,6 +9,7 @@ use AIArmada\Events\Models\Concerns\UsesEventUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -60,6 +61,12 @@ final class EventReference extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    /** @return MorphTo<Model, $this> */
+    public function referenceable(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     protected static function newFactory(): EventReferenceFactory

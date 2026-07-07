@@ -8,7 +8,7 @@ use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\Events\Contracts\EventLifecycleWorkflow;
 use AIArmada\Events\Enums\PricingMode;
 use AIArmada\Events\Enums\RegistrationMode;
-use App\Models\Event;
+use AIArmada\Events\Models\Event;
 use AIArmada\FilamentEvents\Actions\Exporter\EventExporter;
 use BackedEnum;
 use Filament\Actions\Action;

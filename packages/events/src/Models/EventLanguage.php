@@ -36,18 +36,6 @@ final class EventLanguage extends Model
         'metadata',
     ];
 
-
-
-    protected static function booted(): void
-    {
-        static::saving(function ($model) {
-            if (! isset($model->attributes['event_id'])) {
-                echo 'DEBUG: EventLanguage saving WITHOUT event_id in attributes' . PHP_EOL;
-                echo '  attributes keys: ' . implode(', ', array_keys($model->attributes)) . PHP_EOL;
-                debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-            }
-        });
-    }
     public function getTable(): string
     {
         return config('events.database.tables.event_languages', 'event_languages');
@@ -63,14 +51,6 @@ final class EventLanguage extends Model
     }
 
     /** @return BelongsTo<Event, $this> */
-
-
-    public function getEventIdAttribute()
-    {
-        echo 'DEBUG: EventLanguage->event_id accessed' . PHP_EOL;
-        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
-        return $this->attributes['event_id'] ?? null;
-    }
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
