@@ -98,8 +98,8 @@ class Event extends Model implements HasMedia
     use HasOwnerScopeConfig;
     use HasSocialProfiles;
     use HasStates;
-    use UsesEventUuid;
     use InteractsWithMedia;
+    use UsesEventUuid;
 
     protected static string $ownerScopeConfigKey = 'events.features.owner';
 
