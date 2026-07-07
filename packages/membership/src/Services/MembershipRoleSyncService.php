@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Models\Role;
 use AIArmada\Membership\Enums\MemberRole;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 final class MembershipRoleSyncService
@@ -36,7 +37,7 @@ final class MembershipRoleSyncService
         if ($permissions !== []) {
             if ($permissions === ['*']) {
                 $spatieRole->syncPermissions(
-                    \Spatie\Permission\Models\Permission::query()
+                    Permission::query()
                         ->where('guard_name', $guard)
                         ->pluck('name')
                         ->all()
