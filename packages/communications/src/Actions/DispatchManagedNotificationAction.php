@@ -17,6 +17,7 @@ use AIArmada\Communications\Models\Communication;
 use AIArmada\Communications\Models\CommunicationContent;
 use AIArmada\Communications\Models\CommunicationDelivery;
 use AIArmada\Communications\Models\CommunicationRecipient;
+use BackedEnum;
 use Carbon\CarbonImmutable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
@@ -94,7 +95,7 @@ final class DispatchManagedNotificationAction
                     recipientId: $notifiable->getKey(),
                     destinationHash: $destinationHash,
                     channel: $channel,
-                    category: $context->category instanceof \BackedEnum ? $context->category->value : $context->category,
+                    category: $context->category instanceof BackedEnum ? $context->category->value : $context->category,
                 );
 
                 if (! $eligibility['eligible']) {
