@@ -26,7 +26,7 @@
         "aiarmada/seating": "self.version",
         "aiarmada/ticketing": "self.version",
         "spatie/laravel-data": "^4.23",
-        "spatie/laravel-media-library": "^11.0",
+        "spatie/laravel-medialibrary": "^11.0",
         "spatie/laravel-model-states": "^2.0",
         "spatie/laravel-package-tools": "^1.16"
     },

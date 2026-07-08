@@ -94,7 +94,7 @@ final class DispatchManagedNotificationAction
                     recipientId: $notifiable->getKey(),
                     destinationHash: $destinationHash,
                     channel: $channel,
-                    category: $context->category,
+                    category: $context->category instanceof \BackedEnum ? $context->category->value : $context->category,
                 );
 
                 if (! $eligibility['eligible']) {
@@ -113,6 +113,7 @@ final class DispatchManagedNotificationAction
                 $content->content_html = $rendered->contentHtml;
                 $content->payload = $rendered->payload;
                 $content->checksum = $rendered->checksum;
+                $content->rendered_at = CarbonImmutable::now();
                 $content->save();
 
                 if ($destination !== null) {

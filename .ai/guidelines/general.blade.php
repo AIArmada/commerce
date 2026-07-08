@@ -54,3 +54,10 @@ Use this file for cross-cutting judgment, planning, and change execution.
   - Fix a bug -> reproduce it with a test, then fix it.
   - Refactor -> verify behavior before and after.
 - Every changed line should trace directly to the request.
+
+## Git Safety
+
+- Never use `git` to mass-delete, mass-revert, or bulk-reset work. No `git clean -fdx`, no `git reset --hard` across branches, no `git checkout -- .`, no `git push --force`, no `git push --delete` without explicit per-branch approval.
+- Never run destructive git commands without explicit, per-command user approval.
+- If a git operation would affect more than one commit, stop and ask first.
+- `git stash` and `git stash pop` are safe. Avoid `git stash drop` and `git stash clear` — they permanently delete stashed work.

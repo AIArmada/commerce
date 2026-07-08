@@ -298,6 +298,13 @@ Use this file for cross-cutting judgment, planning, and change execution.
   - Refactor -> verify behavior before and after.
 - Every changed line should trace directly to the request.
 
+## Git Safety
+
+- Never use `git` to mass-delete, mass-revert, or bulk-reset work. No `git clean -fdx`, no `git reset --hard` across branches, no `git checkout -- .`, no `git push --force`, no `git push --delete` without explicit per-branch approval.
+- Never run destructive git commands without explicit, per-command user approval.
+- If a git operation would affect more than one commit, stop and ask first.
+- `git stash` and `git stash pop` are safe. Avoid `git stash drop` and `git stash clear` — they permanently delete stashed work.
+
 === .ai/model rules ===
 
 # Model Guidelines
@@ -525,7 +532,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4
+- php - 8.5
 
 ## Conventions
 
@@ -586,6 +593,13 @@ This application is a Laravel application and its main Laravel ecosystems packag
 # Deployment
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+
+=== herd rules ===
+
+# Laravel Herd
+
+- The application is served by Laravel Herd at `https?://[kebab-case-project-dir].test`. Use the `get-absolute-url` tool to generate valid URLs. Never run commands to serve the site. It is always available.
+- Use the `herd` CLI to manage services, PHP versions, and sites (e.g. `herd sites`, `herd services:start <service>`, `herd php:list`). Run `herd list` to discover all available commands.
 
 === tests rules ===
 
