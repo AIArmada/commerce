@@ -95,7 +95,7 @@ final class DispatchManagedNotificationAction
                     recipientId: $notifiable->getKey(),
                     destinationHash: $destinationHash,
                     channel: $channel,
-                    category: $context->category instanceof BackedEnum ? $context->category->value : $context->category,
+                    category: $context->category->value,
                 );
 
                 if (! $eligibility['eligible']) {
