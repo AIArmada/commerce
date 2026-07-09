@@ -21,7 +21,12 @@ use AIArmada\Membership\Actions\AddMemberAction;
 use AIArmada\Membership\Enums\MemberRole;
 
 AddMemberAction::run($team, $user, MemberRole::Editor);
+AddMemberAction::run($team, $founder, MemberRole::Owner);
 ```
+
+`MemberRole` cases: `Owner`, `Admin`, `Editor`, `Viewer`.
+
+When a member is added, `MembershipRoleSyncService` ensures the mapped Spatie role exists, syncs permissions from `membership.role_permissions` (prefixing non-wildcard names with the subject basename when possible), and assigns the role to the user under the current team context when team-scoped roles are enabled.
 
 ## Invite a Member
 

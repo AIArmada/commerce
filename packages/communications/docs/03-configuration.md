@@ -26,10 +26,13 @@ title: Configuration
         'attachments' => 'communication_attachments',
         'references' => 'communication_references',
         'tracking_tokens' => 'communication_tracking_tokens',
+        'destinations' => 'communication_destinations',
         'notification_inboxes' => 'notification_inboxes',
     ],
 ],
 ```
+
+- `database.tables.destinations` stores per-recipient channel addresses used by `CommunicationDestinationResolver`
 
 ## Features
 
@@ -56,6 +59,31 @@ title: Configuration
 - `auto_capture_allowlist` - restrict auto capture to matching classes
 - `auto_capture_denylist` - exclude matching classes from auto capture
 - `auto_capture_ignored_channels` - skip selected notification channels
+
+## Destinations
+
+```php
+'database' => [
+    'tables' => [
+        'destinations' => 'communication_destinations',
+    ],
+],
+```
+
+- `CommunicationDestination` rows are owner-scoped polymorphic records (`recipient_type` / `recipient_id`) with `channel`, optional `address` / `external_id`, `status`, `is_primary`, and `verified_at`
+- The default `DestinationResolver` binding is `CommunicationDestinationResolver`: it prefers an active primary destination for the channel, then falls back to Laravel notifiable routing (`routeNotificationFor` / `routeNotificationFor{Driver}`)
+- Bind `AIArmada\Communications\Contracts\DestinationResolver` to `NotifiableDestinationResolver` (or a custom implementation) if you want notifiable-only resolution without the destinations table
+
+## Preferences
+
+Preference rows support optional scoping beyond channel and category:
+
+| Column | Purpose |
+| --- | --- |
+| `scope_type` | Logical scope kind (for example event, product, or campaign) |
+| `scope_key` | Scope identifier within that kind |
+
+Use these columns when a recipient should opt in or out for a narrower surface than the whole category.
 
 ## Inbox
 

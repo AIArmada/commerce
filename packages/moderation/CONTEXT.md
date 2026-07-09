@@ -11,7 +11,7 @@ family: governance-and-safety
 ## Snapshot
 
 - Composer: `aiarmada/moderation`
-- Role: Generic moderation, blocking, and moderation-action recording for Laravel models
+- Role: Generic moderation, blocking, and moderation-action recording (including workflow action types) for Laravel models
 - Search first: `src/Models`, `src/Actions`, `src/Traits`, `src/Enums`, `config`, `docs`
 - Related: `commerce-support`, `events`
 

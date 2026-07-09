@@ -25,9 +25,9 @@ title: Overview
 ## Core concepts
 
 - **Block** - an active, expired, or lifted moderation hold on a model
-- **Moderation action** - a recorded moderation event such as warn, mute, suspend, or ban
+- **Moderation action** - a recorded moderation event such as warn, mute, suspend, ban, or workflow decisions (approve, reject, changes requested)
 - **Block reason** - the canonical reason code for a block
-- **Moderation action type** - the canonical action code for a moderation event
+- **Moderation action type** - the canonical action code for a moderation event (`ModerationActionType`)
 
 ## Key features
 

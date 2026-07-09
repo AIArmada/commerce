@@ -25,6 +25,12 @@ php artisan vendor:publish --provider="AIArmada\Communications\CommunicationsSer
 2. Check that `RecordNativeNotificationSending` and `RecordNativeNotificationSent` listeners are registered
 3. Confirm the notification is sent through Laravel's `Notification::send()` or `$notifiable->notify()`
 
+## Destination resolves to the wrong address
+
+1. Check for an active `CommunicationDestination` on the recipient morph + channel (`status = active`). Primary and verified rows win.
+2. If you expect only notifiable routing, confirm no destination row exists or rebind `DestinationResolver` to `NotifiableDestinationResolver`.
+3. Confirm the notifiable implements `routeNotificationFor($channel)` or `routeNotificationFor{Driver}()` for the fallback path.
+
 ## Owner scoping issues
 
 If queries return unexpected results:

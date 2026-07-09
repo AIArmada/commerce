@@ -11,7 +11,7 @@ family: communications
 ## Snapshot
 
 - Composer: `aiarmada/communications`
-- Role: Outbound, inbound, internal, and inbox communication recording, delivery tracking, template management, preference and suppression enforcement, and Laravel Notifications integration.
+- Role: Outbound, inbound, internal, and inbox communication recording, destination resolution, delivery tracking, template management, preference and suppression enforcement, and Laravel Notifications integration.
 - Search first: `src/Models`, `src/Actions`, `src/Contracts`, `src/Data`, `src/Enums`, `src/Events`, `src/Http`, `src/Services`, `src/Traits`, `src/Console`, `resources/views`, `config`, `docs`
 - Related: `filament-communications`, `commerce-support`, `contacting`
 

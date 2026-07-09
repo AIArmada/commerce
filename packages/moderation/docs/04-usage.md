@@ -43,6 +43,25 @@ $comment->recordModerationAction(
 );
 ```
 
+### Action types
+
+| Case | Value | Typical use |
+| --- | --- | --- |
+| `Warn` | `warn` | Soft warning without a block |
+| `Mute` | `mute` | Temporary silence |
+| `Suspend` | `suspend` | Temporary account restriction |
+| `Ban` | `ban` | Permanent restriction |
+| `LiftBlock` | `lift_block` | Record that a block was lifted |
+| `Approve` | `approve` | Content or submission approved |
+| `Reject` | `reject` | Content or submission rejected |
+| `ChangesRequested` | `changes_requested` | Reviewer requested edits |
+| `Cancelled` | `cancelled` | Moderation flow cancelled |
+| `RevertedToDraft` | `reverted_to_draft` | Item returned to draft |
+| `Reconsidered` | `reconsidered` | Prior decision reopened |
+| `Remoderated` | `remoderated` | Item sent through moderation again |
+
+`ModerationAction` is intentionally non-final so domain packages can extend the model when they need package-specific action surfaces.
+
 ## Working with queries
 
 ```php

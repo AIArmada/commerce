@@ -90,6 +90,51 @@ $user->archiveRead();
 
 The package registers the `communications.inbox-index` Livewire component for the inbox listing surface.
 
+## Destinations
+
+Store channel addresses on notifiables when you need explicit routing (multiple emails, verified phones, or provider external ids):
+
+```php
+use AIArmada\Communications\Models\CommunicationDestination;
+
+CommunicationDestination::query()->create([
+    'recipient_type' => $user->getMorphClass(),
+    'recipient_id' => (string) $user->getKey(),
+    'channel' => 'mail',
+    'address' => 'billing@example.com',
+    'status' => 'active',
+    'is_primary' => true,
+    'verified_at' => now(),
+]);
+```
+
+Resolution order for the default `CommunicationDestinationResolver`:
+
+1. Active `CommunicationDestination` for the recipient morph + channel, ordered by `is_primary` then `verified_at`
+2. Notifiable routing via `routeNotificationFor($channel)` or `routeNotificationFor{Driver}()`
+
+Resolved values are still encrypted, hashed, and hinted for delivery storage through the destination protector.
+
+## Preferences
+
+Preferences may optionally narrow to a scope:
+
+```php
+use AIArmada\Communications\Models\CommunicationPreference;
+
+CommunicationPreference::query()->create([
+    'recipient_type' => $user->getMorphClass(),
+    'recipient_id' => (string) $user->getKey(),
+    'channel' => 'mail',
+    'category' => 'marketing',
+    'scope_type' => 'event',
+    'scope_key' => (string) $event->getKey(),
+    // additional preference columns as needed
+]);
+```
+
+Leave `scope_type` and `scope_key` null for recipient-wide channel/category preferences.
+
 ## Working with templates
 
 ```php

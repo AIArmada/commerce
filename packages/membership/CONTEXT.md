@@ -10,7 +10,7 @@ family: foundation
 
 ## Snapshot
 - Composer: `aiarmada/membership`
-- Role: Polymorphic membership applications, invitations, member pivots, and Spatie role synchronization.
+- Role: Polymorphic membership applications, invitations, member pivots, and Spatie role/permission synchronization.
 - Search first: `src/Actions`, `src/Models`, `src/Services`, `src/Traits`, `config`, `database`
 - Related: `authz`, `commerce-support`
 

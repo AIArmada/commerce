@@ -17,7 +17,8 @@ The `aiarmada/communications` package provides a production-grade communications
 - **Thread** — groups related communications
 - **Batch** — business-level grouping for bulk operations
 - **Template** — reusable content definition with versioning
-- **Preference** — recipient-level channel/category preference
+- **Destination** — persisted channel address for a notifiable (email, phone, external id), resolved before delivery
+- **Preference** — recipient-level channel/category preference, optionally scoped by `scope_type` / `scope_key`
 - **Suppression** — hard or temporary prohibition against sending
 - **Inbox** — a stored recipient-facing notification row
 

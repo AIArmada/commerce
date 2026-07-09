@@ -22,9 +22,16 @@ return [
         'table_suffix' => '_members',
     ],
     'role_mapping' => [
+        'owner' => env('MEMBERSHIP_ROLE_OWNER_NAME', 'owner'),
         'admin' => env('MEMBERSHIP_ROLE_ADMIN_NAME', 'admin'),
         'editor' => env('MEMBERSHIP_ROLE_EDITOR_NAME', 'editor'),
         'viewer' => env('MEMBERSHIP_ROLE_VIEWER_NAME', 'viewer'),
+    ],
+    'role_permissions' => [
+        'owner' => ['*'],
+        'admin' => ['update', 'manage-members'],
+        'editor' => ['update'],
+        'viewer' => ['view'],
     ],
     'features' => [
         'team_scoped_roles' => true,
@@ -39,4 +46,19 @@ return [
 ];
 ```
 
-Keep `hash_tokens` enabled in production.
+## Role mapping
+
+- `role_mapping` maps each `MemberRole` case (`owner`, `admin`, `editor`, `viewer`) to a Spatie role name
+- Override via env when the host app already uses different role names
+
+## Role permissions
+
+- `role_permissions` lists permission names granted when `MembershipRoleSyncService` ensures a role
+- `owner => ['*']` expands to every permission registered for the default guard
+- Non-wildcard entries are prefixed with the subject class basename in snake case (for example `Team` → `team.update`) when a subject is available
+- Apps should override `role_permissions` rather than hard-coding host permission names in the package
+
+## Notes
+
+- Keep `hash_tokens` enabled in production. The plaintext token is available only on `MembershipInvitationSent`.
+- When owner scoping is enabled, resolve the current owner before reading or mutating applications and invitations.
