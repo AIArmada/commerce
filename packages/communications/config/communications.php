@@ -28,6 +28,7 @@ return [
             'attachments' => env('COMMUNICATIONS_TABLE_ATTACHMENTS', $tablePrefix . 'communication_attachments'),
             'references' => env('COMMUNICATIONS_TABLE_REFERENCES', $tablePrefix . 'communication_references'),
             'tracking_tokens' => env('COMMUNICATIONS_TABLE_TRACKING_TOKENS', $tablePrefix . 'communication_tracking_tokens'),
+            'destinations' => env('COMMUNICATIONS_TABLE_DESTINATIONS', $tablePrefix . 'communication_destinations'),
             'notification_inboxes' => env('COMMUNICATIONS_TABLE_NOTIFICATION_INBOXES', $tablePrefix . 'notification_inboxes'),
         ],
     ],

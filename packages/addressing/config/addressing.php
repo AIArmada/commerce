@@ -13,6 +13,8 @@ return [
         'addresses' => 'addresses',
         'addressables' => 'addressables',
         'snapshots' => 'address_snapshots',
+        'states' => 'states',
+        'cities' => 'cities',
     ],
 
     'defaults' => [

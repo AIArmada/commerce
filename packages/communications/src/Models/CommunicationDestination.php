@@ -18,30 +18,21 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property string|null $recipient_type
- * @property string|null $recipient_id
+ * @property string $recipient_type
+ * @property string $recipient_id
  * @property string $channel
- * @property string|null $category
- * @property string|null $scope_type
- * @property string|null $scope_key
- * @property string|null $locale
- * @property string|null $timezone
- * @property string|null $quiet_hours_start
- * @property string|null $quiet_hours_end
- * @property string|null $quiet_hours_timezone
- * @property CarbonImmutable|null $enabled_at
- * @property CarbonImmutable|null $disabled_at
- * @property CarbonImmutable|null $opted_in_at
- * @property CarbonImmutable|null $opted_out_at
+ * @property string|null $address
+ * @property string|null $external_id
+ * @property string $status
+ * @property bool $is_primary
  * @property CarbonImmutable|null $verified_at
- * @property string|null $source
  * @property array|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Model|Eloquent $recipient
  * @property-read Model|Eloquent $owner
  */
-final class CommunicationPreference extends Model
+final class CommunicationDestination extends Model
 {
     use HasFactory;
     use HasOwner;
@@ -52,20 +43,11 @@ final class CommunicationPreference extends Model
         'recipient_type',
         'recipient_id',
         'channel',
-        'category',
-        'scope_type',
-        'scope_key',
-        'locale',
-        'timezone',
-        'quiet_hours_start',
-        'quiet_hours_end',
-        'quiet_hours_timezone',
-        'enabled_at',
-        'disabled_at',
-        'opted_in_at',
-        'opted_out_at',
+        'address',
+        'external_id',
+        'status',
+        'is_primary',
         'verified_at',
-        'source',
         'metadata',
     ];
 
@@ -73,16 +55,13 @@ final class CommunicationPreference extends Model
 
     public function getTable(): string
     {
-        return config('communications.database.tables.preferences', 'communication_preferences');
+        return config('communications.database.tables.destinations', 'communication_destinations');
     }
 
     protected function casts(): array
     {
         return [
-            'enabled_at' => 'immutable_datetime',
-            'disabled_at' => 'immutable_datetime',
-            'opted_in_at' => 'immutable_datetime',
-            'opted_out_at' => 'immutable_datetime',
+            'is_primary' => 'boolean',
             'verified_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];

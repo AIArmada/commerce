@@ -30,9 +30,9 @@ use AIArmada\Communications\Integrations\Activitylog\ActivitylogCommunicationAud
 use AIArmada\Communications\Listeners\AutoCaptureNotificationListener;
 use AIArmada\Communications\Listeners\RecordNativeNotificationSending;
 use AIArmada\Communications\Listeners\RecordNativeNotificationSent;
+use AIArmada\Communications\Services\CommunicationDestinationResolver;
 use AIArmada\Communications\Services\CommunicationManagerService;
 use AIArmada\Communications\Services\CommunicationRecorderService;
-use AIArmada\Communications\Services\NotifiableDestinationResolver;
 use AIArmada\Communications\Services\NullCommunicationAuditRecorder;
 use AIArmada\Communications\Services\NullConsentResolver;
 use AIArmada\Communications\Services\NullContentRenderer;
@@ -92,6 +92,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
                 '2000_01_01_000014_create_communication_references_table',
                 '2000_01_01_000015_create_communication_tracking_tokens_table',
                 '2000_01_01_000016_create_notification_inboxes_table',
+                '2000_01_01_000019_create_communication_destinations_table',
                 '2000_01_01_000017_reconcile_configured_communication_table_names',
                 '2000_01_01_000018_add_suppressed_at_to_communication_deliveries',
             ]);
@@ -108,7 +109,7 @@ final class CommunicationsServiceProvider extends PackageServiceProvider
         $this->app->scoped(AutoCaptureState::class);
 
         $this->app->bind(RecipientSnapshotResolver::class, NullRecipientSnapshotResolver::class);
-        $this->app->bind(DestinationResolver::class, NotifiableDestinationResolver::class);
+        $this->app->bind(DestinationResolver::class, CommunicationDestinationResolver::class);
         $this->app->bind(ContentRenderer::class, NullContentRenderer::class);
         $this->app->bind(ConsentResolver::class, NullConsentResolver::class);
         $this->app->bind(SuppressionResolver::class, NullSuppressionResolver::class);
