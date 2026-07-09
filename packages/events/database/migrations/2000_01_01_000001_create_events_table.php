@@ -36,6 +36,7 @@ return new class extends Migration
             $table->timestampTz('postponed_at')->nullable()->index();
             $table->timestampTz('archived_at')->nullable()->index();
             $table->timestampTz('completed_at')->nullable()->index();
+            $table->timestampTz('last_state_change_at')->nullable();
             $table->text('status_reason')->nullable();
             $table->text('status_message')->nullable();
             $table->{$jsonType}('metadata')->nullable();

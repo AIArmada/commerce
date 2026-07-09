@@ -27,6 +27,7 @@ final class EventExporter extends Exporter
             ExportColumn::make('published_at'),
             ExportColumn::make('cancelled_at'),
             ExportColumn::make('completed_at'),
+            ExportColumn::make('last_state_change_at'),
             ExportColumn::make('created_at'),
         ];
     }

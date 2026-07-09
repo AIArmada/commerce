@@ -54,6 +54,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonImmutable|null $postponed_at
  * @property CarbonImmutable|null $archived_at
  * @property CarbonImmutable|null $completed_at
+ * @property CarbonImmutable|null $last_state_change_at
  * @property string|null $status_reason
  * @property string|null $status_message
  * @property string|null $pricing_mode
@@ -176,6 +177,7 @@ class Event extends Model implements HasMedia
             'postponed_at' => 'immutable_datetime',
             'archived_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
+            'last_state_change_at' => 'immutable_datetime',
             'metadata' => 'array',
         ];
     }

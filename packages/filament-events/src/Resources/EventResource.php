@@ -99,6 +99,10 @@ final class EventResource extends Resource
                 Tables\Columns\TextColumn::make('published_at')
                     ->dateTime()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('last_state_change_at')
+                    ->dateTime()
+                    ->label('Last Status Change')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable(),
@@ -190,6 +194,8 @@ final class EventResource extends Resource
                         TextEntry::make('cancelled_at')->dateTime(),
                         TextEntry::make('postponed_at')->dateTime(),
                         TextEntry::make('archived_at')->dateTime(),
+                        TextEntry::make('completed_at')->dateTime(),
+                        TextEntry::make('last_state_change_at')->dateTime()->label('Last Status Change'),
                     ])->columns(2),
                 Section::make('Ownership')
                     ->schema([
