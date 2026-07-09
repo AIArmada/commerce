@@ -8,7 +8,7 @@ return [
     ],
 
     'tables' => [
-        'countries' => 'address_countries',
+        'countries' => 'countries',
         'areas' => 'address_areas',
         'addresses' => 'addresses',
         'addressables' => 'addressables',

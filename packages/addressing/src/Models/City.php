@@ -23,6 +23,7 @@ class City extends Model
 
     protected $fillable = [
         'state_id',
+        'country_id',
         'name',
         'postcode',
         'label',
@@ -40,6 +41,11 @@ class City extends Model
     public function state(): BelongsTo
     {
         return $this->belongsTo(State::class, 'state_id');
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(AddressCountry::class, 'country_id');
     }
 
     protected function casts(): array

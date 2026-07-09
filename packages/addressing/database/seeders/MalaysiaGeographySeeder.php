@@ -50,6 +50,7 @@ class MalaysiaGeographySeeder extends Seeder
                     [
                         'postcode' => $cityData['postcode'] ?? null,
                         'label' => $cityData['label'] ?? null,
+                        'country_id' => $malaysia->id,
                     ],
                 );
             }

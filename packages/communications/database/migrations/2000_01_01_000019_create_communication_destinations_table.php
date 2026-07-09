@@ -27,7 +27,6 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index(['recipient_type', 'recipient_id']);
-            $table->index(['owner_type', 'owner_id']);
         });
     }
 };
