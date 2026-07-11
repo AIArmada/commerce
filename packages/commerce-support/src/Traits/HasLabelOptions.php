@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Events\Enums\Concerns;
+namespace AIArmada\CommerceSupport\Traits;
 
 trait HasLabelOptions
 {

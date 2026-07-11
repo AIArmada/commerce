@@ -1,63 +1,67 @@
 {
-    "name": "aiarmada/events",
-    "description": "Generic reusable Laravel events package with scheduling, locations, registrations, ticketing, attendance, and Filament administration",
-    "type": "library",
-    "license": "MIT",
-    "keywords": [
-        "laravel",
-        "events",
-        "scheduling",
-        "registrations",
-        "attendance",
-        "ticketing",
-        "venues"
-    ],
-    "authors": [
-        {
-            "name": "AIArmada",
-            "email": "dev@aiarmada.com"
-        }
-    ],
-    "require": {
-        "php": "^8.4",
-        "aiarmada/commerce-support": "self.version",
-        "aiarmada/contacting": "self.version",
-        "aiarmada/inventory": "self.version",
-        "aiarmada/seating": "self.version",
-        "aiarmada/ticketing": "self.version",
-        "spatie/laravel-data": "^4.23",
-        "spatie/laravel-medialibrary": "^11.0",
-        "spatie/laravel-model-states": "^2.0",
-        "spatie/laravel-package-tools": "^1.16"
+  "name": "aiarmada/events",
+  "description": "Generic reusable Laravel events package with scheduling, locations, registrations, ticketing, attendance, and Filament administration",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "events",
+    "scheduling",
+    "registrations",
+    "attendance",
+    "ticketing",
+    "venues"
+  ],
+  "authors": [
+    {
+      "name": "AIArmada",
+      "email": "dev@aiarmada.com"
+    }
+  ],
+  "require": {
+    "php": "^8.4",
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/contacting": "self.version",
+    "aiarmada/inventory": "self.version",
+    "aiarmada/seating": "self.version",
+    "aiarmada/ticketing": "self.version",
+    "spatie/laravel-data": "^4.23",
+    "spatie/laravel-medialibrary": "^11.0",
+    "spatie/laravel-model-states": "^2.0",
+    "spatie/laravel-package-tools": "^1.16"
+  },
+  "suggest": {
+    "aiarmada/addressing": "Optional integration",
+    "aiarmada/cart": "Optional integration",
+    "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing.",
+    "aiarmada/customers": "Enables customer-backed registrants and participants.",
+    "aiarmada/engagement": "Optional integration",
+    "aiarmada/filament-authz": "Optional integration",
+    "aiarmada/orders": "Enables order-item fulfillment and event order completion sync.",
+    "aiarmada/products": "Enables product/variant relationships for tickets and merchandise."
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\Events\\": "src/",
+      "AIArmada\\Events\\Database\\Factories\\": "database/factories"
     },
-    "suggest": {
-        "aiarmada/products": "Enables product/variant relationships for tickets and merchandise.",
-        "aiarmada/customers": "Enables customer-backed registrants and participants.",
-        "aiarmada/orders": "Enables order-item fulfillment and event order completion sync.",
-        "aiarmada/checkout": "Enables cart and checkout orchestration for ticket purchasing."
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\Events\\": "src/",
-            "AIArmada\\Events\\Database\\Factories\\": "database/factories"
-        },
-        "files": [
-            "src/helpers.php"
-        ]
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\Events\\EventsServiceProvider"
-            ],
-            "aliases": {
-                "Events": "AIArmada\\Events\\Facades\\Events"
-            }
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    "files": [
+      "src/helpers.php"
+    ]
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\Events\\EventsServiceProvider"
+      ],
+      "aliases": {
+        "Events": "AIArmada\\Events\\Facades\\Events"
+      }
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }

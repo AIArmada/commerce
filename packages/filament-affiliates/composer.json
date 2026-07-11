@@ -1,35 +1,42 @@
 {
-    "name": "aiarmada/filament-affiliates",
-    "description": "Filament admin plugin for managing AIArmada affiliate programs, attributions, and commissions.",
-    "license": "MIT",
-    "homepage": "https://github.com/aiarmada/commerce",
-    "support": {
-        "issues": "https://github.com/aiarmada/commerce/issues",
-        "source": "https://github.com/aiarmada/commerce"
-    },
-    "require": {
-        "aiarmada/commerce-support": "self.version",
-        "aiarmada/affiliates": "self.version",
-        "filament/filament": "^5.6.7",
-        "php": "^8.4"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\FilamentAffiliates\\": "src/",
-            "AIArmada\\FilamentAffiliates\\Database\\Factories\\": "database/factories/",
-            "AIArmada\\FilamentAffiliates\\Database\\Seeders\\": "database/seeders/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\FilamentAffiliates\\FilamentAffiliatesServiceProvider"
-            ]
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/filament-affiliates",
+  "description": "Filament admin plugin for managing AIArmada affiliate programs, attributions, and commissions.",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/affiliates": "self.version",
+    "filament/filament": "^5.6.7",
+    "php": "^8.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentAffiliates\\": "src/",
+      "AIArmada\\FilamentAffiliates\\Database\\Factories\\": "database/factories/",
+      "AIArmada\\FilamentAffiliates\\Database\\Seeders\\": "database/seeders/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentAffiliates\\FilamentAffiliatesServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "suggest": {
+    "aiarmada/events": "Optional integration",
+    "aiarmada/filament-vouchers": "Optional integration",
+    "aiarmada/products": "Optional integration",
+    "aiarmada/ticketing": "Optional integration",
+    "aiarmada/vouchers": "Optional integration"
+  }
 }

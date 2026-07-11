@@ -12,6 +12,8 @@ use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderProcessingStarted;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Processing;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Spatie\ModelStates\Transition;
 
 /**
@@ -34,40 +36,79 @@ final class PaymentConfirmed extends Transition
 
     public function handle(): Order
     {
-        // Record payment
-        $this->order->payments()->create([
-            'transaction_id' => $this->transactionId,
-            'gateway' => $this->gateway,
-            'amount' => $this->amount,
-            'currency' => $this->order->currency,
-            'status' => PaymentStatus::Completed,
-            'paid_at' => now(),
-            'metadata' => $this->metadata,
-        ]);
+        $originalOrder = $this->order;
 
-        // Deduct inventory (if package present)
-        if (
-            config('orders.integrations.inventory.enabled', true)
-            && class_exists(InventoryService::class)
-        ) {
-            $this->deductInventory();
-        }
+        return DB::transaction(function () use ($originalOrder): Order {
+            $this->order = $this->order->newQuery()
+                ->lockForUpdate()
+                ->findOrFail($this->order->getKey());
 
-        // Attribute affiliate commission (if package present)
-        if (config('orders.integrations.affiliates.enabled', true)) {
-            $this->attributeCommission();
-        }
+            $existingPayment = $this->order->payments()
+                ->where('gateway', $this->gateway)
+                ->where('transaction_id', $this->transactionId)
+                ->first();
 
-        // Update order state and paid timestamp
-        $this->order->status->transitionTo(Processing::class);
-        $this->order->paid_at = now();
-        $this->order->save();
+            if ($existingPayment !== null) {
+                if (
+                    (int) $existingPayment->amount !== $this->amount
+                    || (string) $existingPayment->currency !== (string) $this->order->currency
+                ) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Payment identity %s/%s was already recorded with a different amount or currency.',
+                        $this->gateway,
+                        $this->transactionId,
+                    ));
+                }
 
-        // Dispatch events
-        event(new OrderPaid($this->order, $this->transactionId, $this->gateway));
-        event(new OrderProcessingStarted($this->order, $this->transactionId, $this->gateway));
+                $this->syncOriginalOrder($originalOrder);
 
-        return $this->order;
+                return $originalOrder;
+            }
+
+            // Record payment
+            $this->order->payments()->create([
+                'transaction_id' => $this->transactionId,
+                'gateway' => $this->gateway,
+                'amount' => $this->amount,
+                'currency' => $this->order->currency,
+                'status' => PaymentStatus::Completed,
+                'paid_at' => now(),
+                'metadata' => $this->metadata,
+            ]);
+
+            // Deduct inventory (if package present)
+            if (
+                config('orders.integrations.inventory.enabled', true)
+                && class_exists(InventoryService::class)
+            ) {
+                $this->deductInventory();
+            }
+
+            // Attribute affiliate commission (if package present)
+            if (config('orders.integrations.affiliates.enabled', true)) {
+                $this->attributeCommission();
+            }
+
+            // Update order state and paid timestamp
+            $this->order->status->transitionTo(Processing::class);
+            $this->order->paid_at = now();
+            $this->order->save();
+
+            // Dispatch events
+            event(new OrderPaid($this->order, $this->transactionId, $this->gateway));
+            event(new OrderProcessingStarted($this->order, $this->transactionId, $this->gateway));
+
+            $this->syncOriginalOrder($originalOrder);
+
+            return $originalOrder;
+        });
+    }
+
+    private function syncOriginalOrder(Order $originalOrder): void
+    {
+        $originalOrder->setRawAttributes($this->order->getAttributes());
+        $originalOrder->setRelations($this->order->getRelations());
+        $originalOrder->syncOriginal();
     }
 
     /**

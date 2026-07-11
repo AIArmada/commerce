@@ -1,42 +1,46 @@
 {
-    "name": "aiarmada/cashier-chip",
-    "description": "Laravel Cashier-style billing integration for CHIP payment gateway",
-    "license": "MIT",
-    "homepage": "https://github.com/aiarmada/commerce",
-    "support": {
-        "issues": "https://github.com/aiarmada/commerce/issues",
-        "source": "https://github.com/aiarmada/commerce"
-    },
-    "require": {
-        "aiarmada/commerce-support": "self.version",
-        "aiarmada/chip": "self.version",
-        "spatie/laravel-webhook-client": "^3.6.2",
-        "php": "^8.4"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\CashierChip\\": "src/",
-            "AIArmada\\CashierChip\\Database\\Factories\\": "database/factories/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "AIArmada\\CashierChip\\Tests\\": "tests/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\CashierChip\\CashierChipServiceProvider"
-            ],
-            "aliases": {
-                "CashierChip": "AIArmada\\CashierChip\\Facades\\CashierChip"
-            }
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/cashier-chip",
+  "description": "Laravel Cashier-style billing integration for CHIP payment gateway",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/chip": "self.version",
+    "spatie/laravel-webhook-client": "^3.6.2",
+    "php": "^8.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\CashierChip\\": "src/",
+      "AIArmada\\CashierChip\\Database\\Factories\\": "database/factories/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "AIArmada\\CashierChip\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\CashierChip\\CashierChipServiceProvider"
+      ],
+      "aliases": {
+        "CashierChip": "AIArmada\\CashierChip\\Facades\\CashierChip"
+      }
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "suggest": {
+    "aiarmada/docs": "Optional integration",
+    "aiarmada/vouchers": "Optional integration"
+  }
 }

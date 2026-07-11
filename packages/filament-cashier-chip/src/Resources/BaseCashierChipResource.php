@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
+use AIArmada\CommerceSupport\Support\MoneyFormatter;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -92,8 +93,7 @@ abstract class BaseCashierChipResource extends Resource
     protected static function formatAmount(int $amount, ?string $currency = null): string
     {
         $currency = $currency ?? config('cashier-chip.currency', 'MYR');
-        $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision, '.', ',');
+        return MoneyFormatter::formatMinorWithCode($amount, $currency);
     }
 }

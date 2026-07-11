@@ -34,10 +34,10 @@ final class CartBridge
 
             $hasReference = AffiliateConversion::query()
                 ->forOwner($owner, false)
-                ->where('cart_identifier', $identifier)
+                ->where('subject_identifier', $identifier)
                 ->when(
                     $instance !== null,
-                    fn ($query) => $query->where('cart_instance', $instance),
+                    fn ($query) => $query->where('subject_instance', $instance),
                 )
                 ->exists();
 

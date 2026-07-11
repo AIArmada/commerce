@@ -18,7 +18,7 @@ use Override;
 /**
  * Base model for CHIP tables that use integer primary keys.
  *
- * Used by: BankAccountData, SendInstruction, SendLimit, SendWebhook
+ * Used by: BankAccountData, SendInstruction, SendLimit
  * These tables mirror the CHIP Send API which uses integer IDs.
  */
 abstract class ChipIntegerModel extends Model

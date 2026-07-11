@@ -1,42 +1,46 @@
 {
-    "name": "aiarmada/products",
-    "description": "Product catalog and PIM for the AIArmada Commerce ecosystem",
-    "license": "MIT",
-    "type": "library",
-    "keywords": [
-        "laravel",
-        "commerce",
-        "products",
-        "catalog",
-        "pim",
-        "variants",
-        "categories"
-    ],
-    "authors": [
-        {
-            "name": "AIArmada",
-            "email": "dev@aiarmada.com"
-        }
-    ],
-    "require": {
-        "aiarmada/commerce-support": "self.version",
-        "php": "^8.4"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\Products\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\Products\\ProductsServiceProvider"
-            ]
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/products",
+  "description": "Product catalog and PIM for the AIArmada Commerce ecosystem",
+  "license": "MIT",
+  "type": "library",
+  "keywords": [
+    "laravel",
+    "commerce",
+    "products",
+    "catalog",
+    "pim",
+    "variants",
+    "categories"
+  ],
+  "authors": [
+    {
+      "name": "AIArmada",
+      "email": "dev@aiarmada.com"
+    }
+  ],
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "php": "^8.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\Products\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\Products\\ProductsServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "suggest": {
+    "aiarmada/inventory": "Optional integration",
+    "aiarmada/pricing": "Optional integration"
+  }
 }

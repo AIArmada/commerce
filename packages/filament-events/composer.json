@@ -1,28 +1,32 @@
 {
-    "name": "aiarmada/filament-events",
-    "description": "Filament admin for aiarmada/events: manage events, occurrences, registrations, attendance, venues.",
-    "license": "MIT",
-    "require": {
-        "php": "^8.4",
-        "aiarmada/commerce-support": "self.version",
-        "aiarmada/events": "self.version",
-        "filament/filament": "^5.6.7"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\FilamentEvents\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\FilamentEvents\\FilamentEventsServiceProvider"
-            ]
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/filament-events",
+  "description": "Filament admin for aiarmada/events: manage events, occurrences, registrations, attendance, venues.",
+  "license": "MIT",
+  "require": {
+    "php": "^8.4",
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/events": "self.version",
+    "filament/filament": "^5.6.7"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentEvents\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentEvents\\FilamentEventsServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "suggest": {
+    "aiarmada/customers": "Optional integration",
+    "aiarmada/ticketing": "Optional integration"
+  }
 }

@@ -18,14 +18,9 @@ return [
     | Features
     |--------------------------------------------------------------------------
     */
-    'features' => [
-        'promotions' => true,  // Register PromotionResource in Pricing context
-    ],
-
     'resources' => [
         'navigation_sort' => [
             'price_lists' => 1,
-            'promotions' => 2,
         ],
     ],
 

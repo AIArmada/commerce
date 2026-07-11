@@ -9,6 +9,7 @@ use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMergeStrategyRegistry;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartOwnerScope;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -118,7 +119,7 @@ final class MigrateGuestCartToUserAction
             $this->resolveStorage()->putMetadataBatch($userIdentifier, $instance, array_merge($guestMetadata, $userMetadata));
         }
 
-        $this->markSourceCartAsMerged($guestIdentifier, $instance, $userIdentifier);
+        $this->markSourceCartAsMerged($guestIdentifier, $instance, $userIdentifier, $guestStorage, $this->resolveStorage());
 
         $guestStorage->forget($guestIdentifier, $instance);
 
@@ -194,7 +195,7 @@ final class MigrateGuestCartToUserAction
         $conditions = $sourceStorage->getConditions($oldIdentifier, $instance);
         $metadata = $sourceStorage->getAllMetadata($oldIdentifier, $instance);
 
-        $this->markSourceCartAsMerged($oldIdentifier, $instance, $newIdentifier);
+        $this->markSourceCartAsMerged($oldIdentifier, $instance, $newIdentifier, $sourceStorage, $targetStorage);
 
         $targetStorage->putItems($newIdentifier, $instance, $items);
 
@@ -211,26 +212,37 @@ final class MigrateGuestCartToUserAction
         return true;
     }
 
-    private function markSourceCartAsMerged(string $sourceIdentifier, string $instance, string $targetIdentifier): void
-    {
+    private function markSourceCartAsMerged(
+        string $sourceIdentifier,
+        string $instance,
+        string $targetIdentifier,
+        StorageInterface $sourceStorage,
+        StorageInterface $targetStorage,
+    ): void {
         $table = config('cart.database.table', 'carts');
 
-        $targetCart = DB::table($table)
+        $targetQuery = DB::table($table)
             ->where('identifier', $targetIdentifier)
-            ->where('instance', $instance)
-            ->first(['id']);
+            ->where('instance', $instance);
+
+        CartOwnerScope::apply($targetQuery, $targetStorage);
+
+        $targetCart = $targetQuery->first(['id']);
 
         if ($targetCart === null) {
             return;
         }
 
-        DB::table($table)
+        $sourceQuery = DB::table($table)
             ->where('identifier', $sourceIdentifier)
-            ->where('instance', $instance)
-            ->update([
-                'merged_into_id' => $targetCart->id,
-                'updated_at' => now(),
-            ]);
+            ->where('instance', $instance);
+
+        CartOwnerScope::apply($sourceQuery, $sourceStorage);
+
+        $sourceQuery->update([
+            'merged_into_id' => $targetCart->id,
+            'updated_at' => now(),
+        ]);
     }
 
     /**

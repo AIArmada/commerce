@@ -1,41 +1,44 @@
 {
-    "name": "aiarmada/pricing",
-    "description": "Dynamic pricing engine for the AIArmada Commerce ecosystem",
-    "license": "MIT",
-    "type": "library",
-    "keywords": [
-        "laravel",
-        "commerce",
-        "pricing",
-        "price-rules",
-        "tiered-pricing",
-        "promotions"
-    ],
-    "authors": [
-        {
-            "name": "AIArmada",
-            "email": "dev@aiarmada.com"
-        }
-    ],
-    "require": {
-        "aiarmada/commerce-support": "self.version",
-        "php": "^8.4"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\Pricing\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\Pricing\\PricingServiceProvider"
-            ]
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/pricing",
+  "description": "Dynamic pricing engine for the AIArmada Commerce ecosystem",
+  "license": "MIT",
+  "type": "library",
+  "keywords": [
+    "laravel",
+    "commerce",
+    "pricing",
+    "price-rules",
+    "tiered-pricing",
+    "promotions"
+  ],
+  "authors": [
+    {
+      "name": "AIArmada",
+      "email": "dev@aiarmada.com"
+    }
+  ],
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "php": "^8.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\Pricing\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\Pricing\\PricingServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "suggest": {
+    "aiarmada/promotions": "Optional integration"
+  }
 }

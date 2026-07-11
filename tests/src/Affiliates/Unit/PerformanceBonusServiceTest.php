@@ -70,6 +70,23 @@ describe('PerformanceBonusService', function (): void {
             expect($result)->toBe(1);
         });
 
+        test('does not award the same bonus period twice', function (): void {
+            $bonuses = [
+                [
+                    'affiliate_id' => $this->affiliate->id,
+                    'affiliate_name' => $this->affiliate->name,
+                    'bonus_type' => 'top_performer',
+                    'amount_minor' => 5000,
+                    'reason' => 'Test bonus',
+                    'metrics' => ['period' => '2026-07'],
+                ],
+            ];
+
+            expect($this->service->awardBonuses($bonuses))->toBe(1)
+                ->and($this->service->awardBonuses($bonuses))->toBe(0)
+                ->and(AffiliateConversion::where('affiliate_id', $this->affiliate->id)->count())->toBe(1);
+        });
+
         test('increments affiliate balance available amount', function (): void {
             AffiliateBalance::create([
                 'affiliate_id' => $this->affiliate->id,

@@ -64,7 +64,6 @@ final readonly class RecordCommissionForOrder
 
             $this->affiliateService->recordConversion($cart, [
                 'external_reference' => $reference,
-                'order_reference' => $reference,
                 'conversion_type' => 'purchase',
                 'subtotal' => $order->subtotal,
                 'total' => $order->grand_total,

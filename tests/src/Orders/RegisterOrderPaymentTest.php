@@ -27,11 +27,12 @@ describe('RegisterOrderPayment', function (): void {
 
         $result = OwnerContext::withOwner(null, fn (): Order => $action->execute($order, 'txn_action_1', 'stripe', 10000));
 
-        expect($result)->toBe($order);
-        expect($order->status)->toBeInstanceOf(Processing::class);
-        expect($order->paid_at)->not->toBeNull();
-        expect($order->payments)->toHaveCount(1);
-        expect($order->payments->first()->transaction_id)->toBe('txn_action_1');
+        expect($result)->toBeInstanceOf(Order::class)
+            ->and($result->getKey())->toBe($order->getKey());
+        expect($result->status)->toBeInstanceOf(Processing::class);
+        expect($result->paid_at)->not->toBeNull();
+        expect($result->payments)->toHaveCount(1);
+        expect($result->payments->first()->transaction_id)->toBe('txn_action_1');
     });
 
     it('records payment with metadata', function (): void {
@@ -49,5 +50,41 @@ describe('RegisterOrderPayment', function (): void {
         $result = OwnerContext::withOwner(null, fn (): Order => $action->execute($order, 'txn_meta_1', 'chip', 5000, $metadata));
 
         expect($result->payments->first()->metadata)->toBe($metadata);
+    });
+
+    it('does not duplicate a repeated gateway transaction', function (): void {
+        $order = Order::create([
+            'order_number' => 'ORD-PAY-IDEMPOTENT-' . uniqid(),
+            'status' => PendingPayment::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+
+        $action = new RegisterOrderPayment;
+
+        OwnerContext::withOwner(null, function () use ($action, $order): void {
+            $action->execute($order, 'txn_idempotent', 'stripe', 10000);
+            $action->execute($order, 'txn_idempotent', 'stripe', 10000);
+        });
+
+        expect($order->payments()->where('transaction_id', 'txn_idempotent')->count())->toBe(1);
+    });
+
+    it('rejects a repeated gateway transaction with a different amount', function (): void {
+        $order = Order::create([
+            'order_number' => 'ORD-PAY-MISMATCH-' . uniqid(),
+            'status' => PendingPayment::class,
+            'currency' => 'MYR',
+            'subtotal' => 10000,
+            'grand_total' => 10000,
+        ]);
+
+        $action = new RegisterOrderPayment;
+
+        expect(fn () => OwnerContext::withOwner(null, function () use ($action, $order): void {
+            $action->execute($order, 'txn_mismatch', 'stripe', 10000);
+            $action->execute($order, 'txn_mismatch', 'stripe', 9000);
+        }))->toThrow(InvalidArgumentException::class, 'different amount or currency');
     });
 });

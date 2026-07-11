@@ -1,43 +1,48 @@
 {
-    "name": "aiarmada/filament-customers",
-    "description": "Filament admin panel for customer management",
-    "license": "MIT",
-    "type": "library",
-    "keywords": [
-        "laravel",
-        "filament",
-        "customers",
-        "crm",
-        "admin",
-        "commerce"
-    ],
-    "authors": [
-        {
-            "name": "AIArmada",
-            "email": "dev@aiarmada.com"
-        }
-    ],
-    "require": {
-        "aiarmada/commerce-support": "self.version",
-        "aiarmada/customers": "self.version",
-        "filament/filament": "^5.6.7",
-        "php": "^8.4"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\FilamentCustomers\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\FilamentCustomers\\FilamentCustomersServiceProvider"
-            ]
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/filament-customers",
+  "description": "Filament admin panel for customer management",
+  "license": "MIT",
+  "type": "library",
+  "keywords": [
+    "laravel",
+    "filament",
+    "customers",
+    "crm",
+    "admin",
+    "commerce"
+  ],
+  "authors": [
+    {
+      "name": "AIArmada",
+      "email": "dev@aiarmada.com"
+    }
+  ],
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/customers": "self.version",
+    "filament/filament": "^5.6.7",
+    "php": "^8.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentCustomers\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentCustomers\\FilamentCustomersServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "suggest": {
+    "aiarmada/filament-cart": "Optional integration",
+    "aiarmada/filament-orders": "Optional integration",
+    "aiarmada/filament-vouchers": "Optional integration"
+  }
 }

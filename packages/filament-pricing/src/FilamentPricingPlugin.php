@@ -37,14 +37,6 @@ final class FilamentPricingPlugin implements Plugin
             Resources\PriceListResource::class,
         ];
 
-        // Only register the legacy pricing-scoped PromotionResource when the
-        // dedicated filament-promotions package is not installed.
-        if (config('filament-pricing.features.promotions', true)
-            && class_exists('\\AIArmada\\Promotions\\Models\\Promotion')
-            && ! class_exists('\\AIArmada\\FilamentPromotions\\Resources\\PromotionResource')) {
-            $resources[] = Resources\PromotionResource::class;
-        }
-
         if (class_exists('\\AIArmada\\Products\\Models\\Product') && class_exists('\\AIArmada\\Products\\Models\\Variant')) {
             $pages[] = Pages\PriceSimulator::class;
         }

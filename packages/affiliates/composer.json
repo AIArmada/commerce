@@ -1,39 +1,40 @@
 {
-    "name": "aiarmada/affiliates",
-    "description": "Affiliate attribution, referral tracking, and commission management for Laravel commerce stacks.",
-    "license": "MIT",
-    "homepage": "https://github.com/aiarmada/commerce",
-    "support": {
-        "issues": "https://github.com/aiarmada/commerce/issues",
-        "source": "https://github.com/aiarmada/commerce"
-    },
-    "require": {
-        "aiarmada/contacting": "self.version",
-        "aiarmada/commerce-support": "self.version",
-        "php": "^8.4"
-    },
-    "suggest": {
-        "aiarmada/cart": "Enables cart level attribution helpers and conversion tracking",
-        "aiarmada/vouchers": "Auto associates affiliate codes with voucher campaigns"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\Affiliates\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\Affiliates\\AffiliatesServiceProvider"
-            ],
-            "aliases": {
-                "Affiliate": "AIArmada\\Affiliates\\Facades\\Affiliate"
-            }
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/affiliates",
+  "description": "Affiliate attribution, referral tracking, and commission management for Laravel commerce stacks.",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "aiarmada/contacting": "self.version",
+    "aiarmada/commerce-support": "self.version",
+    "php": "^8.4"
+  },
+  "suggest": {
+    "aiarmada/cart": "Enables cart level attribution helpers and conversion tracking",
+    "aiarmada/orders": "Optional integration",
+    "aiarmada/vouchers": "Auto associates affiliate codes with voucher campaigns"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\Affiliates\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\Affiliates\\AffiliatesServiceProvider"
+      ],
+      "aliases": {
+        "Affiliate": "AIArmada\\Affiliates\\Facades\\Affiliate"
+      }
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }

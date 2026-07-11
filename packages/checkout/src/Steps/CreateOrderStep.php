@@ -104,6 +104,12 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         if ($paymentConfirmationEnabled) {
             $paymentWasConfirmed = $this->confirmPayment($orderService, $order, $session, $paymentData);
+
+            if (! $paymentWasConfirmed) {
+                return $this->failed('Payment confirmation failed', [
+                    'payment' => 'The order was created but payment could not be confirmed. Retry payment confirmation before completing checkout.',
+                ]);
+            }
         }
 
         $session->update([

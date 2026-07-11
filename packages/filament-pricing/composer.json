@@ -1,47 +1,50 @@
 {
-    "name": "aiarmada/filament-pricing",
-    "description": "Filament admin panel for pricing rules management",
-    "license": "MIT",
-    "type": "library",
-    "keywords": [
-        "laravel",
-        "filament",
-        "pricing",
-        "promotions",
-        "admin",
-        "commerce"
-    ],
-    "authors": [
-        {
-            "name": "AIArmada",
-            "email": "dev@aiarmada.com"
-        }
-    ],
-    "require": {
-        "aiarmada/commerce-support": "self.version",
-        "aiarmada/pricing": "self.version",
-        "filament/filament": "^5.6.7",
-        "filament/spatie-laravel-settings-plugin": "^5.6.7",
-        "php": "^8.4"
-    },
-    "suggest": {
-        "aiarmada/promotions": "For promotion management features"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\FilamentPricing\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\FilamentPricing\\FilamentPricingServiceProvider"
-            ]
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/filament-pricing",
+  "description": "Filament admin panel for pricing rules management",
+  "license": "MIT",
+  "type": "library",
+  "keywords": [
+    "laravel",
+    "filament",
+    "pricing",
+    "promotions",
+    "admin",
+    "commerce"
+  ],
+  "authors": [
+    {
+      "name": "AIArmada",
+      "email": "dev@aiarmada.com"
+    }
+  ],
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/pricing": "self.version",
+    "filament/filament": "^5.6.7",
+    "filament/spatie-laravel-settings-plugin": "^5.6.7",
+    "php": "^8.4"
+  },
+  "suggest": {
+    "aiarmada/customers": "Optional integration",
+    "aiarmada/filament-promotions": "For promotions administration",
+    "aiarmada/products": "Optional integration",
+    "aiarmada/promotions": "Optional integration"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentPricing\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentPricing\\FilamentPricingServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }

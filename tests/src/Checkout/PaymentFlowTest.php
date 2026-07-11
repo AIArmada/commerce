@@ -505,6 +505,44 @@ describe('CreateOrderStep', function (): void {
             ->and($session->fresh()->order_id)->not->toBeNull();
     });
 
+    it('does not complete checkout when payment confirmation fails', function (): void {
+        config()->set('checkout.create_order.confirm_payment', true);
+
+        $orderService = mock(OrderServiceInterface::class);
+        $order = new Order;
+        $order->forceFill([
+            'id' => (string) Str::uuid(),
+            'order_number' => 'TEST-ORDER-PAYMENT-FAILED',
+        ]);
+
+        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+        $orderService->shouldReceive('confirmPayment')->once()->andThrow(new RuntimeException('gateway unavailable'));
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-payment-failed',
+            'cart_snapshot' => ['items' => []],
+            'payment_data' => [
+                'type' => 'card',
+                'status' => PaymentStatus::Completed->value,
+                'transaction_id' => 'tx-payment-failed',
+                'gateway' => 'chip',
+            ],
+            'selected_payment_gateway' => 'chip',
+            'payment_id' => 'payment-failed',
+            'subtotal' => 1000,
+            'grand_total' => 1000,
+            'currency' => 'USD',
+        ]);
+        $session = $session->transitionStatus(Processing::class);
+
+        $result = app(CreateOrderStep::class)->handle($session);
+
+        expect($result->isSuccessful())->toBeFalse()
+            ->and($session->fresh()->order_id)->toBeNull()
+            ->and($session->fresh()->completed_at)->toBeNull();
+    });
+
     it('skips directly committing inventory reservations when payment confirmation already handles paid orders', function (): void {
         config()->set('checkout.create_order.confirm_payment', true);
 

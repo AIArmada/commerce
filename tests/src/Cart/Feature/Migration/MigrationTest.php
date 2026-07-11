@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Session;
 
@@ -465,6 +466,49 @@ it('uses the resolved owner boundary when migrating carts in owner mode', functi
 
     expect(array_sum(array_column($ownerItemsAfter, 'quantity')))->toBe(2);
     expect($ownerItemsAfter['product-1']['name'])->toBe('Owner Scoped Product');
+});
+
+it('does not mark a same-identity cart belonging to another owner as merged', function (): void {
+    config(['cart.owner.enabled' => true]);
+    config(['cart.events' => false]);
+
+    $connection = app('db')->connection();
+    $storage = new DatabaseStorage($connection, 'carts');
+    $ownerA = User::query()->create([
+        'name' => 'Merge Owner A',
+        'email' => 'merge-owner-a@example.com',
+        'password' => 'secret',
+    ]);
+    $ownerB = User::query()->create([
+        'name' => 'Merge Owner B',
+        'email' => 'merge-owner-b@example.com',
+        'password' => 'secret',
+    ]);
+
+    $userIdentifier = 'shared-user';
+    $guestIdentifier = 'shared-guest';
+
+    $storage->withOwner($ownerB)->putItems($userIdentifier, 'default', [
+        'foreign-product' => ['id' => 'foreign-product', 'quantity' => 7],
+    ]);
+    $storage->putItems($guestIdentifier, 'default', [
+        'guest-product' => ['id' => 'guest-product', 'quantity' => 2],
+    ]);
+
+    $result = OwnerContext::withOwner($ownerA, fn (): bool => $this->cartMigration->migrateGuestCartToUser(
+        $userIdentifier,
+        'default',
+        $guestIdentifier,
+    ));
+
+    expect($result)->toBeTrue()
+        ->and($storage->withOwner($ownerA)->getItems($userIdentifier, 'default'))->toHaveKey('guest-product')
+        ->and($storage->withOwner($ownerB)->getItems($userIdentifier, 'default')['foreign-product']['quantity'])->toBe(7)
+        ->and(DB::table('carts')
+            ->where('identifier', $userIdentifier)
+            ->where('instance', 'default')
+            ->where('owner_id', $ownerB->getKey())
+            ->value('merged_into_id'))->toBeNull();
 });
 
 it('returns false when guest cart is empty', function (): void {

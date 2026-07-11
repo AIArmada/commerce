@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Spatie\ModelStates\HasStates;
 
@@ -37,6 +38,7 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $voucher_code
  * @property string|null $external_reference
  * @property string|null $order_reference
+ * @property string|null $performance_bonus_key
  * @property string|null $conversion_type
  * @property int $subtotal_minor
  * @property int $value_minor
@@ -85,6 +87,7 @@ class AffiliateConversion extends Model
         'voucher_code',
         'external_reference',
         'order_reference',
+        'performance_bonus_key',
         'conversion_type',
         'subtotal_minor',
         'value_minor',
@@ -305,7 +308,14 @@ class AffiliateConversion extends Model
 
     private static function getOrCreateBalance(Affiliate $affiliate, self $conversion): AffiliateBalance
     {
-        return $affiliate->balance()->first() ?? self::createBalance($affiliate, $conversion);
+        return DB::transaction(function () use ($affiliate, $conversion): AffiliateBalance {
+            $lockedAffiliate = Affiliate::query()
+                ->whereKey($affiliate->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            return $lockedAffiliate->balance()->first() ?? self::createBalance($lockedAffiliate, $conversion);
+        });
     }
 
     private static function createBalance(
@@ -327,15 +337,13 @@ class AffiliateConversion extends Model
 
     private static function creditAvailableCommission(AffiliateBalance $balance, int $commissionMinor): void
     {
-        $balance->available_minor += $commissionMinor;
-        $balance->lifetime_earnings_minor += $commissionMinor;
-        $balance->save();
+        $balance->increment('available_minor', $commissionMinor);
+        $balance->increment('lifetime_earnings_minor', $commissionMinor);
     }
 
     private static function recordLifetimeEarnings(AffiliateBalance $balance, int $commissionMinor): void
     {
-        $balance->lifetime_earnings_minor += $commissionMinor;
-        $balance->save();
+        $balance->increment('lifetime_earnings_minor', $commissionMinor);
     }
 
     /**

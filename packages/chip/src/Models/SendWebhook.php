@@ -12,7 +12,7 @@ namespace AIArmada\Chip\Models;
  * @property string $email
  * @property array<string>|null $event_hooks
  */
-class SendWebhook extends ChipIntegerModel
+class SendWebhook extends ChipModel
 {
     public $timestamps = false;
 

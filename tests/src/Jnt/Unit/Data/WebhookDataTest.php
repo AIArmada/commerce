@@ -6,7 +6,6 @@ use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\WebhookData;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 describe('WebhookData', function (): void {
@@ -180,39 +179,6 @@ describe('WebhookData', function (): void {
 
             WebhookData::fromRequest($request);
         })->throws(JntValidationException::class);
-    });
-
-    describe('toJntResponse', function (): void {
-        it('generates correct success response structure', function (): void {
-            $webhook = WebhookData::make(
-                billCode: 'JT001',
-                txlogisticId: 'ORDER123',
-                details: []
-            );
-
-            $response = $webhook->toJntResponse();
-
-            expect($response)->toBeArray()
-                ->and($response)->toHaveKeys(['code', 'msg', 'data', 'requestId'])
-                ->and($response['code'])->toBe('1')
-                ->and($response['msg'])->toBe('success')
-                ->and($response['data'])->toBe('SUCCESS')
-                ->and($response['requestId'])->toBeString()
-                ->and(Str::isUuid($response['requestId']))->toBeTrue();
-        });
-
-        it('generates unique requestId for each response', function (): void {
-            $webhook = WebhookData::make(
-                billCode: 'JT001',
-                txlogisticId: null,
-                details: []
-            );
-
-            $response1 = $webhook->toJntResponse();
-            $response2 = $webhook->toJntResponse();
-
-            expect($response1['requestId'])->not->toBe($response2['requestId']);
-        });
     });
 
     describe('getLatestDetail', function (): void {
@@ -446,7 +412,7 @@ describe('WebhookData', function (): void {
                 ->and($webhook->getLatestDetail()->scanType)->toBe('派件')
                 ->and($webhook->getLatestDetail()->description)->toBe('Out for delivery');
 
-            $response = $webhook->toJntResponse();
+            $response = $webhook->toJntAckResponse();
             expect($response['code'])->toBe('1')
                 ->and($response['data'])->toBe('SUCCESS');
 

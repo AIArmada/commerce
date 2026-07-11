@@ -1,38 +1,40 @@
 {
-    "name": "aiarmada/filament-vouchers",
-    "description": "A Filament v5 plugin for administering vouchers provided by the AIArmada vouchers package",
-    "license": "MIT",
-    "homepage": "https://github.com/aiarmada/commerce",
-    "support": {
-        "issues": "https://github.com/aiarmada/commerce/issues",
-        "source": "https://github.com/aiarmada/commerce"
-    },
-    "require": {
-        "aiarmada/commerce-support": "self.version",
-        "aiarmada/vouchers": "self.version",
-        "filament/filament": "^5.6.7",
-        "php": "^8.4"
-    },
-    "suggest": {
-        "aiarmada/filament-cart": "Enables deep linking from voucher usage records to cart snapshots"
-    },
-    "autoload": {
-        "psr-4": {
-            "AIArmada\\FilamentVouchers\\": "src/",
-            "AIArmada\\FilamentVouchers\\Database\\Factories\\": "database/factories/",
-            "AIArmada\\FilamentVouchers\\Database\\Seeders\\": "database/seeders/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "AIArmada\\FilamentVouchers\\FilamentVouchersServiceProvider"
-            ]
-        }
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "aiarmada/filament-vouchers",
+  "description": "A Filament v5 plugin for administering vouchers provided by the AIArmada vouchers package",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/vouchers": "self.version",
+    "filament/filament": "^5.6.7",
+    "php": "^8.4"
+  },
+  "suggest": {
+    "aiarmada/affiliates": "Optional integration",
+    "aiarmada/cart": "Optional integration",
+    "aiarmada/filament-cart": "Enables deep linking from voucher usage records to cart snapshots"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentVouchers\\": "src/",
+      "AIArmada\\FilamentVouchers\\Database\\Factories\\": "database/factories/",
+      "AIArmada\\FilamentVouchers\\Database\\Seeders\\": "database/seeders/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentVouchers\\FilamentVouchersServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }

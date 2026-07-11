@@ -10,7 +10,6 @@ use AIArmada\FilamentPricing\FilamentPricingPlugin;
 use AIArmada\FilamentPricing\Pages\ManagePricingSettings;
 use AIArmada\FilamentPricing\Pages\PriceSimulator;
 use AIArmada\FilamentPricing\Resources\PriceListResource;
-use AIArmada\FilamentPricing\Resources\PromotionResource;
 use AIArmada\FilamentPricing\Widgets\PricingStatsWidget;
 use Filament\FilamentManager;
 use Filament\Panel;
@@ -56,12 +55,6 @@ it('registers resources and widgets on the panel', function (): void {
     $expectedResources = [
         PriceListResource::class,
     ];
-
-    $hasDedicatedPromotionsPlugin = class_exists('\\AIArmada\\FilamentPromotions\\FilamentPromotionsPlugin');
-
-    if (class_exists('\\AIArmada\\Promotions\\Models\\Promotion') && ! $hasDedicatedPromotionsPlugin) {
-        $expectedResources[] = PromotionResource::class;
-    }
 
     $panel->shouldReceive('resources')->once()->with($expectedResources)->andReturnSelf();
 

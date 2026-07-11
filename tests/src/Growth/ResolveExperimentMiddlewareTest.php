@@ -12,7 +12,7 @@ use AIArmada\Growth\Models\Assignment;
 use AIArmada\Growth\Models\Experiment;
 use AIArmada\Growth\Models\Variant;
 use AIArmada\Growth\Support\Context\ExperimentContextManager;
-use AIArmada\Growth\Support\ExperimentResolver;
+use AIArmada\Growth\Support\Context\ExperimentResolver;
 use AIArmada\Signals\Support\Http\Middleware\BootstrapSignalsBrowserContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;

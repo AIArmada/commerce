@@ -10,6 +10,8 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -70,7 +72,7 @@ final class TopPerformerBonusRule implements PerformanceBonusRule
         $affiliatesTable = (new Affiliate)->getTable();
         $revenueExpression = "COALESCE(NULLIF({$conversionsTable}.value_minor, 0), {$conversionsTable}.total_minor, 0)";
 
-        return DB::table($conversionsTable)
+        $query = DB::table($conversionsTable)
             ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
             ->select([
                 "{$affiliatesTable}.id as affiliate_id",
@@ -83,8 +85,33 @@ final class TopPerformerBonusRule implements PerformanceBonusRule
             ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name")
             ->orderByDesc('total_revenue')
-            ->limit($limit)
-            ->get()
+            ->limit($limit);
+
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            OwnerContext::assertResolvedOrExplicitGlobal(
+                $owner,
+                'Top performer bonuses require an owner context or explicit global context.',
+            );
+
+            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+            OwnerQuery::applyToQueryBuilder(
+                $query,
+                $owner,
+                $includeGlobal,
+                "{$conversionsTable}.owner_type",
+                "{$conversionsTable}.owner_id",
+            );
+            OwnerQuery::applyToQueryBuilder(
+                $query,
+                $owner,
+                $includeGlobal,
+                "{$affiliatesTable}.owner_type",
+                "{$affiliatesTable}.owner_id",
+            );
+        }
+
+        return $query->get()
             ->map(fn ($row, $index) => [
                 'rank' => $index + 1,
                 'affiliate_id' => (string) $row->affiliate_id,

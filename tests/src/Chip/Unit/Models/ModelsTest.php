@@ -128,6 +128,14 @@ describe('ChipIntegerModel base class', function (): void {
         $sendWebhook = new SendWebhook;
         expect($sendWebhook->getTable())->toBe('chip_send_webhooks');
     });
+
+    it('uses a UUID local identity for Send webhooks', function (): void {
+        $sendWebhook = new SendWebhook;
+
+        expect(in_array(HasUuids::class, class_uses_recursive($sendWebhook)))->toBeTrue()
+            ->and($sendWebhook->getKeyType())->toBe('string')
+            ->and($sendWebhook->getIncrementing())->toBeFalse();
+    });
 });
 
 describe('Purchase model', function (): void {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Events\Enums;
 
-use AIArmada\Events\Enums\Concerns\HasLabelOptions;
+use AIArmada\CommerceSupport\Traits\HasLabelOptions;
 
 enum RegistrationMode: string
 {

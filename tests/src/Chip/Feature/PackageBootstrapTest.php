@@ -28,6 +28,8 @@ describe('Package bootstrap', function (): void {
         expect(Schema::hasTable($tablePrefix . 'payments'))->toBeTrue();
         expect(Schema::hasTable('webhook_calls'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'send_instructions'))->toBeTrue();
+        expect(Schema::hasTable($tablePrefix . 'send_webhooks'))->toBeTrue()
+            ->and(Schema::hasColumn($tablePrefix . 'send_webhooks', 'provider_webhook_id'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'bank_accounts'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'clients'))->toBeTrue();
         expect(Schema::hasTable($tablePrefix . 'customers'))->toBeTrue();

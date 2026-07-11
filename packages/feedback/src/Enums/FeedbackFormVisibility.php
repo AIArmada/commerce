@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Feedback\Enums;
 
-use AIArmada\Feedback\Enums\Concerns\HasLabelOptions;
+use AIArmada\CommerceSupport\Traits\HasLabelOptions;
 
 enum FeedbackFormVisibility: string
 {
