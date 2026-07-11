@@ -59,9 +59,9 @@ test('analyzeMonthly returns correct cohort data', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $jan1->id,
         'affiliate_code' => $jan1->code,
-        'order_reference' => 'ORD1',
+        'external_reference' => 'ORD1',
         'occurred_at' => '2024-01-20 10:00:00',
-        'total_minor' => 10000, // $100.00
+        'value_minor' => 10000, // $100.00
         'value_minor' => 10000,
         'commission_minor' => 1000, // $10.00
         'commission_currency' => 'USD',
@@ -73,9 +73,9 @@ test('analyzeMonthly returns correct cohort data', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $jan1->id,
         'affiliate_code' => $jan1->code,
-        'order_reference' => 'ORD2',
+        'external_reference' => 'ORD2',
         'occurred_at' => '2024-02-20 10:00:00',
-        'total_minor' => 5000, // $50.00
+        'value_minor' => 5000, // $50.00
         'value_minor' => 5000,
         'commission_minor' => 500, // $5.00
         'commission_currency' => 'USD',
@@ -87,9 +87,9 @@ test('analyzeMonthly returns correct cohort data', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $feb1->id,
         'affiliate_code' => $feb1->code,
-        'order_reference' => 'ORD3',
+        'external_reference' => 'ORD3',
         'occurred_at' => '2024-02-25 10:00:00',
-        'total_minor' => 20000, // $200.00
+        'value_minor' => 20000, // $200.00
         'value_minor' => 20000,
         'commission_minor' => 2000, // $20.00
         'commission_currency' => 'USD',
@@ -165,9 +165,9 @@ test('calculateRetentionCurve returns aggregated data', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $jan1->id,
         'affiliate_code' => $jan1->code,
-        'order_reference' => 'RET1',
+        'external_reference' => 'RET1',
         'occurred_at' => '2024-01-20', // Month 0 for Jan cohort
-        'total_minor' => 10000,
+        'value_minor' => 10000,
         'value_minor' => 10000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
@@ -178,9 +178,9 @@ test('calculateRetentionCurve returns aggregated data', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $feb1->id,
         'affiliate_code' => $feb1->code,
-        'order_reference' => 'RET2',
+        'external_reference' => 'RET2',
         'occurred_at' => '2024-02-20', // Month 0 for Feb cohort
-        'total_minor' => 20000,
+        'value_minor' => 20000,
         'value_minor' => 20000,
         'commission_minor' => 2000,
         'commission_currency' => 'USD',
@@ -219,9 +219,9 @@ test('calculateLtv returns correct lifetime value metrics', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $aff->id,
         'affiliate_code' => $aff->code,
-        'order_reference' => 'LTV_O1',
+        'external_reference' => 'LTV_O1',
         'occurred_at' => '2024-01-20',
-        'total_minor' => 12000, // 120.00
+        'value_minor' => 12000, // 120.00
         'value_minor' => 12000,
         'commission_minor' => 1200,
         'commission_currency' => 'USD',
@@ -232,9 +232,9 @@ test('calculateLtv returns correct lifetime value metrics', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $aff->id,
         'affiliate_code' => $aff->code,
-        'order_reference' => 'LTV_O2',
+        'external_reference' => 'LTV_O2',
         'occurred_at' => '2024-02-20',
-        'total_minor' => 12000, // 120.00
+        'value_minor' => 12000, // 120.00
         'value_minor' => 12000,
         'commission_minor' => 1200,
         'commission_currency' => 'USD',
@@ -272,9 +272,9 @@ test('compareCohorts correctly identifies best and worst cohorts', function (): 
     AffiliateConversion::create([
         'affiliate_id' => $jan->id,
         'affiliate_code' => $jan->code,
-        'order_reference' => 'COMP_O1',
+        'external_reference' => 'COMP_O1',
         'occurred_at' => '2024-01-15',
-        'total_minor' => 100000,
+        'value_minor' => 100000,
         'value_minor' => 125000,
         'commission_minor' => 10000,
         'commission_currency' => 'USD',
@@ -295,9 +295,9 @@ test('compareCohorts correctly identifies best and worst cohorts', function (): 
     AffiliateConversion::create([
         'affiliate_id' => $feb->id,
         'affiliate_code' => $feb->code,
-        'order_reference' => 'COMP_O2',
+        'external_reference' => 'COMP_O2',
         'occurred_at' => '2024-02-15',
-        'total_minor' => 1000,
+        'value_minor' => 1000,
         'value_minor' => 1000,
         'commission_minor' => 100,
         'commission_currency' => 'USD',
@@ -351,9 +351,9 @@ test('analyzeBySource groups by metadata source', function (): void {
     AffiliateConversion::create([
         'affiliate_id' => $googleAff->id,
         'affiliate_code' => $googleAff->code,
-        'order_reference' => 'SRC_O1',
+        'external_reference' => 'SRC_O1',
         'occurred_at' => '2024-01-15',
-        'total_minor' => 5000,
+        'value_minor' => 5000,
         'value_minor' => 8000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
@@ -376,7 +376,7 @@ test('analyzeBySource groups by metadata source', function (): void {
         ->and($results['direct']['total_affiliates'])->toBe(1);
 });
 
-test('analyzeBySource falls back to legacy total_minor when neutral value is unset', function (): void {
+test('analyzeBySource uses value_minor', function (): void {
     $legacyAffiliate = Affiliate::create([
         'code' => 'SRC_LEGACY',
         'name' => 'Legacy Source Affiliate',
@@ -391,9 +391,9 @@ test('analyzeBySource falls back to legacy total_minor when neutral value is uns
     AffiliateConversion::create([
         'affiliate_id' => $legacyAffiliate->id,
         'affiliate_code' => $legacyAffiliate->code,
-        'order_reference' => 'SRC-LEGACY-001',
+        'external_reference' => 'SRC-LEGACY-001',
         'occurred_at' => '2024-01-15',
-        'total_minor' => 6000,
+        'value_minor' => 6000,
         'commission_minor' => 600,
         'commission_currency' => 'USD',
         'status' => 'approved',
@@ -423,9 +423,9 @@ test('analyzeMonthly prefers neutral revenue value over legacy total', function 
     AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
-        'order_reference' => 'MONTH-NEUTRAL-001',
+        'external_reference' => 'MONTH-NEUTRAL-001',
         'occurred_at' => '2024-01-20',
-        'total_minor' => 4000,
+        'value_minor' => 4000,
         'value_minor' => 9000,
         'commission_minor' => 400,
         'commission_currency' => 'USD',

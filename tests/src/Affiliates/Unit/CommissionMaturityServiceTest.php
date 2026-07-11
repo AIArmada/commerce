@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -34,9 +35,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'MAT-001',
+                'external_reference' => 'MAT-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
@@ -57,9 +58,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'RECENT-001',
+                'external_reference' => 'RECENT-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(5), // Only 5 days old
@@ -74,9 +75,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'APPROVED-001',
+                'external_reference' => 'APPROVED-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(35),
@@ -93,9 +94,9 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'MATURE-001',
+                'external_reference' => 'MATURE-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
@@ -113,13 +114,15 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'BALANCE-001',
+                'external_reference' => 'BALANCE-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
+
+            ApplyConversionAccounting::run($conversion);
 
             $balance = $this->affiliate->balance()->firstOrFail();
             $balance->update([
@@ -139,9 +142,9 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'PENDING-001',
+                'external_reference' => 'PENDING-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => PendingConversion::class,
                 'occurred_at' => now()->subDays(35),
@@ -156,9 +159,9 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'FUTURE-001',
+                'external_reference' => 'FUTURE-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(5), // Not mature yet
@@ -173,9 +176,9 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'META-001',
+                'external_reference' => 'META-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
@@ -193,13 +196,15 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'NEWBAL-001',
+                'external_reference' => 'NEWBAL-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
+
+            ApplyConversionAccounting::run($conversion);
 
             expect(AffiliateBalance::where('affiliate_id', $this->affiliate->id)->exists())->toBeTrue();
 
@@ -215,9 +220,9 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'MATDATE-001',
+                'external_reference' => 'MATDATE-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => $occurredAt,
@@ -236,9 +241,9 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'ISMATURE-001',
+                'external_reference' => 'ISMATURE-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
@@ -251,9 +256,9 @@ describe('CommissionMaturityService', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'NOTMATURE-001',
+                'external_reference' => 'NOTMATURE-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(5),
@@ -268,9 +273,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'PEND-001',
+                'external_reference' => 'PEND-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(10),
@@ -279,9 +284,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'PEND-002',
+                'external_reference' => 'PEND-002',
                 'subtotal_minor' => 20000,
-                'total_minor' => 20000,
+                'value_minor' => 20000,
                 'commission_minor' => 2000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(15),
@@ -296,9 +301,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'APPROVED',
+                'external_reference' => 'APPROVED',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(10),
@@ -307,9 +312,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'PENDING',
+                'external_reference' => 'PENDING',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => PendingConversion::class,
                 'occurred_at' => now()->subDays(10),
@@ -335,9 +340,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'WITHIN-001',
+                'external_reference' => 'WITHIN-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(25), // Matures in 5 days, but cutoff is 20 days
@@ -348,9 +353,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'WITHIN-002',
+                'external_reference' => 'WITHIN-002',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(15), // After cutoff, included
@@ -375,9 +380,9 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'BEYOND-001',
+                'external_reference' => 'BEYOND-001',
                 'subtotal_minor' => 10000,
-                'total_minor' => 10000,
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(25), // Before cutoff (20 days), excluded
