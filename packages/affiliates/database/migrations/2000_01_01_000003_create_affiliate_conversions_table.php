@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('order_reference', 120)->nullable();
             $table->string('external_reference', 120)->nullable();
             $table->string('conversion_type', 64)->nullable();
+            $table->string('performance_bonus_key', 160)->nullable()->unique();
             $table->unsignedBigInteger('subtotal_minor')->default(0);
             $table->unsignedBigInteger('total_minor')->default(0);
             $table->unsignedBigInteger('commission_minor')->default(0);
