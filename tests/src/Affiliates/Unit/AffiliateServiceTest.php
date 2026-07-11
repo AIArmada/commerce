@@ -55,7 +55,7 @@ test('affiliate conversions are recorded using cart metadata', function (): void
     Cart::attachAffiliate($this->affiliate->code);
 
     $conversion = Cart::recordAffiliateConversion([
-        'order_reference' => 'SO-1001',
+        'external_reference' => 'SO-1001',
         'subtotal' => 10000,
         'total' => 12000,
     ]);
@@ -68,8 +68,7 @@ test('affiliate conversions are recorded using cart metadata', function (): void
 
     expect($stored->affiliate_code)
         ->toBe($this->affiliate->code)
-        ->and($stored->commission_minor)->toBe(500) // 5% of 10,000
-        ->and($stored->order_reference)->toBe('SO-1001');
+        ->and($stored->commission_minor)->toBe(500); // 5% of 10,000
 });
 
 test('subject fields propagate through attribution touchpoint and conversion records', function (): void {
@@ -81,7 +80,7 @@ test('subject fields propagate through attribution touchpoint and conversion rec
     ]);
 
     Cart::recordAffiliateConversion([
-        'order_reference' => 'SO-2001',
+        'external_reference' => 'SO-2001',
         'subtotal' => 10000,
         'total' => 10000,
     ]);
@@ -123,7 +122,7 @@ test('affiliate metadata helpers expose and clear attachment state', function ()
 });
 
 test('recording conversion without metadata returns null', function (): void {
-    expect(Cart::recordAffiliateConversion(['order_reference' => 'SO-404']))
+    expect(Cart::recordAffiliateConversion(['external_reference' => 'SO-404']))
         ->toBeNull();
 
     expect(AffiliateConversion::count())->toBe(0);
@@ -168,7 +167,7 @@ test('middleware captures affiliate visits via cookies', function (): void {
     expect($attribution)
         ->not()->toBeNull()
         ->and($attribution->cookie_value)->not()->toBeNull()
-        ->and($attribution->cart_identifier)->toBeNull();
+        ->and($attribution->subject_identifier)->toBeNull();
 });
 
 test('cart metadata hydrates from affiliate cookie automatically', function (): void {

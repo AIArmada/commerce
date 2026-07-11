@@ -39,7 +39,7 @@ test('AffiliateConversion can be created with fillable attributes', function ():
     $conversion = AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => 'AFF1',
-        'order_reference' => 'ORD123',
+        'external_reference' => 'ORD123',
         'commission_minor' => 500,
         'commission_currency' => 'USD',
         'status' => ApprovedConversion::class,
@@ -47,7 +47,7 @@ test('AffiliateConversion can be created with fillable attributes', function ():
 
     expect($conversion->affiliate_id)->toBe($affiliate->id);
     expect($conversion->affiliate_code)->toBe('AFF1');
-    expect($conversion->order_reference)->toBe('ORD123');
+    expect($conversion->external_reference)->toBe('ORD123');
     expect($conversion->commission_minor)->toBe(500);
     expect($conversion->commission_currency)->toBe('USD');
     expect($conversion->status)->toBeInstanceOf(ApprovedConversion::class);

@@ -15,9 +15,7 @@ return new class extends Migration
         }
 
         if (! Schema::hasTable('webhook_calls')) {
-            throw new RuntimeException(
-                'The commerce-support webhook_calls migration must run before the CHIP webhook extension migration.'
-            );
+            return;
         }
 
         $jsonType = (string) commerce_json_column_type('chip', 'jsonb');

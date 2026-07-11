@@ -33,8 +33,8 @@ test('AffiliateConversion can be created with required fields', function (): voi
     $conversion = AffiliateConversion::create([
         'affiliate_id' => $affiliate->id,
         'affiliate_code' => $affiliate->code,
-        'order_reference' => 'ORD-12345',
-        'total_minor' => 50000,
+        'external_reference' => 'ORD-12345',
+        'value_minor' => 50000,
         'commission_minor' => 5000,
         'commission_currency' => 'USD',
         'status' => ApprovedConversion::class,
@@ -42,7 +42,7 @@ test('AffiliateConversion can be created with required fields', function (): voi
     ]);
 
     expect($conversion)->toBeInstanceOf(AffiliateConversion::class);
-    expect($conversion->order_reference)->toBe('ORD-12345');
+    expect($conversion->external_reference)->toBe('ORD-12345');
     expect($conversion->commission_minor)->toBe(5000);
 });
 

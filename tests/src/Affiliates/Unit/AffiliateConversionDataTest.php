@@ -81,14 +81,10 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
         'subject_identifier' => 'event:1',
         'subject_instance' => 'share',
         'subject_title_snapshot' => 'Ramadan Night',
-        'cart_identifier' => 'cart1',
-        'cart_instance' => 'instance1',
         'voucher_code' => 'VOUCHER',
-        'external_reference' => 'OUTCOME123',
-        'order_reference' => 'ORD123',
+        'external_reference' => 'ORD123',
         'subtotal_minor' => 1000,
         'value_minor' => 1200,
-        'total_minor' => 1200,
         'commission_minor' => 120,
         'commission_currency' => 'USD',
         'conversion_type' => 'registration',
@@ -108,10 +104,10 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
     expect($data->subjectIdentifier)->toBe('event:1');
     expect($data->subjectInstance)->toBe('share');
     expect($data->subjectTitleSnapshot)->toBe('Ramadan Night');
-    expect($data->cartIdentifier)->toBe('cart1');
-    expect($data->cartInstance)->toBe('instance1');
+    expect($data->cartIdentifier)->toBe('event:1');
+    expect($data->cartInstance)->toBe('share');
     expect($data->voucherCode)->toBe('VOUCHER');
-    expect($data->externalReference)->toBe('OUTCOME123');
+    expect($data->externalReference)->toBe('ORD123');
     expect($data->orderReference)->toBe('ORD123');
     expect($data->subtotalMinor)->toBe(1000);
     expect($data->valueMinor)->toBe(1200);

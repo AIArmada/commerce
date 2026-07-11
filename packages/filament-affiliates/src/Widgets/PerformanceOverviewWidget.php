@@ -33,7 +33,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
         $startOfMonth = $now->startOfMonth();
         $lastMonthStart = $now->subMonth()->startOfMonth();
         $lastMonthEnd = $lastMonthStart->endOfMonth();
-        $revenueExpression = DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)');
+        $revenueExpression = DB::raw('COALESCE(NULLIF(value_minor, 0), 0)');
 
         // This month stats
         $thisMonthConversions = AffiliateConversion::query()

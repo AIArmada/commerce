@@ -73,8 +73,8 @@ final class AffiliateConversionInfolist
                             ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->commission_currency ?? config('affiliates.currency.default', 'MYR')))
                             ->weight(FontWeight::SemiBold),
 
-                        TextEntry::make('total_minor')
-                            ->label('Total')
+                        TextEntry::make('value_minor')
+                            ->label('Value')
                             ->formatStateUsing(fn ($state, $record): string => MoneyFormatter::formatMinor((int) $state, $record->commission_currency ?? config('affiliates.currency.default', 'MYR')))
                             ->weight(FontWeight::SemiBold),
 

@@ -63,8 +63,7 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
     AffiliateConversion::create([
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
-        'order_reference' => 'ORDER-MONTH',
-        'total_minor' => 1000,
+        'external_reference' => 'ORDER-MONTH',
         'value_minor' => 9000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
@@ -76,8 +75,7 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
     AffiliateConversion::create([
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
-        'order_reference' => 'ORDER-LAST',
-        'total_minor' => 2000,
+        'external_reference' => 'ORDER-LAST',
         'value_minor' => 4000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',

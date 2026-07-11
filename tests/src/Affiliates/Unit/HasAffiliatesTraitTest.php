@@ -26,7 +26,7 @@ test('has affiliates trait reports state and records conversions', function (): 
 
     $conversion = $this->cartWrapper->recordAffiliateConversion([
         'subtotal' => 5_000,
-        'order_reference' => 'HAS-1',
+        'external_reference' => 'HAS-1',
     ]);
 
     expect($conversion)

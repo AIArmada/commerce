@@ -42,7 +42,6 @@ it('records affiliate conversions when order commission attribution is required'
     $conversion = AffiliateConversion::query()->sole();
 
     expect($conversion->external_reference)->toBe($orderReference)
-        ->and($conversion->order_reference)->toBe($orderReference)
         ->and($conversion->conversion_type)->toBe('purchase');
 });
 

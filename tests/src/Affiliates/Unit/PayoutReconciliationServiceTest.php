@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -291,16 +292,17 @@ describe('PayoutReconciliationService', function (): void {
 
         test('detects balance discrepancy', function (): void {
             // Create approved conversion
-            AffiliateConversion::create([
+            $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'reference' => 'CONV-1',
-                'total_minor' => 100000,
+                'value_minor' => 100000,
                 'commission_minor' => 10000,
                 'status' => 'approved',
-                'currency' => 'USD',
+                'commission_currency' => 'USD',
                 'occurred_at' => now(),
             ]);
+
+            ApplyConversionAccounting::run($conversion);
 
             // Balance doesn't match (should be 10000)
             $this->affiliate->balance()->firstOrFail()->update([

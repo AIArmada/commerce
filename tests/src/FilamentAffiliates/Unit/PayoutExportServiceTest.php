@@ -56,7 +56,7 @@ function createPayoutWithConversions(): AffiliatePayout
         'affiliate_id' => $affiliate->getKey(),
         'affiliate_code' => $affiliate->code,
         'affiliate_payout_id' => $payout->getKey(),
-        'order_reference' => 'ORD-002',
+        'external_reference' => 'ORD-002',
         'value_minor' => 20000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',

@@ -640,8 +640,8 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
-            'order_reference' => 'ORDER-CASCADE',
-            'total_minor' => 10000,
+            'external_reference' => 'ORDER-CASCADE',
+            'value_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,

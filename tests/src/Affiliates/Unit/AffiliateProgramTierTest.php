@@ -163,9 +163,8 @@ describe('AffiliateProgramTier Model', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
-            'order_reference' => 'ORD-REV-001',
-            'total_minor' => 50000, // Only 500 in minor units, below 100000 minimum
-            'value_minor' => 75000,
+            'external_reference' => 'ORD-REV-001',
+            'value_minor' => 50000, // Only 500 in minor units, below 100000 minimum
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'metadata' => ['program_id' => $this->program->id],
@@ -199,8 +198,7 @@ describe('AffiliateProgramTier Model', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $affiliate->id,
             'affiliate_code' => $affiliate->code,
-            'order_reference' => 'ORD-REV-002',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-REV-002',
             'value_minor' => 125000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
