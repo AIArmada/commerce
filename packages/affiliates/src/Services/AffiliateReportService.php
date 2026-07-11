@@ -22,7 +22,7 @@ final class AffiliateReportService
         $conversions = AffiliateConversion::query()
             ->forOwner()
             ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->get(['commission_minor', 'value_minor', 'total_minor']);
+            ->get(['commission_minor', 'value_minor']);
 
         $attributions = (int) $this->applyAttributionWindow(
             AffiliateAttribution::query()->forOwner(),
@@ -233,7 +233,7 @@ final class AffiliateReportService
         $conversions = AffiliateConversion::query()
             ->forOwner()
             ->where('affiliate_id', $affiliateId)
-            ->get(['commission_minor', 'value_minor', 'total_minor', 'metadata']);
+            ->get(['commission_minor', 'value_minor', 'metadata']);
 
         $totalCommission = (int) $conversions->sum('commission_minor');
         $totalRevenue = $this->sumRevenueMinor($conversions);
@@ -324,12 +324,12 @@ final class AffiliateReportService
             return $valueMinor;
         }
 
-        return (int) $conversion->getRawOriginal('total_minor');
+        return (int) $conversion->getRawOriginal('value_minor');
     }
 
     private function revenueMinorExpression(): string
     {
-        return 'COALESCE(NULLIF(value_minor, 0), total_minor, 0)';
+        return 'COALESCE(value_minor, 0)';
     }
 
     private function subjectKey(string $subjectType, string $subjectIdentifier): string

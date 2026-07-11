@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
+use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -113,6 +114,10 @@ final class PerformanceBonusService
                     ],
                 );
 
+                if ($conversion->wasRecentlyCreated) {
+                    app(ApplyConversionAccounting::class)->handle($conversion);
+                }
+
                 $awarded += (int) $conversion->wasRecentlyCreated;
             }
 
@@ -130,7 +135,7 @@ final class PerformanceBonusService
 
         $conversionsTable = (new AffiliateConversion)->getTable();
         $affiliatesTable = (new Affiliate)->getTable();
-        $revenueExpression = "COALESCE(NULLIF({$conversionsTable}.value_minor, 0), {$conversionsTable}.total_minor, 0)";
+        $revenueExpression = "COALESCE({$conversionsTable}.value_minor, 0)";
 
         $query = DB::table($conversionsTable)
             ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
@@ -176,6 +181,11 @@ final class PerformanceBonusService
         }
 
         $owner = OwnerContext::resolve();
+        OwnerContext::assertResolvedOrExplicitGlobal(
+            $owner,
+            'Performance bonus queries require an owner context or explicit global context.',
+        );
+
         $includeGlobal = (bool) config('affiliates.owner.include_global', false);
 
         OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, $ownerTypeColumn, $ownerIdColumn);

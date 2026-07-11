@@ -33,6 +33,7 @@ final class RecordAffiliateConversion
         private readonly WebhookDispatcher $webhooks,
         private readonly AttributionModel $attributionModel,
         private readonly AllocateUplineCommissions $allocateUpline,
+        private readonly ApplyConversionAccounting $accounting,
     ) {}
 
     public function handle(Cart $cart, array $payload = []): ?AffiliateConversionData
@@ -93,6 +94,8 @@ final class RecordAffiliateConversion
                 $conversionMetadata['upline_levels'] = $metadata['upline_levels'];
             }
 
+            $wasCreated = false;
+
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
                 'affiliate_code' => $beneficiary?->code ?? $affiliate->code,
@@ -116,6 +119,8 @@ final class RecordAffiliateConversion
                 'occurred_at' => $payload['occurred_at'] ?? now(),
                 'approved_at' => $autoApprove ? now() : null,
             ]);
+
+            $this->accounting->handle($conversion);
 
             $conversionData = AffiliateConversionData::fromModel($conversion);
             $conversions[] = $conversionData;

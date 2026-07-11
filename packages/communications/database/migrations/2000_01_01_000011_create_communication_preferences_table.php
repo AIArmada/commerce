@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('recipient_id');
             $table->string('channel')->nullable();
             $table->string('category')->nullable();
+            $table->string('scope_type')->nullable();
+            $table->string('scope_key')->nullable();
             $table->string('locale')->nullable();
             $table->string('timezone')->nullable();
             $table->time('quiet_hours_start')->nullable();
@@ -35,6 +37,7 @@ return new class extends Migration
 
             $table->index(['recipient_type', 'recipient_id']);
             $table->index(['owner_type', 'owner_id', 'channel', 'category']);
+            $table->index(['scope_type', 'scope_key']);
         });
     }
 };

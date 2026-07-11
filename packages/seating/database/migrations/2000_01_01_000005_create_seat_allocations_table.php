@@ -15,15 +15,22 @@ return new class extends Migration
         Schema::create(config('seating.database.tables.seat_allocations'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
-            $table->uuid('seat_id')->index();
+            $table->uuid('seat_id')->nullable();
+            $table->uuid('seat_section_id')->nullable()->index();
             $table->nullableMorphs('allocated_to');
             $table->string('reference')->nullable()->index();
             $table->timestampTz('allocated_at');
+            $table->timestampTz('released_at')->nullable();
+            $table->timestampTz('revoked_at')->nullable();
+            $table->string('released_by_type')->nullable();
+            $table->string('released_by_id')->nullable();
             $table->string('state')->default('active')->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
 
             $table->index(['seat_id', 'state']);
+            $table->index(['seat_section_id', 'state'], 'sa_section_state_idx');
+            $table->index(['released_by_type', 'released_by_id'], 'sa_released_by_idx');
         });
     }
 

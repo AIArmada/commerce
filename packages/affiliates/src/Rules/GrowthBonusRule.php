@@ -43,12 +43,12 @@ final class GrowthBonusRule implements PerformanceBonusRule
             $currentRevenue = $affiliate->conversions()
                 ->whereBetween('occurred_at', [$from, $to])
                 ->where('status', ApprovedConversion::value())
-                ->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
+                ->sum(DB::raw('COALESCE(value_minor, 0)'));
 
             $previousRevenue = $affiliate->conversions()
                 ->whereBetween('occurred_at', [$prevFrom, $prevTo])
                 ->where('status', ApprovedConversion::value())
-                ->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
+                ->sum(DB::raw('COALESCE(value_minor, 0)'));
 
             if ($previousRevenue < ($config['min_previous_revenue'] ?? 50000)) {
                 continue;

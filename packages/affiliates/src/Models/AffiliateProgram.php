@@ -293,7 +293,7 @@ class AffiliateProgram extends Model implements Auditable
         }
 
         if (isset($rules['min_revenue'])) {
-            $revenue = (int) $affiliate->conversions()->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
+            $revenue = (int) $affiliate->conversions()->sum(DB::raw('COALESCE(value_minor, 0)'));
 
             if ($revenue < $rules['min_revenue']) {
                 return false;

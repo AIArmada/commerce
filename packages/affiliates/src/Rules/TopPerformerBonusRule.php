@@ -70,7 +70,7 @@ final class TopPerformerBonusRule implements PerformanceBonusRule
     {
         $conversionsTable = (new AffiliateConversion)->getTable();
         $affiliatesTable = (new Affiliate)->getTable();
-        $revenueExpression = "COALESCE(NULLIF({$conversionsTable}.value_minor, 0), {$conversionsTable}.total_minor, 0)";
+        $revenueExpression = "COALESCE({$conversionsTable}.value_minor, 0)";
 
         $query = DB::table($conversionsTable)
             ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")

@@ -21,6 +21,7 @@ final class AllocateUplineCommissions
     public function __construct(
         private readonly Dispatcher $events,
         private readonly WebhookDispatcher $webhooks,
+        private readonly ApplyConversionAccounting $accounting,
     ) {}
 
     public function handle(array $baseConversions, bool $autoApprove, ConversionStatus $statusEnum, ?string $attributionId): void
@@ -78,7 +79,7 @@ final class AllocateUplineCommissions
                         'cart_instance' => $conversionData->cartInstance,
                         'voucher_code' => $conversionData->voucherCode,
                         'external_reference' => $conversionData->externalReference,
-                        'order_reference' => $conversionData->orderReference,
+                        'external_reference' => $conversionData->orderReference,
                         'conversion_type' => $conversionData->conversionType,
                         'subtotal_minor' => 0,
                         'value_minor' => 0,
@@ -98,6 +99,8 @@ final class AllocateUplineCommissions
                         'occurred_at' => now(),
                         'approved_at' => $autoApprove ? now() : null,
                     ]);
+
+                    $this->accounting->handle($model);
 
                     $uplineData = AffiliateConversionData::fromModel($model);
 

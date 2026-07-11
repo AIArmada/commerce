@@ -8,7 +8,6 @@ use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
 use AIArmada\Affiliates\States\PendingConversion;
-use AIArmada\Affiliates\States\QualifiedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
@@ -19,8 +18,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -37,12 +34,10 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $cart_instance
  * @property string|null $voucher_code
  * @property string|null $external_reference
- * @property string|null $order_reference
  * @property string|null $performance_bonus_key
  * @property string|null $conversion_type
  * @property int $subtotal_minor
  * @property int $value_minor
- * @property int $total_minor
  * @property int $commission_minor
  * @property string $commission_currency
  * @property ConversionStatus $status
@@ -56,7 +51,7 @@ use Spatie\ModelStates\HasStates;
  * @property CarbonInterface|null $paid_at
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
- * @property-read string|null $order_id Alias for order_reference
+ * @property-read string|null $order_id
  * @property-read string $currency Alias for commission_currency
  * @property-read Affiliate $affiliate
  * @property-read AffiliateAttribution|null $attribution
@@ -86,12 +81,10 @@ class AffiliateConversion extends Model
         'cart_instance',
         'voucher_code',
         'external_reference',
-        'order_reference',
         'performance_bonus_key',
         'conversion_type',
         'subtotal_minor',
         'value_minor',
-        'total_minor',
         'commission_minor',
         'commission_currency',
         'status',
@@ -172,19 +165,7 @@ class AffiliateConversion extends Model
         });
 
         static::created(function (self $conversion): void {
-            if (! self::syncsAffiliateBalances()) {
-                return;
-            }
-
-            $affiliate = $conversion->affiliate()->first();
-
-            if (! $affiliate) {
-                return;
-            }
-
-            $status = self::resolveStatus($conversion);
-
-            if (config('affiliates.commissions.auto_approve', false) && ($status->equals(PendingConversion::class) || $status->equals(QualifiedConversion::class))) {
+            if (config('affiliates.commissions.auto_approve', false) && $conversion->status->equals(PendingConversion::class)) {
                 $approvedAt = now();
 
                 $conversion->updateQuietly([
@@ -193,41 +174,11 @@ class AffiliateConversion extends Model
                 ]);
 
                 $conversion->approved_at = $approvedAt;
-                $status = ConversionStatus::fromString(ApprovedConversion::class, $conversion);
-            }
-
-            if ($status->equals(ApprovedConversion::class)) {
-                if ($conversion->approved_at === null) {
-                    $approvedAt = now();
-
-                    $conversion->updateQuietly(['approved_at' => $approvedAt]);
-                    $conversion->approved_at = $approvedAt;
-                }
-
-                self::creditAvailableCommission(
-                    self::getOrCreateBalance($affiliate, $conversion),
-                    $conversion->commission_minor,
-                );
-
-                return;
-            }
-
-            if ($status->equals(PendingConversion::class) || $status->equals(QualifiedConversion::class)) {
-                self::getOrCreateBalance($affiliate, $conversion)->addToHolding($conversion->commission_minor);
-
-                return;
-            }
-
-            if ($status->equals(PaidConversion::class)) {
-                self::recordLifetimeEarnings(
-                    self::getOrCreateBalance($affiliate, $conversion),
-                    $conversion->commission_minor,
-                );
             }
         });
 
         static::updated(function (self $conversion): void {
-            if (! $conversion->wasChanged('status') || ! self::syncsAffiliateBalances()) {
+            if (! $conversion->wasChanged('status')) {
                 return;
             }
 
@@ -243,222 +194,31 @@ class AffiliateConversion extends Model
 
                 $conversion->rejected_at = null;
 
-                $affiliate = $conversion->affiliate()->first();
-
-                if (! $affiliate) {
-                    return;
-                }
-
-                $balance = $affiliate->balance()->first();
-
-                if (! $balance) {
-                    self::createBalance(
-                        $affiliate,
-                        $conversion,
-                        availableMinor: $conversion->commission_minor,
-                        lifetimeEarningsMinor: $conversion->commission_minor,
-                    );
-
-                    return;
-                }
-
-                $holdingMinor = $balance->holding_minor;
-
-                $balance->releaseFromHolding($conversion->commission_minor);
-
-                $remainingMinor = max(0, $conversion->commission_minor - $holdingMinor);
-
-                if ($remainingMinor > 0) {
-                    $balance->increment('available_minor', $remainingMinor);
-                }
-
                 return;
             }
 
             if ($newStatus->equals(RejectedConversion::class) && $conversion->rejected_at === null) {
                 $conversion->updateQuietly(['rejected_at' => now()]);
                 $conversion->rejected_at = now();
+
+                return;
             }
 
-            if ($newStatus->equals(PaidConversion::class)) {
-                if ($conversion->paid_at === null) {
-                    $conversion->updateQuietly(['paid_at' => now()]);
-                    $conversion->paid_at = now();
-                }
-
-                $affiliate = $conversion->affiliate()->first();
-                $balance = $affiliate?->balance()->first();
-
-                if ($balance) {
-                    $balance->deductFromAvailable($conversion->commission_minor);
-                }
+            if ($newStatus->equals(PaidConversion::class) && $conversion->paid_at === null) {
+                $conversion->updateQuietly(['paid_at' => now()]);
+                $conversion->paid_at = now();
             }
         });
     }
 
-    private static function syncsAffiliateBalances(): bool
-    {
-        return Schema::hasTable((new AffiliateBalance)->getTable());
-    }
-
-    private static function resolveStatus(self $conversion): ConversionStatus
-    {
-        return ConversionStatus::fromString($conversion->status, $conversion);
-    }
-
-    private static function getOrCreateBalance(Affiliate $affiliate, self $conversion): AffiliateBalance
-    {
-        return DB::transaction(function () use ($affiliate, $conversion): AffiliateBalance {
-            $lockedAffiliate = Affiliate::query()
-                ->whereKey($affiliate->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            return $lockedAffiliate->balance()->first() ?? self::createBalance($lockedAffiliate, $conversion);
-        });
-    }
-
-    private static function createBalance(
-        Affiliate $affiliate,
-        self $conversion,
-        int $holdingMinor = 0,
-        int $availableMinor = 0,
-        ?int $lifetimeEarningsMinor = null,
-    ): AffiliateBalance {
-        return AffiliateBalance::create([
-            'affiliate_id' => $affiliate->id,
-            'available_minor' => $availableMinor,
-            'holding_minor' => $holdingMinor,
-            'lifetime_earnings_minor' => $lifetimeEarningsMinor ?? ($holdingMinor + $availableMinor),
-            'minimum_payout_minor' => config('affiliates.payouts.minimum_amount', 5000),
-            'currency' => $conversion->commission_currency ?: $affiliate->currency ?: 'MYR',
-        ]);
-    }
-
-    private static function creditAvailableCommission(AffiliateBalance $balance, int $commissionMinor): void
-    {
-        $balance->increment('available_minor', $commissionMinor);
-        $balance->increment('lifetime_earnings_minor', $commissionMinor);
-    }
-
-    private static function recordLifetimeEarnings(AffiliateBalance $balance, int $commissionMinor): void
-    {
-        $balance->increment('lifetime_earnings_minor', $commissionMinor);
-    }
-
     /**
-     * Neutral alias for cart_identifier.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function subjectIdentifier(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): ?string => $this->attributes['subject_identifier'] ?? $this->attributes['cart_identifier'] ?? null,
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Neutral alias for cart_instance.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function subjectInstance(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): ?string => $this->attributes['subject_instance'] ?? $this->attributes['cart_instance'] ?? null,
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Compatibility alias for subject_identifier.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function cartIdentifier(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): ?string => $this->attributes['cart_identifier'] ?? $this->attributes['subject_identifier'] ?? null,
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Compatibility alias for subject_instance.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function cartInstance(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): ?string => $this->attributes['cart_instance'] ?? $this->attributes['subject_instance'] ?? null,
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Neutral alias for order_reference.
-     *
      * @return Attribute<string|null, string|null>
      */
     protected function externalReference(): Attribute
     {
         return Attribute::make(
-            get: fn (): ?string => $this->attributes['external_reference'] ?? $this->attributes['order_reference'] ?? null,
+            get: fn (): ?string => $this->attributes['external_reference'] ?? null,
             set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Alias for order_reference.
-     *
-     * @return Attribute<string|null, never>
-     */
-    protected function orderId(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): ?string => $this->attributes['order_reference'] ?? $this->attributes['external_reference'] ?? null,
-        );
-    }
-
-    /**
-     * Compatibility alias for external_reference.
-     *
-     * @return Attribute<string|null, string|null>
-     */
-    protected function orderReference(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): ?string => $this->attributes['order_reference'] ?? $this->attributes['external_reference'] ?? null,
-            set: fn (?string $value): ?string => $value,
-        );
-    }
-
-    /**
-     * Neutral alias for total_minor.
-     *
-     * @return Attribute<int, int>
-     */
-    protected function valueMinor(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): int => (int) ($this->attributes['value_minor'] ?? $this->attributes['total_minor'] ?? 0),
-            set: fn (mixed $value): int => max(0, (int) $value),
-        );
-    }
-
-    /**
-     * Compatibility alias for value_minor.
-     *
-     * @return Attribute<int, int>
-     */
-    protected function totalMinor(): Attribute
-    {
-        return Attribute::make(
-            get: fn (): int => (int) ($this->attributes['total_minor'] ?? $this->attributes['value_minor'] ?? 0),
-            set: fn (mixed $value): int => max(0, (int) $value),
         );
     }
 
@@ -498,5 +258,10 @@ class AffiliateConversion extends Model
     public function isPaid(): bool
     {
         return $this->paid_at !== null;
+    }
+
+    private static function resolveStatus(self $conversion): ConversionStatus
+    {
+        return ConversionStatus::fromString($conversion->status, $conversion);
     }
 }

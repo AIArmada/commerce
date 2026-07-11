@@ -425,13 +425,12 @@ describe('PerformanceBonusService', function (): void {
             expect($result->first()['total_revenue'])->toBe(8000); // Only in-range conversion
         });
 
-        test('falls back to legacy total_minor when neutral value_minor is unset', function (): void {
+        test('calculates revenue from value_minor', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'ORD-LEGACY-TOTAL',
-                'subtotal_minor' => 7000,
-                'total_minor' => 7000,
+                'external_reference' => 'ORD-REVENUE-TEST',
+                'value_minor' => 7000,
                 'commission_minor' => 700,
                 'status' => ApprovedConversion::class,
                 'occurred_at' => now(),

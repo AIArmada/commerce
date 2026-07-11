@@ -86,7 +86,7 @@ class AffiliateProgramTier extends Model implements Auditable
         }
 
         $revenue = (int) $this->programConversions($affiliate, $program)
-            ->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
+            ->sum(DB::raw('COALESCE(value_minor, 0)'));
 
         if ($revenue < $this->min_revenue) {
             return false;

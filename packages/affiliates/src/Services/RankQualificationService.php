@@ -163,7 +163,7 @@ final class RankQualificationService
             $scope($query);
         }
 
-        return (int) $query->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
+        return (int) $query->sum(DB::raw('COALESCE(value_minor, 0)'));
     }
 
     private function shouldChangeRank(Affiliate $affiliate, ?AffiliateRank $newRank): bool

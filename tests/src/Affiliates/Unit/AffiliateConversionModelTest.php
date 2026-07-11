@@ -10,10 +10,22 @@ use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\States\QualifiedConversion;
 use AIArmada\Affiliates\States\RejectedConversion;
 use Carbon\CarbonImmutable;
+
+/**
+ * Helper: create a conversion and apply accounting explicitly.
+ */
+function createConversionWithAccounting(array $data): AffiliateConversion
+{
+    $conversion = AffiliateConversion::create($data);
+    ApplyConversionAccounting::run($conversion);
+
+    return $conversion;
+}
 
 describe('AffiliateConversion Model', function (): void {
     beforeEach(function (): void {
@@ -31,9 +43,9 @@ describe('AffiliateConversion Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-' . uniqid(),
+            'external_reference' => 'ORD-' . uniqid(),
             'subtotal_minor' => 50000,
-            'total_minor' => 55000,
+            'value_minor' => 55000,
             'commission_minor' => 5500,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
@@ -42,19 +54,19 @@ describe('AffiliateConversion Model', function (): void {
 
         expect($conversion)->toBeInstanceOf(AffiliateConversion::class);
         expect($conversion->subtotal_minor)->toBe(50000);
-        expect($conversion->total_minor)->toBe(55000);
+        expect($conversion->value_minor)->toBe(55000);
         expect($conversion->commission_minor)->toBe(5500);
     });
 
     test('records pending commissions in holding balance by default', function (): void {
         config(['affiliates.commissions.auto_approve' => false]);
 
-        AffiliateConversion::create([
+        createConversionWithAccounting([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-BAL-' . uniqid(),
+            'external_reference' => 'ORD-BAL-' . uniqid(),
             'subtotal_minor' => 10000,
-            'total_minor' => 10000,
+            'value_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
@@ -72,12 +84,12 @@ describe('AffiliateConversion Model', function (): void {
     test('auto approved conversions become available immediately', function (): void {
         config(['affiliates.commissions.auto_approve' => true]);
 
-        $conversion = AffiliateConversion::create([
+        $conversion = createConversionWithAccounting([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-AUTO-' . uniqid(),
+            'external_reference' => 'ORD-AUTO-' . uniqid(),
             'subtotal_minor' => 10000,
-            'total_minor' => 10000,
+            'value_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
@@ -97,19 +109,21 @@ describe('AffiliateConversion Model', function (): void {
     test('approved and paid transitions update affiliate balances', function (): void {
         config(['affiliates.commissions.auto_approve' => false]);
 
-        $conversion = AffiliateConversion::create([
+        $conversion = createConversionWithAccounting([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-TRANS-' . uniqid(),
+            'external_reference' => 'ORD-TRANS-' . uniqid(),
             'subtotal_minor' => 10000,
-            'total_minor' => 10000,
+            'value_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
             'occurred_at' => now(),
         ]);
 
+        $previousStatus = $conversion->status;
         $conversion->update(['status' => ApprovedConversion::class]);
+        ApplyConversionAccounting::run($conversion, $previousStatus);
 
         $conversion = $conversion->fresh();
         $balance = $this->affiliate->fresh()->balance;
@@ -119,7 +133,9 @@ describe('AffiliateConversion Model', function (): void {
             ->and($balance?->holding_minor)->toBe(0)
             ->and($balance?->available_minor)->toBe(1000);
 
+        $previousStatus = $conversion->status;
         $conversion?->update(['status' => PaidConversion::class]);
+        ApplyConversionAccounting::run($conversion, $previousStatus);
 
         $balance = $this->affiliate->fresh()->balance;
 
@@ -131,8 +147,8 @@ describe('AffiliateConversion Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-REL-001',
-            'total_minor' => 30000,
+            'external_reference' => 'ORD-REL-001',
+            'value_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
@@ -156,8 +172,8 @@ describe('AffiliateConversion Model', function (): void {
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'affiliate_attribution_id' => $attribution->id,
-            'order_reference' => 'ORD-ATR-001',
-            'total_minor' => 40000,
+            'external_reference' => 'ORD-ATR-001',
+            'value_minor' => 40000,
             'commission_minor' => 4000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -172,7 +188,7 @@ describe('AffiliateConversion Model', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-CONV-' . uniqid(),
             'status' => 'completed',
-            'total_minor' => 50000,
+            'value_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
             'payee_type' => Affiliate::class,
@@ -183,8 +199,8 @@ describe('AffiliateConversion Model', function (): void {
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'affiliate_payout_id' => $payout->id,
-            'order_reference' => 'ORD-PAY-001',
-            'total_minor' => 10000,
+            'external_reference' => 'ORD-PAY-001',
+            'value_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
             'status' => PaidConversion::class,
@@ -195,27 +211,27 @@ describe('AffiliateConversion Model', function (): void {
         expect($conversion->payout->id)->toBe($payout->id);
     });
 
-    test('order_id accessor returns order_reference', function (): void {
+    test('stores external_reference', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-ALIAS-001',
-            'total_minor' => 25000,
+            'external_reference' => 'EXT-REF-001',
+            'subtotal_minor' => 25000,
             'commission_minor' => 2500,
             'commission_currency' => 'USD',
             'status' => ApprovedConversion::class,
             'occurred_at' => now(),
         ]);
 
-        expect($conversion->order_id)->toBe('ORD-ALIAS-001');
+        expect($conversion->external_reference)->toBe('EXT-REF-001');
     });
 
     test('currency accessor returns commission_currency', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-CUR-001',
-            'total_minor' => 30000,
+            'external_reference' => 'ORD-CUR-001',
+            'value_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'EUR',
             'status' => PendingConversion::class,
@@ -229,8 +245,8 @@ describe('AffiliateConversion Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-ENUM-001',
-            'total_minor' => 20000,
+            'external_reference' => 'ORD-ENUM-001',
+            'value_minor' => 20000,
             'commission_minor' => 2000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
@@ -246,8 +262,8 @@ describe('AffiliateConversion Model', function (): void {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'ORD-STATUS-' . $status::value(),
-                'total_minor' => 10000,
+                'external_reference' => 'ORD-STATUS-' . $status::value(),
+                'value_minor' => 10000,
                 'commission_minor' => 1000,
                 'commission_currency' => 'USD',
                 'status' => $status,
@@ -268,8 +284,8 @@ describe('AffiliateConversion Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-META-001',
-            'total_minor' => 35000,
+            'external_reference' => 'ORD-META-001',
+            'value_minor' => 35000,
             'commission_minor' => 3500,
             'commission_currency' => 'USD',
             'status' => ApprovedConversion::class,
@@ -287,8 +303,8 @@ describe('AffiliateConversion Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-DATE-001',
-            'total_minor' => 15000,
+            'external_reference' => 'ORD-DATE-001',
+            'value_minor' => 15000,
             'commission_minor' => 1500,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
@@ -303,8 +319,8 @@ describe('AffiliateConversion Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-APPR-001',
-            'total_minor' => 45000,
+            'external_reference' => 'ORD-APPR-001',
+            'value_minor' => 45000,
             'commission_minor' => 4500,
             'commission_currency' => 'USD',
             'status' => ApprovedConversion::class,
@@ -316,25 +332,7 @@ describe('AffiliateConversion Model', function (): void {
         expect($conversion->approved_at->format('Y-m-d'))->toBe('2024-06-11');
     });
 
-    test('can store cart information', function (): void {
-        $conversion = AffiliateConversion::create([
-            'affiliate_id' => $this->affiliate->id,
-            'affiliate_code' => $this->affiliate->code,
-            'cart_identifier' => 'cart-abc-123',
-            'cart_instance' => 'shopping',
-            'order_reference' => 'ORD-CART-001',
-            'total_minor' => 50000,
-            'commission_minor' => 5000,
-            'commission_currency' => 'USD',
-            'status' => ApprovedConversion::class,
-            'occurred_at' => now(),
-        ]);
-
-        expect($conversion->cart_identifier)->toBe('cart-abc-123');
-        expect($conversion->cart_instance)->toBe('shopping');
-    });
-
-    test('keeps neutral subject and reference aliases in sync', function (): void {
+    test('stores neutral subject and reference fields', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -350,14 +348,10 @@ describe('AffiliateConversion Model', function (): void {
         ]);
 
         expect($conversion->subject_identifier)->toBe('event:123')
-            ->and($conversion->cart_identifier)->toBe('event:123')
             ->and($conversion->subject_instance)->toBe('share')
-            ->and($conversion->cart_instance)->toBe('share')
             ->and($conversion->external_reference)->toBe('REG-123')
-            ->and($conversion->order_reference)->toBe('REG-123')
             ->and($conversion->conversion_type)->toBe('registration')
-            ->and($conversion->value_minor)->toBe(4200)
-            ->and($conversion->total_minor)->toBe(4200);
+            ->and($conversion->value_minor)->toBe(4200);
     });
 
     test('can store voucher code', function (): void {
@@ -365,8 +359,8 @@ describe('AffiliateConversion Model', function (): void {
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
             'voucher_code' => 'SUMMER20',
-            'order_reference' => 'ORD-VOUCH-001',
-            'total_minor' => 25000,
+            'external_reference' => 'ORD-VOUCH-001',
+            'value_minor' => 25000,
             'commission_minor' => 2500,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -380,8 +374,8 @@ describe('AffiliateConversion Model', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-CHAN-001',
-            'total_minor' => 30000,
+            'external_reference' => 'ORD-CHAN-001',
+            'value_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,

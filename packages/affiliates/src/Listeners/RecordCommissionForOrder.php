@@ -46,7 +46,7 @@ final readonly class RecordCommissionForOrder
         } catch (InvalidArgumentException $exception) {
             logger()->warning('affiliates.order_commission_skipped_malformed_owner_tuple', [
                 'order_id' => $order->id,
-                'order_reference' => $reference,
+                'external_reference' => $reference,
                 'owner_type' => $order->owner_type,
                 'owner_id' => $order->owner_id,
                 'message' => $exception->getMessage(),

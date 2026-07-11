@@ -154,7 +154,7 @@ final class CommissionRuleEngine
 
         $periodVolume = (int) $volumeQuery
             ->where('occurred_at', '>=', now()->startOfMonth())
-            ->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
+            ->sum(DB::raw('COALESCE(value_minor, 0)'));
 
         // Find applicable volume tier
         $tier = AffiliateVolumeTier::query()

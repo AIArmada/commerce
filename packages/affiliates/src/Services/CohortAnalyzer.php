@@ -68,7 +68,7 @@ final class CohortAnalyzer
             });
 
             $totalRevenue = (int) $affiliates->sum(function ($affiliate): int | float {
-                return (int) $affiliate->conversions()->sum(DB::raw('COALESCE(NULLIF(value_minor, 0), total_minor, 0)'));
+                return (int) $affiliate->conversions()->sum(DB::raw('COALESCE(value_minor, 0)'));
             });
 
             $totalCommissions = (int) $affiliates->sum(function ($affiliate): int | float {
@@ -292,7 +292,7 @@ final class CohortAnalyzer
         $sourceExpression = $driver === 'sqlite'
             ? "COALESCE(json_extract(a.metadata, '$.source'), 'direct')"
             : "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(a.metadata, '$.source')), 'direct')";
-        $revenueExpression = 'COALESCE(NULLIF(c.value_minor, 0), c.total_minor, 0)';
+        $revenueExpression = 'COALESCE(c.value_minor, 0)';
 
         $query = DB::table("{$affiliatesTable} as a")
             ->leftJoin("{$conversionsTable} as c", 'c.affiliate_id', '=', 'a.id')
@@ -393,7 +393,7 @@ final class CohortAnalyzer
             $conversionsQuery = DB::table($conversionsTable)
                 ->whereIn('affiliate_id', $affiliateIds)
                 ->whereBetween('occurred_at', [$periodStart, $periodEnd])
-                ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(NULLIF(value_minor, 0), total_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions');
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(COALESCE(value_minor, 0)), 0) as revenue, COALESCE(SUM(commission_minor), 0) as commissions');
 
             $this->applyOwnerScopeToQuery($conversionsQuery, "{$conversionsTable}.owner_type", "{$conversionsTable}.owner_id");
 

@@ -156,6 +156,6 @@ final class DailyAggregationService
 
     private function revenueMinorExpression(): string
     {
-        return 'COALESCE(NULLIF(value_minor, 0), total_minor, 0)';
+        return 'COALESCE(value_minor, 0)';
     }
 }

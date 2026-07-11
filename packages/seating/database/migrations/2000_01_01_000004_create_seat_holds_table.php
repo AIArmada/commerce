@@ -19,6 +19,7 @@ return new class extends Migration
             $table->uuid('seat_id')->index();
             $table->string('reference')->nullable()->index();
             $table->timestampTz('expires_at')->index();
+            $table->timestampTz('converted_at')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestampsTz();
         });

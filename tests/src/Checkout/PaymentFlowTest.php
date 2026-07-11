@@ -539,11 +539,110 @@ describe('CreateOrderStep', function (): void {
         $result = app(CreateOrderStep::class)->handle($session);
 
         expect($result->isSuccessful())->toBeFalse()
-            ->and($session->fresh()->order_id)->toBeNull()
+            ->and($session->fresh()->order_id)->not->toBeNull()
             ->and($session->fresh()->completed_at)->toBeNull();
     });
 
-    it('skips directly committing inventory reservations when payment confirmation already handles paid orders', function (): void {
+    it('responds with the stored order on retry after a failed confirmation', function (): void {
+        config()->set('checkout.create_order.confirm_payment', true);
+
+        // Persist a real order so the session relationship resolves on retry
+        $order = Order::create([
+            'order_number' => 'ORD-RETRY-' . Str::random(6),
+            'currency' => 'USD',
+            'grand_total' => 1000,
+        ]);
+
+        $orderService = mock(OrderServiceInterface::class);
+        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+        $orderService->shouldReceive('confirmPayment')->twice()->andReturnUsing(function () use ($order) {
+            static $call = 0;
+            $call++;
+
+            if ($call === 1) {
+                throw new RuntimeException('gateway unavailable');
+            }
+
+            return $order;
+        });
+
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-retry-safe',
+            'cart_snapshot' => ['items' => []],
+            'payment_data' => [
+                'type' => 'card',
+                'status' => PaymentStatus::Completed->value,
+                'transaction_id' => 'tx-retry-safe',
+                'gateway' => 'chip',
+            ],
+            'selected_payment_gateway' => 'chip',
+            'payment_id' => 'payment-retry-safe',
+            'subtotal' => 1000,
+            'grand_total' => 1000,
+            'currency' => 'USD',
+        ]);
+        $session = $session->transitionStatus(Processing::class);
+
+        // First attempt — payment fails
+        $firstResult = app(CreateOrderStep::class)->handle($session);
+
+        expect($firstResult->isSuccessful())->toBeFalse();
+
+        // Reload session — order_id was persisted despite payment failure
+        $session = $session->fresh();
+        expect($session->order_id)->not->toBeNull();
+
+        // Second attempt — payment succeeds, order reused
+        $secondResult = app(CreateOrderStep::class)->handle($session);
+
+        expect($secondResult->isSuccessful())->toBeTrue()
+            ->and($session->fresh()->order_id)->toBe($order->id)
+            ->and($session->fresh()->completed_at)->not->toBeNull();
+    });
+
+    it('does not commit inventory reservations when payment confirmation fails', function (): void {
+        config()->set('checkout.create_order.confirm_payment', true);
+
+        $orderService = mock(OrderServiceInterface::class);
+        $order = new Order;
+        $order->forceFill([
+            'id' => (string) Str::uuid(),
+            'order_number' => 'TEST-ORDER-PAYMENT-FAILED-NO-INV',
+        ]);
+
+        $orderService->shouldReceive('createOrder')->once()->andReturn($order);
+        $orderService->shouldReceive('confirmPayment')->once()->andThrow(new RuntimeException('gateway unavailable'));
+        app()->instance(OrderServiceInterface::class, $orderService);
+
+        $inventoryService = mock(CheckoutInventoryServiceInterface::class);
+        $inventoryService->shouldReceive('commitAllForReference')->never();
+        app()->instance(CheckoutInventoryServiceInterface::class, $inventoryService);
+
+        $session = CheckoutSession::create([
+            'cart_id' => 'test-cart-payment-failed-no-inv',
+            'cart_snapshot' => ['items' => []],
+            'payment_data' => [
+                'type' => 'card',
+                'status' => PaymentStatus::Completed->value,
+                'transaction_id' => 'tx-payment-failed-no-inv',
+                'gateway' => 'chip',
+            ],
+            'selected_payment_gateway' => 'chip',
+            'payment_id' => 'payment-failed-no-inv',
+            'subtotal' => 1000,
+            'grand_total' => 1000,
+            'currency' => 'USD',
+        ]);
+        $session = $session->transitionStatus(Processing::class);
+
+        $result = app(CreateOrderStep::class)->handle($session);
+
+        expect($result->isSuccessful())->toBeFalse();
+    });
+
+    it('commits inventory reservations when payment confirmation succeeds for paid orders', function (): void {
         config()->set('checkout.create_order.confirm_payment', true);
 
         $orderService = mock(OrderServiceInterface::class);
@@ -559,7 +658,7 @@ describe('CreateOrderStep', function (): void {
         app()->instance(OrderServiceInterface::class, $orderService);
 
         $inventoryService = mock(CheckoutInventoryServiceInterface::class);
-        $inventoryService->shouldReceive('commitAllForReference')->never();
+        $inventoryService->shouldReceive('commitAllForReference')->once();
 
         app()->instance(CheckoutInventoryServiceInterface::class, $inventoryService);
 

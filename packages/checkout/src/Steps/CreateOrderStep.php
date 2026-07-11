@@ -69,34 +69,46 @@ final class CreateOrderStep extends AbstractCheckoutStep
         }
 
         $orderService = app(OrderServiceInterface::class);
-        $customer = $session->customer ?? $session->billable;
-
-        $shippingData = $session->shipping_data ?? [];
-        $billingData = $session->billing_data ?? [];
         $paymentData = $session->payment_data ?? [];
-
-        $orderData = [
-            'customer_id' => $customer?->getKey(),
-            'customer_type' => $customer?->getMorphClass(),
-            'subtotal' => $session->subtotal,
-            'discount_total' => $session->discount_total,
-            'shipping_total' => $session->shipping_total,
-            'tax_total' => $session->tax_total,
-            'grand_total' => $session->grand_total,
-            'currency' => $session->currency,
-            'metadata' => $this->buildOrderMetadata($session, $paymentData),
-        ];
-
-        $items = $this->buildOrderItems($session);
-
-        $order = $orderService->createOrder(
-            orderData: $orderData,
-            items: $items,
-            billingAddress: $billingData ?: null,
-            shippingAddress: $shippingData ?: null,
-        );
-
         $isFreeOrder = ($paymentData['type'] ?? null) === 'free_order';
+
+        // Reuse existing order if already created for this session (retry-safe)
+        if ($session->order_id !== null) {
+            $order = $session->order;
+
+            if ($order === null) {
+                return $this->failed('Previously created order not found');
+            }
+        } else {
+            $customer = $session->customer ?? $session->billable;
+            $shippingData = $session->shipping_data ?? [];
+            $billingData = $session->billing_data ?? [];
+
+            $orderData = [
+                'customer_id' => $customer?->getKey(),
+                'customer_type' => $customer?->getMorphClass(),
+                'subtotal' => $session->subtotal,
+                'discount_total' => $session->discount_total,
+                'shipping_total' => $session->shipping_total,
+                'tax_total' => $session->tax_total,
+                'grand_total' => $session->grand_total,
+                'currency' => $session->currency,
+                'metadata' => $this->buildOrderMetadata($session, $paymentData),
+            ];
+
+            $items = $this->buildOrderItems($session);
+
+            $order = $orderService->createOrder(
+                orderData: $orderData,
+                items: $items,
+                billingAddress: $billingData ?: null,
+                shippingAddress: $shippingData ?: null,
+            );
+
+            // Persist order_id immediately — before payment confirmation — so retries reuse this order
+            $session->order_id = $order->id;
+            $session->save();
+        }
 
         // Confirm payment if not a free order (triggers PaymentConfirmed transition → OrderPaid event)
         $paymentConfirmationEnabled = ! $isFreeOrder && config('checkout.create_order.confirm_payment', true);
@@ -112,10 +124,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
             }
         }
 
-        $session->update([
-            'order_id' => $order->id,
-            'completed_at' => now(),
-        ]);
+        $session->update(['completed_at' => now()]);
 
         $this->redeemAppliedVouchers($session, $order->id);
 
@@ -332,7 +341,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
             return true;
         }
 
-        return ! $paymentWasConfirmed;
+        return $paymentWasConfirmed;
     }
 
     private function clearCart(CheckoutSession $session): void

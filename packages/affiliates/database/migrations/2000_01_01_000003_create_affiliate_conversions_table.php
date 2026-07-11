@@ -23,15 +23,11 @@ return new class extends Migration
             $table->string('subject_identifier')->nullable();
             $table->string('subject_instance')->nullable();
             $table->string('subject_title_snapshot', 200)->nullable();
-            $table->string('cart_identifier')->nullable();
-            $table->string('cart_instance')->nullable();
             $table->string('voucher_code', 64)->nullable();
-            $table->string('order_reference', 120)->nullable();
             $table->string('external_reference', 120)->nullable();
             $table->string('conversion_type', 64)->nullable();
             $table->string('performance_bonus_key', 160)->nullable()->unique();
             $table->unsignedBigInteger('subtotal_minor')->default(0);
-            $table->unsignedBigInteger('total_minor')->default(0);
             $table->unsignedBigInteger('commission_minor')->default(0);
             $table->unsignedBigInteger('value_minor')->default(0);
             $table->string('commission_currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
