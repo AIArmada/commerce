@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Affiliates\Actions\Conversions\ApplyConversionAccounting;
 use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -29,13 +30,15 @@ describe('MatureConversion Action', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-MAT-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-MAT-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35), // Past maturity
         ]);
+
+        ApplyConversionAccounting::run($conversion);
 
         $balance = $this->affiliate->balance()->firstOrFail();
 
@@ -55,8 +58,8 @@ describe('MatureConversion Action', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-PEND-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-PEND-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => PendingConversion::class,
@@ -72,8 +75,8 @@ describe('MatureConversion Action', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-EARLY-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-EARLY-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -89,14 +92,15 @@ describe('MatureConversion Action', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-NEWBAL-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-NEWBAL-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
 
+        ApplyConversionAccounting::run($conversion);
         $this->affiliate->refresh();
 
         expect($this->affiliate->balance)->not->toBeNull();
@@ -116,8 +120,8 @@ describe('MatureConversion Action', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-META-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-META-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -151,8 +155,8 @@ describe('CommissionMaturityService', function (): void {
             AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => "ORD-BATCH-{$i}",
-                'total_minor' => 50000,
+                'external_reference' => "ORD-BATCH-{$i}",
+                'value_minor' => 50000,
                 'commission_minor' => 5000,
                 'commission_currency' => 'USD',
                 'status' => QualifiedConversion::class,
@@ -169,13 +173,15 @@ describe('CommissionMaturityService', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-SERV-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-SERV-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
+
+        ApplyConversionAccounting::run($conversion);
 
         $balance = $this->affiliate->balance()->firstOrFail();
 
@@ -191,8 +197,8 @@ describe('CommissionMaturityService', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-DATE-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-DATE-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -209,8 +215,8 @@ describe('CommissionMaturityService', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-ISMATURE-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-ISMATURE-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -224,8 +230,8 @@ describe('CommissionMaturityService', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-NOTMATURE-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-NOTMATURE-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -240,8 +246,8 @@ describe('CommissionMaturityService', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-PENDING-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-PENDING-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -251,8 +257,8 @@ describe('CommissionMaturityService', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-PENDING-002',
-            'total_minor' => 30000,
+            'external_reference' => 'ORD-PENDING-002',
+            'value_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -263,8 +269,8 @@ describe('CommissionMaturityService', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-APPROVED-001',
-            'total_minor' => 100000,
+            'external_reference' => 'ORD-APPROVED-001',
+            'value_minor' => 100000,
             'commission_minor' => 10000,
             'commission_currency' => 'USD',
             'status' => 'approved',
@@ -281,8 +287,8 @@ describe('CommissionMaturityService', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-SOON-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-SOON-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -293,8 +299,8 @@ describe('CommissionMaturityService', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-LATER-001',
-            'total_minor' => 30000,
+            'external_reference' => 'ORD-LATER-001',
+            'value_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,
@@ -317,8 +323,8 @@ describe('CommissionMaturityService', function (): void {
         AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
-            'order_reference' => 'ORD-NOBAL-001',
-            'total_minor' => 50000,
+            'external_reference' => 'ORD-NOBAL-001',
+            'value_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
             'status' => QualifiedConversion::class,

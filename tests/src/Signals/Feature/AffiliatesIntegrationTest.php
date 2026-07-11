@@ -75,15 +75,11 @@ beforeEach(function (): void {
         $table->string('affiliate_code');
         $table->string('subject_identifier')->nullable();
         $table->string('subject_instance')->nullable();
-        $table->string('cart_identifier')->nullable()->index();
-        $table->string('cart_instance')->nullable();
         $table->string('voucher_code')->nullable();
         $table->string('external_reference')->nullable();
-        $table->string('order_reference')->nullable();
         $table->string('conversion_type')->nullable();
         $table->unsignedBigInteger('subtotal_minor')->default(0);
         $table->unsignedBigInteger('value_minor')->default(0);
-        $table->unsignedBigInteger('total_minor')->default(0);
         $table->unsignedBigInteger('commission_minor')->default(0);
         $table->string('commission_currency', 3)->default('MYR');
         $table->string('status')->default(ApprovedConversion::class);
@@ -179,8 +175,6 @@ it('records an affiliate attributed signal for the matching owner property', fun
             'affiliate_code' => 'USTAZ-ALI',
             'subject_identifier' => 'event:ramadan-series',
             'subject_instance' => 'share-link',
-            'cart_identifier' => 'share-visit-001',
-            'cart_instance' => 'share',
             'cookie_value' => 'cookie-share-001',
             'voucher_code' => 'DAKWAH10',
         ]);
@@ -251,15 +245,11 @@ it('records an affiliate conversion signal for the matching owner property', fun
         'affiliate_code' => $affiliate->code,
         'subject_identifier' => 'event:weekly-tafsir',
         'subject_instance' => 'share-link',
-        'cart_identifier' => 'share-conversion-001',
-        'cart_instance' => 'share',
         'voucher_code' => 'TAFSIR15',
         'external_reference' => 'REG-SHARE-1001',
-        'order_reference' => 'ORD-SHARE-1001',
         'conversion_type' => 'registration',
         'subtotal_minor' => 32000,
         'value_minor' => 28000,
-        'total_minor' => 35000,
         'commission_minor' => 2800,
         'commission_currency' => 'MYR',
         'status' => ApprovedConversion::class,
@@ -292,15 +282,11 @@ it('records an affiliate conversion signal for the matching owner property', fun
             'attribution_id' => $attribution->id,
             'subject_identifier' => 'event:weekly-tafsir',
             'subject_instance' => 'share-link',
-            'cart_identifier' => 'share-conversion-001',
-            'cart_instance' => 'share',
             'voucher_code' => 'TAFSIR15',
             'external_reference' => 'REG-SHARE-1001',
-            'order_reference' => 'ORD-SHARE-1001',
             'conversion_type' => 'registration',
             'subtotal_minor' => 32000,
             'value_minor' => 28000,
-            'total_minor' => 35000,
             'commission_minor' => 2800,
             'status' => 'approved',
             'channel' => 'share',
