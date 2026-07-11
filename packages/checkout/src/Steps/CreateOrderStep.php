@@ -74,6 +74,7 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         // Reuse existing order if already created for this session (retry-safe)
         if ($session->order_id !== null) {
+            /** @var Order|null $order */
             $order = $session->order;
 
             if ($order === null) {
