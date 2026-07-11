@@ -1,4 +1,4 @@
-name: check-code-style
+name: fix-code-style
 
 on:
   push:
@@ -28,13 +28,19 @@ permissions:
   contents: read
 
 jobs:
-  check-code-style:
+  fix-code-style:
     runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+    env:
+      TARGET_REF: ${{ github.head_ref || github.ref_name }}
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ env.TARGET_REF }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -46,7 +52,7 @@ jobs:
 
       - name: Get Composer cache directory
         id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer dependencies
         uses: actions/cache@v5
@@ -60,31 +66,24 @@ jobs:
           COMPOSER_AUTH: '{"http-basic":{"packages.filamentphp.com":{"username":"${{ secrets.COMPOSER_AUTH_USERNAME }}","password":"${{ secrets.COMPOSER_AUTH_PASSWORD }}"}}}'
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Determine changed PHP files
-        id: changed-files
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.sha }}
-        run: |
-          if [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            git ls-files -z -- '*.php' > /tmp/changed-php-files
-          else
-            git diff --name-only --diff-filter=ACMR -z "$BASE_SHA" "$HEAD_SHA" -- '*.php' > /tmp/changed-php-files
-          fi
+      - name: Run Pint (fix)
+        run: vendor/bin/pint
 
-          if [ ! -s /tmp/changed-php-files ]; then
-            echo "has_php_changes=false" >> "$GITHUB_OUTPUT"
+      - name: Run Rector (fix)
+        run: vendor/bin/rector --no-progress-bar
+
+      - name: Commit changes (if any)
+        run: |
+          if git diff --quiet; then
+            echo "No code style changes to commit."
             exit 0
           fi
 
-          echo "has_php_changes=true" >> "$GITHUB_OUTPUT"
-          echo "Changed PHP files:"
-          tr '\0' '\n' < /tmp/changed-php-files
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Check Pint on changed PHP files
-        if: steps.changed-files.outputs.has_php_changes == 'true'
-        run: xargs -0 vendor/bin/pint --test < /tmp/changed-php-files
+          git add -A
+          git commit -m "chore(style): apply Pint and Rector"
+          git push origin HEAD:${TARGET_REF}
 
-      - name: Check Rector on changed PHP files
-        if: steps.changed-files.outputs.has_php_changes == 'true'
-        run: xargs -0 vendor/bin/rector process --dry-run --no-progress-bar < /tmp/changed-php-files
+  # Note: check-pint and check-rector jobs removed - now handled by ci.yml
