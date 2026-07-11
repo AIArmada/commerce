@@ -163,7 +163,7 @@ it('builds resources, schemas, tables, pages, and relation managers', function (
         return $method->invoke(null, 12345, 'MYR');
     })();
 
-    expect($formatted)->toBe('MYR 123.45');
+    expect($formatted)->toBe('123.45 MYR');
 
     // Pages (header actions via reflection, without needing records)
     foreach ([ListCustomers::class, ListSubscriptions::class, ListInvoices::class] as $pageClass) {
