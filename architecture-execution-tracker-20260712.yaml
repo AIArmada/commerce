@@ -522,7 +522,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-order-intake.md
     scope_manifest: 'Exact file manifest (8 files): modify CreateOrder/CreateOrderFromCart/OrderServiceInterface/Order/CreateOrderStep + new migration + new OrderIntakeConflictException + docs'
-    commit: pending
+    commit: 509c57bd3
     tests: 'test -f design-order-intake.md ✓; git diff --check clean; labels present'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-order-intake.md (new)
