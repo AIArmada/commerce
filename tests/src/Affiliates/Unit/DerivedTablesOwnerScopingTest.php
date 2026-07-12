@@ -17,8 +17,8 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
     config()->set('affiliates.owner.include_global', false);
     config()->set('affiliates.owner.auto_assign_on_create', false);
 
-    $ownerA = AffiliatesTestOwner::create(['name' => 'Owner A']);
-    $ownerB = AffiliatesTestOwner::create(['name' => 'Owner B']);
+    $ownerA = DerivedTablesOwnerScopingTestOwner::create(['name' => 'Owner A']);
+    $ownerB = DerivedTablesOwnerScopingTestOwner::create(['name' => 'Owner B']);
 
     $setOwner = function (?Model $owner): void {
         app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
@@ -145,17 +145,15 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
         ->and(AffiliateNetwork::query()->where('descendant_id', $affiliateA->getKey())->count())->toBe(0);
 });
 
-if (! class_exists('AffiliatesTestOwner')) {
-    class AffiliatesTestOwner extends Model
-    {
-        use HasUuids;
+final class DerivedTablesOwnerScopingTestOwner extends Model
+{
+    use HasUuids;
 
-        public $incrementing = false;
+    public $incrementing = false;
 
-        protected $table = 'test_products';
+    protected $table = 'test_products';
 
-        protected $guarded = [];
+    protected $guarded = [];
 
-        protected $keyType = 'string';
-    }
+    protected $keyType = 'string';
 }

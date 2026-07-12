@@ -15,7 +15,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = config('engagement.database.json_column_type', 'jsonb');
+        $jsonType = commerce_json_column_type('engagement', 'jsonb');
         Schema::create(config('engagement.database.tables.engagement_counters', 'engagement_counters'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('subject_type')->index();

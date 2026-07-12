@@ -116,7 +116,7 @@ describe('WebhookValidator', function (): void {
 
         config([
             'chip.webhooks.verify_signature' => true,
-            'chip.webhooks.company_public_key' => $publicKeyDetails['key'],
+            'chip.collect.public_key' => $publicKeyDetails['key'],
         ]);
 
         $validator = new WebhookValidator;
@@ -128,7 +128,7 @@ describe('WebhookValidator', function (): void {
     it('returns false when company public key is not configured', function (): void {
         config([
             'chip.webhooks.verify_signature' => true,
-            'chip.webhooks.company_public_key' => null,
+            'chip.collect.public_key' => null,
         ]);
 
         $validator = new WebhookValidator;
@@ -153,7 +153,7 @@ describe('WebhookValidator', function (): void {
 
         config([
             'chip.webhooks.verify_signature' => true,
-            'chip.webhooks.company_public_key' => $publicKeyDetails['key'],
+            'chip.collect.public_key' => $publicKeyDetails['key'],
         ]);
 
         $validator = new WebhookValidator;
@@ -187,7 +187,7 @@ describe('WebhookValidator', function (): void {
 
         config([
             'chip.webhooks.verify_signature' => true,
-            'chip.webhooks.company_public_key' => $publicKeyDetails['key'],
+            'chip.collect.public_key' => $publicKeyDetails['key'],
         ]);
 
         $validator = new WebhookValidator;

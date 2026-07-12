@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Support\Webhooks;
 
+use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class WebhookDispatcher
 {
+    public function __construct(
+        private readonly PublicHttpUrlGuard $urlGuard = new PublicHttpUrlGuard,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $payload
      */
@@ -32,7 +37,7 @@ class WebhookDispatcher
         foreach ($endpoints as $url) {
             $trimmed = mb_trim((string) $url);
 
-            if ($trimmed === '') {
+            if ($trimmed === '' || ! $this->urlGuard->isAllowed($trimmed)) {
                 continue;
             }
 
@@ -45,9 +50,12 @@ class WebhookDispatcher
 
             $signature = $this->sign($body, is_string($secret) ? $secret : null);
 
-            Http::withHeaders(array_merge($headers, [
-                'X-Affiliates-Webhook-Signature' => $signature ?? '',
-            ]))->asJson()->post($trimmed, $body);
+            Http::withoutRedirecting()
+                ->withHeaders(array_merge($headers, [
+                    'X-Affiliates-Webhook-Signature' => $signature ?? '',
+                ]))
+                ->asJson()
+                ->post($trimmed, $body);
         }
     }
 

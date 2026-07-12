@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Support;
 
+use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use DOMDocument;
 use DOMElement;
 use DOMNodeList;
@@ -14,7 +15,10 @@ use Illuminate\Support\Facades\Route;
 
 final class InteractionRuleScanner
 {
-    public function __construct(private readonly Filesystem $filesystem) {}
+    public function __construct(
+        private readonly Filesystem $filesystem,
+        private readonly PublicHttpUrlGuard $urlGuard,
+    ) {}
 
     /**
      * @return list<array{name: string, selector: string|null, page_pattern: string|null, settings: array<string, mixed>|null, confidence: int, confidence_note: string}>
@@ -195,7 +199,10 @@ final class InteractionRuleScanner
 
     private function fetchHtml(string $pageUrl): ?string
     {
-        $response = Http::timeout(15)
+        $this->urlGuard->assertAllowed($pageUrl);
+
+        $response = Http::withoutRedirecting()
+            ->timeout(15)
             ->withHeaders(['Accept' => 'text/html'])
             ->get($pageUrl);
 

@@ -115,3 +115,29 @@ it('calculates grand total correctly with shipping condition', function (): void
     expect($session->shipping_total)->toBe(800)
         ->and($session->grand_total)->toBe(10800);
 });
+
+it('uses the published jnt shipping origin configuration', function (): void {
+    config()->set('jnt.shipping.origin', [
+        'name' => 'JNT Warehouse',
+        'phone' => '60123456789',
+        'address' => '1 Logistics Road',
+        'post_code' => '40150',
+        'city' => 'Shah Alam',
+        'state' => 'Selangor',
+        'country_code' => 'MYS',
+    ]);
+
+    $adapter = app(\AIArmada\Checkout\Integrations\ShippingAdapter::class);
+    $method = new ReflectionMethod($adapter, 'getOriginData');
+    $origin = $method->invoke($adapter);
+
+    expect($origin)->toMatchArray([
+        'name' => 'JNT Warehouse',
+        'phone' => '60123456789',
+        'line1' => '1 Logistics Road',
+        'postcode' => '40150',
+        'city' => 'Shah Alam',
+        'state' => 'Selangor',
+        'country' => 'MYS',
+    ]);
+});

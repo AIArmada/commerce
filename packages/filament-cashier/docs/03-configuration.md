@@ -42,26 +42,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Gateways
-    |--------------------------------------------------------------------------
-    */
-    'gateways' => [
-        'stripe' => [
-            'label' => 'Stripe',
-            'icon' => 'heroicon-o-credit-card',
-            'color' => 'indigo',
-            'dashboard_url' => 'https://dashboard.stripe.com',
-        ],
-        'chip' => [
-            'label' => 'CHIP',
-            'icon' => 'heroicon-o-cube',
-            'color' => 'emerald',
-            'dashboard_url' => 'https://gate.chip-in.asia',
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Features
     |--------------------------------------------------------------------------
     */
@@ -142,32 +122,6 @@ FilamentCashierPlugin::make()
 ```
 
 Plugin options override config values.
-
-## Gateway Configuration
-
-Each gateway can be customized with label, icon, color, and dashboard URL:
-
-```php
-'gateways' => [
-    'stripe' => [
-        'label' => 'Stripe',                              // Display name
-        'icon' => 'heroicon-o-credit-card',               // Heroicon name
-        'color' => 'indigo',                              // Filament color
-        'dashboard_url' => 'https://dashboard.stripe.com', // External dashboard
-    ],
-    'chip' => [
-        'label' => 'CHIP Malaysia',
-        'icon' => 'heroicon-o-cube',
-        'color' => 'emerald',
-        'dashboard_url' => 'https://gate.chip-in.asia',
-    ],
-],
-```
-
-### Supported Colors
-
-- `primary`, `success`, `warning`, `danger`, `info`
-- `gray`, `indigo`, `emerald`, `amber`, `violet`
 
 ## Feature Toggles
 

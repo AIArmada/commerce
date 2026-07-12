@@ -12,7 +12,6 @@ The `config/events.php` file controls all Events package behavior.
 $tablePrefix = env('EVENTS_TABLE_PREFIX', '');
 
 'database' => [
-    'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
         'events' => env('EVENTS_TABLE_EVENTS', $tablePrefix . 'events'),
         'event_occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'event_occurrences'),
@@ -85,9 +84,12 @@ Controls multi-tenancy behavior. When enabled, event roots and children, series/
 
 ```php
 'defaults' => [
+    'currency' => env('EVENTS_DEFAULT_CURRENCY', env('TICKETING_DEFAULT_CURRENCY', 'MYR')),
     'timezone' => env('EVENTS_TIMEZONE', env('APP_TIMEZONE', 'UTC')),
 ]
 ```
+
+`currency` is used when issuing registration passes without an explicit registration currency. `timezone` controls the package fallback display and scheduling timezone.
 
 ### Codes
 
@@ -99,19 +101,6 @@ Controls multi-tenancy behavior. When enabled, event roots and children, series/
 ```
 
 Controls auto-generated registration number format.
-
-### Inventory Backfill
-
-```php
-'features' => [
-    'inventory' => [
-        'default_location_id' => env('EVENTS_DEFAULT_INVENTORY_LOCATION', 'default'),
-        'auto_register_quotas_on_migrate' => env('EVENTS_AUTO_REGISTER_QUOTAS', true),
-    ],
-]
-```
-
-`default_location_id` is used by the legacy quota migration to resolve the inventory location token. Runtime ticket-type syncing uses the inventory package's default location and only seeds positive quotas.
 
 ### Lifecycle
 
@@ -212,14 +201,7 @@ Auto-detects commerce packages. When related packages are installed, integration
         'event_name' => env('EVENTS_WELCOME_EVENT_NAME', env('APP_NAME')),
         'brand_name' => env('EVENTS_WELCOME_BRAND_NAME', env('APP_NAME')),
     ],
-    'ticket' => [
-        'enabled' => env('EVENTS_TICKET_NOTIFICATION_ENABLED', true),
-        'from_address' => env('EVENTS_TICKET_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
-        'from_name' => env('EVENTS_TICKET_FROM_NAME', env('MAIL_FROM_NAME')),
-        'event_name' => env('EVENTS_TICKET_EVENT_NAME', env('APP_NAME')),
-        'brand_name' => env('EVENTS_TICKET_BRAND_NAME', env('APP_NAME')),
-    ],
 ]
 ```
 
-The welcome notification is sent when a registration is approved. The ticket notification is sent after passes are issued.
+The welcome notification is sent when a registration is approved.

@@ -11,8 +11,6 @@ return [
     'features' => [
         'collections' => true,
         'attributes' => true,
-        'bulk_edit' => true,
-        'import_export' => true,
     ],
 ];
 ```
@@ -44,14 +42,6 @@ Controls whether `CollectionResource` is registered.
 ### `features.attributes`
 
 Controls whether `AttributeResource` is registered.
-
-### `features.bulk_edit`
-
-Controls whether the `BulkEditProducts` page is registered.
-
-### `features.import_export`
-
-Controls whether the `ImportExportProducts` page is registered.
 
 ## What is not configurable here
 

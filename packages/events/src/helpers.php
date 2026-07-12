@@ -14,7 +14,7 @@ if (! function_exists('events_table')) {
 if (! function_exists('events_json_type')) {
     function events_json_type(): string
     {
-        return (string) config('events.database.json_column_type', 'jsonb');
+        return (string) commerce_json_column_type('events', 'jsonb');
     }
 }
 

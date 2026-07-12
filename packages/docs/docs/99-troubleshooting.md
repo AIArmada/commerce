@@ -313,8 +313,7 @@ use AIArmada\Docs\DataObjects\DocData; // Correct
 ```php
 // config/docs.php
 'database' => [
-    'json_column_type' => 'jsonb', // For PostgreSQL
-    // or 'json' for MySQL
+    // Configure the column type via commerce_json_column_type() helper or env var
 ],
 ```
 

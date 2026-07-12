@@ -339,6 +339,6 @@ describe('AffiliateFraudSignal Model', function (): void {
     test('uses correct table name from config', function (): void {
         $signal = new AffiliateFraudSignal;
 
-        expect($signal->getTable())->toBe(config('affiliates.table_names.fraud_signals', 'affiliate_fraud_signals'));
+        expect($signal->getTable())->toBe(config('affiliates.database.tables.fraud_signals', 'affiliate_fraud_signals'));
     });
 });

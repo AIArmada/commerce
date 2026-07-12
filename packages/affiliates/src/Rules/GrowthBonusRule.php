@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Contracts\PerformanceBonusRule;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -31,21 +32,26 @@ final class GrowthBonusRule implements PerformanceBonusRule
             return [];
         }
 
-        $minimumGrowthPercentage = (float) ($config['min_growth_percentage'] ?? 50);
+        $minimumGrowthPercentage = (float) ($config['min_growth_percent'] ?? 50);
         $bonuses = [];
 
         $prevFrom = $from->subMonth()->startOfMonth();
         $prevTo = $from->subMonth()->endOfMonth();
 
-        $affiliates = Affiliate::where('status', Active::class)->get();
+        $affiliates = Affiliate::query()
+            ->forOwner(OwnerContext::CURRENT, $includeGlobal)
+            ->where('status', Active::class)
+            ->get();
 
         foreach ($affiliates as $affiliate) {
             $currentRevenue = $affiliate->conversions()
+                ->forOwner(OwnerContext::CURRENT, $includeGlobal)
                 ->whereBetween('occurred_at', [$from, $to])
                 ->where('status', ApprovedConversion::value())
                 ->sum(DB::raw('COALESCE(value_minor, 0)'));
 
             $previousRevenue = $affiliate->conversions()
+                ->forOwner(OwnerContext::CURRENT, $includeGlobal)
                 ->whereBetween('occurred_at', [$prevFrom, $prevTo])
                 ->where('status', ApprovedConversion::value())
                 ->sum(DB::raw('COALESCE(value_minor, 0)'));

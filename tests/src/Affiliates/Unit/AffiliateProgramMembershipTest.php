@@ -288,6 +288,6 @@ describe('AffiliateProgramMembership Model', function (): void {
     test('uses correct table name from config', function (): void {
         $membership = new AffiliateProgramMembership;
 
-        expect($membership->getTable())->toBe(config('affiliates.table_names.program_memberships', 'affiliate_program_memberships'));
+        expect($membership->getTable())->toBe(config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships'));
     });
 });

@@ -23,17 +23,6 @@ beforeEach(function (): void {
         $table->timestamps();
     });
 
-    // Create test model class that uses HasVouchers (which now includes wallet logic)
-    if (! class_exists(TestWalletUser::class)) {
-        eval('
-            class TestWalletUser extends Illuminate\Database\Eloquent\Model
-            {
-                use AIArmada\Vouchers\Traits\HasVouchers;
-                protected $table = "users";
-                protected $guarded = [];
-            }
-        ');
-    }
 });
 
 test('can add voucher to wallet using trait', function (): void {
@@ -484,3 +473,12 @@ test('wallet entry knows if voucher is expired', function (): void {
 
     expect($walletEntry->isExpired())->toBeTrue();
 });
+
+final class TestWalletUser extends Model
+{
+    use HasVouchers;
+
+    protected $table = 'users';
+
+    protected $guarded = [];
+}

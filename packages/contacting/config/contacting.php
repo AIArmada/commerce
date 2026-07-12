@@ -7,7 +7,7 @@ $tablePrefix = env('CONTACTING_TABLE_PREFIX', '');
 return [
     'database' => [
         'table_prefix' => $tablePrefix,
-        'json_column_type' => env('CONTACTING_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
+
         'tables' => [
             'contact_methods' => env('CONTACTING_TABLE_CONTACT_METHODS', $tablePrefix . 'contact_methods'),
             'social_profiles' => env('CONTACTING_TABLE_SOCIAL_PROFILES', $tablePrefix . 'social_profiles'),

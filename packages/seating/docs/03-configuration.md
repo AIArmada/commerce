@@ -16,7 +16,6 @@ return [
             'seat_holds' => env('SEATING_TABLE_SEAT_HOLDS', 'seat_holds'),
             'seat_allocations' => env('SEATING_TABLE_SEAT_ALLOCATIONS', 'seat_allocations'),
         ],
-        'json_column_type' => env('SEATING_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     ],
 
     'holds' => [
@@ -47,9 +46,7 @@ Owner scoping configuration. When enabled, all seating models are scoped to the 
 - `include_global`: Include ownerless (global) records in owner-scoped queries (default: `false`).
 - `auto_assign_on_create`: Automatically assign the current owner to new records (default: `true`).
 
-## `database.json_column_type`
-
-The column type used for JSON columns in migrations. Set to `json` or `jsonb` depending on your database driver.
+JSON column type is controlled by `commerce_json_column_type('seating', 'json')`. Set `COMMERCE_JSON_COLUMN_TYPE=jsonb` in your `.env` to override.
 
 ## `scheduling.release_expired_holds`
 

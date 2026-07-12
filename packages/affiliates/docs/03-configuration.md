@@ -11,7 +11,6 @@ The package is configured via `config/affiliates.php`. This document reflects th
 ```php
 'database' => [
     'table_prefix' => env('AFFILIATES_TABLE_PREFIX', 'affiliate_'),
-    'json_column_type' => env('AFFILIATES_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     'tables' => [
         'affiliates' => 'affiliate_affiliates',
         'attributions' => 'affiliate_attributions',

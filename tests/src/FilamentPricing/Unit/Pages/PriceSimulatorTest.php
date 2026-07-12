@@ -43,3 +43,12 @@ it('builds a result infolist when result exists', function (): void {
 
     expect($schema->getComponents())->not()->toBeEmpty();
 });
+
+it('uses the published customer owner include-global setting', function (): void {
+    config()->set('customers.features.owner.include_global', true);
+
+    $page = app(PriceSimulator::class);
+    $method = (new ReflectionClass(PriceSimulator::class))->getMethod('customerIncludesGlobal');
+
+    expect($method->invoke($page))->toBeTrue();
+});

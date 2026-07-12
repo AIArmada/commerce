@@ -212,8 +212,7 @@ Event::listen(Attempting::class, function ($event) {
 
 **Solution:**
 1. Use MySQL or PostgreSQL for production
-2. Ensure `json_column_type` is set to `json` (not `jsonb`)
-3. Upgrade to SQLite 3.38+ for better JSON support
+2. Upgrade to SQLite 3.38+ for better JSON support
 
 ## Debugging Tools
 

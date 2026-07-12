@@ -89,7 +89,7 @@ describe('PromotionResource', function (): void {
 
     describe('configuration', function (): void {
         it('has correct navigation group', function (): void {
-            expect(PromotionResource::getNavigationGroup())->toBe(config('filament-promotions.navigation_group'));
+            expect(PromotionResource::getNavigationGroup())->toBe(config('filament-promotions.navigation.group'));
         });
 
         it('has navigation badge color', function (): void {

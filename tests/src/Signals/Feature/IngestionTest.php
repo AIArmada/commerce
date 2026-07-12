@@ -479,7 +479,6 @@ it('uses the configured tracker filename when deriving the pageview endpoint', f
 
 it('adds the consolidated columns through the base session migration', function (): void {
     config()->set('signals.database.tables.sessions', 'custom_signal_sessions');
-    config()->set('signals.database.json_column_type', 'json');
 
     Schema::dropIfExists('custom_signal_sessions');
     Schema::dropIfExists('signal_sessions');

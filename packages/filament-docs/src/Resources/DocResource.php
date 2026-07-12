@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
 use AIArmada\CommerceSupport\Support\FilamentPermission;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\States\Overdue;
@@ -30,7 +31,6 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 use UnitEnum;
 
 final class DocResource extends Resource
@@ -133,8 +133,9 @@ final class DocResource extends Resource
      */
     private static function cachedBadgeCounts(): array
     {
-        return Cache::remember(
-            'filament-docs:nav-badge:counts',
+        return OwnerCache::remember(
+            OwnerUiScope::resolveOwner(Doc::class),
+            'filament-docs.nav-badge.counts',
             CarbonImmutable::now()->addSeconds(30),
             function (): array {
                 $pendingStatus = DocStatus::normalize(Pending::class);

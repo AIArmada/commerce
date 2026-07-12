@@ -52,13 +52,6 @@ return [
         ],
     ],
 
-    // Subscription behavior
-    'subscriptions' => [
-        'retry_days' => env('CASHIER_CHIP_RETRY_DAYS', 3),
-        'max_retries' => env('CASHIER_CHIP_MAX_RETRIES', 3),
-        'grace_days' => env('CASHIER_CHIP_GRACE_DAYS', 7),
-    ],
-
     // Webhook route prefix
     'path' => env('CASHIER_CHIP_PATH', 'chip'),
 

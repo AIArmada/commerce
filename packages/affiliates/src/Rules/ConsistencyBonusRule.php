@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Contracts\PerformanceBonusRule;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 
 final class ConsistencyBonusRule implements PerformanceBonusRule
@@ -34,7 +35,10 @@ final class ConsistencyBonusRule implements PerformanceBonusRule
         $minWeeks = $config['min_weeks'] ?? 4;
         $minConversionsPerWeek = $config['min_conversions_per_week'] ?? 1;
 
-        $affiliates = Affiliate::where('status', Active::class)->get();
+        $affiliates = Affiliate::query()
+            ->forOwner(OwnerContext::CURRENT, $includeGlobal)
+            ->where('status', Active::class)
+            ->get();
 
         foreach ($affiliates as $affiliate) {
             $weeksWithSales = 0;
@@ -44,6 +48,7 @@ final class ConsistencyBonusRule implements PerformanceBonusRule
                 $weekEnd = $currentWeek->copy()->endOfWeek();
 
                 $conversionsThisWeek = $affiliate->conversions()
+                    ->forOwner(OwnerContext::CURRENT, $includeGlobal)
                     ->whereBetween('occurred_at', [$currentWeek, $weekEnd])
                     ->where('status', ApprovedConversion::value())
                     ->count();

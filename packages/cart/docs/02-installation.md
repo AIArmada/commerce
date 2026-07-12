@@ -133,16 +133,6 @@ Configure cart expiration:
 ],
 ```
 
-### JSON Column Type
-
-For PostgreSQL with JSONB support:
-
-```php
-'database' => [
-    'json_column_type' => 'jsonb', // Uses GIN indexes for better performance
-],
-```
-
 ### Development Setup
 
 No additional storage setup is required for the built-in database backend.

@@ -28,7 +28,5 @@ return [
     'features' => [
         'collections' => true,
         'attributes' => true,
-        'bulk_edit' => true,
-        'import_export' => true,
     ],
 ];

@@ -315,6 +315,6 @@ describe('AffiliateProgramTier Model', function (): void {
     test('uses correct table name from config', function (): void {
         $tier = new AffiliateProgramTier;
 
-        expect($tier->getTable())->toBe(config('affiliates.table_names.program_tiers', 'affiliate_program_tiers'));
+        expect($tier->getTable())->toBe(config('affiliates.database.tables.program_tiers', 'affiliate_program_tiers'));
     });
 });

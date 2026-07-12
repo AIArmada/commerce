@@ -34,7 +34,7 @@ beforeEach(function (): void {
     });
 });
 
-it('allows same-tenant PDF downloads and blocks cross-tenant downloads', function (): void {
+it('allows same-tenant document routes and blocks cross-tenant document routes', function (): void {
     $ownerA = User::query()->create([
         'name' => 'Owner A',
         'email' => 'owner-a-download@example.test',
@@ -68,6 +68,12 @@ it('allows same-tenant PDF downloads and blocks cross-tenant downloads', functio
         ->assertOk();
 
     $this->get(route('filament-docs.download', ['doc' => (string) $docB->getKey()]))
+        ->assertNotFound();
+
+    $this->get(route('filament-docs.documents.view', ['doc' => (string) $docA->getKey()]))
+        ->assertOk();
+
+    $this->get(route('filament-docs.documents.view', ['doc' => (string) $docB->getKey()]))
         ->assertNotFound();
 });
 

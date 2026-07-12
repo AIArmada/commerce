@@ -78,7 +78,7 @@ it('uses configured json column type for navigation_links', function (): void {
     $driver = Schema::getConnection()->getDriverName();
 
     $column = Schema::getColumnType($this->addressesTable, 'navigation_links');
-    $jsonColumnType = config('addressing.database.json_column_type', 'json');
+    $jsonColumnType = commerce_json_column_type('addressing', 'json');
 
     if ($driver === 'sqlite') {
         expect($column)->toBeIn(['text', $jsonColumnType]);

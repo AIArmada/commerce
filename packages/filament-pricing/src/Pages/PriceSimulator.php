@@ -244,7 +244,7 @@ final class PriceSimulator extends Page
                                 $query = OwnerQuery::applyToEloquentBuilder(
                                     Customer::query(),
                                     $owner,
-                                    (bool) config('customers.owner.include_global', false),
+                                    $this->customerIncludesGlobal(),
                                 );
 
                                 return $query
@@ -275,7 +275,7 @@ final class PriceSimulator extends Page
                                 $query = OwnerQuery::applyToEloquentBuilder(
                                     Customer::query(),
                                     $owner,
-                                    (bool) config('customers.owner.include_global', false),
+                                    $this->customerIncludesGlobal(),
                                 );
 
                                 $customer = $query
@@ -360,7 +360,7 @@ final class PriceSimulator extends Page
             $query = OwnerQuery::applyToEloquentBuilder(
                 Customer::query(),
                 $owner,
-                (bool) config('customers.owner.include_global', false),
+                $this->customerIncludesGlobal(),
             );
             $customer = $query->find($customerId);
         }
@@ -524,6 +524,11 @@ final class PriceSimulator extends Page
                 ->action('clear')
                 ->visible(fn () => $this->result !== null),
         ];
+    }
+
+    private function customerIncludesGlobal(): bool
+    {
+        return (bool) config('customers.features.owner.include_global', false);
     }
 
     private function formatResultAmount(int $amountMinor): string

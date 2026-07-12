@@ -68,6 +68,68 @@ it('keeps top performer bonuses inside the current owner scope', function (): vo
         ->and($bonuses[0]['affiliate_id'])->not->toBe($affiliateB->id);
 });
 
+it('honors the caller include global flag instead of overriding it from config', function (): void {
+    config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', false);
+    config()->set('affiliates.bonuses.top_performer.enabled', true);
+    config()->set('affiliates.bonuses.top_performer.min_revenue', 0);
+    config()->set('affiliates.bonuses.top_performer.positions', [1 => 1000, 2 => 500]);
+
+    $owner = TopPerformerBonusRuleTestOwner::create(['name' => 'Scoped Owner']);
+
+    $scopedAffiliate = OwnerContext::withOwner($owner, fn (): Affiliate => Affiliate::create([
+        'code' => 'TOP-SCOPED',
+        'name' => 'Scoped Affiliate',
+        'status' => Active::class,
+        'commission_type' => CommissionType::Percentage,
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]));
+    $globalAffiliate = OwnerContext::withOwner(null, fn (): Affiliate => Affiliate::create([
+        'code' => 'TOP-GLOBAL',
+        'name' => 'Global Affiliate',
+        'status' => Active::class,
+        'commission_type' => CommissionType::Percentage,
+        'commission_rate' => 1000,
+        'currency' => 'USD',
+    ]));
+
+    OwnerContext::withOwner($owner, fn () => AffiliateConversion::create([
+        'affiliate_id' => $scopedAffiliate->id,
+        'affiliate_code' => $scopedAffiliate->code,
+        'order_reference' => 'TOP-SCOPED-ORDER',
+        'subtotal_minor' => 10000,
+        'total_minor' => 10000,
+        'value_minor' => 10000,
+        'commission_minor' => 1000,
+        'status' => ApprovedConversion::class,
+        'occurred_at' => now(),
+    ]));
+    OwnerContext::withOwner(null, fn () => AffiliateConversion::create([
+        'affiliate_id' => $globalAffiliate->id,
+        'affiliate_code' => $globalAffiliate->code,
+        'order_reference' => 'TOP-GLOBAL-ORDER',
+        'subtotal_minor' => 20000,
+        'total_minor' => 20000,
+        'value_minor' => 20000,
+        'commission_minor' => 2000,
+        'status' => ApprovedConversion::class,
+        'occurred_at' => now(),
+    ]));
+
+    $rule = new TopPerformerBonusRule;
+    $from = CarbonImmutable::now()->startOfMonth();
+    $to = CarbonImmutable::now()->endOfMonth();
+
+    $scoped = OwnerContext::withOwner($owner, fn (): array => $rule->calculate($from, $to, false));
+    $withGlobal = OwnerContext::withOwner($owner, fn (): array => $rule->calculate($from, $to, true));
+
+    expect($scoped)->toHaveCount(1)
+        ->and($scoped[0]['affiliate_id'])->toBe($scopedAffiliate->id)
+        ->and($withGlobal)->toHaveCount(2)
+        ->and($withGlobal[0]['affiliate_id'])->toBe($globalAffiliate->id);
+});
+
 it('fails closed without an owner context when owner mode is enabled', function (): void {
     config()->set('affiliates.owner.enabled', true);
     config()->set('affiliates.bonuses.top_performer.enabled', true);

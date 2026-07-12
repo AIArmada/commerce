@@ -20,7 +20,6 @@ return [
     */
     'database' => [
         'table_prefix' => $tablePrefix,
-        'json_column_type' => env('AFFILIATE_NETWORK_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => $tables,
     ],
 
@@ -115,7 +114,6 @@ return [
         'timeout_seconds' => 5,
         'retries' => 1,
         'retry_sleep_ms' => 150,
-        'skip_dns_check' => false,
     ],
 
 ];

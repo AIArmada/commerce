@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerCache;
@@ -70,4 +71,22 @@ it('reports gateway health and default gateway without network calls', function 
 
     $headerActions = $reflection->getMethod('getHeaderActions');
     expect($headerActions->invoke($page))->toBeArray();
+});
+
+it('checks configured CHIP health through the collect service', function (): void {
+    config()->set('chip.collect.brand_id', 'brand-id');
+    config()->set('chip.collect.api_key', 'api-key');
+
+    $chip = Mockery::mock(ChipCollectService::class);
+    $chip->shouldReceive('getAccountBalance')->once()->andReturn(['balance' => 100]);
+    app()->instance(ChipCollectService::class, $chip);
+
+    $page = app(GatewayManagement::class);
+    $method = (new ReflectionClass(GatewayManagement::class))->getMethod('checkChipHealth');
+
+    expect($method->invoke($page))->toMatchArray([
+        'status' => 'healthy',
+        'color' => 'success',
+        'message' => null,
+    ]);
 });

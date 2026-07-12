@@ -10,11 +10,10 @@ The package publishes a `config/addressing.php` file with these sections:
 
 ```php
 'database' => [
-    'json_column_type' => env('ADDRESS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
 ],
 ```
 
-Set `ADDRESS_JSON_COLUMN_TYPE=jsonb` in your `.env` for PostgreSQL JSONB support.
+JSON column type is controlled by `commerce_json_column_type('addressing', 'json')` and inherits from `COMMERCE_JSON_COLUMN_TYPE` when set.
 
 ## Tables
 

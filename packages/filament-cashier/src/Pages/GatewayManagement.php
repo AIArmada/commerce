@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Pages;
 
 use AIArmada\Cashier\Support\GatewayDetector;
-use AIArmada\Chip\Chip;
+use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use BackedEnum;
@@ -279,8 +279,8 @@ final class GatewayManagement extends Page
      */
     protected function checkChipHealth(): array
     {
-        $brandId = config('chip.brand_id') ?? config('cashier.gateways.chip.brand_id');
-        $apiKey = config('chip.api_key') ?? config('chip.collect.api_key');
+        $brandId = config('chip.collect.brand_id');
+        $apiKey = config('chip.collect.api_key');
 
         if (! is_string($brandId) || $brandId === '' || ! is_string($apiKey) || $apiKey === '') {
             return [
@@ -291,10 +291,8 @@ final class GatewayManagement extends Page
         }
 
         try {
-            if (class_exists(Chip::class)) {
-                $chip = app(Chip::class);
-                // Simple health check - get brands
-                $chip->brands()->first();
+            if (class_exists(ChipCollectService::class)) {
+                app(ChipCollectService::class)->getAccountBalance();
 
                 return [
                     'status' => 'healthy',

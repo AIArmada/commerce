@@ -116,7 +116,7 @@ class WebhookService
                 try {
                     // For webhook-specific requests, try webhook_keys first
                     if ($webhookId) {
-                        $configuredKeys = (array) config('chip.webhooks.webhook_keys', []);
+                        $configuredKeys = $this->allWebhookKeys();
 
                         if (isset($configuredKeys[$webhookId]) && $configuredKeys[$webhookId] !== '') {
                             return (string) $configuredKeys[$webhookId];
@@ -134,7 +134,7 @@ class WebhookService
                     // For general requests or when webhook-specific key not found,
                     // use company public key (mandatory, no fallback)
                     if (! $webhookId) {
-                        $companyKey = config('chip.webhooks.company_public_key');
+                        $companyKey = config('chip.collect.public_key');
                         if ($companyKey) {
                             return (string) $companyKey;
                         }
@@ -150,7 +150,7 @@ class WebhookService
                             return $publicKey;
                         }
 
-                        throw new WebhookVerificationException('Company public key is required but not configured. Set CHIP_COMPANY_PUBLIC_KEY environment variable.');
+                        throw new WebhookVerificationException('Company public key is required but not configured. Set CHIP_COLLECT_PUBLIC_KEY environment variable.');
                     }
                 } catch (WebhookVerificationException $e) {
                     throw $e;
@@ -163,7 +163,7 @@ class WebhookService
 
                     // Fallback for webhook-specific keys only
                     if ($webhookId) {
-                        $fallbackKeys = (array) config('chip.webhooks.webhook_keys', []);
+                        $fallbackKeys = $this->allWebhookKeys();
                         if (isset($fallbackKeys[$webhookId])) {
                             return (string) $fallbackKeys[$webhookId];
                         }
@@ -172,12 +172,12 @@ class WebhookService
                     }
 
                     // For company key, check config again
-                    $companyKey = config('chip.webhooks.company_public_key');
+                    $companyKey = config('chip.collect.public_key');
                     if ($companyKey) {
                         return (string) $companyKey;
                     }
 
-                    throw new WebhookVerificationException('Company public key is required but not configured. Set CHIP_COMPANY_PUBLIC_KEY environment variable.');
+                    throw new WebhookVerificationException('Company public key is required but not configured. Set CHIP_COLLECT_PUBLIC_KEY environment variable.');
                 }
 
                 // Should not reach here, but ensure we don't return empty string
@@ -220,7 +220,7 @@ class WebhookService
             }
         }
 
-        foreach ((array) config('chip.webhooks.webhook_keys', []) as $configuredKey) {
+        foreach ($this->allWebhookKeys() as $configuredKey) {
             if (is_string($configuredKey) && $configuredKey !== '') {
                 $candidateKeys[] = $configuredKey;
             }
@@ -235,6 +235,19 @@ class WebhookService
         }
 
         return array_values(array_unique($candidateKeys));
+    }
+
+    /**
+     * Merge Collect and Send webhook key maps.
+     *
+     * @return array<string, string>
+     */
+    protected function allWebhookKeys(): array
+    {
+        return array_merge(
+            (array) config('chip.webhooks.collect.webhook_keys', []),
+            (array) config('chip.webhooks.send.webhook_keys', []),
+        );
     }
 
     protected function normalizePublicKey(string $publicKey): string

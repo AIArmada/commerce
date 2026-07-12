@@ -21,7 +21,6 @@ return [
         'tables' => [
             'checkout_sessions' => 'checkout_sessions',
         ],
-        'json_column_type' => env('CHECKOUT_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     ],
 
     /*
@@ -53,7 +52,6 @@ return [
     'create_order' => [
         'confirm_payment' => true,
     ],
-
 
     /*
     |--------------------------------------------------------------------------
@@ -214,7 +212,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | - CHIP: Uses config('chip.webhooks.verify_signature')
-    | - Stripe: Uses config('cashier.webhook.secret')
+    | - Stripe: Uses config('cashier.gateways.stripe.webhook_secret')
     |
     */
     'webhooks' => [
@@ -245,7 +243,7 @@ Checkout document generation is disabled by default. The `dispatch_documents` st
 |-----|------|---------|-------------|
 | `database.table_prefix` | string | `''` | Prefix for database tables |
 | `database.tables.checkout_sessions` | string | `checkout_sessions` | Sessions table name |
-| `database.json_column_type` | string | `jsonb` | JSON column type (`json` or `jsonb`) |
+| — | — | — | JSON column type via `commerce_json_column_type('checkout', 'jsonb')` helper |
 
 ### Default Settings
 

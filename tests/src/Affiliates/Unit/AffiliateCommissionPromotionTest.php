@@ -317,6 +317,6 @@ describe('AffiliateCommissionPromotion Model', function (): void {
     test('uses correct table name from config', function (): void {
         $promotion = new AffiliateCommissionPromotion;
 
-        expect($promotion->getTable())->toBe(config('affiliates.table_names.commission_promotions', 'affiliate_commission_promotions'));
+        expect($promotion->getTable())->toBe(config('affiliates.database.tables.commission_promotions', 'affiliate_commission_promotions'));
     });
 });

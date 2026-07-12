@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = config('events.database.json_column_type', 'jsonb');
+        $jsonType = commerce_json_column_type('events', 'jsonb');
 
         Schema::create(config('events.database.tables.event_registration_participants', 'event_registration_participants'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();

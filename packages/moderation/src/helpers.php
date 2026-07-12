@@ -12,6 +12,6 @@ if (! function_exists('moderation_table')) {
 if (! function_exists('moderation_json_type')) {
     function moderation_json_type(): string
     {
-        return (string) config('moderation.database.json_column_type', 'jsonb');
+        return commerce_json_column_type('moderation', 'jsonb');
     }
 }

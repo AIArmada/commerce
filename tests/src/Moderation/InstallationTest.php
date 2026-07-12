@@ -67,7 +67,7 @@ test('contract and concrete resolve the same singleton', function (): void {
 test('helper functions config sources resolve correctly', function (): void {
     expect(config('moderation.database.tables.blocks'))->toBe('moderation_blocks');
     expect(config('moderation.database.tables.moderation_actions'))->toBe('moderation_actions');
-    expect(config('moderation.database.json_column_type'))->toBeString()->not->toBeEmpty();
+    expect(commerce_json_column_type('moderation'))->toBeString()->not->toBeEmpty();
 });
 
 test('blockable morph uses a UUID column', function (): void {

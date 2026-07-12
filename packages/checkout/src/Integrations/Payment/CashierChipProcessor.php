@@ -40,8 +40,8 @@ final class CashierChipProcessor implements PaymentProcessorInterface
             return false;
         }
 
-        return config('cashier-chip.brand_id') !== null
-            && config('cashier-chip.api_key') !== null;
+        return filled(config('chip.collect.brand_id'))
+            && filled(config('chip.collect.api_key'));
     }
 
     public function createPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult

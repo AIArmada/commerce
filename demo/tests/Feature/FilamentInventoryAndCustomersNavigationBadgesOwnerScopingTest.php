@@ -19,7 +19,7 @@ test('inventory and customers filament navigation badges are owner-scoped (no cr
     config()->set('inventory.owner.include_global', false);
 
     config()->set('customers.owner.enabled', true);
-    config()->set('customers.owner.include_global', false);
+    config()->set('customers.features.owner.include_global', false);
 
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();

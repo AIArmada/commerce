@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Support;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Signals\Models\TrackedProperty;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
@@ -12,6 +11,8 @@ use InvalidArgumentException;
 
 final class TrackedPropertyMutationGuard
 {
+    public function __construct(private readonly SignalsModelReferenceGuard $referenceGuard) {}
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -30,7 +31,7 @@ final class TrackedPropertyMutationGuard
         }
 
         try {
-            OwnerWriteGuard::findOrFailForOwner(
+            $this->referenceGuard->findOrFail(
                 TrackedProperty::class,
                 $trackedPropertyId,
                 includeGlobal: false,

@@ -31,6 +31,10 @@ return [
 
     'default_currency' => 'MYR',
 
+    'features' => [
+        'regulator_mode' => false,
+    ],
+
     'resources' => [
         'navigation_sort' => [
             'purchases' => 10,
@@ -85,6 +89,7 @@ return [
 ```
 
 - `default_currency` is the fallback currency used by UI formatting helpers.
+- `features.regulator_mode` exposes regulator-focused read-only surfaces when enabled.
 - Owner scoping is configured via `config/chip.php` (`chip.owner.enabled`).
 
 ## Resource Navigation Sort

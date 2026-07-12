@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('severity', 20);
             $table->string('description');
 
-            $jsonType = config('affiliates.database.json_column_type', commerce_json_column_type('affiliates', 'jsonb'));
+            $jsonType = commerce_json_column_type('affiliates', 'jsonb');
             $table->addColumn($jsonType, 'evidence')->nullable();
 
             $table->string('status', 20)->default('detected');

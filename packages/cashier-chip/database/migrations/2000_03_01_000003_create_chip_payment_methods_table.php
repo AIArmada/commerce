@@ -14,7 +14,7 @@ return new class extends Migration
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
         $tables = $databaseConfig['tables'] ?? [];
         $tableName = $tables['payment_methods'] ?? $tablePrefix . 'payment_methods';
-        $jsonColumnType = $databaseConfig['json_column_type'] ?? 'jsonb';
+        $jsonColumnType = commerce_json_column_type('cashier-chip', 'jsonb');
 
         if (Schema::hasTable($tableName)) {
             return;

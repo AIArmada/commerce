@@ -31,6 +31,10 @@ return [
     |--------------------------------------------------------------------------
     */
     'features' => [
+        'promotional' => [
+            'enabled' => env('PRICING_PROMOTIONAL_ENABLED', true),
+        ],
+
         'owner' => [
             'enabled' => env('PRICING_OWNER_ENABLED', false),
             'include_global' => false,

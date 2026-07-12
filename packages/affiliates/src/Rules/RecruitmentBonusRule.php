@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Rules;
 use AIArmada\Affiliates\Contracts\PerformanceBonusRule;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 
 final class RecruitmentBonusRule implements PerformanceBonusRule
@@ -32,14 +33,17 @@ final class RecruitmentBonusRule implements PerformanceBonusRule
         $bonuses = [];
 
         $recruiters = Affiliate::query()
+            ->forOwner(OwnerContext::CURRENT, $includeGlobal)
             ->where('status', Active::class)
-            ->whereHas('children', function ($query) use ($from, $to): void {
-                $query->whereBetween('created_at', [$from, $to])
+            ->whereHas('children', function ($query) use ($from, $to, $includeGlobal): void {
+                $query->forOwner(OwnerContext::CURRENT, $includeGlobal)
+                    ->whereBetween('created_at', [$from, $to])
                     ->where('status', Active::class);
             })
             ->withCount([
-                'children' => function ($query) use ($from, $to): void {
-                    $query->whereBetween('created_at', [$from, $to])
+                'children' => function ($query) use ($from, $to, $includeGlobal): void {
+                    $query->forOwner(OwnerContext::CURRENT, $includeGlobal)
+                        ->whereBetween('created_at', [$from, $to])
                         ->where('status', Active::class);
                 },
             ])

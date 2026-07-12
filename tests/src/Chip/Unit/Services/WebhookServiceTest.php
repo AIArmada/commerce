@@ -46,8 +46,8 @@ describe('WebhookService', function (): void {
     });
 
     it('verifies incoming requests with configured webhook public keys', function (): void {
-        config()->set('chip.webhooks.company_public_key', null);
-        config()->set('chip.webhooks.webhook_keys', [
+        config()->set('chip.collect.public_key', null);
+        config()->set('chip.webhooks.collect.webhook_keys', [
             'wh_123' => $this->publicKey,
         ]);
 
@@ -80,8 +80,8 @@ describe('WebhookService', function (): void {
 
         $alternateKeyDetails = openssl_pkey_get_details($alternateKey);
 
-        config()->set('chip.webhooks.company_public_key', $this->publicKey);
-        config()->set('chip.webhooks.webhook_keys', [
+        config()->set('chip.collect.public_key', $this->publicKey);
+        config()->set('chip.webhooks.collect.webhook_keys', [
             'wh_123' => $alternateKeyDetails['key'],
         ]);
 
@@ -157,8 +157,8 @@ describe('WebhookService', function (): void {
     it('retrieves and caches public keys from the collect service', function (): void {
         Cache::forget(config('chip.cache.prefix') . 'public_key');
 
-        // Clear the company_public_key to force API fetch
-        config(['chip.webhooks.company_public_key' => null]);
+        // Clear the public_key to force API fetch
+        config(['chip.collect.public_key' => null]);
 
         $originalClient = app(ChipCollectClient::class);
         $collectClient = Mockery::mock(ChipCollectClient::class);
@@ -197,7 +197,7 @@ describe('WebhookService', function (): void {
     });
 
     it('returns configured company public key without calling the api', function (): void {
-        config(['chip.webhooks.company_public_key' => 'company-fallback-key']);
+        config(['chip.collect.public_key' => 'company-fallback-key']);
 
         $originalClient = app(ChipCollectClient::class);
         $collectClient = Mockery::mock(ChipCollectClient::class);
@@ -214,7 +214,7 @@ describe('WebhookService', function (): void {
     });
 
     it('throws exception when company public key is not configured', function (): void {
-        config(['chip.webhooks.company_public_key' => null]);
+        config(['chip.collect.public_key' => null]);
 
         $originalClient = app(ChipCollectClient::class);
         $collectClient = Mockery::mock(ChipCollectClient::class);

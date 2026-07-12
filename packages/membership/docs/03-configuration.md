@@ -11,7 +11,6 @@ return [
             'applications' => 'membership_applications',
             'invitations' => 'membership_invitations',
         ],
-        'json_column_type' => 'jsonb',
     ],
     'invitations' => [
         'token_length' => 64,

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource\Pages;
 
+use AIArmada\CommerceSupport\Support\Filament\OwnerUiScope;
+use AIArmada\CommerceSupport\Support\OwnerCache;
 use AIArmada\FilamentSignals\Resources\SignalInteractionRuleResource;
 use AIArmada\FilamentSignals\Support\InteractionRuleScanner;
+use AIArmada\FilamentSignals\Support\SignalsModelReferenceGuard;
 use AIArmada\Signals\Models\SignalInteractionRule;
 use AIArmada\Signals\Models\TrackedProperty;
 use Filament\Actions;
@@ -16,7 +19,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -94,7 +97,19 @@ final class ListSignalInteractionRules extends ListRecords
                     $eventCategoryRaw = (string) ($meta['event_category'] ?? 'engagement');
                     $eventCategory = mb_trim($eventCategoryRaw) !== '' ? $eventCategoryRaw : null;
                     $triggerType = (string) ($meta['trigger_type'] ?? 'click');
-                    $trackedPropertyId = is_string($meta['tracked_property_id'] ?? null) ? $meta['tracked_property_id'] : null;
+                    try {
+                        $trackedPropertyId = $this->resolveTrackedPropertyId($meta['tracked_property_id'] ?? null);
+                    } catch (Throwable $exception) {
+                        report($exception);
+                        $this->clearScanPreview();
+
+                        Notification::make()
+                            ->title('The selected website or app is no longer available')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
                     $isActive = (bool) ($data['activate_created_rules'] ?? false);
                     $existingSortOrder = (int) (SignalInteractionRule::query()->forOwner()->max('sort_order') ?? 0);
                     $created = 0;
@@ -213,6 +228,7 @@ final class ListSignalInteractionRules extends ListRecords
                     $scanner = app(InteractionRuleScanner::class);
 
                     try {
+                        $trackedPropertyId = $this->resolveTrackedPropertyId($data['tracked_property_id'] ?? null);
                         $scanSource = (string) ($data['scan_source'] ?? 'url');
                         $maxCandidates = max(1, (int) ($data['max_candidates'] ?? 25));
 
@@ -270,7 +286,7 @@ final class ListSignalInteractionRules extends ListRecords
                     $this->storeScanPreview(
                         candidates: $candidates,
                         meta: [
-                            'tracked_property_id' => (string) $data['tracked_property_id'],
+                            'tracked_property_id' => $trackedPropertyId,
                             'event_name' => (string) $data['event_name'],
                             'event_category' => (string) ($data['event_category'] ?? 'engagement'),
                             'trigger_type' => (string) $data['trigger_type'],
@@ -303,7 +319,6 @@ final class ListSignalInteractionRules extends ListRecords
                     $eventName = mb_trim((string) $data['event_name']);
                     $eventCategory = mb_trim((string) ($data['event_category'] ?? ''));
                     $triggerType = (string) $data['trigger_type'];
-                    $trackedPropertyId = (string) $data['tracked_property_id'];
                     $isActive = (bool) ($data['activate_created_rules'] ?? false);
                     $existingSortOrder = (int) (SignalInteractionRule::query()->forOwner()->max('sort_order') ?? 0);
                     $created = 0;
@@ -391,6 +406,7 @@ final class ListSignalInteractionRules extends ListRecords
                     $scanner = app(InteractionRuleScanner::class);
 
                     try {
+                        $trackedPropertyId = $this->resolveTrackedPropertyId($data['tracked_property_id'] ?? null);
                         $candidates = $scanner->scanLocalSource(
                             triggerType: (string) $data['trigger_type'],
                             routePath: (string) $data['route_path'],
@@ -423,7 +439,7 @@ final class ListSignalInteractionRules extends ListRecords
                     $this->storeScanPreview(
                         candidates: $candidates,
                         meta: [
-                            'tracked_property_id' => (string) $data['tracked_property_id'],
+                            'tracked_property_id' => $trackedPropertyId,
                             'event_name' => (string) $data['event_name'],
                             'event_category' => (string) ($data['event_category'] ?? 'engagement'),
                             'trigger_type' => (string) $data['trigger_type'],
@@ -460,7 +476,7 @@ final class ListSignalInteractionRules extends ListRecords
      */
     private function storeScanPreview(array $candidates, array $meta): void
     {
-        Cache::put($this->scanPreviewCacheKey(), [
+        OwnerCache::put($this->scanPreviewOwner(), $this->scanPreviewLogicalKey(), [
             'candidates' => $candidates,
             'meta' => $meta,
         ], now()->addMinutes(30));
@@ -471,7 +487,7 @@ final class ListSignalInteractionRules extends ListRecords
      */
     private function scanPreviewPayload(): array
     {
-        $payload = Cache::get($this->scanPreviewCacheKey());
+        $payload = OwnerCache::get($this->scanPreviewOwner(), $this->scanPreviewLogicalKey());
 
         if (! is_array($payload)) {
             return ['candidates' => [], 'meta' => []];
@@ -486,14 +502,36 @@ final class ListSignalInteractionRules extends ListRecords
 
     private function clearScanPreview(): void
     {
-        Cache::forget($this->scanPreviewCacheKey());
+        OwnerCache::forget($this->scanPreviewOwner(), $this->scanPreviewLogicalKey());
     }
 
-    private function scanPreviewCacheKey(): string
+    private function scanPreviewOwner(): ?Model
+    {
+        return OwnerUiScope::resolveOwner(SignalInteractionRule::class);
+    }
+
+    private function scanPreviewLogicalKey(): string
     {
         $userIdentifier = auth()->id();
+        $userKey = is_scalar($userIdentifier) ? (string) $userIdentifier : 'guest';
 
-        return 'filament-signals:interaction-rule-scan-preview:' . (is_scalar($userIdentifier) ? (string) $userIdentifier : 'guest');
+        return 'filament-signals.interaction-rule-scan-preview.user-' . hash('sha256', $userKey);
+    }
+
+    private function resolveTrackedPropertyId(mixed $id): string
+    {
+        if (! is_scalar($id) || mb_trim((string) $id) === '') {
+            throw new \InvalidArgumentException('A tracked property identifier is required.');
+        }
+
+        $trackedProperty = app(SignalsModelReferenceGuard::class)->findOrFail(
+            TrackedProperty::class,
+            (string) $id,
+            includeGlobal: false,
+            message: 'The selected tracked property does not belong to the active owner.',
+        );
+
+        return (string) $trackedProperty->getKey();
     }
 
     /**

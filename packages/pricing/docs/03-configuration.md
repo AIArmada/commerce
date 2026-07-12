@@ -40,6 +40,10 @@ return [
     |--------------------------------------------------------------------------
     */
     'features' => [
+        'promotional' => [
+            'enabled' => env('PRICING_PROMOTIONAL_ENABLED', true),
+        ],
+
         'owner' => [
             'enabled' => env('PRICING_OWNER_ENABLED', false),
             'include_global' => false,
@@ -69,6 +73,7 @@ return [
 
 | Key | Default | Description |
 |-----|---------|-------------|
+| `features.promotional.enabled` | `true` | Enable promotional adjustment resolution |
 | `features.owner.enabled` | `false` | Enable multitenancy/owner scoping |
 | `features.owner.include_global` | `false` | Include global (ownerless) records in queries |
 | `features.owner.auto_assign_on_create` | `true` | Auto-assign the resolved owner to newly created pricing records |
@@ -107,11 +112,12 @@ The registrar's `boot()` method is called during service provider registration t
 ## Environment Variables
 
 ```bash
+# Enable promotional adjustment resolution
+PRICING_PROMOTIONAL_ENABLED=true
+
 # Enable multitenancy
 PRICING_OWNER_ENABLED=true
 ```
-
-
 
 ### PromotionalPricingSettings
 

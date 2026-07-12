@@ -197,3 +197,20 @@ it('silently clears invalid report page state ids', function (): void {
         ->and($sanitizer->sanitizeSavedReportId($ownerBReport->id, 'acquisition'))->toBe('')
         ->and($sanitizer->sanitizeSavedReportId($ownerAReport->id, 'retention'))->toBe('');
 });
+
+it('accepts existing references when signals owner mode is disabled', function (): void {
+    config()->set('signals.owner.enabled', false);
+
+    $property = TrackedProperty::query()->create([
+        'name' => 'Global Property',
+        'slug' => 'global-property',
+        'write_key' => 'global-property-key',
+    ]);
+
+    $data = app(TrackedPropertyMutationGuard::class)->sanitize([
+        'tracked_property_id' => $property->id,
+    ]);
+
+    expect($data['tracked_property_id'])->toBe($property->id)
+        ->and(app(SignalsReportStateSanitizer::class)->sanitizeTrackedPropertyId($property->id))->toBe($property->id);
+});

@@ -31,8 +31,8 @@ final class MassAssignmentTest extends CashierChipTestCase
         $this->assertSame('price_basic', $subscription->chip_price);
         $this->assertNull($subscription->owner_type);
         $this->assertNull($subscription->owner_id);
-        $this->assertNull($subscription->chip_id);
-        $this->assertNull($subscription->chip_status);
+        $this->assertSame('sub_external', $subscription->chip_id);
+        $this->assertSame(SubscriptionStatus::Active, $subscription->chip_status);
     }
 
     public function test_subscription_item_protects_owner_gateway_id_and_amount(): void

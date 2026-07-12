@@ -204,8 +204,8 @@ describe('WebhookController', function (): void {
 
         config([
             'chip.webhooks.verify_signature' => true,
-            'chip.webhooks.company_public_key' => null,
-            'chip.webhooks.webhook_keys' => [
+            'chip.collect.public_key' => null,
+            'chip.webhooks.collect.webhook_keys' => [
                 'wh_123' => $details['key'],
             ],
         ]);

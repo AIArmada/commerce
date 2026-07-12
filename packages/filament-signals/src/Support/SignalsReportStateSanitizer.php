@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Support;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Signals\Models\SavedSignalReport;
 use AIArmada\Signals\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
@@ -13,6 +12,8 @@ use InvalidArgumentException;
 
 final class SignalsReportStateSanitizer
 {
+    public function __construct(private readonly SignalsModelReferenceGuard $referenceGuard) {}
+
     public function sanitizeTrackedPropertyId(?string $trackedPropertyId): string
     {
         if (! is_string($trackedPropertyId) || $trackedPropertyId === '') {
@@ -20,7 +21,7 @@ final class SignalsReportStateSanitizer
         }
 
         try {
-            OwnerWriteGuard::findOrFailForOwner(
+            $this->referenceGuard->findOrFail(
                 TrackedProperty::class,
                 $trackedPropertyId,
                 includeGlobal: false,
@@ -39,7 +40,7 @@ final class SignalsReportStateSanitizer
         }
 
         try {
-            OwnerWriteGuard::findOrFailForOwner(
+            $this->referenceGuard->findOrFail(
                 SignalSegment::class,
                 $signalSegmentId,
                 includeGlobal: false,
@@ -58,7 +59,7 @@ final class SignalsReportStateSanitizer
         }
 
         try {
-            $savedReport = OwnerWriteGuard::findOrFailForOwner(
+            $savedReport = $this->referenceGuard->findOrFail(
                 SavedSignalReport::class,
                 $savedReportId,
                 includeGlobal: false,

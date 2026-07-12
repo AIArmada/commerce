@@ -56,7 +56,12 @@ return [
     'billing' => [
         'billable_model' => null,
         'panel_id' => 'billing',
+        'path' => 'billing',
+        'brand_name' => 'Billing Portal',
+        'primary_color' => '#6366f1',
+        'login_enabled' => true,
         'auth_guard' => 'web',
+        'allowed_roles' => [],
         'features' => [
             'subscriptions' => true,
             'payment_methods' => true,

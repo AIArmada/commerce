@@ -62,7 +62,7 @@ CHIP_SEND_API_KEY=your_send_api_key
 CHIP_SEND_API_SECRET=your_send_api_secret
 
 # Webhook Security
-CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+CHIP_COLLECT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
 
 # Redirects
 CHIP_SUCCESS_REDIRECT=https://your-app.com/payment/success

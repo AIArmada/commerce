@@ -20,8 +20,9 @@ This path integrates with `spatie/laravel-webhook-client` and the package's webh
 CHIP_WEBHOOKS_ENABLED=true
 CHIP_WEBHOOK_ROUTE=/chip/webhooks
 CHIP_WEBHOOK_VERIFY_SIGNATURE=true
-CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
-CHIP_WEBHOOK_PUBLIC_KEYS='{"webhook-id":"-----BEGIN PUBLIC KEY-----..."}'
+CHIP_COLLECT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
+CHIP_COLLECT_WEBHOOK_PUBLIC_KEYS='{"wh-uuid":"-----BEGIN PUBLIC KEY-----..."}'
+CHIP_SEND_WEBHOOK_PUBLIC_KEYS='{"1":"-----BEGIN PUBLIC KEY-----..."}'
 ```
 
 Relevant config:
@@ -31,11 +32,17 @@ Relevant config:
     'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
     'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
     'middleware' => ['api'],
-    'company_public_key' => env('CHIP_COMPANY_PUBLIC_KEY'),
-    'webhook_keys' => json_decode(env('CHIP_WEBHOOK_PUBLIC_KEYS', '[]'), true) ?: [],
     'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
     'store_webhooks' => env('CHIP_WEBHOOK_STORE', true),
     'deduplication' => env('CHIP_WEBHOOK_DEDUPLICATION', true),
+
+    'collect' => [
+        'webhook_keys' => json_decode(env('CHIP_COLLECT_WEBHOOK_PUBLIC_KEYS', '[]'), true) ?: [],
+    ],
+
+    'send' => [
+        'webhook_keys' => json_decode(env('CHIP_SEND_WEBHOOK_PUBLIC_KEYS', '[]'), true) ?: [],
+    ],
 ],
 ```
 
@@ -52,8 +59,9 @@ According to the CHIP Collect docs:
 
 This package supports both sources:
 
-- `chip.webhooks.company_public_key`
-- `chip.webhooks.webhook_keys`
+- `chip.collect.public_key` (company key for Collect success callbacks)
+- `chip.webhooks.collect.webhook_keys` (per-webhook keys for Collect registered webhooks)
+- `chip.webhooks.send.webhook_keys` (per-webhook keys for Send webhooks)
 
 At runtime, `AIArmada\Chip\Services\WebhookService` attempts a webhook-specific key first when it can resolve a webhook ID, then falls back to configured webhook keys and finally the company key.
 

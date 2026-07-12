@@ -10,6 +10,8 @@ use AIArmada\Signals\Models\SignalAlertLog;
 use AIArmada\Signals\Models\SignalAlertRule;
 use AIArmada\Signals\Models\SignalEvent;
 use AIArmada\Signals\Models\TrackedProperty;
+use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
+use AIArmada\Signals\Services\SignalAlertDispatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
@@ -268,6 +270,14 @@ it('applies generic event and property filters before dispatching alerts', funct
 
 it('dispatches signal alerts to named webhook destinations', function (): void {
     Http::fake();
+
+    // ponytail: allow any URL in test since DNS won't resolve .test domains
+    app()->instance(PublicHttpUrlGuard::class, new PublicHttpUrlGuard(
+        static fn (string $host): array => ['93.184.216.34'],
+    ));
+
+    // ponytail: force re-resolution since dispatcher is a singleton cached from prior tests
+    app()->forgetInstance(SignalAlertDispatcher::class);
 
     config()->set('signals.features.alerts.destinations.webhook.ops', [
         'url' => 'https://alerts.example.test/signals',

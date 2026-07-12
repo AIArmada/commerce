@@ -326,6 +326,6 @@ describe('AffiliatePayout Model', function (): void {
     test('uses correct table name from config', function (): void {
         $payout = new AffiliatePayout;
 
-        expect($payout->getTable())->toBe(config('affiliates.table_names.payouts', 'affiliate_payouts'));
+        expect($payout->getTable())->toBe(config('affiliates.database.tables.payouts', 'affiliate_payouts'));
     });
 });

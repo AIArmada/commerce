@@ -11,7 +11,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = config('events.database.json_column_type', 'jsonb');
+        $jsonType = commerce_json_column_type('events', 'jsonb');
 
         Schema::create(config('events.database.tables.events', 'events'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
@@ -47,7 +47,7 @@ return new class extends Migration
             $table->boolean('issue_passes_for_free')->default(true);
         });
 
-        if (DB::getDriverName() === 'pgsql' && config('events.database.json_column_type', 'jsonb') === 'jsonb') {
+        if (DB::getDriverName() === 'pgsql' && commerce_json_column_type('events', 'jsonb') === 'jsonb') {
             $eventsTable = config('events.database.tables.events', 'events');
             DB::statement("CREATE INDEX IF NOT EXISTS {$eventsTable}_metadata_gin_idx ON {$eventsTable} USING GIN (metadata jsonb_path_ops)");
         }

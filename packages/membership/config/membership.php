@@ -8,7 +8,6 @@ return [
             'applications' => env('MEMBERSHIP_TABLE_APPLICATIONS', 'membership_applications'),
             'invitations' => env('MEMBERSHIP_TABLE_INVITATIONS', 'membership_invitations'),
         ],
-        'json_column_type' => env('MEMBERSHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     ],
 
     'invitations' => [

@@ -30,7 +30,7 @@ Analytics queries include owner scoping. Ensure the same owner context is used w
 
 ## JSON column type mismatch
 
-Set `database.json_column_type` to `json` if your database does not support `jsonb`.
+Set `FEEDBACK_JSON_COLUMN_TYPE=json` env var or `COMMERCE_JSON_COLUMN_TYPE=json` if your database does not support `jsonb`.
 
 ## Filament adapter not showing resources
 

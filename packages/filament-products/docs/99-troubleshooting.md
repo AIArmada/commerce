@@ -110,25 +110,6 @@ php artisan migrate
 
 ---
 
-### Import/Export Page Not Found
-
-**Symptom**: 404 error when navigating to import/export.
-
-**Causes & Solutions**:
-
-1. **Feature disabled**:
-
-```php
-// config/filament-products.php
-'features' => [
-    'import_export' => true,  // Must be true
-],
-```
-
-2. **Page not registered**: Check FilamentProductsPlugin registers the page.
-
----
-
 ### Cross-Tenant Data Visible
 
 **Symptom**: Products or categories from other tenants appear in lists.

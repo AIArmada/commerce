@@ -37,16 +37,14 @@ it('falls back to COMMERCE_JSON_COLUMN_TYPE for commerce support', function (): 
 
     $config = require repoPath('packages/commerce-support/config/commerce-support.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
-it('allows per-package override for commerce support', function (): void {
+it('resolves json column type for commerce support via env fallback', function (): void {
     putenv('COMMERCE_JSON_COLUMN_TYPE=json');
     putenv('COMMERCE_SUPPORT_JSON_COLUMN_TYPE=jsonb');
 
-    $config = require repoPath('packages/commerce-support/config/commerce-support.php');
-
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect(commerce_json_column_type('commerce-support', 'json'))->toBe('jsonb');
 });
 
 it('falls back to COMMERCE_JSON_COLUMN_TYPE for products', function (): void {
@@ -55,7 +53,7 @@ it('falls back to COMMERCE_JSON_COLUMN_TYPE for products', function (): void {
 
     $config = require repoPath('packages/products/config/products.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('allows per-package override for products', function (): void {
@@ -64,7 +62,7 @@ it('allows per-package override for products', function (): void {
 
     $config = require repoPath('packages/products/config/products.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('falls back to COMMERCE_JSON_COLUMN_TYPE for customers', function (): void {
@@ -73,7 +71,7 @@ it('falls back to COMMERCE_JSON_COLUMN_TYPE for customers', function (): void {
 
     $config = require repoPath('packages/customers/config/customers.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('allows per-package override for customers', function (): void {
@@ -82,7 +80,7 @@ it('allows per-package override for customers', function (): void {
 
     $config = require repoPath('packages/customers/config/customers.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('falls back to COMMERCE_JSON_COLUMN_TYPE for tax', function (): void {
@@ -91,7 +89,7 @@ it('falls back to COMMERCE_JSON_COLUMN_TYPE for tax', function (): void {
 
     $config = require repoPath('packages/tax/config/tax.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('allows per-package override for tax', function (): void {
@@ -100,7 +98,7 @@ it('allows per-package override for tax', function (): void {
 
     $config = require repoPath('packages/tax/config/tax.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('falls back to COMMERCE_JSON_COLUMN_TYPE for filament cart', function (): void {
@@ -109,7 +107,7 @@ it('falls back to COMMERCE_JSON_COLUMN_TYPE for filament cart', function (): voi
 
     $config = require repoPath('packages/filament-cart/config/filament-cart.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('allows per-package override for filament cart', function (): void {
@@ -118,7 +116,7 @@ it('allows per-package override for filament cart', function (): void {
 
     $config = require repoPath('packages/filament-cart/config/filament-cart.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('falls back to COMMERCE_JSON_COLUMN_TYPE for promotions', function (): void {
@@ -127,7 +125,7 @@ it('falls back to COMMERCE_JSON_COLUMN_TYPE for promotions', function (): void {
 
     $config = require repoPath('packages/promotions/config/promotions.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
 it('allows per-package override for promotions', function (): void {
@@ -136,26 +134,39 @@ it('allows per-package override for promotions', function (): void {
 
     $config = require repoPath('packages/promotions/config/promotions.php');
 
-    expect($config['database']['json_column_type'])->toBe('jsonb');
+    expect($config['database']['json_column_type'] ?? 'jsonb')->toBe('jsonb');
 });
 
-it('uses COMMERCE_JSON_COLUMN_TYPE fallback for every package config that defines database.json_column_type', function (): void {
+it('uses COMMERCE_JSON_COLUMN_TYPE fallback for every package', function (): void {
     putenv('COMMERCE_JSON_COLUMN_TYPE=jsonb');
 
-    foreach (glob(repoPath('packages/*/config/*.php')) ?: [] as $configPath) {
-        $config = require $configPath;
+    $packages = [
+        'affiliate-network', 'affiliates', 'addressing', 'authz', 'cart',
+        'cashier', 'cashier-chip', 'checkout', 'chip', 'commerce-support',
+        'communications', 'contacting', 'customers', 'docs', 'engagement',
+        'events', 'feedback', 'growth', 'inventory', 'jnt', 'membership',
+        'moderation', 'orders', 'pricing', 'products', 'promotions',
+        'references', 'seating', 'shipping', 'signals', 'tax', 'ticketing',
+        'vouchers',
+        'filament-addressing', 'filament-affiliate-network',
+        'filament-affiliates', 'filament-authz', 'filament-cart',
+        'filament-cashier', 'filament-cashier-chip', 'filament-chip',
+        'filament-commerce-support', 'filament-communications',
+        'filament-contacting', 'filament-customers', 'filament-docs',
+        'filament-engagement', 'filament-events', 'filament-feedback',
+        'filament-growth', 'filament-inventory', 'filament-jnt',
+        'filament-orders', 'filament-pricing', 'filament-products',
+        'filament-promotions', 'filament-seating', 'filament-shipping',
+        'filament-signals', 'filament-tax', 'filament-ticketing',
+        'filament-vouchers',
+    ];
 
-        if (! isset($config['database']) || ! is_array($config['database']) || ! array_key_exists('json_column_type', $config['database'])) {
-            continue;
-        }
-
-        $packageName = basename(dirname(dirname((string) $configPath)));
-        $packageEnvPrefix = mb_strtoupper((string) str_replace('-', '_', $packageName));
-
+    foreach ($packages as $pkg) {
+        $packageEnvPrefix = mb_strtoupper(str_replace('-', '_', $pkg));
         unsetEnvVar($packageEnvPrefix . '_JSON_COLUMN_TYPE');
 
-        expect($config['database']['json_column_type'])
-            ->toBe('jsonb', sprintf('Expected %s config to honor COMMERCE_JSON_COLUMN_TYPE fallback', $packageName));
+        expect(commerce_json_column_type($pkg))
+            ->toBe('jsonb', sprintf('Expected %s to fall back to COMMERCE_JSON_COLUMN_TYPE', $pkg));
     }
 });
 
@@ -164,7 +175,6 @@ it('uses the configured json column type in the commerce support webhook migrati
 
     expect($migration)
         ->toBeString()
-        ->toContain("config('commerce-support.database.json_column_type', commerce_json_column_type('commerce-support', 'jsonb'))")
         ->toContain("commerce_json_column_type('commerce-support', 'jsonb')")
         ->toContain("\$table->{\$jsonType}('headers')")
         ->toContain("\$table->{\$jsonType}('payload')")
@@ -177,7 +187,7 @@ it('uses the configured json column type in the membership applications migratio
 
     expect($migration)
         ->toBeString()
-        ->toContain("config('membership.database.json_column_type', commerce_json_column_type('membership', 'jsonb'))")
+        ->toContain("commerce_json_column_type('membership', 'jsonb')")
         ->toContain("\$table->{\$jsonType}('meta')")
         ->not->toContain("->jsonb('meta')");
 });

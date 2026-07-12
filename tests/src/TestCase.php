@@ -268,9 +268,6 @@ abstract class TestCase extends Orchestra
         // Configure cart cache to use array driver in tests (avoid Redis connection issues in CI)
         $app['config']->set('cart.cache.store', 'array');
 
-        // Configure addressing for testing
-        $app['config']->set('addressing.database.json_column_type', 'json');
-
         // Configure Spatie Laravel Data settings for testing
         $app['config']->set('data.date_format', DATE_ATOM);
         $app['config']->set('data.date_timezone', null);
@@ -330,7 +327,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('chip.collect.environment', 'sandbox');
         $app['config']->set('chip.send.api_key', 'test_api_key');
         $app['config']->set('chip.send.api_secret', 'test_send_secret');
-        $app['config']->set('chip.webhooks.company_public_key', 'test_public_key');
+        $app['config']->set('chip.collect.public_key', 'test_public_key');
 
         // Ownership defaults — enable owner mode in tests for packages
         // that had their config default changed to false.
@@ -361,7 +358,6 @@ abstract class TestCase extends Orchestra
         $app['config']->set('chip.is_sandbox', true);
 
         // Configure communications settings for testing
-        $app['config']->set('communications.database.json_column_type', 'json');
         $app['config']->set('communications.features.owner.enabled', true);
         $app['config']->set('communications.features.owner.include_global', false);
         $app['config']->set('communications.features.owner.auto_assign_on_create', true);
@@ -379,8 +375,8 @@ abstract class TestCase extends Orchestra
         $app['config']->set('jnt.password', 'test_password');
 
         // Configure filament-chip settings for testing
-        $app['config']->set('filament-chip.navigation_group', 'CHIP Operations');
-        $app['config']->set('filament-chip.navigation_badge_color', 'primary');
+        $app['config']->set('filament-chip.navigation.group', 'CHIP Operations');
+        $app['config']->set('filament-chip.navigation.badge_color', 'primary');
         $app['config']->set('filament-chip.polling_interval', '45s');
 
         // Configure vouchers settings for testing
@@ -394,15 +390,10 @@ abstract class TestCase extends Orchestra
         $app['config']->set('affiliate-network.owner.include_global', false);
         $app['config']->set('affiliate-network.owner.auto_assign_on_create', true);
         $app['config']->set('affiliate-network.database.table_prefix', 'affiliate_network_');
-        $app['config']->set('affiliate-network.database.json_column_type', 'json');
-
         // Configure moderation settings for testing
-        $app['config']->set('moderation.database.json_column_type', 'json');
         $app['config']->set('moderation.features.owner.enabled', true);
 
         // Configure references settings for testing
-        $app['config']->set('references.database.json_column_type', 'json');
-
         // Configure seating owner scoping for testing
         $app['config']->set('seating.owner.enabled', true);
         $app['config']->set('seating.owner.include_global', false);
@@ -444,8 +435,6 @@ abstract class TestCase extends Orchestra
 
         // Configure engagement settings for testing
         $app['config']->set('engagement.database.table_prefix', 'engagement_');
-        $app['config']->set('engagement.database.json_column_type', 'json');
-
         // Map interactions config for engagement migrations that use old config key
         $app['config']->set('interactions.database', $app['config']->get('engagement.database'));
 

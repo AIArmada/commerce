@@ -54,6 +54,8 @@ Dashboard widget flags are split out so you can roll them out independently:
 
 Feature flags in this plugin only control whether the Filament UI is registered. Some data surfaces still depend on upstream Signals package settings such as `signals.features.ua_parsing.enabled`, `signals.features.ip_tracking.enabled`, and `signals.features.monetary.enabled`.
 
+The interaction-rule scanner only fetches public `http` or `https` pages on standard ports. URLs containing credentials, internal hostnames, private/reserved IP addresses, or redirects are rejected before content is scanned.
+
 ## Resources
 
 ```php

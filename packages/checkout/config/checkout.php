@@ -16,7 +16,6 @@ return [
         'tables' => [
             'checkout_sessions' => 'checkout_sessions',
         ],
-        'json_column_type' => env('CHECKOUT_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     ],
 
     /*
@@ -270,7 +269,7 @@ return [
     | Webhook signature verification settings. When enabled, webhooks are
     | validated using the source gateway's verification mechanism:
     | - CHIP: Uses config('chip.webhooks.verify_signature') and public key
-    | - Stripe: Uses config('cashier.webhook.secret')
+    | - Stripe: Uses config('cashier.gateways.stripe.webhook_secret')
     |
     */
     'webhooks' => [

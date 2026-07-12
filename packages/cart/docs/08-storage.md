@@ -78,7 +78,6 @@ The default production storage using database persistence.
     'table' => 'carts',
     'ttl' => 60 * 60 * 24 * 30, // 30 days
     'lock_for_update' => false, // Enable for high contention
-    'json_column_type' => 'jsonb', // PostgreSQL optimization
 ],
 ```
 

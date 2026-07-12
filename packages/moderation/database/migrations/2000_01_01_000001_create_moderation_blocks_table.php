@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = config('moderation.database.json_column_type', 'jsonb');
+        $jsonType = commerce_json_column_type('moderation', 'jsonb');
 
         Schema::create(config('moderation.database.tables.blocks', 'moderation_blocks'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();

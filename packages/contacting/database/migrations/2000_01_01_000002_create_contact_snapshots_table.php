@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         $tableName = config('contacting.database.tables.contact_snapshots', 'contact_snapshots');
-        $jsonColumnType = config('contacting.database.json_column_type', 'json');
+        $jsonColumnType = commerce_json_column_type('contacting', 'json');
 
         if (Schema::hasTable($tableName)) {
             return;

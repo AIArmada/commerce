@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentSignals\Support;
 
-use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\Signals\Models\SignalGoal;
 use AIArmada\Signals\Models\SignalSegment;
 use AIArmada\Signals\Models\TrackedProperty;
@@ -15,6 +14,8 @@ use InvalidArgumentException;
 
 final class SavedSignalReportMutationGuard
 {
+    public function __construct(private readonly SignalsModelReferenceGuard $referenceGuard) {}
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -84,7 +85,7 @@ final class SavedSignalReportMutationGuard
         }
 
         try {
-            OwnerWriteGuard::findOrFailForOwner(
+            $this->referenceGuard->findOrFail(
                 TrackedProperty::class,
                 $trackedPropertyId,
                 includeGlobal: false,
@@ -106,7 +107,7 @@ final class SavedSignalReportMutationGuard
         }
 
         try {
-            OwnerWriteGuard::findOrFailForOwner(
+            $this->referenceGuard->findOrFail(
                 SignalSegment::class,
                 $signalSegmentId,
                 includeGlobal: false,

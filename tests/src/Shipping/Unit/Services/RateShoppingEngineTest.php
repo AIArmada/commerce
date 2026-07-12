@@ -632,3 +632,68 @@ describe('RateShoppingEngine', function (): void {
         expect($rates->first()->carrier)->toBe('fedex');
     });
 });
+
+it('partitions shipping rate cache keys by owner', function (): void {
+    config()->set('shipping.features.owner.enabled', true);
+
+    $ownerA = \AIArmada\Commerce\Tests\Fixtures\Models\User::query()->create([
+        'name' => 'Shipping Cache Owner A',
+        'email' => 'shipping-cache-a@example.test',
+        'password' => 'secret',
+    ]);
+    $ownerB = \AIArmada\Commerce\Tests\Fixtures\Models\User::query()->create([
+        'name' => 'Shipping Cache Owner B',
+        'email' => 'shipping-cache-b@example.test',
+        'password' => 'secret',
+    ]);
+
+    $engine = new class(Mockery::mock(ShippingManager::class), []) extends RateShoppingEngine
+    {
+        public function exposedCacheKey(AddressData $origin, AddressData $destination, array $packages): ?string
+        {
+            return $this->buildCacheKey($origin, $destination, $packages);
+        }
+    };
+
+    $origin = new AddressData(name: 'Origin', phone: '1', line1: 'Origin', postcode: '40000', country: 'MY');
+    $destination = new AddressData(name: 'Destination', phone: '2', line1: 'Destination', postcode: '50000', country: 'MY');
+    $packages = [new PackageData(1000, 10, 10, 10, 1000, 'box', 1)];
+
+    $keyA = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(
+        $ownerA,
+        fn (): ?string => $engine->exposedCacheKey($origin, $destination, $packages),
+    );
+    $keyB = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(
+        $ownerB,
+        fn (): ?string => $engine->exposedCacheKey($origin, $destination, $packages),
+    );
+
+    expect($keyA)->not->toBeNull()
+        ->and($keyB)->not->toBeNull()
+        ->and($keyA)->not->toBe($keyB);
+});
+
+it('does not reuse a rate cache key for different shipment details', function (): void {
+    config()->set('shipping.features.owner.enabled', false);
+
+    $engine = new class(Mockery::mock(ShippingManager::class), []) extends RateShoppingEngine
+    {
+        public function exposedCacheKey(AddressData $origin, AddressData $destination, array $packages): ?string
+        {
+            return $this->buildCacheKey($origin, $destination, $packages);
+        }
+    };
+
+    $origin = new AddressData(name: 'Origin', phone: '1', line1: 'Origin', postcode: '40000', country: 'MY');
+    $destinationA = new AddressData(name: 'Destination', phone: '2', line1: 'Street A', postcode: '50000', country: 'MY');
+    $destinationB = new AddressData(name: 'Destination', phone: '2', line1: 'Street B', postcode: '50000', country: 'MY');
+    $compactPackage = [new PackageData(1000, 10, 10, 10, 1000, 'box', 1)];
+    $oversizedPackage = [new PackageData(1000, 100, 1, 10, 1000, 'box', 1)];
+
+    $baseKey = $engine->exposedCacheKey($origin, $destinationA, $compactPackage);
+    $differentAddressKey = $engine->exposedCacheKey($origin, $destinationB, $compactPackage);
+    $differentDimensionsKey = $engine->exposedCacheKey($origin, $destinationA, $oversizedPackage);
+
+    expect($baseKey)->not->toBe($differentAddressKey)
+        ->and($baseKey)->not->toBe($differentDimensionsKey);
+});

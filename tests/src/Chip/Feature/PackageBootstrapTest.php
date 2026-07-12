@@ -52,7 +52,7 @@ describe('Package bootstrap', function (): void {
         expect(config('chip.send.api_key'))->toBe('test_api_key');
         expect(config('chip.environment'))->toBe('sandbox');
         expect(config('chip.webhooks.route'))->toBe('/chip/webhooks');
-        expect(config('chip.webhooks.company_public_key'))->toBe('test_public_key');
+        expect(config('chip.collect.public_key'))->toBe('test_public_key');
         expect(config('chip.webhooks.store_webhooks'))->toBeTrue();
         expect(config('chip.integrations.docs.enabled'))->toBeFalse();
         expect(config('chip.integrations.docs.auto_generate_invoice'))->toBeFalse();

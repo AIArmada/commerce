@@ -389,6 +389,6 @@ describe('AffiliateConversion Model', function (): void {
     test('uses correct table name from config', function (): void {
         $conversion = new AffiliateConversion;
 
-        expect($conversion->getTable())->toBe(config('affiliates.table_names.conversions', 'affiliate_conversions'));
+        expect($conversion->getTable())->toBe(config('affiliates.database.tables.conversions', 'affiliate_conversions'));
     });
 });

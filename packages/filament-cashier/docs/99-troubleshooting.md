@@ -85,7 +85,8 @@ class_exists(\AIArmada\CashierChip\Cashier::class); // Should return true
    ```bash
    php artisan tinker
    >>> config('services.stripe.secret')
-   >>> config('chip.api_key')
+   >>> config('chip.collect.api_key')
+   >>> config('chip.collect.brand_id')
    ```
 
 3. Test gateway connectivity from Gateway Management page

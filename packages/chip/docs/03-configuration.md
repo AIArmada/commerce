@@ -11,14 +11,12 @@ The `config/chip.php` file contains all package settings organized by concern.
 ```php
 'database' => [
     'table_prefix' => env('CHIP_TABLE_PREFIX', 'chip_'),
-    'json_column_type' => env('CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
 ],
 ```
 
 | Key | Description | Default |
 |-----|-------------|---------|
 | `table_prefix` | Prefix for all CHIP tables | `chip_` |
-| `json_column_type` | JSON column type (`json` or `jsonb`) | `json` |
 
 ## Credentials / API
 
@@ -29,6 +27,7 @@ The `config/chip.php` file contains all package settings organized by concern.
     'base_url' => env('CHIP_COLLECT_BASE_URL', 'https://gate.chip-in.asia/api/v1/'),
     'api_key' => env('CHIP_COLLECT_API_KEY'),
     'brand_id' => env('CHIP_COLLECT_BRAND_ID'),
+    'public_key' => env('CHIP_COLLECT_PUBLIC_KEY'),
 ],
 
 'send' => [
@@ -44,6 +43,7 @@ The `config/chip.php` file contains all package settings organized by concern.
 | Key | Description |
 |-----|-------------|
 | `environment` | `sandbox` for testing, `production` for live |
+| `collect.public_key` | Company public key from CHIP Dashboard (`CHIP_COLLECT_PUBLIC_KEY`) |
 | `collect.api_key` | Secret key from CHIP Dashboard |
 | `collect.brand_id` | Your brand UUID from CHIP |
 | `send.api_key` | Send API key (different from Collect) |
@@ -198,20 +198,43 @@ Refund-generated documents are stored with the docs-package `refunded` status so
     'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
     'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
     'middleware' => ['api'],
-    'company_public_key' => env('CHIP_COMPANY_PUBLIC_KEY'),
-    'webhook_keys' => $webhookKeys, // Parsed from CHIP_WEBHOOK_PUBLIC_KEYS JSON
     'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
     'log_payloads' => env('CHIP_WEBHOOK_LOG_PAYLOADS', false),
     'store_webhooks' => env('CHIP_WEBHOOK_STORE', true),
     'deduplication' => env('CHIP_WEBHOOK_DEDUPLICATION', true),
+
+    'collect' => [
+        'webhook_keys' => $collectWebhookKeys, // Parsed from CHIP_COLLECT_WEBHOOK_PUBLIC_KEYS JSON
+    ],
+
+    'send' => [
+        'webhook_keys' => $sendWebhookKeys, // Parsed from CHIP_SEND_WEBHOOK_PUBLIC_KEYS JSON
+    ],
 ],
 ```
 
-### Multiple Webhook Keys
+### Company Public Key
 
-For multiple brands with different keys, set as JSON:
+The company public key is used for both client-side Chip.js initialization and webhook signature verification. Set it via `CHIP_COLLECT_PUBLIC_KEY`:
+
 ```env
-CHIP_WEBHOOK_PUBLIC_KEYS='{"webhook-id-1":"-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----","webhook-id-2":"..."}'
+CHIP_COLLECT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+```
+
+It maps to `config('chip.collect.public_key')`.
+
+### Collect Webhook Keys
+
+Per-webhook public keys for CHIP Collect (payments). Set as JSON mapping webhook IDs to PEM keys:
+```env
+CHIP_COLLECT_WEBHOOK_PUBLIC_KEYS='{"wh-uuid-1":"-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----","wh-uuid-2":"..."}'
+```
+
+### Send Webhook Keys
+
+Per-webhook public keys for CHIP Send (payouts). Set as JSON mapping webhook IDs to PEM keys:
+```env
+CHIP_SEND_WEBHOOK_PUBLIC_KEYS='{"1":"-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----","2":"..."}'
 ```
 
 ## Cache

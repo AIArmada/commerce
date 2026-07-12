@@ -21,7 +21,6 @@ abstract class FeedbackTestCase extends TestCase
     {
         parent::defineEnvironment($app);
 
-        $app['config']->set('feedback.database.json_column_type', 'json');
         $app['config']->set('feedback.owner.enabled', true);
         $app['config']->set('feedback.owner.include_global', false);
         $app['config']->set('feedback.owner.auto_assign_on_create', true);

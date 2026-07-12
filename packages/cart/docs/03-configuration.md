@@ -12,7 +12,6 @@ The cart config is intentionally small. If a key is present, it is actively used
 'database' => [
     'table' => env('CART_DB_TABLE', 'carts'),
     'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
-    'json_column_type' => env('CART_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30),
     'lock_for_update' => env('CART_DB_LOCK_FOR_UPDATE', false),
 ],

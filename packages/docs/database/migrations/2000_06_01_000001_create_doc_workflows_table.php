@@ -13,7 +13,7 @@ return new class extends Migration
         $database = config('docs.database', []);
         $prefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
-        $jsonColumnType = $database['json_column_type'] ?? 'json';
+        $jsonColumnType = commerce_json_column_type('docs', 'json');
 
         $workflowsTable = $tables['workflows'] ?? $prefix . 'workflows';
         $workflowStepsTable = $tables['workflow_steps'] ?? $prefix . 'workflow_steps';

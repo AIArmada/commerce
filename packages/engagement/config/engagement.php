@@ -17,7 +17,6 @@ return [
     /* Database */
     'database' => [
         'table_prefix' => $tablePrefix,
-        'json_column_type' => env('ENGAGEMENT_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => [
             'follows' => env('ENGAGEMENT_TABLE_FOLLOWS', $tablePrefix . 'follows'),
             'bookmarks' => env('ENGAGEMENT_TABLE_BOOKMARKS', $tablePrefix . 'bookmarks'),

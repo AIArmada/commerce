@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonColumnType = config('feedback.database.json_column_type', 'jsonb');
+        $jsonColumnType = commerce_json_column_type('feedback', 'jsonb');
 
         $addJsonColumn = function (Blueprint $table, string $column) use ($jsonColumnType): void {
             if ($jsonColumnType === 'jsonb') {

@@ -11,7 +11,6 @@ it('creates the event property types column in the base event migration', functi
     $tableName = 'custom_signal_events';
 
     config()->set('signals.database.tables.events', $tableName);
-    config()->set('signals.database.json_column_type', 'json');
 
     Schema::dropIfExists($tableName);
 
@@ -27,7 +26,6 @@ it('creates the auth user columns in the base identity migration', function (): 
     $tableName = 'custom_signal_identities';
 
     config()->set('signals.database.tables.identities', $tableName);
-    config()->set('signals.database.json_column_type', 'json');
 
     Schema::dropIfExists($tableName);
 
@@ -44,7 +42,6 @@ it('creates the owner scope column in the base interaction rule migration', func
     $tableName = 'custom_signal_interaction_rules';
 
     config()->set('signals.database.tables.interaction_rules', $tableName);
-    config()->set('signals.database.json_column_type', 'json');
 
     Schema::dropIfExists($tableName);
 

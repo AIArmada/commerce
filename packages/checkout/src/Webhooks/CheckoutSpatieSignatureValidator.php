@@ -81,7 +81,7 @@ final class CheckoutSpatieSignatureValidator implements SignatureValidator
         }
 
         $signature = $request->header('Stripe-Signature');
-        $secret = config('cashier.webhook.secret');
+        $secret = config('cashier.gateways.stripe.webhook_secret');
 
         if (! is_string($signature) || $signature === '' || ! is_string($secret) || $secret === '') {
             return false;

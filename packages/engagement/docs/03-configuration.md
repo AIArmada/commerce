@@ -11,7 +11,6 @@ The `config/engagement.php` file controls all Engagement package behavior.
 ```php
 'database' => [
     'table_prefix' => env('ENGAGEMENT_TABLE_PREFIX', 'engagement_'),
-    'json_column_type' => env('ENGAGEMENT_JSON_COLUMN_TYPE', 'jsonb'),
     'tables' => [
         'follows' => env('ENGAGEMENT_TABLE_FOLLOWS', $tablePrefix . 'follows'),
         'bookmarks' => env('ENGAGEMENT_TABLE_BOOKMARKS', $tablePrefix . 'bookmarks'),

@@ -2,12 +2,21 @@
 
 declare(strict_types=1);
 
-$webhookKeysEnv = env('CHIP_WEBHOOK_PUBLIC_KEYS');
-$webhookKeys = [];
-if ($webhookKeysEnv !== null) {
-    $decoded = json_decode($webhookKeysEnv, true);
+$collectWebhookKeysEnv = env('CHIP_COLLECT_WEBHOOK_PUBLIC_KEYS');
+$collectWebhookKeys = [];
+if ($collectWebhookKeysEnv !== null) {
+    $decoded = json_decode($collectWebhookKeysEnv, true);
     if (is_array($decoded)) {
-        $webhookKeys = $decoded;
+        $collectWebhookKeys = $decoded;
+    }
+}
+
+$sendWebhookKeysEnv = env('CHIP_SEND_WEBHOOK_PUBLIC_KEYS');
+$sendWebhookKeys = [];
+if ($sendWebhookKeysEnv !== null) {
+    $decoded = json_decode($sendWebhookKeysEnv, true);
+    if (is_array($decoded)) {
+        $sendWebhookKeys = $decoded;
     }
 }
 
@@ -19,7 +28,6 @@ return [
     */
     'database' => [
         'table_prefix' => env('CHIP_TABLE_PREFIX', 'chip_'),
-        'json_column_type' => env('CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     ],
 
     /*
@@ -33,6 +41,7 @@ return [
         'base_url' => env('CHIP_COLLECT_BASE_URL', 'https://gate.chip-in.asia/api/v1/'),
         'api_key' => env('CHIP_COLLECT_API_KEY'),
         'brand_id' => env('CHIP_COLLECT_BRAND_ID'),
+        'public_key' => env('CHIP_COLLECT_PUBLIC_KEY'),
     ],
     'send' => [
         'base_url' => [
@@ -124,12 +133,18 @@ return [
         'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
         'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhooks'),
         'middleware' => ['api'],
-        'company_public_key' => env('CHIP_COMPANY_PUBLIC_KEY'),
-        'webhook_keys' => $webhookKeys,
         'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
         'log_payloads' => env('CHIP_WEBHOOK_LOG_PAYLOADS', false),
         'store_webhooks' => env('CHIP_WEBHOOK_STORE', true),
         'deduplication' => env('CHIP_WEBHOOK_DEDUPLICATION', true),
+
+        'collect' => [
+            'webhook_keys' => $collectWebhookKeys,
+        ],
+
+        'send' => [
+            'webhook_keys' => $sendWebhookKeys,
+        ],
     ],
 
     /*

@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = config('communications.database.json_column_type', 'jsonb');
+        $jsonType = commerce_json_column_type('communications', 'jsonb');
 
         Schema::create(config('communications.database.tables.deliveries', 'communication_deliveries'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();

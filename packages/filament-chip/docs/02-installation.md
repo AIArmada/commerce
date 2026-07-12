@@ -78,7 +78,7 @@ CHIP_SEND_API_KEY=your-send-api-key
 CHIP_SEND_API_SECRET=your-send-api-secret
 
 # Webhooks
-CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
+CHIP_COLLECT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
 ```
 
 ## Verify Installation

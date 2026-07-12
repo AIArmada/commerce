@@ -10,7 +10,6 @@ return [
     */
     'database' => [
         'table_prefix' => env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_'),
-        'json_column_type' => env('CASHIER_CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => (static function (): array {
             $prefix = env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_');
 
@@ -49,10 +48,8 @@ return [
     | Behavior
     |--------------------------------------------------------------------------
     */
-    'subscriptions' => [
-        'retry_days' => env('CASHIER_CHIP_RETRY_DAYS', 3),
-        'max_retries' => env('CASHIER_CHIP_MAX_RETRIES', 3),
-        'grace_days' => env('CASHIER_CHIP_GRACE_DAYS', 7),
+    'rate_limits' => [
+        'charges_per_minute' => env('CASHIER_CHIP_CHARGES_PER_MINUTE', 30),
     ],
 
     /*
@@ -82,13 +79,6 @@ return [
         'paper' => env('CASHIER_CHIP_PAPER', 'A4'),
         'vendor_address' => env('CASHIER_CHIP_INVOICE_VENDOR_ADDRESS'),
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Logging
-    |--------------------------------------------------------------------------
-    */
-    'logger' => env('CASHIER_CHIP_LOGGER'),
 
     /*
     |--------------------------------------------------------------------------

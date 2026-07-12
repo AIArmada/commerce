@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use AIArmada\AffiliateNetwork\Services\SiteVerificationService;
+use AIArmada\AffiliateNetwork\Support\SiteContentFetcher;
+use AIArmada\CommerceSupport\Support\PublicHttpUrlGuard;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -67,7 +69,11 @@ describe('SiteVerificationService', function (): void {
             'http://verified.example/*' => Http::response('', 404),
         ]);
 
-        config(['affiliate-network.http.skip_dns_check' => true]);
+        app()->instance(PublicHttpUrlGuard::class, new PublicHttpUrlGuard(
+            static fn (string $host): array => $host === 'verified.example' ? ['93.184.216.34'] : [],
+        ));
+        app()->forgetInstance(SiteContentFetcher::class);
+        app()->forgetInstance(SiteVerificationService::class);
 
         $service = app(SiteVerificationService::class);
 

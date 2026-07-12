@@ -30,7 +30,7 @@
 
     <script>
         const chip = new Chip({
-            publicKey: '{{ config("chip.public_key") }}',
+            publicKey: '{{ config("chip.collect.public_key") }}',
             environment: '{{ config("chip.environment") }}'
         });
 

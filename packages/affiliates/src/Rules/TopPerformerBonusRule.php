@@ -94,7 +94,6 @@ final class TopPerformerBonusRule implements PerformanceBonusRule
                 'Top performer bonuses require an owner context or explicit global context.',
             );
 
-            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
             OwnerQuery::applyToQueryBuilder(
                 $query,
                 $owner,

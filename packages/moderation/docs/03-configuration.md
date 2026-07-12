@@ -11,7 +11,6 @@ title: Configuration
 ```php
 'database' => [
     'table_prefix' => env('MODERATION_TABLE_PREFIX', 'moderation_'),
-    'json_column_type' => env('MODERATION_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     'tables' => [
         'blocks' => env('MODERATION_TABLE_BLOCKS', $tablePrefix . 'blocks'),
         'moderation_actions' => env('MODERATION_TABLE_ACTIONS', $tablePrefix . 'actions'),
@@ -20,8 +19,8 @@ title: Configuration
 ```
 
 - `database.table_prefix` controls the default moderation table prefix
-- `database.json_column_type` switches the JSON column type between supported database drivers
 - `database.tables.blocks` and `database.tables.moderation_actions` can be overridden individually
+- JSON column type is controlled by `commerce_json_column_type('moderation', 'jsonb')`
 
 ## Features
 

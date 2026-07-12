@@ -38,8 +38,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    name: Pest (manual) - Shard ${{ matrix.shard }}/10
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    name: Pest (manual) - Shard ${{ matrix.shard }}/20
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -63,4 +63,4 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Execute tests
-        run: vendor/bin/pest --colors=always --parallel --shard=${{ matrix.shard }}/10
+        run: vendor/bin/pest --colors=always --parallel --shard=${{ matrix.shard }}/20

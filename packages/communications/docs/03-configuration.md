@@ -9,7 +9,6 @@ title: Configuration
 ```php
 'database' => [
     'table_prefix' => '',
-    'json_column_type' => 'jsonb',
     'tables' => [
         'batches' => 'communication_batches',
         'threads' => 'communication_threads',

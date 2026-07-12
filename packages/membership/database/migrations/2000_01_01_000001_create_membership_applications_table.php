@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = (string) config('membership.database.json_column_type', commerce_json_column_type('membership', 'jsonb'));
+        $jsonType = (string) commerce_json_column_type('membership', 'jsonb');
 
         $tableName = (string) config('membership.database.tables.applications', 'membership_applications');
 

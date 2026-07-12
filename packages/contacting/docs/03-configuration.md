@@ -27,11 +27,7 @@ CONTACTING_TABLE_PREFIX=org_
 
 ## JSON Column Type
 
-```php
-'database' => [
-    'json_column_type' => env('CONTACTING_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
-],
-```
+JSON column type is controlled by `commerce_json_column_type('contacting', 'json')` and inherits from `COMMERCE_JSON_COLUMN_TYPE` when set.
 
 ## Defaults
 

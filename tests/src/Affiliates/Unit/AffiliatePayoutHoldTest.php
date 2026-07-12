@@ -151,6 +151,6 @@ describe('AffiliatePayoutHold Model', function (): void {
     test('uses correct table name from config', function (): void {
         $hold = new AffiliatePayoutHold;
 
-        expect($hold->getTable())->toBe(config('affiliates.table_names.payout_holds', 'affiliate_payout_holds'));
+        expect($hold->getTable())->toBe(config('affiliates.database.tables.payout_holds', 'affiliate_payout_holds'));
     });
 });

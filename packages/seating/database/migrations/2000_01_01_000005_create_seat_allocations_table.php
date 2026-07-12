@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonType = config('seating.database.json_column_type', 'json');
+        $jsonType = commerce_json_column_type('seating', 'json');
 
         Schema::create(config('seating.database.tables.seat_allocations'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();

@@ -20,7 +20,6 @@ return [
 
     /* Database */
     'database' => [
-        'json_column_type' => env('EVENTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => [
             'events' => env('EVENTS_TABLE_EVENTS', $tablePrefix . 'events'),
             'event_occurrences' => env('EVENTS_TABLE_OCCURRENCES', $tablePrefix . 'event_occurrences'),
@@ -106,15 +105,11 @@ return [
             'open_door_mode' => env('EVENTS_OPEN_DOOR_MODE', 'block'),
         ],
         'enforce_scope_capacity_on_paid_registrations' => (bool) env('EVENTS_ENFORCE_SCOPE_CAPACITY_PAID', false),
-
-        'inventory' => [
-            'default_location_id' => env('EVENTS_DEFAULT_INVENTORY_LOCATION', 'default'),
-            'auto_register_quotas_on_migrate' => env('EVENTS_AUTO_REGISTER_QUOTAS', true),
-        ],
     ],
 
     /* Defaults */
     'defaults' => [
+        'currency' => env('EVENTS_DEFAULT_CURRENCY', env('TICKETING_DEFAULT_CURRENCY', 'MYR')),
         'timezone' => env('EVENTS_TIMEZONE', env('APP_TIMEZONE', 'UTC')),
     ],
 
@@ -202,13 +197,6 @@ return [
             'from_name' => env('EVENTS_WELCOME_FROM_NAME', env('MAIL_FROM_NAME', $appName)),
             'event_name' => env('EVENTS_WELCOME_EVENT_NAME', $appName),
             'brand_name' => env('EVENTS_WELCOME_BRAND_NAME', $appName),
-        ],
-        'ticket' => [
-            'enabled' => (bool) env('EVENTS_TICKET_NOTIFICATION_ENABLED', true),
-            'from_address' => env('EVENTS_TICKET_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
-            'from_name' => env('EVENTS_TICKET_FROM_NAME', env('MAIL_FROM_NAME', $appName)),
-            'event_name' => env('EVENTS_TICKET_EVENT_NAME', $appName),
-            'brand_name' => env('EVENTS_TICKET_BRAND_NAME', $appName),
         ],
     ],
 

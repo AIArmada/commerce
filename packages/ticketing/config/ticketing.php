@@ -7,7 +7,6 @@ $tablePrefix = env('TICKETING_TABLE_PREFIX', 'ticket_');
 return [
     'database' => [
         'table_prefix' => $tablePrefix,
-        'json_column_type' => env('TICKETING_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => [
             'ticket_types' => env('TICKETING_TICKET_TYPES_TABLE', $tablePrefix . 'ticket_types'),
             'ticket_type_components' => env('TICKETING_TICKET_TYPE_COMPONENTS_TABLE', $tablePrefix . 'ticket_type_components'),

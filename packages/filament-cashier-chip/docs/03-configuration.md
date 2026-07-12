@@ -85,11 +85,16 @@ return [
         // Model that uses Billable trait (null = auto-detect)
         'billable_model' => null,
         
-        // Filament panel ID for billing portal
+        // Filament panel identity and presentation
         'panel_id' => 'billing',
-        
-        // Auth guard for billing portal
+        'path' => 'billing',
+        'brand_name' => 'Billing Portal',
+        'primary_color' => '#6366f1',
+        'login_enabled' => true,
+
+        // Auth guard and optional role restriction
         'auth_guard' => 'web',
+        'allowed_roles' => [],
         
         // Billing portal features
         'features' => [

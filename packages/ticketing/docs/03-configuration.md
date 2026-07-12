@@ -35,11 +35,7 @@ TICKETING_TABLE_PREFIX=festival_
 
 ### JSON Column Type
 
-```php
-'database' => [
-    'json_column_type' => env('TICKETING_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
-],
-```
+Use the `commerce_json_column_type('ticketing', 'jsonb')` helper in migrations.
 
 - Use `jsonb` for PostgreSQL (default) — better performance, supports indexing
 - Use `json` for MySQL compatibility

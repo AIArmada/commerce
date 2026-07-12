@@ -240,14 +240,14 @@ final class ShippingAdapter
     private function getOriginData(): array
     {
         return [
-            'name' => config('jnt.origin.name', config('shipping.defaults.origin.name', '')),
-            'phone' => config('jnt.origin.phone', config('shipping.defaults.origin.phone', '')),
-            'line1' => config('jnt.origin.line1', config('shipping.defaults.origin.line1', config('shipping.defaults.origin.address', ''))),
-            'line2' => config('jnt.origin.line2', config('shipping.defaults.origin.line2', null)),
-            'postcode' => config('jnt.origin.postcode', config('shipping.defaults.origin.postcode', '')),
-            'city' => config('jnt.origin.city', config('shipping.defaults.origin.city', '')),
-            'state' => config('jnt.origin.state', config('shipping.defaults.origin.state', '')),
-            'country' => config('jnt.origin.country', config('shipping.defaults.origin.country', 'MY')),
+            'name' => config('jnt.shipping.origin.name', config('shipping.defaults.origin.name', '')),
+            'phone' => config('jnt.shipping.origin.phone', config('shipping.defaults.origin.phone', '')),
+            'line1' => config('jnt.shipping.origin.address', config('shipping.defaults.origin.line1', '')),
+            'line2' => config('shipping.defaults.origin.line2'),
+            'postcode' => config('jnt.shipping.origin.post_code', config('shipping.defaults.origin.postcode', '')),
+            'city' => config('jnt.shipping.origin.city', config('shipping.defaults.origin.city', '')),
+            'state' => config('jnt.shipping.origin.state', config('shipping.defaults.origin.state', '')),
+            'country' => config('jnt.shipping.origin.country_code', config('shipping.defaults.origin.country', 'MY')),
         ];
     }
 

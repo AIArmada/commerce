@@ -10,7 +10,6 @@ title: Configuration
 return [
     'database' => [
         'table_prefix' => 'product_',
-        'json_column_type' => env('PRODUCTS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
         'tables' => [
             'products' => 'products',
             'variants' => 'product_variants',
@@ -112,7 +111,7 @@ The `GenerateVariants` action resolves the bound implementation and delegates ge
 
 ### Media
 
-The package reads collection limits and mime rules from `media.collections.*`, and image conversion sizes from `media.conversions.*`.
+The package reads collection limits and mime rules from `media.collections.*`, and image conversion sizes from `media.conversions.*`. The `hero`, `icon`, and `banner` collections each default to a single file; change their `limit` values in published config when a different cardinality is required.
 
 ### SEO
 

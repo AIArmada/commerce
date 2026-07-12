@@ -16,7 +16,7 @@ return new class extends Migration
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
         $tableName = $tables['snapshot_items'] ?? $tablePrefix . 'snapshot_items';
-        $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'jsonb'));
+        $jsonType = (string) commerce_json_column_type('cart', 'jsonb');
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
@@ -42,7 +42,7 @@ return new class extends Migration
 
         // GIN indexes only work with jsonb in PostgreSQL
         if (
-            ($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'jsonb')) === 'jsonb'
+            commerce_json_column_type('cart', 'jsonb') === 'jsonb'
             && ConnectionDriver::name(Schema::getConnection()) === 'pgsql'
         ) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName): void {

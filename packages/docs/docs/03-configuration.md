@@ -11,7 +11,6 @@ Configuration lives in `config/docs.php`.
 ```php
 'database' => [
     'table_prefix' => env('DOCS_TABLE_PREFIX', 'docs_'),
-    'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'jsonb')),
     'tables' => [
         'docs' => 'docs_docs',
         'doc_templates' => 'docs_doc_templates',
