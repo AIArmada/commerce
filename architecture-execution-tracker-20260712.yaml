@@ -614,7 +614,7 @@ tasks:
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-inventory-commitment.md (new)
     reviewer: opencode (self-approval authorized by user)
-    review_notes: 'Approved: required sections, reference-group invariants, retry semantics, and exact manifest verified.'
+    review_notes: 'Approved in a73344c4d: required sections, reference-group invariants, retry semantics, and exact manifest verified.'
 - id: DES-OWN-410
   wave: 1
   candidate: Candidate 04
@@ -700,7 +700,7 @@ tasks:
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-owner-scope-consolidation.md (new)
     reviewer: opencode (self-approval authorized by user)
-    review_notes: 'Approved: no-new-policy decision, Inventory carve-out, and exact manifest verified.'
+    review_notes: 'Approved in a73344c4d: no-new-policy decision, Inventory carve-out, and exact manifest verified.'
 - id: DES-DSC-510
   wave: 1
   candidate: Candidate 05
@@ -795,7 +795,7 @@ tasks:
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-combined-discount-policy.md (new)
     reviewer: opencode (self-approval authorized by user)
-    review_notes: 'Approved: cap, optional-provider, commitment, and retry contracts verified.'
+    review_notes: 'Approved in a73344c4d: cap, optional-provider, commitment, and retry contracts verified.'
 - id: DES-SHP-610
   wave: 1
   candidate: Candidate 06
@@ -881,7 +881,7 @@ tasks:
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-shipment-operations.md (new)
     reviewer: opencode (self-approval authorized by user)
-    review_notes: 'Approved: durable remote-operation, outcome taxonomy, and reconciliation design verified.'
+    review_notes: 'Approved in a73344c4d: durable remote-operation, outcome taxonomy, and reconciliation design verified.'
 - id: DES-FIN-710
   wave: 1
   candidate: Candidate 07 — newly discovered
@@ -973,7 +973,7 @@ tasks:
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-checkout-finalization.md (new)
     reviewer: opencode (self-approval authorized by user)
-    review_notes: 'Approved: single finalizer, durable phases, and completion/carts ordering verified.'
+    review_notes: 'Approved in a73344c4d: single finalizer, durable phases, and completion/carts ordering verified.'
 - id: CTR-620
   wave: 1
   candidate: Cross-candidate contract gate
@@ -1051,7 +1051,7 @@ tasks:
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/cross-package-contract-matrix.md (new)
     reviewer: opencode (self-approval and integration-owner confirmation authorized by user)
-    review_notes: 'Approved: identities, money, owner context, retry outcomes, order, and package absence agree.'
+    review_notes: 'Approved in a73344c4d: identities, money, owner context, retry outcomes, order, and package absence agree.'
 - id: CHK-121
   wave: 2
   candidate: Candidate 01
