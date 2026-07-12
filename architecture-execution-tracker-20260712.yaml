@@ -619,11 +619,11 @@ tasks:
   wave: 1
   candidate: Candidate 04
   title: Re-evaluate Owner scope consolidation using the existing deep implementation
-  status: todo
+  status: claimed
   severity: design-gate
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: des-own-410-owner-scope-consolidation
+  claimed_at: '2026-07-12T15:38:30Z'
   goal: Determine whether a new module is justified or whether package helpers should simply configure and reuse existing
     commerce-support behavior.
   why: The prior workboard assumed a new OwnerAccessPolicy, but commerce-support already contains OwnerScopeConfig, OwnerQuery,
