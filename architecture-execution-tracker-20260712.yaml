@@ -1351,46 +1351,64 @@ tasks:
   wave: 2
   candidate: Candidate 03
   title: Implement the approved Inventory reservation-group lifecycle
-  status: gated
+  status: claimed
   severity: high
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: inv-321-reservation-group
+  claimed_at: '2026-07-12T23:30:00Z'
   goal: Expose reservation, commitment, release, and retry outcomes through one coherent reference-centered interface.
   why: The current integration leaks individual allocation IDs, fake IDs, and ambiguous already-committed state.
   depends_on:
   - CTR-620
   - DES-INV-310
   - BUG-INV-100
-  exclusive_scope: []
-  known_affected_files:
+  exclusive_scope:
+  - packages/inventory/src/Contracts/CheckoutReservationServiceInterface.php
+  - packages/inventory/src/Data/ReservationLine.php
+  - packages/inventory/src/Data/ReservationOutcome.php
+  - packages/inventory/src/Models/InventoryReservation.php
+  - packages/inventory/src/Exceptions/ReservationReferenceConflict.php
+  - packages/inventory/src/Exceptions/InvalidReservationTransition.php
+  - packages/inventory/src/Services/Stock/CheckoutReservationService.php
+  - packages/inventory/database/migrations/2026_07_12_000002_create_inventory_reservations_table.php
+  - tests/src/Inventory/Feature/CheckoutReservationServiceTest.php
+  - packages/inventory/src/InventoryServiceProvider.php
+  - packages/inventory/src/Models/InventoryAllocation.php
+  - packages/inventory/src/Services/Stock/InventoryAllocationService.php
   - packages/inventory/src/Contracts/CheckoutInventoryServiceInterface.php
   - packages/inventory/src/Integrations/CheckoutInventoryService.php
-  - packages/inventory/src/Services/Stock/InventoryAllocationService.php
-  - packages/inventory/src/Models/InventoryAllocation.php
-  - packages/inventory/src/Models/InventoryMovement.php
-  - packages/inventory/src/Models/InventoryOperation.php
-  - packages/inventory/database/migrations
-  - tests/src/Inventory
+  - packages/checkout/src/Integrations/InventoryAdapter.php
+  - packages/checkout/src/Steps/ReserveInventoryStep.php
+  - packages/checkout/src/Steps/CreateOrderStep.php
+  - packages/checkout/src/Exceptions/InventoryException.php
+  - packages/checkout/docs/04-usage.md
+  - packages/checkout/docs/05-checkout-steps.md
   - packages/inventory/docs/04-usage.md
+  - tests/src/Inventory/Unit/CheckoutInventoryServiceConfigurationTest.php
+  - tests/src/Inventory/Unit/InventoryAllocationServiceTest.php
+  - tests/src/Checkout/PaymentFlowTest.php
+  - tests/src/Checkout/CreateOrderStepTest.php
+  known_affected_files: []
   scope_reuse_after: []
   forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
+  - All packages and files not listed in exclusive_scope
   observed_evidence:
   - CheckoutInventoryService returns first allocation ID or reference; commit deletes allocation evidence.
   decisions_required: []
   implementation_steps:
-  - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
-  - Write or update characterization tests before changing behavior.
-  - Implement the approved reservation-group result with requested/reserved quantities and stable reference.
-  - Make reserve repeatable for the same reference and line identity.
-  - Make commit/release consult durable operation evidence before mutation.
-  - Return stable observable outcomes for already committed/released operations.
-  - Keep split-location allocations internal.
-  - Update the package documentation in the same commit as public behavior.
-  - Delete obsolete shallow-module tests only after equivalent interface-level behavior is covered.
-  - Attach exact commands, exit codes, and commit SHA to tracker evidence.
+  - Implement the approved reservation-group contract, data objects, model, and migration.
+  - Implement CheckoutReservationService with group-level reserve/release/commit/extend.
+  - Update InventoryServiceProvider to bind the new contract.
+  - Update InventoryAllocation to relate to reservation group.
+  - Update InventoryAllocationService methods to work via group where applicable.
+  - Delete the old CheckoutInventoryServiceInterface and CheckoutInventoryService.
+  - Update Checkout InventoryAdapter to use the new contract.
+  - Update ReserveInventoryStep for group-level reservations.
+  - Update CreateOrderStep to use group-based commit.
+  - Update InventoryException with reference/outcome terminology.
+  - Write CheckoutReservationServiceTest covering group lifecycle, split allocations, retry, owner isolation.
+  - Update/delete obsolete tests.
+  - Update docs in the same pass.
   acceptance:
   - done: false
     text: No fake or fallback ID represents success.
@@ -1417,8 +1435,8 @@ tasks:
   - 'Same-pass documentation: packages/inventory/docs/04-usage.md.'
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
+    decision_record: docs/architecture-execution/design-inventory-commitment.md
+    scope_manifest: 'DES-INV-310 + CTR-620 approved manifest (27 files: 9 create, 10 modify, 2 delete, 4 test files, 2 docs)'
     commit: null
     tests: null
     static_analysis: null
