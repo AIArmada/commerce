@@ -446,11 +446,11 @@ tasks:
   wave: 1
   candidate: Candidate 02
   title: Design durable Order intake identity and transaction ownership
-  status: todo
+  status: claimed
   severity: design-gate
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: des-ord-210-order-intake
+  claimed_at: '2026-07-12T23:10:00Z'
   goal: Define the Order intake module that materializes an Order once and exposes a retry-safe result.
   why: The existing CreateOrder transaction is local, while Checkout separately stores order_id and confirms payment. Current
     task scope had no durable intake identity, making concurrent idempotency impossible.
