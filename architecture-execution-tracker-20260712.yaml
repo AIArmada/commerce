@@ -1443,32 +1443,59 @@ tasks:
     docs_updated: 'packages/inventory/docs/04-usage.md; packages/checkout/docs/04-usage.md; packages/checkout/docs/05-checkout-steps.md'
     reviewer: pending
     review_notes: 'Concurrency regression coverage done (idempotent commit/release, cross-order conflict). InventoryBatchTest 3 failures pre-existing and unrelated. Ready for review.'
-  - id: OWN-421
+- id: OWN-421
   wave: 2
   candidate: Candidate 04
   title: Apply the approved Owner-scope consolidation, only if the design recommends implementation
-  status: gated
+  status: claimed
   severity: medium
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: own-421-owner-scope-consolidation
+  claimed_at: '2026-07-13T03:00:00Z'
   goal: Remove duplicated package coordination only where the deletion test proves leverage over existing commerce-support
     modules.
   why: A preselected new policy would risk another shallow module. This task is conditional and may be marked rejected/skipped.
   depends_on:
   - DES-OWN-410
   - CTR-620
-  exclusive_scope: []
-  known_affected_files:
-  - packages/commerce-support/src/Support/OwnerScopeConfig.php
-  - packages/commerce-support/src/Support/OwnerQuery.php
-  - packages/commerce-support/src/Support/OwnerScope.php
-  - packages/commerce-support/src/Support/OwnerWriteGuard.php
-  - package-specific *OwnerScope helpers listed by the approved design manifest
-  scope_reuse_after: []
-  forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
+  exclusive_scope:
+  - packages/pricing/src/Models/Price.php
+  - packages/pricing/src/Models/PriceList.php
+  - packages/pricing/src/Models/PriceTier.php
+  - packages/pricing/src/Actions/ResolveTierPrice.php
+  - packages/pricing/src/Services/PriceCalculator.php
+  - packages/pricing/src/Support/CustomerPriceResolver.php
+  - packages/pricing/src/Support/SegmentPriceResolver.php
+  - packages/pricing/src/Support/TierResolver.php
+  - packages/promotions/src/Models/Promotion.php
+  - packages/promotions/src/Support/PromotionPerformanceInsights.php
+  - packages/shipping/src/Actions/CreateShipment.php
+  - packages/shipping/src/Services/ShippingZoneResolver.php
+  - packages/shipping/src/Services/TrackingAggregator.php
+  - packages/tax/src/Models/TaxClass.php
+  - packages/tax/src/Models/TaxExemption.php
+  - packages/tax/src/Models/TaxRate.php
+  - packages/tax/src/Models/TaxZone.php
+  - packages/tax/src/Services/TaxCalculator.php
+  - packages/tax/src/Services/ZoneResolver/AddressZoneResolver.php
+  - packages/tax/src/Services/ZoneResolver/DefaultZoneResolver.php
+  - packages/tax/src/Services/ZoneResolver/ZoneIdResolver.php
+  - packages/pricing/src/Support/PricingOwnerScope.php
+  - packages/promotions/src/Support/PromotionsOwnerScope.php
+  - packages/shipping/src/Support/ShippingOwnerScope.php
+  - packages/tax/src/Support/TaxOwnerScope.php
+  - tests/src/Pricing/Feature/PricingOwnerScopeConsolidationTest.php
+  - tests/src/Promotions/Feature/PromotionsOwnerScopeConsolidationTest.php
+  - tests/src/Shipping/Feature/ShippingOwnerScopeConsolidationTest.php
+  - tests/src/Tax/Feature/TaxOwnerScopeConsolidationTest.php
+  - tests/src/Inventory/Unit/InventoryOwnerScopeTest.php
+  - tests/src/CommerceSupport/OwnerScopeTest.php
+  - packages/commerce-support/docs/04-multi-tenancy.md
+  - packages/commerce-support/docs/10-traits-utilities.md
+  - packages/pricing/docs/04-usage.md
+  - packages/promotions/docs/04-usage.md
+  - packages/shipping/docs/04-usage.md
+  - packages/tax/docs/04-usage.md
   observed_evidence:
   - Existing commerce-support modules already implement the common query and write behavior.
   decisions_required: []
