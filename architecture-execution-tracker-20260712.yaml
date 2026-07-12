@@ -886,11 +886,11 @@ tasks:
   wave: 1
   candidate: Candidate 07 — newly discovered
   title: Design one recoverable Checkout finalization module
-  status: todo
+  status: claimed
   severity: design-gate
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: des-fin-710-checkout-finalization
+  claimed_at: '2026-07-12T16:10:00Z'
   goal: Make one module own the ordering and durable progress of Order, payment, discount, inventory, completion, and cart
     cleanup.
   why: CreateOrderStep marks completion and performs voucher/inventory/cart side effects, while CheckoutService also calls
