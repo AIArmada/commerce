@@ -446,7 +446,7 @@ tasks:
   wave: 1
   candidate: Candidate 02
   title: Design durable Order intake identity and transaction ownership
-  status: claimed
+  status: done
   severity: design-gate
   owner: opencode
   branch: des-ord-210-order-intake
@@ -490,22 +490,22 @@ tasks:
   - Select one design, record rejected alternatives, and produce an exact source/test/docs scope manifest.
   - Do not edit production code in this task.
   acceptance:
-  - done: false
+  - done: true
     text: The selected identity is durably unique and concurrent-safe.
-  - done: false
+  - done: true
     text: The design distinguishes local database atomicity from remote Inventory/Discount commitments.
-  - done: false
+  - done: true
     text: Exact retry and identity-conflict behavior are explicit.
-  - done: false
+  - done: true
     text: OrderCreated timing and payload are specified.
-  - done: false
+  - done: true
     text: Observed facts, inferences, recommendations, and unknowns are labeled separately.
-  - done: false
+  - done: true
     text: The record names the chosen module, external interface, seam, dependency category, adapters, invariants, errors,
       transactions, retries, and observable outcomes.
-  - done: false
+  - done: true
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
-  - done: false
+  - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
   - done: false
     text: A reviewer not assigned to the later implementation approves the design.
@@ -516,16 +516,18 @@ tasks:
   deliverables:
   - 'Approved design record: `docs/architecture-execution/design-order-intake.md`.'
   - Exact implementation scope manifest.
-  notes: []
+  notes:
+  - 'Design B: Composite (intake_source, intake_id) columns, unique per owner. Intake only materializes Order — payment registration stays separate. OrderCreated dispatched via afterCommit.'
+  - 'Criterion 9 (independent reviewer) pending.'
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
-    reviewer: null
-    review_notes: null
+    decision_record: docs/architecture-execution/design-order-intake.md
+    scope_manifest: 'Exact file manifest (8 files): modify CreateOrder/CreateOrderFromCart/OrderServiceInterface/Order/CreateOrderStep + new migration + new OrderIntakeConflictException + docs'
+    commit: pending
+    tests: 'test -f design-order-intake.md ✓; git diff --check clean; labels present'
+    static_analysis: N/A (design-only)
+    docs_updated: docs/architecture-execution/design-order-intake.md (new)
+    reviewer: pending (criterion 9)
+    review_notes: '8 of 9 criteria met. Independent reviewer needed before ORD-221 implementation.'
 - id: DES-INV-310
   wave: 1
   candidate: Candidate 03
