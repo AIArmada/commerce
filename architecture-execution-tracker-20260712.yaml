@@ -1133,12 +1133,12 @@ tasks:
   - 'Same-pass documentation: packages/checkout/docs/04-usage.md.'
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
+    decision_record: docs/architecture-execution/design-checkout-workflow.md
+    scope_manifest: 'DES-CHK-110 approved manifest (8 files: StepExecutor new, CheckoutServiceInterface, CheckoutService, Checkout facade, CheckoutServiceProvider modified, RunCheckoutPipeline deleted, 2 test files)'
+    commit: 2ba86c0c4
+    tests: 'StepExecutorTest: 6 passed (12 assertions); PaymentFlowTest: 45 passed (139 assertions); StateTest: 16 passed (62 assertions); FacadeTest: 1 passed'
+    static_analysis: 'phpstan --level=6 packages/checkout/src -> OK'
+    docs_updated: packages/checkout/docs/04-usage.md (Step-by-Step Processing section: replaced processStep/getCurrentStep/canProceed examples with processCheckout)
     reviewer: null
     review_notes: null
 - id: CHK-122
