@@ -1058,7 +1058,7 @@ tasks:
   title: Implement one internal Checkout workflow executor
   status: gated
   severity: high
-  owner: null
+  owner: opencode
   branch: null
   claimed_at: null
   goal: Move all step dependency, validation, state, event, redirect, failure, and rollback coordination into the approved
@@ -1067,42 +1067,57 @@ tasks:
   depends_on:
   - CTR-620
   - DES-CHK-110
-  exclusive_scope: []
+  exclusive_scope:
+  - packages/checkout/src/Services/StepExecutor.php (new)
+  - packages/checkout/src/Contracts/CheckoutServiceInterface.php
+  - packages/checkout/src/Services/CheckoutService.php
+  - packages/checkout/src/Facades/Checkout.php
+  - packages/checkout/src/Services/RunCheckoutPipeline.php (delete)
+  - tests/src/Checkout/StepExecutorTest.php (new)
+  - tests/src/Checkout/PaymentFlowTest.php
+  - packages/checkout/docs/04-usage.md
   known_affected_files:
   - packages/checkout/src/Services/CheckoutService.php
   - packages/checkout/src/Services/RunCheckoutPipeline.php
-  - packages/checkout/src/Actions/FinalizeCheckoutSession.php
   - packages/checkout/src/Contracts/CheckoutServiceInterface.php
   - tests/src/Checkout/PaymentFlowTest.php
-  - tests/src/Checkout/StateTest.php
   - packages/checkout/docs/04-usage.md
-  - packages/checkout/docs/05-checkout-steps.md
-  scope_reuse_after: []
+  scope_reuse_after:
+  - CHK-122 (checkout-step-registry-interface split, freeze, mutable-registry-interface)
+  - EVT-123 (Events contributor migration)
   forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
+  - packages/checkout/src/Contracts/StepContributor.php
+  - packages/checkout/src/Contracts/CheckoutStepRegistryInterface.php
+  - packages/checkout/src/Contracts/MutableStepRegistryInterface.php
+  - packages/checkout/src/Support/CheckoutStepOrderPolicy.php
+  - packages/events/src
+  - tests/src/Events
+  - tests/src/Checkout/CheckoutStepRegistryTest.php
+  - tests/src/Checkout/CheckoutServiceProviderTest.php
+  - packages/checkout/docs/05-checkout-steps.md
   observed_evidence:
   - CheckoutService.php:331-364 and RunCheckoutPipeline.php:40-95 duplicate step execution.
   decisions_required: []
   implementation_steps:
-  - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
-  - Write or update characterization tests before changing behavior.
-  - Implement the chosen executor behind the approved internal seam.
-  - Inject it into CheckoutService; do not instantiate it with `new` inside the constructor.
-  - Route normal processing, callback continuation, manual compatibility paths, and rollback through one implementation.
-  - Retain compatibility shims only if the design record explicitly approved a migration period.
-  - Update the package documentation in the same commit as public behavior.
-  - Delete obsolete shallow-module tests only after equivalent interface-level behavior is covered.
+  - Create StepExecutor.php absorbing RunCheckoutPipeline::processStep as a private method.
+  - In CheckoutService: inject StepExecutor via constructor, remove new RunCheckoutPipeline, remove processStep/getCurrentStep/canProceed.
+  - In CheckoutServiceInterface: remove processStep(), getCurrentStep(), canProceed().
+  - In Facades/Checkout: remove processStep, getCurrentStep, canProceed docblocks.
+  - Delete RunCheckoutPipeline.php.
+  - Write StepExecutorTest covering all paths (normal, callback, rollback, failure).
+  - Update PaymentFlowTest & docs/04-usage.md.
   - Attach exact commands, exit codes, and commit SHA to tracker evidence.
   acceptance:
   - done: false
     text: Exactly one production method body owns the execution algorithm.
   - done: false
-    text: All paths emit equivalent step-completed/failed events once.
+    text: StepExecutor covers every path that RunCheckoutPipeline covered (normal, callback, compatibility, rollback).
   - done: false
-    text: Redirect and callback continuation resume at the approved point.
+    text: processStep(), getCurrentStep(), canProceed() are removed from CheckoutServiceInterface and CheckoutService.
   - done: false
-    text: Rollback order and failure state are interface-level tested.
+    text: No new instances of RunCheckoutPipeline created anywhere.
+  - done: false
+    text: PaymentFlowTest and StateTest still pass and cover the new executor.
   - done: false
     text: All changed public behavior is documented in the same task.
   - done: false
@@ -1110,12 +1125,12 @@ tasks:
   - done: false
     text: Package-scoped Pest, PHPStan, and Pint evidence is attached.
   validation_commands:
-  - ./vendor/bin/pest tests/src/Checkout/PaymentFlowTest.php tests/src/Checkout/StateTest.php --parallel
+  - ./vendor/bin/pest tests/src/Checkout/StepExecutorTest.php tests/src/Checkout/PaymentFlowTest.php tests/src/Checkout/StateTest.php --parallel
   - ./vendor/bin/phpstan analyse packages/checkout/src --no-progress
   - ./vendor/bin/pint --dirty
   deliverables:
   - Implementation and interface-level tests.
-  - 'Same-pass documentation: packages/checkout/docs/04-usage.md, packages/checkout/docs/05-checkout-steps.md.'
+  - 'Same-pass documentation: packages/checkout/docs/04-usage.md.'
   notes: []
   evidence:
     decision_record: null
@@ -1140,7 +1155,17 @@ tasks:
   depends_on:
   - CHK-121
   - DES-CHK-110
-  exclusive_scope: []
+  exclusive_scope:
+  - packages/checkout/src/Contracts/StepContributor.php (new)
+  - packages/checkout/src/Contracts/CheckoutStepRegistryInterface.php
+  - packages/checkout/src/Contracts/MutableStepRegistryInterface.php (new)
+  - packages/checkout/src/Services/CheckoutStepRegistry.php
+  - packages/checkout/src/CheckoutServiceProvider.php
+  - packages/checkout/src/Support/CheckoutStepOrderPolicy.php
+  - tests/src/Checkout/CheckoutStepRegistryTest.php
+  - tests/src/Checkout/CheckoutServiceProviderTest.php
+  - packages/checkout/docs/05-checkout-steps.md
+  - packages/checkout/docs/08-integrations.md
   known_affected_files:
   - packages/checkout/src/Contracts/CheckoutStepRegistryInterface.php
   - packages/checkout/src/Services/CheckoutStepRegistry.php
@@ -1151,22 +1176,27 @@ tasks:
   - tests/src/Checkout/CheckoutServiceProviderTest.php
   - packages/checkout/docs/05-checkout-steps.md
   - packages/checkout/docs/08-integrations.md
-  scope_reuse_after: []
+  scope_reuse_after:
+  - EVT-123 (Events contributor migration uses StepContributor interface)
+  - CHK-714 (final cleanup may touch CheckoutServiceProvider)
   forbidden_scope:
-  - Do not claim until the design record and CTR-620 provide an exact scope manifest.
-  - Do not edit packages outside the approved manifest.
+  - packages/events/src
+  - packages/checkout/src/Services/StepExecutor.php
+  - packages/checkout/src/Contracts/CheckoutServiceInterface.php
+  - packages/checkout/src/Services/CheckoutService.php
+  - packages/checkout/src/Facades/Checkout.php
   observed_evidence:
   - CheckoutServiceProvider and EventsServiceProvider mutate the same registry during boot.
   decisions_required: []
   implementation_steps:
-  - Before claim, copy the approved exact file manifest into `exclusive_scope` and commit that tracker change.
-  - Write or update characterization tests before changing behavior.
-  - Implement the approved contributor discovery and ordering mechanism.
-  - Make assembly repeatable and safe under repeated provider boot and long-lived workers.
-  - Keep internal ordering policy behind Checkout's module interface.
-  - Do not expose internal contributors through the external Checkout interface.
-  - Update the package documentation in the same commit as public behavior.
-  - Delete obsolete shallow-module tests only after equivalent interface-level behavior is covered.
+  - Create StepContributor.php contract interface.
+  - Split CheckoutStepRegistryInterface into read-only (public) + MutableStepRegistryInterface (internal).
+  - Implement freeze in CheckoutStepRegistry; make registerLazy idempotent (check has() before append).
+  - In CheckoutServiceProvider: discover tagged contributors, call registerLazy, freeze after all registered.
+  - Make CheckoutStepOrderPolicy idempotent under repeated boot.
+  - Write CheckoutStepRegistryTest freeze/immutable tests.
+  - Write CheckoutServiceProviderTest idempotent boot tests.
+  - Update docs/05-checkout-steps.md and 08-integrations.md.
   - Attach exact commands, exit codes, and commit SHA to tracker evidence.
   acceptance:
   - done: false
