@@ -1538,7 +1538,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-owner-scope-consolidation.md
     scope_manifest: 'DES-OWN-410 approved manifest (37 files: 21 modify, 4 delete, 6 test, 6 docs)'
-    commit: null
+    commit: 383cdaac8
     tests: 'Consolidation tests: 10 passed (4 packages x adapter-removed check + owner-scoped query check, Inventory retention); Existing: Pricing OwnerScopingTest 5 passed, Tax OwnerScopingTest 3 passed, PromotionOwnerActionGuard 3 passed'
     static_analysis: 'phpstan analyse packages/pricing/src packages/promotions/src packages/shipping/src packages/tax/src --level=6 -> OK'
     docs_updated: null
