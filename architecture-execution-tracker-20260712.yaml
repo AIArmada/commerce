@@ -705,11 +705,11 @@ tasks:
   wave: 1
   candidate: Candidate 05
   title: Design the combined Promotion and Voucher stacking policy and commitment lifecycle
-  status: todo
+  status: claimed
   severity: design-gate
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: des-dsc-510-combined-discount-policy
+  claimed_at: '2026-07-12T15:45:00Z'
   goal: Define where cross-system discount composition lives, what the combined cap means, and how provider reservations become
     durable commitments.
   why: 'The root architectural gap is not merely untyped data: StackingCoordinationRegistrar is an unreachable stub, the container
