@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('ticketing', 'jsonb');
 
-        Schema::create(config('ticketing.database.tables.ticket_type_components', 'ticket_ticket_type_components'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('ticketing.database.tables.ticket_type_components', 'ticket_type_components'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('parent_ticket_type_id')->index();
             $table->uuid('component_ticket_type_id')->index();
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('ticketing.database.tables.ticket_type_components', 'ticket_ticket_type_components'));
+        Schema::dropIfExists(config('ticketing.database.tables.ticket_type_components', 'ticket_type_components'));
     }
 };
