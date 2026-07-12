@@ -179,11 +179,11 @@ tasks:
   wave: 0
   candidate: Environment
   title: Restore a valid Pest and PHPStan baseline
-  status: todo
+  status: claimed
   severity: blocker
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: env-003-baseline
+  claimed_at: '2026-07-12T22:30:00Z'
   goal: Make repository verification executable before any refactor begins.
   why: The supplied environment cannot run Pest because DOM is missing and Pest TIA fails during shutdown; PHPStan cannot
     bootstrap because SQLite support is missing. A plan that requires green tests without a working validator is not executable.
