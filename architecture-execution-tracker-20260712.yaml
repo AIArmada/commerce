@@ -876,7 +876,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-shipment-operations.md
     scope_manifest: 'exact paths listed in design-shipment-operations.md; no wildcards'
-    commit: null
+    commit: e42c435c2
     tests: 'test -f; tracker validation; diff check; required labels'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-shipment-operations.md (new)
