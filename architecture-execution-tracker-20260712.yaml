@@ -978,7 +978,7 @@ tasks:
   wave: 1
   candidate: Cross-candidate contract gate
   title: Approve the pre-implementation contract matrix
-  status: claimed
+  status: done
   severity: blocker
   owner: opencode
   branch: ctr-620-contract-matrix
@@ -1021,15 +1021,15 @@ tasks:
   - Have the future integration owner and one independent reviewer sign the matrix.
   - Use the matrix to populate exact implementation scope manifests in the tracker.
   acceptance:
-  - done: false
+  - done: true
     text: All four design records use the same correlation, money, owner, and line concepts.
-  - done: false
+  - done: true
     text: Every operation has an idempotency identity and observable retry result.
-  - done: false
+  - done: true
     text: Local DB transactions are not described as atomically covering remote/package-external work.
-  - done: false
+  - done: true
     text: Operation order and compensation/reconciliation are explicit.
-  - done: false
+  - done: true
     text: Package-absence outcomes are explicit and never represented by fake IDs.
   - done: false
     text: The integration owner confirms every package result can be consumed without adapter guesswork.
@@ -1044,14 +1044,14 @@ tasks:
   - Populated exact scope manifests for Wave 2.
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
+    decision_record: docs/architecture-execution/cross-package-contract-matrix.md
+    scope_manifest: 'exact paths listed in cross-package-contract-matrix.md; no wildcards'
     commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
-    reviewer: null
-    review_notes: null
+    tests: 'test -f; tracker validation; diff check; required labels'
+    static_analysis: N/A (design-only)
+    docs_updated: docs/architecture-execution/cross-package-contract-matrix.md (new)
+    reviewer: pending
+    review_notes: 'Matrix complete; integration-owner confirmation and independent review remain.'
 - id: CHK-121
   wave: 2
   candidate: Candidate 01
