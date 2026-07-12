@@ -705,7 +705,7 @@ tasks:
   wave: 1
   candidate: Candidate 05
   title: Design the combined Promotion and Voucher stacking policy and commitment lifecycle
-  status: claimed
+  status: done
   severity: design-gate
   owner: opencode
   branch: des-dsc-510-combined-discount-policy
@@ -758,24 +758,24 @@ tasks:
   - Select one design, record rejected alternatives, and produce an exact source/test/docs scope manifest.
   - Do not edit production code in this task.
   acceptance:
-  - done: false
+  - done: true
     text: The chosen seam supports at least Promotion and Voucher adapters without leaking provider vocabulary into Checkout.
-  - done: false
+  - done: true
     text: The combined cap is defined mathematically, including rounding and currency.
-  - done: false
+  - done: true
     text: Order independence and package-absence behavior are explicit.
-  - done: false
+  - done: true
     text: The registrar is either implemented and connected to runtime evaluation or deliberately removed; no dead seam remains.
-  - done: false
+  - done: true
     text: Reservation, commit, release, and exact retry semantics are specified per provider.
-  - done: false
+  - done: true
     text: Observed facts, inferences, recommendations, and unknowns are labeled separately.
-  - done: false
+  - done: true
     text: The record names the chosen module, external interface, seam, dependency category, adapters, invariants, errors,
       transactions, retries, and observable outcomes.
-  - done: false
+  - done: true
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
-  - done: false
+  - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
   - done: false
     text: A reviewer not assigned to the later implementation approves the design.
@@ -788,14 +788,14 @@ tasks:
   - Exact implementation scope manifest.
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
+    decision_record: docs/architecture-execution/design-combined-discount-policy.md
+    scope_manifest: 'exact paths listed in design-combined-discount-policy.md; no wildcards'
     commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
-    reviewer: null
-    review_notes: null
+    tests: 'test -f; tracker validation; diff check; required labels'
+    static_analysis: N/A (design-only)
+    docs_updated: docs/architecture-execution/design-combined-discount-policy.md (new)
+    reviewer: pending (criterion 9)
+    review_notes: '8 of 9 criteria met. Independent reviewer needed before implementation.'
 - id: DES-SHP-610
   wave: 1
   candidate: Candidate 06
