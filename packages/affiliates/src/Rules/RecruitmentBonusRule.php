@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 final class RecruitmentBonusRule implements PerformanceBonusRule
 {
@@ -35,13 +36,15 @@ final class RecruitmentBonusRule implements PerformanceBonusRule
         $recruiters = Affiliate::query()
             ->forOwner(OwnerContext::CURRENT, $includeGlobal)
             ->where('status', Active::class)
-            ->whereHas('children', function ($query) use ($from, $to, $includeGlobal): void {
+            ->whereHas('children', function (EloquentBuilder $query) use ($from, $to, $includeGlobal): void {
+                /** @var EloquentBuilder<Affiliate> $query */
                 $query->forOwner(OwnerContext::CURRENT, $includeGlobal)
                     ->whereBetween('created_at', [$from, $to])
                     ->where('status', Active::class);
             })
             ->withCount([
-                'children' => function ($query) use ($from, $to, $includeGlobal): void {
+                'children' => function (EloquentBuilder $query) use ($from, $to, $includeGlobal): void {
+                    /** @var EloquentBuilder<Affiliate> $query */
                     $query->forOwner(OwnerContext::CURRENT, $includeGlobal)
                         ->whereBetween('created_at', [$from, $to])
                         ->where('status', Active::class);

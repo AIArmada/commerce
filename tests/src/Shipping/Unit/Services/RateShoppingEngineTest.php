@@ -181,10 +181,9 @@ describe('RateShoppingEngine', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
         $engine = new RateShoppingEngine($shippingManager, ['cache_ttl' => 0]);
 
-        Cache::shouldReceive('store')->andReturnSelf();
-        Cache::shouldReceive('getStore')->andReturn(new class {});
-        // Non-taggable stores are a no-op; ensure we do not globally flush.
-        Cache::shouldReceive('flush')->never();
+        $cacheRepository = Mockery::mock(Repository::class);
+        $cacheRepository->shouldReceive('getStore')->andReturn(new class {});
+        Cache::shouldReceive('store')->andReturn($cacheRepository);
 
         $engine->clearCache();
     });

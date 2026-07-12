@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 it('publishes invoice company detail settings', function (): void {
-    expect(config('orders.company'))
+    $config = require base_path('packages/orders/config/orders.php');
+
+    expect($config['company'] ?? null)
         ->toBeArray()
         ->toHaveKeys(['address', 'phone', 'email']);
 });
