@@ -6,6 +6,7 @@ namespace AIArmada\Tax\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -17,7 +18,6 @@ use AIArmada\Tax\States\TaxExemptionState\ExpiredState;
 use AIArmada\Tax\States\TaxExemptionState\RevokedState;
 use AIArmada\Tax\States\TaxExemptionState\TaxExemptionState;
 use AIArmada\Tax\States\TaxExemptionState\UnderReviewState;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;

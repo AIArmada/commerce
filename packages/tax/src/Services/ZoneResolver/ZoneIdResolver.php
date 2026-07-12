@@ -7,7 +7,6 @@ namespace AIArmada\Tax\Services\ZoneResolver;
 use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
 
-
 final class ZoneIdResolver implements TaxZoneResolverInterface
 {
     public function resolve(?string $zoneId, array $context): ?TaxZone

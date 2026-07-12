@@ -8,7 +8,6 @@ use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
 use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxZone;
 
-
 final class DefaultZoneResolver implements TaxZoneResolverInterface
 {
     private ?string $fallbackZoneId;

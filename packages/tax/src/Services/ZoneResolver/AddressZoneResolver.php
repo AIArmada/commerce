@@ -7,7 +7,6 @@ namespace AIArmada\Tax\Services\ZoneResolver;
 use AIArmada\Tax\Contracts\TaxZoneResolverInterface;
 use AIArmada\Tax\Models\TaxZone;
 
-
 final class AddressZoneResolver implements TaxZoneResolverInterface
 {
     private ?bool $enabled;
