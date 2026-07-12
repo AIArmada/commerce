@@ -1056,11 +1056,11 @@ tasks:
   wave: 2
   candidate: Candidate 01
   title: Implement one internal Checkout workflow executor
-  status: gated
+  status: claimed
   severity: high
   owner: opencode
-  branch: null
-  claimed_at: null
+  branch: chk-121-workflow-executor
+  claimed_at: '2026-07-13T03:30:00Z'
   goal: Move all step dependency, validation, state, event, redirect, failure, and rollback coordination into the approved
     deep module.
   why: CheckoutService and RunCheckoutPipeline currently duplicate the execution algorithm.
