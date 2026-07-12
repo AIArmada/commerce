@@ -532,11 +532,11 @@ tasks:
   wave: 1
   candidate: Candidate 03
   title: Design reference-centered Inventory reservation and commitment
-  status: todo
+  status: claimed
   severity: design-gate
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: des-inv-310-inventory-commitment
+  claimed_at: '2026-07-12T23:15:00Z'
   goal: Make one Inventory interface own reservation groups, commitment, release, and idempotent observable outcomes.
   why: Checkout receives individual or fake reservation IDs while the implementation allocates by cart/reference and may split
     across locations. Callers therefore coordinate an implementation detail and can leak allocations.
