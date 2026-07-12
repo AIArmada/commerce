@@ -21,6 +21,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Throwable;
 
 final class ListSignalInteractionRules extends ListRecords
@@ -97,6 +98,7 @@ final class ListSignalInteractionRules extends ListRecords
                     $eventCategoryRaw = (string) ($meta['event_category'] ?? 'engagement');
                     $eventCategory = mb_trim($eventCategoryRaw) !== '' ? $eventCategoryRaw : null;
                     $triggerType = (string) ($meta['trigger_type'] ?? 'click');
+
                     try {
                         $trackedPropertyId = $this->resolveTrackedPropertyId($meta['tracked_property_id'] ?? null);
                     } catch (Throwable $exception) {
@@ -521,7 +523,7 @@ final class ListSignalInteractionRules extends ListRecords
     private function resolveTrackedPropertyId(mixed $id): string
     {
         if (! is_scalar($id) || mb_trim((string) $id) === '') {
-            throw new \InvalidArgumentException('A tracked property identifier is required.');
+            throw new InvalidArgumentException('A tracked property identifier is required.');
         }
 
         $trackedProperty = app(SignalsModelReferenceGuard::class)->findOrFail(

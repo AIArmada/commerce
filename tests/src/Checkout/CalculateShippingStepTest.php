@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
+use AIArmada\Checkout\Integrations\ShippingAdapter;
 use AIArmada\Checkout\Steps\CalculateShippingStep;
 
 it('uses shipping condition from cart snapshot when present', function (): void {
@@ -127,7 +128,7 @@ it('uses the published jnt shipping origin configuration', function (): void {
         'country_code' => 'MYS',
     ]);
 
-    $adapter = app(\AIArmada\Checkout\Integrations\ShippingAdapter::class);
+    $adapter = app(ShippingAdapter::class);
     $method = new ReflectionMethod($adapter, 'getOriginData');
     $origin = $method->invoke($adapter);
 

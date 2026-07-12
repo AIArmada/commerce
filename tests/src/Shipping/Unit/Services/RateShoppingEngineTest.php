@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Contracts\RateSelectionStrategyInterface;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
@@ -636,12 +638,12 @@ describe('RateShoppingEngine', function (): void {
 it('partitions shipping rate cache keys by owner', function (): void {
     config()->set('shipping.features.owner.enabled', true);
 
-    $ownerA = \AIArmada\Commerce\Tests\Fixtures\Models\User::query()->create([
+    $ownerA = User::query()->create([
         'name' => 'Shipping Cache Owner A',
         'email' => 'shipping-cache-a@example.test',
         'password' => 'secret',
     ]);
-    $ownerB = \AIArmada\Commerce\Tests\Fixtures\Models\User::query()->create([
+    $ownerB = User::query()->create([
         'name' => 'Shipping Cache Owner B',
         'email' => 'shipping-cache-b@example.test',
         'password' => 'secret',
@@ -659,11 +661,11 @@ it('partitions shipping rate cache keys by owner', function (): void {
     $destination = new AddressData(name: 'Destination', phone: '2', line1: 'Destination', postcode: '50000', country: 'MY');
     $packages = [new PackageData(1000, 10, 10, 10, 1000, 'box', 1)];
 
-    $keyA = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(
+    $keyA = OwnerContext::withOwner(
         $ownerA,
         fn (): ?string => $engine->exposedCacheKey($origin, $destination, $packages),
     );
-    $keyB = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(
+    $keyB = OwnerContext::withOwner(
         $ownerB,
         fn (): ?string => $engine->exposedCacheKey($origin, $destination, $packages),
     );

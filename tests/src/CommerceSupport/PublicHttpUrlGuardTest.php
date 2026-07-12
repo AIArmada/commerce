@@ -18,7 +18,7 @@ it('rejects private internal and malformed outbound destinations', function (str
         default => ['93.184.216.34'],
     });
 
-    expect(fn () => $guard->assertAllowed($url))->toThrow(\InvalidArgumentException::class);
+    expect(fn () => $guard->assertAllowed($url))->toThrow(InvalidArgumentException::class);
 })->with([
     'private literal' => 'http://127.0.0.1/admin',
     'private dns result' => 'https://private.example/hooks',

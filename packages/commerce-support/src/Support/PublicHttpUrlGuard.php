@@ -46,14 +46,14 @@ final class PublicHttpUrlGuard
      */
     public function assertAllowed(string $url): void
     {
-        $url = trim($url);
+        $url = mb_trim($url);
         $parts = parse_url($url);
 
         if ($url === '' || ! is_array($parts)) {
             throw new InvalidArgumentException('Outbound URL must be a valid absolute HTTP URL.');
         }
 
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $scheme = mb_strtolower((string) ($parts['scheme'] ?? ''));
 
         if (! in_array($scheme, ['http', 'https'], true)) {
             throw new InvalidArgumentException('Outbound URL scheme must be HTTP or HTTPS.');
@@ -70,7 +70,7 @@ final class PublicHttpUrlGuard
             throw new InvalidArgumentException('Outbound URL port must match the standard port for its scheme.');
         }
 
-        $host = strtolower(trim((string) ($parts['host'] ?? ''), "[] \t\n\r\0\x0B."));
+        $host = mb_strtolower(mb_trim((string) ($parts['host'] ?? ''), "[] \t\n\r\0\x0B."));
 
         if ($host === '') {
             throw new InvalidArgumentException('Outbound URL must include a host.');
@@ -136,13 +136,13 @@ final class PublicHttpUrlGuard
             return false;
         }
 
-        if (strlen($packed) === 4) {
+        if (mb_strlen($packed) === 4) {
             $firstOctet = ord($packed[0]);
 
             return $firstOctet < 224;
         }
 
-        if (ord($packed[0]) === 0xff) {
+        if (ord($packed[0]) === 0xFF) {
             return false;
         }
 
@@ -151,10 +151,10 @@ final class PublicHttpUrlGuard
 
         return ! (
             is_string($wellKnownNat64)
-            && substr($packed, 0, 12) === substr($wellKnownNat64, 0, 12)
+            && mb_substr($packed, 0, 12) === mb_substr($wellKnownNat64, 0, 12)
         ) && ! (
             is_string($localNat64)
-            && substr($packed, 0, 6) === substr($localNat64, 0, 6)
+            && mb_substr($packed, 0, 6) === mb_substr($localNat64, 0, 6)
         );
     }
 

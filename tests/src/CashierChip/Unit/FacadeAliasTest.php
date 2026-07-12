@@ -13,7 +13,7 @@ final class FacadeAliasTest extends CashierChipTestCase
 {
     public function test_legacy_root_namespace_aliases_resolve(): void
     {
-        $this->assertTrue(class_exists(\AIArmada\CashierChip\Billing\Cashier::class));
+        $this->assertTrue(class_exists(Cashier::class));
         $this->assertTrue(trait_exists(Billable::class));
     }
 

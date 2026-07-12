@@ -19,8 +19,8 @@ final class SiteContentFetcher
 
     public function fetch(string $domain, string $path): ?string
     {
-        $domain = strtolower(trim($domain));
-        $path = '/' . ltrim($path, '/');
+        $domain = mb_strtolower(mb_trim($domain));
+        $path = '/' . mb_ltrim($path, '/');
 
         if ($domain === '') {
             return null;

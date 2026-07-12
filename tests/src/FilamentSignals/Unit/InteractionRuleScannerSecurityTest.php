@@ -19,7 +19,7 @@ it('rejects private page scan destinations before sending a request', function (
     );
 
     expect(fn () => $scanner->scan('https://private.example/admin', 'click'))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 
     Http::assertNothingSent();
 });
