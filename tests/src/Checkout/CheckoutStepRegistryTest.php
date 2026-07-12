@@ -214,6 +214,83 @@ describe('CheckoutStepRegistry', function (): void {
 
         expect($order)->toBe(['step1', 'step2']);
     });
+
+    it('throws when register is called after freeze', function (): void {
+        $registry = new CheckoutStepRegistry;
+        $step = createMockStep('test', 'Test');
+
+        $registry->freeze();
+
+        expect(fn () => $registry->register('test', $step))
+            ->toThrow(CheckoutStepException::class, 'frozen');
+    });
+
+    it('throws when registerLazy is called after freeze', function (): void {
+        $registry = new CheckoutStepRegistry;
+
+        $registry->freeze();
+
+        expect(fn () => $registry->registerLazy('test', fn () => createMockStep('test', 'Test')))
+            ->toThrow(CheckoutStepException::class, 'frozen');
+    });
+
+    it('throws when insertBefore is called after freeze', function (): void {
+        $registry = new CheckoutStepRegistry;
+        $registry->register('existing', createMockStep('existing', 'Existing'));
+
+        $registry->freeze();
+
+        expect(fn () => $registry->insertBefore('existing', 'test', createMockStep('test', 'Test')))
+            ->toThrow(CheckoutStepException::class, 'frozen');
+    });
+
+    it('throws when insertAfter is called after freeze', function (): void {
+        $registry = new CheckoutStepRegistry;
+        $registry->register('existing', createMockStep('existing', 'Existing'));
+
+        $registry->freeze();
+
+        expect(fn () => $registry->insertAfter('existing', 'test', createMockStep('test', 'Test')))
+            ->toThrow(CheckoutStepException::class, 'frozen');
+    });
+
+    it('registerLazy is idempotent under repeated calls', function (): void {
+        $registry = new CheckoutStepRegistry;
+        $factory = fn () => createMockStep('test', 'Test');
+
+        $registry->registerLazy('test', $factory);
+        $registry->registerLazy('test', $factory);
+
+        expect($registry->has('test'))->toBeTrue()
+            ->and($registry->get('test')->getName())->toBe('Test');
+    });
+
+    it('register is idempotent under repeated calls', function (): void {
+        $registry = new CheckoutStepRegistry;
+        $step = createMockStep('test', 'Test');
+
+        $registry->register('test', $step);
+        $registry->register('test', $step);
+
+        expect($registry->has('test'))->toBeTrue()
+            ->and($registry->get('test'))->toBe($step);
+    });
+
+    it('freeze does not affect read methods', function (): void {
+        $registry = new CheckoutStepRegistry;
+        $step = createMockStep('test', 'Test');
+        $registry->register('test', $step);
+
+        $registry->freeze();
+
+        expect($registry->has('test'))->toBeTrue()
+            ->and($registry->get('test'))->toBe($step)
+            ->and($registry->isEnabled('test'))->toBeTrue()
+            ->and($registry->all())->toHaveKey('test')
+            ->and($registry->getOrder())->toContain('test')
+            ->and($registry->getOrderedSteps())->toHaveCount(1)
+            ->and($registry->getEnabledStepIdentifiers())->toContain('test');
+    });
 });
 
 /**

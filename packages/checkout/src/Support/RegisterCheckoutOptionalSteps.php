@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Support;
 
-use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
+use AIArmada\Checkout\Contracts\MutableStepRegistryInterface;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Integrations\PromotionsAdapter;
 use AIArmada\Checkout\Integrations\TaxAdapter;
@@ -19,14 +19,14 @@ use AIArmada\Vouchers\VouchersServiceProvider;
 
 final class RegisterCheckoutOptionalSteps
 {
-    public function register(CheckoutStepRegistryInterface $registry): void
+    public function register(MutableStepRegistryInterface $registry): void
     {
         $this->registerInventoryStep($registry);
         $this->registerTaxStep($registry);
         $this->registerDiscountStep($registry);
     }
 
-    private function registerInventoryStep(CheckoutStepRegistryInterface $registry): void
+    private function registerInventoryStep(MutableStepRegistryInterface $registry): void
     {
         if ($this->hasInventoryPackage() && config('checkout.integrations.inventory.enabled', true)) {
             app()->singleton(InventoryAdapter::class);
@@ -39,7 +39,7 @@ final class RegisterCheckoutOptionalSteps
         }
     }
 
-    private function registerTaxStep(CheckoutStepRegistryInterface $registry): void
+    private function registerTaxStep(MutableStepRegistryInterface $registry): void
     {
         if ($this->hasTaxPackage() && config('checkout.integrations.tax.enabled', true)) {
             $registry->register('calculate_tax', new CalculateTaxStep(
@@ -50,7 +50,7 @@ final class RegisterCheckoutOptionalSteps
         }
     }
 
-    private function registerDiscountStep(CheckoutStepRegistryInterface $registry): void
+    private function registerDiscountStep(MutableStepRegistryInterface $registry): void
     {
         if ($this->hasDiscountPackages() && $this->isDiscountsEnabled()) {
             $registry->register('apply_discounts', new ApplyDiscountsStep(

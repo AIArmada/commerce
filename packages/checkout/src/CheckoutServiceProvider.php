@@ -9,7 +9,9 @@ use AIArmada\CashierChip\Billing\Cashier;
 use AIArmada\Checkout\Actions\FinalizeCheckoutSession;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
+use AIArmada\Checkout\Contracts\MutableStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
+use AIArmada\Checkout\Contracts\StepContributor;
 use AIArmada\Checkout\Exceptions\MissingPaymentGatewayException;
 use AIArmada\Checkout\Services\CheckoutService;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
@@ -78,6 +80,9 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $this->validatePaymentGatewayConfiguration();
         $this->registerDefaultSteps();
         $this->registerOptionalIntegrations();
+
+        // Defer freeze until after all providers have booted and contributed steps.
+        $this->app->booted(fn () => $this->freezeStepRegistry());
     }
 
     protected function validateStepConfiguration(): void
@@ -165,7 +170,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     protected function registerDefaultSteps(): void
     {
-        $registry = $this->app->make(CheckoutStepRegistryInterface::class);
+        $registry = $this->app->make(CheckoutStepRegistry::class);
 
         $registry->registerLazy('validate_cart', fn () => $this->app->make(ValidateCartStep::class));
         $registry->registerLazy('resolve_customer', fn () => $this->app->make(ResolveCustomerStep::class));
@@ -181,7 +186,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     protected function registerOptionalIntegrations(): void
     {
-        $registry = $this->app->make(CheckoutStepRegistryInterface::class);
+        $registry = $this->app->make(CheckoutStepRegistry::class);
 
         app(RegisterCheckoutOptionalSteps::class)->register($registry);
 
@@ -291,5 +296,20 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     {
         $registrar = new ChipIntegrationRegistrar;
         $registrar->register();
+    }
+
+    protected function freezeStepRegistry(): void
+    {
+        $registry = $this->app->make(CheckoutStepRegistry::class);
+
+        foreach ($this->app->tagged('checkout.steps') as $contributor) {
+            if ($contributor instanceof StepContributor) {
+                foreach ($contributor->steps() as $identifier => $factory) {
+                    $registry->registerLazy($identifier, $factory);
+                }
+            }
+        }
+
+        $registry->freeze();
     }
 }

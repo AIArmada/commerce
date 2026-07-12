@@ -284,6 +284,28 @@ describe('CheckoutServiceProvider', function (): void {
         }
     });
 
+    it('boot produces same ordered steps when called twice', function (): void {
+        app()->forgetInstance(CheckoutStepRegistry::class);
+
+        $provider1 = new CheckoutServiceProvider(app());
+        invokeProviderBootingPackage($provider1);
+
+        $steps1 = app(CheckoutStepRegistry::class)->getOrderedSteps();
+
+        app()->forgetInstance(CheckoutStepRegistry::class);
+
+        $provider2 = new CheckoutServiceProvider(app());
+        invokeProviderBootingPackage($provider2);
+
+        $steps2 = app(CheckoutStepRegistry::class)->getOrderedSteps();
+
+        expect($steps1)->toHaveCount(count($steps2));
+
+        foreach ($steps1 as $i => $step) {
+            expect($step->getIdentifier())->toBe($steps2[$i]->getIdentifier());
+        }
+    });
+
     it('fails owner validation during provider boot when step configuration is valid', function (): void {
         config()->set('checkout.steps.enabled.create_order', true);
         config()->set('checkout.steps.enabled.persist_customer', true);

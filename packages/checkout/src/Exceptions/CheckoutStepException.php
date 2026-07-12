@@ -37,4 +37,9 @@ final class CheckoutStepException extends CheckoutException
             ['step_identifier' => $identifier],
         );
     }
+
+    public static function registryFrozen(): self
+    {
+        return new self('Step registry is frozen and cannot be modified after boot.');
+    }
 }

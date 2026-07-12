@@ -6,10 +6,11 @@ namespace AIArmada\Checkout\Services;
 
 use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
+use AIArmada\Checkout\Contracts\MutableStepRegistryInterface;
 use AIArmada\Checkout\Exceptions\CheckoutStepException;
 use Closure;
 
-final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
+final class CheckoutStepRegistry implements CheckoutStepRegistryInterface, MutableStepRegistryInterface
 {
     /** @var array<string, CheckoutStepInterface> */
     private array $steps = [];
@@ -23,8 +24,21 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
     /** @var array<string, bool> */
     private array $enabled = [];
 
+    private bool $frozen = false;
+
+    public function freeze(): void
+    {
+        $this->frozen = true;
+    }
+
     public function register(string $identifier, CheckoutStepInterface $step): void
     {
+        $this->assertNotFrozen();
+
+        if ($this->has($identifier)) {
+            return;
+        }
+
         $this->steps[$identifier] = $step;
         unset($this->lazyFactories[$identifier]);
         $this->enabled[$identifier] ??= true;
@@ -39,6 +53,12 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
      */
     public function registerLazy(string $identifier, Closure $factory): void
     {
+        $this->assertNotFrozen();
+
+        if ($this->has($identifier)) {
+            return;
+        }
+
         $this->lazyFactories[$identifier] = $factory;
         $this->enabled[$identifier] ??= true;
 
@@ -100,16 +120,22 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
      */
     public function setOrder(array $order): void
     {
+        $this->assertNotFrozen();
+
         $this->order = $order;
     }
 
     public function enable(string $identifier): void
     {
+        $this->assertNotFrozen();
+
         $this->enabled[$identifier] = true;
     }
 
     public function disable(string $identifier): void
     {
+        $this->assertNotFrozen();
+
         $this->enabled[$identifier] = false;
     }
 
@@ -120,6 +146,8 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
 
     public function replace(string $identifier, CheckoutStepInterface $step): void
     {
+        $this->assertNotFrozen();
+
         if (! $this->has($identifier)) {
             throw CheckoutStepException::stepNotFound($identifier);
         }
@@ -129,6 +157,8 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
 
     public function insertBefore(string $beforeIdentifier, string $identifier, CheckoutStepInterface $step): void
     {
+        $this->assertNotFrozen();
+
         $position = array_search($beforeIdentifier, $this->order, true);
 
         if ($position === false) {
@@ -143,6 +173,8 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
 
     public function insertAfter(string $afterIdentifier, string $identifier, CheckoutStepInterface $step): void
     {
+        $this->assertNotFrozen();
+
         $position = array_search($afterIdentifier, $this->order, true);
 
         if ($position === false) {
@@ -169,5 +201,12 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
     public function getEnabledStepIdentifiers(): array
     {
         return array_filter($this->order, fn (string $id) => $this->isEnabled($id));
+    }
+
+    private function assertNotFrozen(): void
+    {
+        if ($this->frozen) {
+            throw CheckoutStepException::registryFrozen();
+        }
     }
 }
