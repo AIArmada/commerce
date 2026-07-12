@@ -355,11 +355,11 @@ tasks:
   wave: 1
   candidate: Candidate 01
   title: Design the deep Checkout workflow and contributor seam
-  status: todo
+  status: claimed
   severity: design-gate
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: des-chk-110-checkout-workflow
+  claimed_at: '2026-07-12T23:00:00Z'
   goal: Choose one coherent Checkout interface and one internal step-assembly seam without exposing caller-visible sequencing.
   why: The current service and pipeline duplicate execution logic, while Events mutates the registry directly. However, the
     registry is also documented as an extension mechanism, so deleting it without compatibility and long-lived-worker decisions
