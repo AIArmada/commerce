@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,9 +21,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $order_id
  * @property string $kind
  * @property string $status
- * @property \Carbon\CarbonImmutable|null $completed_at
- * @property \Carbon\CarbonImmutable|null $created_at
- * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property CarbonImmutable|null $completed_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  */
 final class InventoryOperation extends Model
 {
@@ -31,10 +32,13 @@ final class InventoryOperation extends Model
     use HasUuids;
 
     public const string KIND_DEDUCTION = 'deduction';
+
     public const string KIND_RELEASE = 'release';
 
     public const string STATUS_PENDING = 'pending';
+
     public const string STATUS_COMPLETED = 'completed';
+
     public const string STATUS_FAILED = 'failed';
 
     protected static string $ownerScopeConfigKey = 'inventory.owner';
