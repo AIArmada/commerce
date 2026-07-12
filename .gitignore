@@ -22,3 +22,7 @@ graphify-out/
 
 # Prevent published skeleton migrations from causing duplicate migration issues
 vendor/orchestra/testbench-core/laravel/database/migrations/*.php
+
+# Architecture handoff artifacts
+architecture-handoff-*/
+architecture-handoff-*.zip

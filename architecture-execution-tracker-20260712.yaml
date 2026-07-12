@@ -1541,7 +1541,7 @@ tasks:
     commit: 383cdaac8
     tests: 'Consolidation tests: 10 passed (4 packages x adapter-removed check + owner-scoped query check, Inventory retention); Existing: Pricing OwnerScopingTest 5 passed, Tax OwnerScopingTest 3 passed, PromotionOwnerActionGuard 3 passed'
     static_analysis: 'phpstan analyse packages/pricing/src packages/promotions/src packages/shipping/src packages/tax/src --level=6 -> OK'
-    docs_updated: null
+    docs_updated: 'packages/tax/docs/04-usage.md (Manual Scoping section: TaxOwnerScope references replaced with commerce-support primitives; remaining 5 in-scope docs had no stale refs)'
     reviewer: null
     review_notes: null
 - id: DSC-521
