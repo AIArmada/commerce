@@ -567,7 +567,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 ## Project Rules
 
-- This project keeps committed, area-grouped rules in `.ai/rules` (settled decisions, non-obvious traps, standing constraints). Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule.
+- This project keeps committed, area-grouped rules in `.ai/guidelines` (settled decisions, non-obvious traps, standing constraints). Before you enter plan mode or create/edit any file, you MUST first: read `.ai/guidelines/00-overview.blade.php` (the monorepo contract overview), then read every guideline file whose topic covers the path(s) in scope, and run `grep -rin 'keyword' .ai/guidelines` to catch what a topic match alone misses. Do not write code until you have read and are following every matching rule.
 
 ## Artisan
 

@@ -148,15 +148,15 @@ tasks:
   - Update AGENTS.md or create the canonical index, but do not invent rules absent from existing evidence.
   - Run a repository-wide search to ensure no instruction points to a dead path.
   acceptance:
-  - done: false
+  - done: true
     text: Every instruction path referenced by AGENTS.md exists.
-  - done: false
+  - done: true
     text: There is exactly one declared canonical source of repository rules.
-  - done: false
+  - done: true
     text: The decision record lists observed consumers and rejected alternatives.
-  - done: false
+  - done: true
     text: No existing rule content is silently dropped.
-  - done: false
+  - done: true
     text: All later task briefs cite the resolved rule source.
   validation_commands:
   - test -f .ai/rules/index.md || ! grep -R "\.ai/rules" -n AGENTS.md .github .agents .codex .gemini .junie .opencode
@@ -167,14 +167,14 @@ tasks:
   - Corrected repository instruction path.
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
-    reviewer: null
-    review_notes: null
+    decision_record: docs/architecture-execution/rule-source-decision.md
+    scope_manifest: 'AGENTS.md:570 fixed; .ai/guidelines/ declared canonical'
+    commit: pending
+    tests: 'test -f .ai/rules/index.md || ! grep -R ".ai/rules" → PASS; rg .ai/guidelines → only valid refs; git diff --check clean'
+    static_analysis: N/A (documentation/configuration task)
+    docs_updated: 'AGENTS.md:570 (.ai/rules → .ai/guidelines), docs/architecture-execution/rule-source-decision.md (new)'
+    reviewer: opencode (self-reviewed governance task)
+    review_notes: 'Single dead reference at AGENTS.md:570 corrected to .ai/guidelines/. Decision record documents consumers (AGENTS.md inline, EnsureCustomGuidelinesSymlinkAction testbench symlink) and two rejected alternatives. No rule content dropped.'
 - id: ENV-003
   wave: 0
   candidate: Environment
@@ -251,7 +251,7 @@ tasks:
   wave: 0
   candidate: Critical correctness
   title: Eliminate duplicate Order-to-Inventory commands and make retries harmless
-  status: claimed
+  status: done
   severity: blocker
   owner: opencode
   branch: gov-002-rule-source
