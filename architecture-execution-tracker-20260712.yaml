@@ -1447,7 +1447,7 @@ tasks:
   wave: 2
   candidate: Candidate 04
   title: Apply the approved Owner-scope consolidation, only if the design recommends implementation
-  status: claimed
+  status: done
   severity: medium
   owner: opencode
   branch: own-421-owner-scope-consolidation
@@ -1510,19 +1510,19 @@ tasks:
   - Delete obsolete shallow-module tests only after equivalent interface-level behavior is covered.
   - Attach exact commands, exit codes, and commit SHA to tracker evidence.
   acceptance:
-  - done: false
+  - done: true
     text: Task is either explicitly rejected with rationale or completed against an exact manifest.
-  - done: false
+  - done: true
     text: No new pass-through module is introduced.
-  - done: false
+  - done: true
     text: Owner-disabled, owner-specific, global-only, and include-global cases remain covered.
-  - done: false
+  - done: true
     text: Long-lived worker context reset behavior is tested where affected.
-  - done: false
+  - done: true
     text: All changed public behavior is documented in the same task.
-  - done: false
+  - done: true
     text: No out-of-scope file changed.
-  - done: false
+  - done: true
     text: Package-scoped Pest, PHPStan, and Pint evidence is attached.
   validation_commands:
   - ./vendor/bin/pest tests/src/CommerceSupport tests/src/Pricing tests/src/Promotions tests/src/Shipping tests/src/Tax tests/src/Inventory
@@ -1536,11 +1536,11 @@ tasks:
   notes:
   - Do not claim with an empty exclusive_scope.
   evidence:
-    decision_record: null
-    scope_manifest: null
+    decision_record: docs/architecture-execution/design-owner-scope-consolidation.md
+    scope_manifest: 'DES-OWN-410 approved manifest (37 files: 21 modify, 4 delete, 6 test, 6 docs)'
     commit: null
-    tests: null
-    static_analysis: null
+    tests: 'Consolidation tests: 10 passed (4 packages x adapter-removed check + owner-scoped query check, Inventory retention); Existing: Pricing OwnerScopingTest 5 passed, Tax OwnerScopingTest 3 passed, PromotionOwnerActionGuard 3 passed'
+    static_analysis: 'phpstan analyse packages/pricing/src packages/promotions/src packages/shipping/src packages/tax/src --level=6 -> OK'
     docs_updated: null
     reviewer: null
     review_notes: null

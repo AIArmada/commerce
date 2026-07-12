@@ -27,7 +27,7 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
 
         $effectiveAt = $this->resolveEffectiveAt($context);
 
-        $price = PricingOwnerScope::applyToOwnedQuery(Price::query())
+        $price = Price::query()
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->forQuantity($quantity)
@@ -39,7 +39,7 @@ final class CustomerPriceResolver implements CustomerPriceResolverInterface
             })
             ->whereIn(
                 'price_list_id',
-                PricingOwnerScope::applyToOwnedQuery(PriceList::query())
+                PriceList::query()
                     ->where('is_active', true)
                     ->where(function ($q) use ($effectiveAt): void {
                         $q->whereNull('starts_at')->orWhere('starts_at', '<=', $effectiveAt);

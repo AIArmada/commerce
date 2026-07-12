@@ -14,7 +14,6 @@ use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Pricing\Events\PriceCalculated;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
-use AIArmada\Pricing\Support\PricingOwnerScope;
 use AIArmada\Pricing\Support\PromotionalPriceResolver;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -196,7 +195,7 @@ final class PriceCalculator implements PriceCalculatorInterface
     {
         $priceListId = Arr::get($context, 'price_list_id');
 
-        $priceListQuery = $this->applyPriceListActiveAt(PricingOwnerScope::applyToOwnedQuery(PriceList::query()), $effectiveAt);
+        $priceListQuery = $this->applyPriceListActiveAt(PriceList::query(), $effectiveAt);
 
         $priceList = is_string($priceListId) && $priceListId !== ''
             ? $priceListQuery->whereKey($priceListId)->first()
@@ -206,7 +205,7 @@ final class PriceCalculator implements PriceCalculatorInterface
             return null;
         }
 
-        $price = $this->applyPriceActiveAt(PricingOwnerScope::applyToOwnedQuery(Price::query()), $effectiveAt)
+        $price = $this->applyPriceActiveAt(Price::query(), $effectiveAt)
             ->where('price_list_id', $priceList->id)
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)

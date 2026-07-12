@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Pricing\Support\PricingOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -90,11 +90,11 @@ class Price extends Model implements Auditable
     protected static function booted(): void
     {
         static::updating(function (self $price): void {
-            if (! PricingOwnerScope::isEnabled()) {
+            if (! config('pricing.features.owner.enabled', false)) {
                 return;
             }
 
-            $owner = PricingOwnerScope::resolveOwner();
+            $owner = OwnerContext::resolve();
 
             if ($owner !== null && ! $price->belongsToOwner($owner)) {
                 throw new AuthorizationException('Cannot update prices outside the current owner scope.');
@@ -102,7 +102,7 @@ class Price extends Model implements Auditable
         });
 
         static::saving(function (self $price): void {
-            if (! PricingOwnerScope::isEnabled()) {
+            if (! config('pricing.features.owner.enabled', false)) {
                 return;
             }
 
@@ -113,7 +113,7 @@ class Price extends Model implements Auditable
                 throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
             }
 
-            $owner = PricingOwnerScope::resolveOwner();
+            $owner = OwnerContext::resolve();
 
             if ($owner === null) {
                 if ($price->owner_type !== null || $price->owner_id !== null) {
@@ -137,7 +137,7 @@ class Price extends Model implements Auditable
                 }
             }
 
-            $priceListQuery = PricingOwnerScope::applyToOwnedQuery(PriceList::query());
+            $priceListQuery = PriceList::query();
 
             $priceListExists = $priceListQuery
                 ->whereKey($price->price_list_id)
@@ -156,7 +156,7 @@ class Price extends Model implements Auditable
                     /** @var Builder<Model> $query */
                     $query = $type::query();
 
-                    $exists = PricingOwnerScope::applyToOwnedQuery($query)
+                    $exists = $query
                         ->whereKey($price->priceable_id)
                         ->exists();
 

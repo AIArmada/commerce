@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Tests\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 
 beforeEach(function (): void {
@@ -39,7 +38,7 @@ it('rejects cross-owner promotions for destructive actions', function (): void {
     expect(fn () => OwnerWriteGuard::findOrFailForOwner(
         Promotion::class,
         (string) $promotionB->getKey(),
-        PromotionsOwnerScope::resolveOwner(),
+        OwnerContext::resolve(),
         includeGlobal: false,
         message: 'Promotion is not accessible in the current owner scope.',
     ))->toThrow(AuthorizationException::class, 'Promotion is not accessible in the current owner scope.');
@@ -62,7 +61,7 @@ it('rejects owned promotions when owner context is missing', function (): void {
     expect(fn () => OwnerWriteGuard::findOrFailForOwner(
         Promotion::class,
         (string) $ownedPromotion->getKey(),
-        PromotionsOwnerScope::resolveOwner(),
+        OwnerContext::resolve(),
         includeGlobal: false,
         message: 'Promotion is not accessible in the current owner scope.',
     ))->toThrow(AuthorizationException::class, 'Promotion is not accessible in the current owner scope.');
@@ -79,7 +78,7 @@ it('allows global promotions when owner context is missing', function (): void {
     $authorized = OwnerWriteGuard::findOrFailForOwner(
         Promotion::class,
         (string) $globalPromotion->getKey(),
-        PromotionsOwnerScope::resolveOwner(),
+        OwnerContext::resolve(),
         includeGlobal: false,
         message: 'Promotion is not accessible in the current owner scope.',
     );

@@ -8,7 +8,7 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Events\ShipmentCreated;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\States\Draft;
-use AIArmada\Shipping\Support\ShippingOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -20,13 +20,13 @@ final class CreateShipment
     public function handle(ShipmentData $data, ?string $ownerId = null, ?string $ownerType = null): Shipment
     {
         return DB::transaction(function () use ($data, $ownerId, $ownerType): Shipment {
-            $resolvedOwner = ShippingOwnerScope::resolveOwner();
+            $resolvedOwner = OwnerContext::resolve();
 
-            if (ShippingOwnerScope::isEnabled() && $resolvedOwner === null) {
+            if (config('shipping.features.owner.enabled', false) && $resolvedOwner === null) {
                 throw new AuthorizationException('Owner context is required when shipping owner scoping is enabled.');
             }
 
-            if (ShippingOwnerScope::isEnabled() && ($ownerId !== null || $ownerType !== null)) {
+            if (config('shipping.features.owner.enabled', false) && ($ownerId !== null || $ownerType !== null)) {
                 if ($resolvedOwner === null) {
                     throw new AuthorizationException('Cannot assign an owner without an owner context.');
                 }

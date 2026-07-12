@@ -10,7 +10,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Pricing\Support\PricingOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -155,11 +154,11 @@ class PriceList extends Model implements Auditable
      */
     public function scopeForOwner(Builder $query, ?EloquentModel $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! PricingOwnerScope::isEnabled()) {
+        if (! config('pricing.features.owner.enabled', false)) {
             return $query;
         }
 
-        $includeGlobal = $includeGlobal && PricingOwnerScope::includeGlobal();
+        $includeGlobal = $includeGlobal && config('pricing.features.owner.include_global', false);
 
         $ownerToScope = $owner;
 
@@ -235,11 +234,11 @@ class PriceList extends Model implements Auditable
     protected static function booted(): void
     {
         static::updating(function (PriceList $priceList): void {
-            if (! PricingOwnerScope::isEnabled()) {
+            if (! config('pricing.features.owner.enabled', false)) {
                 return;
             }
 
-            $owner = PricingOwnerScope::resolveOwner();
+            $owner = OwnerContext::resolve();
 
             if ($owner !== null && ! $priceList->belongsToOwner($owner)) {
                 throw new AuthorizationException('Cannot update price lists outside the current owner scope.');
@@ -247,7 +246,7 @@ class PriceList extends Model implements Auditable
         });
 
         static::saving(function (PriceList $priceList): void {
-            if (! PricingOwnerScope::isEnabled()) {
+            if (! config('pricing.features.owner.enabled', false)) {
                 return;
             }
 
@@ -258,7 +257,7 @@ class PriceList extends Model implements Auditable
                 throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
             }
 
-            $owner = PricingOwnerScope::resolveOwner();
+            $owner = OwnerContext::resolve();
 
             if ($owner === null) {
                 if ($priceList->owner_type !== null || $priceList->owner_id !== null) {
@@ -286,8 +285,8 @@ class PriceList extends Model implements Auditable
         });
 
         static::deleting(function (PriceList $priceList): void {
-            if (PricingOwnerScope::isEnabled()) {
-                $owner = PricingOwnerScope::resolveOwner();
+            if (config('pricing.features.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
 
                 if ($owner === null) {
                     if ($priceList->owner_type !== null || $priceList->owner_id !== null) {

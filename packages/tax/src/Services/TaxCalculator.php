@@ -16,7 +16,7 @@ use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Settings\TaxSettings;
-use AIArmada\Tax\Support\TaxOwnerScope;
+
 use Illuminate\Database\Eloquent\Collection;
 use Throwable;
 
@@ -98,7 +98,7 @@ class TaxCalculator implements TaxCalculatorInterface
      */
     protected function getRates(string $taxClass, TaxZone $zone, bool $isShipping = false): Collection
     {
-        $query = TaxOwnerScope::applyToOwnedQuery(TaxRate::query())
+        $query = TaxRate::query()
             ->where('zone_id', $zone->id)
             ->where('tax_class', $taxClass)
             ->active()
@@ -142,7 +142,7 @@ class TaxCalculator implements TaxCalculatorInterface
 
         $zoneId = $context['zone_id'] ?? null;
 
-        $query = TaxOwnerScope::applyToOwnedQuery(TaxExemption::query())
+        $query = TaxExemption::query()
             ->where('exemptable_id', $customerId)
             ->whereIn('exemptable_type', $candidateTypes)
             ->active()
@@ -155,7 +155,7 @@ class TaxCalculator implements TaxCalculatorInterface
     {
         $zone = null;
         if ($zoneId !== null) {
-            $zone = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
+            $zone = TaxZone::query()
                 ->whereKey($zoneId)
                 ->first();
         }
@@ -182,7 +182,7 @@ class TaxCalculator implements TaxCalculatorInterface
         $zone = null;
 
         if ($zoneId !== null) {
-            $zone = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
+            $zone = TaxZone::query()
                 ->whereKey($zoneId)
                 ->first();
         }

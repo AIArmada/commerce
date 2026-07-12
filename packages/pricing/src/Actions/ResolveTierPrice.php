@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Actions;
 
 use AIArmada\Pricing\Models\PriceTier;
-use AIArmada\Pricing\Support\PricingOwnerScope;
 use Illuminate\Support\Arr;
 
 final class ResolveTierPrice
@@ -22,7 +21,7 @@ final class ResolveTierPrice
 
         $priceListId = Arr::get($context, 'price_list_id');
 
-        $query = PricingOwnerScope::applyToOwnedQuery(PriceTier::query())
+        $query = PriceTier::query()
             ->where('tierable_type', $tierableType)
             ->where('tierable_id', $tierableId)
             ->forQuantity($quantity)

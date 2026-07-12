@@ -20,7 +20,7 @@ final class TierResolver implements TierResolverInterface
 
         $priceListId = Arr::get($context, 'price_list_id');
 
-        $query = PricingOwnerScope::applyToOwnedQuery(PriceTier::query())
+        $query = PriceTier::query()
             ->where('tierable_type', $tierableType)
             ->where('tierable_id', $tierableId)
             ->forQuantity($quantity)
