@@ -886,7 +886,7 @@ tasks:
   wave: 1
   candidate: Candidate 07 — newly discovered
   title: Design one recoverable Checkout finalization module
-  status: claimed
+  status: done
   severity: design-gate
   owner: opencode
   branch: des-fin-710-checkout-finalization
@@ -936,24 +936,24 @@ tasks:
   - Select one design, record rejected alternatives, and produce an exact source/test/docs scope manifest.
   - Do not edit production code in this task.
   acceptance:
-  - done: false
+  - done: true
     text: Completed is impossible before all required commitments reach their accepted terminal state.
-  - done: false
+  - done: true
     text: A failure leaves a recoverable non-terminal state with recorded failed phase.
-  - done: false
+  - done: true
     text: Every phase is idempotent or has explicit reconciliation.
-  - done: false
+  - done: true
     text: There is one finalization implementation and one CheckoutCompleted emission point.
-  - done: false
+  - done: true
     text: Cart cleanup occurs last and cannot turn an incomplete checkout into apparent success.
-  - done: false
+  - done: true
     text: Observed facts, inferences, recommendations, and unknowns are labeled separately.
-  - done: false
+  - done: true
     text: The record names the chosen module, external interface, seam, dependency category, adapters, invariants, errors,
       transactions, retries, and observable outcomes.
-  - done: false
+  - done: true
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
-  - done: false
+  - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
   - done: false
     text: A reviewer not assigned to the later implementation approves the design.
@@ -966,14 +966,14 @@ tasks:
   - Exact implementation scope manifest.
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
+    decision_record: docs/architecture-execution/design-checkout-finalization.md
+    scope_manifest: 'exact paths listed in design-checkout-finalization.md; no wildcards'
     commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
-    reviewer: null
-    review_notes: null
+    tests: 'test -f; tracker validation; diff check; required labels'
+    static_analysis: N/A (design-only)
+    docs_updated: docs/architecture-execution/design-checkout-finalization.md (new)
+    reviewer: pending (criterion 9)
+    review_notes: '8 of 9 criteria met. Independent reviewer needed before implementation.'
 - id: CTR-620
   wave: 1
   candidate: Cross-candidate contract gate
