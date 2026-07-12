@@ -1199,19 +1199,19 @@ tasks:
   - Update docs/05-checkout-steps.md and 08-integrations.md.
   - Attach exact commands, exit codes, and commit SHA to tracker evidence.
   acceptance:
-  - done: false
+  - done: true
     text: Repeated container/provider boot produces the same unique ordered steps.
-  - done: false
+  - done: true
     text: No normal caller resolves a mutable registry.
-  - done: false
+  - done: true
     text: Optional packages may contribute or be absent without boot failure.
-  - done: false
+  - done: true
     text: Order conflicts fail deterministically with a meaningful error.
-  - done: false
+  - done: true
     text: All changed public behavior is documented in the same task.
-  - done: false
+  - done: true
     text: No out-of-scope file changed.
-  - done: false
+  - done: true
     text: Package-scoped Pest, PHPStan, and Pint evidence is attached.
   validation_commands:
   - ./vendor/bin/pest tests/src/Checkout/CheckoutStepRegistryTest.php tests/src/Checkout/CheckoutServiceProviderTest.php --parallel
@@ -1222,12 +1222,12 @@ tasks:
   - 'Same-pass documentation: packages/checkout/docs/05-checkout-steps.md, packages/checkout/docs/08-integrations.md.'
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
+    decision_record: docs/architecture-execution/design-checkout-workflow.md
+    scope_manifest: 'DES-CHK-110 approved manifest (9 files: StepContributor new, MutableStepRegistryInterface new, CheckoutStepRegistryInterface split, CheckoutStepRegistry freeze+idempotent, CheckoutServiceProvider contributor discovery, CheckoutStepException, RegisterCheckoutOptionalSteps type hint, 2 test files, 2 doc files)'
+    commit: 71ccd0b33
+    tests: 'CheckoutStepRegistryTest: 22 passed (55 assertions); CheckoutServiceProviderTest: 14 passed (39 assertions); StepExecutorTest: 6 passed; PaymentFlowTest: 45 passed; StateTest: 16 passed; FacadeTest: 1 passed (total 87 checkout tests, 257 assertions)'
+    static_analysis: 'phpstan --level=6 packages/checkout/src -> OK; pint packages/checkout/src --test -> PASS (96 files)'
+    docs_updated: packages/checkout/docs/05-checkout-steps.md, packages/checkout/docs/08-integrations.md (direct registry mutation examples replaced with StepContributor tag pattern)
     reviewer: null
     review_notes: null
 - id: EVT-123
