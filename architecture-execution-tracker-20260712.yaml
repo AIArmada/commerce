@@ -169,7 +169,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/rule-source-decision.md
     scope_manifest: 'AGENTS.md:570 fixed; .ai/guidelines/ declared canonical'
-    commit: pending
+    commit: ce8ab509a
     tests: 'test -f .ai/rules/index.md || ! grep -R ".ai/rules" → PASS; rg .ai/guidelines → only valid refs; git diff --check clean'
     static_analysis: N/A (documentation/configuration task)
     docs_updated: 'AGENTS.md:570 (.ai/rules → .ai/guidelines), docs/architecture-execution/rule-source-decision.md (new)'
