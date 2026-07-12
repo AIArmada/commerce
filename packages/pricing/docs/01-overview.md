@@ -34,7 +34,7 @@ The `aiarmada/pricing` package owns reusable pricing rules, price lists, tiered 
 - **Models** — `PriceList`, `Price`, `PriceTier`
 - **Actions** — `ResolveBasePrice`, `ResolveTierPrice`, `FormatPriceForDisplay`, `ApplyPromotionalAdjustment`
 - **Contracts** — `PriceCalculatorInterface`, `Priceable`, `CustomerPriceResolverInterface`, `SegmentPriceResolverInterface`, `TierResolverInterface`
-- **Support** — `CustomerPriceResolver`, `SegmentPriceResolver`, `TierResolver`, `PromotionalPriceResolver`, `PricingIntegrationRegistrar`, `PricingOwnerScope`
+- **Support** — `CustomerPriceResolver`, `SegmentPriceResolver`, `TierResolver`, `PromotionalPriceResolver`, `PricingIntegrationRegistrar`
 - **Events** — `PriceCalculated`, `TierApplied`
 - **Settings** — `PricingSettings`, `PromotionalPricingSettings`
 - **Core surface** — the pricing resolution pipeline that decides which price source wins for a given context

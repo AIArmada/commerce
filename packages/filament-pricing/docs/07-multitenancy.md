@@ -110,13 +110,11 @@ This is applied to:
 The `PricingStatsWidget` applies owner scoping:
 
 ```php
-$activePriceLists = PricingOwnerScope::applyToOwnedQuery(
-    PriceList::query()
-)->active()->count();
+$activePriceLists = PriceList::forOwner($owner)->active()->count();
 
 // For promotions
-if (PromotionsOwnerScope::isEnabled()) {
-    $promotionQuery = $promotionQuery->forOwner();
+if (config('promotions.features.owner.enabled', false)) {
+    $promotionQuery = $promotionQuery->forOwner($owner);
 }
 ```
 

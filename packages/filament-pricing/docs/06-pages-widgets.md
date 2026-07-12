@@ -235,9 +235,7 @@ The widget displays owner-scoped statistics:
 protected function getStats(): array
 {
     // Active price lists
-    $activePriceLists = PricingOwnerScope::applyToOwnedQuery(
-        PriceList::query()
-    )->active()->count();
+    $activePriceLists = PriceList::forOwner($owner)->active()->count();
 
     $stats = [
         Stat::make('Active Price Lists', number_format($activePriceLists))
@@ -250,8 +248,8 @@ protected function getStats(): array
     if (class_exists(Promotion::class)) {
         $promotionQuery = Promotion::query();
 
-        if (PromotionsOwnerScope::isEnabled()) {
-            $promotionQuery = $promotionQuery->forOwner();
+        if (config('promotions.features.owner.enabled', false)) {
+            $promotionQuery = $promotionQuery->forOwner($owner);
         }
 
         $activePromotions = (clone $promotionQuery)->active()->count();

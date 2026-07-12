@@ -156,7 +156,7 @@ PriceList::active()->count();
 
 2. Owner scoping correct:
 ```php
-PricingOwnerScope::applyToOwnedQuery(PriceList::query())->count();
+PriceList::forOwner($owner)->count();
 ```
 
 3. Promotions stats (if expected):

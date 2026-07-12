@@ -181,8 +181,9 @@ public static function getEloquentQuery(): Builder
 {
     $query = parent::getEloquentQuery();
 
-    return PromotionsOwnerScope::applyToOwnedQuery($query);
+    return $query->forOwner($owner);
 }
+
 ```
 
 To customize the scoping logic, override `getEloquentQuery` in your resource subclass.

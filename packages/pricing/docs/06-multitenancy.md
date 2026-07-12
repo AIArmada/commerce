@@ -76,28 +76,26 @@ $lists = PriceList::forOwner($tenant, includeGlobal: true)->get();
 $globalLists = PriceList::whereNull('owner_id')->get();
 ```
 
-## PricingOwnerScope Helper
+## Sharing config and owner context
 
-The `PricingOwnerScope` helper provides utility methods:
+Owner scoping is configured per package and resolved through `commerce-support`:
 
 ```php
-use AIArmada\Pricing\Support\PricingOwnerScope;
+use AIArmada\CommerceSupport\Facades\OwnerContext;
 
 // Check if owner scoping is enabled
-if (PricingOwnerScope::isEnabled()) {
+if (config('pricing.features.owner.enabled', false)) {
     // Owner scoping is active
 }
 
 // Check if global records should be included
-$includeGlobal = PricingOwnerScope::includeGlobal();
+$includeGlobal = config('pricing.features.owner.include_global', false);
 
 // Resolve current owner
-$owner = PricingOwnerScope::resolveOwner();
+$owner = OwnerContext::resolve();
 
-// Apply scoping to any query
-$query = PricingOwnerScope::applyToOwnedQuery(
-    PriceList::query()
-);
+// Apply scoping to any query — models use the global scope automatically
+$query = PriceList::forOwner($owner);
 ```
 
 ## Write Protection
