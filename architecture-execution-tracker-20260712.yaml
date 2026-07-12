@@ -609,7 +609,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-inventory-commitment.md
     scope_manifest: 'exact paths listed in design-inventory-commitment.md; no wildcards'
-    commit: null
+    commit: f85b63c24
     tests: 'test -f ✓; python3 validate-architecture-tracker.py → VALID; git diff --check clean; required labels present'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-inventory-commitment.md (new)
