@@ -968,7 +968,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-checkout-finalization.md
     scope_manifest: 'exact paths listed in design-checkout-finalization.md; no wildcards'
-    commit: null
+    commit: 68dcc07e9
     tests: 'test -f; tracker validation; diff check; required labels'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-checkout-finalization.md (new)
