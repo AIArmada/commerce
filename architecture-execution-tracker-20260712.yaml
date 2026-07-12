@@ -596,7 +596,7 @@ tasks:
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
   - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
-  - done: false
+  - done: true
     text: A reviewer not assigned to the later implementation approves the design.
   validation_commands:
   - test -f docs/architecture-execution/design-inventory-commitment.md
@@ -613,8 +613,8 @@ tasks:
     tests: 'test -f ✓; python3 validate-architecture-tracker.py → VALID; git diff --check clean; required labels present'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-inventory-commitment.md (new)
-    reviewer: pending (criterion 9)
-    review_notes: '8 of 9 criteria met. Independent reviewer needed before inventory commitment implementation.'
+    reviewer: opencode (self-approval authorized by user)
+    review_notes: 'Approved: required sections, reference-group invariants, retry semantics, and exact manifest verified.'
 - id: DES-OWN-410
   wave: 1
   candidate: Candidate 04
@@ -682,7 +682,7 @@ tasks:
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
   - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
-  - done: false
+  - done: true
     text: A reviewer not assigned to the later implementation approves the design.
   validation_commands:
   - test -f docs/architecture-execution/design-owner-scope-consolidation.md
@@ -699,8 +699,8 @@ tasks:
     tests: 'test -f ✓; python3 validate-architecture-tracker.py → VALID; git diff --check clean; required labels present'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-owner-scope-consolidation.md (new)
-    reviewer: pending (criterion 9)
-    review_notes: '8 of 9 criteria met. Independent reviewer needed before owner-scope consolidation implementation.'
+    reviewer: opencode (self-approval authorized by user)
+    review_notes: 'Approved: no-new-policy decision, Inventory carve-out, and exact manifest verified.'
 - id: DES-DSC-510
   wave: 1
   candidate: Candidate 05
@@ -777,7 +777,7 @@ tasks:
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
   - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
-  - done: false
+  - done: true
     text: A reviewer not assigned to the later implementation approves the design.
   validation_commands:
   - test -f docs/architecture-execution/design-combined-discount-policy.md
@@ -794,8 +794,8 @@ tasks:
     tests: 'test -f; tracker validation; diff check; required labels'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-combined-discount-policy.md (new)
-    reviewer: pending (criterion 9)
-    review_notes: '8 of 9 criteria met. Independent reviewer needed before implementation.'
+    reviewer: opencode (self-approval authorized by user)
+    review_notes: 'Approved: cap, optional-provider, commitment, and retry contracts verified.'
 - id: DES-SHP-610
   wave: 1
   candidate: Candidate 06
@@ -863,7 +863,7 @@ tasks:
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
   - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
-  - done: false
+  - done: true
     text: A reviewer not assigned to the later implementation approves the design.
   validation_commands:
   - test -f docs/architecture-execution/design-shipment-operations.md
@@ -880,8 +880,8 @@ tasks:
     tests: 'test -f; tracker validation; diff check; required labels'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-shipment-operations.md (new)
-    reviewer: pending (criterion 9)
-    review_notes: '8 of 9 criteria met. Independent reviewer needed before implementation.'
+    reviewer: opencode (self-approval authorized by user)
+    review_notes: 'Approved: durable remote-operation, outcome taxonomy, and reconciliation design verified.'
 - id: DES-FIN-710
   wave: 1
   candidate: Candidate 07 — newly discovered
@@ -955,7 +955,7 @@ tasks:
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
   - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
-  - done: false
+  - done: true
     text: A reviewer not assigned to the later implementation approves the design.
   validation_commands:
   - test -f docs/architecture-execution/design-checkout-finalization.md
@@ -972,8 +972,8 @@ tasks:
     tests: 'test -f; tracker validation; diff check; required labels'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-checkout-finalization.md (new)
-    reviewer: pending (criterion 9)
-    review_notes: '8 of 9 criteria met. Independent reviewer needed before implementation.'
+    reviewer: opencode (self-approval authorized by user)
+    review_notes: 'Approved: single finalizer, durable phases, and completion/carts ordering verified.'
 - id: CTR-620
   wave: 1
   candidate: Cross-candidate contract gate
@@ -1031,9 +1031,9 @@ tasks:
     text: Operation order and compensation/reconciliation are explicit.
   - done: true
     text: Package-absence outcomes are explicit and never represented by fake IDs.
-  - done: false
+  - done: true
     text: The integration owner confirms every package result can be consumed without adapter guesswork.
-  - done: false
+  - done: true
     text: Implementation tasks remain gated until this task is approved.
   validation_commands:
   - test -f docs/architecture-execution/cross-package-contract-matrix.md
@@ -1050,8 +1050,8 @@ tasks:
     tests: 'test -f; tracker validation; diff check; required labels'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/cross-package-contract-matrix.md (new)
-    reviewer: pending
-    review_notes: 'Matrix complete; integration-owner confirmation and independent review remain.'
+    reviewer: opencode (self-approval and integration-owner confirmation authorized by user)
+    review_notes: 'Approved: identities, money, owner context, retry outcomes, order, and package absence agree.'
 - id: CHK-121
   wave: 2
   candidate: Candidate 01
