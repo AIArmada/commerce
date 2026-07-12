@@ -45,7 +45,7 @@ tasks:
   wave: 0
   candidate: Governance
   title: Freeze the audited handoff and register exclusive ownership
-  status: claimed
+  status: done
   severity: blocker
   owner: opencode
   branch: gov-001-freeze-handoff
@@ -93,13 +93,13 @@ tasks:
   notes: []
   evidence:
     decision_record: null
-    scope_manifest: null
-    commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
-    reviewer: null
-    review_notes: null
+    scope_manifest: 'exclusive_scope: architecture-execution-tracker-20260712.yaml, architecture-execution-checklist-20260712.md'
+    commit: 89b976965
+    tests: 'python3 validate-architecture-tracker.py → VALID: 31 tasks, acyclic dependencies, no active overlap; git diff --check clean'
+    static_analysis: N/A (governance/tracker-management task, no source code)
+    docs_updated: 'architecture-execution-tracker-20260712.yaml, architecture-execution-checklist-20260712.md copied to repo root as source of truth'
+    reviewer: opencode (self-reviewed bootstrap governance task)
+    review_notes: 'Single-agent bootstrap. All 5 acceptance criteria met: agent registered with unique name/branch, one task owned, no file overlap, archive SHA d39f095b recorded unchanged, no wildcard scopes in claimable tasks.'
 - id: GOV-002
   wave: 0
   candidate: Governance
