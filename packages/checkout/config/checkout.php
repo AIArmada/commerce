@@ -71,6 +71,8 @@ return [
             'process_payment' => true,
             'persist_customer' => true,
             'create_order' => true,
+            'create_event_registrations' => true,
+            'issue_event_passes' => true,
             'dispatch_documents' => true,
         ],
         'order' => [
@@ -84,6 +86,8 @@ return [
             'process_payment',
             'persist_customer',
             'create_order',
+            'create_event_registrations',
+            'issue_event_passes',
             'dispatch_documents',
         ],
     ],

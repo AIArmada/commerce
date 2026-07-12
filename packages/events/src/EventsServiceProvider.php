@@ -6,11 +6,10 @@ namespace AIArmada\Events;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
-use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
+use AIArmada\Checkout\Contracts\StepContributor;
 use AIArmada\Engagement\EngagementServiceProvider;
 use AIArmada\Engagement\Integrations\Events\EngagementEventEngagementManager;
 use AIArmada\Events\Actions\AutoAddRequiredTicketBundlesAction;
-use AIArmada\Events\Actions\CreateRegistrationsFromOrderAction;
 use AIArmada\Events\Actions\ExpandTicketTypeComponentsAction;
 use AIArmada\Events\Actions\IssueEventRegistrationPassesAction;
 use AIArmada\Events\Actions\PromoteInterestedToConfirmedAction;
@@ -19,6 +18,7 @@ use AIArmada\Events\Actions\RecordHeadcountLogAction;
 use AIArmada\Events\Actions\RecordWalkInAction;
 use AIArmada\Events\Actions\RegisterForFreeAction;
 use AIArmada\Events\Actions\SyncManagementAssignmentToAuthzAction;
+use AIArmada\Events\Checkout\EventsStepContributor;
 use AIArmada\Events\Contracts\EventChangeNoticeAudienceResolver;
 use AIArmada\Events\Contracts\EventChangeNoticeNotificationDispatcher;
 use AIArmada\Events\Contracts\EventChangeNoticeWorkflow;
@@ -104,8 +104,6 @@ use AIArmada\Events\Services\EventMetadataSyncService;
 use AIArmada\Events\Services\EventQueryService;
 use AIArmada\Events\Services\EventSearchDocumentBuilder;
 use AIArmada\Events\Services\RegistrationService;
-use AIArmada\Events\Steps\CreateEventRegistrationsStep;
-use AIArmada\Events\Steps\IssueEventPassesStep;
 use AIArmada\Events\Support\EventOwnerScope;
 use AIArmada\Events\Support\EventSubmissionOwnerScope;
 use AIArmada\Events\Support\Integration\CommerceIntegration;
@@ -114,7 +112,6 @@ use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
 use AIArmada\Orders\Events\OrderCanceled;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Events\OrderRefunded;
-use AIArmada\Ticketing\Contracts\PassDeliveryServiceInterface;
 use AIArmada\Ticketing\Events\PassIssued;
 use AIArmada\Ticketing\Models\TicketType;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -278,48 +275,9 @@ final class EventsServiceProvider extends PackageServiceProvider
 
         TicketType::observe(ObserveEventTicketTypePricingConsistency::class);
 
-        if (! interface_exists(CheckoutStepRegistryInterface::class)) {
-            return;
+        if (interface_exists(StepContributor::class)) {
+            $this->app->tag(EventsStepContributor::class, 'checkout.steps');
         }
-
-        $registry = $this->app->make(CheckoutStepRegistryInterface::class);
-
-        if (! $registry->isEnabled('create_order')) {
-            return;
-        }
-
-        $step = new CreateEventRegistrationsStep(
-            createRegistrations: $this->app->make(CreateRegistrationsFromOrderAction::class),
-        );
-
-        if ($registry->has('create_event_registrations')) {
-            $registry->replace('create_event_registrations', $step);
-
-            return;
-        }
-
-        $registry->insertAfter('create_order', 'create_event_registrations', $step);
-
-        if (! $registry->isEnabled('create_event_registrations')) {
-            return;
-        }
-
-        if (! (bool) config('events.features.auto_issue_passes', false)) {
-            return;
-        }
-
-        $passStep = new IssueEventPassesStep(
-            issuePasses: $this->app->make(IssueEventRegistrationPassesAction::class),
-            passDelivery: $this->app->make(PassDeliveryServiceInterface::class),
-        );
-
-        if ($registry->has('issue_event_passes')) {
-            $registry->replace('issue_event_passes', $passStep);
-
-            return;
-        }
-
-        $registry->insertAfter('create_event_registrations', 'issue_event_passes', $passStep);
     }
 
     private function checkoutPipelineAvailable(): bool
