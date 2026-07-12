@@ -800,11 +800,11 @@ tasks:
   wave: 1
   candidate: Candidate 06
   title: Design shipment submission and cancellation as durable remote operations
-  status: todo
+  status: claimed
   severity: design-gate
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: des-shp-610-shipment-operations
+  claimed_at: '2026-07-12T16:00:00Z'
   goal: Represent remote carrier outcomes, unknown outcomes, retries, and reconciliation without lying in local Shipment state.
   why: ShipShipment retries remote creation before durable local evidence; CancelShipment marks local cancellation before
     the carrier result and ignores a false result. The driver interface collapses unknown, denied, and transient outcomes
