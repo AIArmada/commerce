@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('ticketing', 'jsonb');
 
-        Schema::create(config('ticketing.database.tables.pass_holders'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('ticketing.database.tables.pass_holders', 'ticket_pass_holders'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->uuid('pass_id')->index();
             $table->string('holder_type')->nullable();
@@ -31,6 +31,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('ticketing.database.tables.pass_holders'));
+        Schema::dropIfExists(config('ticketing.database.tables.pass_holders', 'ticket_pass_holders'));
     }
 };

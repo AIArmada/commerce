@@ -495,6 +495,41 @@ $critical = $replenishment->getCriticalSuggestions();
 $replenishment->approve($suggestion, approvedBy: auth()->id());
 ```
 
+## Order Inventory Operations (Idempotency)
+
+When the Inventory package processes inventory commands from the Orders package, each logical operation is recorded in an `InventoryOperation` record. This guarantees that even if an event is delivered more than once (queue retries, replays, concurrent callbacks), the inventory is mutated exactly once.
+
+### Operation Identity
+
+Each operation is uniquely identified by `(order_id, kind)` where kind is either `deduction` or `release`. The database enforces this uniqueness, serializing concurrent attempts at the row level.
+
+### Operation States
+
+| State | Meaning |
+|-------|---------|
+| `pending` | Operation created, processing not yet started or in progress |
+| `completed` | Operation finished successfully — deduplicated on retry |
+| `failed` | Operation failed — may be retried |
+
+### Retry Behavior
+
+- If an operation is already `completed`, subsequent delivery of the same inventory command is a no-op. No new movements or stock mutations occur.
+- If an operation is `pending`, the listener locks the row and proceeds. A concurrent duplicate is serialized by the unique database constraint.
+- Completion is recorded within the same database transaction as the stock mutations.
+
+### Cross-package Integration
+
+The canonical event path for order-driven inventory operations is:
+
+```
+Order transition commits (after local DB transaction)
+  → Order domain event (OrderProcessingStarted / OrderCancelInitiated)
+  → Orders listener translates to inventory event
+  → Inventory listener processes once, guarded by InventoryOperation
+```
+
+Inventory commands are never dispatched synchronously from within an Order transition body. One transition produces one logical inventory operation.
+
 ## Events
 
 The package dispatches events you can listen to:

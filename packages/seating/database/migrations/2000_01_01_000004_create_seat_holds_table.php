@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('seating', 'json');
 
-        Schema::create(config('seating.database.tables.seat_holds'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('seating.database.tables.seat_holds', 'seat_holds'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('held_by');
             $table->nullableMorphs('owner');
@@ -27,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('seating.database.tables.seat_holds'));
+        Schema::dropIfExists(config('seating.database.tables.seat_holds', 'seat_holds'));
     }
 };
