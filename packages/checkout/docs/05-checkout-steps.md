@@ -66,11 +66,12 @@ Calculates shipping costs:
 
 ### ReserveInventoryStep
 
-Reserves inventory for items:
+Reserves inventory for items as a single group:
 
-- Creates stock reservations
-- Sets reservation expiry
-- Handles reservation failures
+- Creates a group reservation (one reference for the entire cart)
+- Stores outcome in `pricing_data.inventory_reservation` (contains `reference`, `state`, `expires_at`)
+- Sets `pricing_data.reservations_expire_at` for upstream consumers
+- Rolls back by releasing the entire reference group
 - Runs before `process_payment` by default and moves to the start of the post-payment phase when `integrations.inventory.reserve_before_payment` is `false`
 
 ### ProcessPaymentStep

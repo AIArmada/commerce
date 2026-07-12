@@ -14,7 +14,7 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Completed;
 use AIArmada\Checkout\States\Pending;
 use AIArmada\Checkout\States\Processing;
-use AIArmada\Inventory\InventoryServiceProvider;
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Facades\Log;
@@ -125,6 +125,10 @@ final class CreateOrderStep extends AbstractCheckoutStep
             }
         }
 
+        if ($this->shouldCommitInventoryReservations($isFreeOrder, $paymentConfirmationEnabled, $paymentWasConfirmed)) {
+            $this->commitInventoryReservations($session);
+        }
+
         $session->update(['completed_at' => now()]);
 
         $this->redeemAppliedVouchers($session, $order->id);
@@ -133,13 +137,8 @@ final class CreateOrderStep extends AbstractCheckoutStep
             $session->transitionStatus(Processing::class);
         }
 
-        // Only transition to Completed if not already in that state
         if (! $session->status->is(Completed::class)) {
             $session->transitionStatus(Completed::class);
-        }
-
-        if ($this->shouldCommitInventoryReservations($isFreeOrder, $paymentConfirmationEnabled, $paymentWasConfirmed)) {
-            $this->commitInventoryReservations($session);
         }
         $this->clearCart($session);
 
@@ -312,21 +311,23 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
     private function commitInventoryReservations(CheckoutSession $session): void
     {
-        if (! class_exists(InventoryServiceProvider::class)) {
+        if ($session->order_id === null) {
             return;
         }
 
         $pricingData = $session->pricing_data ?? [];
-        $reservations = $pricingData['inventory_reservations'] ?? [];
+        $reservation = $pricingData['inventory_reservation'] ?? [];
 
-        if (empty($reservations)) {
+        if (empty($reservation) || ! isset($reservation['reference'])) {
+            return;
+        }
+
+        if (! interface_exists(CheckoutReservationServiceInterface::class)) {
             return;
         }
 
         $inventoryAdapter = app(InventoryAdapter::class);
-
-        // Commit all reservations for this checkout cart at once
-        $inventoryAdapter->commitAllForReference($session->cart_id, $session->order_id);
+        $inventoryAdapter->commit($reservation['reference'], $session->order_id);
     }
 
     private function shouldCommitInventoryReservations(

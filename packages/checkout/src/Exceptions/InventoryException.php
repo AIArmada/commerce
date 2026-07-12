@@ -14,27 +14,27 @@ final class InventoryException extends CheckoutException
         );
     }
 
-    public static function reservationFailed(string $productId, string $reason): self
+    public static function reservationFailed(string $reference, string $reason): self
     {
         return new self(
-            "Failed to reserve inventory for product '{$productId}': {$reason}",
-            ['product_id' => $productId, 'reason' => $reason],
+            "Failed to reserve inventory for reference '{$reference}': {$reason}",
+            ['reference' => $reference, 'reason' => $reason],
         );
     }
 
-    public static function reservationExpired(string $reservationId): self
+    public static function referenceNotFound(string $reference): self
     {
         return new self(
-            "Inventory reservation '{$reservationId}' has expired",
-            ['reservation_id' => $reservationId],
+            "Inventory reservation reference '{$reference}' not found",
+            ['reference' => $reference],
         );
     }
 
-    public static function releaseFailed(string $reservationId, string $reason): self
+    public static function releaseFailed(string $reference, string $reason): self
     {
         return new self(
-            "Failed to release inventory reservation '{$reservationId}': {$reason}",
-            ['reservation_id' => $reservationId, 'reason' => $reason],
+            "Failed to release inventory for reference '{$reference}': {$reason}",
+            ['reference' => $reference, 'reason' => $reason],
         );
     }
 }

@@ -9,6 +9,7 @@ use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Exceptions\InventoryException;
 use AIArmada\Checkout\Integrations\InventoryAdapter;
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Inventory\Data\ReservationLine;
 use Throwable;
 
 final class ReserveInventoryStep extends AbstractCheckoutStep
@@ -28,9 +29,7 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
         return 'Reserve Inventory';
     }
 
-    /**
-     * @return array<string>
-     */
+    /** @return array<string> */
     public function getDependencies(): array
     {
         $deps = ['calculate_pricing'];
@@ -64,7 +63,6 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
 
     public function canSkip(CheckoutSession $session): bool
     {
-        // Skip if inventory package is not installed or disabled
         if ($this->inventoryAdapter === null) {
             return true;
         }
@@ -73,7 +71,6 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
             return true;
         }
 
-        // Skip if not configured to validate stock
         if (! config('checkout.integrations.inventory.validate_stock', true)) {
             return true;
         }
@@ -81,37 +78,10 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
         return false;
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function validate(CheckoutSession $session): array
     {
-        if ($this->inventoryAdapter === null) {
-            return [];
-        }
-
-        $errors = [];
-        $cartSnapshot = $session->cart_snapshot ?? [];
-        $items = $cartSnapshot['items'] ?? [];
-
-        foreach ($items as $item) {
-            $productId = $item['product_id'] ?? data_get($item, 'attributes.product_id');
-            $variantId = $item['variant_id'] ?? data_get($item, 'attributes.variant_id');
-            $quantity = $item['quantity'] ?? 1;
-
-            if ($productId === null) {
-                continue;
-            }
-
-            $available = $this->inventoryAdapter->getAvailableStock($productId, $variantId);
-
-            if ($available < $quantity) {
-                $itemName = $item['name'] ?? "Product {$productId}";
-                $errors["item_{$productId}"] = "Insufficient stock for {$itemName}: requested {$quantity}, available {$available}";
-            }
-        }
-
-        return $errors;
+        return [];
     }
 
     public function handle(CheckoutSession $session): StepResult
@@ -122,12 +92,12 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
 
         $cartSnapshot = $session->cart_snapshot ?? [];
         $items = $cartSnapshot['items'] ?? [];
-
-        $reservations = [];
         $reservationTtl = config('checkout.integrations.inventory.reservation_ttl', 900);
-        $currentProductId = null;
+        $reference = $session->cart_id;
 
         try {
+            $lines = [];
+
             foreach ($items as $item) {
                 $productId = $item['product_id'] ?? data_get($item, 'attributes.product_id');
                 $variantId = $item['variant_id'] ?? data_get($item, 'attributes.variant_id');
@@ -137,46 +107,42 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
                     continue;
                 }
 
-                $currentProductId = $productId;
-
-                $reservation = $this->inventoryAdapter->reserve(
+                $lines[] = new ReservationLine(
                     productId: $productId,
                     variantId: $variantId,
                     quantity: $quantity,
-                    reference: $session->cart_id,
-                    ttl: $reservationTtl,
                 );
-
-                $reservations[] = [
-                    'product_id' => $productId,
-                    'variant_id' => $variantId,
-                    'quantity' => $quantity,
-                    'reservation_id' => $reservation['id'] ?? null,
-                ];
             }
 
-            // Store reservation data in session
+            if ($lines === []) {
+                return $this->failed('No valid items to reserve');
+            }
+
+            $outcome = $this->inventoryAdapter->reserve(
+                reference: $reference,
+                lines: $lines,
+                ttl: $reservationTtl,
+            );
+
             $pricingData = $session->pricing_data ?? [];
-            $pricingData['inventory_reservations'] = $reservations;
-            $pricingData['reservations_expire_at'] = now()->addSeconds($reservationTtl)->toIso8601String();
+            $pricingData['inventory_reservation'] = [
+                'reference' => $outcome->reference,
+                'state' => $outcome->state,
+                'expires_at' => $outcome->expiresAt,
+            ];
+            $pricingData['reservations_expire_at'] = $outcome->expiresAt ?? now()->addSeconds($reservationTtl)->toIso8601String();
 
             $session->update(['pricing_data' => $pricingData]);
 
             return $this->success('Inventory reserved', [
-                'reservations_count' => count($reservations),
+                'reference' => $outcome->reference,
+                'state' => $outcome->state,
                 'expires_in' => $reservationTtl,
             ]);
         } catch (Throwable $e) {
-            // Release any reservations made before the failure
-            foreach ($reservations as $reservation) {
-                if (isset($reservation['reservation_id'])) {
-                    $this->inventoryAdapter->release($reservation['reservation_id']);
-                }
-            }
-
             throw InventoryException::reservationFailed(
-                $currentProductId ?? 'unknown',
-                $e->getMessage()
+                $reference,
+                $e->getMessage(),
             );
         }
     }
@@ -191,12 +157,12 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
             return;
         }
 
-        // Release all reservations for this checkout cart at once
-        $this->inventoryAdapter->releaseAllForReference($session->cart_id);
+        $reference = $session->cart_id;
 
-        // Clear reservation data from session
+        $this->inventoryAdapter->release($reference);
+
         $pricingData = $session->pricing_data ?? [];
-        unset($pricingData['inventory_reservations'], $pricingData['reservations_expire_at']);
+        unset($pricingData['inventory_reservation'], $pricingData['reservations_expire_at']);
         $session->update(['pricing_data' => $pricingData]);
     }
 }

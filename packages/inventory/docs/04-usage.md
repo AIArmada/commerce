@@ -70,6 +70,44 @@ ReleaseStock::run($product, $cartId);
 ReleaseStock::make()->releaseAllForCart($cartId);
 ```
 
+### Checkout Reservation Groups
+
+The checkout-facing interface reserves inventory as a single group rather than per-item allocations. This gives the checkout flow a single reference for the entire cart.
+
+```php
+use AIArmada\Inventory\Contracts\CheckoutReservationServiceInterface;
+use AIArmada\Inventory\Data\ReservationLine;
+
+$reservation = app(CheckoutReservationServiceInterface::class);
+
+// Reserve a group of lines (single reference for the whole cart)
+$outcome = $reservation->reserve(
+    reference: $cartId,
+    lines: [
+        new ReservationLine(productId: 'product-uuid', variantId: 'variant-uuid', quantity: 2),
+        new ReservationLine(productId: 'product-uuid-2', quantity: 1),
+    ],
+    ttlSeconds: 900,
+);
+// $outcome->state === 'reserved'
+
+// Commit on order placement
+$reservation->commit($cartId, $orderId);
+// $outcome->state === 'committed'
+
+// Release on abandonment
+$reservation->release($cartId);
+// $outcome->state === 'released'
+
+// Extend TTL
+$reservation->extend($cartId, 1800);
+
+// Check state
+$outcome = $reservation->find($cartId);
+```
+
+Each group creates a durable `InventoryReservation` record that retains its terminal state after allocations are cleaned up. Duplicate active reservations for the same reference throw `ReservationReferenceConflict`.
+
 ### Batch & Serial Operations
 
 ```php

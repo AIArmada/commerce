@@ -451,3 +451,6 @@ try {
 | `InvalidCheckoutStateException::emptyCart` | Cart has no items | Add items to cart |
 | `PaymentException::paymentFailed` | Payment declined | Retry with different method |
 | `InventoryException::insufficientStock` | Item out of stock | Update quantities |
+| `InventoryException::reservationFailed` | Reservation error | Check stock availability |
+| `InventoryException::referenceNotFound` | Missing reservation group | Verify checkout session state |
+| `InventoryException::releaseFailed` | Release error | Check inventory state |
