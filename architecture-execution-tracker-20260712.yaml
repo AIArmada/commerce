@@ -104,11 +104,11 @@ tasks:
   wave: 0
   candidate: Governance
   title: Resolve the repository-rule source before any code edit
-  status: todo
+  status: done
   severity: blocker
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: gov-002-rule-source
+  claimed_at: '2026-07-12T22:15:00Z'
   goal: 'Establish which committed instructions are canonical: the missing `.ai/rules` hierarchy referenced by AGENTS.md or
     the existing `.ai/guidelines` files.'
   why: AGENTS.md requires every agent to read `.ai/rules/index.md` before editing, but that path does not exist. Proceeding
@@ -251,11 +251,11 @@ tasks:
   wave: 0
   candidate: Critical correctness
   title: Eliminate duplicate Order-to-Inventory commands and make retries harmless
-  status: done
-  severity: blocker
-  owner: opencode
-  branch: gov-002-rule-source
-  claimed_at: '2026-07-12T22:15:00Z'
+  status: todo
+  severity: critical
+  owner: null
+  branch: null
+  claimed_at: null
   goal: Guarantee one logical deduction and one logical release per Order operation even when the event is delivered more
     than once.
   why: Payment confirmation and cancellation each dispatch inventory commands through two independent Orders paths. The second
