@@ -978,11 +978,11 @@ tasks:
   wave: 1
   candidate: Cross-candidate contract gate
   title: Approve the pre-implementation contract matrix
-  status: todo
+  status: claimed
   severity: blocker
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: ctr-620-contract-matrix
+  claimed_at: '2026-07-12T16:20:00Z'
   goal: Prove that Order intake, Inventory commitment, Discount commitment, and Checkout finalization agree before any shared
     integration code is written.
   why: The prior checkpoint occurred after package implementations and immediately before integration. At that point incompatible
