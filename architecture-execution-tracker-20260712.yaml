@@ -1046,7 +1046,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/cross-package-contract-matrix.md
     scope_manifest: 'exact paths listed in cross-package-contract-matrix.md; no wildcards'
-    commit: null
+    commit: 37ba4c4d9
     tests: 'test -f; tracker validation; diff check; required labels'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/cross-package-contract-matrix.md (new)
