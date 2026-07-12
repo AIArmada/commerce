@@ -244,7 +244,7 @@ tasks:
   evidence:
     decision_record: null
     scope_manifest: 'NO SOURCE EDITS; evidence at /tmp/commerce-audit-baseline/{php-environment,pest-baseline,phpstan-baseline}.txt'
-    commit: pending
+    commit: 8eaebb389
     tests: 'DOM exit 0; SQLite exit 0; pest --version exit 0 (Pest 4.7.5); pest tests/src/Checkout 202 failed (pre-existing ticketing migration bug, bootstrap OK); phpstan packages/checkout/src 0 errors'
     static_analysis: 'phpstan analyse packages/checkout/src --no-progress → [OK] No errors, exit 0'
     docs_updated: N/A (environment task, no docs changed)
