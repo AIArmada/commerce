@@ -436,7 +436,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-checkout-workflow.md
     scope_manifest: 'Exact file manifest (16 files): create StepContributor/StepExecutor, modify 8 checkout+events files, delete RunCheckoutPipeline, update 3 docs'
-    commit: pending
+    commit: 2edb70f18
     tests: 'test -f design-checkout-workflow.md ✓; git diff --check clean; Observed fact|Inference|Chosen design|Rejected|Unknown labels present'
     static_analysis: N/A (design-only task, no code edits)
     docs_updated: docs/architecture-execution/design-checkout-workflow.md (new design record)
