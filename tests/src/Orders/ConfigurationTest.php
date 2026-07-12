@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 it('publishes invoice company detail settings', function (): void {
-    $config = require base_path('packages/orders/config/orders.php');
+    $config = require dirname(__DIR__, 3) . '/packages/orders/config/orders.php';
 
     expect($config['company'] ?? null)
         ->toBeArray()
