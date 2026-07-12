@@ -790,7 +790,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-combined-discount-policy.md
     scope_manifest: 'exact paths listed in design-combined-discount-policy.md; no wildcards'
-    commit: null
+    commit: 34eb3d5c2
     tests: 'test -f; tracker validation; diff check; required labels'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-combined-discount-policy.md (new)
