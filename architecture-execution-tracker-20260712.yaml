@@ -1145,11 +1145,11 @@ tasks:
   wave: 2
   candidate: Candidate 01
   title: Implement deterministic internal Checkout contributors
-  status: gated
+  status: claimed
   severity: high
-  owner: null
-  branch: null
-  claimed_at: null
+  owner: opencode
+  branch: chk-122-contributor-seam
+  claimed_at: '2026-07-13T04:00:00Z'
   goal: Assemble core and package-provided steps without caller-visible mutable registry coordination.
   why: Events and Checkout currently mutate a singleton registry during provider boot.
   depends_on:
