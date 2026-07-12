@@ -1538,9 +1538,9 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-owner-scope-consolidation.md
     scope_manifest: 'DES-OWN-410 approved manifest (37 files: 21 modify, 4 delete, 6 test, 6 docs)'
-    commit: 383cdaac8
-    tests: 'Consolidation tests: 10 passed (4 packages x adapter-removed check + owner-scoped query check, Inventory retention); Existing: Pricing OwnerScopingTest 5 passed, Tax OwnerScopingTest 3 passed, PromotionOwnerActionGuard 3 passed'
-    static_analysis: 'phpstan analyse packages/pricing/src packages/promotions/src packages/shipping/src packages/tax/src --level=6 -> OK'
+    commit: cf6452f85
+    tests: 'Consolidation tests: 10 passed (4 packages x adapter-removed check + owner-scoped query check, Inventory retention); Existing: Pricing OwnerScopingTest 5 passed, Tax OwnerScopingTest 3 passed, PromotionOwnerActionGuard 3 passed (total 18 tests, 36 assertions)'
+    static_analysis: 'phpstan --level=6 packages/pricing, promotions, shipping, tax -> OK; pint --test on 21 modified files -> fixed 12 style issues, clean'
     docs_updated: 'packages/tax/docs/04-usage.md (Manual Scoping section: TaxOwnerScope references replaced with commerce-support primitives; remaining 5 in-scope docs had no stale refs)'
     reviewer: null
     review_notes: null
