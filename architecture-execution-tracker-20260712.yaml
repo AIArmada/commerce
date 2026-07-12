@@ -1351,7 +1351,7 @@ tasks:
   wave: 2
   candidate: Candidate 03
   title: Implement the approved Inventory reservation-group lifecycle
-  status: claimed
+  status: review
   severity: high
   owner: opencode
   branch: inv-321-reservation-group
@@ -1410,19 +1410,19 @@ tasks:
   - Update/delete obsolete tests.
   - Update docs in the same pass.
   acceptance:
-  - done: false
+  - done: true
     text: No fake or fallback ID represents success.
-  - done: false
+  - done: true
     text: All allocations for one reference are committed/released together according to the contract.
-  - done: false
+  - done: true
     text: Split allocations are covered by tests.
-  - done: false
+  - done: true
     text: Expired, missing, committed, and released references have distinct documented outcomes.
   - done: false
     text: Concurrent reserve/commit/release tests prove stock invariants.
-  - done: false
+  - done: true
     text: All changed public behavior is documented in the same task.
-  - done: false
+  - done: true
     text: No out-of-scope file changed.
   - done: false
     text: Package-scoped Pest, PHPStan, and Pint evidence is attached.
@@ -1437,12 +1437,12 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-inventory-commitment.md
     scope_manifest: 'DES-INV-310 + CTR-620 approved manifest (27 files: 9 create, 10 modify, 2 delete, 4 test files, 2 docs)'
-    commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
-    reviewer: null
-    review_notes: null
+    commit: 30f5fef79
+    tests: 'CheckoutReservationServiceTest: 11 passed, 25 assertions; full tests/src/Inventory sweep has unrelated existing failures and needs triage'
+    static_analysis: 'phpstan analyse packages/inventory/src packages/checkout/src --level=6 → OK; Pint changed files → passed'
+    docs_updated: 'packages/inventory/docs/04-usage.md; packages/checkout/docs/04-usage.md; packages/checkout/docs/05-checkout-steps.md'
+    reviewer: pending
+    review_notes: 'Review required: add concurrency reserve/commit/release regression coverage and triage broad Inventory suite failures before done.'
 - id: OWN-421
   wave: 2
   candidate: Candidate 04
