@@ -171,4 +171,39 @@ class CheckoutReservationServiceTest extends InventoryTestCase
         $outcome = $this->reservationService->find('no-such-ref');
         expect($outcome->state)->toBe('not_found');
     }
+
+    public function test_commit_is_idempotent(): void
+    {
+        $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
+        $this->reservationService->reserve('ref-idem-commit', $lines, 900);
+
+        $first = $this->reservationService->commit('ref-idem-commit', 'ORDER-A');
+        $second = $this->reservationService->commit('ref-idem-commit', 'ORDER-A');
+
+        expect($first->state)->toBe('committed');
+        expect($second->state)->toBe('committed');
+        expect($second->orderId)->toBe('ORDER-A');
+    }
+
+    public function test_commit_with_different_order_id_throws(): void
+    {
+        $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
+        $this->reservationService->reserve('ref-diff-order', $lines, 900);
+        $this->reservationService->commit('ref-diff-order', 'ORDER-A');
+
+        expect(fn () => $this->reservationService->commit('ref-diff-order', 'ORDER-B'))
+            ->toThrow(ReservationReferenceConflict::class);
+    }
+
+    public function test_release_is_idempotent(): void
+    {
+        $lines = [new ReservationLine(productId: $this->item->getKey(), quantity: 2)];
+        $this->reservationService->reserve('ref-idem-release', $lines, 900);
+
+        $first = $this->reservationService->release('ref-idem-release');
+        $second = $this->reservationService->release('ref-idem-release');
+
+        expect($first->state)->toBe('released');
+        expect($second->state)->toBe('released');
+    }
 }
