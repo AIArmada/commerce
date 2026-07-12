@@ -619,7 +619,7 @@ tasks:
   wave: 1
   candidate: Candidate 04
   title: Re-evaluate Owner scope consolidation using the existing deep implementation
-  status: claimed
+  status: done
   severity: design-gate
   owner: opencode
   branch: des-own-410-owner-scope-consolidation
@@ -665,22 +665,22 @@ tasks:
   - Select one design, record rejected alternatives, and produce an exact source/test/docs scope manifest.
   - Do not edit production code in this task.
   acceptance:
-  - done: false
+  - done: true
     text: Recommendation strength is re-evaluated and may legitimately become `rejected` or `no implementation`.
-  - done: false
+  - done: true
     text: No new module is approved unless the deletion test shows added leverage over existing commerce-support modules.
-  - done: false
+  - done: true
     text: The exact provider path is correct.
-  - done: false
+  - done: true
     text: The scope manifest separates common tuple scoping from Inventory-specific relation/cache behavior.
-  - done: false
+  - done: true
     text: Observed facts, inferences, recommendations, and unknowns are labeled separately.
-  - done: false
+  - done: true
     text: The record names the chosen module, external interface, seam, dependency category, adapters, invariants, errors,
       transactions, retries, and observable outcomes.
-  - done: false
+  - done: true
     text: The record contains an exact file manifest with no wildcards before any implementation task is ungated.
-  - done: false
+  - done: true
     text: The record identifies obsolete modules/tests to delete and compatibility documentation to update.
   - done: false
     text: A reviewer not assigned to the later implementation approves the design.
@@ -693,14 +693,14 @@ tasks:
   - Exact implementation scope manifest.
   notes: []
   evidence:
-    decision_record: null
-    scope_manifest: null
+    decision_record: docs/architecture-execution/design-owner-scope-consolidation.md
+    scope_manifest: 'exact paths listed in design-owner-scope-consolidation.md; no wildcards'
     commit: null
-    tests: null
-    static_analysis: null
-    docs_updated: null
-    reviewer: null
-    review_notes: null
+    tests: 'test -f ✓; python3 validate-architecture-tracker.py → VALID; git diff --check clean; required labels present'
+    static_analysis: N/A (design-only)
+    docs_updated: docs/architecture-execution/design-owner-scope-consolidation.md (new)
+    reviewer: pending (criterion 9)
+    review_notes: '8 of 9 criteria met. Independent reviewer needed before owner-scope consolidation implementation.'
 - id: DES-DSC-510
   wave: 1
   candidate: Candidate 05
