@@ -695,7 +695,7 @@ tasks:
   evidence:
     decision_record: docs/architecture-execution/design-owner-scope-consolidation.md
     scope_manifest: 'exact paths listed in design-owner-scope-consolidation.md; no wildcards'
-    commit: null
+    commit: 3abf1bb0a
     tests: 'test -f ✓; python3 validate-architecture-tracker.py → VALID; git diff --check clean; required labels present'
     static_analysis: N/A (design-only)
     docs_updated: docs/architecture-execution/design-owner-scope-consolidation.md (new)
