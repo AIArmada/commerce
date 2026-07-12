@@ -322,12 +322,28 @@ Optional integrations and payment processors are now registered through dedicate
 | `RegisterCheckoutOptionalSteps` | Registers inventory, tax, and discount steps based on package availability and config |
 | `ChipIntegrationRegistrar` | Listens to CHIP purchase events and forwards them to the callback flow |
 
-### Adding a new integration
+### Adding a new integration via StepContributor
 
 ```php
-// In your own service provider
-$registry = app(CheckoutStepRegistryInterface::class);
-$registry->register('my_custom_step', new MyCustomStep());
+use AIArmada\Checkout\Contracts\StepContributor;
+
+final class MyIntegrationContributor implements StepContributor
+{
+    /** @return array<string, \Closure(): CheckoutStepInterface> */
+    public function steps(): array
+    {
+        return [
+            'my_custom_step' => fn (): CheckoutStepInterface => new MyCustomStep(),
+        ];
+    }
+}
+```
+
+Tag the contributor in your service provider:
+
+```php
+// In your service provider's boot method
+$this->app->tag(MyIntegrationContributor::class, 'checkout.steps');
 ```
 
 ### Callback flow
