@@ -25,11 +25,6 @@ interface CheckoutServiceInterface
     public function processCheckout(CheckoutSession $session): CheckoutResult;
 
     /**
-     * Process a single step in the checkout flow.
-     */
-    public function processStep(CheckoutSession $session, string $stepName): CheckoutSession;
-
-    /**
      * Retry payment for a failed checkout session.
      */
     public function retryPayment(CheckoutSession $session): CheckoutResult;
@@ -49,14 +44,4 @@ interface CheckoutServiceInterface
         string $callbackType,
         array $payload = [],
     ): CheckoutResult;
-
-    /**
-     * Get the current step for a checkout session.
-     */
-    public function getCurrentStep(CheckoutSession $session): ?string;
-
-    /**
-     * Check if checkout can proceed to the next step.
-     */
-    public function canProceed(CheckoutSession $session): bool;
 }

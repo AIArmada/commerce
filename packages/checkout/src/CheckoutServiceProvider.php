@@ -6,6 +6,7 @@ namespace AIArmada\Checkout;
 
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\CashierChip\Billing\Cashier;
+use AIArmada\Checkout\Actions\FinalizeCheckoutSession;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
@@ -13,6 +14,7 @@ use AIArmada\Checkout\Exceptions\MissingPaymentGatewayException;
 use AIArmada\Checkout\Services\CheckoutService;
 use AIArmada\Checkout\Services\CheckoutStepRegistry;
 use AIArmada\Checkout\Services\PaymentGatewayResolver;
+use AIArmada\Checkout\Services\StepExecutor;
 use AIArmada\Checkout\Steps\CalculatePricingStep;
 use AIArmada\Checkout\Steps\CalculateShippingStep;
 use AIArmada\Checkout\Steps\CreateOrderStep;
@@ -152,6 +154,8 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $this->app->singleton(CheckoutService::class, fn ($app) => new CheckoutService(
             stepRegistry: $app->make(CheckoutStepRegistryInterface::class),
             events: $app->make(Dispatcher::class),
+            stepExecutor: $app->make(StepExecutor::class),
+            finalizer: $app->make(FinalizeCheckoutSession::class),
             paymentResolver: $app->make(PaymentGatewayResolverInterface::class),
         ));
 

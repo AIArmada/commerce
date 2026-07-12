@@ -1309,6 +1309,8 @@ describe('CheckoutService', function (): void {
         $service = new CheckoutService(
             stepRegistry: $registry,
             events: app(Dispatcher::class),
+            stepExecutor: new \AIArmada\Checkout\Services\StepExecutor($registry, app(Dispatcher::class)),
+            finalizer: new \AIArmada\Checkout\Actions\FinalizeCheckoutSession(app(Dispatcher::class)),
             paymentResolver: null,
         );
 
@@ -1420,6 +1422,8 @@ describe('CheckoutService', function (): void {
         $service = new CheckoutService(
             stepRegistry: $registry,
             events: app(Dispatcher::class),
+            stepExecutor: new \AIArmada\Checkout\Services\StepExecutor($registry, app(Dispatcher::class)),
+            finalizer: new \AIArmada\Checkout\Actions\FinalizeCheckoutSession(app(Dispatcher::class)),
             paymentResolver: null,
         );
 
@@ -1537,6 +1541,8 @@ describe('CheckoutService', function (): void {
         $service = new CheckoutService(
             stepRegistry: $registry,
             events: app(Dispatcher::class),
+            stepExecutor: new \AIArmada\Checkout\Services\StepExecutor($registry, app(Dispatcher::class)),
+            finalizer: new \AIArmada\Checkout\Actions\FinalizeCheckoutSession(app(Dispatcher::class)),
             paymentResolver: null,
         );
 

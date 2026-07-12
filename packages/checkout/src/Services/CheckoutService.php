@@ -7,21 +7,17 @@ namespace AIArmada\Checkout\Services;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Checkout\Actions\FinalizeCheckoutSession;
 use AIArmada\Checkout\Contracts\CheckoutServiceInterface;
-use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Contracts\PaymentGatewayResolverInterface;
 use AIArmada\Checkout\Contracts\SessionDataTransformerInterface;
 use AIArmada\Checkout\Data\CheckoutResult;
 use AIArmada\Checkout\Data\PaymentResult;
-use AIArmada\Checkout\Data\StepResult;
 use AIArmada\Checkout\Enums\PaymentStatus;
 use AIArmada\Checkout\Enums\StepStatus;
 use AIArmada\Checkout\Events\CheckoutCancelled;
 use AIArmada\Checkout\Events\CheckoutFailed;
 use AIArmada\Checkout\Events\CheckoutPaymentCompleted;
 use AIArmada\Checkout\Events\CheckoutStarted;
-use AIArmada\Checkout\Events\CheckoutStepCompleted;
-use AIArmada\Checkout\Events\CheckoutStepFailed;
 use AIArmada\Checkout\Exceptions\CheckoutStepException;
 use AIArmada\Checkout\Exceptions\InvalidCheckoutStateException;
 use AIArmada\Checkout\Exceptions\PaymentException;
@@ -41,18 +37,13 @@ use Throwable;
 
 final class CheckoutService implements CheckoutServiceInterface
 {
-    private readonly RunCheckoutPipeline $pipeline;
-
-    private readonly FinalizeCheckoutSession $finalizer;
-
     public function __construct(
         private readonly CheckoutStepRegistryInterface $stepRegistry,
         private readonly Dispatcher $events,
+        private readonly StepExecutor $stepExecutor,
+        private readonly FinalizeCheckoutSession $finalizer,
         private readonly ?PaymentGatewayResolverInterface $paymentResolver = null,
-    ) {
-        $this->pipeline = new RunCheckoutPipeline($stepRegistry, $events);
-        $this->finalizer = new FinalizeCheckoutSession($events);
-    }
+    ) {}
 
     public function startCheckout(string $cartId, ?string $customerId = null): CheckoutSession
     {
@@ -113,7 +104,7 @@ final class CheckoutService implements CheckoutServiceInterface
                 return DB::transaction(function () use ($session) {
                     $this->ensureProcessingStatus($session);
 
-                    $pipelineResult = $this->pipeline->run($session);
+                    $pipelineResult = $this->stepExecutor->run($session);
 
                     if ($pipelineResult->requiresRedirect() || ! $pipelineResult->success) {
                         return $pipelineResult;
@@ -126,27 +117,6 @@ final class CheckoutService implements CheckoutServiceInterface
 
                 throw $e;
             }
-        });
-    }
-
-    public function processStep(CheckoutSession $session, string $stepName): CheckoutSession
-    {
-        $step = $this->stepRegistry->get($stepName);
-
-        if ($step === null) {
-            throw CheckoutStepException::stepNotFound($stepName);
-        }
-
-        if (! $this->stepRegistry->isEnabled($stepName)) {
-            throw CheckoutStepException::stepNotFound($stepName);
-        }
-
-        return $this->withSessionOwnerContext($session, function () use ($session, $step): CheckoutSession {
-            $this->transformSessionData($session);
-
-            $this->processStepInternal($session, $step);
-
-            return $session->fresh();
         });
     }
 
@@ -174,7 +144,7 @@ final class CheckoutService implements CheckoutServiceInterface
                 throw CheckoutStepException::stepNotFound('process_payment');
             }
 
-            $result = $this->processStepInternal($session, $paymentStep);
+            $result = $this->stepExecutor->processStep($session, $paymentStep);
 
             if ($session->payment_redirect_url !== null) {
                 return CheckoutResult::awaitingPayment($session, $session->payment_redirect_url);
@@ -241,30 +211,6 @@ final class CheckoutService implements CheckoutServiceInterface
         });
     }
 
-    public function getCurrentStep(CheckoutSession $session): ?string
-    {
-        return $session->current_step;
-    }
-
-    public function canProceed(CheckoutSession $session): bool
-    {
-        if ($session->status->isTerminal()) {
-            return false;
-        }
-
-        if ($session->isExpired()) {
-            return false;
-        }
-
-        $currentStep = $this->stepRegistry->get($session->current_step ?? '');
-
-        if ($currentStep === null) {
-            return false;
-        }
-
-        return empty($currentStep->validate($session));
-    }
-
     private function resolveCart(string $cartId): mixed
     {
         if (! app()->bound(CartManagerInterface::class)) {
@@ -328,44 +274,9 @@ final class CheckoutService implements CheckoutServiceInterface
         }
     }
 
-    private function processStepInternal(CheckoutSession $session, CheckoutStepInterface $step): StepResult
-    {
-        $identifier = $step->getIdentifier();
-
-        foreach ($step->getDependencies() as $dependency) {
-            $depState = $session->getStepState($dependency);
-            if ($depState !== StepStatus::Completed && $depState !== StepStatus::Skipped) {
-                throw CheckoutStepException::dependencyNotMet($identifier, $dependency);
-            }
-        }
-
-        $errors = $step->validate($session);
-        if (! empty($errors)) {
-            $session->setStepState($identifier, StepStatus::Failed);
-            $this->events->dispatch(new CheckoutStepFailed($session, $identifier, $errors));
-
-            return StepResult::failed($identifier, 'Validation failed', $errors);
-        }
-
-        $session->setStepState($identifier, StepStatus::Processing);
-        $session->update(['current_step' => $identifier]);
-
-        $result = $step->handle($session);
-
-        $session->setStepState($identifier, $result->status);
-
-        if ($result->isSuccessful()) {
-            $this->events->dispatch(new CheckoutStepCompleted($session, $identifier, $result->data));
-        } else {
-            $this->events->dispatch(new CheckoutStepFailed($session, $identifier, $result->errors));
-        }
-
-        return $result;
-    }
-
     private function continueFromStep(CheckoutSession $session, string $fromStep): CheckoutResult
     {
-        $pipelineResult = $this->pipeline->run($session, fromStep: $fromStep);
+        $pipelineResult = $this->stepExecutor->run($session, fromStep: $fromStep);
 
         if ($pipelineResult->requiresRedirect() || ! $pipelineResult->success) {
             return $pipelineResult;

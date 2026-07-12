@@ -15,7 +15,7 @@ use AIArmada\Checkout\Exceptions\CheckoutStepException;
 use AIArmada\Checkout\Models\CheckoutSession;
 use Illuminate\Contracts\Events\Dispatcher;
 
-final readonly class RunCheckoutPipeline
+final readonly class StepExecutor
 {
     public function __construct(
         private CheckoutStepRegistryInterface $stepRegistry,
@@ -73,7 +73,7 @@ final readonly class RunCheckoutPipeline
         );
     }
 
-    private function processStep(CheckoutSession $session, CheckoutStepInterface $step): StepResult
+    public function processStep(CheckoutSession $session, CheckoutStepInterface $step): StepResult
     {
         $identifier = $step->getIdentifier();
 
