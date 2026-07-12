@@ -1108,21 +1108,21 @@ tasks:
   - Update PaymentFlowTest & docs/04-usage.md.
   - Attach exact commands, exit codes, and commit SHA to tracker evidence.
   acceptance:
-  - done: false
+  - done: true
     text: Exactly one production method body owns the execution algorithm.
-  - done: false
+  - done: true
     text: StepExecutor covers every path that RunCheckoutPipeline covered (normal, callback, compatibility, rollback).
-  - done: false
+  - done: true
     text: processStep(), getCurrentStep(), canProceed() are removed from CheckoutServiceInterface and CheckoutService.
-  - done: false
+  - done: true
     text: No new instances of RunCheckoutPipeline created anywhere.
-  - done: false
+  - done: true
     text: PaymentFlowTest and StateTest still pass and cover the new executor.
-  - done: false
+  - done: true
     text: All changed public behavior is documented in the same task.
-  - done: false
+  - done: true
     text: No out-of-scope file changed.
-  - done: false
+  - done: true
     text: Package-scoped Pest, PHPStan, and Pint evidence is attached.
   validation_commands:
   - ./vendor/bin/pest tests/src/Checkout/StepExecutorTest.php tests/src/Checkout/PaymentFlowTest.php tests/src/Checkout/StateTest.php --parallel
