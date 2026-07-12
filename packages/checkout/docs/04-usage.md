@@ -101,21 +101,29 @@ The action:
 
 ### Step-by-Step Processing
 
-Process individual steps for more control:
+Run the full checkout flow through the configured steps:
 
 ```php
-// Get current step
-$currentStep = Checkout::getCurrentStep($session);
+// Process all steps
+$result = Checkout::processCheckout($session);
 
-// Process a specific step
-$session = Checkout::processStep($session, 'validate_cart');
-$session = Checkout::processStep($session, 'calculate_pricing');
+if ($result->requiresRedirect()) {
+    // Payment redirect required
+    return redirect($result->redirectUrl);
+}
 
-// Check if can proceed
-if (Checkout::canProceed($session)) {
-    $session = Checkout::processStep($session, 'process_payment');
+if ($result->success) {
+    // Checkout completed
+    $orderId = $result->orderId;
 }
 ```
+
+### Checking Step State
+
+The session model exposes current step state directly:
+
+```php
+$session->current_step;     // Current step name
 
 ## Working with Sessions
 
