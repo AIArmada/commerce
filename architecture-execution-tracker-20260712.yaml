@@ -343,7 +343,7 @@ tasks:
   evidence:
     decision_record: null
     scope_manifest: 'exclusive_scope: 14 files (transitions, listeners, model, migration, tests, docs)'
-    commit: pending
+    commit: 49f532f60
     tests: '15 tests, 53 assertions all passing: OrderTransitionsTest (6), CancelOrderTest (2), OrderInventoryIdempotencyTest (7)'
     static_analysis: 'phpstan analyse packages/orders/src packages/inventory/src --no-progress → [OK] No errors'
     docs_updated: 'packages/orders/docs/05-state-machine.md (canonical event path), packages/inventory/docs/04-usage.md (idempotency section)'
