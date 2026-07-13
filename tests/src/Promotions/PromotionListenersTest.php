@@ -11,6 +11,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingContextInterface;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingEngineInterface;
 use AIArmada\CommerceSupport\Targeting\Contracts\TargetingRuleEvaluator;
+use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Promotions\Actions\EvaluatePromotionForCart;
@@ -120,13 +121,37 @@ it('reevaluates only active promotions in the cart owner scope', function (): vo
 
 function orderWithPromotion(User $owner, Promotion $promotion): Order
 {
+    $session = new CheckoutSession;
+    $session->forceFill([
+        'id' => (string) Str::uuid(),
+        'cart_id' => (string) Str::uuid(),
+        'status' => 'completed',
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'discount_total' => 1000,
+        'discount_data' => [
+            'allocations' => [
+                [
+                    'provider_key' => 'promotions',
+                    'candidate_key' => 'promotion:' . $promotion->id,
+                    'requested_amount' => 1000,
+                    'meta' => [
+                        'promotion_id' => $promotion->id,
+                    ],
+                ],
+            ],
+            'total_discount' => 1000,
+        ],
+    ]);
+    $session->save();
+
     $order = new Order;
     $order->forceFill([
         'id' => (string) Str::uuid(),
         'order_number' => 'ORD-' . Str::upper(Str::random(8)),
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => (string) $owner->getKey(),
-        'promotion_id' => $promotion->id,
+        'metadata' => ['checkout_session_id' => $session->id],
     ]);
 
     return $order;
