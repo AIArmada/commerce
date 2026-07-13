@@ -2124,9 +2124,9 @@ tasks:
   wave: 4
   candidate: Candidate 07 / integration choke point
   title: Implement one recoverable Checkout finalization coordinator
-  status: gated
+  status: done
   severity: critical
-  owner: null
+  owner: opencode
   branch: null
   claimed_at: null
   goal: Replace CreateOrderStep's scattered side effects and duplicate finalization with the approved durable phase coordinator.
